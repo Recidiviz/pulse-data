@@ -130,6 +130,7 @@ class DatapointInterface:
         is_published: bool,
         frequency: schema.ReportingFrequency,
         old_value: Optional[str] = None,
+        agency_name: Optional[str] = None,
     ) -> DatapointJson:
         """Serializes Datapoint object into json format for consumption in the Justice Counts Control Panel"""
         metric_definition = METRIC_KEY_TO_METRIC[datapoint.metric_definition_key]
@@ -150,6 +151,7 @@ class DatapointInterface:
         return {
             "id": datapoint.id,
             "report_id": datapoint.report_id,
+            "agency_name": agency_name,
             "start_date": datapoint.start_date,
             "end_date": datapoint.end_date,
             "metric_definition_key": datapoint.metric_definition_key,
@@ -321,6 +323,7 @@ class DatapointInterface:
         dimension: Optional[DimensionBase] = None,
         use_existing_aggregate_value: bool = False,
         user_account: Optional[schema.UserAccount] = None,
+        agency: Optional[schema.Agency] = None,
     ) -> Optional[DatapointJson]:
         """Given a Report and a MetricInterface, add a row to the datapoint table.
         All datapoints associated with a metric are saved, even if the value is None.
@@ -442,6 +445,7 @@ class DatapointInterface:
                 is_published=report.status == schema.ReportStatus.PUBLISHED,
                 frequency=schema.ReportingFrequency[report.type],
                 old_value=existing_datapoint_value if not equal_to_existing else None,
+                agency_name=agency.name if agency is not None else None,
             )
             if new_datapoint is not None
             else None

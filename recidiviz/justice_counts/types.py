@@ -23,6 +23,7 @@ class DatapointJson(TypedDict):
 
     id: int
     report_id: int
+    agency_name: Optional[str]
     start_date: str
     end_date: str
     metric_definition_key: str

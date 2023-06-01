@@ -54,7 +54,7 @@ class WorkbookUploader:
         system: schema.System,
         agency: schema.Agency,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-        child_agency_name_to_id: Optional[Dict[str, int]] = None,
+        child_agency_name_to_agency: Optional[Dict[str, schema.Agency]] = None,
         user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.system = system
@@ -96,8 +96,8 @@ class WorkbookUploader:
         # A set of uploaded report IDs will be used to create the `unchanged_reports` set
         self.uploaded_reports: Set[schema.Report] = set()
         # A child agency is an agency that the current agency has the permission to
-        # upload data for. child_agency_name_to_id maps child agency name to id.
-        self.child_agency_name_to_id = child_agency_name_to_id or {}
+        # upload data for. child_agency_name_to_agency maps child agency name to agency.
+        self.child_agency_name_to_agency = child_agency_name_to_agency or {}
 
     def upload_workbook(
         self,
@@ -113,7 +113,9 @@ class WorkbookUploader:
         """
         # 1. Fetch existing reports and datapoints for this agency, so that
         # we know what objects to update vs. what new objects to create.
-        agency_ids = list(self.child_agency_name_to_id.values()) + [self.agency.id]
+        agency_ids = [a.id for a in self.child_agency_name_to_agency.values()] + [
+            self.agency.id
+        ]
         reports = ReportInterface.get_reports_by_agency_ids(
             session, agency_ids=agency_ids, include_datapoints=True
         )
@@ -188,7 +190,7 @@ class WorkbookUploader:
                 agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
                 existing_datapoints_dict=existing_datapoints_dict,
                 metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
-                child_agency_name_to_id=self.child_agency_name_to_id,
+                child_agency_name_to_agency=self.child_agency_name_to_agency,
             )
             spreadsheet_uploader.upload_sheet(
                 session=session,

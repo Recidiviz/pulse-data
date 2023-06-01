@@ -47,7 +47,7 @@ class TimeRangeUploader:
 
     def __init__(
         self,
-        agency_id: int,
+        agency: schema.Agency,
         time_range: Tuple[datetime.date, datetime.date],
         rows_for_this_time_range: List[Dict[str, Any]],
         text_analyzer: TextAnalyzer,
@@ -61,7 +61,7 @@ class TimeRangeUploader:
         self.time_range = time_range
         self.user_account = user_account
         self.existing_datapoints_dict = existing_datapoints_dict
-        self.agency_id = agency_id
+        self.agency = agency
         self.rows_for_this_time_range = rows_for_this_time_range
         self.text_analyzer = text_analyzer
         self.metricfile = metricfile
@@ -93,7 +93,7 @@ class TimeRangeUploader:
             year, month = time_range_to_year_month[self.time_range]
             report = ReportInterface.create_report(
                 session=session,
-                agency_id=self.agency_id,
+                agency_id=self.agency.id,
                 year=year,
                 month=month,
                 frequency=reporting_frequency.value,
@@ -115,6 +115,7 @@ class TimeRangeUploader:
             # TODO(#15499) Infer aggregate value only if total sheet was not provided.
             use_existing_aggregate_value=self.metricfile.disaggregation is not None,
             existing_datapoints_dict=self.existing_datapoints_dict,
+            agency=self.agency,
         )
         return report, datapoint_json_list
 

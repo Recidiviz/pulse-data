@@ -48,7 +48,6 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
@@ -256,8 +255,8 @@ class SpreadsheetInterface:
         uploader = WorkbookUploader(
             agency=agency,
             system=spreadsheet.system,
-            child_agency_name_to_id={
-                a.name.strip().lower(): a.id for a in child_agencies
+            child_agency_name_to_agency={
+                a.name.strip().lower(): a for a in child_agencies
             },
             user_account=user_account,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
@@ -326,9 +325,9 @@ class SpreadsheetInterface:
         ],
         metric_definitions: List[MetricDefinition],
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-        updated_reports: Set[schema.Report],
+        updated_report_jsons: List[Dict[str, Any]],
         new_report_jsons: List[Dict[str, Any]],
-        unchanged_reports: Set[schema.Report],
+        unchanged_report_jsons: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
@@ -414,21 +413,13 @@ class SpreadsheetInterface:
         # This is an ingest-blocking error because in this scenario we are not able
         # to convert the rows into datapoints.
         non_metric_errors = [e.to_json() for e in metric_key_to_errors.get(None, [])]
-        updated_reports_json = [
-            ReportInterface.to_json_response(report=r, editor_id_to_json={})
-            for r in updated_reports
-        ]
-        unchanged_reports_json = [
-            ReportInterface.to_json_response(report=r, editor_id_to_json={})
-            for r in unchanged_reports
-        ]
 
         return {
             "metrics": metrics,
             "non_metric_errors": non_metric_errors,
-            "updated_reports": updated_reports_json,
+            "updated_reports": updated_report_jsons,
             "new_reports": new_report_jsons,
-            "unchanged_reports": unchanged_reports_json,
+            "unchanged_reports": unchanged_report_jsons,
         }
 
     @staticmethod

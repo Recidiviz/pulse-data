@@ -863,7 +863,19 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 len(metric_key_to_datapoint_jsons.get("PAROLE_FUNDING", [])) > 0
             )
             self.assertTrue(
+                all(
+                    d["agency_name"] == agency.name
+                    for d in metric_key_to_datapoint_jsons["PAROLE_FUNDING"]
+                )
+            )
+            self.assertTrue(
                 len(metric_key_to_datapoint_jsons.get("PROBATION_FUNDING", [])) > 0
+            )
+            self.assertTrue(
+                all(
+                    d["agency_name"] == agency.name
+                    for d in metric_key_to_datapoint_jsons["PROBATION_FUNDING"]
+                )
             )
 
     def test_unexpected_column_name(
@@ -1229,8 +1241,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 agency=super_agency,
                 user_account=user_account,
                 metric_key_to_agency_datapoints={},
-                child_agency_name_to_id={
-                    a.name.strip().lower(): a.id for a in child_agencies
+                child_agency_name_to_agency={
+                    a.name.strip().lower(): a for a in child_agencies
                 },
             )
 

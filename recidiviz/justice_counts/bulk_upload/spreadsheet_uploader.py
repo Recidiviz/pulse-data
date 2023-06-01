@@ -64,7 +64,7 @@ class SpreadsheetUploader:
         metric_key_to_timerange_to_total_value: Dict[
             str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]
         ],
-        child_agency_name_to_id: Dict[str, int],
+        child_agency_name_to_agency: Dict[str, schema.Agency],
         user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.text_analyzer = text_analyzer
@@ -79,7 +79,7 @@ class SpreadsheetUploader:
         self.metric_key_to_timerange_to_total_value = (
             metric_key_to_timerange_to_total_value
         )
-        self.child_agency_name_to_id = child_agency_name_to_id
+        self.child_agency_name_to_agency = child_agency_name_to_agency
 
     def upload_sheet(
         self,
@@ -101,14 +101,14 @@ class SpreadsheetUploader:
         This is indicated by the `system` column. In this case, we break up
         the rows by system, and then ingest one system at a time."""
 
-        if len(self.child_agency_name_to_id) > 0:
-            agency_id_to_rows = self._get_agency_id_to_rows(
+        if len(self.child_agency_name_to_agency) > 0:
+            agency_name_to_rows = self._get_agency_name_to_rows(
                 rows=rows,
                 metric_key_to_errors=metric_key_to_errors,
             )
             self._upload_super_agency_sheet(
                 session=session,
-                agency_id_to_rows=agency_id_to_rows,
+                agency_name_to_rows=agency_name_to_rows,
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
@@ -142,7 +142,7 @@ class SpreadsheetUploader:
     def _upload_super_agency_sheet(
         self,
         session: Session,
-        agency_id_to_rows: Dict[int, List[Dict[str, Any]]],
+        agency_name_to_rows: Dict[str, List[Dict[str, Any]]],
         invalid_sheet_names: List[str],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
@@ -153,7 +153,7 @@ class SpreadsheetUploader:
         """Uploads agency rows one agency at a time. If the agency is a
         supervision agency, the rows from each agency will be uploaded one system
         at a time."""
-        for curr_agency_id, current_rows in agency_id_to_rows.items():
+        for curr_agency_name, current_rows in agency_name_to_rows.items():
             if self.system == schema.System.SUPERVISION:
                 system_to_rows = self._get_system_to_rows(
                     rows=current_rows,
@@ -165,7 +165,7 @@ class SpreadsheetUploader:
                     invalid_sheet_names=invalid_sheet_names,
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_key_to_errors=metric_key_to_errors,
-                    child_agency_id=curr_agency_id,
+                    child_agency_name=curr_agency_name,
                     uploaded_reports=uploaded_reports,
                 )
             else:
@@ -176,7 +176,7 @@ class SpreadsheetUploader:
                     invalid_sheet_names=invalid_sheet_names,
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_key_to_errors=metric_key_to_errors,
-                    child_agency_id=curr_agency_id,
+                    child_agency_name=curr_agency_name,
                     uploaded_reports=uploaded_reports,
                 )
 
@@ -190,7 +190,7 @@ class SpreadsheetUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         uploaded_reports: Set[schema.Report],
-        child_agency_id: Optional[int] = None,
+        child_agency_name: Optional[str] = None,
     ) -> None:
         """Uploads supervision rows one system at a time."""
         for current_system, current_rows in system_to_rows.items():
@@ -202,7 +202,7 @@ class SpreadsheetUploader:
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 uploaded_reports=uploaded_reports,
-                child_agency_id=child_agency_id,
+                child_agency_name=child_agency_name,
             )
 
     def _upload_rows(
@@ -216,7 +216,7 @@ class SpreadsheetUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         uploaded_reports: Set[schema.Report],
-        child_agency_id: Optional[int] = None,
+        child_agency_name: Optional[str] = None,
     ) -> None:
         """Uploads rows for a given system and child agency. If child_agency_id
         if None, then the rows are uploaded for the agency specified as self.agency."""
@@ -246,7 +246,7 @@ class SpreadsheetUploader:
                 metricfile=metricfile,
                 metric_key_to_errors=metric_key_to_errors,
                 uploaded_reports=uploaded_reports,
-                child_agency_id=child_agency_id,
+                child_agency_name=child_agency_name,
             )
         except Exception as e:
             new_datapoint_json_list = []
@@ -271,7 +271,7 @@ class SpreadsheetUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         uploaded_reports: Set[schema.Report],
-        child_agency_id: Optional[int] = None,
+        child_agency_name: Optional[str] = None,
     ) -> List[DatapointJson]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
@@ -327,13 +327,17 @@ class SpreadsheetUploader:
         # exists for this time range, update it with the MetricInterface.
         # Else, create a new report and add the MetricInterface.
         datapoint_jsons_list = []
+        curr_agency = (
+            self.agency
+            if child_agency_name is None or len(child_agency_name) == 0
+            else self.child_agency_name_to_agency[child_agency_name]
+        )
+
         for time_range, rows_for_this_time_range in rows_by_time_range.items():
             try:
                 time_range_uploader = TimeRangeUploader(
                     time_range=time_range,
-                    agency_id=self.agency.id
-                    if child_agency_id is None
-                    else child_agency_id,
+                    agency=curr_agency,
                     rows_for_this_time_range=rows_for_this_time_range,
                     user_account=self.user_account,
                     # TODO(#15499) Infer aggregate value only if total sheet was not provided.
@@ -342,11 +346,8 @@ class SpreadsheetUploader:
                     metricfile=metricfile,
                     metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
                 )
-                curr_agency_id = (
-                    child_agency_id if child_agency_id is not None else self.agency.id
-                )
                 existing_report = self.agency_id_to_time_range_to_reports.get(
-                    curr_agency_id, {}
+                    curr_agency.id, {}
                 ).get(time_range)
                 if existing_report is not None and existing_report[0].id is not None:
                     uploaded_reports.add(existing_report[0])
@@ -361,7 +362,7 @@ class SpreadsheetUploader:
                     metric_key_to_errors=metric_key_to_errors,
                     metric_key=metricfile.definition.key,
                 )  # TODO(#15499) Infer aggregate value only if total sheet was not provided
-                self.agency_id_to_time_range_to_reports[curr_agency_id][time_range] = [
+                self.agency_id_to_time_range_to_reports[curr_agency.id][time_range] = [
                     report
                 ]
                 datapoint_jsons_list += datapoint_json_list_for_time_range
@@ -464,7 +465,7 @@ class SpreadsheetUploader:
             )
         if metric_definition.system.value == "SUPERVISION":
             expected_columns.add("system")
-        if len(self.child_agency_name_to_id) > 0:
+        if len(self.child_agency_name_to_agency) > 0:
             expected_columns.add("agency")
         unexpected_columns = actual_columns.difference(expected_columns)
         for unexpected_col in unexpected_columns:
@@ -583,16 +584,16 @@ class SpreadsheetUploader:
             rows_by_time_range[(date_range_start, date_range_end)].append(row)
         return rows_by_time_range, time_range_to_year_month
 
-    def _get_agency_id_to_rows(
+    def _get_agency_name_to_rows(
         self,
         rows: List[Dict[str, Any]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-    ) -> Dict[int, List[Dict[str, Any]]]:
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Groups the rows in the file by the value of the `agency` column.
         Returns a dictionary mapping each agency to its list of rows."""
-        agency_id_to_rows = {}
+        agency_name_to_rows: Dict[str, List[Dict[str, Any]]] = {}
 
         def get_agency_name(row: Dict[str, Any]) -> str:
             agency_name = row.get("agency")
@@ -632,7 +633,7 @@ class SpreadsheetUploader:
                 return ""
             normalized_agency_name = agency_name.strip().lower()
             if (
-                normalized_agency_name not in self.child_agency_name_to_id
+                normalized_agency_name not in self.child_agency_name_to_agency
                 and normalized_agency_name != self.agency.name.lower()
             ):
                 description = f"Failed to upload data for {agency_name}. Either this agency does not exist in our database, or your agency does not have permission to upload for this agency."
@@ -682,10 +683,9 @@ class SpreadsheetUploader:
             if len(agency_name) > 0:
                 # Agency Name will be "" if the row is missing an agency.
                 # The rows associated with no agency name will not be ingested.
-                agency_id = self.child_agency_name_to_id[agency_name]
-                agency_id_to_rows[agency_id] = agency_rows
+                agency_name_to_rows[agency_name] = agency_rows
 
-        return agency_id_to_rows
+        return agency_name_to_rows
 
     def _get_system_to_rows(
         self,
