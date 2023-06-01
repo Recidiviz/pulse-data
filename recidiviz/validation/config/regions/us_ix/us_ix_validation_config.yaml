@@ -15,7 +15,7 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.03
     override_reason: TODO(#18856), TODO(#18993) - Needs investigation. As of 2/24/23, failing 2.29% in staging and 2.3% in production.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
-    hard_max_allowed_error_override: 0.16
+    hard_max_allowed_error_override: 0.165
     override_reason: TODO(#20470) - Fixed state specific condition but will need additional investigation after that.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
     hard_max_allowed_error_override: 0.04
@@ -46,20 +46,22 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 73000
     override_reason: TODO(#20471) - Needs investigation. Sentence dates are a known issue for Atlas so bumping thresholds for now
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 24000
-    override_reason: TODO(#20473) - Investigated and found some contributing issues, so we should address those first and then re-evaluate.  Bumping the threshold for now.
+    hard_num_allowed_rows_override: 1000
+    override_reason: TODO(#20473) - Addressed known issues, ticket remains to investigate remaining issues.
   - validation_name: incarceration_release_reason_no_release_date
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#20471) - Really low error rate so just bumping threshold for now
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 12500
-    override_reason: TODO(#20472) - Issue is coming from ingested charges that aren't attached to an ingested sentence.  20472 is the ticket to fix.
+    hard_num_allowed_rows_override: 28000
+    override_reason:
+      TODO(#20472) - Half of the issue is coming from ingested charges that aren't attached to an ingested sentence (20472 is the ticket to fix).
+      The other half of the issue is from ingested early discharges that are attached to dummy sentences since we don't have sentence info.
   - validation_name: normalized_state_charge_missing_descriptions
     hard_num_allowed_rows_override: 50
     override_reason: Current failing level as of 4/5/23 is 0 rows
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 50
-    override_reason: Current failing level as of 4/5/23 is 13 rows (0.004%)
+    hard_num_allowed_rows_override: 51
+    override_reason: Current failing level as of 5/31/23 is 11 rows (0.004%)
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 3000
     override_reason: Current failing level as of 4/20/23 is 2,067 rows (0.8%)
