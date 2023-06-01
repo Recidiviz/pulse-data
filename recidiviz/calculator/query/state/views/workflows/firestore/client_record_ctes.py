@@ -332,7 +332,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     4 AS milestone_priority
                 FROM time_with_employer
         )
-        WHERE state_code in ('US_IX')
+        WHERE state_code in ('US_IX', 'US_MI')
         AND milestone_text IS NOT NULL
         GROUP BY state_code, person_id
     ),
