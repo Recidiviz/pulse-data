@@ -409,10 +409,12 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             temp_results_dataset=intermediate_table_address.dataset_id,
             temp_results_table=intermediate_table_address.table_id,
             upper_bound_datetime_inclusive=datetime_clause(
-                upper_bound_datetime_inclusive
+                upper_bound_datetime_inclusive, include_milliseconds=False
             ),
             lower_bound_datetime_exclusive=(
-                datetime_clause(lower_bound_datetime_exclusive)
+                datetime_clause(
+                    lower_bound_datetime_exclusive, include_milliseconds=False
+                )
                 if lower_bound_datetime_exclusive
                 else "CAST(NULL AS DATETIME)"
             ),
@@ -489,7 +491,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
                 results_dataset=results_address.dataset_id,
                 results_table=results_address.table_id,
                 upper_bound_datetime_inclusive=datetime_clause(
-                    upper_bound_datetime_inclusive
+                    upper_bound_datetime_inclusive, include_milliseconds=False
                 ),
                 batch_number=batch_number,
             ),
@@ -572,9 +574,11 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             results_dataset=results_address.dataset_id,
             results_table=results_address.table_id,
             upper_bound_datetime_inclusive=datetime_clause(
-                upper_bound_datetime_inclusive
+                upper_bound_datetime_inclusive, include_milliseconds=False
             ),
-            processed_time=datetime_clause(datetime.datetime.utcnow()),
+            processed_time=datetime_clause(
+                datetime.datetime.utcnow(), include_milliseconds=False
+            ),
             batch_number=batch_number,
         )
         query_job = self._big_query_client.run_query_async(

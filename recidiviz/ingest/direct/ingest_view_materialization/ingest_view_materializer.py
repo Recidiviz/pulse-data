@@ -249,7 +249,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                     ingest_view_materialization_args, request_id=self.request_id
                 ),
                 ingest_view=ingest_view,
-                date_bound=ingest_view_materialization_args.lower_bound_datetime_exclusive,
+                date_bound=ingest_view_materialization_args.lower_bound_datetime_exclusive_for_query(),
             )
             single_date_table_materialization_jobs.append(lower_bound_table_job)
 
@@ -400,7 +400,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 destination_table_type=DestinationTableType.TEMPORARY,
                 destination_dataset_id=None,
                 destination_table_id=lower_bound_table_id,
-                update_timestamp=ingest_view_materialization_args.lower_bound_datetime_exclusive,
+                update_timestamp=ingest_view_materialization_args.lower_bound_datetime_exclusive_for_query(),
                 raw_table_subquery_name_prefix="lower_"
                 if ingest_view.materialize_raw_data_table_views
                 else "",
@@ -467,11 +467,13 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 if __name__ == "__main__":
 
     # Update these variables and run to print a materialization query you can run in the BigQuery UI
-    region_code_: str = "us_mo"
-    ingest_view_name_: str = "tak001_offender_identification"
-    lower_bound_datetime_exclusive_: datetime.datetime = datetime.datetime(2023, 1, 11)
+    region_code_: str = "us_tn"
+    ingest_view_name_: str = "DisciplinaryIncarcerationIncident"
+    lower_bound_datetime_exclusive_: datetime.datetime = datetime.datetime(
+        2022, 3, 23, 6, 2, 54, 633642
+    )
     upper_bound_datetime_inclusive_: datetime.datetime = datetime.datetime(
-        2023, 1, 16, 12, 11, 0
+        2023, 5, 2, 8, 3, 43, 383642
     )
     raw_data_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY
 

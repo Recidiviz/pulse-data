@@ -256,6 +256,12 @@ class BigQueryQueryRewriter:
         # Date/time parsing functions are different in Postgres
         query = _replace_iter(
             query,
+            r"DATETIME \"(?P<date_str>.+?)\"",
+            "TO_TIMESTAMP('{date_str}', 'YYYY-MM-DDTHH24-MI-SS.US')",
+            flags=re.IGNORECASE,
+        )
+        query = _replace_iter(
+            query,
             r"(SAFE\.)?PARSE_TIMESTAMP\((?P<fmt>.+?), (?P<col>.+?\)?)\)",
             "TO_TIMESTAMP({col}, {fmt})",
             flags=re.IGNORECASE,

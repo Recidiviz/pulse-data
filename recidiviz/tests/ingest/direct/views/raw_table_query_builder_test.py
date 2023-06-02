@@ -99,7 +99,7 @@ class RawTableQueryBuilderTest(unittest.TestCase):
             self.raw_file_config,
             address_overrides=None,
             normalized_column_values=True,
-            raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5),
+            raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=True,
         )
 
@@ -114,7 +114,7 @@ WITH filtered_rows AS (
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
             `recidiviz-456.us_xx_raw_data.table_name`
-        WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+        WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
     ) a
     WHERE
         recency_rank = 1
@@ -143,7 +143,7 @@ FROM filtered_rows
             self.raw_file_config,
             address_overrides=None,
             normalized_column_values=True,
-            raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5),
+            raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=False,
         )
 
@@ -151,7 +151,7 @@ FROM filtered_rows
 WITH filtered_rows AS (
     SELECT *
     FROM `recidiviz-456.us_xx_raw_data.table_name`
-    WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+    WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
 )
 SELECT col1, 
         COALESCE(
@@ -179,7 +179,7 @@ FROM filtered_rows
             raw_file_config,
             address_overrides=None,
             normalized_column_values=True,
-            raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5),
+            raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=True,
         )
 
@@ -189,7 +189,7 @@ WITH max_update_datetime AS (
         MAX(update_datetime) AS update_datetime
     FROM
         `recidiviz-456.us_xx_raw_data.table_name`
-    WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+    WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
 ),
 max_file_id AS (
     SELECT
