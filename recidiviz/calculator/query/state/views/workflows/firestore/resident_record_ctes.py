@@ -75,8 +75,25 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
             NULL AS admission_date,
             NULL AS release_date
         FROM incarceration_cases ic
-        # TODO(#21234): Add dates for TN
-        WHERE state_code!="US_ME"
+        WHERE state_code="US_MO"
+        
+        UNION ALL
+
+        SELECT 
+            ic.*,
+            MIN(t.start_date) 
+                    OVER(w) AS admission_date,
+            MAX(t.projected_completion_date_max) 
+                    OVER(w) AS release_date
+        FROM
+            incarceration_cases ic
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_projected_completion_date_spans_materialized` t
+          ON ic.person_id = t.person_id
+              AND ic.state_code = t.state_code
+              AND CURRENT_DATE('US/Eastern') >= t.start_date
+              AND t.end_date IS NULL
+        WHERE ic.state_code NOT IN ("US_ME", "US_MO")
+        WINDOW w as (PARTITION BY ic.person_id)
     ),
 """
 
