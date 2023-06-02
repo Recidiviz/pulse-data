@@ -198,7 +198,7 @@ def supervision_past_full_term_completion_date(
             person_id,
             start_date AS start_datetime,
             end_date AS end_datetime,
-            projected_completion_date_max AS critical_date
+            {revert_nonnull_end_date_clause('projected_completion_date_max')} AS critical_date
         FROM `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized`
     ),
     {critical_date_has_passed_spans_cte(meets_criteria_leading_window_days)}
