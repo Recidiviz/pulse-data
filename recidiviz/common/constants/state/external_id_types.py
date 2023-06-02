@@ -92,6 +92,8 @@ US_MI_OMNI_USER = "US_MI_OMNI_USER"
 
 # CA Offender Number
 US_CA_DOC = "US_CA_DOC"
+# CA Staff Badge Number
+US_CA_BADGE_NO = "US_CA_BADGE_NO"
 
 # NC DOC ID Number
 US_NC_DOC_INMATE = "US_NC_DOC_INMATE"
