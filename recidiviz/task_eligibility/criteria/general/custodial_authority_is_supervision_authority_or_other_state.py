@@ -18,6 +18,7 @@
 custodial authority of supervision authority or other state.
 Therefore, federal and other country custodial authorities are excluded.
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -55,7 +56,7 @@ SELECT
     LOGICAL_OR(eligible_custodial_authority) AS meets_criteria,
     TO_JSON(STRUCT(LOGICAL_OR(eligible_custodial_authority) AS eligible_custodial_authority)) AS reason,
 FROM sub_sessions_with_attributes
-WHERE start_date != end_date
+WHERE start_date != {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
 
