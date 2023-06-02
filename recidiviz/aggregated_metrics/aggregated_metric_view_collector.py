@@ -42,6 +42,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     ABSCONSIONS_BENCH_WARRANTS,
+    ANY_INCARCERATION_365,
     AVG_AGE,
     AVG_ASSIGNMENTS_OFFICER,
     AVG_CRITICAL_CASELOAD_SIZE,
@@ -284,6 +285,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         *PERSON_DAYS_TASK_ELIGIBLE_METRICS,
         *TASK_COMPLETED_METRICS,
         # Assignment window metrics
+        ANY_INCARCERATION_365,
         DAYS_ABSCONDED_365,
         DAYS_AT_LIBERTY_365,
         DAYS_IN_COMMUNITY_365,
