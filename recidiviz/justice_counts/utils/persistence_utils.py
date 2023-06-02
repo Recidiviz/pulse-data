@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains utilities for writing JusticeCountsDatabaseEntitites to the DB."""
 
+from datetime import datetime
 from typing import Optional, Tuple, Type
 
 from sqlalchemy import cast
@@ -57,12 +58,14 @@ def get_existing_entity(
 
 
 def update_existing_or_create(
-    ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session
+    ingested_entity: schema.JusticeCountsDatabaseEntity,
+    session: Session,
+    created_at: datetime,
 ) -> Tuple[schema.JusticeCountsDatabaseEntity, Optional[JusticeCountsBase]]:
-    expunge_existing(session=session, ingested_entity=ingested_entity)
     # Note: Using on_conflict_do_update to resolve whether there is an existing entity could be more efficient as it
     # wouldn't incur multiple roundtrips. However for some entities we need to know whether there is an existing entity
     # (e.g. table instance) so we can clear child entities, so we probably wouldn't win much if anything.
+    expunge_existing(session=session, ingested_entity=ingested_entity)
     table_entity = get_existing_entity(ingested_entity, session)
     if table_entity is not None:
         # TODO(#4477): Instead of assuming the primary key field is named `id`, use an Entity method.
@@ -73,6 +76,9 @@ def update_existing_or_create(
         # this would likely make mypy less useful.
         merged_entity = session.merge(ingested_entity)
         return merged_entity, table_entity
+    # we'll get here if we are creating a new object
+    # add on the created_at property
+    ingested_entity.created_at = created_at
     session.add(ingested_entity)
     return ingested_entity, None
 

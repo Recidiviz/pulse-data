@@ -375,6 +375,7 @@ class DatapointInterface:
             value_type=value_type,
             start_date=report.date_range_start,
             end_date=report.date_range_end,
+            created_at=current_time,
             report=report,
             dimension_identifier_to_member={
                 dimension.dimension_identifier(): dimension.dimension_name
@@ -541,6 +542,7 @@ class DatapointInterface:
                     is_report_datapoint=False,
                 ),
                 session=session,
+                created_at=datetime.datetime.now(tz=datetime.timezone.utc),
             )
 
         # 2. Set default contexts
@@ -555,6 +557,7 @@ class DatapointInterface:
                     is_report_datapoint=False,
                 ),
                 session,
+                created_at=datetime.datetime.now(tz=datetime.timezone.utc),
             )
 
         # 3. Set top-level includes/excludes
@@ -591,6 +594,7 @@ class DatapointInterface:
                     is_report_datapoint=False,
                 ),
                 session,
+                created_at=datetime.datetime.now(tz=datetime.timezone.utc),
             )
 
         # 4. Add datapoints to record that metric is disaggregated_by_supervision_subsystems
@@ -620,6 +624,7 @@ class DatapointInterface:
                             is_report_datapoint=False,
                         ),
                         session,
+                        created_at=datetime.datetime.now(tz=datetime.timezone.utc),
                     )
                     # Then, update the enabled/disabled statuses accordingly. If the metric
                     # is Supervision and we are *not* disaggregating, the metric should be
@@ -635,6 +640,7 @@ class DatapointInterface:
                                 is_report_datapoint=False,
                             ),
                             session=session,
+                            created_at=datetime.datetime.now(tz=datetime.timezone.utc),
                         )
                     elif (
                         schema.System[system] in schema.System.supervision_subsystems()
@@ -648,6 +654,7 @@ class DatapointInterface:
                                 is_report_datapoint=False,
                             ),
                             session=session,
+                            created_at=datetime.datetime.now(tz=datetime.timezone.utc),
                         )
 
         for aggregated_dimension in agency_metric.aggregated_dimensions:
@@ -667,6 +674,7 @@ class DatapointInterface:
                             is_report_datapoint=False,
                         ),
                         session=session,
+                        created_at=datetime.datetime.now(tz=datetime.timezone.utc),
                     )
 
             for (
@@ -691,6 +699,7 @@ class DatapointInterface:
                             is_report_datapoint=False,
                         ),
                         session=session,
+                        created_at=datetime.datetime.now(tz=datetime.timezone.utc),
                     )
 
                 # 3b. Set disaggregation-level includes/excludes
@@ -737,6 +746,7 @@ class DatapointInterface:
                 is_report_datapoint=False,
             ),
             session=session,
+            created_at=datetime.datetime.now(tz=datetime.timezone.utc),
         )
         if existing_datapoint is not None:
             if existing_datapoint.value != datapoint.value:

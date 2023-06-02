@@ -661,6 +661,9 @@ class Datapoint(JusticeCountsBase):
     # Datapoints that are not contexts will not have a context key.
     context_key = Column(String, nullable=True)
 
+    # Date created
+    created_at = Column(DateTime, nullable=True)
+
     # Agency datapoints that describe what data is being included/excluded
     # in the metric definition will have an includes_excludes_key.
     includes_excludes_key = Column(String, nullable=True)
