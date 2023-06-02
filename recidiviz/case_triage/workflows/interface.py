@@ -226,7 +226,7 @@ class WorkflowsUsTnExternalRequestInterface:
         start_time = time.perf_counter()
         request_body = request.format_request()
 
-        logging.info("Sending request to TOMIS")
+        logging.info("Sending request to TOMIS: %s", request_body)
 
         try:
             tomis_response = requests.put(
