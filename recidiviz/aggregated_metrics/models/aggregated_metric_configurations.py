@@ -19,6 +19,7 @@ from typing import Dict, List
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentDaysToFirstEventMetric,
+    AssignmentEventBinaryMetric,
     AssignmentEventCountMetric,
     AssignmentSpanDaysMetric,
     AssignmentSpanMaxDaysMetric,
@@ -69,6 +70,15 @@ ABSCONSIONS_BENCH_WARRANTS = EventCountMetric(
     display_name="Absconsions/Bench Warrants",
     description="Number of absconsions or bench warrants",
     event_types=[PersonEventType.ABSCONSION_BENCH_WARRANT],
+    event_attribute_filters={},
+)
+
+ANY_INCARCERATION_365 = AssignmentEventBinaryMetric(
+    name="any_incarceration_365",
+    display_name="Any Incarceration Start Within 1 Year of Assignment",
+    description="Number of client assignments followed by an incarceration start "
+    "within 1 year",
+    event_types=[PersonEventType.INCARCERATION_START],
     event_attribute_filters={},
 )
 

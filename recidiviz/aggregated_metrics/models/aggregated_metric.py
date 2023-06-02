@@ -641,15 +641,39 @@ class AssignmentEventCountMetric(
         self, event_date_col: str, assignment_date_col: str
     ) -> str:
         return f"""
-            COUNT( 
+            COUNT(
                 DISTINCT IF(
                     {self.get_metric_conditions_string()}
                     AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                    CONCAT(events.person_id, {event_date_col}), 
+                    CONCAT(events.person_id, {event_date_col}),
                     NULL
                 )
-            ) AS {self.name}
-        """
+            ) AS {self.name}"""
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SUM({self.name}) AS {self.name}"
+
+
+@attr.define(frozen=True, kw_only=True)
+class AssignmentEventBinaryMetric(
+    AssignmentEventAggregatedMetric, EventMetricConditionsMixin
+):
+    """
+    Class that stores information about a metric that counts one event per person
+    specified in `person_events` occurring within {window_length_days} of assignment,
+    for all assignments occurring during the analysis period.
+
+    Example metric: Any Incarceration Start Within 1 Year of Assignment
+    """
+
+    def generate_aggregation_query_fragment(
+        self, event_date_col: str, assignment_date_col: str
+    ) -> str:
+        return f"""
+            CAST(LOGICAL_OR(
+                {self.get_metric_conditions_string()}
+                AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)
+            ) AS INT64) AS {self.name}"""
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SUM({self.name}) AS {self.name}"
