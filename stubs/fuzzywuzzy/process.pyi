@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,15 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements stubs for statsmodels.regression_linear_model"""
+from typing import Any, Callable, Union
 
-from typing import Iterable
+from fuzzywuzzy.fuzz import WRatio
+from fuzzywuzzy.utils import full_process
 
-import numpy as np
-
-class RegressionResults(object):
-    params: np.ndarray
-    def predict(self, data: Iterable) -> Iterable: ...
-
-class RegressionModel(object):
-    def fit(self) -> RegressionResults: ...
+def extractOne(
+    query: Any,
+    choices: Any,
+    processor: Callable[[Any, bool], Any] = full_process,
+    scorer: Callable[[Any, Any, bool, bool], int] = WRatio,
+    score_cutoff: int = 0,
+) -> Union[tuple[Any, int, Any], tuple[Any, int]]: ...

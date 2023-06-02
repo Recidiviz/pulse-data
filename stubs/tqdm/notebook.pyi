@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,15 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements stubs for statsmodels.regression_linear_model"""
+from typing import Any
 
-from typing import Iterable
-
-import numpy as np
-
-class RegressionResults(object):
-    params: np.ndarray
-    def predict(self, data: Iterable) -> Iterable: ...
-
-class RegressionModel(object):
-    def fit(self) -> RegressionResults: ...
+def tqdm(*args: Any, **kwargs: Any) -> None: ...
