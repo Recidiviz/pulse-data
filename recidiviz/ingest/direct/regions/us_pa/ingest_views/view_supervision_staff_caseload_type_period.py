@@ -24,16 +24,21 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT 
+WITH most_recent_entries AS (
+  SELECT 
   external_id,
   UPPER(AgentType) AS AgentType,
-  1 AS period_seq_num,
-  -- TODO(#18022):We should be building these periods based on actual start and end dates of employment; these are arbitrary, temporary placeholders.
+  -- TODO(#18022): We should be building these periods based on actual start and end dates of employment; these are arbitrary, temporary placeholders.
   -- Since this is a static roster, there will be exactly one row per P.O., and we will assume they are all actively employed.
   DATE(1900,1,1) AS start_date, 
-  NULL AS end_date
-FROM {specialty_agents}
-WHERE external_id IS NOT NULL
+  NULL AS end_date,
+  ROW_NUMBER() OVER (PARTITION BY external_id ORDER BY date_received desc, AgentType) as period_seq_num
+  FROM {specialty_agents}
+)
+SELECT *
+FROM most_recent_entries
+WHERE period_seq_num = 1
+AND external_id IS NOT NULL
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
