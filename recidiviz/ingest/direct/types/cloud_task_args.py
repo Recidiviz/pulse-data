@@ -87,6 +87,8 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
 
 @attr.s(frozen=True)
 class IngestViewMaterializationArgs(CloudTaskArgs):
+    """Arguments for an ingest view materialization job."""
+
     # The file tag of the ingest view to export. Used to determine which query to run
     # to generate the exported file.
     ingest_view_name: str = attr.ib()
@@ -101,6 +103,24 @@ class IngestViewMaterializationArgs(CloudTaskArgs):
 
     # The instance the ingest view is being generated in.
     ingest_instance: DirectIngestInstance = attr.ib()
+
+    def lower_bound_datetime_exclusive_for_query(self) -> datetime.datetime:
+        """Temporary workaround to manage recovery from https://go/pull/21230.
+        This function returns a lower bound datetime with milliseconds stripped
+        which should be used as the temporary lower bound for ingest view diff
+        queries to make sure we don't create a gap in ingested data.
+        TODO(#21230): Remove this and use the actual datetime with milliseconds once
+         every ingest view has run at least once with fresh data for every state.
+        """
+        if not self.lower_bound_datetime_exclusive:
+            raise ValueError(
+                "The lower_bound_datetime_exclusive is None. Should only be called for "
+                "args with a nonnull lower_bound_datetime_exclusive."
+            )
+        dt = self.lower_bound_datetime_exclusive
+        return datetime.datetime(
+            dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
+        )
 
     def task_id_tag(self) -> str:
         tag = (

@@ -512,7 +512,7 @@ class DirectIngestViewQueryBuilder:
         if config.raw_data_datetime_upper_bound:
             query = query.replace(
                 f"@{UPDATE_DATETIME_PARAM_NAME}",
-                f"{datetime_clause(config.raw_data_datetime_upper_bound)}",
+                f"{datetime_clause(config.raw_data_datetime_upper_bound, include_milliseconds=True)}",
             )
         else:
             query = query.replace(

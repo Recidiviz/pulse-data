@@ -39,7 +39,7 @@ class DirectIngestViewQueryBuilderTest(unittest.TestCase):
     )
 
     DEFAULT_EXPANDED_CONFIG = DirectIngestViewQueryBuilder.QueryStructureConfig(
-        raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5),
+        raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
     )
 
     def setUp(self) -> None:
@@ -97,7 +97,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -117,7 +117,7 @@ file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -200,7 +200,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -302,7 +302,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -322,7 +322,7 @@ file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -439,7 +439,7 @@ ORDER BY col1, col2;"""
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -459,7 +459,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -477,7 +477,7 @@ ORDER BY col1, col2;"""
             view.build_query(
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_data_datetime_upper_bound=datetime.datetime(
-                        2000, 1, 2, 3, 4, 5
+                        2000, 1, 2, 3, 4, 5, 6
                     ),
                 )
             ),
@@ -554,7 +554,7 @@ ORDER BY col1, col2;"""
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -574,7 +574,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -680,7 +680,7 @@ ORDER BY col1, col2
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -700,7 +700,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -802,7 +802,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -822,7 +822,7 @@ file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -888,7 +888,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -898,7 +898,7 @@ file_tag_first_generated_view AS (
     FROM filtered_rows
 )
 SELECT * FROM file_tag_first_generated_view
-        WHERE col1 <= DATETIME(2000, 1, 2, 3, 4, 5)
+        WHERE col1 <= DATETIME "2000-01-02T03:04:05.000006"
 ORDER BY col1, col2;"""
 
         self.assertEqual(
@@ -1050,7 +1050,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -1063,7 +1063,7 @@ file_tag_second__ALL_generated_view AS (
     WITH filtered_rows AS (
         SELECT *
         FROM `recidiviz-456.us_xx_raw_data.file_tag_second`
-        WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+        WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
     )
     SELECT col_name_2a, update_datetime
     FROM filtered_rows
@@ -1138,7 +1138,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+            WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
         ) a
         WHERE
             recency_rank = 1
@@ -1151,7 +1151,7 @@ file_tag_first__ALL_generated_view AS (
     WITH filtered_rows AS (
         SELECT *
         FROM `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+        WHERE update_datetime <= DATETIME "2000-01-02T03:04:05.000006"
     )
     SELECT col_name_1a, col_name_1b, update_datetime
     FROM filtered_rows

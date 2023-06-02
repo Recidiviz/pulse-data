@@ -61,15 +61,19 @@ from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.string import StrictStringFormatter
 
 _ID = 1
-_DATE_1 = datetime.datetime(year=2019, month=7, day=20)
-_DATE_2 = datetime.datetime(year=2020, month=7, day=20)
+_DATE_1 = datetime.datetime(
+    year=2019, month=7, day=20, hour=0, minute=0, second=0, microsecond=123456
+)
+_DATE_2 = datetime.datetime(
+    year=2020, month=7, day=20, hour=1, minute=2, second=3, microsecond=4
+)
 _DATE_3 = datetime.datetime(year=2022, month=4, day=13)
 _DATE_4 = datetime.datetime(year=2022, month=4, day=14)
 _DATE_5 = datetime.datetime(year=2022, month=4, day=15)
 
 
-_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = """DROP TABLE IF EXISTS `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`;
-CREATE TABLE `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
+_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = """DROP TABLE IF EXISTS `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234`;
+CREATE TABLE `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
   expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
@@ -87,7 +91,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
         ) a
         WHERE
             recency_rank = 1
@@ -102,7 +106,7 @@ tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
     ),
     max_file_id AS (
         SELECT
@@ -139,7 +143,7 @@ _DATE_2_UPPER_BOUND_MATERIALIZED_RAW_TABLE_CREATE_TABLE_SCRIPT = """CREATE TEMP 
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
         ) a
         WHERE
             recency_rank = 1
@@ -154,7 +158,7 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
     ),
     max_file_id AS (
         SELECT
@@ -174,8 +178,8 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
     SELECT COL_1
     FROM filtered_rows
 );
-DROP TABLE IF EXISTS `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`;
-CREATE TABLE `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
+DROP TABLE IF EXISTS `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234`;
+CREATE TABLE `recidiviz-456.{temp_dataset}.ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
   expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
@@ -430,7 +434,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             ]
         )
         expected_query = (
-            "SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`\n"
+            "SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234`\n"
             "ORDER BY colA, colC;"
         )
         self.assert_materialized_with_query(args, expected_query)
@@ -438,7 +442,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             [
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234",
+                    table_id="ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234",
                 )
             ]
         )
@@ -488,8 +492,10 @@ class IngestViewMaterializerTest(unittest.TestCase):
             temp_dataset=_TEMP_DATASET,
         )
         expected_lower_bound_query = expected_upper_bound_query.replace(
-            "2020_07_20_00_00_00_upper_bound", "2019_07_20_00_00_00_lower_bound"
-        ).replace("DATETIME(2020, 7, 20, 0, 0, 0)", "DATETIME(2019, 7, 20, 0, 0, 0)")
+            "2020_07_20_01_02_03_upper_bound", "2019_07_20_00_00_00_lower_bound"
+        ).replace(
+            'DATETIME "2020-07-20T01:02:03.000004"', 'DATETIME "2019-07-20T00:00:00"'
+        )
 
         self.mock_client.dataset_ref_for_id.assert_has_calls(
             [mock.call(_TEMP_DATASET), mock.call(_TEMP_DATASET)]
@@ -512,7 +518,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             ]
         )
         expected_query = """(
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
+SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234`
 ) EXCEPT DISTINCT (
 SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234`
 )
@@ -522,7 +528,7 @@ ORDER BY colA, colC;"""
             [
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234",
+                    table_id="ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234",
                 ),
                 mock.call(
                     dataset_id=_TEMP_DATASET,
@@ -579,8 +585,10 @@ ORDER BY colA, colC;"""
             temp_dataset=_TEMP_DATASET,
         )
         expected_lower_bound_query = expected_upper_bound_query.replace(
-            "2020_07_20_00_00_00_upper_bound", "2019_07_20_00_00_00_lower_bound"
-        ).replace("DATETIME(2020, 7, 20, 0, 0, 0)", "DATETIME(2019, 7, 20, 0, 0, 0)")
+            "2020_07_20_01_02_03_upper_bound", "2019_07_20_00_00_00_lower_bound"
+        ).replace(
+            'DATETIME "2020-07-20T01:02:03.000004"', 'DATETIME "2019-07-20T00:00:00"'
+        )
 
         self.mock_client.run_query_async.assert_has_calls(
             [
@@ -597,7 +605,7 @@ ORDER BY colA, colC;"""
             ]
         )
         expected_query = """(
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
+SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234`
 ) EXCEPT DISTINCT (
 SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234`
 )
@@ -608,7 +616,7 @@ ORDER BY colA, colC;"""
             [
                 mock.call(
                     dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234",
+                    table_id="ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234",
                 ),
                 mock.call(
                     dataset_id=_TEMP_DATASET,
@@ -654,7 +662,7 @@ ORDER BY colA, colC;"""
                 export_args,
             )
 
-        expected_debug_query = """CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234 AS (
+        expected_debug_query = """CREATE TEMP TABLE ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234 AS (
 
 WITH
 file_tag_first_generated_view AS (
@@ -668,7 +676,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
         ) a
         WHERE
             recency_rank = 1
@@ -683,7 +691,7 @@ tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
     ),
     max_file_id AS (
         SELECT
@@ -721,7 +729,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+            WHERE update_datetime <= DATETIME "2019-07-20T00:00:00"
         ) a
         WHERE
             recency_rank = 1
@@ -736,7 +744,7 @@ tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+        WHERE update_datetime <= DATETIME "2019-07-20T00:00:00"
     ),
     max_file_id AS (
         SELECT
@@ -761,11 +769,14 @@ ORDER BY colA, colC
 
 );
 (
-SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234
+SELECT * FROM ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234
 ) EXCEPT DISTINCT (
 SELECT * FROM ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234
 )
 ORDER BY colA, colC;"""
+
+        print(f"\n\n EXPECTED \n\n {expected_debug_query}")
+        print(f"\n\n ACTUAL \n\n {debug_query}")
 
         # Assert
         self.assertEqual(expected_debug_query, debug_query)
@@ -798,7 +809,7 @@ ORDER BY colA, colC;"""
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
         ) a
         WHERE
             recency_rank = 1
@@ -813,7 +824,7 @@ CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
     ),
     max_file_id AS (
         SELECT
@@ -833,7 +844,7 @@ CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
     SELECT COL_1
     FROM filtered_rows
 );
-CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234 AS (
+CREATE TEMP TABLE ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234 AS (
 
 select * from upper_file_tag_first_generated_view JOIN upper_tagFullHistoricalExport_generated_view USING (COL_1)
 ORDER BY colA, colC
@@ -850,7 +861,7 @@ CREATE TEMP TABLE lower_file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+            WHERE update_datetime <= DATETIME "2019-07-20T00:00:00"
         ) a
         WHERE
             recency_rank = 1
@@ -865,7 +876,7 @@ CREATE TEMP TABLE lower_tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+        WHERE update_datetime <= DATETIME "2019-07-20T00:00:00"
     ),
     max_file_id AS (
         SELECT
@@ -892,7 +903,7 @@ ORDER BY colA, colC
 
 );
 (
-SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234
+SELECT * FROM ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234
 ) EXCEPT DISTINCT (
 SELECT * FROM ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234
 )
@@ -936,7 +947,7 @@ ORDER BY colA, colC;"""
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+            WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
         ) a
         WHERE
             recency_rank = 1
@@ -951,7 +962,7 @@ CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+        WHERE update_datetime <= DATETIME "2020-07-20T01:02:03.000004"
     ),
     max_file_id AS (
         SELECT
@@ -971,13 +982,13 @@ CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
     SELECT COL_1
     FROM filtered_rows
 );
-CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234 AS (
+CREATE TEMP TABLE ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234 AS (
 
 select * from upper_file_tag_first_generated_view JOIN upper_tagFullHistoricalExport_generated_view USING (COL_1)
 ORDER BY colA, colC
 
 );
-SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234
+SELECT * FROM ingest_view_2020_07_20_01_02_03_upper_bound_abcd1234
 ORDER BY colA, colC;"""
 
         # Assert
