@@ -260,7 +260,7 @@ def create_bq_refresh_nodes(schema_type: str) -> BQResultSensor:
     task_group = TaskGroup(f"{schema_type.lower()}_bq_refresh")
     acquire_lock = IAPHTTPRequestOperator(
         task_id=f"acquire_lock_{schema_type}",
-        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/acquire_lock/{schema_type}",
+        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/acquire_lock",
         url_method="POST",
         data=json.dumps(
             {
