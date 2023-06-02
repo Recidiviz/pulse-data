@@ -53,4 +53,4 @@ class UsCaController(BaseDirectIngestController):
             and ingest_instance == DirectIngestInstance.PRIMARY
         ):
             return []
-        return ["person", "supervision_violation", "assessments"]
+        return ["person", "supervision_violation", "staff", "assessments"]
