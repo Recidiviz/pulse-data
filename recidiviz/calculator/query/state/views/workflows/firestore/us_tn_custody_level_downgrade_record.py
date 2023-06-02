@@ -165,7 +165,7 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
                 ARRAY_AGG(
                     STRUCT(event_date, note_body)
                 )
-            ) AS form_q7_notes
+            ) AS form_information_q7_notes
         FROM 
             ( 
             SELECT *
@@ -187,7 +187,7 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
                            detainer_misdemeanor_flag AS detainer_misdemeanor_flag
                            )
                 )
-            ) AS form_q8_notes
+            ) AS form_information_q8_notes
         FROM ({detainers_cte()})
         WHERE end_date IS NULL
         GROUP BY 1
@@ -195,25 +195,25 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     recommended_scores AS (
       -- Schedule B is only scored if Schedule A is 9 or less, so this CTE "re scores" schedule B scores if needed
       SELECT * 
-        EXCEPT(form_calculated_total_score),
-             CASE WHEN form_calculated_schedule_a_score > 9 
-                  THEN form_calculated_schedule_a_score 
-                  ELSE form_calculated_total_score
-                  END AS form_calculated_total_score,
+        EXCEPT(form_information_calculated_total_score),
+             CASE WHEN form_information_calculated_schedule_a_score > 9 
+                  THEN form_information_calculated_schedule_a_score 
+                  ELSE form_information_calculated_total_score
+                  END AS form_information_calculated_total_score,
       FROM (
           SELECT person_id,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q1_score') AS INT64) AS form_q1_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q2_score') AS INT64) AS form_q2_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q3_score') AS INT64) AS form_q3_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q4_score') AS INT64) AS form_q4_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q5_score') AS INT64) AS form_q5_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q6_score') AS INT64) AS form_q6_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q7_score') AS INT64) AS form_q7_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q8_score') AS INT64) AS form_q8_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q9_score') AS INT64) AS form_q9_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.calculated_schedule_a_score') AS INT64) AS form_calculated_schedule_a_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.calculated_schedule_b_score') AS INT64) AS form_calculated_schedule_b_score,
-                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.calculated_total_score') AS INT64) AS form_calculated_total_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q1_score') AS INT64) AS form_information_q1_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q2_score') AS INT64) AS form_information_q2_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q3_score') AS INT64) AS form_information_q3_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q4_score') AS INT64) AS form_information_q4_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q5_score') AS INT64) AS form_information_q5_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q6_score') AS INT64) AS form_information_q6_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q7_score') AS INT64) AS form_information_q7_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q8_score') AS INT64) AS form_information_q8_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.q9_score') AS INT64) AS form_information_q9_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.calculated_schedule_a_score') AS INT64) AS form_information_calculated_schedule_a_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.calculated_schedule_b_score') AS INT64) AS form_information_calculated_schedule_b_score,
+                 CAST(JSON_EXTRACT_SCALAR(score_metadata,'$.calculated_total_score') AS INT64) AS form_information_calculated_total_score,
           FROM
             `{{project_id}}.{{analyst_dataset}}.recommended_custody_level_spans_materialized`
           WHERE
@@ -223,9 +223,9 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     ),
     q6_score_info AS (
         SELECT *,
-            CASE WHEN form_q6_score IN (-4, -2, -1) THEN latest_disciplinary
-                 WHEN form_q6_score IN (1,4) THEN case_notes_guilty_disciplinaries_last_6_month
-                 END AS form_q6_notes
+            CASE WHEN form_information_q6_score IN (-4, -2, -1) THEN latest_disciplinary
+                 WHEN form_information_q6_score IN (1,4) THEN case_notes_guilty_disciplinaries_last_6_month
+                 END AS form_information_q6_notes
         FROM
             recommended_scores
         LEFT JOIN
@@ -259,9 +259,9 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
            latest_CAF.last_CAF_total,
            current_offenses.offenses AS current_offenses,
            assaultive_disciplinary_history.case_notes_assaultive_disciplinaries,
-           q6_score_info.form_q6_notes,
-           most_serious_disciplinaries.form_q7_notes,
-           detainers_cte.form_q8_notes,
+           q6_score_info.form_information_q6_notes,
+           most_serious_disciplinaries.form_information_q7_notes,
+           detainers_cte.form_information_q8_notes,
            recommended_scores.* EXCEPT(person_id)
     FROM
         `{{project_id}}.{{task_eligibility_dataset}}.custody_level_downgrade_materialized` tes
