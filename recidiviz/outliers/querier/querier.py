@@ -18,9 +18,10 @@
 from copy import copy
 from datetime import date
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import attr
+import cattrs
 import numpy as np
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_
@@ -88,6 +89,10 @@ class OutliersReportData:
     metrics: Dict[str, MetricInfo] = attr.ib()
     # List of metric_ids where there are no outliers, i.e. officers with "FAR" status in this unit
     metrics_without_outliers: List[str] = attr.ib()
+    recipient_email_address: str = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
 
 
 class OutliersQuerier:
@@ -95,7 +100,7 @@ class OutliersQuerier:
 
     def get_officer_level_report_data_for_all_units(
         self, state_code: StateCode, end_date: date
-    ) -> dict:
+    ) -> Dict[str, OutliersReportData]:
         """
         Returns officer-level data by unit for all units in a state in the following format:
         {
@@ -111,7 +116,8 @@ class OutliersQuerier:
                         unit_officers: List[Entity]
                     )
                 },
-                metrics_without_outliers: List[str]
+                metrics_without_outliers: List[str],
+                email_address: str
             },
             ...
         }
@@ -123,7 +129,18 @@ class OutliersQuerier:
         prev_end_date = end_date - relativedelta(months=1)
 
         with SessionFactory.using_database(db_key, autocommit=False) as session:
-            unit_ids = session.query(SupervisionUnit.external_id).all()
+            unit_to_supervisor_records = (
+                session.query(SupervisionUnit, SupervisionOfficerSupervisor)
+                .join(
+                    SupervisionOfficerSupervisor,
+                    SupervisionUnit.external_id
+                    == SupervisionOfficerSupervisor.location_external_id,
+                )
+                .with_entities(
+                    SupervisionUnit.external_id, SupervisionOfficerSupervisor.email
+                )
+            )
+
             metric_id_to_metric_context = {
                 metric_id: self._get_metric_context_from_db(
                     session, metric_id, end_date, prev_end_date
@@ -131,19 +148,27 @@ class OutliersQuerier:
                 for metric_id in self.get_state_metrics(state_code)
             }
 
-            return {
-                external_id: self._get_officer_level_data_for_unit(
+            unit_id_to_data = {}
+
+            for (external_id, email) in unit_to_supervisor_records:
+                metrics, metrics_with_outliers = self._get_officer_level_data_for_unit(
                     external_id,
                     metric_id_to_metric_context,
                 )
-                for (external_id,) in unit_ids
-            }
 
+                unit_id_to_data[external_id] = OutliersReportData(
+                    metrics=metrics,
+                    metrics_without_outliers=metrics_with_outliers,
+                    recipient_email_address=email,
+                )
+
+            return unit_id_to_data
+
+    @staticmethod
     def _get_officer_level_data_for_unit(
-        self,
         unit_external_id: str,
         metric_id_to_metric_context: Dict[str, MetricContext],
-    ) -> OutliersReportData:
+    ) -> Tuple[Dict[str, MetricInfo], List[str]]:
         """
         Given the unit_external_id, get the officer-level data for the period with end_date=end_date compared to
         the period with end_date=prev_end_date.
@@ -185,9 +210,7 @@ class OutliersQuerier:
                 # for the metric in the result.
                 metrics_without_outliers.append(metric_id)
 
-        return OutliersReportData(
-            metrics=metrics_results, metrics_without_outliers=metrics_without_outliers
-        )
+        return metrics_results, metrics_without_outliers
 
     def _get_metric_context_from_db(
         self, session: Session, metric_id: str, end_date: date, prev_end_date: date
@@ -356,24 +379,3 @@ class OutliersQuerier:
         q1, q3 = np.percentile(values, [25, 75])
         iqr = q3 - q1
         return iqr
-
-    @staticmethod
-    def get_unit_id_to_supervision_officer_supervisor_email(
-        state_code: StateCode,
-    ) -> Dict[str, str]:
-        """Returns a dictionary mapping a unit_id to the corresponding officer supervisor"""
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
-            unit_to_supervisor_records = session.query(
-                SupervisionUnit, SupervisionOfficerSupervisor
-            ).join(
-                SupervisionOfficerSupervisor,
-                SupervisionUnit.external_id
-                == SupervisionOfficerSupervisor.location_external_id,
-            )
-            return {
-                record.SupervisionUnit.external_id: record.SupervisionOfficerSupervisor.email
-                for record in unit_to_supervisor_records
-            }

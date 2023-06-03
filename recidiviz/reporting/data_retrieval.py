@@ -29,7 +29,7 @@ import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
-from recidiviz.outliers.querier.querier import OutliersQuerier
+from recidiviz.outliers.querier.querier import OutliersQuerier, OutliersReportData
 from recidiviz.reporting import email_generation
 from recidiviz.reporting.context.available_context import get_report_context
 from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
@@ -193,8 +193,27 @@ def retrieve_data(
         return _retrieve_data_for_overdue_discharge_alert(report_json)
 
     if batch.report_type == ReportType.OutliersSupervisionOfficerSupervisor:
-        # TODO(#21158): Archive report data
-        return _retrieve_data_for_outliers_supervision_officer_supervisor(batch)
+        # Get data from querier
+        results_by_unit = _retrieve_data_for_outliers_supervision_officer_supervisor(
+            batch
+        )
+
+        # Archive data
+        results_by_unit_json = {
+            unit_id: unit_data.to_json()
+            for unit_id, unit_data in results_by_unit.items()
+        }
+        results_by_unit_str = json.dumps(results_by_unit_json)
+        _create_report_json_archive(batch, results_by_unit_str)
+
+        return [
+            Recipient(
+                email_address=unit_data.recipient_email_address,
+                state_code=batch.state_code,
+                data=unit_data.metrics,
+            )
+            for unit_data in results_by_unit.values()
+        ]
 
     raise ValueError("unexpected report type for retrieving data")
 
@@ -265,27 +284,14 @@ def _retrieve_data_for_overdue_discharge_alert(report_json: str) -> List[Recipie
 
 def _retrieve_data_for_outliers_supervision_officer_supervisor(
     batch: Batch,
-) -> List[Recipient]:
-    """Post-processes the data for Outliers' supervision officer supervisor reports into `Recipient`s"""
+) -> Dict[str, OutliersReportData]:
+    """Retrieves the data for Outliers' supervision officer supervisor reports by unit"""
     batch_datetime = utils.get_datetime_from_batch_id(batch)
-
-    outliers_querier = OutliersQuerier()
-    results_by_unit = outliers_querier.get_officer_level_report_data_for_all_units(
+    results_by_unit = OutliersQuerier().get_officer_level_report_data_for_all_units(
         batch.state_code, end_date=batch_datetime
     )
-    unit_id_to_supervision_officer_supervisor = (
-        outliers_querier.get_unit_id_to_supervision_officer_supervisor_email(
-            batch.state_code
-        )
-    )
-    return [
-        Recipient(
-            email_address=unit_id_to_supervision_officer_supervisor[unit_id],
-            state_code=batch.state_code,
-            data=unit_data.metrics,
-        )
-        for unit_id, unit_data in results_by_unit.items()
-    ]
+
+    return results_by_unit
 
 
 def _write_batch_metadata(

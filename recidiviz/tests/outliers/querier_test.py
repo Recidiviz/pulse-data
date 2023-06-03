@@ -141,20 +141,62 @@ class TestOutliersQuerier(TestCase):
                         ],
                     )
                 },
+                recipient_email_address="supervisor1@recidiviz.org",
                 metrics_without_outliers=[],
             ),
             "B": OutliersReportData(
                 metrics={},
                 metrics_without_outliers=["incarceration_starts_and_inferred"],
+                recipient_email_address="supervisor2@recidiviz.org",
             ),
         }
 
-        self.assertEqual(actual, expected)
+        expected_json = {
+            "A": {
+                "metrics": {
+                    "incarceration_starts_and_inferred": {
+                        "target": 0.13887506249377812,
+                        "other_officers": {
+                            "FAR": [],
+                            "MET": [
+                                0.12645777715329493,
+                                0.0,
+                                0.03996003996003996,
+                                0.111000111000111,
+                            ],
+                            "NEAR": [0.18409086725207563, 0.17053206002728513],
+                        },
+                        "unit_officers": [
+                            {
+                                "name": "Officer 1",
+                                "rate": 0.26688907422852376,
+                                "target_status": "FAR",
+                                "prev_rate": 0.31938677738741617,
+                                "location_external_id": "A",
+                            },
+                            {
+                                "name": "Officer 8",
+                                "rate": 0.3333333333333333,
+                                "target_status": "FAR",
+                                "prev_rate": None,
+                                "location_external_id": "A",
+                            },
+                        ],
+                    }
+                },
+                "metrics_without_outliers": [],
+                "recipient_email_address": "supervisor1@recidiviz.org",
+            },
+            "B": {
+                "metrics": {},
+                "metrics_without_outliers": ["incarceration_starts_and_inferred"],
+                "recipient_email_address": "supervisor2@recidiviz.org",
+            },
+        }
 
-    def test_get_unit_id_to_supervisor_email(self) -> None:
-        expected = {"A": "supervisor1@recidiviz.org", "B": "supervisor2@recidiviz.org"}
+        actual_json = {
+            unit_id: unit_data.to_json() for unit_id, unit_data in actual.items()
+        }
+        self.assertEqual(expected_json, actual_json)
 
-        actual = OutliersQuerier().get_unit_id_to_supervision_officer_supervisor_email(
-            StateCode.US_PA
-        )
         self.assertEqual(actual, expected)
