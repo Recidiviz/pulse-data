@@ -23,9 +23,6 @@ from unittest import TestCase
 
 import pytest
 
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.querier.querier import (
     Entity,
@@ -112,79 +109,43 @@ class TestOutliersQuerier(TestCase):
             "A": OutliersReportData(
                 metrics={
                     "incarceration_starts_and_inferred": MetricInfo(
-                        context={
-                            "target": 0.13887506249377812,
-                            "min": 0.0,
-                            "max": 0.31938677738741617,
+                        target=0.13887506249377812,
+                        other_officers={
+                            TargetStatus.FAR: [],
+                            TargetStatus.MET: [
+                                0.12645777715329493,
+                                0.0,
+                                0.03996003996003996,
+                                0.111000111000111,
+                            ],
+                            TargetStatus.NEAR: [
+                                0.18409086725207563,
+                                0.17053206002728513,
+                            ],
                         },
-                        entities=[
+                        unit_officers=[
                             Entity(
                                 name="Officer 1",
                                 rate=0.26688907422852376,
                                 target_status=TargetStatus.FAR,
                                 prev_rate=0.31938677738741617,
-                                prev_target_status=TargetStatus.FAR,
+                                location_external_id="A",
                             ),
                             Entity(
-                                name="Officer 2",
-                                rate=0.12645777715329493,
-                                target_status=TargetStatus.MET,
-                                prev_rate=0.12858428700012858,
-                                prev_target_status=TargetStatus.MET,
-                            ),
-                            Entity(
-                                name="Officer 5",
-                                rate=0.03996003996003996,
-                                target_status=TargetStatus.MET,
-                                prev_rate=0.07616146230007616,
-                                prev_target_status=TargetStatus.MET,
-                            ),
-                            Entity(
-                                name="Officer 7",
-                                rate=0.17053206002728513,
-                                target_status=TargetStatus.NEAR,
-                                prev_rate=0.135013501350135,
-                                prev_target_status=TargetStatus.MET,
+                                name="Officer 8",
+                                rate=0.3333333333333333,
+                                target_status=TargetStatus.FAR,
+                                prev_rate=None,
+                                location_external_id="A",
                             ),
                         ],
                     )
                 },
-                entity_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+                metrics_without_outliers=[],
             ),
             "B": OutliersReportData(
-                metrics={
-                    "incarceration_starts_and_inferred": MetricInfo(
-                        context={
-                            "target": 0.13887506249377812,
-                            "min": 0.0,
-                            "max": 0.31938677738741617,
-                        },
-                        entities=[
-                            Entity(
-                                name="Officer 3",
-                                rate=0.18409086725207563,
-                                target_status=TargetStatus.NEAR,
-                                prev_rate=0.18505667360629194,
-                                prev_target_status=TargetStatus.NEAR,
-                            ),
-                            Entity(
-                                name="Officer 4",
-                                rate=0.2898550724637681,
-                                target_status=TargetStatus.FAR,
-                                prev_rate=0.0,
-                                prev_target_status=TargetStatus.MET,
-                            ),
-                            Entity(
-                                name="Officer 6",
-                                rate=0.111000111000111,
-                                target_status=TargetStatus.MET,
-                                prev_rate=0.12001200120012002,
-                                prev_target_status=TargetStatus.MET,
-                            ),
-                        ],
-                    )
-                },
-                entity_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+                metrics={},
+                metrics_without_outliers=["incarceration_starts_and_inferred"],
             ),
         }
 

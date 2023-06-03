@@ -9,10 +9,11 @@ US_PA,incarceration_starts_and_inferred,3,YEAR,2023-04-01,07
 US_PA,incarceration_starts_and_inferred,16,YEAR,2023-05-01,01
 US_PA,incarceration_starts_and_inferred,9,YEAR,2023-05-01,02
 US_PA,incarceration_starts_and_inferred,10,YEAR,2023-05-01,03
-US_PA,incarceration_starts_and_inferred,1,YEAR,2023-05-01,04
+US_PA,incarceration_starts_and_inferred,0,YEAR,2023-05-01,04
 US_PA,incarceration_starts_and_inferred,2,YEAR,2023-05-01,05
 US_PA,incarceration_starts_and_inferred,10,YEAR,2023-05-01,06
 US_PA,incarceration_starts_and_inferred,4,YEAR,2023-05-01,07
+US_PA,incarceration_starts_and_inferred,1,YEAR,2023-05-01,08
 US_PA,avg_daily_population,62.62,YEAR,2023-04-01,01
 US_PA,avg_daily_population,77.77,YEAR,2023-04-01,02
 US_PA,avg_daily_population,43.23,YEAR,2023-04-01,03
@@ -27,3 +28,4 @@ US_PA,avg_daily_population,3.45,YEAR,2023-05-01,04
 US_PA,avg_daily_population,50.05,YEAR,2023-05-01,05
 US_PA,avg_daily_population,90.09,YEAR,2023-05-01,06
 US_PA,avg_daily_population,23.456,YEAR,2023-05-01,07
+US_PA,avg_daily_population,3,YEAR,2023-05-01,08

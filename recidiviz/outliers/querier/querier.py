@@ -18,7 +18,7 @@
 from copy import copy
 from datetime import date
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import attr
 import numpy as np
@@ -27,9 +27,6 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session, aliased
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers import (
     OUTLIERS_CONFIGS_BY_STATE,
 )
@@ -60,42 +57,37 @@ class Entity:
     rate: float = attr.ib()
     # Categorizes how the rate for this entity compares to the target value
     target_status: TargetStatus = attr.ib()
-    # The rate for the prior YEAR period for this unit of analysis
-    prev_rate: float = attr.ib()
-    # The target status for the prior YEAR period for this unit of analysis
-    prev_target_status: TargetStatus = attr.ib()
+    # The rate for the prior YEAR period for this unit of analysis;
+    # None if there is no metric rate for the previous period
+    prev_rate: Optional[float] = attr.ib()
+    # The location_external_id for this entity
+    location_external_id: str = attr.ib()
 
 
 @attr.s
 class MetricContext:
     # Unless otherwise specified, the target is the state average for the current period
     target: float = attr.ib()
-    # The target for the previous period
-    prev_target: float = attr.ib()
-    # The smallest value out of all the officers in a state
-    min: float = attr.ib()
-    # The largest value out of all the officers in a state
-    max: float = attr.ib()
-    # The interquartile range (IQR) given the metric value for all the officers in the state for the current period
-    iqr: float = attr.ib()
-    # The IQR for the previous period
-    prev_iqr: float = attr.ib()
-    # List of all records of the SupervisionOfficerMetric joined to the SupervisionOfficer table for
-    # a specific metric and end date
-    current_period_officer_metrics: list = attr.ib()
-    prev_period_officer_metrics: list = attr.ib()
-
-
-@attr.s
-class MetricInfo:
-    context: Dict[str, float] = attr.ib()
+    # All units of analysis for a given state and metric
     entities: List[Entity] = attr.ib()
 
 
 @attr.s
+class MetricInfo:
+    # Unless otherwise specified, the target is the state average for the current period
+    target: float = attr.ib()
+    # Maps target status to a list of metric rates for all officers not included in unit_officers
+    other_officers: Dict[TargetStatus, List[float]] = attr.ib()
+    # Officers in a given unit who have the "FAR" status for a given metric
+    unit_officers: List[Entity] = attr.ib()
+
+
+@attr.s
 class OutliersReportData:
+    # Metric_ids mapped to MetricInfo objects, where there are officers with "FAR" status in this unit for the metrics
     metrics: Dict[str, MetricInfo] = attr.ib()
-    entity_type: MetricUnitOfAnalysisType = attr.ib()
+    # List of metric_ids where there are no outliers, i.e. officers with "FAR" status in this unit
+    metrics_without_outliers: List[str] = attr.ib()
 
 
 class OutliersQuerier:
@@ -107,19 +99,19 @@ class OutliersQuerier:
         """
         Returns officer-level data by unit for all units in a state in the following format:
         {
-            < supervision unit id >: {
-                entity_type: "OFFICER"
+            < supervision_unit_id >: {
                 metrics: {
-                    < metric id >: {
-                        context: {
-                            target: float,
-                            min: float,
-                            max: float,
+                    < metric id >: MetricInfo(
+                        target: float,
+                        other_officers: {
+                            TargetStatus.MET: float[],
+                            TargetStatus.NEAR: float[],
+                            TargetStatus.FAR: float[],
                         },
-                        entities: List[Entity] (as defined above)
-                    }
-
-                }
+                        unit_officers: List[Entity]
+                    )
+                },
+                metrics_without_outliers: List[str]
             },
             ...
         }
@@ -157,77 +149,44 @@ class OutliersQuerier:
         the period with end_date=prev_end_date.
         """
         metrics_results: Dict[str, MetricInfo] = {}
+        metrics_without_outliers = []
 
         for metric_id, metric_context in metric_id_to_metric_context.items():
-            entities: List[Entity] = []
+            entities = metric_context.entities
 
-            metric_context = metric_id_to_metric_context[metric_id]
+            other_officer_rates: Dict[TargetStatus, List[float]] = {
+                TargetStatus.FAR: [],
+                TargetStatus.MET: [],
+                TargetStatus.NEAR: [],
+            }
+            unit_officers: List[Entity] = []
 
-            # Get officer metrics for this unit
-            officer_metrics_to_officer_for_unit = list(
-                filter(
-                    lambda officer_metric_record: (
-                        officer_metric_record.location_external_id == unit_external_id
-                    ),
-                    copy(metric_context.current_period_officer_metrics),
+            for entity in entities:
+                target_status = entity.target_status
+                rate = entity.rate
+
+                if (
+                    target_status == TargetStatus.FAR
+                    and entity.location_external_id == unit_external_id
+                ):
+                    unit_officers.append(entity)
+                else:
+                    other_officer_rates[target_status].append(rate)
+
+            if unit_officers:
+                info = MetricInfo(
+                    target=metric_context.target,
+                    other_officers=other_officer_rates,
+                    unit_officers=unit_officers,
                 )
-            )
-
-            for officer_metric_to_officer_record in officer_metrics_to_officer_for_unit:
-                officer_id = officer_metric_to_officer_record.officer_id
-                rate = (
-                    officer_metric_to_officer_record.metric_value
-                    / officer_metric_to_officer_record.avg_daily_population
-                )
-
-                status = self.get_target_status(
-                    metric_id,
-                    rate,
-                    metric_context.target,
-                    metric_context.iqr,
-                )
-
-                prev_period_record = [
-                    past_officer_metric_record
-                    for past_officer_metric_record in metric_context.prev_period_officer_metrics
-                    if past_officer_metric_record.officer_id == officer_id
-                ]
-
-                prev_rate = (
-                    prev_period_record[0].metric_value
-                    / prev_period_record[0].avg_daily_population
-                )
-
-                prev_status = self.get_target_status(
-                    metric_id,
-                    prev_rate,
-                    metric_context.prev_target,
-                    metric_context.iqr,
-                )
-
-                entities.append(
-                    Entity(
-                        name=officer_metric_to_officer_record.full_name,
-                        rate=rate,
-                        target_status=status,
-                        prev_rate=prev_rate,
-                        prev_target_status=prev_status,
-                    )
-                )
-
-            info = MetricInfo(
-                context={
-                    "target": metric_context.target,
-                    "min": metric_context.min,
-                    "max": metric_context.max,
-                },
-                entities=entities,
-            )
-            metrics_results[metric_id] = info
+                metrics_results[metric_id] = info
+            else:
+                # If there are no officers with "FAR" for a given metric in the unit, do not include the data
+                # for the metric in the result.
+                metrics_without_outliers.append(metric_id)
 
         return OutliersReportData(
-            entity_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-            metrics=metrics_results,
+            metrics=metrics_results, metrics_without_outliers=metrics_without_outliers
         )
 
     def _get_metric_context_from_db(
@@ -238,11 +197,11 @@ class OutliersQuerier:
         """
 
         target = self.get_state_target_from_db(session, metric_id, end_date)
-        prev_target = self.get_state_target_from_db(session, metric_id, prev_end_date)
 
         officer_metric = aliased(SupervisionOfficerMetric)
         avg_pop_metric = aliased(SupervisionOfficerMetric)
 
+        # Get officer metrics for the given metric_id for the current and previous period
         combined_period_officer_metrics = (
             session.query(officer_metric)
             .select_from(officer_metric)
@@ -277,14 +236,6 @@ class OutliersQuerier:
             .all()
         )
 
-        metric_rates = [
-            record.metric_value / record.avg_daily_population
-            for record in combined_period_officer_metrics
-        ]
-
-        min_rate_for_combined_periods = min(metric_rates)
-        max_rate_for_combined_periods = max(metric_rates)
-
         current_period_officer_metrics = list(
             filter(
                 lambda officer_metric_record: (
@@ -310,23 +261,48 @@ class OutliersQuerier:
             ]
         )
 
-        prev_iqr = self.get_iqr(
-            [
-                record.metric_value / record.avg_daily_population
-                for record in previous_period_officer_metrics
-            ]
-        )
+        # Generate the Entity object for all officers
+        entities: List[Entity] = []
+        for officer_metric_record in current_period_officer_metrics:
+            rate = (
+                officer_metric_record.metric_value
+                / officer_metric_record.avg_daily_population
+            )
+            target_status = self.get_target_status(metric_id, rate, target, iqr)
 
-        return MetricContext(
-            target=target,
-            iqr=iqr,
-            min=min_rate_for_combined_periods,
-            max=max_rate_for_combined_periods,
-            prev_target=prev_target,
-            prev_iqr=prev_iqr,
-            current_period_officer_metrics=current_period_officer_metrics,
-            prev_period_officer_metrics=previous_period_officer_metrics,
-        )
+            prev_period_record = [
+                past_officer_metric_record
+                for past_officer_metric_record in previous_period_officer_metrics
+                if past_officer_metric_record.officer_id
+                == officer_metric_record.officer_id
+            ]
+
+            if len(prev_period_record) > 1:
+                raise ValueError(
+                    f"Expected at most one entry for the previous period, but got {len(prev_period_record)}"
+                    f"for officer_id: {officer_metric_record.officer_id} and {metric_id} metric"
+                )
+
+            prev_rate = (
+                (
+                    prev_period_record[0].metric_value
+                    / prev_period_record[0].avg_daily_population
+                )
+                if len(prev_period_record) == 1
+                else None
+            )
+
+            entities.append(
+                Entity(
+                    name=officer_metric_record.full_name,
+                    rate=rate,
+                    target_status=target_status,
+                    prev_rate=prev_rate,
+                    location_external_id=officer_metric_record.location_external_id,
+                )
+            )
+
+        return MetricContext(target=target, entities=entities)
 
     @staticmethod
     def get_target_status(
