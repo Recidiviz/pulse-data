@@ -30,8 +30,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
         return ReportType.OutliersSupervisionOfficerSupervisor
 
     def get_required_recipient_data_fields(self) -> List[str]:
-        # TODO(#21175): Blocked on update query for report data
-        return []
+        return ["metrics"]
 
     @property
     def html_template(self) -> Template:
