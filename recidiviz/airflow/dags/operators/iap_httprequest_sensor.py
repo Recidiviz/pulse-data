@@ -30,11 +30,19 @@ from recidiviz.cloud_functions.cloud_function_utils import (
 
 
 def request_and_check_condition(
-    url: str, response_check: Callable[[requests.Response], bool]
+    url: str,
+    response_check: Callable[[requests.Response], bool],
+    url_method: str,
+    data: Optional[bytes],
 ) -> bool:
     client_id = IAP_CLIENT_ID[os.environ["GCP_PROJECT"]]
     # make_iap_request raises an exception if the returned status code is not 200
-    response = make_iap_request(url, client_id)
+    response = make_iap_request(
+        url=url,
+        client_id=client_id,
+        method=url_method,
+        data=data,
+    )
 
     return response_check(response)
 
