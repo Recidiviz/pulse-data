@@ -19,6 +19,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    WORKFLOWS_LEVEL_2_INCARCERATION_LOCATION_QUERY_STRING,
+)
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS,
     PersonRecordType,
@@ -87,6 +90,7 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     dataflow_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
@@ -101,6 +105,10 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
     search_by_location_states=list_to_query_string(["US_MO", "US_TN"], quoted=True),
+    us_tn_excluded_facility_ids=list_to_query_string(
+        ["CJ", "WH", "GENERAL", "INACTIVE", "NOT_APPLICABLE"], quoted=True
+    ),
+    level_2_state_codes=WORKFLOWS_LEVEL_2_INCARCERATION_LOCATION_QUERY_STRING,
     workflows_incarceration_states=list_to_query_string(
         ["US_ME", "US_MO", "US_TN"], quoted=True
     ),

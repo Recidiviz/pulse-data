@@ -20,6 +20,7 @@
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_metrics_producer_delegates,
@@ -55,6 +56,20 @@ PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES: List[str] = [
 PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_OPTIONS: str = (
     f"({', '.join(PATHWAYS_LEVEL_2_INCARCERATION_LOCATION_STATES)})"
 )
+
+WORKFLOWS_LEVEL_1_INCARCERATION_LOCATION_QUERY_STRING = list_to_query_string(
+    [
+        "US_ME",
+        "US_MO",
+    ],
+    quoted=True,
+)
+
+
+WORKFLOWS_LEVEL_2_INCARCERATION_LOCATION_QUERY_STRING = list_to_query_string(
+    ["US_TN"], quoted=True
+)
+
 
 STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME = "state_race_ethnicity_population_counts"
 

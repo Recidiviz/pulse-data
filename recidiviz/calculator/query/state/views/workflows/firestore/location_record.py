@@ -20,6 +20,10 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    WORKFLOWS_LEVEL_1_INCARCERATION_LOCATION_QUERY_STRING,
+    WORKFLOWS_LEVEL_2_INCARCERATION_LOCATION_QUERY_STRING,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -37,14 +41,18 @@ LOCATION_RECORD_QUERY_TEMPLATE = """
             "INCARCERATION" AS system,
             "facilityId" AS id_type,
             rr.facility_id AS id,
-            -- ME and MO both use level 1 locations for facilities. Consider using something like
-            -- pathways_incarceration_location_name_map if we need to add new level 2 states before
-            -- `reference_views.location_metadata` is ready (see #18093)
-            IFNULL(locations.level_1_incarceration_location_name, rr.facility_id) AS name,
+            IFNULL(
+                CASE
+                    WHEN rr.state_code IN ({level_1_state_codes})
+                        THEN locations.level_1_incarceration_location_name
+                    WHEN rr.state_code IN ({level_2_state_codes})
+                        THEN locations.level_2_incarceration_location_name
+                    END,
+                rr.facility_id) AS name,
         FROM `{project_id}.{workflows_dataset}.resident_record_materialized` rr
         LEFT JOIN `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names` locations
         ON rr.facility_id = locations.level_1_incarceration_location_external_id
-          AND rr.state_code = locations.state_code
+            AND rr.state_code = locations.state_code
     )
     SELECT {columns} FROM facilities
 """
@@ -61,6 +69,8 @@ LOCATION_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "id",
         "name",
     ],
+    level_1_state_codes=WORKFLOWS_LEVEL_1_INCARCERATION_LOCATION_QUERY_STRING,
+    level_2_state_codes=WORKFLOWS_LEVEL_2_INCARCERATION_LOCATION_QUERY_STRING,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     should_materialize=True,
