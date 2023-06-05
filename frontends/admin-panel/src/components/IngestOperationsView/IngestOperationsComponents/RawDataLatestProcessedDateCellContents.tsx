@@ -63,15 +63,23 @@ const RawDataLatestProcessedDateCellContents: React.FC<RawDataLatestProcessedDat
 
 export default RawDataLatestProcessedDateCellContents;
 
+function normalizeRelativePath(path: string): string {
+  if (path[path.length - 1] !== "/") {
+    return `${path}/`;
+  }
+
+  return path;
+}
+
 function getIngestStorageBucketPath(
   storageDirectoryPath: string,
   fileTag: string,
   date: Date
 ) {
   return getGCPBucketURL(
-    `${storageDirectoryPath}/raw/${date.getUTCFullYear()}/${(
-      date.getUTCMonth() + 1
-    )
+    `${normalizeRelativePath(
+      storageDirectoryPath
+    )}raw/${date.getUTCFullYear()}/${(date.getUTCMonth() + 1)
       .toString()
       .padStart(2, "0")}/${date.getUTCDate().toString().padStart(2, "0")}`,
     fileTag

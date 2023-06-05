@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,23 +14,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import List, Union
-
-from opencensus.stats.aggregation import (
-    DistributionAggregation,
-    LastValueAggregation,
-    SumAggregation,
-)
-from opencensus.stats.measure import BaseMeasure
-
-class View:
-    def __init__(
-        self,
-        _name: str,
-        _description: str,
-        _columns: List[str],
-        _measure: BaseMeasure,
-        _aggregation: Union[
-            SumAggregation, DistributionAggregation, LastValueAggregation
-        ],
-    ) -> None: ...
+"""Utilities for monitoring"""

@@ -65,7 +65,7 @@ from recidiviz.metrics.export.products.product_configs import (
 from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import (
     WithMetadataQueryBigQueryViewExporter,
 )
-from recidiviz.utils import metadata, monitoring
+from recidiviz.utils import monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
@@ -171,7 +171,6 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
 
 def get_configs_for_export_name(
     export_name: str,
-    project_id: str,
     state_code: Optional[str] = None,
     destination_override: Optional[str] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
@@ -188,7 +187,6 @@ def get_configs_for_export_name(
         )
 
     return relevant_export_collection.export_configs_for_views_to_export(
-        project_id=project_id,
         state_code_filter=state_code.upper() if state_code else None,
         destination_override=destination_override,
         address_overrides=address_overrides,
@@ -209,12 +207,9 @@ def export_view_data_to_cloud_storage(
     OptimizedMetricBigQueryViewExporter.
     """
 
-    project_id = metadata.project_id()
-
     export_configs_for_filter = get_configs_for_export_name(
         export_name=export_job_name,
         state_code=state_code,
-        project_id=project_id,
         destination_override=destination_override,
         address_overrides=address_overrides,
     )

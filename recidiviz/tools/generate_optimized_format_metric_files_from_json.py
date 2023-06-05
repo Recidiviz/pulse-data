@@ -163,10 +163,10 @@ def generate_optimized_format_metric_files_from_json(
     gcsfs_client = GcsfsFactory.build()
     bq_client = BigQueryClientImpl()
 
-    if bucket in get_protected_buckets(GCP_PROJECT_STAGING):
+    if bucket in get_protected_buckets():
         raise ValueError(
             f"Must specify a bucket that is not a protected bucket. "
-            f"Protected buckets are: {get_protected_buckets(GCP_PROJECT_STAGING)}"
+            f"Protected buckets are: {get_protected_buckets()}"
         )
 
     temp_dataset_id = f"temp_dataset_{randint(1000,9999)}"

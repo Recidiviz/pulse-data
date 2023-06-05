@@ -43,21 +43,15 @@ from recidiviz.metrics.export.view_export_manager import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_deployed_view_datasets,
 )
 
 
-def get_protected_buckets(project_id: str) -> List[str]:
-    protected_bucket_templates = {
-        config.output_directory_uri_template
-        for config in VIEW_COLLECTION_EXPORT_INDEX.values()
-    }
-
+def get_protected_buckets() -> List[str]:
     return [
-        StrictStringFormatter().format(bucket_template, project_id=project_id)
-        for bucket_template in protected_bucket_templates
+        config.output_directory.uri()
+        for config in VIEW_COLLECTION_EXPORT_INDEX.values()
     ]
 
 
@@ -76,10 +70,10 @@ def export_metrics_from_dataset_to_gcs(
             view_dataset_override_prefix=sandbox_dataset_prefix,
         )
 
-    if destination_bucket in get_protected_buckets(project_id):
+    if destination_bucket in get_protected_buckets():
         raise ValueError(
             f"Must specify a destination_bucket that is not a protected bucket. "
-            f"Protected buckets are: {get_protected_buckets(project_id)}"
+            f"Protected buckets are: {get_protected_buckets()}"
         )
 
     product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)

@@ -35,7 +35,6 @@ from recidiviz.metrics.export.export_config import (
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.metrics.export.view_export_manager import get_delegate_export_map
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.utils.string import StrictStringFormatter
 
 
 def strip_each_line(text: str) -> str:
@@ -78,9 +77,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
     def test_metric_export_validations_match_formats(self) -> None:
         gcsfs = FakeGCSFileSystem()
         for config_collection in _VIEW_COLLECTION_EXPORT_CONFIGS:
-            configs = config_collection.export_configs_for_views_to_export(
-                self.mock_project_id
-            )
+            configs = config_collection.export_configs_for_views_to_export()
 
             try:
                 get_delegate_export_map(
@@ -125,9 +122,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         )
 
         view_configs_to_export = (
-            state_agnostic_dataset_export_config.export_configs_for_views_to_export(
-                project_id=self.mock_project_id,
-            )
+            state_agnostic_dataset_export_config.export_configs_for_views_to_export()
         )
 
         expected_view = self.mock_view_builder.build()
@@ -137,12 +132,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                 view=expected_view,
                 view_filter_clause=None,
                 intermediate_table_name="ALL_STATE_TEST_PRODUCT_base_dataset_test_view_table",
-                output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    StrictStringFormatter().format(
-                        state_agnostic_dataset_export_config.output_directory_uri_template,
-                        project_id=self.mock_project_id,
-                    )
-                ),
+                output_directory=state_agnostic_dataset_export_config.output_directory,
                 export_output_formats_and_validations={
                     ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
                     ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
@@ -165,7 +155,6 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         view_configs_to_export = (
             specific_state_dataset_export_config.export_configs_for_views_to_export(
-                project_id=self.mock_project_id,
                 state_code_filter=mock_export_job_filter,
             )
         )
@@ -199,9 +188,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         )
 
         view_configs_to_export = (
-            lantern_dashboard_dataset_export_config.export_configs_for_views_to_export(
-                project_id=self.mock_project_id,
-            )
+            lantern_dashboard_dataset_export_config.export_configs_for_views_to_export()
         )
 
         expected_view = self.mock_view_builder.build()
@@ -211,12 +198,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                 view=expected_view,
                 view_filter_clause=None,
                 intermediate_table_name="TEST_EXPORT_base_dataset_test_view_table",
-                output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    StrictStringFormatter().format(
-                        lantern_dashboard_dataset_export_config.output_directory_uri_template,
-                        project_id=self.mock_project_id,
-                    )
-                ),
+                output_directory=lantern_dashboard_dataset_export_config.output_directory,
                 export_output_formats_and_validations={
                     ExportOutputFormatType.JSON: [ExportValidationType.EXISTS],
                     ExportOutputFormatType.METRIC: [ExportValidationType.OPTIMIZED],
@@ -238,7 +220,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         mock_state_code = "US_XX"
 
         view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
-            project_id=self.mock_project_id, state_code_filter=mock_state_code
+            state_code_filter=mock_state_code
         )
 
         expected_view = self.mock_view_builder.build()
@@ -276,7 +258,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         mock_state_code = "US_XX"
 
         view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
-            project_id=self.mock_project_id, state_code_filter=mock_state_code
+            state_code_filter=mock_state_code
         )
         view_config_to_export = view_configs_to_export[0]
         assert view_config_to_export is not None
@@ -312,7 +294,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
         mock_state_code = "US_XX"
 
         view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
-            project_id=self.mock_project_id, state_code_filter=mock_state_code
+            state_code_filter=mock_state_code
         )
         view_config_to_export = view_configs_to_export[0]
         assert view_config_to_export is not None

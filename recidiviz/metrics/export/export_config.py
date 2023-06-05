@@ -71,6 +71,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
+from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
 
@@ -102,9 +103,15 @@ class ExportViewCollectionConfig:
 
     export_override_state_codes: Dict[str, str] = attr.ib(factory=dict)
 
+    @property
+    def output_directory(self) -> GcsfsDirectoryPath:
+        output_directory_uri = StrictStringFormatter().format(
+            self.output_directory_uri_template, project_id=metadata.project_id()
+        )
+        return GcsfsDirectoryPath.from_absolute_path(output_directory_uri)
+
     def export_configs_for_views_to_export(
         self,
-        project_id: str,
         state_code_filter: Optional[str] = None,
         address_overrides: Optional[BigQueryAddressOverrides] = None,
         destination_override: Optional[str] = None,
@@ -117,12 +124,11 @@ class ExportViewCollectionConfig:
         )
 
         intermediate_table_name_template = "{export_name}_{dataset_id}_{view_id}_table"
-        if destination_override:
-            output_directory = destination_override
-        else:
-            output_directory = StrictStringFormatter().format(
-                self.output_directory_uri_template, project_id=project_id
-            )
+        output_directory = (
+            GcsfsDirectoryPath.from_absolute_path(destination_override)
+            if destination_override
+            else self.output_directory
+        )
 
         remap_columns: RemapColumns = {}
 
@@ -136,10 +142,14 @@ class ExportViewCollectionConfig:
             }
 
             intermediate_table_name_template += f"_{override_state_code}"
-            output_directory += f"/{override_state_code}"
+            output_directory = GcsfsDirectoryPath.from_dir_and_subdir(
+                output_directory, override_state_code
+            )
         elif state_code_filter:
             intermediate_table_name_template += f"_{state_code_filter}"
-            output_directory += f"/{state_code_filter}"
+            output_directory = GcsfsDirectoryPath.from_dir_and_subdir(
+                output_directory, state_code_filter
+            )
 
         configs = []
         for vb in self.view_builders_to_export:
@@ -160,9 +170,7 @@ class ExportViewCollectionConfig:
                         dataset_id=view.dataset_id,
                         view_id=view.view_id,
                     ),
-                    output_directory=GcsfsDirectoryPath.from_absolute_path(
-                        output_directory
-                    ),
+                    output_directory=output_directory,
                     remap_columns=remap_columns,
                     allow_empty=self.allow_empty,
                     **optional_args,
