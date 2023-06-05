@@ -50,6 +50,7 @@ from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import (
+    CHILD_AGENCY_NAME_TO_UPLOAD_NAME,
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -249,15 +250,22 @@ class SpreadsheetInterface:
                 .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
                 .one()
             )
+
         child_agencies = AgencyInterface.get_child_agencies_for_agency(
             session=session, agency=agency
         )
+
+        child_agency_name_to_agency = {
+            CHILD_AGENCY_NAME_TO_UPLOAD_NAME.get(
+                a.name.strip().lower(), a.name.strip().lower()
+            ): a
+            for a in child_agencies
+        }
+
         uploader = WorkbookUploader(
             agency=agency,
             system=spreadsheet.system,
-            child_agency_name_to_agency={
-                a.name.strip().lower(): a for a in child_agencies
-            },
+            child_agency_name_to_agency=child_agency_name_to_agency,
             user_account=user_account,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
         )
