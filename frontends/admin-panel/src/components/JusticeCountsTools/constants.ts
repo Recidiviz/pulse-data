@@ -15,15 +15,9 @@ export type AgencyTeamMember = {
   name: string;
   email: string;
   invitation_status: "NOT_SENT" | "PENDING" | "ACCEPTED" | "ERRORED";
-  role: AgencyTeamMemberRole;
+  role: string;
 };
 /* eslint-enable camelcase */
-
-export enum AgencyTeamMemberRole {
-  JUSTICE_COUNTS_ADMIN = "JUSTICE_COUNTS_ADMIN",
-  AGENCY_ADMIN = "AGENCY_ADMIN",
-  CONTRIBUTOR = "CONTRIBUTOR",
-}
 
 export type CreateAgencyRequest = {
   name: string;
@@ -40,6 +34,7 @@ export type AgenciesResponse = {
 
 export type AgencyResponse = {
   agency: Agency;
+  roles: string[];
 };
 
 export type CreateAgencyResponse = {
@@ -74,8 +69,11 @@ export type UsersResponse = {
 };
 
 export const getRoleFromEmail = (email: string): string => {
-  if (email.includes("@recidiviz.org") || email.includes("@csg.org")) {
+  if (email.includes("@recidiviz.org")) {
     return "JUSTICE_COUNTS_ADMIN";
+  }
+  if (email.includes("@csg.org")) {
+    return "READ_ONLY";
   }
   return "AGENCY_ADMIN";
 };

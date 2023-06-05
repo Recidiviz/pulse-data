@@ -46,7 +46,6 @@ import {
   AgencyTeamMember,
   CreateAgencyRequest,
   CreateAgencyResponse,
-  CreateUserResponse,
   ErrorResponse,
   FipsCountyCode,
   FipsCountyCodeKey,
@@ -61,8 +60,7 @@ const AgencyProvisioningView = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = useState(false);
   const [selectedStateCode, setSelectedStateCode] = useState<string>("");
   const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
-  const { data: usersData, setData: setUsersData } =
-    useFetchedDataJSON<UsersResponse>(getUsers);
+  const { data: usersData } = useFetchedDataJSON<UsersResponse>(getUsers);
   const [form] = Form.useForm();
   const onFinish = async ({
     name,
@@ -95,10 +93,6 @@ const AgencyProvisioningView = (): JSX.Element => {
       setData({
         agencies: data?.agencies ? [...data.agencies, agency] : [agency],
         systems: data?.systems || [],
-      });
-      const { user } = (await response.json()) as CreateUserResponse;
-      setUsersData({
-        users: [...(usersData?.users || []), user],
       });
       form.resetFields();
       setShowSpinner(false);

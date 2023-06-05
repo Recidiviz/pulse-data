@@ -123,6 +123,8 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                         "agency": AgencyInterface.get_agency_by_id(
                             session=session, agency_id=agency_id
                         ).to_json(),
+                        # also send list of possible roles
+                        "roles": [role.value for role in schema.UserAccountRole],
                     }
                 ),
                 HTTPStatus.OK,
