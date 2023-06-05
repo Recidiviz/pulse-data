@@ -34,6 +34,7 @@ from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StateIncarcerationPeriod,
     StatePerson,
     StateSupervisionContact,
 )
@@ -736,7 +737,7 @@ def get_required_state_specific_delegates(
             required_state_specific_delegates[
                 required_delegate.__name__
             ] = _get_state_specific_violation_response_normalization_delegate(
-                state_code
+                state_code, entity_kwargs
             )
         elif required_delegate is StateSpecificCommitmentFromSupervisionDelegate:
             required_state_specific_delegates[
@@ -1165,9 +1166,19 @@ def _get_state_specific_violation_delegate(
 
 def _get_state_specific_violation_response_normalization_delegate(
     state_code: str,
+    entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]],
 ) -> StateSpecificViolationResponseNormalizationDelegate:
     """Returns the type of StateSpecificViolationResponseNormalizationDelegate that should be used for
     violation calculations in a given |state_code|."""
+    incarceration_periods = (
+        [
+            assert_type(a, StateIncarcerationPeriod)
+            for a in entity_kwargs[StateIncarcerationPeriod.__name__]
+        ]
+        if entity_kwargs
+        and entity_kwargs.get(StateIncarcerationPeriod.__name__) is not None
+        else None
+    )
     if state_code == StateCode.US_AR.value:
         return UsArViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_CA.value:
@@ -1181,7 +1192,13 @@ def _get_state_specific_violation_response_normalization_delegate(
     if state_code == StateCode.US_ME.value:
         return UsMeViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_MI.value:
-        return UsMiViolationResponseNormalizationDelegate()
+        if incarceration_periods is None:
+            raise ValueError(
+                "Missing StateIncarcerationPeriod entity for UsMiViolationResponseNormalizationDelegate"
+            )
+        return UsMiViolationResponseNormalizationDelegate(
+            incarceration_periods=incarceration_periods
+        )
     if state_code == StateCode.US_MO.value:
         return UsMoViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_NC.value:

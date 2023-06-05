@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for state-specific normalization logic related to violations in US_MO."""
 
-from typing import List
+from typing import List, Optional
 
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -52,6 +52,8 @@ class UsMoViolationResponseNormalizationDelegate(
         self,
         person_id: int,
         response: StateSupervisionViolationResponse,
+        violation_response_index: int,
+        sorted_violation_responses: Optional[List[StateSupervisionViolationResponse]],
     ) -> List[StateSupervisionViolationTypeEntry]:
         """Responses of type CITATION in US_MO do not have violation types on their
         violations, so the violation types and conditions violated on these
