@@ -201,7 +201,9 @@ def refresh_bq_dataset() -> Tuple[str, HTTPStatus]:
 
     federated_bq_schema_refresh(
         schema_type=schema_type,
-        direct_ingest_instance=ingest_instance,
+        direct_ingest_instance=ingest_instance
+        if schema_type == SchemaType.STATE
+        else None,
         dataset_override_prefix=sandbox_prefix,
     )
 

@@ -434,7 +434,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         mock_federated_refresh.assert_called_with(
             schema_type=SchemaType.CASE_TRIAGE,
-            direct_ingest_instance=DirectIngestInstance.PRIMARY,
+            direct_ingest_instance=None,
             dataset_override_prefix=None,
         )
         mock_get_current_cloud_task_id.assert_called()
