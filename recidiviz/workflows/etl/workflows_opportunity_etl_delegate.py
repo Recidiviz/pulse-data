@@ -134,18 +134,19 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
                     for reason in value
                 }
             elif key == "case_notes":
-                for note in value:
-                    criteria = note["criteria"]
-                    if criteria not in new_document["caseNotes"]:
-                        new_document["caseNotes"][criteria] = []
+                if value:
+                    for note in value:
+                        criteria = note["criteria"]
+                        if criteria not in new_document["caseNotes"]:
+                            new_document["caseNotes"][criteria] = []
 
-                    new_document["caseNotes"][criteria].append(
-                        {
-                            "noteTitle": note["note_title"],
-                            "noteBody": note["note_body"],
-                            "eventDate": note["event_date"],
-                        }
-                    )
+                        new_document["caseNotes"][criteria].append(
+                            {
+                                "noteTitle": note["note_title"],
+                                "noteBody": note["note_body"],
+                                "eventDate": note["event_date"],
+                            }
+                        )
             elif key == "ineligible_criteria":
                 ineligible_criteria = {self.preprocess_criterion_name(v) for v in value}
             else:
