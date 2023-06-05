@@ -3,8 +3,8 @@ file_tag: RCDVZ_CISPRDDTA_PBRLPH
 file_description: |-
   Parole Board Release Plan Header - Detailed information about an AIC release plan. CIS interface to the Parole Board Management Information System.
 data_classification: source
-primary_key_cols:
-  - RLPH_NEXT_NUMBER
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: TRANSPORT_IN
   - name: RESIDENCE2_STATUS

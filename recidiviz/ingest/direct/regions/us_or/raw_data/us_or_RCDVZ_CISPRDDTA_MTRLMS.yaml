@@ -3,9 +3,8 @@ file_tag: RCDVZ_CISPRDDTA_MTRLMS
 file_description: |-
   Disciplinary Report. Table of misconduct rules and severity level.
 data_classification: source
-primary_key_cols:
-  - RULE_ALLEGED
-  - MISCONDUCT_SEV_LEVEL
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: RULE_ALLEGED
     description: |-

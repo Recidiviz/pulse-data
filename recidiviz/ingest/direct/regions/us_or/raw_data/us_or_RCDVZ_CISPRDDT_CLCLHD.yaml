@@ -3,9 +3,8 @@ file_tag: RCDVZ_CISPRDDT_CLCLHD
 file_description: |-
   This file contains Adult in Custody (AIC) Assessment Header information.
 data_classification: source
-primary_key_cols:
-  - RECORD_KEY
-  - CLASS_ACTION_DATE
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: RECORD_KEY
     description: |-

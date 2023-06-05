@@ -5,11 +5,8 @@ file_description: |-
   as some additional fields. Additional information includes Sentencing Guidelines criminal history level, court case
   termination reason and date, and sanction supervision status.
 data_classification: source
-primary_key_cols:
-  - RECORD_KEY
-  - COURT_CASE_NUMBER
-  - COUNTY
-  - STRUCTURED_SANCTION_STATUS
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: RECORD_KEY
     description: |-
