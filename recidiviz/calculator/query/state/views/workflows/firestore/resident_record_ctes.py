@@ -31,7 +31,9 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
             dataflow.person_id,
             person_external_id,
             sp.full_name AS person_name,
-            dataflow.facility AS facility_id,
+            IF( dataflow.state_code IN ({level_2_state_codes}),
+                COALESCE(locations.level_2_incarceration_location_external_id, dataflow.facility),
+                dataflow.facility) AS facility_id,
         FROM `{project_id}.{dataflow_dataset}.most_recent_incarceration_population_span_metrics_materialized` dataflow
         INNER JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
             ON dataflow.state_code = sessions.state_code
@@ -40,8 +42,12 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
             AND sessions.end_date IS NULL
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp 
             ON dataflow.person_id = sp.person_id
+        LEFT JOIN `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names` locations
+            ON dataflow.facility = locations.level_1_incarceration_location_external_id
         WHERE dataflow.state_code IN ({workflows_incarceration_states}) AND dataflow.included_in_state_population
             AND dataflow.end_date_exclusive IS NULL
+            AND NOT (dataflow.state_code = "US_TN"
+                    AND locations.level_2_incarceration_location_external_id IN ({us_tn_excluded_facility_ids}))
     ),
 """
 
