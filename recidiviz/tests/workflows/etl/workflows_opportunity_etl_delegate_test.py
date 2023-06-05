@@ -278,6 +278,19 @@ class TestWorkflowsETLDelegate(TestCase):
             new_document,
         )
 
+    def test_transform_with_null_case_notes(self) -> None:
+        """Tests that the delegate can process a document with a null `case_notes` field."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
+        data = deepcopy(TEST_DATA)
+        data["case_notes"] = None
+        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected["caseNotes"] = {}  # type: ignore
+        new_document = delegate.build_document(data)
+        self.assertEqual(
+            expected,
+            new_document,
+        )
+
 
 class TestWorkflowsETLConfig(TestCase):
     """Checks constraints on the ETL config"""
