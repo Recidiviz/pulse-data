@@ -154,3 +154,6 @@ class TagKey:
     FUNCTION = "function"
     MODULE = "module"
     RECURSION_DEPTH = "recursion_depth"
+
+    # Export related tags
+    EXPORT_FILE = "export_file"

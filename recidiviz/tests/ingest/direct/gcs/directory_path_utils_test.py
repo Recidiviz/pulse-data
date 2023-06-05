@@ -40,7 +40,7 @@ class TestDirectoryPathUtils(TestCase):
                 region_code="us_nd",
                 ingest_instance=DirectIngestInstance.PRIMARY,
             ).abs_path(),
-            "recidiviz-staging-direct-ingest-state-storage/us_nd",
+            "recidiviz-staging-direct-ingest-state-storage/us_nd/",
         )
 
     @patch(
@@ -52,7 +52,7 @@ class TestDirectoryPathUtils(TestCase):
                 region_code="us_nd",
                 ingest_instance=DirectIngestInstance.SECONDARY,
             ).abs_path(),
-            "recidiviz-staging-direct-ingest-state-storage-secondary/us_nd",
+            "recidiviz-staging-direct-ingest-state-storage-secondary/us_nd/",
         )
 
     @patch(

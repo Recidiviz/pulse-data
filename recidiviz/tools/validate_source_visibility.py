@@ -406,6 +406,35 @@ def main() -> int:
         ),
     )
 
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz/tools/monitoring/report_metric_export_timeliness.py",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.common",
+                "recidiviz.monitoring",
+                "recidiviz.justice_counts",
+                "recidiviz.pipelines",
+                "recidiviz.ingest.direct",
+                "recidiviz.utils",
+                "recidiviz.aggregated_metrics",
+                "recidiviz.big_query",
+                "recidiviz.calculator",
+                "recidiviz.case_triage",
+                "recidiviz.cloud_storage",
+                "recidiviz.datasets",
+                "recidiviz.metrics",
+                "recidiviz.persistence",
+                "recidiviz.task_eligibility",
+                "recidiviz.case_triage.views",
+                "recidiviz.ingest.views",
+                "recidiviz.validation",
+            }
+        ),
+        # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
+        #  isolated the Dataflow pipeline code completely
+        explicitly_invalid_package_dependencies=["apache_beam"],
+    )
+
     return 0 if success else 1
 
 

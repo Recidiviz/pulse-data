@@ -185,7 +185,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
             export_name=self.mock_export_name,
             state_code=self.mock_state_code,
-            project_id=self.mock_project_id,
         )
         view = self.mock_view_builder.build()
         metric_view = self.mock_metric_view_builder.build()
@@ -223,7 +222,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
             export_name=self.mock_export_name.lower(),
             state_code=self.mock_state_code.lower(),
-            project_id=self.mock_project_id,
         )
         self.assertEqual(expected_view_config_list, export_configs_for_filter)
 
@@ -235,7 +233,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         mock_environment.return_value = GCPEnvironment.PRODUCTION.value
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
-            export_name=self.mock_export_name, project_id=self.mock_project_id
+            export_name=self.mock_export_name
         )
         view = self.mock_view_builder.build()
         metric_view = self.mock_metric_view_builder.build()
@@ -271,7 +269,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         # Test for case insensitivity
 
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
-            export_name=self.mock_export_name.lower(), project_id=self.mock_project_id
+            export_name=self.mock_export_name.lower()
         )
 
         self.assertEqual(expected_view_config_list, export_configs_for_filter)

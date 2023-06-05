@@ -52,10 +52,11 @@ resource "google_composer_environment" "default_v2" {
         "secrets-backend_kwargs"    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
       }
       env_variables = {
-        "CONFIG_FILE"          = "/home/airflow/gcs/dags/recidiviz/pipelines/calculation_pipeline_templates.yaml"
-        "SENDGRID_API_KEY"     = data.google_secret_manager_secret_version.airflow_sendgrid_api_key.secret_data,
-        "SENDGRID_MAIL_FROM"   = var.project_id == "recidiviz-staging" ? "alerts+airflow-staging@recidiviz.org" : "alerts+airflow-production@recidiviz.org"
-        "SENDGRID_MAIL_SENDER" = var.project_id == "recidiviz-staging" ? "Airflow Alerts (staging)" : "Airflow Alerts (production)"
+        "CONFIG_FILE"                = "/home/airflow/gcs/dags/recidiviz/pipelines/calculation_pipeline_templates.yaml"
+        "RECIDIVIZ_APP_ENGINE_IMAGE" = "us.gcr.io/${var.project_id}/appengine/default:${var.docker_image_tag}"
+        "SENDGRID_API_KEY"           = data.google_secret_manager_secret_version.airflow_sendgrid_api_key.secret_data,
+        "SENDGRID_MAIL_FROM"         = var.project_id == "recidiviz-staging" ? "alerts+airflow-staging@recidiviz.org" : "alerts+airflow-production@recidiviz.org"
+        "SENDGRID_MAIL_SENDER"       = var.project_id == "recidiviz-staging" ? "Airflow Alerts (staging)" : "Airflow Alerts (production)"
       }
       pypi_packages = {
         "us"                                = "==2.0.2"

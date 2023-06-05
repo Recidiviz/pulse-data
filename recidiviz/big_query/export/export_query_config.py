@@ -40,6 +40,15 @@ class ExportOutputFormatType(Enum):
     HEADERLESS_CSV_WITH_METADATA = "headerless_csv_with_metadata"
 
 
+EXPORT_OUTPUT_FORMAT_TYPE_TO_EXTENSION = {
+    ExportOutputFormatType.METRIC: "txt",
+    ExportOutputFormatType.CSV: "csv",
+    ExportOutputFormatType.JSON: "json",
+    ExportOutputFormatType.HEADERLESS_CSV: "csv",
+    ExportOutputFormatType.HEADERLESS_CSV_WITH_METADATA: "csv",
+}
+
+
 class ExportValidationType(Enum):
     EXISTS = "exists"
     NON_EMPTY_COLUMNS = "non_empty_columns"

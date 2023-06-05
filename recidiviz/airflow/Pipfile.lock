@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ddaf06bd6d766f63b4f35a797952089c7cb5c3babe8959da828f29134dcb5d9b"
+            "sha256": "cc2f781d8359dbed12abd0d5b2af3de6bce1dee8a48b566935ea2b8ef94f6202"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -156,6 +156,14 @@
             ],
             "index": "pypi",
             "version": "==4.1.0"
+        },
+        "apache-airflow-providers-cncf-kubernetes": {
+            "hashes": [
+                "sha256:5aa1b793744355708b5d3046b30b493c66833ed893906f07992818d7801da494",
+                "sha256:da73bae7e5739432bb7bd9cde217233cc4b6353d234d8091920c224a3a5cb691"
+            ],
+            "index": "pypi",
+            "version": "==6.1.0"
         },
         "apache-airflow-providers-common-sql": {
             "hashes": [
@@ -563,9 +571,9 @@
         },
         "cron-descriptor": {
             "hashes": [
-                "sha256:7b6fc5e07f3e505d247f35ef432a098d75769efdaf01b04ab8e42a528c75266d"
+                "sha256:9280a8d4431826e6958f99a9433b04a24758455cc51893adafc31bc7e7a6e4dc"
             ],
-            "version": "==1.2.35"
+            "version": "==1.3.0"
         },
         "croniter": {
             "hashes": [
@@ -1642,6 +1650,21 @@
             ],
             "index": "pypi",
             "version": "==3.2.0"
+        },
+        "kubernetes": {
+            "hashes": [
+                "sha256:cadb1cd7c44eae5b39b50316313343c0f2aff94529f067ec2ba44d38411158e3",
+                "sha256:dd58e286a53071bc8e32041f07f3c2236b3ed8ca5b9f57794a5077358f7ccb06"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==23.6.0"
+        },
+        "kubernetes-asyncio": {
+            "hashes": [
+                "sha256:01b0f22dbb9e83a333dc0d3c7b00bf76483cf18071a70dd022fdeaae04b81e93",
+                "sha256:48f3bd583eeb16fbeb0767b0e190039013c1a4a7f4af5178ca3a6a904a7b6aba"
+            ],
+            "version": "==24.2.3"
         },
         "lazy-object-proxy": {
             "hashes": [
@@ -3374,6 +3397,14 @@
             "index": "pypi",
             "version": "==20.16.6"
         },
+        "websocket-client": {
+            "hashes": [
+                "sha256:3f09e6d8230892547132177f575a4e3e73cfdf06526e20cc02aa1c3b47184d40",
+                "sha256:cdf5877568b7e83aa7cf2244ab56a3213de587bbe0ce9d8b9600fc77b455d89e"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==1.5.1"
+        },
         "werkzeug": {
             "hashes": [
                 "sha256:7ea2d48322cc7c0f8b3a215ed73eabd7b5d75d0b50e31ab006286ccff9e00b8f",
@@ -3797,11 +3828,11 @@
         },
         "pylint": {
             "hashes": [
-                "sha256:761907349e699f8afdcd56c4fe02f3021ab5b3a0fc26d19a9bfdc66c7d0d5cd5",
-                "sha256:a6cbb4c6e96eab4a3c7de7c6383c512478f58f88d95764507d84c899d656a89a"
+                "sha256:5dcf1d9e19f41f38e4e85d10f511e5b9c35e1aa74251bf95cdd8cb23584e2db1",
+                "sha256:7a1145fb08c251bdb5cca11739722ce64a63db479283d10ce718b2460e54123c"
             ],
             "index": "pypi",
-            "version": "==2.17.3"
+            "version": "==2.17.4"
         },
         "pyparsing": {
             "hashes": [

@@ -21,7 +21,11 @@ import attr
 from mock import ANY, patch
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
+from recidiviz.big_query.export.export_query_config import (
+    EXPORT_OUTPUT_FORMAT_TYPE_TO_EXTENSION,
+    ExportBigQueryViewConfig,
+    ExportOutputFormatType,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 
 
@@ -124,3 +128,9 @@ class TestPointingAtStagingSubdirectory(unittest.TestCase):
 
         self.assertEqual(normal_config, matcher)
         self.assertEqual(staging_config, matcher)
+
+    def test_all_output_formats_have_extensions(self) -> None:
+        self.assertCountEqual(
+            list(ExportOutputFormatType),
+            list(EXPORT_OUTPUT_FORMAT_TYPE_TO_EXTENSION.keys()),
+        )
