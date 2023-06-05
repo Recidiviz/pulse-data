@@ -66,6 +66,8 @@ class StateSpecificViolationResponseNormalizationDelegate(StateSpecificDelegate)
         self,
         person_id: int,
         response: StateSupervisionViolationResponse,
+        violation_response_index: int,
+        sorted_violation_responses: Optional[List[StateSupervisionViolationResponse]],
     ) -> List[StateSupervisionViolationTypeEntry]:
         """Returns the list of additional violation types that need to be added to a
         StateSupervisionViolationResponse's list of supervision_violation_types. By
@@ -264,13 +266,13 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
         to the violated conditions."""
 
         updated_responses = []
-        for response in violation_responses:
+        for index, response in enumerate(violation_responses):
             updated_supervision_violation: Optional[StateSupervisionViolation] = None
 
             if response.supervision_violation:
                 additional_types = (
                     self.delegate.get_additional_violation_types_for_response(
-                        self.person_id, response
+                        self.person_id, response, index, violation_responses
                     )
                 )
 

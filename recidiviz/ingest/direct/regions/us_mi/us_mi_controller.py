@@ -52,6 +52,7 @@ class UsMiController(BaseDirectIngestController):
             "state_drug_screen",
             "employment_period",
             "supervision_violations",
+            "supervision_violations_probation",
         ]
 
         if environment.in_gcp_production():

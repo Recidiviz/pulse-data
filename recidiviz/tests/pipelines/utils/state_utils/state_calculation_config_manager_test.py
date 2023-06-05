@@ -25,6 +25,7 @@ import mock
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StateIncarcerationPeriod,
     StatePerson,
     StateSupervisionPeriod,
 )
@@ -169,6 +170,9 @@ def test_get_required_state_specific_delegates() -> None:
                 ],
                 StatePerson.__name__: [
                     StatePerson.new_with_defaults(state_code=state.value)
+                ],
+                StateIncarcerationPeriod.__name__: [
+                    StateIncarcerationPeriod.new_with_defaults(state_code=state.value)
                 ],
                 "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,
