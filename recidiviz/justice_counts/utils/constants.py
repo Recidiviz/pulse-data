@@ -24,6 +24,17 @@ DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS = "DISAGGREGATED_BY_SUPERVISION_SUBSYSTE
 
 AUTOMATIC_UPLOAD_ID = -1
 
+# Maps the actual name of the child agency to
+# a shorthand used in a the spreadsheet during
+# Bulk Upload. We need this because some agencies
+# only want to provide shorthands in their spreadsheets.
+CHILD_AGENCY_NAME_TO_UPLOAD_NAME = {
+    "toledo police department": "toledo",
+    "newark division of police": "newark",
+    "cleveland police department": "cleveland",
+    "columbus police department": "columbus",
+}
+
 
 class DatapointGetRequestEntryPoint(enum.Enum):
     REPORT_PAGE = "REPORT_PAGE"

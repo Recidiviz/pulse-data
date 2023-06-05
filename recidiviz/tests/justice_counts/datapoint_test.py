@@ -669,8 +669,8 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             self.assertDictEqual(
                 datapoint_json,
                 {
-                    "id": monthly_report.id,
-                    "report_id": 1,
+                    "id": datapoints[0].id,
+                    "report_id": monthly_report.id,
                     "agency_name": "Agency Alpha",
                     "frequency": "MONTHLY",
                     "start_date": datetime.date(2022, 6, 1),
@@ -718,8 +718,8 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             self.assertDictEqual(
                 datapoint_json,
                 {
-                    "id": monthly_report.id,
-                    "report_id": 1,
+                    "id": datapoints[0].id,
+                    "report_id": monthly_report.id,
                     "agency_name": monthly_report.source.name,
                     "frequency": "MONTHLY",
                     "start_date": datetime.date(2022, 6, 1),
