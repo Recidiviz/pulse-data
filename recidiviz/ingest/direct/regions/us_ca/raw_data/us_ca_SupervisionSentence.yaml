@@ -3,7 +3,10 @@ file_tag: SupervisionSentence
 file_description: |-
   Historical information about supervision sentences for people currently on parole.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OffenderId
+  - SupvLevelChangeDate
+  - SupervisionLevel
 columns:
   - name: OffenderId
     is_pii: True
