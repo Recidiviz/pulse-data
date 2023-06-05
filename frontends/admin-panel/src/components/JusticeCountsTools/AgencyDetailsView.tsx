@@ -24,12 +24,7 @@ import {
   getAgency,
 } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
-import {
-  AgencyResponse,
-  AgencyTeamMember,
-  AgencyTeamMemberRole,
-  ErrorResponse,
-} from "./constants";
+import { AgencyResponse, AgencyTeamMember, ErrorResponse } from "./constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
   const { agencyId } = useParams() as { agencyId: string };
@@ -126,7 +121,7 @@ const AgencyProvisioningView = (): JSX.Element => {
       title: "Role",
       dataIndex: "role",
       key: "role",
-      render: (role: AgencyTeamMemberRole, user: AgencyTeamMember) => {
+      render: (role: string, user: AgencyTeamMember) => {
         return (
           <Select
             defaultValue={role}
@@ -135,7 +130,7 @@ const AgencyProvisioningView = (): JSX.Element => {
             }}
             style={{ minWidth: 250 }}
           >
-            {Object.values(AgencyTeamMemberRole).map((teamMemberRole) => (
+            {data?.roles.map((teamMemberRole) => (
               <Select.Option key={teamMemberRole} value={teamMemberRole}>
                 {teamMemberRole}
               </Select.Option>
