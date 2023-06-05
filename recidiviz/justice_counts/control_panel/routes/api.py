@@ -1004,10 +1004,14 @@ def get_api_blueprint(
         try:
             bearer_token = request.headers.get("Authorization")
             if bearer_token is None:
-                raise JusticeCountsServerError(
-                    code="justice_counts_no_bearer_token",
-                    description="No Bearer Token was sent in Authorization header of the request.",
+                logging.exception(
+                    JusticeCountsServerError(
+                        code="justice_counts_no_bearer_token",
+                        description="No Bearer Token was sent in Authorization header of the request.",
+                    )
                 )
+                # Return 200 to acknowledge the message from pubsub
+                return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
             token = bearer_token.split(" ")[1]
             # Verify and decode the JWT. `verify_oauth2_token` verifies
@@ -1017,10 +1021,14 @@ def get_api_blueprint(
                 claim["email"] != service_account_email
                 or claim["email_verified"] is not True
             ):
-                raise JusticeCountsServerError(
-                    code="request_not_authenticated",
-                    description="This request could not be authenticated",
+                logging.exception(
+                    JusticeCountsServerError(
+                        code="request_not_authenticated",
+                        description="This request could not be authenticated",
+                    )
                 )
+                # Return 200 to acknowledge the message from pubsub
+                return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
             try:
                 message = extract_pubsub_message_from_json(request.get_json())
@@ -1032,36 +1040,53 @@ def get_api_blueprint(
                 or OBJECT_ID not in message.attributes
                 or BUCKET_ID not in message.attributes
             ):
-                raise JusticeCountsServerError(
-                    code="justice_counts_bad_pub_sub",
-                    description="Invalid Pub/Sub message.",
+                logging.exception(
+                    JusticeCountsServerError(
+                        code="justice_counts_bad_pub_sub",
+                        description="Invalid Pub/Sub message.",
+                    )
                 )
+                # Return 200 to acknowledge the message from pubsub
+                return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
             attributes = message.attributes
 
             filename = attributes[OBJECT_ID]
             bucket_id = attributes[BUCKET_ID]
+
             agency_id = BUCKET_ID_TO_AGENCY_ID.get(bucket_id, None)
             if agency_id is None:
-                raise JusticeCountsServerError(
-                    code="no_bucket_for_agency",
-                    description=f"No agency or system associated with GCS bucket with id {bucket_id}",
+                logging.exception(
+                    JusticeCountsServerError(
+                        code="no_bucket_for_agency",
+                        description=f"No agency or system associated with GCS bucket with id {bucket_id}",
+                    )
                 )
+                # Return 200 to acknowledge the message from pubsub
+                return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
             )
             if filename is None:
-                raise JusticeCountsServerError(
-                    code="justice_counts_missing_file_name_sub",
-                    description="Missing Filename",
+                logging.exception(
+                    JusticeCountsServerError(
+                        code="justice_counts_missing_file_name_sub",
+                        description="Missing Filename",
+                    )
                 )
+                # Return 200 to acknowledge the message from pubsub
+                return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
             if not allowed_file(filename):
-                raise JusticeCountsServerError(
-                    code="file_type_error",
-                    description="Invalid file type: All files must be of type .xlsx or .csv.",
+                logging.exception(
+                    JusticeCountsServerError(
+                        code="file_type_error",
+                        description="Invalid file type: All files must be of type .xlsx or .csv.",
+                    )
                 )
+                # Return 200 to acknowledge the message from pubsub
+                return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
             system = schema.System[agency.systems[0]]
             if len(agency.systems) > 1:
@@ -1080,7 +1105,9 @@ def get_api_blueprint(
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
-            raise _get_error(error=e) from e
+            # Return 200 to acknowledge the message from pubsub
+            logging.exception(e)
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
     @auth_decorator
