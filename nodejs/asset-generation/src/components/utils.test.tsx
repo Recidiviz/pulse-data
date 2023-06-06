@@ -18,7 +18,12 @@
 import styled from "styled-components";
 import { describe, expect, test } from "vitest";
 
-import { convertRemToPx, renderToStaticSvg, wrapText } from "./utils";
+import {
+  computeTextWidth,
+  convertRemToPx,
+  renderToStaticSvg,
+  wrapText,
+} from "./utils";
 
 describe("convertRemToPx", () => {
   test("converts a property value", () => {
@@ -93,6 +98,36 @@ describe("renderToStaticSvg", () => {
   });
 });
 
+test("computeTextWidth", () => {
+  // this snapshot was verified to match Chrome rendering in Storybook
+  expect(computeTextWidth("The quick brown fox", 18)).toMatchInlineSnapshot(`
+    {
+      "cumulativeWidths": [
+        10.431000000000001,
+        20.529,
+        30.320999999999998,
+        34.047,
+        44.46,
+        54.72,
+        58.905,
+        68.247,
+        78.08399999999999,
+        82.008,
+        92.44799999999998,
+        99.11699999999998,
+        108.82799999999996,
+        122.54399999999997,
+        132.65099999999995,
+        136.57499999999996,
+        143.24399999999997,
+        152.45099999999996,
+        162.36899999999997,
+      ],
+      "totalWidth": 162.36899999999997,
+    }
+  `);
+});
+
 describe("wrapText", () => {
   test("fits on one line", () => {
     expect(wrapText("Riley, Dennis F", 125, 16)).toEqual(["Riley, Dennis F"]);
@@ -113,10 +148,10 @@ describe("wrapText", () => {
   });
 
   test("wraps to three lines", () => {
-    expect(wrapText("Holmes-Briggs, Caroline Cordelia", 125, 16)).toEqual([
+    expect(wrapText("Holmes-Briggs, Caroline Gertrude", 125, 16)).toEqual([
       "Holmes-Briggs,",
       "Caroline",
-      "Cordelia",
+      "Gertrude",
     ]);
   });
 });

@@ -15,33 +15,41 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { z } from "zod";
+import type { Meta, StoryObj } from "@storybook/react";
 
-import { goalStatusSchema } from "../schema/helpers";
+import {
+  fittingUnitDataTransformed,
+  overflowingUnitDataTransformed,
+} from "./fixtures";
+import { OutliersUnitChart } from "./OutliersUnitChart";
 
-export const outliersMetricChartInputSchema = z.object({
-  stateCode: z.string(),
-  id: z.string(),
-  width: z.number(),
-  entityLabel: z.string(),
-  data: z.object({
-    min: z.number(),
-    max: z.number(),
-    goal: z.number(),
-    entities: z.array(
-      z.object({
-        name: z.string(),
-        rate: z.number(),
-        goalStatus: goalStatusSchema,
-        previousRate: z.number(),
-        previousGoalStatus: goalStatusSchema,
-      })
-    ),
-  }),
-});
+const meta: Meta<typeof OutliersUnitChart> = {
+  title: "OutliersUnitChart",
+  component: OutliersUnitChart,
+  argTypes: {
+    syncHeight: { action: "syncHeight" },
+  },
+};
 
-export type OutliersMetricChartInput = z.infer<
-  typeof outliersMetricChartInputSchema
->;
+export default meta;
+type Story = StoryObj<typeof OutliersUnitChart>;
 
-export type ChartData = OutliersMetricChartInput["data"];
+const render: Story["render"] = (props) => <OutliersUnitChart {...props} />;
+
+const width = 570;
+
+export const WithFittingUnit: Story = {
+  render,
+  args: {
+    width,
+    data: fittingUnitDataTransformed,
+  },
+};
+
+export const WithOverflowingUnit: Story = {
+  render,
+  args: {
+    width,
+    data: overflowingUnitDataTransformed,
+  },
+};

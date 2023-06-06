@@ -15,33 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { z } from "zod";
-
-import { goalStatusSchema } from "../schema/helpers";
-
-export const outliersMetricChartInputSchema = z.object({
-  stateCode: z.string(),
-  id: z.string(),
-  width: z.number(),
-  entityLabel: z.string(),
-  data: z.object({
-    min: z.number(),
-    max: z.number(),
-    goal: z.number(),
-    entities: z.array(
-      z.object({
-        name: z.string(),
-        rate: z.number(),
-        goalStatus: goalStatusSchema,
-        previousRate: z.number(),
-        previousGoalStatus: goalStatusSchema,
-      })
-    ),
-  }),
-});
-
-export type OutliersMetricChartInput = z.infer<
-  typeof outliersMetricChartInputSchema
->;
-
-export type ChartData = OutliersMetricChartInput["data"];
+export * from "./SwarmedCircleGroup";
