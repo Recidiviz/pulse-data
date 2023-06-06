@@ -34,6 +34,8 @@ METRIC_VIEW_DATA_EXPORT_TRACKER_TABLE_ID = "metric_view_data_export_tracker"
 EXPORT_JOB_NAME_COL = "export_job_name"
 STATE_CODE_COL = "state_code"
 METRIC_VIEW_DATA_EXPORT_RUNTIME_SEC_COL = "metric_view_data_export_runtime_sec"
+DESTINATION_OVERRIDE_COL = "destination_override"
+SANDBOX_DATASET_PREFIX_COL = "sandbox_dataset_prefix"
 
 
 class MetricViewDataExportSuccessPersister(SuccessPersister):
@@ -48,6 +50,8 @@ class MetricViewDataExportSuccessPersister(SuccessPersister):
         runtime_sec: int,
         cloud_task_id: str,
         state_code: Optional[str],
+        destination_override: Optional[str],
+        sandbox_dataset_prefix: Optional[str],
     ) -> None:
 
         success_row = {
@@ -55,6 +59,8 @@ class MetricViewDataExportSuccessPersister(SuccessPersister):
             SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
             EXPORT_JOB_NAME_COL: export_job_name,
             STATE_CODE_COL: state_code,
+            DESTINATION_OVERRIDE_COL: destination_override,
+            SANDBOX_DATASET_PREFIX_COL: sandbox_dataset_prefix,
             METRIC_VIEW_DATA_EXPORT_RUNTIME_SEC_COL: runtime_sec,
         }
 
@@ -79,6 +85,14 @@ class MetricViewDataExportSuccessPersister(SuccessPersister):
             ),
             bigquery.SchemaField(
                 name=STATE_CODE_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+            ),
+            bigquery.SchemaField(
+                name=DESTINATION_OVERRIDE_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+            ),
+            bigquery.SchemaField(
+                name=SANDBOX_DATASET_PREFIX_COL,
                 field_type=bigquery.enums.SqlTypeNames.STRING.value,
             ),
             bigquery.SchemaField(
