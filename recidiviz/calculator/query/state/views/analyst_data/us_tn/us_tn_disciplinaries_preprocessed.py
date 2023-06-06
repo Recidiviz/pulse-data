@@ -33,6 +33,7 @@ US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_DESCRIPTION = (
     """Materialized view for zero tolerance contact codes in TN"""
 )
 
+# TODO(#21262): Deprecate in favor of state agnostic materialized table
 US_TN_DISCIPLINARIES_PREPROCESSED_QUERY_TEMPLATE = """
     WITH incidents AS (
         SELECT inc.person_id,

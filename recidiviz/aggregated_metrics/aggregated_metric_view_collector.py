@@ -76,6 +76,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     CONTACTS_COMPLETED,
     CONTACTS_FACE_TO_FACE,
     CONTACTS_HOME_VISIT,
+    CUSTODY_LEVEL_DOWNGRADES,
+    CUSTODY_LEVEL_DOWNGRADES_TO_MINIMUM,
+    CUSTODY_LEVEL_UPGRADES,
     DAYS_ABSCONDED_365,
     DAYS_AT_LIBERTY_365,
     DAYS_EMPLOYED_365,
@@ -100,6 +103,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     EMPLOYED_STATUS_ENDS,
     EMPLOYED_STATUS_STARTS,
     EMPLOYER_CHANGES_365,
+    INCARCERATION_INCIDENTS,
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_AND_INFERRED,
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL,
@@ -120,7 +124,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     LSIR_SCORE_PRESENT_AT_ASSIGNMENT,
     MAX_DAYS_STABLE_EMPLOYMENT_365,
     PENDING_CUSTODY_STARTS,
-    PERSON_DAYS_TASK_ELIGIBLE_METRICS,
+    PERSON_DAYS_TASK_ELIGIBLE_METRICS_INCARCERATION,
+    PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION,
     PROP_PERIOD_WITH_CRITICAL_CASELOAD,
     SUPERVISION_DISTRICT,
     SUPERVISION_DISTRICT_INFERRED,
@@ -179,6 +184,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         # Events
         COMMUNITY_CONFINEMENT_SUPERVISION_STARTS,
         SUPERVISION_STARTS,
+        INCARCERATION_INCIDENTS,
         # Assignment window metrics
         DAYS_AT_LIBERTY_365,
         DAYS_IN_COMMUNITY_365,
@@ -188,6 +194,13 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         DAYS_SUPERVISED_365,
         DAYS_TO_FIRST_LIBERTY_365,
         DAYS_TO_FIRST_SUPERVISION_START_365,
+        ## Workflows
+        # TODO(#21261): Automatically pull in all incarceration related TES metrics when we have a param in TES to distinguish
+        *PERSON_DAYS_TASK_ELIGIBLE_METRICS_INCARCERATION,
+        ## Custody level changes,
+        CUSTODY_LEVEL_UPGRADES,
+        CUSTODY_LEVEL_DOWNGRADES,
+        CUSTODY_LEVEL_DOWNGRADES_TO_MINIMUM,
     ],
     MetricPopulationType.SUPERVISION: [
         # Location information
@@ -282,7 +295,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         # TODO(#18344): Use task population_types to only calculate relevant workflows metrics for a single population
         ## Workflows
         *LATE_OPPORTUNITY_METRICS,
-        *PERSON_DAYS_TASK_ELIGIBLE_METRICS,
+        *PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION,
         *TASK_COMPLETED_METRICS,
         # Assignment window metrics
         ANY_INCARCERATION_365,

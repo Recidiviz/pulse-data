@@ -64,6 +64,10 @@ CUSTODY_LEVEL_SESSIONS_QUERY_TEMPLATE = f"""
         CASE WHEN session.custody_level_priority > session_lag.custody_level_priority
             AND session.is_discretionary_level AND session_lag.is_discretionary_level
             THEN 1 ELSE 0 END as custody_downgrade,
+        CASE WHEN session.is_discretionary_level AND session_lag.is_discretionary_level
+            THEN ABS(session.custody_level_priority - session_lag.custody_level_priority)
+            END AS custody_level_num_change,
+        session_lag.custody_level AS previous_custody_level,
     FROM dedup_priority session
     LEFT JOIN dedup_priority session_lag
         ON session.state_code = session_lag.state_code

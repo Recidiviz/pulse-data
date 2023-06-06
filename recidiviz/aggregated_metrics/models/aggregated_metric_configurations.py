@@ -439,6 +439,33 @@ CONTACTS_HOME_VISIT = EventCountMetric(
     },
 )
 
+CUSTODY_LEVEL_DOWNGRADES = EventCountMetric(
+    name="custody_level_downgrades",
+    display_name="Custody Level Downgrades",
+    description="Number of changes to a lower custody level",
+    event_types=[PersonEventType.CUSTODY_LEVEL_CHANGE],
+    event_attribute_filters={"change_type": ["DOWNGRADE"]},
+)
+
+CUSTODY_LEVEL_DOWNGRADES_TO_MINIMUM = EventCountMetric(
+    name="custody_level_downgrades_to_minimum",
+    display_name="Custody Level Downgrades to Minimum Custody",
+    description="Number of changes to minimum custody level",
+    event_types=[PersonEventType.CUSTODY_LEVEL_CHANGE],
+    event_attribute_filters={
+        "change_type": ["DOWNGRADE"],
+        "new_custody_level": ["MINIMUM"],
+    },
+)
+
+CUSTODY_LEVEL_UPGRADES = EventCountMetric(
+    name="custody_level_upgrades",
+    display_name="Custody Level Upgrades",
+    description="Number of changes to a higher custody level",
+    event_types=[PersonEventType.CUSTODY_LEVEL_CHANGE],
+    event_attribute_filters={"change_type": ["UPGRADE"]},
+)
+
 DAYS_ABSCONDED_365 = AssignmentSpanDaysMetric(
     name="days_absconded_365",
     display_name="Days Absconded Within 1 Year Of Assignment",
@@ -943,6 +970,45 @@ PERSON_DAYS_WEIGHTED_JUSTICE_IMPACT = SumSpanDaysMetric(
 )
 
 # get days in eligibility span metrics for all task types
+_TASK_TYPE_NAME_INCARCERATION = [
+    "CUSTODY_LEVEL_DOWNGRADE",
+    "RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION",
+    "RELEASE_TO_PAROLE",
+    "SCHEDULED_HEARING_OCCURRED",
+]
+
+PERSON_DAYS_TASK_ELIGIBLE_METRICS_INCARCERATION = [
+    SumSpanDaysMetric(
+        name=f"person_days_task_eligible_{b.task_type_name.lower()}",
+        display_name=f"Person-Days Eligible: {b.task_title}",
+        description="Total number of person-days spent eligible for opportunities of "
+        f"type: {b.task_title.lower()}",
+        span_types=[PersonSpanType.TASK_ELIGIBILITY_SESSION],
+        span_attribute_filters={
+            "is_eligible": ["true"],
+            "task_type": [b.task_type_name],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+]
+
+PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
+    SumSpanDaysMetric(
+        name=f"person_days_task_eligible_{b.task_type_name.lower()}",
+        display_name=f"Person-Days Eligible: {b.task_title}",
+        description="Total number of person-days spent eligible for opportunities of "
+        f"type: {b.task_title.lower()}",
+        span_types=[PersonSpanType.TASK_ELIGIBILITY_SESSION],
+        span_attribute_filters={
+            "is_eligible": ["true"],
+            "task_type": [b.task_type_name],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+]
+
 PERSON_DAYS_TASK_ELIGIBLE_METRICS = [
     SumSpanDaysMetric(
         name=f"person_days_task_eligible_{b.task_type_name.lower()}",
@@ -1030,6 +1096,7 @@ SUPERVISION_LEVEL_UPGRADES = EventCountMetric(
     event_attribute_filters={"change_type": ["UPGRADE"]},
 )
 
+
 SUPERVISION_STARTS = EventCountMetric(
     name="supervision_starts",
     display_name="Supervision Starts",
@@ -1068,6 +1135,14 @@ UNSUCCESSFUL_SUPERVISION_TERMINATIONS = EventCountMetric(
         PersonEventType.INCARCERATION_START,
         PersonEventType.PENDING_CUSTODY_START,
     ],
+    event_attribute_filters={},
+)
+
+INCARCERATION_INCIDENTS = EventCountMetric(
+    name="incarceration_incidents",
+    display_name="Incarceration Incidents",
+    description="Number of incarceration incidents",
+    event_types=[PersonEventType.INCARCERATION_INCIDENT],
     event_attribute_filters={},
 )
 
