@@ -54,8 +54,8 @@ def _build_url(
 def trigger_calculation_dag(
     event: Dict[str, Any], _context: ContextType
 ) -> Tuple[str, HTTPStatus]:
-    """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
-    the calculation pipelines (either daily or historical) run simultaneously.
+    """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where
+    the calculation pipeline runs.
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
     if not project_id:
@@ -78,9 +78,6 @@ def trigger_calculation_dag(
         cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    state_code_filter = json_body.get("state_code_filter")
-    sandbox_dataset_prefix = json_body.get("sandbox_dataset_prefix")
-
     # The name of the DAG you wish to trigger
     dag_name = f"{project_id}_calculation_dag"
 
@@ -88,8 +85,9 @@ def trigger_calculation_dag(
         airflow_uri,
         dag_name,
         {
-            "state_code_filter": state_code_filter,
-            "sandbox_dataset_prefix": sandbox_dataset_prefix,
+            "state_code_filter": json_body.get("state_code_filter"),
+            "sandbox_dataset_prefix": json_body.get("sandbox_dataset_prefix"),
+            "ingest_instance": json_body.get("ingest_instance"),
         },
     )
     cloud_functions_log(
