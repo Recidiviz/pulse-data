@@ -127,6 +127,7 @@ class RawTableQueryBuilder:
         normalized_column_values: bool,
         raw_data_datetime_upper_bound: Optional[datetime.datetime],
         filter_to_latest: bool,
+        filter_to_only_documented_columns: bool,
     ) -> str:
         """Returns a query against data in a state raw data table.
 
@@ -146,11 +147,17 @@ class RawTableQueryBuilder:
                 this means we return just the rows from the latest version
                 of this raw file we received. If false, do no filtering and
                 return |update_datetime| as an additional column.
+            filter_to_only_documented_columns: If true, then we will only select
+                columns that have associated `descriptions` in the raw YAML files.
         """
         if normalized_column_values:
-            columns_clause = self.normalized_columns_for_config(raw_file_config)
+            columns_clause = self.normalized_columns_for_config(
+                raw_file_config, filter_to_only_documented_columns
+            )
         else:
-            columns_clause = self._columns_clause_for_config(raw_file_config)
+            columns_clause = self._columns_clause_for_config(
+                raw_file_config, filter_to_only_documented_columns
+            )
 
         if not filter_to_latest:
             columns_clause += f", {UPDATE_DATETIME_COL_NAME}"
@@ -224,29 +231,45 @@ class RawTableQueryBuilder:
         return supplemental_order_by_clause
 
     @staticmethod
-    def _columns_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
-        if not raw_file_config.available_columns:
+    def _columns_clause_for_config(
+        raw_file_config: DirectIngestRawFileConfig,
+        filter_to_only_documented_columns: bool,
+    ) -> str:
+        columns_to_return = (
+            raw_file_config.documented_columns
+            if filter_to_only_documented_columns
+            else raw_file_config.columns
+        )
+        if filter_to_only_documented_columns and not raw_file_config.documented_columns:
             raise ValueError(
                 f"Found no available (documented) columns for file [{raw_file_config.file_tag}]"
             )
 
-        columns_str = ", ".join(
-            [column.name for column in raw_file_config.available_columns]
-        )
+        columns_str = ", ".join([column.name for column in columns_to_return])
         return columns_str
 
     @staticmethod
     def normalized_columns_for_config(
         raw_file_config: DirectIngestRawFileConfig,
+        filter_to_only_documented_columns: bool,
     ) -> str:
-        if not raw_file_config.available_columns:
+        """Returns list of columns with normalized datetimes."""
+        if filter_to_only_documented_columns and not raw_file_config.documented_columns:
             raise ValueError(
                 f"Found no available (documented) columns for file [{raw_file_config.file_tag}]"
             )
 
-        non_datetime_cols_to_format = raw_file_config.available_non_datetime_cols
+        non_datetime_cols_to_format = (
+            raw_file_config.documented_non_datetime_cols
+            if filter_to_only_documented_columns
+            else raw_file_config.documented_non_datetime_cols
+        )
         non_datetime_col_str = ", ".join(non_datetime_cols_to_format)
-        datetime_cols_to_format = raw_file_config.available_datetime_cols
+        datetime_cols_to_format = (
+            raw_file_config.documented_datetime_cols
+            if filter_to_only_documented_columns
+            else raw_file_config.datetime_cols
+        )
 
         if not datetime_cols_to_format:
             return non_datetime_col_str

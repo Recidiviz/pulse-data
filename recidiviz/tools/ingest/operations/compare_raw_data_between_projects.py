@@ -105,7 +105,7 @@ def compare_raw_data_between_projects(
         ):
             continue
 
-        columns = ", ".join([column.name for column in file_config.available_columns])
+        columns = ", ".join([column.name for column in file_config.documented_columns])
 
         query_job = bq_client.run_query_async(
             query_str=StrictStringFormatter().format(

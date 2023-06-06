@@ -101,6 +101,7 @@ class RawTableQueryBuilderTest(unittest.TestCase):
             normalized_column_values=True,
             raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=True,
+            filter_to_only_documented_columns=True,
         )
 
         expected_view_query = """
@@ -145,6 +146,7 @@ FROM filtered_rows
             normalized_column_values=True,
             raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=False,
+            filter_to_only_documented_columns=True,
         )
 
         expected_view_query = """
@@ -181,6 +183,7 @@ FROM filtered_rows
             normalized_column_values=True,
             raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
             filter_to_latest=True,
+            filter_to_only_documented_columns=True,
         )
 
         expected_view_query = """
@@ -234,6 +237,7 @@ FROM filtered_rows
             normalized_column_values=False,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=False,
+            filter_to_only_documented_columns=True,
         )
 
         expected_view_query = """
@@ -255,6 +259,7 @@ FROM filtered_rows
             normalized_column_values=True,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,
+            filter_to_only_documented_columns=True,
         )
 
         expected_view_query = """
@@ -301,6 +306,7 @@ FROM filtered_rows
             normalized_column_values=False,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,
+            filter_to_only_documented_columns=True,
         )
 
         expected_view_query = """
@@ -341,6 +347,7 @@ FROM filtered_rows
                 normalized_column_values=False,
                 raw_data_datetime_upper_bound=None,
                 filter_to_latest=True,
+                filter_to_only_documented_columns=True,
             )
 
         with self.assertRaisesRegex(
@@ -353,6 +360,7 @@ FROM filtered_rows
                 normalized_column_values=False,
                 raw_data_datetime_upper_bound=None,
                 filter_to_latest=False,
+                filter_to_only_documented_columns=True,
             )
 
     def test_no_valid_primary_keys_nonempty(
@@ -379,6 +387,7 @@ FROM filtered_rows
             normalized_column_values=True,
             raw_data_datetime_upper_bound=None,
             filter_to_latest=True,
+            filter_to_only_documented_columns=True,
         )
 
         expected_view_query = """
@@ -414,4 +423,65 @@ SELECT col1,
 FROM filtered_rows
 """
 
+        self.assertEqual(expected_view_query, query)
+
+    @patch(
+        "recidiviz.ingest.direct.views.raw_table_query_builder.raw_data_pruning_enabled_in_state_and_instance"
+    )
+    def test_always_historical_can_prune_with_undocumented_columns(
+        self, mock_is_enabled: mock.MagicMock
+    ) -> None:
+        mock_is_enabled.return_value = True
+        raw_file_config = attr.evolve(
+            self.raw_file_config, always_historical_export=True
+        )
+        query = self.query_builder.build_query(
+            raw_file_config,
+            address_overrides=None,
+            normalized_column_values=True,
+            raw_data_datetime_upper_bound=None,
+            filter_to_latest=True,
+            filter_to_only_documented_columns=False,
+        )
+
+        expected_view_query = """
+WITH filtered_rows AS (
+    SELECT
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY col1
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.table_name`
+        
+    ) a
+    WHERE
+        recency_rank = 1
+        AND is_deleted = False
+)
+SELECT col1, 
+        COALESCE(
+            CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            col2
+        ) AS col2, 
+        COALESCE(
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\\:\\d\\d\\d.*', '')) AS DATETIME) AS STRING),
+            col3
+        ) AS col3, 
+        COALESCE(
+            CAST(SAFE_CAST(undocumented_column AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', undocumented_column) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', undocumented_column) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', undocumented_column) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', undocumented_column) AS DATETIME) AS STRING),
+            undocumented_column
+        ) AS undocumented_column
+FROM filtered_rows
+"""
         self.assertEqual(expected_view_query, query)
