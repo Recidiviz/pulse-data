@@ -20,7 +20,7 @@ import logging
 from http import HTTPStatus
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from flask import Blueprint, request
+from flask import Blueprint
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
 
@@ -67,7 +67,10 @@ from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import
 )
 from recidiviz.utils import monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.params import get_str_param_value
+from recidiviz.utils.endpoint_helpers import get_value_from_request
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
+)
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -108,30 +111,44 @@ class ViewExportConfigurationError(Exception):
     """Error thrown when views are misconfigured."""
 
 
-@export_blueprint.route("/metric_view_data", methods=["GET", "POST"])
+@export_blueprint.route("/metric_view_data", methods=["POST"])
 @requires_gae_auth
 def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
-    Example:
-        export/metric_view_data?export_job_name=PO_MONTHLY&state_code=US_ID
-    URL parameters:
+    Body Payload:
         export_job_name: Name of job to initiate export for (e.g. PO_MONTHLY).
         state_code: (Optional) State code to initiate export for (e.g. US_ID)
                     State code must be present if the job is not state agnostic.
+        destination_override: (Optional) Override the destination bucket for the export.
+        sandbox_prefix: (Optional) Use a dataset prefix for the export.
     Args:
         N/A
     Returns:
         N/A
     """
-    logging.info("Attempting to export view data to cloud storage")
 
-    export_job_name = get_str_param_value("export_job_name", request.args)
-    state_code = get_str_param_value("state_code", request.args)
+    export_job_name = get_value_from_request("export_job_name")
+    state_code = get_value_from_request("state_code")
+    destination_override = get_value_from_request("destination_override")
+    sandbox_prefix = get_value_from_request("sandbox_prefix")
+    logging.info(
+        "Attempting to export view data to cloud storage for export_job_name [%s], state_code [%s], destination_override [%s], sandbox_prefix [%s]",
+        export_job_name,
+        state_code,
+        destination_override,
+        sandbox_prefix,
+    )
 
     if not export_job_name:
         return (
             "Missing required export_job_name URL parameter",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    if sandbox_prefix and not destination_override:
+        return (
+            "Sandbox prefix requires destination override",
             HTTPStatus.BAD_REQUEST,
         )
 
@@ -147,8 +164,25 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     start = datetime.datetime.now()
 
     if export_launched:
+        relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
+            export_job_name.upper()
+        )
+
+        if not relevant_export_collection:
+            raise ValueError(
+                f"No export configs matching export name: [{export_job_name.upper()}]"
+            )
+
         export_view_data_to_cloud_storage(
-            export_job_name=export_job_name, state_code=state_code
+            export_job_name=export_job_name,
+            state_code=state_code,
+            destination_override=destination_override,
+            address_overrides=address_overrides_for_view_builders(
+                view_dataset_override_prefix=sandbox_prefix,
+                view_builders=relevant_export_collection.view_builders_to_export,
+            )
+            if sandbox_prefix
+            else None,
         )
 
     end = datetime.datetime.now()
@@ -160,6 +194,8 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     success_persister.record_success_in_bq(
         export_job_name=export_job_name,
         state_code=state_code,
+        destination_override=destination_override,
+        sandbox_dataset_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
         cloud_task_id=get_current_cloud_task_id(),
     )

@@ -194,7 +194,7 @@ def trigger_metric_view_data_operator(
 ) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "metric-view-export"
-    endpoint = f"/export/metric_view_data?export_job_name={export_job_name}{f'&state_code={state_code}' if state_code else ''}"
+    endpoint = "/export/metric_view_data"
     task_path = CloudTasksClient.task_path(
         project=project_id,
         location=queue_location,
@@ -206,7 +206,12 @@ def trigger_metric_view_data_operator(
         app_engine_http_request={
             "http_method": "POST",
             "relative_uri": endpoint,
-            "body": json.dumps({}).encode(),
+            "body": json.dumps(
+                {
+                    "export_job_name": export_job_name,
+                    "state_code": state_code,
+                }
+            ).encode(),
         },
     )
     return CloudTasksTaskCreateOperator(

@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Tests for view_export_manager.py."""
-
+import json
 import unittest
 from http import HTTPStatus
 from typing import Any, Dict
@@ -515,18 +515,28 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             }
 
             mock_export_view_data_to_cloud_storage.return_value = None
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=headers,
-                query_string="export_job_name=EXPORT&state_code=US_XX",
+                data=json.dumps(
+                    {
+                        "export_job_name": "EXPORT",
+                        "state_code": "US_XX",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_export_view_data_to_cloud_storage.assert_called()
 
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=headers,
-                query_string="export_job_name=export&state_code=us_xx",
+                data=json.dumps(
+                    {
+                        "export_job_name": "export",
+                        "state_code": "us_xx",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_export_view_data_to_cloud_storage.assert_called()
@@ -546,18 +556,29 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             }
             export_job_name = "export"
             state_code = "us_xx"
+            destination_override = "gs://recidiviz-456-my-bucket/my_subdir"
+            sandbox_prefix = "test_sandbox"
 
             mock_export_view_data_to_cloud_storage.return_value = None
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=headers,
-                query_string=f"export_job_name={export_job_name}&state_code={state_code}",
+                data=json.dumps(
+                    {
+                        "export_job_name": export_job_name,
+                        "state_code": state_code,
+                        "sandbox_prefix": sandbox_prefix,
+                        "destination_override": destination_override,
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_export_view_data_to_cloud_storage.assert_called()
             self.mock_metric_view_data_export_success_persister.record_success_in_bq.assert_called_with(
                 export_job_name=export_job_name,
                 state_code=state_code,
+                destination_override=destination_override,
+                sandbox_dataset_prefix=sandbox_prefix,
                 runtime_sec=mock.ANY,
                 cloud_task_id=current_cloud_task_id,
             )
@@ -580,18 +601,28 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
             mock_export_view_data_to_cloud_storage.return_value = None
             mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=headers,
-                query_string="export_job_name=EXPORT&state_code=US_WW",
+                data=json.dumps(
+                    {
+                        "export_job_name": "EXPORT",
+                        "state_code": "US_WW",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_export_view_data_to_cloud_storage.assert_not_called()
 
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=headers,
-                query_string="export_job_name=export&state_code=us_ww",
+                data=json.dumps(
+                    {
+                        "export_job_name": "export",
+                        "state_code": "us_ww",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_export_view_data_to_cloud_storage.assert_not_called()
@@ -610,18 +641,26 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             }
 
             mock_export_view_data_to_cloud_storage.return_value = None
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=headers,
-                query_string="export_job_name=MOCK_EXPORT_NAME",
+                data=json.dumps(
+                    {
+                        "export_job_name": "MOCK_EXPORT_NAME",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
             # case insensitive
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=headers,
-                query_string="export_job_name=mock_export_name",
+                data=json.dumps(
+                    {
+                        "export_job_name": "mock_export_name",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
@@ -633,10 +672,14 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         with self.app.test_request_context():
             mock_export_view_data_to_cloud_storage.return_value = None
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=self.headers,
-                query_string="export_job_name=EXPORT",
+                data=json.dumps(
+                    {
+                        "export_job_name": "EXPORT",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(
@@ -645,14 +688,43 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             )
 
             # case insensitive
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=self.headers,
-                query_string="export_job_name=export",
+                data=json.dumps(
+                    {
+                        "export_job_name": "export",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(
                 b"Missing required state_code parameter for export_job_name EXPORT",
+                response.data,
+            )
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_metric_view_data_export_has_sandbox_prefix_missing_destination_override(
+        self, mock_export_view_data_to_cloud_storage: Mock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_export_view_data_to_cloud_storage.return_value = None
+            response = self.client.post(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                data=json.dumps(
+                    {
+                        "export_job_name": "EXPORT",
+                        "state_code": "US_XX",
+                        "sandbox_prefix": "test_prefix",
+                    }
+                ),
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Sandbox prefix requires destination override",
                 response.data,
             )
 
@@ -664,10 +736,14 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         with self.app.test_request_context():
             mock_export_view_data_to_cloud_storage.return_value = None
-            response = self.client.get(
+            response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=self.headers,
-                query_string="state_code=US_XX",
+                data=json.dumps(
+                    {
+                        "state_code": "US_XX",
+                    }
+                ),
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(
