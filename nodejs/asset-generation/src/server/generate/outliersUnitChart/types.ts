@@ -17,31 +17,48 @@
 
 import { z } from "zod";
 
-import { goalStatusSchema } from "../schema/helpers";
+import { GoalStatus, goalStatusSchema } from "../schema/helpers";
 
-export const outliersMetricChartInputSchema = z.object({
+export const outliersUnitChartInputSchema = z.object({
   stateCode: z.string(),
   id: z.string(),
   width: z.number(),
-  entityLabel: z.string(),
   data: z.object({
-    min: z.number(),
-    max: z.number(),
-    goal: z.number(),
-    entities: z.array(
+    context: z.object({
+      target: z.number(),
+      otherOfficers: z
+        // receiving this as a mapping is more size-efficient over the network...
+        .record(goalStatusSchema, z.array(z.number()))
+        // ...but spreading the mapping across all records will make plotting easier
+        .transform((mapping) => {
+          const flattenedRecords: { value: number; goalStatus: GoalStatus }[] =
+            [];
+          goalStatusSchema.options.forEach((goalStatus) => {
+            const values = mapping[goalStatus];
+            if (values) {
+              flattenedRecords.push(
+                ...values.map((value) => ({ value, goalStatus }))
+              );
+            }
+          });
+          return flattenedRecords;
+        }),
+    }),
+    unitOfficers: z.array(
       z.object({
         name: z.string(),
         rate: z.number(),
         goalStatus: goalStatusSchema,
         previousRate: z.number(),
-        previousGoalStatus: goalStatusSchema,
       })
     ),
   }),
 });
 
-export type OutliersMetricChartInput = z.infer<
-  typeof outliersMetricChartInputSchema
+export type OutliersUnitChartInput = z.input<
+  typeof outliersUnitChartInputSchema
 >;
 
-export type ChartData = OutliersMetricChartInput["data"];
+export type OutliersUnitChartInputTransformed = z.infer<
+  typeof outliersUnitChartInputSchema
+>;

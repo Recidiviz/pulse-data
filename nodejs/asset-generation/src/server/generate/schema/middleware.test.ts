@@ -18,7 +18,7 @@
 import { expect, test, vi } from "vitest";
 import { z } from "zod";
 
-import { schemaMiddleware } from "./schemaMiddleware";
+import { schemaMiddleware } from "./middleware";
 
 const testSchema = z.object({
   foo: z.string(),

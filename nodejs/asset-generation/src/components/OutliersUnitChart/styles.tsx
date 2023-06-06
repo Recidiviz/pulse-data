@@ -14,27 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { palette, typography } from "@recidiviz/design-system";
+import { Text } from "@visx/text";
+import styled from "styled-components";
 
-import { NextFunction, Request, Response } from "express";
-import { infer as ZodInfer, ZodTypeAny } from "zod";
-import { fromZodError } from "zod-validation-error";
+import { TICK_WIDTH } from "./constants";
 
-import { ValidatedInput } from "./types";
+export const AxisLabel = styled(Text).attrs({ verticalAnchor: "start" })`
+  ${typography.Sans16}
+  fill: ${palette.slate60};
+`;
 
-export function schemaMiddleware<Schema extends ZodTypeAny>(schema: Schema) {
-  return function (
-    req: Request,
-    // note that these types reflect what this function may ADD to the response,
-    // not what we expect to already be there
-    res: Response<{ error: string }, ValidatedInput<ZodInfer<Schema>>>,
-    next: NextFunction
-  ) {
-    const result = schema.safeParse(req.body);
-    if (!result.success) {
-      res.status(400).json({ error: fromZodError(result.error).message });
-    } else {
-      res.locals.data = result.data;
-      next();
-    }
-  };
-}
+export const SwarmLabel = styled(Text).attrs({ verticalAnchor: "middle" })`
+  ${typography.Sans18}
+`;
+
+export const TickLine = styled.line`
+  stroke: ${palette.slate20};
+  stroke-width: ${TICK_WIDTH}px;
+`;
+
+export const GoalLine = styled.line`
+  stroke: ${palette.slate60};
+  stroke-width: ${TICK_WIDTH}px;
+  stroke-dasharray: 4 4;
+`;

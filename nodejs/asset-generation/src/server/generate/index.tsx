@@ -20,7 +20,7 @@ import { json, Router } from "express";
 import { authMiddleware } from "../authMiddleware";
 import { outliersMetricChartRoute } from "./outliersMetricChart/route";
 import { outliersMetricChartInputSchema } from "./outliersMetricChart/types";
-import { schemaMiddleware } from "./schemaMiddleware";
+import { schemaMiddleware } from "./schema/middleware";
 
 export const routes = Router();
 

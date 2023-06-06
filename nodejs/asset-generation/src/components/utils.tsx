@@ -73,8 +73,11 @@ export function renderToStaticSvg(Cmp: ComponentType): string {
 /**
  * Calculates width of given text based on a lookup table of relative character widths
  * Adapted from https://chrishewett.com/blog/calculating-text-width-programmatically/
+ *
+ * NOTE: Assumes you are using the typography.SansXX styles from the design system,
+ * as this is the only typeface currently supported!
  */
-function computeTextWidth(text: string, fontSizePx: number) {
+export function computeTextWidth(text: string, fontSizePx: number) {
   // this will get mutated as we process the string
   let letterWidth = 0;
   // this will store all the intermediate values for later reference
@@ -82,6 +85,9 @@ function computeTextWidth(text: string, fontSizePx: number) {
 
   // split the string up using the spread operator (to handle UTF-8)
   const letterSplit = [...text];
+
+  // this should match the design system for the most accurate result
+  const letterSpacing = (fontSizePx < 18 ? -0.01 : -0.02) * SIZE_BASIS;
 
   // this syntax is fine, our node environment supports it
   // eslint-disable-next-line no-restricted-syntax
@@ -94,6 +100,9 @@ function computeTextWidth(text: string, fontSizePx: number) {
       // add/remove the kerning modifier of this letter and the next one
       letterWidth += letterMapKern.get(`${letter}${letterSplit[key + 1]}`) || 0;
     }
+
+    letterWidth += letterSpacing;
+
     // sizes must be scaled from the reference value to the desired font size
     cumulativeWidths.push(letterWidth * (fontSizePx / SIZE_BASIS));
   }
@@ -110,8 +119,11 @@ const lastWordBoundary = /[\s-](?!.*[\s-])/g;
 
 /**
  * Wraps the provided string to the provided width, given the specified font size.
- * Assumes Public Sans Medium as this is currently the only supported font!
  * Returns an array of strings representing separate lines.
+ * 
+ * NOTE: Assumes you are using the typography.SansXX styles from the design system,
+ * as this is the only typeface currently supported!
+ 
  */
 export function wrapText(
   text: string,

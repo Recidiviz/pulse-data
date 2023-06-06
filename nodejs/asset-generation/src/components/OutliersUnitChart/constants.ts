@@ -15,33 +15,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { z } from "zod";
+import { spacing } from "@recidiviz/design-system";
 
-import { goalStatusSchema } from "../schema/helpers";
+export const UNIT_DOT_RADIUS = 6;
+export const SWARM_DOT_RADIUS = 3;
+export const TICK_WIDTH = 2;
 
-export const outliersMetricChartInputSchema = z.object({
-  stateCode: z.string(),
-  id: z.string(),
-  width: z.number(),
-  entityLabel: z.string(),
-  data: z.object({
-    min: z.number(),
-    max: z.number(),
-    goal: z.number(),
-    entities: z.array(
-      z.object({
-        name: z.string(),
-        rate: z.number(),
-        goalStatus: goalStatusSchema,
-        previousRate: z.number(),
-        previousGoalStatus: goalStatusSchema,
-      })
-    ),
-  }),
-});
+export const X_AXIS_HEIGHT = 22;
+export const ROW_HEIGHT = 42;
 
-export type OutliersMetricChartInput = z.infer<
-  typeof outliersMetricChartInputSchema
->;
+export const MARGIN = {
+  top: spacing.xxs,
+  right: UNIT_DOT_RADIUS + spacing.xxs,
+  bottom: SWARM_DOT_RADIUS + spacing.xxs,
+  left: UNIT_DOT_RADIUS + spacing.xxs,
+};
 
-export type ChartData = OutliersMetricChartInput["data"];
+export const CONTENT_AREA_TOP_OFFSET = MARGIN.top + X_AXIS_HEIGHT;
+
+export const LABEL_X_BASE = UNIT_DOT_RADIUS + spacing.sm;
