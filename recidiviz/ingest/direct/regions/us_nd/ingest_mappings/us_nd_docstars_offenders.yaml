@@ -62,6 +62,7 @@ input_columns:
   - SORAC_SCORE
   - EMAIL
 unused_columns:
+  - SEXOFF
   - SUP_LVL # Unused, for now.
   - SUPER_OVERRIDE # Unused, for now.
   - AGENT
@@ -183,13 +184,3 @@ output:
                 - "3"
                 - "4"
                 - "6"
-    supervision_periods:
-      - StateSupervisionPeriod:
-          case_type_entries:
-            - StateSupervisionCaseTypeEntry:
-                case_type:
-                  $enum_mapping:
-                    $raw_text: SEXOFF
-                    $mappings:
-                      StateSupervisionCaseType.GENERAL: "0"
-                      StateSupervisionCaseType.SEX_OFFENSE: "(1)"

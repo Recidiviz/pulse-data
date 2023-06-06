@@ -68,7 +68,8 @@ offendercases_with_terminating_and_recent_pos AS (
                 THEN COALESCE(SUPER_OVERRIDE, SUP_LVL)
             -- Set supervision level to null if not the most recent period 
             ELSE NULL
-        END AS current_supervision_level
+        END AS current_supervision_level,
+       {{docstars_offenders}}.SEXOFF 
   FROM cases_with_terminating_officers
   LEFT JOIN {{docstars_offenders}}
   ON (cases_with_terminating_officers.SID = {{docstars_offenders}}.SID)
