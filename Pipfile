@@ -68,6 +68,10 @@ Faker = "*"
 #  responses package ships a version that doesn't break mypy.
 responses = "==0.20.0"
 shellcheck-py = "*"
+# We do not rely on appnope directly, but we have to include it here because
+# otherwise it will be dropped from the lock file since we do our locking on a Linux 
+# machine and appnope is Mac specific.
+appnope = {version = "*", markers="sys_platform == 'darwin'"}
 # the following packages are ported over from the recidiviz-research pipfile and
 # imported in at least one file in that repo and do *not* exist elsewhere here
 censusdata = "*"
