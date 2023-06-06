@@ -45,6 +45,7 @@ input_columns:
   - RECORDCRDATE
   - RecDate
   - CHANGE_DATE_REASON
+  - SEXOFF
 unused_columns:
   - TERMINATING_OFFICER
   - SENT_TYPE
@@ -355,3 +356,11 @@ output:
                         $given_names: recent_officer_fname
                         $surname: recent_officer_lname
                     agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+          case_type_entries:
+            - StateSupervisionCaseTypeEntry:
+                case_type:
+                  $enum_mapping:
+                    $raw_text: SEXOFF
+                    $mappings:
+                      StateSupervisionCaseType.GENERAL: "0"
+                      StateSupervisionCaseType.SEX_OFFENSE: "(1)"
