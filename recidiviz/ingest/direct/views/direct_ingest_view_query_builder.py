@@ -605,6 +605,7 @@ class DirectIngestViewQueryBuilder:
             normalized_column_values=True,
             raw_data_datetime_upper_bound=config.raw_data_datetime_upper_bound,
             filter_to_latest=raw_table_dependency_config.filter_to_latest,
+            filter_to_only_documented_columns=True,
         )
 
     @staticmethod

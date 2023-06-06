@@ -250,27 +250,36 @@ class DirectIngestRawFileConfig:
         ]
 
     @property
-    def available_columns(self) -> List[RawTableColumnInfo]:
-        """Filters to only columns that can be used for ingest.
-
-        Currently just excludes undocumented columns.
-        """
+    def documented_columns(self) -> List[RawTableColumnInfo]:
+        """Filters to only documented columns."""
         return [column for column in self.columns if column.description]
 
     @property
-    def available_datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
+    def documented_datetime_cols(
+        self,
+    ) -> List[Tuple[str, Optional[List[str]]]]:
         return [
             (column.name, column.datetime_sql_parsers)
-            for column in self.columns
-            if column.is_datetime and column.description
+            for column in self.documented_columns
+            if column.is_datetime
         ]
 
     @property
-    def available_non_datetime_cols(self) -> List[str]:
+    def datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
         return [
-            column.name
+            (column.name, column.datetime_sql_parsers)
             for column in self.columns
-            if not column.is_datetime and column.description
+            if column.is_datetime
+        ]
+
+    @property
+    def non_datetime_cols(self) -> List[str]:
+        return [column.name for column in self.columns if not column.is_datetime]
+
+    @property
+    def documented_non_datetime_cols(self) -> List[str]:
+        return [
+            column.name for column in self.documented_columns if not column.is_datetime
         ]
 
     @property
@@ -293,7 +302,7 @@ class DirectIngestRawFileConfig:
         """Returns true if the raw file config provides enough information for this
         table to be used in ingest views or *latest views.
         """
-        return not self.available_columns or (
+        return not self.documented_columns or (
             len(self.primary_key_cols) == 0 and not self.no_valid_primary_keys
         )
 
