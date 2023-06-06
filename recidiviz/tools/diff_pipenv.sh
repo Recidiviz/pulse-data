@@ -15,6 +15,7 @@ source "${BASH_SOURCE_DIR}/script_base.sh"
 # - Remove the pypi line ('-i https://pypi.org/simple')
 # - Remove any blank lines
 # - Remove pip / setuptools, since they'll always be installed but aren't always in the Pipfile.lock
+# - Remove appnope, since it is required on Mac but not Linux
 # - Sort, in case the above transformations affected the sort order
 # The command to get the expected packages from pipenv has changed from `pipenv lock -r`
 # to `pipenv --requirements`. We try the new command first, but fall back to the old
@@ -27,6 +28,7 @@ expected=$( (pipenv requirements --dev || pipenv lock -r --dev) \
     | sed '/^$/d' \
     | sed '/^pip/d' \
     | sed '/^setuptools/d' \
+    | sed '/^appnope/d' \
     | sort) || exit_on_fail
 # The installed command gets all installed packages in a requirements format, with the following transformations
 # - Replace any underscores with dashes
