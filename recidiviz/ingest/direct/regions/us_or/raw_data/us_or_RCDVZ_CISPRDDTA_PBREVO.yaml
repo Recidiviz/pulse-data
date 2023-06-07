@@ -8,18 +8,48 @@ primary_key_cols:
   - SUBFILE_KEY
 columns:
   - name: TIME_LAST_UPDATED
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: RECORD_KEY
     description: |-
       Unique identifier for each AIC.
   - name: LAST_UPDATED_WHEN
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: OFFENSE_TYPE
     description: |-
       Type of offense.
   - name: TERMINATION_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: TERMINATION_CODE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PB_SENTENCE_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PB_SENTENCE_TYPE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BAF_GROUP_NO
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CRIME_NUMBER
     description: |-
       Number of crime.
@@ -30,3 +60,9 @@ columns:
     description: |-
       File key, part of composite key.
   - name: DATE_LAST_UPDATED
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"

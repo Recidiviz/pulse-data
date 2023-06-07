@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PBMIS_RELESE_PLN_DT_CALC
 file_description: |-
-  TODO(#17148): Fill in the file description
+  TParole Board Release Plan Calculations
 data_classification: source
 primary_key_cols:
   - RLPH_NEXT_NUMBER
@@ -10,25 +10,65 @@ primary_key_cols:
   - RECORD_KEY
 columns:
   - name: SPLIT_TOTAL_SENT_DAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_TOTAL_SENT_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_TOTAL_SENT_YEARS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_CONSEC_TERMIN
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_CONSEC_TOLLING
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_CONCUR_SENT_TERM
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_CONCUR_TIME
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_CONCUR_SENT_BEGIN
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONSEC_SENTENCE_DAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONSEC_SENTENCE_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONSEC_SENTENCE_YEARS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONSEC_PROJECT_REL
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONSEC_TOLLING
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONCUR_PROJECT_REL
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONCUR_SENTENCE_DAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONCUR_SENTENCE_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONCUR_SENTENCE_YEARS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONCUR_SENT_TERM
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONCUR_TIME_SERVED
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONCUR_SENT_BEGIN
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: RLPH_NEXT_NUMBER
     description: |-
       Part of composite key.
@@ -42,16 +82,54 @@ columns:
     description: |-
       Unique identifier for each person.
   - name: VERSION_NUM
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BASIC_SENTENCE_YEARS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BASIC_SENTENCE_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BASIC_SENTENCE_DAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BASIC_PROJECT_REL
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CREATE_DATE
+    is_datetime: True
+    description: |-
+      Date record was created.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: CREATEDBY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    is_pii: True
   - name: MODIFY_DATE
+    is_datetime: True
+    description: |-
+      Date record was modified.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MODIFIEDBY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    is_pii: True
   - name: CONCUR_SENTENCE_CALCDAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CONSEC_SENTENCE_CALCDAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_TOTAL_SENT_CALCDAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BASIC_CALCDAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SPLIT_TOTAL_TERMIN
+    description: |-
+      TODO(#17148): Fill in with answer from OR

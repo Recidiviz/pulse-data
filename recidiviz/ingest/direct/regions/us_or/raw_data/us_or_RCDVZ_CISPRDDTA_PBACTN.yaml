@@ -9,37 +9,137 @@ primary_key_cols:
   - RECORD_KEY
 columns:
   - name: PPS_MIN_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SUPER_REV_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SUM_HIGH_RANGE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SUM_LOW_RANGE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PB_CAT
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: INACTIVE_SUPERVISION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: DECISION_APPEAL
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: REVOKE_MONTHS_SUPER
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: REVOKE_SEVERE_CRIME
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: REST_PLAN_APPR
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: REST_PLAN_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: COMPELLED_PAROLE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: NEXT_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: NEXT_ACTION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: ADJ_INCEPTION_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: RECORD_KEY
     description: |-
       A unique identifier for each Adult in Custody (AIC).
   - name: LAST_UPDATED_WHEN
+    is_datetime: True
+    description: |-
+      Date last updated.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: LAST_UPDATE_LOCATION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MATRIX_MIN_SUPV
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PPS_SENTENCE_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SG_HISTORY_SCALE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CRIME_CATEGORY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: TIME_SERVED
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PREDATORY_SEX_OFFENDER
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: HRDO_IND
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BM10_IND
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: DISCRETIONARY_IND
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: TENT_PARO_DISC_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ACTIVE_REV_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PA_EXTENDED_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PPS_RELEASE_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PPS_EXPIRATION_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MONTHS_SET
+    description: |-
+      TODO(#17148): Fill in with answer from OR
