@@ -18,6 +18,9 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.bq_utils import (
+    today_between_start_date_and_nullable_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.outliers.staff_query_template import (
     staff_query_template,
@@ -46,10 +49,8 @@ supervision_officer_supervisors AS (
     ON supervisor.state_code = supervisor_external_id.state_code
     AND supervisor.supervisor_staff_external_id = supervisor_external_id.external_id
     AND supervisor.supervisor_staff_external_id_type = supervisor_external_id.id_type
-  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` staff_external_id
-    ON supervisor.staff_id = staff_external_id.staff_id
   WHERE supervisor.state_code = 'US_PA'
-    AND CURRENT_DATE('US/Pacific') BETWEEN supervisor.start_date AND IFNULL(supervisor.end_date, '9999-01-01')
+    AND {today_between_start_date_and_nullable_end_date_exclusive_clause("supervisor.start_date", "supervisor.end_date")}
   GROUP BY 1, 2, 3
 )
 , us_pa_supervision_officer_supervisors AS (
@@ -59,14 +60,17 @@ supervision_officer_supervisors AS (
     current_us_pa_supervisor_ids.staff_id,
     TRIM(CONCAT(COALESCE(JSON_EXTRACT_SCALAR(full_name, '$.given_names'), ''), ' ', COALESCE(JSON_EXTRACT_SCALAR(full_name, '$.surname'), ''))) AS full_name,
     staff.email,
-    location.location_external_id
+    attrs.supervisor_staff_external_id AS supervisor_external_id,
+    attrs.supervision_district,
+    attrs.supervision_unit
   FROM current_us_pa_supervisor_ids
+  INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` attrs 
+    USING (staff_id, state_code)
   INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff 
     USING (state_code, staff_id)
-  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_location_period` location
-    USING (state_code, staff_id)
-  WHERE CURRENT_DATE("US/Pacific") BETWEEN location.start_date AND IFNULL(location.end_date, '9999-01-01')
-)
+  WHERE 
+    {today_between_start_date_and_nullable_end_date_exclusive_clause("attrs.start_date", "attrs.end_date_exclusive")}
+) 
 
 SELECT 
     {{columns}}
@@ -85,6 +89,7 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
     view_query_template=SUPERVISION_OFFICER_SUPERVISORS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICER_SUPERVISORS_DESCRIPTION,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     should_materialize=True,
     columns=[
         "state_code",
@@ -92,7 +97,9 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
         "staff_id",
         "full_name",
         "email",
-        "location_external_id",
+        "supervisor_external_id",
+        "supervision_district",
+        "supervision_unit",
     ],
 )
 

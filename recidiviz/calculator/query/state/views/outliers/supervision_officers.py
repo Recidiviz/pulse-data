@@ -49,6 +49,7 @@ SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=SUPERVISION_OFFICERS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICERS_DESCRIPTION,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
     should_materialize=True,
     columns=[
         "state_code",
@@ -56,7 +57,9 @@ SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "staff_id",
         "full_name",
         "email",
-        "location_external_id",
+        "supervisor_external_id",
+        "supervision_district",
+        "supervision_unit",
     ],
 )
 
