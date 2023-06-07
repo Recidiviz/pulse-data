@@ -194,25 +194,25 @@ def retrieve_data(
 
     if batch.report_type == ReportType.OutliersSupervisionOfficerSupervisor:
         # Get data from querier
-        results_by_unit = _retrieve_data_for_outliers_supervision_officer_supervisor(
-            batch
+        results_by_supervisor = (
+            _retrieve_data_for_outliers_supervision_officer_supervisor(batch)
         )
 
         # Archive data
-        results_by_unit_json = {
-            unit_id: unit_data.to_json()
-            for unit_id, unit_data in results_by_unit.items()
+        results_by_supervisor_json = {
+            supervisor_id: supervisor_data.to_json()
+            for supervisor_id, supervisor_data in results_by_supervisor.items()
         }
-        results_by_unit_str = json.dumps(results_by_unit_json)
-        _create_report_json_archive(batch, results_by_unit_str)
+        results_by_supervisor_str = json.dumps(results_by_supervisor_json)
+        _create_report_json_archive(batch, results_by_supervisor_str)
 
         return [
             Recipient(
-                email_address=unit_data.recipient_email_address,
+                email_address=supervisor_info.recipient_email_address,
                 state_code=batch.state_code,
-                data=unit_data.metrics,
+                data=supervisor_info.metrics,
             )
-            for unit_data in results_by_unit.values()
+            for supervisor_info in results_by_supervisor.values()
         ]
 
     raise ValueError("unexpected report type for retrieving data")
@@ -287,8 +287,10 @@ def _retrieve_data_for_outliers_supervision_officer_supervisor(
 ) -> Dict[str, OutliersReportData]:
     """Retrieves the data for Outliers' supervision officer supervisor reports by unit"""
     batch_datetime = utils.get_datetime_from_batch_id(batch)
-    results_by_unit = OutliersQuerier().get_officer_level_report_data_for_all_units(
-        batch.state_code, end_date=batch_datetime
+    results_by_unit = (
+        OutliersQuerier().get_officer_level_report_data_for_all_officer_supervisors(
+            batch.state_code, end_date=batch_datetime
+        )
     )
 
     return results_by_unit

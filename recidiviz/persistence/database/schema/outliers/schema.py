@@ -71,6 +71,7 @@ class PersonBase:
     staff_id = Column(BigInteger, nullable=False)
     full_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
+    supervisor_external_id = Column(String, nullable=True)
 
 
 class SupervisionOfficer(PersonBase, OutliersBase):
@@ -78,18 +79,11 @@ class SupervisionOfficer(PersonBase, OutliersBase):
 
     __tablename__ = "supervision_officers"
 
+    # TODO(#21428): Remove unused location information once email copy is finalized
+    # Id of the supervision district the officer is assigned to
+    supervision_district = Column(String, nullable=True)
     # Id of the supervision unit the officer is assigned to
-    location_external_id = Column(String, nullable=False)
-
-    __tableargs__ = (
-        ForeignKeyConstraint(
-            ["state_code", "location_external_id"],
-            [
-                "supervision_units.state_code",
-                "supervision_units.external_id",
-            ],
-        ),
-    )
+    supervision_unit = Column(String, nullable=True)
 
 
 class SupervisionOfficerSupervisor(PersonBase, OutliersBase):
@@ -97,18 +91,11 @@ class SupervisionOfficerSupervisor(PersonBase, OutliersBase):
 
     __tablename__ = "supervision_officer_supervisors"
 
+    # TODO(#21428): Remove unused location information once email copy is finalized
+    # Id of the supervision district the supervisor manages or has officers for
+    supervision_district = Column(String, nullable=True)
     # Id of the supervision unit the supervisor manages or has officers for
-    location_external_id = Column(String, nullable=False)
-
-    __tableargs__ = (
-        ForeignKeyConstraint(
-            ["state_code", "location_external_id"],
-            [
-                "supervision_units.state_code",
-                "supervision_units.external_id",
-            ],
-        ),
-    )
+    supervision_unit = Column(String, nullable=True)
 
 
 class SupervisionDistrictManager(PersonBase, OutliersBase):
@@ -116,18 +103,9 @@ class SupervisionDistrictManager(PersonBase, OutliersBase):
 
     __tablename__ = "supervision_district_managers"
 
+    # TODO(#21428): Remove unused location information once email copy is finalized
     # Id of the supervision district the manager is assigned to
-    location_external_id = Column(String, nullable=False)
-
-    __tableargs__ = (
-        ForeignKeyConstraint(
-            ["state_code", "location_external_id"],
-            [
-                "supervision_districts.state_code",
-                "supervision_districts.external_id",
-            ],
-        ),
-    )
+    supervision_district = Column(String, nullable=False)
 
 
 class MetricBase:
