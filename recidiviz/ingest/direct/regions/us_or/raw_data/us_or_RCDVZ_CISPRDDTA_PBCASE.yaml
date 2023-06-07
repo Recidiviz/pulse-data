@@ -19,18 +19,60 @@ columns:
     description: |-
       Unique identifier for each AIC.
   - name: TIME_LAST_UPDATED
+    description: |-
+      Time record was last updated.
   - name: DATE_LAST_UPDATED
+    is_datetime: True
+    description: |-
+      Date record was last updated.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: LAST_UPDATED_WHEN
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PB_CASE_LINK
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PB_CASE_TYPE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: TERMINATION_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: TIME_SERVED_SYNC
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: TIME_SERVED
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PPS_SENTENCE_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PPS_MIN_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CRIME_CATEGORY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SG_HISTORY_SCALE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PPS_EXPIRATION_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: RESTITUTION_AMOUNT
     description: |-
       Amount of restitution required.
@@ -38,19 +80,51 @@ columns:
     description: |-
       Type of offense.
   - name: HB3384_IND
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PROBATION_REVOKE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PRINCIPAL_CRIME
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PB_HISTORY_RISK
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PRINCIPAL_HIGH_RANGE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PRINCIPAL_LOW_RANGE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BASE_HIGH_RANGE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BASE_LOW_RANGE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: ORS_SUB_CATEGORY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: ORS_GRID_CATEGORY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SUM_MATRIX_RANGE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: JUDGE_MIN_OVERRIDE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PB_SENTENCE_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: BAF_GROUP_NO
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CRIME_NUMBER
     description: |-
       Number of crime.
