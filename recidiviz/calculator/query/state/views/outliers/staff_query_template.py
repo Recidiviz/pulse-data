@@ -33,22 +33,19 @@ WITH staff AS (
   FROM `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff
 )
 
-SELECT 
-  ids.external_id,
-  staff.staff_id,
-  staff.state_code,
-  TRIM(CONCAT(COALESCE(given_names, ''), ' ', COALESCE(surname, ''))) AS full_name,
-  staff.email,
-  location.location_external_id
-FROM staff
-INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` ids 
-  USING (state_code, staff_id)
-INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_location_period` location
-  USING (state_code, staff_id)
-INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_role_period` role
-  USING (state_code, staff_id)
+SELECT
+    attrs.officer_id AS external_id,
+    attrs.staff_id,
+    attrs.state_code,
+    TRIM(CONCAT(COALESCE(given_names, ''), ' ', COALESCE(surname, ''))) AS full_name,
+    staff.email,
+    attrs.supervision_district,
+    attrs.supervision_unit, 
+    attrs.supervisor_staff_external_id AS supervisor_external_id
+FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` attrs
+INNER JOIN staff 
+    USING (staff_id, state_code)
 WHERE staff.state_code IN ({list_to_query_string(get_outliers_enabled_states(), quoted=True)}) 
-  AND {today_between_start_date_and_nullable_end_date_exclusive_clause("location.start_date", "location.end_date")}
-  AND {today_between_start_date_and_nullable_end_date_exclusive_clause("role.start_date", "role.end_date")}
-  AND role.role_subtype = '{role}'
+  AND {today_between_start_date_and_nullable_end_date_exclusive_clause("start_date", "end_date_exclusive")}
+  AND attrs.role_subtype = '{role}'
     """
