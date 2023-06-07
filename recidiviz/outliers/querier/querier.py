@@ -37,7 +37,6 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficerMetric,
     SupervisionOfficerSupervisor,
     SupervisionStateMetric,
-    SupervisionUnit,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -51,18 +50,18 @@ class TargetStatus(Enum):
 
 
 @attr.s
-class Entity:
+class OfficerMetricEntity:
     # The name of the unit of analysis, i.e. full name of a SupervisionOfficer object
     name: str = attr.ib()
     # The current rate for this unit of analysis
     rate: float = attr.ib()
-    # Categorizes how the rate for this entity compares to the target value
+    # Categorizes how the rate for this OfficerMetricEntity compares to the target value
     target_status: TargetStatus = attr.ib()
     # The rate for the prior YEAR period for this unit of analysis;
     # None if there is no metric rate for the previous period
     prev_rate: Optional[float] = attr.ib()
-    # The location_external_id for this entity
-    location_external_id: str = attr.ib()
+    # The external_id of this OfficerMetricEntity's supervisor
+    supervisor_external_id: str = attr.ib()
 
 
 @attr.s
@@ -70,7 +69,7 @@ class MetricContext:
     # Unless otherwise specified, the target is the state average for the current period
     target: float = attr.ib()
     # All units of analysis for a given state and metric
-    entities: List[Entity] = attr.ib()
+    entities: List[OfficerMetricEntity] = attr.ib()
 
 
 @attr.s
@@ -80,7 +79,7 @@ class MetricInfo:
     # Maps target status to a list of metric rates for all officers not included in unit_officers
     other_officers: Dict[TargetStatus, List[float]] = attr.ib()
     # Officers in a given unit who have the "FAR" status for a given metric
-    unit_officers: List[Entity] = attr.ib()
+    unit_officers: List[OfficerMetricEntity] = attr.ib()
 
 
 @attr.s
@@ -98,13 +97,13 @@ class OutliersReportData:
 class OutliersQuerier:
     """Implements Querier abstractions for Outliers data sources"""
 
-    def get_officer_level_report_data_for_all_units(
+    def get_officer_level_report_data_for_all_officer_supervisors(
         self, state_code: StateCode, end_date: date
     ) -> Dict[str, OutliersReportData]:
         """
-        Returns officer-level data by unit for all units in a state in the following format:
+        Returns officer-level data by officer supervisor for all officer supervisors in a state in the following format:
         {
-            < supervision_unit_id >: {
+            < SupervisionOfficerSupervisor.external_id >: {
                 metrics: {
                     < metric id >: MetricInfo(
                         target: float,
@@ -113,7 +112,7 @@ class OutliersQuerier:
                             TargetStatus.NEAR: float[],
                             TargetStatus.FAR: float[],
                         },
-                        unit_officers: List[Entity]
+                        unit_officers: List[OfficerMetricEntity]
                     )
                 },
                 metrics_without_outliers: List[str],
@@ -129,17 +128,10 @@ class OutliersQuerier:
         prev_end_date = end_date - relativedelta(months=1)
 
         with SessionFactory.using_database(db_key, autocommit=False) as session:
-            unit_to_supervisor_records = (
-                session.query(SupervisionUnit, SupervisionOfficerSupervisor)
-                .join(
-                    SupervisionOfficerSupervisor,
-                    SupervisionUnit.external_id
-                    == SupervisionOfficerSupervisor.location_external_id,
-                )
-                .with_entities(
-                    SupervisionUnit.external_id, SupervisionOfficerSupervisor.email
-                )
-            )
+            officer_supervisor_records = session.query(
+                SupervisionOfficerSupervisor.external_id,
+                SupervisionOfficerSupervisor.email,
+            ).all()
 
             metric_id_to_metric_context = {
                 metric_id: self._get_metric_context_from_db(
@@ -148,30 +140,33 @@ class OutliersQuerier:
                 for metric_id in self.get_state_metrics(state_code)
             }
 
-            unit_id_to_data = {}
+            officer_supervisor_id_to_data = {}
 
-            for (external_id, email) in unit_to_supervisor_records:
-                metrics, metrics_with_outliers = self._get_officer_level_data_for_unit(
+            for (external_id, email) in officer_supervisor_records:
+                (
+                    metrics,
+                    metrics_with_outliers,
+                ) = self._get_officer_level_data_for_officer_supervisor(
                     external_id,
                     metric_id_to_metric_context,
                 )
 
-                unit_id_to_data[external_id] = OutliersReportData(
+                officer_supervisor_id_to_data[external_id] = OutliersReportData(
                     metrics=metrics,
                     metrics_without_outliers=metrics_with_outliers,
                     recipient_email_address=email,
                 )
 
-            return unit_id_to_data
+            return officer_supervisor_id_to_data
 
     @staticmethod
-    def _get_officer_level_data_for_unit(
-        unit_external_id: str,
+    def _get_officer_level_data_for_officer_supervisor(
+        supervision_officer_supervisor_id: str,
         metric_id_to_metric_context: Dict[str, MetricContext],
     ) -> Tuple[Dict[str, MetricInfo], List[str]]:
         """
-        Given the unit_external_id, get the officer-level data for the period with end_date=end_date compared to
-        the period with end_date=prev_end_date.
+        Given the supervision_officer_supervisor_id, get the officer-level data for all officers supervised by
+        this officer for the period with end_date=end_date compared to the period with end_date=prev_end_date.
         """
         metrics_results: Dict[str, MetricInfo] = {}
         metrics_without_outliers = []
@@ -184,7 +179,7 @@ class OutliersQuerier:
                 TargetStatus.MET: [],
                 TargetStatus.NEAR: [],
             }
-            unit_officers: List[Entity] = []
+            unit_officers: List[OfficerMetricEntity] = []
 
             for entity in entities:
                 target_status = entity.target_status
@@ -192,7 +187,8 @@ class OutliersQuerier:
 
                 if (
                     target_status == TargetStatus.FAR
-                    and entity.location_external_id == unit_external_id
+                    and entity.supervisor_external_id
+                    == supervision_officer_supervisor_id
                 ):
                     unit_officers.append(entity)
                 else:
@@ -254,7 +250,7 @@ class OutliersQuerier:
                 officer_metric.end_date,
                 avg_pop_metric.metric_value.label("avg_daily_population"),
                 SupervisionOfficer.full_name,
-                SupervisionOfficer.location_external_id,
+                SupervisionOfficer.supervisor_external_id,
             )
             .all()
         )
@@ -284,8 +280,8 @@ class OutliersQuerier:
             ]
         )
 
-        # Generate the Entity object for all officers
-        entities: List[Entity] = []
+        # Generate the OfficerMetricEntity object for all officers
+        entities: List[OfficerMetricEntity] = []
         for officer_metric_record in current_period_officer_metrics:
             rate = (
                 officer_metric_record.metric_value
@@ -316,12 +312,12 @@ class OutliersQuerier:
             )
 
             entities.append(
-                Entity(
+                OfficerMetricEntity(
                     name=officer_metric_record.full_name,
                     rate=rate,
                     target_status=target_status,
                     prev_rate=prev_rate,
-                    location_external_id=officer_metric_record.location_external_id,
+                    supervisor_external_id=officer_metric_record.supervisor_external_id,
                 )
             )
 

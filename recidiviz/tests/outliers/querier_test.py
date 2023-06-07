@@ -25,8 +25,8 @@ import pytest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.querier.querier import (
-    Entity,
     MetricInfo,
+    OfficerMetricEntity,
     OutliersQuerier,
     OutliersReportData,
     TargetStatus,
@@ -101,12 +101,14 @@ class TestOutliersQuerier(TestCase):
         )
 
     def test_get_officer_level_report_data_by_unit(self) -> None:
-        actual = OutliersQuerier().get_officer_level_report_data_for_all_units(
-            state_code=StateCode.US_PA,
-            end_date=TEST_END_DATE,
+        actual = (
+            OutliersQuerier().get_officer_level_report_data_for_all_officer_supervisors(
+                state_code=StateCode.US_PA,
+                end_date=TEST_END_DATE,
+            )
         )
         expected = {
-            "A": OutliersReportData(
+            "101": OutliersReportData(
                 metrics={
                     "incarceration_starts_and_inferred": MetricInfo(
                         target=0.13887506249377812,
@@ -124,19 +126,19 @@ class TestOutliersQuerier(TestCase):
                             ],
                         },
                         unit_officers=[
-                            Entity(
+                            OfficerMetricEntity(
                                 name="Officer 1",
                                 rate=0.26688907422852376,
                                 target_status=TargetStatus.FAR,
                                 prev_rate=0.31938677738741617,
-                                location_external_id="A",
+                                supervisor_external_id="101",
                             ),
-                            Entity(
+                            OfficerMetricEntity(
                                 name="Officer 8",
                                 rate=0.3333333333333333,
                                 target_status=TargetStatus.FAR,
                                 prev_rate=None,
-                                location_external_id="A",
+                                supervisor_external_id="101",
                             ),
                         ],
                     )
@@ -144,15 +146,20 @@ class TestOutliersQuerier(TestCase):
                 recipient_email_address="supervisor1@recidiviz.org",
                 metrics_without_outliers=[],
             ),
-            "B": OutliersReportData(
+            "102": OutliersReportData(
                 metrics={},
                 metrics_without_outliers=["incarceration_starts_and_inferred"],
                 recipient_email_address="supervisor2@recidiviz.org",
             ),
+            "103": OutliersReportData(
+                metrics={},
+                metrics_without_outliers=["incarceration_starts_and_inferred"],
+                recipient_email_address="supervisor3@recidiviz.org",
+            ),
         }
 
         expected_json = {
-            "A": {
+            "101": {
                 "metrics": {
                     "incarceration_starts_and_inferred": {
                         "target": 0.13887506249377812,
@@ -172,14 +179,14 @@ class TestOutliersQuerier(TestCase):
                                 "rate": 0.26688907422852376,
                                 "target_status": "FAR",
                                 "prev_rate": 0.31938677738741617,
-                                "location_external_id": "A",
+                                "supervisor_external_id": "101",
                             },
                             {
                                 "name": "Officer 8",
                                 "rate": 0.3333333333333333,
                                 "target_status": "FAR",
                                 "prev_rate": None,
-                                "location_external_id": "A",
+                                "supervisor_external_id": "101",
                             },
                         ],
                     }
@@ -187,10 +194,15 @@ class TestOutliersQuerier(TestCase):
                 "metrics_without_outliers": [],
                 "recipient_email_address": "supervisor1@recidiviz.org",
             },
-            "B": {
+            "102": {
                 "metrics": {},
                 "metrics_without_outliers": ["incarceration_starts_and_inferred"],
                 "recipient_email_address": "supervisor2@recidiviz.org",
+            },
+            "103": {
+                "metrics": {},
+                "metrics_without_outliers": ["incarceration_starts_and_inferred"],
+                "recipient_email_address": "supervisor3@recidiviz.org",
             },
         }
 
