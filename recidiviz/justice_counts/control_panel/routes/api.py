@@ -17,6 +17,7 @@
 """Implements API routes for the Justice Counts Control Panel backend API."""
 import logging
 import os
+import re
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Callable, DefaultDict, Dict, List, Optional
@@ -52,7 +53,7 @@ from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import BUCKET_ID_TO_AGENCY_ID
+from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_BUCKET_REGEX
 from recidiviz.justice_counts.utils.datapoint_utils import filter_deprecated_datapoints
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.environment import in_development, in_gcp, in_gcp_staging
@@ -1051,24 +1052,41 @@ def get_api_blueprint(
 
             attributes = message.attributes
 
-            filename = attributes[OBJECT_ID]
-            bucket_id = attributes[BUCKET_ID]
+            file_name = attributes[OBJECT_ID]
+            bucket_name = attributes[BUCKET_ID]
 
-            agency_id = BUCKET_ID_TO_AGENCY_ID.get(bucket_id, None)
-            if agency_id is None:
+            # Bucket name format is recidiviz-<project>-justice-counts-ingest-agency-<agency_id>
+            # The agency_id will be inferred by the bucket name.
+            match_obj: Optional[re.Match] = re.match(
+                AUTOMATIC_UPLOAD_BUCKET_REGEX, bucket_name
+            )
+
+            if match_obj is None:
+                logging.exception(
+                    JusticeCountsServerError(
+                        code="invalid_ingest_bucket",
+                        description=f"Invalid ingest bucket [{bucket_name}]",
+                    )
+                )
+                # Return 200 to acknowledge the message from pubsub
+                return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+            agency_id_str = match_obj.group("agency_id")
+            if agency_id_str is None:
                 logging.exception(
                     JusticeCountsServerError(
                         code="no_bucket_for_agency",
-                        description=f"No agency or system associated with GCS bucket with id {bucket_id}",
+                        description=f"No agency or system associated with GCS bucket with id {bucket_name}",
                     )
                 )
                 # Return 200 to acknowledge the message from pubsub
                 return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
             agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=agency_id
+                session=current_session, agency_id=int(agency_id_str)
             )
-            if filename is None:
+
+            if file_name is None:
                 logging.exception(
                     JusticeCountsServerError(
                         code="justice_counts_missing_file_name_sub",
@@ -1078,7 +1096,7 @@ def get_api_blueprint(
                 # Return 200 to acknowledge the message from pubsub
                 return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-            if not allowed_file(filename):
+            if not allowed_file(file_name):
                 logging.exception(
                     JusticeCountsServerError(
                         code="file_type_error",
@@ -1095,10 +1113,10 @@ def get_api_blueprint(
 
             SpreadsheetInterface.ingest_workbook_from_gcs(
                 session=current_session,
-                bucket_name=bucket_id,
+                bucket_name=bucket_name,
                 system=system,
                 agency=agency,
-                filename=filename,
+                filename=file_name,
             )
 
             current_session.commit()

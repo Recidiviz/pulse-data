@@ -16,7 +16,7 @@
 # =============================================================================
 """ Contains Justice Counts constants """
 import enum
-from typing import Dict
+import re
 
 REPORTING_FREQUENCY_CONTEXT_KEY = "REPORTING_FREQUENCY"
 
@@ -41,14 +41,8 @@ class DatapointGetRequestEntryPoint(enum.Enum):
     METRICS_TAB = "METRICS_TAB"
 
 
-# BUCKET_ID_TO_AGENCY_ID will map GCS bucket id to an agency id.
-# Each agency will have one bucket with various folders for each system.
-# It is secure to save this dictionary in source code because each
-# bucket will authenticate the user and only be accessible by the
-# agency through a service account and recidiviz admin.
-BUCKET_ID_TO_AGENCY_ID: Dict[str, int] = {
-    "justice-counts-sftp-test": 164,  # NCDPS on staging
-    "clackamas-county-jail-staging": 161,  # Clackamas County Jail on staging
-    "douglas-county-district-attorney-staging": 163,  # Douglas County District Attorney's Office on staging
-    "justice-counts-supervision-three": 168,  # Supervision 3 on Staging
-}
+# Used to infer agency_id from bucket name during Automatic Upload
+AUTOMATIC_UPLOAD_BUCKET_REGEX = re.compile(
+    r"(?P<project>recidiviz-(?:.*))-justice-counts-ingest-agency-"
+    r"(?P<agency_id>[0-9]+)"
+)
