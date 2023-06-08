@@ -16,6 +16,7 @@
 #  =============================================================================
 """Implements tests for the Workflows API schemas."""
 from recidiviz.case_triage.workflows.api_schemas import (
+    WorkflowsHandleSendSmsSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.tests.case_triage.api_schemas_test_utils import (
@@ -169,4 +170,45 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
             },
         },
         ["contact_note"],
+    )
+
+
+class WorkflowsHandleSendSmsSchemaTest(SchemaTestCase):
+    """Tests for WorkflowsHandleSendSmsSchema"""
+
+    camel_case = False
+    schema = WorkflowsHandleSendSmsSchema
+
+    VALID_NUMBER = "+12223334444"
+    MID = "AAA-BBBB-XX-DD"
+
+    test_valid_data = valid_schema_test(
+        {
+            "recipient": VALID_NUMBER,
+            "mid": MID,
+            "message": "Some pig!",
+        }
+    )
+
+    test_missing_mid = invalid_schema_test(
+        {
+            "recipient": VALID_NUMBER,
+            "message": "Baa Ram Ewe",
+        }
+    )
+
+    test_invalid_phone_number = invalid_schema_test(
+        {
+            "recipient": "(555) 666-7777",
+            "mid": MID,
+            "message": "That'll do, pig. That'll do.",
+        }
+    )
+
+    test_another_invalid_phone_number = invalid_schema_test(
+        {
+            "recipient": "15556667777",
+            "mid": MID,
+            "message": "That'll do, pig. That'll do.",
+        }
     )

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """ Contains Marshmallow schemas for Workflows API """
+import re
 from typing import Dict, List
 
 from marshmallow import Schema, ValidationError, fields
@@ -85,3 +86,29 @@ class ProxySchema(Schema):
     headers = fields.Dict()
     json = fields.Dict()
     timeout = fields.Integer(load_default=360)
+
+
+class WorkflowsSendSmsSchema(CamelOrSnakeCaseSchema):
+    """
+    The schema expected by the /workflows/external_request/enqueue_sms_request
+    Camel-cased keys are expected since the request is coming from the dashboards app
+    """
+
+    message = fields.Str(required=True)
+    recipient = fields.Str(required=True)
+    sender = fields.Str(required=True)
+
+
+def validate_phone_number(phone_number: str) -> None:
+    if not re.match(r"\+1\d{10}", phone_number):
+        raise ValidationError("Phone number not a US phone number using E.164")
+
+
+class WorkflowsHandleSendSmsSchema(CamelOrSnakeCaseSchema):
+    """
+    The schema expected by the /workflows/external_request/send_sms_request.
+    """
+
+    message = fields.Str(required=True)
+    recipient = fields.Str(required=True, validate=validate_phone_number)
+    mid = fields.Str(required=True)

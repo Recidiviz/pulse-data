@@ -473,6 +473,104 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
+    @patch("twilio.rest.api.v2010.account.message.MessageList.create")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_valid_twilio_request(
+        self, mock_get_secret: MagicMock, mock_twilio_messages: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+
+        response = self.test_client.post(
+            "/workflows/external_request/us_ca/send_sms_request",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "message": "Message!",
+                "recipient": "+12223334444",
+                "mid": "ABC",
+            },
+        )
+        assert_type(response.get_json(), dict)
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        mock_twilio_messages.assert_called()
+        mock_get_secret.assert_called()
+
+    @patch("twilio.rest.api.v2010.account.message.MessageList.create")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_valid_twilio_request_from_recidiviz_user(
+        self, mock_get_secret: MagicMock, mock_twilio_messages: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("recidiviz")
+
+        response = self.test_client.post(
+            "/workflows/external_request/us_ca/send_sms_request",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "message": "Message!",
+                "recipient": "+12223334444",
+                "mid": "ABC",
+            },
+        )
+        assert_type(response.get_json(), dict)
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+        mock_twilio_messages.assert_called()
+        mock_get_secret.assert_called()
+
+    def test_invalid_state_code(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        response = self.test_client.post(
+            "/workflows/external_request/us_tn/send_sms_request",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "message": "Message!",
+                "recipient": "+12223334444",
+                "mid": "ABC",
+            },
+        )
+        assert_type(response.get_json(), dict)
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+
+    def test_mismatched_state_code(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        response = self.test_client.post(
+            "/workflows/external_request/us_ca/send_sms_request",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "message": "Message!",
+                "recipient": "+12223334444",
+                "mid": "ABC",
+            },
+        )
+        assert_type(response.get_json(), dict)
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+
+    @patch("twilio.rest.api.v2010.account.message.MessageList.create")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_twilio_failure(
+        self, mock_get_secret: MagicMock, mock_twilio_messages: MagicMock
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+
+        mock_twilio_messages.side_effect = Exception("Twilio API error")
+
+        response = self.test_client.post(
+            "/workflows/external_request/us_ca/send_sms_request",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "message": "Message!",
+                "recipient": "+12223334444",
+                "mid": "ABC",
+            },
+        )
+        assert_type(response.get_json(), dict)
+        self.assertEqual(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            response.status_code,
+        )
+        mock_twilio_messages.assert_called()
+        mock_get_secret.assert_called()
+
 
 def make_cors_test(
     path: str,

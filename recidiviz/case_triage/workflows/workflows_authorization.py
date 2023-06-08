@@ -65,7 +65,7 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
             status_code=HTTPStatus.BAD_REQUEST,
         )
 
-    requested_state = request.view_args["state"]
+    requested_state = request.view_args["state"].upper()
     enabled_states = get_workflows_external_request_enabled_states()
 
     if not StateCode.is_state_code(requested_state):
@@ -92,4 +92,4 @@ def get_workflows_external_request_enabled_states() -> List[str]:
     """
     List of states in which we will make external system requests for Workflows
     """
-    return [StateCode.US_TN.value]
+    return [StateCode.US_TN.value, StateCode.US_CA.value]
