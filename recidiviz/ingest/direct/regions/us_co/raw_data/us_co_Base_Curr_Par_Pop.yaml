@@ -4,6 +4,7 @@ file_description: |-
   Contains information about all of the people who on supervision as of the current
   date. To be used for validation against our supervision periods.
 data_classification: validation
+no_valid_primary_keys: True
 primary_key_cols: []
 columns:
   - name: DOCNO
