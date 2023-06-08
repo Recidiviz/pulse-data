@@ -449,22 +449,20 @@ function deploy_migrations {
   local PROJECT=$1
   local COMMIT_HASH=$2
 
-  ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}")
-  ACCEPTABLE_RETURN_CODES=(0 1)
-
   while true
   do
     echo "Running migrations using Cloud SQL Proxy"
 
-    run_cmd pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh "${COMMIT_HASH}" "${PROJECT}"
+    run_cmd_no_exiting pipenv run ./recidiviz/tools/migrations/run_all_migrations.sh "${COMMIT_HASH}" "${PROJECT}"
     RETURN_CODE=$?
 
     if [[ $RETURN_CODE -eq 0 ]]; then
+      echo "Successfully ran migrations"
       return 0
     fi
 
     # Migrations did not run successfully. Check if there was an error in the Cloud SQL Proxy
-    run_cmd pipenv run ./recidiviz/tools/postgres/cloudsql_proxy_control.sh -v -p "${CLOUDSQL_PROXY_MIGRATION_PORT}"
+    run_cmd_no_exiting pipenv run ./recidiviz/tools/postgres/cloudsql_proxy_control.sh -v -p "${CLOUDSQL_PROXY_MIGRATION_PORT}"
     RETURN_CODE=$?
 
     if [[ $RETURN_CODE -eq $CLOUDSQL_PROXY_NETWORK_ERROR_EXIT_CODE ]]; then
@@ -475,7 +473,6 @@ function deploy_migrations {
       script_prompt "Would you like to retry applying migrations?"
     fi
   done
-  ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}")
 }
 
 function post_deploy_triggers {
