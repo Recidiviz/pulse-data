@@ -70,7 +70,7 @@ RUN apt-get update -y && apt-get upgrade -y
 RUN npm install prettier
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
-RUN pipenv sync --dev
+RUN pipenv sync --dev --verbose
 EXPOSE 8888
 
 FROM node:14-alpine AS admin-panel-build
@@ -89,7 +89,7 @@ FROM recidiviz-init AS recidiviz-app
 # Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
-RUN pipenv sync
+RUN pipenv sync --verbose
 # Add the rest of the application code once all dependencies are installed
 COPY . /app
 # Add the built Admin Panel frontend to the image
