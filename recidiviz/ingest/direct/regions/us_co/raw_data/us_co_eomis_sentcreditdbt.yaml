@@ -3,11 +3,8 @@ file_tag: eomis_sentcreditdbt
 file_description: |-
   This file contains information about the type of credit or debit a person may have received towards their sentence.
 data_classification: source
-primary_key_cols:
-  - OFFENDERID
-  - SENTENCECREDITENTRYDATE
-  - SENTENCECREDITENTRYTIME
-  - SENTCREDITDEBITTYPE
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: OFFENDERID
     description: |-

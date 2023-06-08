@@ -3,6 +3,7 @@ file_tag: informix_incident_cod
 file_description: |-
   Decode table for incident type.
 data_classification: source
+no_valid_primary_keys: True
 primary_key_cols: []
 columns:
   - name: incident_cod
