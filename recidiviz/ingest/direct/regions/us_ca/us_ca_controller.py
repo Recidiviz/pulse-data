@@ -22,7 +22,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import environment
 
 
 class UsCaController(BaseDirectIngestController):
@@ -44,13 +43,4 @@ class UsCaController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        # TODO(#20999) I backfilled data for 3/22 which is breaking ingest. I'm removing
-        # these ingest views until 6/12, or whenever we next do a rerun.
-        # return ["person", "supervision_violation"]
-
-        if (
-            environment.in_gcp_staging()
-            and ingest_instance == DirectIngestInstance.PRIMARY
-        ):
-            return []
         return ["person", "supervision_violation", "staff", "assessments"]
