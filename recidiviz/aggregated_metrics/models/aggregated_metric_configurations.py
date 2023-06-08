@@ -51,6 +51,14 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_collector i
     TaskCompletionEventBigQueryViewCollector,
 )
 
+# List of incarceration-specific Workflows opportunities
+_TASK_TYPE_NAME_INCARCERATION = [
+    "CUSTODY_LEVEL_DOWNGRADE",
+    "RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION",
+    "RELEASE_TO_PAROLE",
+    "SCHEDULED_HEARING_OCCURRED",
+]
+
 _VIOLATION_CATEGORY_TO_TYPES_DICT: Dict[str, List[str]] = {
     "ABSCONSION": [StateSupervisionViolationType.ABSCONDED.name],
     "NEW_CRIME": [
@@ -350,6 +358,38 @@ AVG_DAILY_POPULATION_SUPERVISION_LEVEL_METRICS = [
         span_attribute_filters={"supervision_level": conditions},
     )
     for level, conditions in _SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT.items()
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_task_eligible_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible, {b.task_title}",
+        description="Average daily count of clients eligible for task of "
+        f"type: {b.task_title.lower()}",
+        span_types=[PersonSpanType.TASK_ELIGIBILITY_SESSION],
+        span_attribute_filters={
+            "is_eligible": ["true"],
+            "task_type": [b.task_type_name],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+]
+
+AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION = [
+    DailyAvgSpanCountMetric(
+        name=f"avg_population_task_eligible_{b.task_type_name.lower()}",
+        display_name=f"Average Population: Task Eligible, {b.task_title}",
+        description="Average daily count of clients eligible for task of "
+        f"type: {b.task_title.lower()}",
+        span_types=[PersonSpanType.TASK_ELIGIBILITY_SESSION],
+        span_attribute_filters={
+            "is_eligible": ["true"],
+            "task_type": [b.task_type_name],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
 AVG_DAILY_POPULATION_TREATMENT_IN_PRISON = DailyAvgSpanCountMetric(
@@ -834,7 +874,7 @@ INCARCERATIONS_TEMPORARY = EventCountMetric(
     event_attribute_filters={},
 )
 
-LATE_OPPORTUNITY_METRICS = [
+LATE_OPPORTUNITY_METRICS_INCARCERATION = [
     EventCountMetric(
         name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",
         display_name=f"{num_days} Days Late: {b.task_title}",
@@ -846,6 +886,23 @@ LATE_OPPORTUNITY_METRICS = [
         },
     )
     for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+    for num_days in [7, 30]
+]
+
+LATE_OPPORTUNITY_METRICS_SUPERVISION = [
+    EventCountMetric(
+        name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",
+        display_name=f"{num_days} Days Late: {b.task_title}",
+        description=f"Number of times clients surpass {num_days} days of being eligible "
+        f"for opportunities of type: {b.task_title.lower()}",
+        event_types=[PersonEventType[f"TASK_ELIGIBLE_{num_days}_DAYS"]],
+        event_attribute_filters={
+            "task_type": [b.task_type_name],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
     for num_days in [7, 30]
 ]
 
@@ -970,13 +1027,6 @@ PERSON_DAYS_WEIGHTED_JUSTICE_IMPACT = SumSpanDaysMetric(
 )
 
 # get days in eligibility span metrics for all task types
-_TASK_TYPE_NAME_INCARCERATION = [
-    "CUSTODY_LEVEL_DOWNGRADE",
-    "RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION",
-    "RELEASE_TO_PAROLE",
-    "SCHEDULED_HEARING_OCCURRED",
-]
-
 PERSON_DAYS_TASK_ELIGIBLE_METRICS_INCARCERATION = [
     SumSpanDaysMetric(
         name=f"person_days_task_eligible_{b.task_type_name.lower()}",
@@ -1009,20 +1059,6 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
-PERSON_DAYS_TASK_ELIGIBLE_METRICS = [
-    SumSpanDaysMetric(
-        name=f"person_days_task_eligible_{b.task_type_name.lower()}",
-        display_name=f"Person-Days Eligible: {b.task_title}",
-        description="Total number of person-days spent eligible for opportunities of "
-        f"type: {b.task_title.lower()}",
-        span_types=[PersonSpanType.TASK_ELIGIBILITY_SESSION],
-        span_attribute_filters={
-            "is_eligible": ["true"],
-            "task_type": [b.task_type_name],
-        },
-    )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
-]
 
 SUPERVISION_DISTRICT = MiscAggregatedMetric(
     name="supervision_district",
@@ -1106,7 +1142,7 @@ SUPERVISION_STARTS = EventCountMetric(
 )
 
 # get unique completion task types
-TASK_COMPLETED_METRICS = [
+TASK_COMPLETED_METRICS_INCARCERATION = [
     EventCountMetric(
         name=f"task_completions_{b.task_type_name.lower()}",
         display_name=f"Task Completions: {b.task_title}",
@@ -1115,6 +1151,19 @@ TASK_COMPLETED_METRICS = [
         event_attribute_filters={"task_type": [b.task_type_name]},
     )
     for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+]
+
+TASK_COMPLETED_METRICS_SUPERVISION = [
+    EventCountMetric(
+        name=f"task_completions_{b.task_type_name.lower()}",
+        display_name=f"Task Completions: {b.task_title}",
+        description=f"Number of task completions of type: {b.task_title.lower()}",
+        event_types=[PersonEventType.TASK_COMPLETED],
+        event_attribute_filters={"task_type": [b.task_type_name]},
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
 TREATMENT_REFERRALS = EventCountMetric(
