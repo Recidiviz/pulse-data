@@ -71,8 +71,8 @@ COPY Pipfile.lock /app/
 WORKDIR /app
 
 RUN if [ "$DEV_MODE" = "True" ]; \
-    then pipenv sync --dev; \
-    else pipenv sync; \
+    then pipenv sync --dev --verbose; \
+    else pipenv sync --verbose; \
     fi
 
 # Add the current commit SHA as an env variable
