@@ -25,18 +25,21 @@ import requests
 import werkzeug.wrappers
 from flask import Blueprint, Response, current_app, g, jsonify, make_response, request
 from flask_wtf.csrf import generate_csrf
+from twilio.rest import Client as TwilioClient
 from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_api_schema
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.workflows.api_schemas import (
     ProxySchema,
+    WorkflowsHandleSendSmsSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.interface import (
     WorkflowsUsTnExternalRequestInterface,
 )
+from recidiviz.case_triage.workflows.utils import jsonify_response
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
     on_successful_authorization_recidiviz_only,
@@ -301,6 +304,48 @@ def create_workflows_api_blueprint() -> Blueprint:
             ),
             HTTPStatus.OK,
         )
+
+    @workflows_api.post("/external_request/<state>/send_sms_request")
+    def handle_send_sms_request(state: str) -> Response:
+        cloud_task_body = get_cloud_task_json_body()
+
+        # Validate schema
+        data = load_api_schema(WorkflowsHandleSendSmsSchema, cloud_task_body)
+
+        message = data["message"]
+        recipient = data["recipient"]
+        state_code = state.upper()
+
+        if state_code != "US_CA":
+            return jsonify_response(
+                f"Unsupported sender state: {state_code}", HTTPStatus.UNAUTHORIZED
+            )
+
+        sid = get_secret("twilio_sid")
+        auth_token = get_secret("twilio_auth_token")
+        messaging_service_sid = get_secret("twilio_us_ca_messaging_service_sid")
+
+        if not sid or not auth_token or not messaging_service_sid:
+            return jsonify_response(
+                "Server missing API credentials",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        try:
+            client = TwilioClient(sid, auth_token)
+
+            client.messages.create(
+                body=message, messaging_service_sid=messaging_service_sid, to=recipient
+            )
+        except Exception as e:
+            logging.error("Sending message to Twilio failed. Error: %s", e)
+            # TODO(#21438): Write error back to firestore
+
+            return jsonify_response(
+                "Error enqueuing message", HTTPStatus.INTERNAL_SERVER_ERROR
+            )
+
+        return jsonify_response("Successfully enqueued sms message", HTTPStatus.OK)
 
     @workflows_api.get("/ip")
     def ip() -> Response:
