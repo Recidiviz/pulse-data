@@ -38,4 +38,5 @@ worker_class = ".".join(
 timeout = 3600  # 60 min timeout
 loglevel = "debug"
 accesslog = "gunicorn-access.log"
+errorlog = "gunicorn-error.log"
 keepalive = 650
