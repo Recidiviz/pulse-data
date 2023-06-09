@@ -83,9 +83,9 @@ def populate_root_entity_backedges(root_entities: List[RootEntity]) -> None:
                 child.set_field(back_edge_field_name, root_entity)
 
 
-# When writing parser tests, we'll end up creating many state people with only the external_id
-# and state_code populated. I know we already have several other helpers around this,
-# but this felt like general enough usecase that it was worth providing here as well.
+# TODO(#21459) When writing parser tests, we'll end up creating many state people with
+# only the external_id and state_code populated. There also is not a backedge on the
+# StatePersonExternalId. We may wish to merge or clarify how to use these two functions.
 def build_non_entity_matched_person(
     external_id: str, state_code: StateCode, unchecked_id_type: str
 ) -> entities.StatePerson:
@@ -257,16 +257,16 @@ def add_supervision_period_to_person(
     person: entities.StatePerson,
     state_code: str,
     external_id: str,
-    supervision_type: StateSupervisionPeriodSupervisionType,
-    supervision_type_raw_text: Optional[str],
     start_date: datetime.date,
-    termination_date: Optional[datetime.date],
-    supervision_site: str,
-    supervising_officer_staff_external_id: Optional[str],
-    supervising_officer_staff_external_id_type: Optional[str],
-    supervising_officer: Optional[entities.StateAgent],
-    admission_reason: Optional[StateSupervisionPeriodAdmissionReason],
-    termination_reason: Optional[StateSupervisionPeriodTerminationReason],
+    termination_date: Optional[datetime.date] = None,
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = None,
+    supervision_type_raw_text: Optional[str] = None,
+    supervision_site: Optional[str] = None,
+    supervising_officer_staff_external_id: Optional[str] = None,
+    supervising_officer_staff_external_id_type: Optional[str] = None,
+    supervising_officer: Optional[entities.StateAgent] = None,
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = None,
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = None,
     conditions: Optional[str] = None,
     county_code: Optional[str] = None,
     admission_reason_raw_text: Optional[str] = None,

@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: PersonParole
 file_description: >-
-  Information about people currently on parole in California. The best way to
-  identify if someone has absconded is by using the OffenderGroup field -- do
-  not rely on AddressType.
+  Information about people currently on parole in California. The best way to identify
+  if someone has absconded is by using the OffenderGroup field -- do not rely on
+  AddressType.
 data_classification: source
 primary_key_cols:
   - OffenderId
@@ -15,8 +15,8 @@ columns:
   - name: OffenderId
     is_pii: True
     description: >-
-      TODO(#15297) An ID to reference a specific individual in who is in custody
-      or under supervision of CDCR.
+      TODO(#15297) An ID to reference a specific individual in who is in custody or
+      under supervision of CDCR.
   - name: FirstName
     is_pii: True
     description: >-
@@ -40,8 +40,8 @@ columns:
       The client's date of birth.
   - name: Sex
     description: >-
-      The client's sex. This field is either M or F. We're currently unclear how
-      this is handled in the case of transgender or non-binary clients.
+      The client's sex. This field is either M or F. We're currently unclear how this is
+      handled in the case of transgender or non-binary clients.
     known_values:
       - value: F
         description: Female
@@ -90,9 +90,9 @@ columns:
     description: >-
       The region the parolee is paroled in. We need this information in addition
       to  BadgeNumber because some agents are active in multiple units, and this
-      allows  us to understand which unit this individual is being supervised
-      under (needs to be confirmed that this information is accurate). This is
-      sometimes null as well.  This is being investigated here:
+      allows  us to understand which unit this individual is being supervised under
+      (needs to be confirmed that this information is accurate). This is sometimes null
+      as well.  This is being investigated here:
       https://docs.google.com/document/d/1btF1k4KotghdKkAxjUNQOY9mYZcNnk1NL_t4XJyLm9w/edit#bookmark=id.vgjp81eb5voo
   - name: ParoleDistrict
     description: >-
@@ -108,19 +108,19 @@ columns:
     is_pii: True
   - name: LastParoleDate
     description: >-
-      The most recent time this person went onto parole. This often (perhaps
-      alwyas) matches IncarcerationParole.OUTDATE.
+      The most recent time this person went onto parole. This often (perhaps always)
+      matches IncarcerationParole.OUTDATE.
     is_datetime: True
   - name: ControllingDischargeDate
     description: >-
-      Maximum date at which a person must legally be discharged. When a parolee
-      has absconded, their Controlling Discharge Date is suspended until
-      apprehended and may be in the past.
+      Maximum date at which a person must legally be discharged. When a parolee has
+      absconded, their Controlling Discharge Date is suspended until apprehended and may
+      be in the past.
     is_datetime: True
   - name: EarnedDischargeDate
     description: >-
-      Date at which a person should be eligible for discharge. Typically
-      reflecting policies that target different populations (i.e. parole caps).
+      Date at which a person should be eligible for discharge. Typically reflecting
+      policies that target different populations (i.e. parole caps).
     is_datetime: True
   - name: SentenceInMonths
     description: >-
@@ -131,21 +131,25 @@ columns:
     known_values:
       - value: PAROLE
       - value: MCRP
+        description: Male Community Reentry Program
       - value: ICOOP
+        description: Interstate cooperative cases
       - value: MDPAR
       - value: CCTRP
       - value: PAL
         description: Identifies someone who has absconded.
       - value: ACP
       - value: ISPU
+        description: Interstate Parole Unit
       - value: ISPU_PAL
+        description: >-
+          Describes an individual on interstate parole who has absconded
       - value: MRP
   - name: AddressType
     description: >-
-      The general category of someone's residence. More information about these
-      address types can be found in the DOM, section 81090.7.1. A link to the
-      DOM is available in the main US_CA documentation. Most of these
-      descriptions are sourced from this.
+      The general category of someone's residence. More information about these address
+      types can be found in the DOM, section 81090.7.1. A link to the DOM is available
+      in the main US_CA documentation. Most of these descriptions are sourced from this.
     known_values:
       - value: Custody Program
         description: >-
@@ -159,21 +163,21 @@ columns:
         description: The proposed address from the RPS.
       - value: Mailing
       - value: PAL Report Submitted
-        description: Don't rely on this value for identifying absconsions -- use
-          OffenderGroup = PAL instead.
+        description:
+          Don't rely on this value for identifying absconsions -- use OffenderGroup =
+          PAL instead.
       - value: Local Jail
         description: >-
           An offender incarcerated in a county jail within the state of
-          California  pending local or revocation charges, or serving a
-          revocation sentence.
+          California  pending local or revocation charges, or serving a revocation
+          sentence.
       - value: Shelter Transient
       - value: Out-of-State Custody
       - value: Temporary
       - value: Planned (after ISC Transfer)
         description: >-
-          The address in California where an offender from another state
-          proposes to  reside, if the offender's interstate transfer request is
-          granted.
+          The address in California where an offender from another state proposes
+          to  reside, if the offender's interstate transfer request is granted.
       - value: Federal Custody
         description: >-
           An offender under DAPO's supervision currently in custody for federal

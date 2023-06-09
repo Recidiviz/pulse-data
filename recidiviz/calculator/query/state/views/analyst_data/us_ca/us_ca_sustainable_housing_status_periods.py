@@ -60,7 +60,7 @@ raw_address_data AS (
 /*
     Handles some date parsing and replaces NULL end dates with '9999-01-31'
 */
--- TODO(#20888): Use StateSupervisionPeriod once it is ingested
+-- TODO(#21353): Use StateSupervisionPeriod once it is ingested
 IncarcerationParole_parsed AS (
     -- Use DISTINCT because it's possible to get some duplicates from this query
     -- which will cause problems later on with the LEAD/LAG functions
@@ -113,7 +113,7 @@ valid_parole_periods AS (
         SELECT
             OffenderId,
             out_date AS parole_start_date,
-            -- TODO(#20888): Instead of closing previous open parole periods using the out_date
+            -- TODO(#21353): Instead of closing previous open parole periods using the out_date
             -- of the next parole period, we should probably use the in_date of the next record in
             -- the IncarcerationParole raw table
             CASE

@@ -31,7 +31,7 @@ columns:
     description: >-
       When someone re-entered DOC supervision. This may only be a techincality -- IE
       it's possible that due to certain circumstances, the person never actually sets
-      foot in prison.
+      foot in prison. If there is no in_date, this person is likely interstate.
   - name: In_Move
     description: >-
       The type of transition that led to someone being readmitted to a facility. Can
@@ -90,6 +90,7 @@ columns:
       Identifies the date someone actually re-enters a facility. If this is null, it
       means there were circumstances that meant this person never actually had to enter
       prison -- for example, they may have gone directly to parole.
+    is_datetime: True
   - name: out_date
     description: >-
       out_date will be filled with the date a person was paroled or discharged.

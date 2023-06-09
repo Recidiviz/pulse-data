@@ -26,7 +26,8 @@ columns:
   - name: OffenderGroup
     description: >-
       Not really OffenderGroup -- this reflects the type of change that occured and
-      placed someone in the Delta file.
+      placed someone in the Delta file. What does it mean when this is null?
+      TODO(#21313)
     known_values:
       - value: Date Change
         description: >-
@@ -41,4 +42,7 @@ columns:
       - value: Record Deleted
       - value: Release Type Changed to MEPD
       - value: Removed SACCO
+        description: >-
+          Removed from SACCO (Sacramento Central Office) jurisdiction. TODO(#21313)
+          Aaron may have more information about this in his email.
       - value: Return to Institution
