@@ -144,6 +144,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_early_disch
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_supervision_level_raw_text_mappings import (
     US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_classification_hearings_preprocessed import (
+    US_MO_CLASSIFICATION_HEARINGS_PREPROCESSED_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_eligibility import (
     PRIORITIZED_ELIGIBILITY,
 )
@@ -358,6 +361,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
     US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER,
     RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
+    US_MO_CLASSIFICATION_HEARINGS_PREPROCESSED_RECORD_VIEW_BUILDER,
     *get_person_spans_and_events_view_builders(),
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
 ]

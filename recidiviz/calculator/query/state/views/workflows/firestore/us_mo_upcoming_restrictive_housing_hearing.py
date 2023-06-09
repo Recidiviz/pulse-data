@@ -20,6 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
@@ -29,10 +30,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.us_mo_query_fragments import (
-    current_bed_stay_cte,
-    hearings_dedup_cte,
-)
+from recidiviz.task_eligibility.utils.us_mo_query_fragments import current_bed_stay_cte
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -62,19 +60,6 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             AND tes.state_code = 'US_MO'
     )
     ,
-    {hearings_dedup_cte()}
-    ,
-    hearing_comments AS (
-        SELECT
-            ISCSQ_ as hearing_id,
-            -- Trim whitespace and quotation marks to concatenate comments across rows.
-            -- Comment lines in raw table are sometimes separated in reality by line breaks, and sometimes
-            -- by a single space. This inserts line breaks as a general case that doesn't look terrible.
-            STRING_AGG(TRIM(ISCMNT, " \\""), "\\n" ORDER BY CAST(ISCLN_ AS INT64) ASC) AS hearing_comments,
-        FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK294_latest`
-        GROUP BY 1
-    )
-    ,
     most_recent_hearings AS (
         SELECT DISTINCT
             state_code,
@@ -83,24 +68,12 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             FIRST_VALUE(hearing_date) OVER person_window AS most_recent_hearing_date,
             FIRST_VALUE(hearing_type) OVER person_window AS most_recent_hearing_type,
             FIRST_VALUE(hearing_facility) OVER person_window AS most_recent_hearing_facility,
-        FROM hearings
+            FIRST_VALUE(hearing_comments) OVER person_window AS most_recent_hearing_comments,
+        FROM `{{project_id}}.{{analyst_views_dataset}}.us_mo_classification_hearings_preprocessed_materialized`
         WINDOW person_window AS (
             PARTITION by person_id, state_code
             ORDER BY hearing_date DESC
         )
-    )
-    ,
-    most_recent_hearings_with_comment AS (
-        SELECT
-            state_code,
-            person_id,
-            hearing_comments.hearing_comments AS most_recent_hearing_comments,
-            most_recent_hearings.most_recent_hearing_date,
-            most_recent_hearings.most_recent_hearing_facility,
-            most_recent_hearings.most_recent_hearing_type
-        FROM most_recent_hearings
-        LEFT JOIN hearing_comments
-        ON most_recent_hearings.most_recent_hearing_id = hearing_comments.hearing_id
     )
     ,
     current_confinement_stay AS (
@@ -175,9 +148,9 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
                         -- and minor CDVs before the most recent hearing
                         (
                             CASE 
-                            WHEN is_major_violation THEN "Major CDVs, past 12 months"
+                            WHEN is_major_violation THEN "Major CDVs, past {US_MO_CDV_MAJOR_NUM_MONTHS_TO_DISPLAY} months"
                             WHEN occurred_since_last_hearing THEN "Other CDVs since last hearing"
-                            ELSE "Other Minor CDVs, past 6 months" END
+                            ELSE "Other Minor CDVs, past {US_MO_CDV_MINOR_NUM_MONTHS_TO_DISPLAY} months" END
                         ) AS criteria
                     )
                     ORDER BY cdv_date DESC
@@ -249,7 +222,7 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             TO_JSON(IFNULL(cdv_minors_since_hearing.cdvs, [])) AS metadata_cdvs_since_last_hearing,
             IFNULL(ARRAY_LENGTH(cdv_minors_recent.cdvs), 0) AS metadata_num_minor_cdvs_before_last_hearing
         FROM base_query base
-        LEFT JOIN most_recent_hearings_with_comment hearings
+        LEFT JOIN most_recent_hearings hearings
         USING (person_id)
         LEFT JOIN current_housing_stay housing
         USING (person_id)
@@ -274,6 +247,7 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER = SimpleBigQueryV
     view_id=US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_NAME,
     view_query_template=US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE,
     description=US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_DESCRIPTION,
+    analyst_views_dataset=ANALYST_VIEWS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
