@@ -73,20 +73,31 @@ def cis_204_notes_cte(criteria_name: str) -> str:
 def cis_408_violations_notes_cte(
     violation_type: str,
     violation_type_for_criteria: str,
+    note_title: str,
     time_interval: int = 6,
     date_part: str = "MONTH",
+    violation_finding_cd: str = "1",
+    violation_date: str = "v.Toll_Start_Date",
 ) -> str:
     """
 
     Args:
         violation_type (str): Violation types that will be kept in the query. Supported
-            types: "TECHNICAL", "MISDEMEANOR" and "FELONY".
+            types: "TECHNICAL", "MISDEMEANOR", "FELONY" and "ANY".
         violation_type_for_criteria (str): String that will be shown in the criteria
             column of the case notes.
-        date_interval (int, optional): Number of <date_part> when the violation
+        note_title (str): String that will be shown as the note_title column of the
+            case notes
+        time_interval (int, optional): Number of <date_part> when the violation
             will be counted as valid. Defaults to 6 (e.g. 6 months).
         date_part (str, optional): Supports any of the BigQuery date_part values:
             "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        violation_finding_cd (str, optional): Violation finding type code. All other
+            violation finding types will be filtered out. Defaults to "1", which refers
+            to 'Violation found'.
+        violation_date (str, optional): This date will be the one filtered to
+            consider the most recent violations only. Defaults to v.Toll_Start_Date.
+
     Returns:
         str: Query that surfaces all violations of the type passed <violation_type>
             that have the finding type "VIOLATION FOUND" and happened within the
@@ -94,28 +105,40 @@ def cis_408_violations_notes_cte(
     """
 
     if violation_type.upper() == "TECHNICAL":
-        vtype = "63"
+        vtype = " '63' "
     elif violation_type.upper() == "MISDEMEANOR":
-        vtype = "64"
+        vtype = " '64' "
     elif violation_type.upper() == "FELONY":
-        vtype = "65"
+        vtype = " '65' "
+    elif violation_type.upper() == "ANY":
+        vtype = " '65','64','63' "
 
     return f"""
     SELECT 
-        Cis_100_Client_Id AS external_id,
+        csp.external_id,
         "{violation_type_for_criteria}" AS criteria,
-        vf.Violation_Finding_Descr_Tx AS note_title,
-        Violation_Descr_Tx AS note_body,
-        SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE) AS event_date,
-    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_480_VIOLATION_latest` v
-    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_4800_VIOLATION_FINDING_latest` vf
-        ON v.Cis_4800_Violation_Finding_Cd = vf.Violation_Finding_Cd
-    WHERE Cis_4009_Violation_Type_Cd = '{vtype}'
-        AND Cis_4800_Violation_Finding_Cd = '1'
-        AND DATE_ADD(SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE), INTERVAL {time_interval} {date_part}) > CURRENT_DATE('US/Eastern')
-        -- Remove cases where logical_delete_ind = 'Y'
-        AND Logical_Delete_Ind = 'N'
-    """
+        COALESCE(viol.note_title, "No violations found") AS note_title,
+        COALESCE(note_body, "") AS note_body,
+        event_date AS event_date
+    FROM current_supervision_pop_cte csp
+    LEFT JOIN (
+        SELECT 
+            v.Cis_100_Client_Id AS external_id,
+            {note_title} AS note_title,
+            Violation_Descr_Tx AS note_body,
+            SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE) AS event_date,
+        FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_480_VIOLATION_latest` v
+        LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_4800_VIOLATION_FINDING_latest` vf
+            ON v.Cis_4800_Violation_Finding_Cd = vf.Violation_Finding_Cd
+        LEFT JOIN `{{project_id}}.us_me_raw_data_up_to_date_views.CIS_4009_SENT_CALC_SYS_latest` scs
+            ON scs.Sent_Calc_Sys_Cd = v.Cis_4009_Violation_Type_Cd
+        WHERE Cis_4009_Violation_Type_Cd IN ({vtype})
+            AND Cis_4800_Violation_Finding_Cd = '{violation_finding_cd}'
+            AND DATE_ADD(SAFE_CAST(LEFT({violation_date}, 10) AS DATE), INTERVAL {time_interval} {date_part}) > CURRENT_DATE('US/Eastern')
+            -- Remove cases flagged for deletion
+            AND v.Logical_Delete_Ind = 'N'
+    ) viol
+    USING(external_id)"""
 
 
 def cis_425_program_enrollment_notes(

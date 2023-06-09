@@ -35,7 +35,6 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     json_to_array_cte,
     one_criteria_away_from_eligibility,
-    x_time_away_from_eligibility,
 )
 from recidiviz.task_eligibility.utils.raw_table_import import (
     cis_408_violations_notes_cte,
@@ -167,24 +166,38 @@ case_notes_cte AS (
     -- Technical violations
     {cis_408_violations_notes_cte(violation_type='TECHNICAL', 
                                   violation_type_for_criteria='Technical Violations (in the past 6 months)',
+                                  note_title = " 'Violation Found' ",
                                   time_interval = 6,
                                   date_part = 'MONTH')}
 
     UNION ALL
 
+    -- Graduated sanctions
+    {cis_408_violations_notes_cte(violation_type='ANY', 
+                                  violation_type_for_criteria='Graduated Sanctions (in the past year)',
+                                  note_title = "Sent_Calc_Sys_Desc",
+                                  time_interval = 1,
+                                  date_part = 'YEAR')}
+
+    UNION ALL 
+    
     -- Misdemeanors
     {cis_408_violations_notes_cte(violation_type='MISDEMEANOR', 
-                                  violation_type_for_criteria='Misdemeanors (in the past 6 months)',
+                                  violation_type_for_criteria='Misdemeanors (6 months within Toll End Date)',
+                                  note_title = " 'Violation Found' ",
                                   time_interval = 6,
-                                  date_part = 'MONTH')}
+                                  date_part = 'MONTH',
+                                  violation_date = "v.Toll_End_Date")}
 
     UNION ALL
 
     -- Felonies
     {cis_408_violations_notes_cte(violation_type='FELONY', 
-                                  violation_type_for_criteria='Felonies (in the past 6 months)',
+                                  violation_type_for_criteria='Felonies (6 months within Toll End Date)',
+                                  note_title = " 'Violation Found' ",
                                   time_interval = 6,
-                                  date_part = 'MONTH')}
+                                  date_part = 'MONTH',
+                                  violation_date = "v.Toll_End_Date")}
                          
     UNION ALL
 
@@ -209,7 +222,7 @@ case_notes_cte AS (
 
     UNION ALL
 
-    #TODO(#20608): get descriptions these programs and add them to the note so POs have
+    #TODO(#20608): get descriptions from these programs and add them to the note so POs have
         # more context
 
     -- Program enrollment notes: starting from the incarceration period that preceded
@@ -230,12 +243,6 @@ eligible_and_almost_eligible AS (
     SELECT * EXCEPT(is_eligible)
     FROM current_supervision_pop_cte
     WHERE is_eligible
-
-    UNION ALL 
-
-    -- ALMOST ELIGIBLE (<6mo remaining before half time)
-    {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_SUPERVISION_START')}
 
     UNION ALL
     
