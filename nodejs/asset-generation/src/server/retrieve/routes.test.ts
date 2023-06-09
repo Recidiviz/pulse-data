@@ -33,8 +33,8 @@ import {
   getTestToken,
   mockImageData,
 } from "../testUtils";
-import { routes } from "./index";
 import { readFile } from "./readFile";
+import { routes } from "./routes";
 
 vi.mock("./readFile");
 

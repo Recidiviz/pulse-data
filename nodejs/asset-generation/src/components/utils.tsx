@@ -37,7 +37,7 @@ export function convertRemToPx(styles: string, remSize = 16) {
 }
 
 /**
- * Renders the given component (which must render a root <svg>) to a markup string.
+ * Renders the given component (which must render a root `<svg>`) to a markup string.
  * Any styles collected from Styled Components within the component tree will be injected
  * into the markup as a <style> tag.
  */

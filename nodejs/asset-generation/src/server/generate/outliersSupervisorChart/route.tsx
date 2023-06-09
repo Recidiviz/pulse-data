@@ -17,32 +17,47 @@
 
 import { Request, Response } from "express";
 
-import { getRenderedChartSvg } from "../../../components/OutliersMetricChart/OutliersMetricChart";
+import { OutliersSupervisorChart } from "../../../components/OutliersSupervisorChart";
+import { renderToStaticSvg } from "../../../components/utils";
 import { RETRIEVE_PATH } from "../../constants";
 import { HttpError } from "../../errors";
 import { getAssetToken } from "../../token";
 import { convertToImage } from "../convertToImage";
 import { AssetResponse, ValidatedInput } from "../types";
 import { writeFile } from "../writeFile";
-import { OutliersMetricChartInput } from "./types";
+import { OutliersSupervisorChartInputTransformed } from "./types";
 
-export const outliersMetricChartRoute = async (
+export const outliersSupervisorChartRoute = async (
   req: Request,
   res: Response<
     AssetResponse & { height: number },
-    ValidatedInput<OutliersMetricChartInput>
+    ValidatedInput<OutliersSupervisorChartInputTransformed>
   >
 ) => {
-  const { width, entityLabel, stateCode, id, data } = res.locals.data;
+  const { width, stateCode, id, data } = res.locals.data;
 
-  const { svg, height } = getRenderedChartSvg({
-    width,
-    entityLabel,
-    data,
-  });
+  let height: number | undefined;
+
+  const syncHeight = (calculatedHeight: number) => {
+    height = calculatedHeight;
+  };
+
+  const svg = renderToStaticSvg(() => (
+    <OutliersSupervisorChart {...{ width, data, syncHeight }} />
+  ));
+
+  // this is not expected in practice,
+  // but we do want to ensure that we've received the dynamic height value
+  if (height === undefined) {
+    // eslint-disable-next-line no-console
+    console.error("Did not receive required chart height from component.");
+    res.sendStatus(HttpError.INTERNAL_SERVER_ERROR);
+    return;
+  }
+
   const img = await convertToImage(svg);
   const today = new Date().toISOString().split("T")[0];
-  const fileUrl = `outliers-metric-chart/${stateCode}/${today}/${id}.png`;
+  const fileUrl = `outliers-supervisor-chart/${stateCode}/${today}/${id}.png`;
   try {
     await writeFile(fileUrl, img);
     const token = await getAssetToken(fileUrl);

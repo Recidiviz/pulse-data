@@ -15,34 +15,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { palette, spacing } from "@recidiviz/design-system";
-import { lighten } from "polished";
+import { spacing } from "@recidiviz/design-system";
 
-export const DOT_RADIUS = 6;
+export const HIGHLIGHT_DOT_RADIUS = 6;
+export const SWARM_DOT_RADIUS = 3;
+export const TICK_WIDTH = 2;
 
 export const X_AXIS_HEIGHT = 22;
+export const ROW_HEIGHT = 42;
 
 export const MARGIN = {
   top: spacing.xxs,
-  right: DOT_RADIUS,
-  bottom: 0,
-  left: spacing.xxs,
+  right: HIGHLIGHT_DOT_RADIUS + spacing.xxs,
+  bottom: SWARM_DOT_RADIUS + spacing.xxs,
+  left: HIGHLIGHT_DOT_RADIUS + spacing.xxs,
 };
 
-export const AXIS_OFFSET = 165;
+export const CONTENT_AREA_TOP_OFFSET = MARGIN.top + X_AXIS_HEIGHT;
 
-export const ROWS_OFFSET = MARGIN.top + X_AXIS_HEIGHT;
-
-export const ROW_LABEL_WIDTH = AXIS_OFFSET - MARGIN.left - DOT_RADIUS;
-
-export const TICK_WIDTH = 2;
-
-export const ROW_HEIGHT = 48;
-
-export const MARK_STROKE_WIDTH = 2;
-
-export const GOAL_COLORS = {
-  far: palette.data.crimson1,
-  near: palette.data.gold1,
-  met: lighten(0.45)(palette.slate),
-};
+export const LABEL_X_BASE = HIGHLIGHT_DOT_RADIUS + spacing.sm;

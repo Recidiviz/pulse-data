@@ -19,32 +19,30 @@ import { z } from "zod";
 
 import { GoalStatus, goalStatusSchema } from "../schema/helpers";
 
-export const outliersUnitChartInputSchema = z.object({
+export const outliersSupervisorChartInputSchema = z.object({
   stateCode: z.string(),
   id: z.string(),
   width: z.number(),
   data: z.object({
-    context: z.object({
-      target: z.number(),
-      otherOfficers: z
-        // receiving this as a mapping is more size-efficient over the network...
-        .record(goalStatusSchema, z.array(z.number()))
-        // ...but spreading the mapping across all records will make plotting easier
-        .transform((mapping) => {
-          const flattenedRecords: { value: number; goalStatus: GoalStatus }[] =
-            [];
-          goalStatusSchema.options.forEach((goalStatus) => {
-            const values = mapping[goalStatus];
-            if (values) {
-              flattenedRecords.push(
-                ...values.map((value) => ({ value, goalStatus }))
-              );
-            }
-          });
-          return flattenedRecords;
-        }),
-    }),
-    unitOfficers: z.array(
+    target: z.number(),
+    otherOfficers: z
+      // receiving this as a mapping is more size-efficient over the network...
+      .record(goalStatusSchema, z.array(z.number()))
+      // ...but spreading the mapping across all records will make plotting easier
+      .transform((mapping) => {
+        const flattenedRecords: { value: number; goalStatus: GoalStatus }[] =
+          [];
+        goalStatusSchema.options.forEach((goalStatus) => {
+          const values = mapping[goalStatus];
+          if (values) {
+            flattenedRecords.push(
+              ...values.map((value) => ({ value, goalStatus }))
+            );
+          }
+        });
+        return flattenedRecords;
+      }),
+    highlightedOfficers: z.array(
       z.object({
         name: z.string(),
         rate: z.number(),
@@ -55,10 +53,10 @@ export const outliersUnitChartInputSchema = z.object({
   }),
 });
 
-export type OutliersUnitChartInput = z.input<
-  typeof outliersUnitChartInputSchema
+export type OutliersSupervisorChartInput = z.input<
+  typeof outliersSupervisorChartInputSchema
 >;
 
-export type OutliersUnitChartInputTransformed = z.infer<
-  typeof outliersUnitChartInputSchema
+export type OutliersSupervisorChartInputTransformed = z.infer<
+  typeof outliersSupervisorChartInputSchema
 >;

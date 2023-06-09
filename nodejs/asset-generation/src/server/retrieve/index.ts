@@ -15,32 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Router } from "express";
-import { fileTypeFromBuffer } from "file-type";
-
-import { HttpError } from "../errors";
-import { getUrlFromAssetToken } from "../token";
-import { readFile } from "./readFile";
-
-export const routes = Router();
-
-routes.get("/:token", async (req, res) => {
-  try {
-    const url = await getUrlFromAssetToken(req.params.token);
-    const file = await readFile(url);
-
-    const { mime } = (await fileTypeFromBuffer(file)) ?? {};
-    if (!mime) throw new Error("unknown file type");
-
-    res.type(mime);
-    res.send(file);
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e);
-    if (e instanceof HttpError) {
-      res.sendStatus(e.code);
-      return;
-    }
-    res.sendStatus(HttpError.NOT_FOUND);
-  }
-});
+export * from "./routes";

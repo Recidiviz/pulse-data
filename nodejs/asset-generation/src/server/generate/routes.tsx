@@ -15,22 +15,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { spacing } from "@recidiviz/design-system";
+import { json, Router } from "express";
 
-export const UNIT_DOT_RADIUS = 6;
-export const SWARM_DOT_RADIUS = 3;
-export const TICK_WIDTH = 2;
+import { authMiddleware } from "../authMiddleware";
+import { outliersSupervisorChartRoute } from "./outliersSupervisorChart/route";
+import { outliersSupervisorChartInputSchema } from "./outliersSupervisorChart/types";
+import { schemaMiddleware } from "./schema/middleware";
 
-export const X_AXIS_HEIGHT = 22;
-export const ROW_HEIGHT = 42;
+export const routes = Router();
 
-export const MARGIN = {
-  top: spacing.xxs,
-  right: UNIT_DOT_RADIUS + spacing.xxs,
-  bottom: SWARM_DOT_RADIUS + spacing.xxs,
-  left: UNIT_DOT_RADIUS + spacing.xxs,
-};
+routes.use(json());
 
-export const CONTENT_AREA_TOP_OFFSET = MARGIN.top + X_AXIS_HEIGHT;
-
-export const LABEL_X_BASE = UNIT_DOT_RADIUS + spacing.sm;
+routes.post(
+  "/outliers-supervisor-chart",
+  authMiddleware,
+  schemaMiddleware(outliersSupervisorChartInputSchema),
+  outliersSupervisorChartRoute
+);
