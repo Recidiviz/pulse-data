@@ -17,17 +17,14 @@
 """Describes the spans of time during which someone in MO
 has an upcoming restrictive housing hearing.
 """
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
-from recidiviz.task_eligibility.utils.us_mo_query_fragments import hearings_dedup_cte
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -40,9 +37,7 @@ has an upcoming disciplinary hearing.
 US_MO_HAS_UPCOMING_HEARING_NUM_DAYS = 7
 
 _QUERY_TEMPLATE = f"""
-    WITH {hearings_dedup_cte()}
-    ,
-    critical_date_spans AS (
+    WITH critical_date_spans AS (
         SELECT
             state_code,
             person_id,
@@ -52,7 +47,7 @@ _QUERY_TEMPLATE = f"""
                  ELSE LEAD(hearing_date) OVER hearing_window
                  END AS end_datetime,
             next_review_date AS critical_date,
-        FROM hearings
+        FROM `{{project_id}}.{{analyst_views_dataset}}.us_mo_classification_hearings_preprocessed_materialized`
         WINDOW hearing_window AS (
             PARTITION BY state_code, person_id
             ORDER BY hearing_date ASC
@@ -82,10 +77,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         meets_criteria_default=False,
-        us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
-        ),
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        analyst_views_dataset=ANALYST_VIEWS_DATASET,
     )
 )
 
