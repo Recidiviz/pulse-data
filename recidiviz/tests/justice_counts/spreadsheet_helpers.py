@@ -18,8 +18,10 @@
 
 import os
 import tempfile
-from typing import Any, Dict, List, Optional, Set, Tuple
+from enum import Enum
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, cast
 
+import numpy as np
 import pandas as pd
 
 from recidiviz.justice_counts.metricfile import MetricFile
@@ -330,4 +332,79 @@ def create_csv_file(
 
     df = pd.DataFrame(dataframe_dict)
     df.to_csv(file_path)
+    return file_path
+
+
+def create_combined_excel_file(
+    system: schema.System,
+    file_name: str,
+) -> str:
+    """Populates test_single_page_combined.xlsx with fake data to test bulk upload
+    functions work for a single file that contains multiple metrics
+    """
+    temp_dir = tempfile.mkdtemp()
+    file_path = os.path.join(temp_dir, file_name)
+    filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
+
+    df = pd.DataFrame(
+        columns=[
+            "metric",
+            "year",
+            "month",
+            "breakdown_category",
+            "breakdown",
+            "value",
+        ]
+    )
+    all_metric_files = filename_to_metricfile.values()
+    for filename, metricfile in filename_to_metricfile.items():
+        current_metric = filename_to_metricfile[filename].definition
+        high_level_metric = [
+            metric_file
+            for metric_file in all_metric_files
+            if metric_file.definition == current_metric
+            and metric_file.disaggregation is None
+        ][0].canonical_filename
+
+        if metricfile.disaggregation is None:
+            if metricfile.definition.reporting_frequency.value == "ANNUAL":
+                row = [high_level_metric, "2023", np.nan, np.nan, np.nan, 70]
+            else:
+                row = [
+                    high_level_metric,
+                    "2023",
+                    "January",
+                    np.nan,
+                    np.nan,
+                    120,
+                ]
+            df.loc[len(df.index)] = row
+        else:
+            breakdown_category = metricfile.disaggregation_column_name
+            # source: https://stackoverflow.com/questions/60669969/why-is-mypy-complaining-about-list-comprehension-when-it-cant-be-annotated
+            # avoiding mypy errors
+            agg_dim = cast(Iterable[Enum], metricfile.disaggregation)
+            dimensions = [e.value for e in agg_dim]  # type: ignore[attr-defined]
+            for breakdown in dimensions:
+                if metricfile.definition.reporting_frequency.value == "ANNUAL":
+                    row = [
+                        high_level_metric,
+                        "2023",
+                        np.nan,
+                        breakdown_category,
+                        breakdown,
+                        70 / len(dimensions),
+                    ]
+                else:
+                    row = [
+                        high_level_metric,
+                        "2023",
+                        "January",
+                        breakdown_category,
+                        breakdown,
+                        120 / len(dimensions),
+                    ]
+                df.loc[len(df.index)] = row
+
+    df.to_excel(file_path, index=False)
     return file_path

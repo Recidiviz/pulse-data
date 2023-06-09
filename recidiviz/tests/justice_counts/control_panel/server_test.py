@@ -2533,6 +2533,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             session=self.session,
             xls=pd.ExcelFile(law_enforcement_excel),
             metric_definitions=METRICS_BY_SYSTEM[schema.System.LAW_ENFORCEMENT.value],
+            filename=law_enforcement_excel,
         )
         self.session.commit()
 

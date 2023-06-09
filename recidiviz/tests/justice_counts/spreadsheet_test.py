@@ -78,6 +78,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     metric_definitions=METRICS_BY_SYSTEM[
                         schema.System.LAW_ENFORCEMENT.value
                     ],
+                    filename=file_path,
                 )
 
                 spreadsheet = session.query(schema.Spreadsheet).one()
@@ -115,6 +116,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
+                filename=file_path,
             )
 
             spreadsheet = session.query(schema.Spreadsheet).one()
@@ -207,6 +209,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PAROLE.value]
                 + METRICS_BY_SYSTEM[schema.System.PROBATION.value]
                 + METRICS_BY_SYSTEM[schema.System.PAROLE.value],
+                filename=file_path,
             )
 
             metric_definitions = (
