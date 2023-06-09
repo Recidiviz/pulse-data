@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: SupervisionSentence
-file_description: |-
+file_description: >-
   Historical information about supervision sentences for people currently on parole.
 data_classification: source
 primary_key_cols:
@@ -10,38 +10,93 @@ primary_key_cols:
 columns:
   - name: OffenderId
     is_pii: True
-    description: |-
-      An ID to reference a specific individual in who is in custody or under supervision of CDCR.
+    description: >-
+      An ID to reference a specific individual in who is in custody or under supervision
+      of CDCR.
   - name: Cdcno
     is_pii: True
-    description: |-
+    description: >-
       This has the latest CDCNO for each person. See CDCNOInCustody for more.
   - name: SupervisionType
-    description: |-
-      Supervision type of the period starting. For some types, a parenthesis shows the 
-      unit in charge of the monitoring and the client's offense type (at a very high level).
-      We should ask more about the info in these parenthesis ()
+    description: >-
+      Supervision type of the period starting. For some types, a parenthesis shows the
+      unit in charge of the monitoring and the client's offense type (at a very high
+      level). We should ask more about the info in these parenthesis ()
   - name: SupervisionLevel
-    description: |-
-      Supervision level starting at SupvLevelChangeDate.
+    description: >-
+      Supervision level starting at SupvLevelChangeDate. More information at 81020.1
+      California Parole Supervision Reintegration Model in the DOM.
+    known_values:
+      - value: Act Gang GPS Non-Specialized
+      - value: Act Gang GPS Specialized
+      - value: Act HRSO GPS Non-Specialized
+      - value: Act HRSO GPS Specialized
+      - value: Category A
+      - value: Category B
+      - value: Category C
+      - value: Category D
+      - value: Category E
+      - value: Category I
+      - value: Category P
+      - value: Community Custody Release
+      - value: Control Services
+      - value: CS Prop 36 Eligible
+      - value: Deported
+      - value: Enhanced Outpatient
+      - value: EO Non-Specialized
+      - value: EX and SX
+      - value: HC/HS Prop 36 Eligible
+      - value: High Control
+      - value: High Risk Sex Offender
+      - value: High Services
+      - value: Highest Super MISD
+      - value: HR Non-Specialized
+      - value: In-Home Det Monitor
+      - value: In-Home Det Sanction
+      - value: Low Super MISD
+      - value: Minimum Supervision
+      - value: MS Prop 36 Eligible
+      - value: OCS High Control
+      - value: OCS Sex Offender
+      - value: Offender with Mental Health Disorder
+      - value: Offender with Mental Health Disorder Non-Specialized
+      - value: Pass P290 GPS Non-Specialized
+      - value: Pass P290 GPS Specialized
+      - value: Pending Deport
+      - value: Second Striker
+      - value: SO Category A
+      - value: SO Category B
+      - value: SO Category C
+      - value: SO Category D
+        description:
+      - value: SO Category E
+      - value: SO Category I
+      - value: SO Category P
+      - value: SO Non-Specialized
+      - value: SO Transition Phase (TP)
+      - value: Trans Phase MISD
+      - value: Transition Phase
+      - value: Vulnerable Release Program
   - name: SupvLevelChangeDate
-    description: |-
+    description: >-
       Date at which SupervisionLevel changed.
     is_datetime: True
   - name: ParoleAgentName
     is_pii: True
-    description: |-
-      Name of each parole agent (string). Some of these fields are represented by something
-      that looks like badge numbers (should ask the state TODO(#15297))
+    description: >-
+      Name of each parole agent (string). Some of these fields are represented by
+      something that looks like badge numbers (should ask the state TODO(#15297))
   - name: BadgeNumber
-    description: |-
+    description: >-
       TODO(#15297)
   - name: ParoleRegion
-    description: |-
-      The region that a parole agent works under. Parole Agents may work in multiple regions.
+    description: >-
+      The region that a parole agent works under. Parole Agents may work in multiple
+      regions.
   - name: ParoleDistrict
-    description: |-
-      The district that a parole agent works under. Parole Agents may work in multiple districts.
+    description: >-
+      The district that a parole agent works under. Parole Agents may work in multiple
+      districts.
   - name: ParoleUnit
-    description: |-
+    description: >-
       The unit the parolee is paroled in. See ParoleRegion.

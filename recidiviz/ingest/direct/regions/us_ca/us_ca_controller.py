@@ -43,4 +43,10 @@ class UsCaController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        return ["person", "supervision_violation", "staff", "assessments"]
+        return [
+            "person",
+            "supervision_violation",
+            "supervision_period",
+            "staff",
+            "assessments",
+        ]

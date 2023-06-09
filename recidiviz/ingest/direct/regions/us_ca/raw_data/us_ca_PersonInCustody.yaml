@@ -1,17 +1,20 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: PersonInCustody
-file_description: |-
-  TODO(#15297): Fill in the file description
+file_description: >-
+  Individuals who are in custody but are scheduled to be released within 90 days. If
+  someone disappears from this population, they may have had their release date pushed
+  back -- see the Delta file to determine if this is true.
 data_classification: source
 primary_key_cols: []
 columns:
   - name: Cdcno
-    description: |-
+    description: >-
       This individual's most recent CDCNO. See CDCNOInCustody for more.
     is_pii: True
   - name: OffenderId
-    description: |-
-      An ID to reference a specific individual in who is in custody or under supervision of CDCR.
+    description: >-
+      An ID to reference a specific individual in who is in custody or under supervision
+      of CDCR.
     is_pii: True
   - name: FirstName
     is_pii: True
@@ -27,11 +30,11 @@ columns:
   - name: Ethnic
     is_pii: True
   - name: PlannedReleaseType
-    description: |-
+    description: >-
       TODO(#15297)
   - name: EligForPrcs
-    description: |-
+    description: >-
       TODO(#15297)
   - name: CurrentLocation
-    description: |-
+    description: >-
       TODO(#15297)
