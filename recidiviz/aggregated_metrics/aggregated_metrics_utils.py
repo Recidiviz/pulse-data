@@ -16,7 +16,7 @@
 # =============================================================================
 """File with utils specific to aggregated metrics methods."""
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
@@ -28,7 +28,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 def get_unioned_time_granularity_clause(
     aggregation_level: MetricUnitOfAnalysis,
     metrics: Sequence[AggregatedMetric],
-    manual_metrics_str: Optional[str] = None,
 ) -> str:
     """
     Returns select statement with month, quarterly, and year-granularity metrics all
@@ -41,18 +40,11 @@ def get_unioned_time_granularity_clause(
 
     metrics : List[AggregatedMetric]
         A list of AggregatedMetric objects used to construct the select statement
-
-    manual_metrics_str : Optional[str]
-        An optional string of columns to be appended in front of `metrics`.
-        Do not include trailing commas.
-        Example: manual_metrics_str = "SUM(assignments) AS assignments"
     """
     index_cols = aggregation_level.get_index_columns_query_string()
     metric_cols = ",\n\t".join(
         [metric.generate_aggregate_time_periods_query_fragment() for metric in metrics]
     )
-    if manual_metrics_str:
-        metric_cols = manual_metrics_str + ",\n\t" + metric_cols
 
     return f"""
 SELECT

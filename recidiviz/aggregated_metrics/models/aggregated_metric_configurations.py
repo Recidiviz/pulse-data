@@ -18,6 +18,7 @@
 from typing import Dict, List
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AssignmentCountMetric,
     AssignmentDaysToFirstEventMetric,
     AssignmentEventBinaryMetric,
     AssignmentEventCountMetric,
@@ -88,6 +89,14 @@ ANY_INCARCERATION_365 = AssignmentEventBinaryMetric(
     "within 1 year",
     event_types=[PersonEventType.INCARCERATION_START],
     event_attribute_filters={},
+)
+
+ASSIGNMENTS = AssignmentCountMetric(
+    name="assignments",
+    display_name="Assignments",
+    description="Number of client assignments",
+    span_types=[],
+    span_attribute_filters={},
 )
 
 AVG_ASSIGNMENTS_OFFICER = MiscAggregatedMetric(
@@ -278,7 +287,7 @@ AVG_DAILY_POPULATION_OTHER_CASE_TYPE = DailyAvgSpanCountMetric(
     span_attribute_filters={
         "compartment_level_1": ["SUPERVISION"],
         "case_type_start": """NOT IN (
-        "GENERAL", "DOMESTIC_VIOLENCE", "SEX_OFFENSE", "DRUG_COURT", 
+        "GENERAL", "DOMESTIC_VIOLENCE", "SEX_OFFENSE", "DRUG_COURT",
         "SERIOUS_MENTAL_ILLNESS", "MENTAL_HEALTH_COURT"
     )""",
     },
@@ -1058,7 +1067,6 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
     for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
-
 
 SUPERVISION_DISTRICT = MiscAggregatedMetric(
     name="supervision_district",
