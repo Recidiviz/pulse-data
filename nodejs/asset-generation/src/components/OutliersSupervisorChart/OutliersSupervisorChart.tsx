@@ -21,19 +21,19 @@ import { descending } from "d3-array";
 import { format } from "d3-format";
 import { scaleLinear } from "d3-scale";
 
-import { OutliersUnitChartInputTransformed } from "../../server/generate/outliersUnitChart/types";
+import { OutliersSupervisorChartInputTransformed } from "../../server/generate/outliersSupervisorChart/types";
 import { OUTLIERS_GOAL_COLORS } from "../constants";
 import { SwarmedCircleGroup } from "../SwarmedCircleGroup";
 import { calculateSwarm } from "../SwarmedCircleGroup/calculateSwarm";
 import { computeTextWidth } from "../utils";
 import {
   CONTENT_AREA_TOP_OFFSET,
+  HIGHLIGHT_DOT_RADIUS,
   LABEL_X_BASE,
   MARGIN,
   ROW_HEIGHT,
   SWARM_DOT_RADIUS,
   TICK_WIDTH,
-  UNIT_DOT_RADIUS,
   X_AXIS_HEIGHT,
 } from "./constants";
 import { AxisLabel, GoalLine, SwarmLabel, TickLine } from "./styles";
@@ -43,8 +43,8 @@ const formatTarget = format(".1%");
 
 function getValueExtent(data: ChartProps["data"]) {
   const allValues = [
-    ...data.context.otherOfficers.map((o) => o.value),
-    ...data.unitOfficers.map((o) => [o.rate, o.previousRate]),
+    ...data.otherOfficers.map((o) => o.value),
+    ...data.highlightedOfficers.map((o) => [o.rate, o.previousRate]),
   ]
     .flat()
     .sort();
@@ -95,25 +95,32 @@ function getLabelProps(
   return { x, textAnchor };
 }
 
-type ChartProps = Pick<OutliersUnitChartInputTransformed, "data" | "width"> & {
+type ChartProps = Pick<
+  OutliersSupervisorChartInputTransformed,
+  "data" | "width"
+> & {
   // this lets the component share its dynamically calculated height with its parent
   syncHeight: (h: number) => void;
 };
 
-export function OutliersUnitChart({ data, width, syncHeight }: ChartProps) {
+export function OutliersSupervisorChart({
+  data,
+  width,
+  syncHeight,
+}: ChartProps) {
   const { min, max } = getValueExtent(data);
   const xScale = scaleLinear()
     .domain([min, max])
     .range([MARGIN.left, width - MARGIN.right]);
 
-  const unitRowsHeight = ROW_HEIGHT * data.unitOfficers.length;
+  const highlightedRowsHeight = ROW_HEIGHT * data.highlightedOfficers.length;
 
   const { swarmPoints, swarmSpread } = calculateSwarm({
-    data: data.context.otherOfficers,
+    data: data.otherOfficers,
     radius: SWARM_DOT_RADIUS,
     valueScale: xScale,
-    // make sure the swarm is large enough to contain the unit plot
-    minSpread: unitRowsHeight,
+    // make sure the swarm is large enough to contain the highlights
+    minSpread: highlightedRowsHeight,
   });
 
   const height = Math.ceil(
@@ -124,11 +131,11 @@ export function OutliersUnitChart({ data, width, syncHeight }: ChartProps) {
   // so we can just call this during render. it should not trigger a re-render
   syncHeight(height);
 
-  // unit rows should be centered on the midpoint of the swarm
-  const unitRowsOffset =
+  // highlighted rows should be centered on the midpoint of the swarm
+  const highlightedRowsOffset =
     CONTENT_AREA_TOP_OFFSET +
-    // swarm will be >= unit height because we passed minSpread above
-    (swarmSpread - unitRowsHeight) / 2 +
+    // swarm will be >= highlights height because we passed minSpread above
+    (swarmSpread - highlightedRowsHeight) / 2 +
     ROW_HEIGHT / 2;
 
   const axisPositions = {
@@ -136,7 +143,7 @@ export function OutliersUnitChart({ data, width, syncHeight }: ChartProps) {
     tickEnd: height - MARGIN.bottom,
     min: xScale(min),
     max: xScale(max),
-    target: xScale(data.context.target),
+    target: xScale(data.target),
   };
 
   return (
@@ -184,7 +191,7 @@ export function OutliersUnitChart({ data, width, syncHeight }: ChartProps) {
         x={axisPositions.target}
         y={axisPositions.tickStart}
       >
-        {formatTarget(data.context.target)}
+        {formatTarget(data.target)}
       </AxisLabel>
 
       <SwarmedCircleGroup
@@ -194,9 +201,9 @@ export function OutliersUnitChart({ data, width, syncHeight }: ChartProps) {
         transform={`translate(0 ${CONTENT_AREA_TOP_OFFSET + swarmSpread / 2})`}
       />
 
-      {/* unit officers */}
-      <g transform={`translate(0 ${unitRowsOffset})`}>
-        {data.unitOfficers
+      {/* highlighted officers */}
+      <g transform={`translate(0 ${highlightedRowsOffset})`}>
+        {data.highlightedOfficers
           .sort((a, b) => descending(a.rate, b.rate))
           .map((e, i) => {
             const cx = xScale(e.rate);
@@ -209,18 +216,18 @@ export function OutliersUnitChart({ data, width, syncHeight }: ChartProps) {
                 transform={`translate(${cx} ${ROW_HEIGHT * i})`}
               >
                 <rect
-                  height={UNIT_DOT_RADIUS * 2}
+                  height={HIGHLIGHT_DOT_RADIUS * 2}
                   // this rect spans the distance from the outer edges of two circles
                   // centered at cx & prevX
-                  width={UNIT_DOT_RADIUS * 2 + Math.abs(cx - prevX)}
+                  width={HIGHLIGHT_DOT_RADIUS * 2 + Math.abs(cx - prevX)}
                   fill={palette.slate20}
-                  rx={UNIT_DOT_RADIUS}
-                  y={-UNIT_DOT_RADIUS}
+                  rx={HIGHLIGHT_DOT_RADIUS}
+                  y={-HIGHLIGHT_DOT_RADIUS}
                   // the left edge position depends on which way the bar extends from cx
-                  x={(cx < prevX ? 0 : prevX - cx) - UNIT_DOT_RADIUS}
+                  x={(cx < prevX ? 0 : prevX - cx) - HIGHLIGHT_DOT_RADIUS}
                 />
                 <circle
-                  r={UNIT_DOT_RADIUS}
+                  r={HIGHLIGHT_DOT_RADIUS}
                   fill={OUTLIERS_GOAL_COLORS[e.goalStatus]}
                 />
                 <SwarmLabel {...getLabelProps(labelText, cx, prevX, width)}>

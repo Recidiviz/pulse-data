@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { outliersUnitChartInputSchema } from "../../server/generate/outliersUnitChart/types";
+import { outliersSupervisorChartInputSchema } from "../../server/generate/outliersSupervisorChart/types";
 
 /**
  * the mode of this distribution should be zero
@@ -155,7 +155,7 @@ export const officersDataZeroMode = {
  * the mode of this distribution should be zero
  */
 export const officersDataZeroModeTransformed =
-  outliersUnitChartInputSchema.shape.data.shape.context.shape.otherOfficers.parse(
+  outliersSupervisorChartInputSchema.shape.data.shape.otherOfficers.parse(
     officersDataZeroMode
   );
 
@@ -323,6 +323,6 @@ export const officersDataNonZeroMode = {
  * the mode of this distribution should be > zero
  */
 export const officersDataNonZeroModeTransformed =
-  outliersUnitChartInputSchema.shape.data.shape.context.shape.otherOfficers.parse(
+  outliersSupervisorChartInputSchema.shape.data.shape.otherOfficers.parse(
     officersDataNonZeroMode
   );

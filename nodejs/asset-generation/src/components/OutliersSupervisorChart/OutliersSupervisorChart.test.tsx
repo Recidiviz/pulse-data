@@ -20,10 +20,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { convertToImage } from "../../server/generate/convertToImage";
 import { renderToStaticSvg } from "../utils";
 import {
-  fittingUnitDataTransformed,
-  overflowingUnitDataTransformed,
+  fittingSupervisorDataTransformed,
+  overflowingSupervisorDataTransformed,
 } from "./fixtures";
-import { OutliersUnitChart } from "./OutliersUnitChart";
+import { OutliersSupervisorChart } from "./OutliersSupervisorChart";
 
 const syncHeight = vi.fn();
 
@@ -33,19 +33,23 @@ beforeEach(() => {
 
 describe.each([
   {
-    label: "unit that fits within swarm height",
-    data: fittingUnitDataTransformed,
+    label: "highlights that fit within swarm height",
+    data: fittingSupervisorDataTransformed,
     expectedHeight: 213,
   },
   {
-    label: "unit overflowing swarm height",
-    data: overflowingUnitDataTransformed,
+    label: "highlights overflowing swarm height",
+    data: overflowingSupervisorDataTransformed,
     expectedHeight: 279,
   },
 ])("data with $label", ({ data, expectedHeight }) => {
   function TestComponent() {
     return (
-      <OutliersUnitChart data={data} width={570} syncHeight={syncHeight} />
+      <OutliersSupervisorChart
+        data={data}
+        width={570}
+        syncHeight={syncHeight}
+      />
     );
   }
 

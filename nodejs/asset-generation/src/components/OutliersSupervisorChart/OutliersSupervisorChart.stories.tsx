@@ -18,38 +18,39 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
-  fittingUnitDataTransformed,
-  overflowingUnitDataTransformed,
+  fittingSupervisorDataTransformed,
+  overflowingSupervisorDataTransformed,
 } from "./fixtures";
-import { OutliersUnitChart } from "./OutliersUnitChart";
+import { OutliersSupervisorChart } from "./OutliersSupervisorChart";
 
-const meta: Meta<typeof OutliersUnitChart> = {
-  title: "OutliersUnitChart",
-  component: OutliersUnitChart,
+const meta: Meta<typeof OutliersSupervisorChart> = {
+  component: OutliersSupervisorChart,
   argTypes: {
     syncHeight: { action: "syncHeight" },
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof OutliersUnitChart>;
+type Story = StoryObj<typeof OutliersSupervisorChart>;
 
-const render: Story["render"] = (props) => <OutliersUnitChart {...props} />;
+const render: Story["render"] = (props) => (
+  <OutliersSupervisorChart {...props} />
+);
 
 const width = 570;
 
-export const WithFittingUnit: Story = {
+export const WithFittingHighlights: Story = {
   render,
   args: {
     width,
-    data: fittingUnitDataTransformed,
+    data: fittingSupervisorDataTransformed,
   },
 };
 
-export const WithOverflowingUnit: Story = {
+export const WithOverflowingHighlights: Story = {
   render,
   args: {
     width,
-    data: overflowingUnitDataTransformed,
+    data: overflowingSupervisorDataTransformed,
   },
 };

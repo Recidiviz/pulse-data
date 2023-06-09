@@ -30,7 +30,14 @@ async function getTokenSecret() {
 
 export async function getAssetToken(url: string) {
   const secret = await getTokenSecret();
-  return jwt.sign({ sub: url, iat: Date.now() }, secret);
+  return jwt.sign(
+    {
+      sub: url,
+      // JWT specifies that iat should be in seconds
+      iat: Date.now() / 1000,
+    },
+    secret
+  );
 }
 
 export async function getUrlFromAssetToken(token: string) {

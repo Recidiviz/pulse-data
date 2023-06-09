@@ -16,14 +16,14 @@
 // =============================================================================
 
 import {
-  OutliersUnitChartInput,
-  outliersUnitChartInputSchema,
-} from "../../server/generate/outliersUnitChart/types";
+  OutliersSupervisorChartInput,
+  outliersSupervisorChartInputSchema,
+} from "../../server/generate/outliersSupervisorChart/types";
 import { goalStatusSchema } from "../../server/generate/schema/helpers";
 import { officersDataZeroMode } from "../SwarmedCircleGroup/fixtures";
 
-export const fittingUnitData: OutliersUnitChartInput["data"] = {
-  unitOfficers: [
+export const fittingSupervisorData: OutliersSupervisorChartInput["data"] = {
+  highlightedOfficers: [
     {
       name: "Tatiana Alvarez-Thomas",
       rate: 0.19904024430145054,
@@ -43,18 +43,16 @@ export const fittingUnitData: OutliersUnitChartInput["data"] = {
       goalStatus: goalStatusSchema.enum.far,
     },
   ],
-  context: {
-    target: 0.05428241659992843,
-    otherOfficers: officersDataZeroMode,
-  },
+  target: 0.05428241659992843,
+  otherOfficers: officersDataZeroMode,
 };
 
-export const fittingUnitDataTransformed =
-  outliersUnitChartInputSchema.shape.data.parse(fittingUnitData);
+export const fittingSupervisorDataTransformed =
+  outliersSupervisorChartInputSchema.shape.data.parse(fittingSupervisorData);
 
-export const overflowingUnitData = structuredClone(fittingUnitData);
+export const overflowingSupervisorData = structuredClone(fittingSupervisorData);
 // needs enough entries to overflow the height of the swarm
-overflowingUnitData.unitOfficers.push(
+overflowingSupervisorData.highlightedOfficers.push(
   ...[
     {
       name: "Julian Stewart",
@@ -78,5 +76,7 @@ overflowingUnitData.unitOfficers.push(
   ]
 );
 
-export const overflowingUnitDataTransformed =
-  outliersUnitChartInputSchema.shape.data.parse(overflowingUnitData);
+export const overflowingSupervisorDataTransformed =
+  outliersSupervisorChartInputSchema.shape.data.parse(
+    overflowingSupervisorData
+  );
