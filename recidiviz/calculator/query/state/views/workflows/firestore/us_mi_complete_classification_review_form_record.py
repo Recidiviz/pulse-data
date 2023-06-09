@@ -17,7 +17,10 @@
 """Query for clients past their initial classification review date in Michigan"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
@@ -30,6 +33,8 @@ from recidiviz.task_eligibility.dataset_config import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+ID_TYPE = "US_MI_DOC_BOOK"
 
 US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_NAME = (
     "us_mi_complete_classification_review_form_record"
@@ -55,41 +60,247 @@ SELECT
 FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sc
 WHERE state_code = "US_MI" 
 QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment_date DESC, assessment_id)=1
-) 
+),
 
-SELECT
-    pei.external_id,
-    tes.state_code,
-    TO_JSON([STRUCT(NULL AS note_title, (CASE
-    WHEN sai.meets_criteria THEN c.recommended_supervision_level
-    WHEN cses.correctional_level = 'HIGH' THEN 'MAXIMUM' 
-    WHEN cses.correctional_level = 'MAXIMUM' THEN 'MEDIUM' 
-    WHEN cses.correctional_level = 'MEDIUM' THEN 'MINIMUM' 
-    WHEN cses.correctional_level = 'MINIMUM' THEN 'TELEPHONE REPORTING' 
-    ELSE NULL
-    END) AS note_body, NULL as event_date, "Recommended supervision level" AS criteria)]) AS case_notes,
-    reasons,
-FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
-INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-    ON tes.state_code = pei.state_code 
-    AND tes.person_id = pei.person_id
-    AND pei.id_type = "US_MI_DOC"
-    AND task_name IN ("COMPLETE_INITIAL_CLASSIFICATION_REVIEW_FORM", "COMPLETE_SUBSEQUENT_CLASSIFICATION_REVIEW_FORM")
-LEFT JOIN `{{project_id}}.{{criteria_dataset}}.supervision_or_supervision_out_of_state_level_is_sai_materialized` sai
-    ON tes.state_code = sai.state_code
-    AND tes.person_id = sai.person_id 
-    AND CURRENT_DATE('US/Pacific') BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause('sai.end_date')}
-#TODO(#20035) replace with supervision level raw text sessions once views agree
-INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`cses
-    ON tes.state_code = cses.state_code
-    AND tes.person_id = cses.person_id
-    AND CURRENT_DATE('US/Pacific') BETWEEN cses.start_date AND {nonnull_end_date_exclusive_clause('cses.end_date_exclusive')}
-LEFT JOIN compas_recommended_preprocessed c
-    ON tes.state_code = c.state_code
-    AND tes.person_id = c.person_id
-WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
-    AND tes.is_eligible
-    AND tes.state_code = "US_MI"
+three_progress_notes AS (
+  SELECT 
+    plan_detail_id,
+    STRING_AGG(CONCAT(STRING(note_date), ': ', progress_notes), "; ") AS last_3_progress_notes
+  FROM (
+      SELECT 
+        DISTINCT
+          app.plan_detail_id,
+          app.plan_progress_id,
+          DATE(app.last_update_date) AS note_date,
+          CONCAT(app.notes, COALESCE(app.notes2, ''), COALESCE(app.notes3, '')) AS progress_notes,
+      FROM `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_PLAN_PROGRESS_latest` app
+      INNER JOIN `{{project_id}}.us_mi_raw_data.ADH_PLAN_DETAIL` apd
+        USING(plan_detail_id)
+      LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_PLAN_OF_SUPERVISION_latest` aps
+        USING(plan_of_supervision_id)
+      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON aps.offender_booking_id = pei.external_id
+          AND pei.id_type = "{ID_TYPE}"
+          AND pei.state_code = 'US_MI'
+      LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` ss
+        ON pei.person_id = ss.person_id 
+          AND pei.state_code = ss.state_code
+          AND CURRENT_DATE BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date')}
+      WHERE app.notes IS NOT NULL
+        -- Remove notes from before the current super session
+        AND ss.start_date < DATE(app.last_update_date)
+      -- Will only display latest 3 progress notes
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY app.plan_detail_id ORDER BY app.last_update_date DESC) <= 3
+    )
+  GROUP BY 1
+),
+
+case_notes_cte AS (
+--- Get together all case_notes
+
+    -- Recommended supervision level
+    SELECT 
+        sai.person_id,
+        NULL AS note_title, 
+        CASE
+            WHEN sai.meets_criteria THEN c.recommended_supervision_level
+            WHEN cses.correctional_level = 'HIGH' THEN 'MAXIMUM' 
+            WHEN cses.correctional_level = 'MAXIMUM' THEN 'MEDIUM' 
+            WHEN cses.correctional_level = 'MEDIUM' THEN 'MINIMUM' 
+            WHEN cses.correctional_level = 'MINIMUM' THEN 'TELEPHONE REPORTING' 
+        ELSE NULL
+        END AS note_body, 
+        NULL as event_date, 
+        "Recommended supervision level" AS criteria,
+    FROM `{{project_id}}.{{criteria_dataset}}.supervision_or_supervision_out_of_state_level_is_sai_materialized` sai
+    #TODO(#20035) replace with supervision level raw text sessions once views agree
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`cses
+    ON sai.state_code = cses.state_code
+        AND sai.person_id = cses.person_id
+        AND CURRENT_DATE('US/Pacific') BETWEEN cses.start_date AND {nonnull_end_date_exclusive_clause("cses.end_date_exclusive")}
+        AND CURRENT_DATE('US/Pacific') BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause("sai.end_date")}
+    LEFT JOIN compas_recommended_preprocessed c
+        ON sai.state_code = c.state_code
+        AND sai.person_id = c.person_id
+        
+    UNION ALL
+
+    -- Recent violations (past 6 months)
+    SELECT 
+        ssv.person_id,
+        # Violation type + text directly from raw data
+        IF(violation_type != 'INTERNAL_UNKNOWN',
+            CONCAT(svte.violation_type, ' - ', svte.violation_type_raw_text),
+            svte.violation_type_raw_text) AS note_title, 
+        # Decision type + text directly from raw data
+        IF(svrd.decision != 'INTERNAL_UNKNOWN',
+            CONCAT('Decision: ', svrd.decision, ' - ', svrd.decision_raw_text),
+            CONCAT('Decision: ', svrd.decision_raw_text)) AS note_body,
+        ssv.violation_date AS event_date,
+        "Recent violations (past 6 months)" AS criteria, 
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation`  ssv
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_type_entry` svte
+        USING(supervision_violation_id)
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_response` svr
+        USING(supervision_violation_id)
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_response_decision_entry` svrd
+        USING(supervision_violation_response_id)
+    WHERE ssv.state_code = 'US_MI'
+        AND ssv.violation_date IS NOT NULL
+        AND DATE_DIFF(CURRENT_DATE, ssv.violation_date, MONTH)<=6
+        AND svrd.decision != 'VIOLATION_UNFOUNDED'
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY ssv.person_id, ssv.supervision_violation_id ORDER BY svr.response_date DESC) =1
+
+    UNION ALL
+
+    -- Recent employment (past 6 months)
+    SELECT 
+        person_id, 
+        CONCAT("Employer: ", employer_name) AS note_title, 
+        IF(job_title IS NOT NULL,
+            CONCAT('Job title: ', 
+                job_title, ' - ', 
+                "From ", CAST(start_date AS string), ' until ', IF(end_date = CURRENT_DATE, 'today', CAST(end_date AS string)), " (", CAST(DATE_DIFF(end_date, start_date, MONTH) AS STRING), " months)"),
+            CONCAT("From ", CAST(start_date AS string), ' until ', IF(end_date = CURRENT_DATE, 'today', CAST(end_date AS string)), " (", CAST(DATE_DIFF(end_date, start_date, MONTH) AS STRING), " months)")
+        ) AS note_body,
+        end_date AS event_date,
+        "Recent employment (past 6 months)" AS criteria,
+    FROM (
+        SELECT 
+            * EXCEPT(end_date),
+            COALESCE(end_date, CURRENT_DATE) AS end_date
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` 
+    )
+    WHERE state_code = 'US_MI'
+        AND DATE_DIFF(CURRENT_DATE, end_date, MONTH)<=6
+
+    UNION ALL
+
+    -- Fines and fees
+    SELECT 
+        person_id, 
+        note_title, 
+        CONCAT(
+            'Initial amount: ',
+            CAST(total_amount_ordered AS STRING),
+            '; Amount left to pay: ',
+            CAST( (CAST(total_amount_ordered AS FLOAT64) - CAST(amount_paid_todate AS FLOAT64)) AS STRING),
+            '; Last payment date: ',
+            LEFT(last_payment_date, 10)
+                ) AS note_body,
+        event_date,
+        "Fines and fees" AS criteria, 
+    FROM (
+        SELECT
+        pei.person_id, 
+        CONCAT(ref4.description, ' - ',ref2.description) AS note_title,
+        CAST(LEFT(fee_prof.last_update_date, 10) AS DATE) AS event_date,
+        IF(total_amount_ordered IS NULL, 
+            'Unknown', 
+            total_amount_ordered) AS total_amount_ordered,
+        IF(amount_paid_todate IS NULL, 
+            'Unknown', 
+            amount_paid_todate) AS amount_paid_todate,
+        IF(last_payment_date IS NULL, 
+            '', 
+            last_payment_date) AS last_payment_date,
+        FROM `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_OFFENDER_FEE_PROFILE_latest` fee_prof
+        LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_COS_FEE_TYPE_latest` ref1 
+            on fee_prof.cos_fee_type_id = ref1.cos_fee_type_id
+        LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_REFERENCE_CODE_latest` ref4 
+            on ref1.cos_type_id = ref4.reference_code_id
+        LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_REFERENCE_CODE_latest` ref2 
+            on fee_prof.status_id = ref2.reference_code_id
+        LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_REFERENCE_CODE_latest` ref3 
+            on fee_prof.closing_reason_id = ref3.reference_code_id
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+            ON fee_prof.offender_booking_id = pei.external_id
+            AND pei.id_type = "{ID_TYPE}"
+            AND pei.state_code = 'US_MI'
+    )
+
+    UNION ALL
+    
+    -- Case plan goals and progress
+    SELECT 
+        pei.person_id,
+        -- Completion status + Standard Plan Goal Description
+        IF(apd.complete_date IS NULL,
+        CONCAT(code.description),
+        CONCAT("COMPLETED - ", code.description)) 
+        AS note_title,
+        -- Plan goal standard method description + plan goal specific notes + latest 3 progress notes
+        CONCAT('Method: ', COALESCE(code2.description, 'None'),
+            ' - Plan Notes: ', COALESCE(apd.notes, 'None'), 
+            ' - Progress Notes: ', COALESCE(tpn.last_3_progress_notes, 'None'))
+        AS note_body,
+        -- Latest update of the record at ADH_PLAN_DETAIL
+        CAST(LEFT(apd.last_update_date, 10) AS DATE) AS event_date,
+        "Case Plan Goals" AS criteria,
+    FROM `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_PLAN_OF_SUPERVISION_latest` aps
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_PLAN_DETAIL_latest` apd
+        USING(plan_of_supervision_id)
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_REFERENCE_CODE_latest` code
+        ON code.reference_code_id = apd.plan_goal_id
+    LEFT JOIN `{{project_id}}.us_mi_raw_data_up_to_date_views.ADH_REFERENCE_CODE_latest` code2
+        ON code2.reference_code_id = apd.plan_goal_method_id
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON aps.offender_booking_id = pei.external_id
+        AND pei.id_type = "{ID_TYPE}"
+        AND pei.state_code = 'US_MI'
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` ss
+        ON pei.person_id = ss.person_id 
+        AND pei.state_code = ss.state_code
+        AND CURRENT_DATE BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date')}
+    LEFT JOIN three_progress_notes tpn
+        ON tpn.plan_detail_id = apd.plan_detail_id
+    -- Only surface plans of supervision happening after supervision start
+    WHERE ss.start_date <= CAST(LEFT(aps.start_date, 10) AS DATE)
+        --AND CURRENT_DATE BETWEEN CAST(LEFT(aps.start_date, 10) AS  DATE) AND CAST(LEFT(aps.end_date, 10) AS DATE)
+    -- Only keep latest goals from the latest plan of supervision
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.person_id, apd.plan_goal_id
+                            ORDER BY aps.last_update_date DESC) = 1
+),
+
+eligible_clients AS (
+    SELECT
+        pei.external_id,
+        tes.state_code,
+        reasons,
+    FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON tes.state_code = pei.state_code 
+        AND tes.person_id = pei.person_id
+        AND pei.id_type = "{ID_TYPE}"
+        AND task_name IN ("COMPLETE_INITIAL_CLASSIFICATION_REVIEW_FORM", "COMPLETE_SUBSEQUENT_CLASSIFICATION_REVIEW_FORM")
+    WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause("tes.end_date")}
+        AND tes.is_eligible
+        AND tes.state_code = "US_MI"
+),
+
+array_case_notes_for_eligible_folks AS (
+    SELECT 
+      external_id,
+      -- Group all notes into an array within a JSON
+      TO_JSON(ARRAY_AGG( STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
+    FROM case_notes_cte cn
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON cn.person_id = pei.person_id
+            AND pei.id_type = "{ID_TYPE}"
+            AND pei.state_code = 'US_MI'
+    INNER JOIN eligible_clients
+        USING(external_id)
+    GROUP BY 1
+)
+
+SELECT 
+    ec.external_id,
+    ec.state_code,
+    ec.reasons,
+    cn.case_notes,
+FROM eligible_clients ec
+LEFT JOIN array_case_notes_for_eligible_folks cn
+  USING(external_id)
 """
 
 US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
