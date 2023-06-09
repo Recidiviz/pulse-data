@@ -423,10 +423,17 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
         period_end_date_col: str,
         original_span_start_date: Optional[str] = None,
     ) -> str:
+        weight_snippet = (
+            (
+                f'CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.weight_col}") AS FLOAT64) * '
+            )
+            if self.weight_col
+            else ""
+        )
         return f"""
             SUM(
             (
-                {self.weight_col + " * " if self.weight_col else ""}DATE_DIFF(
+                {weight_snippet}DATE_DIFF(
                     LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
                     GREATEST({period_start_date_col}, {span_start_date_col}),
                     DAY)
@@ -542,6 +549,23 @@ class AssignmentSpanValueAtStartMetric(
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"SAFE_DIVIDE(SUM({self.span_count_metric.name} * {self.name}), SUM({self.span_count_metric.name})) AS {self.name}"
+
+
+@attr.define(frozen=True, kw_only=True)
+class AssignmentCountMetric(AssignmentSpanAggregatedMetric, SpanMetricConditionsMixin):
+    """
+    Class used specifically for calculating number of assignments in a period.
+
+    This is used only for the metric "Assignments".
+    """
+
+    def generate_aggregation_query_fragment(
+        self, span_start_date_col: str, span_end_date_col: str, assignment_date_col: str
+    ) -> str:
+        return f"1 AS {self.name}"
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SUM({self.name}) AS {self.name}"
 
 
 @attr.define(frozen=True, kw_only=True)

@@ -35,6 +35,7 @@ class MetricPopulationType(Enum):
 
     INCARCERATION = "INCARCERATION"
     SUPERVISION = "SUPERVISION"
+    JUSTICE_INVOLVED = "JUSTICE_INVOLVED"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -92,6 +93,22 @@ METRIC_POPULATIONS_BY_TYPE = {
                 StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION.value,
                 StateSupervisionPeriodSupervisionType.PAROLE.value,
                 StateSupervisionPeriodSupervisionType.PROBATION.value,
+            ],
+        },
+    ),
+    MetricPopulationType.JUSTICE_INVOLVED: MetricPopulation(
+        population_type=MetricPopulationType.JUSTICE_INVOLVED,
+        conditions_dict={
+            # every compartment except
+            # "DEATH", "ERRONEOUS_RELEASE", "INTERNAL_UNKNOWN", "LIBERTY", "SUSPENSION"
+            "compartment_level_1": [
+                "INCARCERATION",
+                "INCARCERATION_OUT_OF_STATE",
+                "SUPERVISION",
+                "SUPERVISION_OUT_OF_STATE",
+                "INVESTIGATION",
+                "PENDING_SUPERVISION",
+                "PENDING_CUSTODY",
             ],
         },
     ),

@@ -23,8 +23,12 @@ from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
+    AssignmentEventAggregatedMetric,
+    AssignmentSpanAggregatedMetric,
     MetricConditionsMixin,
     MiscAggregatedMetric,
+    PeriodEventAggregatedMetric,
+    PeriodSpanAggregatedMetric,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
@@ -57,7 +61,7 @@ def generate_aggregated_metrics_view_builder(
             and aggregation_level.level_type in metric.aggregation_levels
         )
     ]
-    metrics_query_str = ", ".join([metric.name for metric in included_metrics])
+    metrics_query_str = ",\n    ".join([metric.name for metric in included_metrics])
     view_description_metrics = [
         f"|{metric.display_name} (`{metric.name}`)|{metric.description}|{metric.pretty_name()}|"
         f"`{metric.get_metric_conditions_string_no_newline() if isinstance(metric, MetricConditionsMixin) else 'N/A'}`|"
@@ -76,7 +80,7 @@ def generate_aggregated_metrics_view_builder(
 
 #### Aggregation Level Definition: {level_name.title()}
 
-Source table: 
+Source table:
 ```
 {aggregation_level.client_assignment_query}
 ```
@@ -91,51 +95,70 @@ Additional attribute columns: `{aggregation_level.get_attribute_columns_query_st
 {view_description_metrics_str}
     """
 
-    query_template = f"""
-    SELECT 
-        {aggregation_level.get_index_columns_query_string(prefix="period_span")},
-        start_date,
-        end_date,
-        period,
-        COALESCE(assignments, 0) AS assignments,
-        {metrics_query_str},
-    FROM
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_span_aggregated_metrics` period_span
-    LEFT JOIN
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_event_aggregated_metrics` period_event
-    USING (
-        {aggregation_level.get_primary_key_columns_query_string()},
-        start_date, end_date, period
-    )
-    LEFT JOIN
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_assignment_span_aggregated_metrics` assignment_span
-    USING (
-        {aggregation_level.get_primary_key_columns_query_string()},
-        start_date, end_date, period
-    )
-    LEFT JOIN
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_assignment_event_aggregated_metrics` assignment_event
-    USING (
-        {aggregation_level.get_primary_key_columns_query_string()},
-        start_date, end_date, period
-    )
+    # determine which metric source tables to include
+    included_metric_types = {type(metric) for metric in included_metrics}
+
+    # generate FROM clause
+    from_clause = ""
+    metric_class_to_table_mapping = {
+        PeriodSpanAggregatedMetric: "period_span",
+        PeriodEventAggregatedMetric: "period_event",
+        AssignmentSpanAggregatedMetric: "assignment_span",
+        AssignmentEventAggregatedMetric: "assignment_event",
+        MiscAggregatedMetric: "misc",
+    }
+
+    for metric_class, table_name in metric_class_to_table_mapping.items():
+        # Check if there is a metric of the given class. If so, we need to add the
+        # table to the FROM clause.
+        if any(
+            issubclass(metric_type, metric_class)
+            for metric_type in included_metric_types
+        ):
+            # For misc metrics, check if the view builder exists for the population,
+            # and if not, don't add the table to the FROM clause.
+            if metric_class == MiscAggregatedMetric:
+                misc_metrics_view_builder = (
+                    generate_misc_aggregated_metrics_view_builder(
+                        aggregation_level=aggregation_level,
+                        population=population,
+                        metrics=[
+                            m
+                            for m in included_metrics
+                            if isinstance(m, MiscAggregatedMetric)
+                        ],
+                    )
+                )
+                if not misc_metrics_view_builder:
+                    continue
+
+            # Add table to the FROM clause
+            table_ref = f"`{{project_id}}.aggregated_metrics.{population_name}_{level_name}_{table_name}_aggregated_metrics` {table_name}"
+            if not from_clause:
+                join_type = "FROM"
+                join_condition = ""
+            else:
+                join_type = "LEFT JOIN"
+                join_condition = f"USING ({aggregation_level.get_primary_key_columns_query_string()}, start_date, end_date, period)"
+            from_clause += f"""
+{join_type}
+    {table_ref}
+{join_condition}
 """
 
-    misc_metrics_view_builder = generate_misc_aggregated_metrics_view_builder(
-        aggregation_level=aggregation_level,
-        population=population,
-        metrics=[m for m in included_metrics if isinstance(m, MiscAggregatedMetric)],
-    )
-    if misc_metrics_view_builder:
-        # Join to miscellaneous metrics view if view exists for population and aggregation level
-        query_template += f"""
-        LEFT JOIN
-            `{{project_id}}.{{aggregated_metrics_dataset}}.{misc_metrics_view_builder.view_id}` misc
-        USING (
-            {aggregation_level.get_primary_key_columns_query_string()},
-            start_date, end_date, period
-        )
-    """
+    # verify from_clause is hydrated
+    if not from_clause:
+        raise ValueError(f"No metrics found for {population_name} metrics")
+
+    # construct query template
+    query_template = f"""
+SELECT
+    {aggregation_level.get_index_columns_query_string(prefix="period_span")},
+    start_date,
+    end_date,
+    period,
+    {metrics_query_str},{from_clause}
+"""
 
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
@@ -143,7 +166,6 @@ Additional attribute columns: `{aggregation_level.get_attribute_columns_query_st
         view_query_template=query_template,
         description=view_description,
         bq_description=view_description_header,
-        aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
         should_materialize=True,
         clustering_fields=aggregation_level.primary_key_columns,
     )

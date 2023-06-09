@@ -43,6 +43,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     ABSCONSIONS_BENCH_WARRANTS,
     ANY_INCARCERATION_365,
+    ASSIGNMENTS,
     AVG_AGE,
     AVG_ASSIGNMENTS_OFFICER,
     AVG_CRITICAL_CASELOAD_SIZE,
@@ -129,6 +130,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     PENDING_CUSTODY_STARTS,
     PERSON_DAYS_TASK_ELIGIBLE_METRICS_INCARCERATION,
     PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION,
+    PERSON_DAYS_WEIGHTED_JUSTICE_IMPACT,
     PROP_PERIOD_WITH_CRITICAL_CASELOAD,
     SUPERVISION_DISTRICT,
     SUPERVISION_DISTRICT_INFERRED,
@@ -163,6 +165,8 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
 )
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] = {
     MetricPopulationType.INCARCERATION: [
@@ -190,6 +194,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         SUPERVISION_STARTS,
         INCARCERATION_INCIDENTS,
         # Assignment window metrics
+        ASSIGNMENTS,
         DAYS_AT_LIBERTY_365,
         DAYS_IN_COMMUNITY_365,
         DAYS_INCARCERATED_365,
@@ -306,6 +311,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         *PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION,
         *TASK_COMPLETED_METRICS_SUPERVISION,
         # Assignment window metrics
+        ASSIGNMENTS,
         ANY_INCARCERATION_365,
         DAYS_ABSCONDED_365,
         DAYS_AT_LIBERTY_365,
@@ -323,6 +329,10 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         DAYS_TO_FIRST_VIOLATION_RESPONSE_365,
         *DAYS_TO_FIRST_VIOLATION_RESPONSE_365_BY_TYPE_METRICS,
     ],
+    MetricPopulationType.JUSTICE_INVOLVED: [
+        AVG_DAILY_POPULATION,
+        PERSON_DAYS_WEIGHTED_JUSTICE_IMPACT,
+    ],
 }
 
 LEVELS_BY_POPULATION_TYPE: Dict[
@@ -339,21 +349,29 @@ LEVELS_BY_POPULATION_TYPE: Dict[
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
+    MetricPopulationType.JUSTICE_INVOLVED: [
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ],
 }
 
 
-def collect_aggregated_metrics_view_builders() -> List[SimpleBigQueryViewBuilder]:
+def collect_aggregated_metrics_view_builders(
+    metrics_by_population_dict: Dict[MetricPopulationType, List[AggregatedMetric]],
+    levels_by_population_dict: Dict[
+        MetricPopulationType, List[MetricUnitOfAnalysisType]
+    ],
+) -> List[SimpleBigQueryViewBuilder]:
     """
     Collects all aggregated metrics view builders at all available aggregation levels and populations
     """
     view_builders = []
-    for population_type in MetricPopulationType:
+    for population_type, all_metrics in metrics_by_population_dict.items():
         population = METRIC_POPULATIONS_BY_TYPE[population_type]
-        all_metrics = METRICS_BY_POPULATION_TYPE[population_type]
         if not all_metrics:
             continue
-        for level_type in LEVELS_BY_POPULATION_TYPE[population_type]:
+        for level_type in levels_by_population_dict[population_type]:
             level = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[level_type]
+
             # Build assignment table
             view_builders.append(
                 generate_metric_assignment_sessions_view_builder(
@@ -363,70 +381,103 @@ def collect_aggregated_metrics_view_builders() -> List[SimpleBigQueryViewBuilder
             )
 
             # Build metric builder views by type
-            view_builders.append(
-                generate_period_span_aggregated_metrics_view_builder(
-                    aggregation_level=level,
-                    population=population,
-                    metrics=[
-                        m
-                        for m in all_metrics
-                        if isinstance(m, PeriodSpanAggregatedMetric)
-                    ],
+            # PeriodSpanAggregatedMetric
+            period_span_metric_list = [
+                m for m in all_metrics if isinstance(m, PeriodSpanAggregatedMetric)
+            ]
+            if period_span_metric_list:
+                view_builders.append(
+                    generate_period_span_aggregated_metrics_view_builder(
+                        aggregation_level=level,
+                        population=population,
+                        metrics=period_span_metric_list,
+                    )
                 )
-            )
-            view_builders.append(
-                generate_period_event_aggregated_metrics_view_builder(
-                    aggregation_level=level,
-                    population=population,
-                    metrics=[
-                        m
-                        for m in all_metrics
-                        if isinstance(m, PeriodEventAggregatedMetric)
-                    ],
-                )
-            )
-            view_builders.append(
-                generate_assignment_span_aggregated_metrics_view_builder(
-                    aggregation_level=level,
-                    population=population,
-                    metrics=[
-                        m
-                        for m in all_metrics
-                        if isinstance(m, AssignmentSpanAggregatedMetric)
-                    ],
-                )
-            )
-            view_builders.append(
-                generate_assignment_event_aggregated_metrics_view_builder(
-                    aggregation_level=level,
-                    population=population,
-                    metrics=[
-                        m
-                        for m in all_metrics
-                        if isinstance(m, AssignmentEventAggregatedMetric)
-                    ],
-                )
-            )
-            # Add miscellaneous metric view builders if they exist for a given
-            # population and aggregation level
-            misc_metrics_view_builder = generate_misc_aggregated_metrics_view_builder(
-                aggregation_level=level,
-                population=population,
-                metrics=[
-                    m
-                    for m in all_metrics
-                    if isinstance(m, MiscAggregatedMetric)
-                    and population.population_type in m.populations
-                    and level.level_type in m.aggregation_levels
-                ],
-            )
-            if misc_metrics_view_builder:
-                view_builders.append(misc_metrics_view_builder)
 
-            # Build joined view of all metrics
+            # PeriodEventAggregatedMetric
+            period_event_metric_list = [
+                m for m in all_metrics if isinstance(m, PeriodEventAggregatedMetric)
+            ]
+            if period_event_metric_list:
+                view_builders.append(
+                    generate_period_event_aggregated_metrics_view_builder(
+                        aggregation_level=level,
+                        population=population,
+                        metrics=period_event_metric_list,
+                    )
+                )
+
+            # AssignmentSpanAggregatedMetric
+            assignment_span_metric_list = [
+                m for m in all_metrics if isinstance(m, AssignmentSpanAggregatedMetric)
+            ]
+            if assignment_span_metric_list:
+                view_builders.append(
+                    generate_assignment_span_aggregated_metrics_view_builder(
+                        aggregation_level=level,
+                        population=population,
+                        metrics=assignment_span_metric_list,
+                    )
+                )
+
+            # AssignmentEventAggregatedMetric
+            assignment_event_metric_list = [
+                m for m in all_metrics if isinstance(m, AssignmentEventAggregatedMetric)
+            ]
+            if assignment_event_metric_list:
+                view_builders.append(
+                    generate_assignment_event_aggregated_metrics_view_builder(
+                        aggregation_level=level,
+                        population=population,
+                        metrics=assignment_event_metric_list,
+                    )
+                )
+
+            # verify that ASSIGNMENTS is present if any assignment span/event metrics
+            # are present
+            if assignment_span_metric_list or assignment_event_metric_list:
+                if not ASSIGNMENTS in all_metrics:
+                    raise ValueError(
+                        "Assignment span/event metrics are present but ASSIGNMENTS is not"
+                    )
+
+            # MiscAggregatedMetric
+            misc_metric_list = [
+                m
+                for m in all_metrics
+                if isinstance(m, MiscAggregatedMetric)
+                and population.population_type in m.populations
+                and level.level_type in m.aggregation_levels
+            ]
+            if misc_metric_list:
+                # Even if there are misc metrics, generate_misc_aggregated_metrics_view_builder
+                # may return None if there are no metrics for the given population,
+                # so first generate the view builder and then check if it is None
+                misc_metric_view_builder = (
+                    generate_misc_aggregated_metrics_view_builder(
+                        aggregation_level=level,
+                        population=population,
+                        metrics=misc_metric_list,
+                    )
+                )
+                if misc_metric_view_builder:
+                    view_builders.append(misc_metric_view_builder)
+
+            # Build aggregated metrics table combining all
             view_builders.append(
                 generate_aggregated_metrics_view_builder(
-                    aggregation_level=level, population=population, metrics=all_metrics
+                    aggregation_level=level,
+                    population=population,
+                    metrics=all_metrics,
                 )
             )
+
     return view_builders
+
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        for view_builder in collect_aggregated_metrics_view_builders(
+            METRICS_BY_POPULATION_TYPE, LEVELS_BY_POPULATION_TYPE
+        ):
+            view_builder.build_and_print()

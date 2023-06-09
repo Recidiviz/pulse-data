@@ -82,7 +82,6 @@ assignments AS (
         population_start_date AS start_date,
         population_end_date AS end_date,
         period,
-        SUM(assignments) AS assignments,
         {metric_aggregation_fragment_outer}
     FROM (
         SELECT
@@ -92,7 +91,6 @@ assignments AS (
             period,
             assign.person_id,
             assign.assignment_date,
-            1 AS assignments,
             {metric_aggregation_fragment_inner}
         FROM 
             time_periods pop
@@ -125,7 +123,6 @@ assignments AS (
 )""" + get_unioned_time_granularity_clause(
         aggregation_level=aggregation_level,
         metrics=metrics,
-        manual_metrics_str="SUM(assignments) AS assignments",
     )
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
