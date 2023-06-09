@@ -1243,6 +1243,7 @@ def get_api_blueprint(
                 agency=agency,
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 metric_definitions=metric_definitions,
+                filename=file.filename,
             )
 
             current_session.commit()

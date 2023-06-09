@@ -32,6 +32,10 @@ from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEth
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseDeclinedSeverityType,
     FundingType,
+    ProsecutedCaseSeverityType,
+)
+from recidiviz.justice_counts.dimensions.prosecution import (
+    StaffType as ProsecutionStaffType,
 )
 from recidiviz.justice_counts.dimensions.supervision import StaffType
 from recidiviz.justice_counts.exceptions import (
@@ -53,6 +57,7 @@ from recidiviz.justice_counts.utils.constants import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import (
+    create_combined_excel_file,
     create_csv_file,
     create_excel_file,
 )
@@ -130,6 +135,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
+                filename=file_path,
             )
 
             self.assertEqual(len(metric_key_to_errors), 2)
@@ -180,6 +186,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -238,6 +245,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(excel_file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=excel_file_path,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -282,6 +290,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
+                filename=file_path,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -318,6 +327,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
+                filename=file_path,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -350,6 +360,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERVISION.value],
+                filename=file_path,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
@@ -603,6 +614,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
+                filename=file_path,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -690,6 +702,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
+                filename=file_path,
             )
 
             # Case 1 (Missing entire metric)
@@ -805,6 +818,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
+                filename=file_path,
             )
             # There should be no errors because calls for service metric is missing
             # but it is disabled.
@@ -853,6 +867,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERVISION.value],
+                filename=file_path,
             )
 
             # There should be datapoints for parole and probation funding, but none for supervision
@@ -911,6 +926,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             self.assertEqual(len(metric_key_to_errors), 3)
             # 1 warning because metric was reported as monthly even though it is an annual metric.
@@ -959,6 +975,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             self.assertEqual(len(metric_key_to_errors), 8)
             # Annual metrics have a row for 2 years
@@ -1018,6 +1035,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             # Make sure reports were created
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1037,6 +1055,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             # Check that reports have not been set to draft (no changes were actually made)
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1058,6 +1077,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1089,6 +1109,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1118,6 +1139,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1160,6 +1182,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1184,6 +1207,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             self.assertEqual(len(workbook_uploader.updated_reports), 0)
 
@@ -1198,6 +1222,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1251,6 +1276,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session=session,
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+                filename=file_path,
             )
             super_agency_reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_super_agency_id
@@ -1264,3 +1290,77 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session, agency_id=child_agencies[1].id
             )
             self.assertEqual(len(affiliate_agency_B_reports), 9)
+
+    def test_single_page_multiple_metrics(self) -> None:
+        """Bulk upload single page file that contains data for mulitple metrics."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            prosecution_agency = AgencyInterface.get_agency_by_id(
+                session=session, agency_id=self.prosecution_agency_id
+            )
+            file_path = create_combined_excel_file(
+                system=schema.System.PROSECUTION,
+                file_name="test_single_page_combined.xlsx",
+            )
+            workbook_uploader = WorkbookUploader(
+                system=schema.System.PROSECUTION,
+                agency=prosecution_agency,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(file_path),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
+                filename=file_path,
+            )
+            self.assertEqual(len(workbook_uploader.metric_key_to_errors), 0)
+
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=session,
+                agency_id=self.prosecution_agency_id,
+                include_datapoints=True,
+            )
+            reports_by_instance = {report.instance: report for report in reports}
+
+            # Spot check monthly report
+            monthly_report = reports_by_instance["01 2023 Metrics"]
+            monthly_metrics = ReportInterface.get_metrics_by_report(
+                session=session, report=monthly_report
+            )
+            self.assertEqual(len(monthly_metrics), 7)
+
+            cases_prosecuted_metric = list(
+                filter(
+                    lambda m: m.key == prosecution.cases_prosecuted.key, monthly_metrics
+                )
+            )[0]
+
+            self.assertEqual(cases_prosecuted_metric.value, 120)
+            self.assertEqual(
+                cases_prosecuted_metric.aggregated_dimensions[  # type: ignore[index]
+                    0
+                ].dimension_to_value[ProsecutedCaseSeverityType.FELONY],
+                30,
+            )
+
+            # Spot check annual report
+            annual_report = reports_by_instance["2023 Annual Metrics"]
+            annual_metrics = ReportInterface.get_metrics_by_report(
+                session=session, report=annual_report
+            )
+            self.assertEqual(len(annual_metrics), 4)
+
+            total_staff_metric = list(
+                filter(lambda m: m.key == prosecution.staff.key, annual_metrics)
+            )[0]
+
+            self.assertEqual(total_staff_metric.value, 70)
+            self.assertEqual(
+                total_staff_metric.aggregated_dimensions[  # type: ignore[index]
+                    0
+                ].dimension_to_value[ProsecutionStaffType.LEGAL_STAFF],
+                10,
+            )

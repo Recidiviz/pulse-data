@@ -234,6 +234,7 @@ class SpreadsheetInterface:
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         metric_definitions: List[MetricDefinition],
         agency: schema.Agency,
+        filename: Optional[str],
         auth0_user_id: Optional[str] = None,
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
@@ -276,6 +277,7 @@ class SpreadsheetInterface:
             session=session,
             xls=xls,
             metric_definitions=metric_definitions,
+            filename=filename,
         )
         is_ingest_successful = all(
             isinstance(e, JusticeCountsBulkUploadException)
@@ -490,6 +492,7 @@ class SpreadsheetInterface:
             agency=agency,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
             metric_definitions=metric_definitions,
+            filename=filename,
         )
 
     @staticmethod
