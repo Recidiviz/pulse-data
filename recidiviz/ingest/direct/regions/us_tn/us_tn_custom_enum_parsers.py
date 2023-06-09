@@ -22,6 +22,10 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_tn_custom_enum_parsers.<function name>
 """
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
@@ -79,3 +83,24 @@ def supervision_type_from_fields(
     ) and (sup_type == "CCO" or (sup_type in ("COM", "ISC") and assign_type == "CCC")):
         return StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT
     return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
+
+def staff_role_type_from_staff_title(
+    raw_text: str,
+) -> StateStaffRoleType:
+    if raw_text in ("PRBM", "PRBO", "PRBP", "PARO", "PAOS"):
+        return StateStaffRoleType.SUPERVISION_OFFICER
+
+    return StateStaffRoleType.INTERNAL_UNKNOWN
+
+
+def staff_role_subtype_from_staff_title(
+    raw_text: str,
+) -> StateStaffRoleSubtype:
+    if raw_text in ("PAOS"):
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
+
+    if raw_text in ("PRBM", "PRBO", "PRBP", "PARO"):
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER
+
+    return StateStaffRoleSubtype.INTERNAL_UNKNOWN
