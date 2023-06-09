@@ -28,8 +28,7 @@ pytest-alembic = "*"
 pipenv = "*"
 pygit2 = "*"
 parameterized = "*"
-# TODO(#21447) Unpin google-api-python-client when worker signal 11 failure is fixed.
-google-api-python-client = "==2.86.0"
+google-api-python-client = "*"
 google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
 google-cloud-build = "*"
@@ -103,10 +102,8 @@ SyntheticControlMethods = "*"
 tabulate = "*"
 ydata-profiling = "*"
 # end recidiviz-research dependencies
-# TODO(#21447) Unpin below packages when worker signal 11 failure is fixed.
+# TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
-cython = "==0.29.34"
-libcst = "==0.4.9"
 
 [packages]
 callee = "*"
@@ -181,8 +178,7 @@ cryptography = "*"
 #  google-cloud* libraries to >= 2.0.0.
 google-cloud-bigquery = "<3.0.0"
 google-cloud-bigquery-datatransfer = "<3.0.0"
-# TODO(#21447) Unpin google-api-python-client when worker signal 11 failure is fixed.
-google-api-python-client = "==2.86.0"
+google-api-python-client = "*"
 google-auth = "*"
 deepdiff = "*"
 "mmh3" = "*"
@@ -242,10 +238,8 @@ xlsxwriter="*"
 pytablewriter = "*"
 twilio = "*"
 twilio-stubs = "*"
-# TODO(#21447) Unpin below packages when worker signal 11 failure is fixed.
+# TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
-cython = "==0.29.34"
-libcst = "==0.4.9"
 
 
 [requires]
