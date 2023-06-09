@@ -51,6 +51,7 @@ class UsTnController(BaseDirectIngestController):
             "DisciplinaryIncarcerationIncident",
             "CAFScoreAssessment",
             "Staff",
+            "StaffRolePeriods",
         ]
 
         # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes

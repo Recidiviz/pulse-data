@@ -3,6 +3,7 @@ file_tag: Staff
 file_description: |-
   This entity contains descriptive information about each employee in the Tennessee Department of Corrections or other agency utilizing the TOMIS system.
 data_classification: source
+always_historical_export: False # Since this file is used for State Staff hydration, we need to query it for Staff@ALL which means it should not be pruned. Adding this flag or now to make sure this data does not get pruned. Eventually, this can be reverted back once XXX is merged.
 primary_key_cols:
   - StaffID
 columns:
@@ -491,7 +492,7 @@ columns:
       - value: HSDI
         description: HEALTH SERVICES
       - value: INAN
-        description: "TODO(#7424): Update with definition."
+        description: INTELLIGENCE ANALYST
       - value: INFO
         description: INFORMATION OFFICER
       - value: INJ2
@@ -509,7 +510,7 @@ columns:
       - value: INVE
         description: INVESTIGATOR
       - value: IPPO
-        description: "TODO(#7424): Update with definition."
+        description: INST. PROB/PARO OFFICER
       - value: ISCC
         description: ISC COORDINATOR
       - value: JADM
