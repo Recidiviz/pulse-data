@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -106,6 +106,7 @@ def has_at_least_x_negative_tests_in_time_interval(
     date_interval: int = 12,
     date_part: str = "MONTH",
 ) -> str:
+
     """
     Args:
         number_of_negative_tests: Number of negative tests needed within time interval
@@ -216,4 +217,60 @@ def has_unpaid_fines_fees_balance(
         TO_JSON(STRUCT({unpaid_balance_field} AS amount_owed)) AS reason,
     FROM aggregated_fines_fees_per_client
     WHERE fee_type = "{fee_type}"
+    """
+
+
+def time_difference_from_client_record_case_notes(
+    state_code: str,
+    criteria_str: str = "Time remaining on supervision",
+    event_date_str: str = "NULL",
+    note_title_str: str = "NULL",
+    latest_date: str = "expiration_date",
+    earliest_date: str = "CURRENT_DATE('US/Pacific')",
+) -> str:
+    """
+    This generates a view that calculates the time difference between two dates present in
+    the client record (e.g. time remaining on supervision) and formats it to be consistent
+    with workflows case notes.
+
+    Args:
+        state_code (str): String state code (e.g. 'US_MI')
+        criteria_str (str, optional): Criteria name as a string. Defaults to "Time remaining on supervision".
+        event_date_str (str, optional): Event date. Defaults to "NULL".
+        note_title_str (str, optional): Note title. Defaults to "NULL".
+        latest_date (str, optional): Date to be used to calculate the difference. This
+            date should come later than earliest_date. Defaults to "expiration_date".
+        earliest_date (str, optional): Date to be used to calculate the difference. This
+            date should come before than latest_date. Defaults to "CURRENT_DATE('US/Pacific')".
+
+    Returns:
+        str: SQL query
+    """
+
+    return f"""
+    SELECT 
+        external_id,
+        {note_title_str} AS note_title,
+        CASE 
+            WHEN ABS(years_remaining) > 0 
+            THEN CONCAT(CAST(years_remaining AS string), " years and ", CAST(MOD(months_remaining,12) AS string), " months")
+            WHEN ABS(years_remaining) = 0 AND ABS(months_remaining)>=1
+            THEN CONCAT(CAST(months_remaining AS string), " months")
+            WHEN ABS(years_remaining) = 0 AND ABS(months_remaining)=0
+            THEN CONCAT(CAST(days_remaining AS string), " days")
+        END AS note_body,
+        {event_date_str} as event_date,
+        "{criteria_str}" AS criteria,
+    FROM (
+        SELECT 
+            person_external_id AS external_id,
+            DATE_DIFF({latest_date}, {earliest_date}, YEAR) AS years_remaining,
+            DATE_DIFF({latest_date}, {earliest_date}, MONTH) AS months_remaining,
+            DATE_DIFF({latest_date}, {earliest_date}, DAY) AS days_remaining,
+            {latest_date},
+        FROM `{{project_id}}.{{workflows_dataset}}.client_record_materialized` 
+        WHERE state_code = "{state_code}"
+        # We drop cases where earliest_date comes after latest_date
+            AND {latest_date} > {earliest_date}
+        )
     """
