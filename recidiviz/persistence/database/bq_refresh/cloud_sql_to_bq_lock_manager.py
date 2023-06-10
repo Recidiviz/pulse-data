@@ -22,7 +22,6 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockDoesNotExist,
     GCSPseudoLockManager,
     postgres_to_bq_lock_name_for_schema,
-    postgres_to_bq_lock_name_for_schema_old,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
@@ -121,29 +120,15 @@ class CloudSqlToBQLockManager:
         self, schema_type: SchemaType, ingest_instance: DirectIngestInstance
     ) -> None:
         """Releases the CloudSQL -> BQ refresh lock for a given schema and ingest instance."""
-        try:
-            self.lock_manager.unlock(
-                postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance)
-            )
-        except GCSPseudoLockDoesNotExist:
-            # TODO(#20892): Remove this once all ingest instances are migrated to the new lock name.
-            self.lock_manager.unlock(
-                postgres_to_bq_lock_name_for_schema_old(schema_type)
-            )
+        self.lock_manager.unlock(
+            postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance)
+        )
 
     def is_locked(
         self, schema_type: SchemaType, ingest_instance: DirectIngestInstance
     ) -> bool:
-
-        new_lock = self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance)
-        )
-        if new_lock:
-            return True
-
-        # TODO(#20892): Remove this once all ingest instances are migrated to the new lock name.
         return self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema_old(schema_type)
+            postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance)
         )
 
     @staticmethod
