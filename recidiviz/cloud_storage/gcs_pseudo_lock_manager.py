@@ -48,11 +48,6 @@ def postgres_to_bq_lock_name_for_schema(
     return f"{POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME}_{schema.value.upper()}_{ingest_instance.value.upper()}"
 
 
-# TODO(#20892): Remove this function once all ingest instances are migrated to the new lock name.
-def postgres_to_bq_lock_name_for_schema_old(schema: SchemaType) -> str:
-    return f"{POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME}_{schema.value.upper()}"
-
-
 @attr.s(auto_attribs=True, frozen=True)
 class GCSPseudoLockBody:
     """Defines the schema for the contents of the lock used by GCSPseudoLockManager."""
