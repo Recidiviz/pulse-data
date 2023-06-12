@@ -264,6 +264,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_payments_pr
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_permanent_exemptions_preprocessed import (
     US_TN_PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_prior_record_preprocessed import (
+    US_TN_PRIOR_RECORD_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_recommended_custody_level_spans import (
     US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
 )
@@ -358,6 +361,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CAF_Q6_VIEW_BUILDER,
     US_TN_CAF_Q7_VIEW_BUILDER,
     US_TN_CAF_Q8_VIEW_BUILDER,
+    US_TN_PRIOR_RECORD_PREPROCESSED_VIEW_BUILDER,
     US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
     US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER,
     RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,

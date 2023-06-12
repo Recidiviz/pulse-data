@@ -99,7 +99,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
         TO_JSON_STRING(sis.sentence_metadata) AS sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
-        COALESCE(charge.description, statute.OffenseDescription) AS description,
+        UPPER(REGEXP_REPLACE(COALESCE(charge.description, statute.OffenseDescription), "  ", " ")) AS description,
     -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
     FROM (
         SELECT * EXCEPT(sentence_metadata), 
@@ -158,7 +158,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
         TO_JSON_STRING(sss.sentence_metadata) AS sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
-        COALESCE(charge.description, statute.OffenseDescription) AS description,
+        UPPER(REGEXP_REPLACE(COALESCE(charge.description, statute.OffenseDescription), "  ", " ")) AS description,
     -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
     FROM (
         SELECT * EXCEPT(sentence_metadata),
@@ -197,6 +197,17 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         MAX(projected_completion_date_max) AS projected_completion_date_max,
     FROM sentences_cte
     GROUP BY 1
+    )
+    ,
+    sentences_with_flags_cte AS
+    (
+    SELECT
+        *,
+        description LIKE '%DOMESTIC%' AS is_violent_domestic,
+        REGEXP_CONTAINS(description, 'DUI|INFLUENCE|DWI') AS is_dui,
+        description LIKE '%13%' AND description LIKE '%VICT%' AS is_victim_under_18,
+        REGEXP_CONTAINS(description, 'HOMICIDE|MURD') AS is_homicide,
+    FROM sentences_cte
     )
     /*
     Joins back to sessions to create a "session_id_imposed" field as well as to the consecutive id preprocessed file
@@ -247,6 +258,10 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.offense_completed_uniform,
         sen.offense_attempted_uniform,
         sen.offense_conspired_uniform, 
+        sen.is_violent_domestic,
+        sen.is_dui,
+        sen.is_victim_under_18,
+        sen.is_homicide,
         sen.county_code,       
         sen.sentence_metadata,
         --these are TN specific fields which are not included in the state-agnostic schema at this point
@@ -258,13 +273,12 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         raw.total_drug_alcohol_credits,
         raw.total_education_attendance_credits,
         raw.total_treatment_credits,
-        
         cs.consecutive_sentence_id,
         -- Set the session_id_imposed if the sentence date imposed matches the session start date
         IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
         ses.session_id AS session_id_closest,
         DATE_DIFF(ses.start_date, sen.date_imposed, DAY) AS sentence_to_session_offset_days,
-    FROM sentences_cte sen
+    FROM sentences_with_flags_cte sen
     LEFT JOIN `{project_id}.{sessions_dataset}.consecutive_sentences_preprocessed_materialized` cs
         USING (person_id, state_code, sentence_id, sentence_type)
     JOIN dedup_external_id_fields dedup
