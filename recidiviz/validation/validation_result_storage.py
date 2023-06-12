@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.common import serialization
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment
 from recidiviz.validation.validation_models import (
     DataValidationJob,
@@ -70,6 +71,9 @@ class ValidationResultForStorage:
     runtime_seconds: Optional[float] = attr.ib()
     exception_log: Optional[Exception] = attr.ib()
 
+    sandbox_dataset_prefix: Optional[str] = attr.ib()
+    ingest_instance: Optional[DirectIngestInstance] = attr.ib()
+
     @trace_id.default
     def _trace_id_factory(self) -> str:
         return execution_context.get_opencensus_tracer().span_context.trace_id
@@ -102,6 +106,8 @@ class ValidationResultForStorage:
             result_details_type=result.result_details.__class__.__name__,
             result_details=result.result_details,
             validation_category=result.validation_job.validation.validation_category,
+            sandbox_dataset_prefix=result.validation_job.sandbox_dataset_prefix,
+            ingest_instance=result.validation_job.ingest_instance,
             runtime_seconds=runtime_seconds,
             exception_log=None,
         )
@@ -128,6 +134,8 @@ class ValidationResultForStorage:
             result_details_type=None,
             result_details=None,
             validation_category=job.validation.validation_category,
+            sandbox_dataset_prefix=job.sandbox_dataset_prefix,
+            ingest_instance=job.ingest_instance,
             runtime_seconds=None,
             exception_log=exception_log,
         )
@@ -189,6 +197,8 @@ REGION_CODE_COL = "region_code"
 SUCCESS_TIMESTAMP_COL = "success_timestamp"
 NUM_VALIDATIONS_RUN_COL = "num_validations_run"
 VALIDATIONS_RUNTIME_SEC_COL = "validations_runtime_sec"
+INGEST_INSTANCE_COL = "ingest_instance"
+SANDBOX_DATASET_PREFIX_COL = "sandbox_dataset_prefix"
 
 VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS = BigQueryAddress(
     dataset_id=VALIDATION_RESULTS_DATASET_ID, table_id="validations_completion_tracker"
@@ -200,6 +210,8 @@ def store_validation_run_completion_in_big_query(
     num_validations_run: int,
     validations_runtime_sec: int,
     cloud_task_id: str,
+    ingest_instance: DirectIngestInstance,
+    sandbox_dataset_prefix: Optional[str],
 ) -> None:
     """Persists a row to BQ that indicates that a particular validation run has
     completed without crashing. This row will be used by our Airflow DAG to determine
@@ -248,6 +260,16 @@ def store_validation_run_completion_in_big_query(
                 field_type=bigquery.enums.SqlTypeNames.INT64.value,
                 mode="REQUIRED",
             ),
+            bigquery.SchemaField(
+                name=INGEST_INSTANCE_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="NULLABLE",
+            ),
+            bigquery.SchemaField(
+                name=SANDBOX_DATASET_PREFIX_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="NULLABLE",
+            ),
         ],
     )
 
@@ -259,6 +281,8 @@ def store_validation_run_completion_in_big_query(
                 SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
                 NUM_VALIDATIONS_RUN_COL: num_validations_run,
                 VALIDATIONS_RUNTIME_SEC_COL: validations_runtime_sec,
+                INGEST_INSTANCE_COL: ingest_instance.value,
+                SANDBOX_DATASET_PREFIX_COL: sandbox_dataset_prefix,
             }
         ]
     )

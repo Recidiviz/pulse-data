@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Tests for validation/validation_manager.py."""
-
+import json
 from typing import List, Optional, Set
 from unittest import TestCase
 from unittest.mock import call
@@ -29,6 +29,7 @@ from mock import MagicMock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
@@ -243,7 +244,10 @@ class TestHandleRequest(TestCase):
             ),
         )
 
-        response = self.client.post("/validate/US_XX", headers=APP_ENGINE_HEADERS)
+        data = {"ingest_instance": "PRIMARY"}
+        response = self.client.post(
+            "/validate/US_XX", headers=APP_ENGINE_HEADERS, data=json.dumps(data)
+        )
 
         self.assertEqual(200, response.status_code)
 
@@ -262,6 +266,78 @@ class TestHandleRequest(TestCase):
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
+        )
+
+    @patch(
+        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
+    )
+    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
+    )
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
+    )
+    def test_handle_request_happy_path_no_failures_secondary_with_sandbox_prefix(
+        self,
+        mock_store_run_success: MagicMock,
+        mock_store_validation_results: MagicMock,
+        mock_fetch_validations: MagicMock,
+        mock_run_job: MagicMock,
+        mock_emit_opencensus_failure_events: MagicMock,
+        mock_file_tickets_for_failing_validations: MagicMock,
+    ) -> None:
+        mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        mock_run_job.return_value = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[0],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.SUCCESS
+            ),
+        )
+
+        data = {"ingest_instance": "SECONDARY", "sandbox_prefix": "test_prefix"}
+        response = self.client.post(
+            "/validate/US_XX", headers=APP_ENGINE_HEADERS, data=json.dumps(data)
+        )
+
+        self.assertEqual(200, response.status_code)
+
+        self.assertEqual(5, mock_run_job.call_count)
+        for job in self._TEST_VALIDATIONS:
+            mock_run_job.assert_any_call(job)
+
+        mock_emit_opencensus_failure_events.assert_not_called()
+        mock_file_tickets_for_failing_validations.assert_not_called()
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(5, len(results))
+
+        mock_store_run_success.assert_called_with(
+            cloud_task_id="my-task-id",
+            num_validations_run=5,
+            validations_runtime_sec=mock.ANY,
+            validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            sandbox_dataset_prefix="test_prefix",
+        )
+
+    def test_handle_request_should_failure_secondary_with_no_sandbox_prefix(
+        self,
+    ) -> None:
+
+        data = {"ingest_instance": "SECONDARY"}
+        response = self.client.post(
+            "/validate/US_XX", headers=APP_ENGINE_HEADERS, data=json.dumps(data)
+        )
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            response.get_data().decode(),
+            "Sandbox prefix must be specified for secondary ingest instance",
         )
 
     @patch("recidiviz.validation.validation_manager.github_helperbot_client")
@@ -324,7 +400,10 @@ class TestHandleRequest(TestCase):
             third_failure,
             ValueError("Job failed to run!"),
         ]
-        response = self.client.post("/validate/US_XX", headers=APP_ENGINE_HEADERS)
+        data = {"ingest_instance": "PRIMARY"}
+        response = self.client.post(
+            "/validate/US_XX", headers=APP_ENGINE_HEADERS, data=json.dumps(data)
+        )
 
         self.assertEqual(200, response.status_code)
 
@@ -345,6 +424,8 @@ class TestHandleRequest(TestCase):
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
         )
 
         expected_labels = ["Validation", "Region: US_XX", "Team: State Pod"]
@@ -431,7 +512,10 @@ class TestHandleRequest(TestCase):
             ),
         ]
 
-        response = self.client.post("/validate/US_XX", headers=APP_ENGINE_HEADERS)
+        data = {"ingest_instance": "PRIMARY"}
+        response = self.client.post(
+            "/validate/US_XX", headers=APP_ENGINE_HEADERS, data=json.dumps(data)
+        )
 
         self.assertEqual(200, response.status_code)
 
@@ -452,6 +536,8 @@ class TestHandleRequest(TestCase):
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
         )
 
         expected_labels = ["Validation", "Region: US_XX", "Team: State Pod"]
@@ -490,7 +576,10 @@ class TestHandleRequest(TestCase):
     ) -> None:
         mock_fetch_validations.return_value = []
 
-        response = self.client.post("/validate/US_XX", headers=APP_ENGINE_HEADERS)
+        data = {"ingest_instance": "PRIMARY"}
+        response = self.client.post(
+            "/validate/US_XX", headers=APP_ENGINE_HEADERS, data=json.dumps(data)
+        )
 
         self.assertEqual(200, response.status_code)
 
@@ -505,6 +594,8 @@ class TestHandleRequest(TestCase):
             num_validations_run=0,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
         )
 
 
@@ -533,7 +624,9 @@ class TestFetchValidations(TestCase):
         for state_code, config in all_region_configs.items():
             num_exclusions = len(config.exclusions) + len(global_config.disabled)
             expected_length = len(all_validations) - num_exclusions
-            result = _fetch_validation_jobs_to_perform(region_code=state_code)
+            result = _fetch_validation_jobs_to_perform(
+                region_code=state_code, ingest_instance=DirectIngestInstance.PRIMARY
+            )
             self.assertEqual(expected_length, len(result))
 
     @patch(
@@ -563,7 +656,9 @@ class TestFetchValidations(TestCase):
         for state_code, config in region_configs_to_validate.items():
             num_exclusions = len(config.exclusions) + len(global_config.disabled)
             expected_length = len(all_validations) - num_exclusions
-            result = _fetch_validation_jobs_to_perform(region_code=state_code)
+            result = _fetch_validation_jobs_to_perform(
+                region_code=state_code, ingest_instance=DirectIngestInstance.PRIMARY
+            )
             self.assertEqual(expected_length, len(result))
 
     @patch("recidiviz.validation.validation_manager.get_validation_region_configs")
@@ -636,7 +731,11 @@ class TestFetchValidations(TestCase):
 
         actual_jobs = []
         for state_code in region_configs:
-            actual_jobs.extend(_fetch_validation_jobs_to_perform(state_code))
+            actual_jobs.extend(
+                _fetch_validation_jobs_to_perform(
+                    state_code, DirectIngestInstance.PRIMARY
+                )
+            )
 
         expected_jobs = [
             DataValidationJob(
@@ -650,6 +749,7 @@ class TestFetchValidations(TestCase):
                     soft_num_allowed_rows=10,
                 ),
                 region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
             ),
             DataValidationJob(
                 validation=SamenessDataValidationCheck(
@@ -665,6 +765,7 @@ class TestFetchValidations(TestCase):
                     region_configs=region_configs,
                 ),
                 region_code="US_XX",
+                ingest_instance=DirectIngestInstance.PRIMARY,
             ),
             DataValidationJob(
                 validation=ExistenceDataValidationCheck(
@@ -676,6 +777,7 @@ class TestFetchValidations(TestCase):
                     hard_num_allowed_rows=0,
                 ),  # No override
                 region_code="US_YY",
+                ingest_instance=DirectIngestInstance.PRIMARY,
             ),
             DataValidationJob(
                 validation=SamenessDataValidationCheck(
@@ -691,6 +793,7 @@ class TestFetchValidations(TestCase):
                     region_configs=region_configs,
                 ),
                 region_code="US_YY",
+                ingest_instance=DirectIngestInstance.PRIMARY,
             ),
         ]
         self.assertEqual(expected_jobs, actual_jobs)

@@ -27,6 +27,7 @@ Example usage (run from `pipenv shell`):
 python -m recidiviz.tools.run_validations \
     --project-id recidiviz-staging \
     --state-code [state_code] \
+    --ingest-instance [ingest_instance] \
     --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
     --validation-name-filter [regex]
 """
@@ -36,6 +37,7 @@ import re
 from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.validation_manager import execute_validation
@@ -58,11 +60,17 @@ def create_parser() -> argparse.ArgumentParser:
         help="Validations will run for this region.",
     )
     parser.add_argument(
+        "--ingest-instance",
+        type=DirectIngestInstance,
+        default=DirectIngestInstance.PRIMARY,
+        choices=list(DirectIngestInstance),
+        help="Ingest instance of data to run validations for. Determines which validations are allowed to run.",
+    )
+    parser.add_argument(
         "--sandbox_dataset_prefix",
         dest="sandbox_dataset_prefix",
         help="A prefix to append to all names of the datasets to load custom views.",
-        type=str,
-        default="",
+        default=None,
     )
     parser.add_argument(
         "--validation-name-filter",
@@ -73,8 +81,9 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def main(
-    sandbox_dataset_prefix: str,
+    sandbox_dataset_prefix: Optional[str],
     state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[str],
 ) -> None:
     validation_regex = (
@@ -82,6 +91,7 @@ def main(
     )
     execute_validation(
         region_code=state_code.value,
+        ingest_instance=ingest_instance,
         validation_name_filter=validation_regex,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
@@ -95,5 +105,6 @@ if __name__ == "__main__":
         main(
             args.sandbox_dataset_prefix,
             args.state_code,
+            args.ingest_instance,
             args.validation_name_filter,
         )
