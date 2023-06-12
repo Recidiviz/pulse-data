@@ -12,6 +12,12 @@
 		"ghcr.io/dhoeric/features/google-cloud-cli:1": {},
 		"ghcr.io/devcontainers/features/common-utils:2": {
 			"configureZshAsDefaultShell": true
+		},
+		// gdal and cmake are needed to install certain pip dependencies.
+		// micromamba lets us install these easily from conda with a small footprint. 
+		"ghcr.io/mamba-org/devcontainer-features/micromamba:1": {
+			"channels": "conda-forge",
+			"packages": "gdal cmake"
 		}
 	},
 
@@ -19,7 +25,34 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sh .devcontainer/postCreate.sh"
+	"postCreateCommand": "sh .devcontainer/postCreate.sh",
+	// The git directory isn't ready until the container has been started, so put `git config`
+	// commands into a separate script.
+	"postStartCommand": "sh .devcontainer/postStart.sh ${containerWorkspaceFolder}",
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"DavidAnson.vscode-markdownlint",
+				"dbaeumer.vscode-eslint",
+				"eamodio.gitlens",
+				"esbenp.prettier-vscode",
+				"hashicorp.terraform",
+				"mechatroner.rainbow-csv",
+				"ms-python.black-formatter",
+				"ms-python.python",
+				"samuelcolvin.jinjahtml",
+				"stkb.rewrap"
+			]
+		}
+	},
+
+	// Mount local .config/gcloud directory to get access to existing gcloud credentials. This way,
+	// the user doesn't have to reauthenticate with gcloud every time the container is rebuilt.
+	// This won't work with GH codespaces, but based on https://github.com/Recidiviz/pulse-data/pull/21325#issuecomment-1574052908
+	// it sounds like that's a non-goal.
+	// TODO(#21470): Figure out how to make this work for Windows (configs are in %APPDATA%\gcloud)
+	"mounts": ["source=${localEnv:HOME}/.config/gcloud,target=/home/vscode/.config/gcloud,type=bind,consistency=cached"]
 
 	// Configure tool-specific properties.
 	// "customizations": {},
