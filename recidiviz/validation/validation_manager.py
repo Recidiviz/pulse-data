@@ -32,8 +32,10 @@ from opencensus.stats import aggregation, measure, view
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata, monitoring, structured_logging, trace
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.endpoint_helpers import get_value_from_request
 from recidiviz.utils.environment import get_gcp_environment
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.utils.metadata import project_id
@@ -97,13 +99,32 @@ monitoring.register_views([failed_validations_view, failed_to_run_validations_vi
 validation_manager_blueprint = Blueprint("validation_manager", __name__)
 
 
-@validation_manager_blueprint.route("/validate/<region_code>", methods=["GET", "POST"])
+@validation_manager_blueprint.route("/validate/<region_code>", methods=["POST"])
 @requires_gae_auth
 def handle_validation_request(region_code: str) -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
+
+    sandbox_prefix: Optional[str] = get_value_from_request("sandbox_prefix")
+    try:
+        ingest_instance: DirectIngestInstance = DirectIngestInstance(
+            get_value_from_request("ingest_instance")
+        )
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
+
+    if ingest_instance == DirectIngestInstance.SECONDARY and not sandbox_prefix:
+        return (
+            "Sandbox prefix must be specified for secondary ingest instance",
+            HTTPStatus.BAD_REQUEST,
+        )
+
     cloud_task_id = get_current_cloud_task_id()
     start_datetime = datetime.datetime.now()
-    run_id, num_validations_run = execute_validation(region_code=region_code.upper())
+    run_id, num_validations_run = execute_validation(
+        region_code=region_code.upper(),
+        ingest_instance=ingest_instance,
+        sandbox_dataset_prefix=sandbox_prefix,
+    )
     end_datetime = datetime.datetime.now()
 
     runtime_sec = int((end_datetime - start_datetime).total_seconds())
@@ -113,6 +134,8 @@ def handle_validation_request(region_code: str) -> Tuple[str, HTTPStatus]:
         num_validations_run=num_validations_run,
         cloud_task_id=cloud_task_id,
         validations_runtime_sec=runtime_sec,
+        sandbox_dataset_prefix=sandbox_prefix,
+        ingest_instance=ingest_instance,
     )
 
     return "", HTTPStatus.OK
@@ -120,10 +143,13 @@ def handle_validation_request(region_code: str) -> Tuple[str, HTTPStatus]:
 
 def execute_validation(
     region_code: str,
+    ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> Tuple[str, int]:
     """Executes validation checks for |region_code|.
+    |ingest_instance| is the ingest instance used to generate the data that is being validated. This determines which
+    validations are allowed to run.
     If |validation_name_filter| is supplied, only performs validations on those
     that have a regex match.
     If |sandbox_dataset_prefix| is supplied, performs validation using sandbox dataset
@@ -136,6 +162,7 @@ def execute_validation(
         region_code=region_code,
         validation_name_filter=validation_name_filter,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
+        ingest_instance=ingest_instance,
     )
 
     run_datetime = datetime.datetime.now(tz=pytz.UTC)
@@ -238,6 +265,7 @@ def execute_validation(
 
 def _get_validations_jobs(
     region_code: str,
+    ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> List[DataValidationJob]:
@@ -254,6 +282,8 @@ def _get_validations_jobs(
         region_code=region_code,
         validation_name_filter=validation_name_filter,
         address_overrides=sandbox_address_overrides,
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+        ingest_instance=ingest_instance,
     )
 
 
@@ -301,7 +331,9 @@ def _run_job(job: DataValidationJob) -> DataValidationJobResult:
 
 def _fetch_validation_jobs_to_perform(
     region_code: str,
+    ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[Pattern] = None,
+    sandbox_dataset_prefix: Optional[str] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> List[DataValidationJob]:
     """
@@ -329,6 +361,8 @@ def _fetch_validation_jobs_to_perform(
                     validation=updated_check,
                     region_code=region_code,
                     address_overrides=address_overrides,
+                    sandbox_dataset_prefix=sandbox_dataset_prefix,
+                    ingest_instance=ingest_instance,
                 )
             )
 

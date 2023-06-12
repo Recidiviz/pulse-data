@@ -173,7 +173,12 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
             app_engine_http_request={
                 "http_method": "POST",
                 "relative_uri": f"/validation_manager/validate/{validation_state_code}",
-                "body": json.dumps({}).encode(),
+                "body": json.dumps(
+                    {
+                        "ingest_instance": "PRIMARY",
+                        # TODO(#21342): Pass in ingest instance from parameter when added.
+                    }
+                ).encode(),
             },
         )
 

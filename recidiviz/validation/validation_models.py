@@ -25,6 +25,7 @@ import attr
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.validation.validation_config import ValidationRegionConfig
 
 
@@ -119,6 +120,21 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
 
     # Optional dataset overrides to change which datasets will be used for query
     address_overrides: Optional[BigQueryAddressOverrides] = attr.ib(default=None)
+
+    # Optional prefix for which sandbox prefix was used for the validation when running against secondary instance data
+    sandbox_dataset_prefix: Optional[str] = attr.ib(default=None)
+
+    # Optional prefix for which ingest instance was used for the validation
+    ingest_instance: Optional[DirectIngestInstance] = attr.ib(default=None)
+
+    def __attrs_post_init__(self) -> None:
+        if (
+            self.ingest_instance == DirectIngestInstance.SECONDARY
+            and not self.sandbox_dataset_prefix
+        ):
+            raise ValueError(
+                "Must specify sandbox_dataset_prefix when using SECONDARY ingest instance"
+            )
 
     def original_builder_query_str(self) -> str:
         view = self.validation.view_builder.build(

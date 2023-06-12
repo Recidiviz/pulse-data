@@ -26,6 +26,7 @@ from mock import MagicMock, patch
 
 from recidiviz.big_query import big_query_client
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
     SamenessDataValidationCheck,
@@ -75,6 +76,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     ),
                     region_configs={},
                 ),
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix="test_prefix",
             ),
             result_details=SamenessPerRowValidationResultDetails(
                 failed_rows=[],
@@ -115,6 +118,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 exception_log=None,
                 runtime_seconds=1,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_dataset_prefix="test_prefix",
             ),
             result,
         )
@@ -136,6 +141,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 "exception_log": None,
                 "trace_id": result.trace_id,
                 "runtime_seconds": 1,
+                "ingest_instance": "PRIMARY",
+                "sandbox_dataset_prefix": "test_prefix",
             },
             result.to_serializable(),
         )
@@ -197,6 +204,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 exception_log=None,
                 runtime_seconds=1,
+                ingest_instance=None,
+                sandbox_dataset_prefix=None,
             ),
             result,
         )
@@ -218,6 +227,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 "exception_log": None,
                 "trace_id": result.trace_id,
                 "runtime_seconds": 1,
+                "ingest_instance": None,
+                "sandbox_dataset_prefix": None,
             },
             result.to_serializable(),
         )
@@ -281,6 +292,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 result_details=result_details,
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 exception_log=None,
+                ingest_instance=None,
+                sandbox_dataset_prefix=None,
                 runtime_seconds=1,
             ),
             result,
@@ -311,6 +324,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 "trace_id": result.trace_id,
                 "exception_log": None,
                 "runtime_seconds": 1,
+                "ingest_instance": None,
+                "sandbox_dataset_prefix": None,
             },
             result.to_serializable(),
         )
@@ -360,6 +375,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 exception_log=None,
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 runtime_seconds=None,
+                ingest_instance=None,
+                sandbox_dataset_prefix=None,
             ),
             result,
         )
@@ -381,6 +398,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 "trace_id": result.trace_id,
                 "validation_category": "EXTERNAL_AGGREGATE",
                 "runtime_seconds": None,
+                "ingest_instance": None,
+                "sandbox_dataset_prefix": None,
             },
             result.to_serializable(),
         )
@@ -420,6 +439,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                     exception_log=None,
                     runtime_seconds=1,
+                    ingest_instance=None,
+                    sandbox_dataset_prefix=None,
                 ),
             ]
         )
@@ -456,6 +477,8 @@ class TestValidationResultStorage(unittest.TestCase):
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             exception_log=None,
             runtime_seconds=1,
+            ingest_instance=None,
+            sandbox_dataset_prefix=None,
         )
         storage_result_2 = ValidationResultForStorage(
             run_id="abc123",
@@ -485,6 +508,8 @@ class TestValidationResultStorage(unittest.TestCase):
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             exception_log=None,
             runtime_seconds=1,
+            ingest_instance=None,
+            sandbox_dataset_prefix=None,
         )
         storage_result_3 = ValidationResultForStorage(
             run_id="abc123",
@@ -502,6 +527,8 @@ class TestValidationResultStorage(unittest.TestCase):
             validation_category=ValidationCategory.CONSISTENCY,
             exception_log=None,
             runtime_seconds=1,
+            ingest_instance=None,
+            sandbox_dataset_prefix=None,
         )
 
         # Act
@@ -534,6 +561,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     "exception_log": None,
                     "trace_id": storage_result_1.trace_id,
                     "runtime_seconds": 1,
+                    "ingest_instance": None,
+                    "sandbox_dataset_prefix": None,
                 },
                 {
                     "run_id": "abc123",
@@ -552,6 +581,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     "exception_log": None,
                     "trace_id": storage_result_2.trace_id,
                     "runtime_seconds": 1,
+                    "ingest_instance": None,
+                    "sandbox_dataset_prefix": None,
                 },
                 {
                     "run_id": "abc123",
@@ -570,6 +601,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     "exception_log": None,
                     "trace_id": storage_result_3.trace_id,
                     "runtime_seconds": 1,
+                    "ingest_instance": None,
+                    "sandbox_dataset_prefix": None,
                 },
             ],
         )
@@ -590,6 +623,8 @@ class TestValidationResultStorage(unittest.TestCase):
             num_validations_run=10,
             cloud_task_id="my-task-id",
             validations_runtime_sec=5,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
         )
 
         # Assert
@@ -602,6 +637,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     "success_timestamp": "2022-01-01T00:00:00+00:00",
                     "num_validations_run": 10,
                     "validations_runtime_sec": 5,
+                    "ingest_instance": "PRIMARY",
+                    "sandbox_dataset_prefix": None,
                 }
             ],
         )
@@ -620,6 +657,8 @@ class TestValidationResultStorage(unittest.TestCase):
             num_validations_run=10,
             cloud_task_id="my-task-id",
             validations_runtime_sec=5,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
         )
 
         # Assert
