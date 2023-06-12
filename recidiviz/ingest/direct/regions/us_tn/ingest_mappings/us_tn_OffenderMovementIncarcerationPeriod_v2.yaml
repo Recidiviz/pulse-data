@@ -430,6 +430,8 @@ output:
                           - EndMovementReason
                         $include_nulls: False
                     $mappings:
+                      StateIncarcerationPeriodReleaseReason.DEATH:
+                        - DEATH-DEATH # Generated when the EndDate of a period is the same as the DeathDate in the OffenderAttributes table
                       StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
                         # The following are all movements from facility to probation (FAPR).
                         - FAPR-REINS # Reinstatement

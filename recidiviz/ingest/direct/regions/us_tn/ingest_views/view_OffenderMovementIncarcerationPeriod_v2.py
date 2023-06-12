@@ -118,30 +118,39 @@ WITH
     ),
     configure_segregation_data AS (
         SELECT DISTINCT
-          OffenderID,
-          StartDateTime as MovementDateTime,
-          CONCAT(SegregationStatus,'-',SegregationType,'-',SegragationReason) as MovementType,
-          'SEG_START' as MovementReason,
-          SiteID AS FromLocationID,
-          SiteID as ToLocationID,
-          CAST(null AS STRING) AS RecommendedCustody,
-          'SEG_START' as PeriodEvent,
-          CAST(null AS STRING) as DeathDate,
-          AssignedUnitID as HousingUnit,
+            OffenderID,
+            StartDateTime as MovementDateTime,
+            CONCAT(SegregationStatus,'-',SegregationType,'-',SegragationReason) as MovementType,
+            'SEG_START' as MovementReason,
+            SiteID AS FromLocationID,
+            SiteID as ToLocationID,
+            CAST(null AS STRING) AS RecommendedCustody,
+            'SEG_START' as PeriodEvent,
+            CASE 
+                WHEN REGEXP_CONTAINS(attributes.DeathDate, r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]') THEN DeathDate
+            END AS DeathDate,
+            AssignedUnitID as HousingUnit,
         FROM {Segregation}
+        LEFT JOIN {OffenderAttributes} as attributes
+            USING (OffenderID)
+        
         UNION DISTINCT
         SELECT DISTINCT
-          OffenderID,
-          ActualEndDateTime as MovementDateTime,
-          CONCAT(SegregationStatus,'-',SegregationType,'-',SegragationReason) as MovementType,
-          'SEG_END' as MovementReason,
-          SiteID AS FromLocationID,
-          SiteID as ToLocationID,
-          CAST(null AS STRING) AS RecommendedCustody,
-          'SEG_END' as PeriodEvent,
-          CAST(null AS STRING) as DeathDate,
-          AssignedUnitID as HousingUnit,
+            OffenderID,
+            ActualEndDateTime as MovementDateTime,
+            CONCAT(SegregationStatus,'-',SegregationType,'-',SegragationReason) as MovementType,
+            'SEG_END' as MovementReason,
+            SiteID AS FromLocationID,
+            SiteID as ToLocationID,
+            CAST(null AS STRING) AS RecommendedCustody,
+            'SEG_END' as PeriodEvent,
+            CASE 
+                WHEN REGEXP_CONTAINS(attributes.DeathDate, r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]') THEN DeathDate
+            END AS DeathDate,
+            AssignedUnitID as HousingUnit,
         FROM {Segregation}
+        LEFT JOIN {OffenderAttributes} as attributes
+            USING (OffenderID)
     ),
     add_seg_info_to_movement_info AS (
         SELECT 
@@ -259,6 +268,7 @@ WITH
             -- If there is an end date, use that, otherwise use the death date.
             COALESCE(NextMovementDateTime, DeathDate)
         ) AS EndDateTime,
+        DeathDate,
         LAST_VALUE(StartToLocationID ignore nulls) OVER (person_sequence range between UNBOUNDED preceding and current row) AS Site,	
         LAST_VALUE(SiteType ignore nulls) OVER (person_sequence range between UNBOUNDED preceding and current row) AS SiteType,
         StartMovementType,
@@ -282,8 +292,8 @@ SELECT
     SiteType,
     StartMovementType,
     StartMovementReason,
-    EndMovementType,
-    EndMovementReason,
+    CASE WHEN EndDateTime = DeathDate THEN 'DEATH' ELSE EndMovementType END AS EndMovementType,
+    CASE WHEN EndDateTime = DeathDate THEN 'DEATH' ELSE EndMovementReason END AS EndMovementReason,
     CustodyLevel,
     HousingUnit,
     ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementSequenceNumber ASC) AS IncarcerationPeriodSequenceNumber
