@@ -29,6 +29,14 @@ from recidiviz.persistence.database.schema.state.dao import check_not_dirty
 from recidiviz.persistence.database.session import Session
 
 
+def state_allows_multiple_ids_same_type(state_code: str) -> bool:
+    if state_code.upper() in ("US_MI",):
+        return True
+
+    # By default, states don't allow multiple different ids of the same type
+    return False
+
+
 def check_staff_do_not_have_multiple_ids_same_type(
     session: Session, region_code: str, output_staff: List[schema.StateStaff]
 ) -> bool:
@@ -40,6 +48,13 @@ def check_staff_do_not_have_multiple_ids_same_type(
         "[Invariant validation] Checking that no staff member has multiple external "
         "ids of the same type."
     )
+
+    if state_allows_multiple_ids_same_type(region_code):
+        logging.info(
+            "[Invariant validation] Multiple external ids of the same type allowed for [%s] - skipping.",
+            region_code,
+        )
+        return True
 
     staff_ids = {s.staff_id for s in output_staff}
     if not staff_ids:
