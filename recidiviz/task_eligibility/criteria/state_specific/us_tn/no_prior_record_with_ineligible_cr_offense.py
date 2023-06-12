@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client is eligible with discretion to due past sentences for
-ineligible offenses that are less than 10 years expired"""
+"""Describes the spans of time when a TN client is not eligible due to a prior record with an ineligible
+offense"""
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -27,52 +27,45 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TN_INELIGIBLE_OFFENSES_EXPIRED"
+_CRITERIA_NAME = "US_TN_NO_PRIOR_RECORD_WITH_INELIGIBLE_CR_OFFENSE"
 
-_DESCRIPTION = """Describes the spans of time when a TN client is eligible with discretion to due past sentences for
-ineligible offenses that are less than 10 years expired.
+_DESCRIPTION = """Describes the spans of time when a TN client is not eligible due to a prior record with an ineligible
+offense.
 """
 
 _QUERY_TEMPLATE = f"""
-    WITH cte AS 
+    WITH prior_record_cte AS 
     (
     SELECT 
-        state_code,
         person_id,
-        projected_completion_date_max AS start_date,
-        --If the year of the date is greater than 9000, set it to NULL to avoid date overflow errors for dates within
-        --10 years of the max date in bigquery ('9999-12-31')
-        --TODO(#21472): Investigate placeholder expiration dates far in the future
-        DATE_ADD(IF(projected_completion_date_max>='3000-01-01', NULL, projected_completion_date_max),
-            INTERVAL 10 YEAR) AS end_date,
-        projected_completion_date_max AS expiration_date,
+        state_code,
+        offense_date AS start_date,
+        CAST(NULL AS DATE) AS end_date,
+        offense_date,
+        FALSE AS meets_criteria,
         description,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized`
-    WHERE state_code = 'US_TN'
-        AND (is_violent_domestic OR is_sex_offense OR is_dui OR is_violent OR is_victim_under_18)
-        AND completion_date IS NOT NULL
+    FROM `{{project_id}}.{{analyst_data_dataset}}.us_tn_prior_record_preprocessed_materialized`
+    WHERE is_violent_domestic OR is_sex_offense OR is_dui OR is_victim_under_18 OR is_violent OR is_homicide
     )
     ,
     /*
-    If a person has more than 1 sentence completed in the 10 year period, they will have overlapping sessions created in
+    If a person has more than 1 prior record with an ineligible offense, they will have overlapping sessions created in
     the above CTE. Therefore we use `create_sub_sessions_with_attributes` to break these up
     */
-    {create_sub_sessions_with_attributes('cte')}
-
-    SELECT 
+    {create_sub_sessions_with_attributes('prior_record_cte')}
+    SELECT
         state_code,
         person_id,
         start_date,
         end_date,
-        FALSE AS meets_criteria,
+        meets_criteria,
         TO_JSON(STRUCT(
-            ARRAY_AGG(description ORDER BY expiration_date) AS ineligible_offenses,
-            ARRAY_AGG(expiration_date ORDER BY expiration_date) AS ineligible_sentences_expiration_dates
-            )) AS reason
+            ARRAY_AGG(description ORDER BY COALESCE(offense_date,'9999-01-01')) AS ineligible_offenses,
+            ARRAY_AGG(offense_date ORDER BY COALESCE(offense_date,'9999-01-01')) AS ineligible_offense_dates
+            )) AS reason,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4,5
 
-    
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -81,7 +74,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
+        analyst_data_dataset=ANALYST_VIEWS_DATASET,
         meets_criteria_default=True,
     )
 )
