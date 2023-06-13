@@ -26,7 +26,10 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.task_eligibility.utils.us_mo_query_fragments import current_bed_stay_cte
+from recidiviz.task_eligibility.utils.us_mo_query_fragments import (
+    classes_cte,
+    current_bed_stay_cte,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -36,26 +39,13 @@ US_MO_PROGRAM_TRACKS_VIEW_DESCRIPTION = """Pulls together information on screene
 other information on currently incarcerated individuals in MO to assign them to Program Tracks"""
 
 US_MO_PROGRAM_TRACKS_QUERY_TEMPLATE = f"""
-WITH mosop_details AS (
-  SELECT 
-    se.OFNDR_CYCLE_REF_ID,
-    se.EXIT_TYPE_CD,
-    DOC_ID,
-    CYCLE_NO,
-    ACTUAL_START_DT,
-    ACTUAL_EXIT_DT,
-    classes.CLASS_TITLE,
-    exit.CLASS_EXIT_REASON_DESC
-  FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS_latest` se
-  LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF_latest` xref
-  USING (OFNDR_CYCLE_REF_ID)
-  LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.MASTER_PDB_CLASSES_latest` classes
-  USING (CLASS_REF_ID)
-  LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CODE_PDB_CLASS_EXIT_REASON_CODES_latest` exit
-  USING (CLASS_EXIT_REASON_CD)
-  WHERE 
-    se.DELETE_IND = "N" AND xref.DELETE_IND = "N" AND classes.DELETE_IND = "N"
-    AND CLASS_TITLE LIKE "%MOSOP%"
+WITH {classes_cte()}
+,
+mosop_details AS (
+  SELECT
+    *
+  FROM classes 
+  WHERE CLASS_TITLE LIKE "%MOSOP%"
 ),
 mosop_completion_flags AS (
   /* MOSOP completion is identified based on the individual's most recent cycle involving
@@ -187,8 +177,8 @@ flag_120 AS (
        person_id,
        LOGICAL_OR(COALESCE(BT_OTD,'N') = 'Y' AND BS_SCF = 'N') AS flag_120_required,
        MAX(SAFE.PARSE_DATE('%Y%m%d',NULLIF(BT_OH,'0'))) AS max_120_date
-  FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LBAKRDTA_TAK023_latest`
-  LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LBAKRDTA_TAK022_latest`
+  FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK023_latest`
+  LEFT JOIN `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK022_latest`
     ON BT_DOC = BS_DOC
     AND BT_CYC = BS_CYC
     AND BT_SEO = BS_SEO
@@ -201,7 +191,7 @@ board_mandated AS (
   SELECT person_id, 
          ARRAY_AGG(CI_SPC) AS special_conditions,
   FROM `{{project_id}}.{{analyst_dataset}}.us_mo_sentencing_dates_preprocessed_materialized`
-  LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LBAKRDTA_TAK046_latest`
+  LEFT JOIN `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK046_latest`
       ON doc_id = CI_DOC
       AND cycle_num = CI_CYC
       AND seq_num = CI_BSN
@@ -270,7 +260,7 @@ pivoted_asmts AS (
 {current_bed_stay_cte()},
 unprioritized_program_tracks AS (
 SELECT p.*,
-       housing.* EXCEPT(person_id, state_code),
+       housing.* EXCEPT(person_id, state_code, facility),
        CONCAT(JSON_VALUE(full_name, '$.given_names'), ' ', JSON_VALUE(full_name, '$.surname')) AS person_name,
        IF(
             latest_sentencing_dates.minimum_eligibility_date >= start_date,
@@ -354,7 +344,7 @@ LEFT JOIN (
       sp.external_id,
       sp.status
     FROM 
-      `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LBAKRDTA_TAK040_latest` t
+      `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK040_latest` t
     INNER JOIN
       `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON
@@ -389,7 +379,7 @@ LEFT JOIN
 /* There are about 30 people in each of these, and it seems like a bug / not an actual facility. AIFED means someone is 
 "serving a Missouri sentence(s) concurrently with an out-of-state or federal facility.
 Both Missouri and the confining agency have jurisdiction over the offender." based on https://doc.mo.gov/glossary */
-WHERE facility NOT IN ('AIFED', 'EXTERNAL_UNKNOWN')
+WHERE p.facility NOT IN ('AIFED', 'EXTERNAL_UNKNOWN')
 )
 SELECT 
   pt.*,
@@ -421,7 +411,7 @@ US_MO_PROGRAM_TRACKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_MO_PROGRAM_TRACKS_VIEW_DESCRIPTION,
     should_materialize=True,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+    us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO,
         instance=DirectIngestInstance.PRIMARY,
     ),

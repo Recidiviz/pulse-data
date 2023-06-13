@@ -30,7 +30,10 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.us_mo_query_fragments import current_bed_stay_cte
+from recidiviz.task_eligibility.utils.us_mo_query_fragments import (
+    classes_cte,
+    current_bed_stay_cte,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,6 +47,7 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_DESCRIPTION = """
 
 US_MO_CDV_MINOR_NUM_MONTHS_TO_DISPLAY = "6"
 US_MO_CDV_MAJOR_NUM_MONTHS_TO_DISPLAY = "12"
+US_MO_CLASSES_RECENT_NUM_MONTHS_TO_DISPLAY = "12"
 
 US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     WITH base_query AS (
@@ -102,14 +106,39 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     ,
     {current_bed_stay_cte()}
     ,
+    -- TODO(#20812): Deprecate raw sanctions and violations queries once violations and outcomes are ingested 
+    cdv_sanctions AS (
+        SELECT
+            cdv.IZ_DOC,
+            cdv.IZ_CYC,
+            cdv.IZCSEQ,
+            ARRAY_AGG(
+                STRUCT(
+                    IU_SU as sanction_start_date,
+                    IU_SE as sanction_expiration_date,
+                    IUSSAN as sanction_code
+                ) ORDER BY IUSASQ ASC
+            ) AS sanctions,
+        FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK233_latest` cdv
+        INNER JOIN `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK236_latest` sanc
+        ON 
+          cdv.IZ_DOC = sanc.IU_DOC
+          and cdv.IZ_CYC = sanc.IU_CYC
+          and cdv.IZCSEQ = sanc.IUCSEQ
+        GROUP BY 1,2,3
+    )
+    ,
     cdv_clean AS (
         SELECT 
-            pei.person_id,
+            person_id,
             SAFE.PARSE_DATE("%Y%m%d", cdv.IZWDTE) AS cdv_date,
             IZVRUL as cdv_rule,
             -- Rules are formatted as [major_number].[minor_number] e.g. 11.5
             CAST(RTRIM(REGEXP_EXTRACT(cdv.IZVRUL, r'.+\\.'), r'\\.') AS INT64) as cdv_rule_part1,
+            TO_JSON(IFNULL(sanctions, [])) as sanctions,
         FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK233_latest` cdv
+        LEFT JOIN cdv_sanctions
+        USING(IZ_DOC, IZ_CYC, IZCSEQ)
         LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON
             cdv.IZ_DOC = pei.external_id
@@ -129,48 +158,16 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             -- occur either before or after the hearing, since hearings are likely to be
             -- scheduled further in advance than on the same day as the violation.
             cdv.cdv_date > h.most_recent_hearing_date AS occurred_since_last_hearing,
+            sanctions,
         FROM cdv_clean cdv
         LEFT JOIN most_recent_hearings h
         USING(person_id)
     )
     ,
-    cdv_case_notes AS (
-        SELECT
-            person_id,
-            TO_JSON(
-                ARRAY_AGG(
-                    STRUCT(
-                        cdv_rule as note_title,
-                        NULL as note_body,
-                        cdv_date as event_date,
-                        -- Separate violations into mutually exclusive groups:
-                        -- All major CDVs, minor CDVs since the most recent hearing,
-                        -- and minor CDVs before the most recent hearing
-                        (
-                            CASE 
-                            WHEN is_major_violation THEN "Major CDVs, past {US_MO_CDV_MAJOR_NUM_MONTHS_TO_DISPLAY} months"
-                            WHEN occurred_since_last_hearing THEN "Other CDVs since last hearing"
-                            ELSE "Other Minor CDVs, past {US_MO_CDV_MINOR_NUM_MONTHS_TO_DISPLAY} months" END
-                        ) AS criteria
-                    )
-                    ORDER BY cdv_date DESC
-                )
-            ) AS case_notes
-        FROM cdv_all
-        WHERE 
-            -- Only surface CDVs corresponding to the criteria groups
-            (is_major_violation AND cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_major_months_to_display}} MONTH))
-            OR
-            ((NOT is_major_violation) AND cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_minor_months_to_display}} MONTH))
-            OR
-            (occurred_since_last_hearing)
-        GROUP BY 1
-    )
-    ,
     cdv_majors_recent AS (
         SELECT
             person_id,
-            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule, sanctions) ORDER BY cdv_date DESC) AS cdvs
         FROM cdv_all
         WHERE
             cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_major_months_to_display}} MONTH)
@@ -181,7 +178,7 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     cdv_minors_since_hearing AS (
         SELECT
             person_id,
-            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule, sanctions) ORDER BY cdv_date DESC) AS cdvs
         FROM cdv_all
         WHERE
             occurred_since_last_hearing
@@ -192,12 +189,127 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     cdv_minors_recent AS (
         SELECT
             person_id,
-            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule, sanctions) ORDER BY cdv_date DESC) AS cdvs
         FROM cdv_all
         WHERE
             cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_minor_months_to_display}} MONTH)
             AND NOT occurred_since_last_hearing
             AND NOT is_major_violation
+        GROUP BY 1
+    )
+    ,
+    -- TODO(#19220): Reference state_assessment once these screeners are ingested
+    mental_health_latest AS (
+        SELECT DISTINCT
+            person_id,
+            FIRST_VALUE(assessment_date) OVER person_scores,
+            FIRST_VALUE(assessment_score) OVER person_scores as mental_health_assessment_score,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_mo_screeners_preprocessed_materialized` 
+        WHERE assessment_type = 'mental_health'
+        WINDOW person_scores AS (
+            PARTITION BY person_id, state_code
+            ORDER BY assessment_date DESC
+        )
+    )
+    ,
+    {classes_cte()}
+    ,
+    classes_with_date AS (
+        SELECT 
+            c.DOC_ID as external_id,
+            IF(ACTUAL_START_DT = '7799-12-31', NULL, SAFE.PARSE_DATE('%Y-%m-%d', ACTUAL_START_DT)) as start_date,
+            IF(ACTUAL_EXIT_DT = '7799-12-31', NULL, SAFE.PARSE_DATE('%Y-%m-%d', ACTUAL_EXIT_DT)) as end_date,
+            CLASS_TITLE as class_title,
+            CLASS_EXIT_REASON_DESC as class_exit_reason,
+        FROM classes c
+    )
+    ,
+    classes_by_person_recent AS (
+        SELECT
+            external_id,
+            ARRAY_AGG(STRUCT(start_date, end_date, class_title, class_exit_reason) ORDER BY start_date DESC) AS classes
+        FROM classes_with_date
+        WHERE
+            start_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {US_MO_CLASSES_RECENT_NUM_MONTHS_TO_DISPLAY} MONTH)
+        GROUP BY 1
+    )
+    ,
+    classes_by_person_other AS (
+        SELECT
+            external_id,
+            ARRAY_AGG(STRUCT(start_date, end_date, class_title, class_exit_reason) ORDER BY start_date DESC) AS classes
+        FROM classes_with_date
+        WHERE
+            start_date < DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {US_MO_CLASSES_RECENT_NUM_MONTHS_TO_DISPLAY} MONTH)
+        GROUP BY 1
+    )
+    ,
+    aic_scores_latest AS (
+        SELECT 
+            GY_DOC AS external_id, 
+            (
+                CASE GY_AIS
+                WHEN 'X' THEN 'Alpha'
+                WHEN 'Y' THEN 'Kappa'
+                WHEN 'Z' THEN 'Sigma'
+                ELSE 'Unknown' END
+            ) AS aic_score,
+        FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK194_latest`
+        QUALIFY ROW_NUMBER() OVER(
+            PARTITION BY GY_DOC
+            ORDER BY GY_BH DESC
+        ) = 1
+    )
+    ,
+    -- List of "unwaived enemies" of people in Restrictive Housing who are in the same facility.
+    -- Indicates that those people should be separated from each other, and used in determining where
+    -- people can be assigned.
+    unwaived_enemies AS (
+        SELECT
+          enemy.CD_DOC as external_id, 
+          enemy.CD_ENY as enemy_external_id,
+          bed_enemy.bed_number as enemy_bed_number,
+          bed_enemy.room_number as enemy_room_number,
+          bed_enemy.complex_number as enemy_complex_number,
+          bed_enemy.building_number as enemy_building_number,
+          bed_enemy.housing_use_code as enemy_housing_use_code,
+          bed_enemy.facility as enemy_facility,
+        FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK033_latest` enemy
+        -- Join on CD_ENY to get person in Restrictive Housing's enemies' bed stays
+        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei_enemy
+        ON
+            enemy.CD_ENY = pei_enemy.external_id
+            AND pei_enemy.state_code = 'US_MO'
+        -- Join on CD_DOC to get person in Restrictive Housing's facility
+        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei_self
+        ON
+            enemy.CD_DOC = pei_self.external_id
+            AND pei_self.state_code = 'US_MO'
+        LEFT JOIN current_bed_stay bed_enemy
+        ON pei_enemy.person_id = bed_enemy.person_id
+        LEFT JOIN current_bed_stay bed_self
+        ON pei_self.person_id = bed_self.person_id
+        WHERE 
+            -- Enemy is not "waived"
+            CD_EWA = 'N' 
+            -- Unwaived enemy is in same facility
+            AND bed_enemy.facility = bed_self.facility 
+    )
+    ,
+    unwaived_enemies_by_person AS (
+        SELECT
+            external_id,
+            ARRAY_AGG(
+                STRUCT(
+                    enemy_external_id,
+                    enemy_bed_number,
+                    enemy_room_number,
+                    enemy_complex_number,
+                    enemy_building_number,
+                    enemy_housing_use_code
+                ) ORDER BY enemy_external_id ASC
+            ) AS unwaived_enemies,
+        FROM unwaived_enemies
         GROUP BY 1
     )
     ,
@@ -217,10 +329,14 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             bed.complex_number AS metadata_complex_number,
             bed.building_number AS metadata_building_number,
             bed.housing_use_code AS metadata_housing_use_code,
-            IFNULL(cdv.case_notes, PARSE_JSON("[]")) AS metadata_case_notes,
             TO_JSON(IFNULL(cdv_majors_recent.cdvs, [])) AS metadata_major_cdvs,
             TO_JSON(IFNULL(cdv_minors_since_hearing.cdvs, [])) AS metadata_cdvs_since_last_hearing,
-            IFNULL(ARRAY_LENGTH(cdv_minors_recent.cdvs), 0) AS metadata_num_minor_cdvs_before_last_hearing
+            IFNULL(ARRAY_LENGTH(cdv_minors_recent.cdvs), 0) AS metadata_num_minor_cdvs_before_last_hearing,
+            mental_health_latest.mental_health_assessment_score AS metadata_mental_health_assessment_score,
+            TO_JSON(IFNULL(classes_by_person_recent.classes, [])) AS metadata_classes_recent,
+            TO_JSON(IFNULL(classes_by_person_other.classes, [])) AS metadata_classes_other,
+            aic_scores_latest.aic_score as metadata_aic_score,
+            TO_JSON(IFNULL(unwaived_enemies_by_person.unwaived_enemies, [])) AS metadata_unwaived_enemies,
         FROM base_query base
         LEFT JOIN most_recent_hearings hearings
         USING (person_id)
@@ -230,14 +346,22 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
         USING (person_id)
         LEFT JOIN current_bed_stay bed
         USING (person_id)
-        LEFT JOIN cdv_case_notes cdv
-        USING (person_id)
         LEFT JOIN cdv_majors_recent
         USING (person_id)
         LEFT JOIN cdv_minors_since_hearing
         USING (person_id)
         LEFT JOIN cdv_minors_recent
         USING (person_id)
+        LEFT JOIN mental_health_latest
+        USING (person_id)
+        LEFT JOIN classes_by_person_recent
+        USING (external_id)
+        LEFT JOIN classes_by_person_other
+        USING (external_id)
+        LEFT JOIN aic_scores_latest
+        USING (external_id)
+        LEFT JOIN unwaived_enemies_by_person
+        USING (external_id)
     )
     SELECT * FROM final
 """
@@ -250,6 +374,7 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER = SimpleBigQueryV
     analyst_views_dataset=ANALYST_VIEWS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_MO
     ),
