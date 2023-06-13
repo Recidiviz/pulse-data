@@ -38,7 +38,7 @@ resource "google_composer_environment" "default_v2" {
 
     software_config {
       airflow_config_overrides = {
-        "api-auth_backend"                         = "airflow.composer.api.backend.composer_auth"
+        "api-auth_backends"                        = "airflow.composer.api.backend.composer_auth,airflow.api.auth.backend.session"
         "api-composer_auth_user_registration_role" = "Op"
         # The default maximum is 1024, but there may be instances where we may have stopped
         # SFTP and will need to catch up after a few days, so we will increase the limit.
