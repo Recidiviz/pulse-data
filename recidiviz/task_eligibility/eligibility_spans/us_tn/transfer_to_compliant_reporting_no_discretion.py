@@ -32,15 +32,19 @@ from recidiviz.task_eligibility.criteria.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     fines_fees_eligible,
+    ineligible_offenses_expired,
     no_arrests_in_past_year,
+    no_dui_offense_in_past_5_years,
     no_high_sanctions_in_past_year,
     no_murder_convictions,
+    no_prior_record_with_ineligible_cr_offense,
     no_recent_compliant_reporting_rejections,
     no_zero_tolerance_codes_spans,
     not_in_judicial_district_17_while_on_probation,
     not_on_life_sentence_or_lifetime_supervision,
     not_permanently_rejected_from_compliant_reporting,
-    offense_type_eligible,
+    not_serving_ineligible_cr_offense,
+    not_serving_unknown_cr_offense,
     on_eligible_level_for_sufficient_time,
     passed_drug_screen_check,
     special_conditions_are_current,
@@ -54,31 +58,43 @@ from recidiviz.utils.metadata import local_project_id_override
 _DESCRIPTION = """Shows the spans of time during which someone in TN may be eligible for compliant reporting.
 """
 
+_REQUIRED_CRITERIA = [
+    on_eligible_level_for_sufficient_time,
+    no_arrests_in_past_year,
+    no_high_sanctions_in_past_year,
+    fines_fees_eligible,
+    passed_drug_screen_check,
+    special_conditions_are_current,
+    not_in_judicial_district_17_while_on_probation,
+    not_permanently_rejected_from_compliant_reporting,
+    no_recent_compliant_reporting_rejections,
+    not_on_life_sentence_or_lifetime_supervision,
+    supervision_level_is_not_internal_unknown,
+    supervision_level_is_not_interstate_compact,
+    supervision_level_is_not_unassigned,
+    no_murder_convictions,
+    not_serving_ineligible_cr_offense,
+    no_dui_offense_in_past_5_years,
+]
+
+_DISCRETION_CRITERIA = [
+    no_zero_tolerance_codes_spans,
+    has_active_sentence,
+    supervision_not_past_full_term_completion_date_or_upcoming_90_days,
+    not_serving_unknown_cr_offense,
+    no_prior_record_with_ineligible_cr_offense,
+    ineligible_offenses_expired,
+]
+
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="TRANSFER_TO_COMPLIANT_REPORTING_NO_DISCRETION",
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        on_eligible_level_for_sufficient_time.VIEW_BUILDER,
-        no_arrests_in_past_year.VIEW_BUILDER,
-        no_high_sanctions_in_past_year.VIEW_BUILDER,
-        fines_fees_eligible.VIEW_BUILDER,
-        passed_drug_screen_check.VIEW_BUILDER,
-        special_conditions_are_current.VIEW_BUILDER,
-        not_in_judicial_district_17_while_on_probation.VIEW_BUILDER,
-        not_permanently_rejected_from_compliant_reporting.VIEW_BUILDER,
-        no_recent_compliant_reporting_rejections.VIEW_BUILDER,
-        not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,
-        no_murder_convictions.VIEW_BUILDER,
-        no_zero_tolerance_codes_spans.VIEW_BUILDER,
-        offense_type_eligible.VIEW_BUILDER,
-        has_active_sentence.VIEW_BUILDER,
-        supervision_not_past_full_term_completion_date_or_upcoming_90_days.VIEW_BUILDER,
-        supervision_level_is_not_internal_unknown.VIEW_BUILDER,
-        supervision_level_is_not_interstate_compact.VIEW_BUILDER,
-        supervision_level_is_not_unassigned.VIEW_BUILDER,
-    ],
+        criteria.VIEW_BUILDER for criteria in _REQUIRED_CRITERIA
+    ]
+    + [criteria.VIEW_BUILDER for criteria in _DISCRETION_CRITERIA],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
 
