@@ -18,7 +18,7 @@
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.monitoring.report_metric_export_timeliness \
+python -m recidiviz.entrypoints.monitoring.report_metric_export_timeliness \
     --project_id recidiviz-123
 """
 import argparse
@@ -49,8 +49,5 @@ if __name__ == "__main__":
 
     known_args, _ = parse_arguments(sys.argv)
 
-    if known_args.project_id:
-        with local_project_id_override(known_args.project_id):
-            report_export_timeliness_metrics()
-    else:
+    with local_project_id_override(known_args.project_id):
         report_export_timeliness_metrics()

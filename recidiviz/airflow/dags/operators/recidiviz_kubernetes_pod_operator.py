@@ -23,6 +23,7 @@ from typing import List
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
     KubernetesPodOperator,
 )
+from kubernetes.client import models as k8s
 
 
 def build_recidiviz_kubernetes_pod_operator(
@@ -60,4 +61,7 @@ def build_recidiviz_kubernetes_pod_operator(
             "CONTAINER_NAME": container_name,
             "NAMESPACE": namespace,
         },
+        container_resources=k8s.V1ResourceRequirements(
+            requests={"cpu": "2000m", "memory": "1Gi"}
+        ),
     )

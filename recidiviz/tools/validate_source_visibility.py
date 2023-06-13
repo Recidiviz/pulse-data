@@ -286,7 +286,7 @@ def main() -> int:
                 "recidiviz.common.constants.states",
                 "recidiviz.ingest.direct.types.direct_ingest_instance",
                 "recidiviz.metrics.export.products",
-                "recidiviz.tools",
+                "recidiviz.tools.utils.script_helpers",
                 "recidiviz.utils.environment",
                 "recidiviz.utils.yaml_dict",
             }
@@ -407,7 +407,7 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
-        "recidiviz/tools/monitoring/report_metric_export_timeliness.py",
+        "recidiviz/entrypoints/monitoring/report_metric_export_timeliness.py",
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.common",

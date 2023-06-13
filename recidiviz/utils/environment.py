@@ -45,6 +45,7 @@ GCP_ENVIRONMENTS = {env.value for env in GCPEnvironment}
 GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 
 
+# TODO(#21450) Rename to in_app_engine_env
 def in_gcp() -> bool:
     """Check whether we're currently running on local dev machine or in prod
 

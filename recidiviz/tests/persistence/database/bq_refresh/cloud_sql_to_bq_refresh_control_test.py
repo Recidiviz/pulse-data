@@ -15,16 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for cloud_sql_to_bq_refresh_control.py."""
-
+# pylint: disable=unused-argument
 import json
 import unittest
+import uuid
 from http import HTTPStatus
 from typing import Any, Dict, Optional
 from unittest import mock
 
 import flask
-from mock import Mock
+from mock import Mock, create_autospec
+from parameterized import parameterized
 
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import direct_ingest_control
@@ -42,6 +46,7 @@ REFRESH_CONTROL_PACKAGE_NAME = cloud_sql_to_bq_refresh_control.__name__
 INGEST_CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
 
 
+# TODO(#21446) Remove these tests once we move the callsite to Kubernetes in Airflow.
 class CloudSqlToBQExportControlTest(unittest.TestCase):
     """Tests for cloud_sql_to_bq_refresh_control.py."""
 
@@ -91,7 +96,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.fs_patcher.stop()
         self.refresh_bq_datase_success_persister_patcher.stop()
 
-    def assertIsOnlySchemaLocked(
+    def assert_is_only_schema_locked(
         self, schema_type: SchemaType, ingest_instance: DirectIngestInstance
     ) -> None:
         for s in SchemaType:
@@ -137,7 +142,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(
+            self.assert_is_only_schema_locked(
                 SchemaType.STATE, DirectIngestInstance.PRIMARY
             )
 
@@ -198,7 +203,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(
+            self.assert_is_only_schema_locked(
                 SchemaType.STATE, DirectIngestInstance.PRIMARY
             )
 
@@ -264,7 +269,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(
+            self.assert_is_only_schema_locked(
                 SchemaType.STATE, DirectIngestInstance.PRIMARY
             )
 
@@ -337,7 +342,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(
+            self.assert_is_only_schema_locked(
                 SchemaType.STATE, DirectIngestInstance.SECONDARY
             )
 
@@ -411,7 +416,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(
+            self.assert_is_only_schema_locked(
                 SchemaType.CASE_TRIAGE, DirectIngestInstance.PRIMARY
             )
 
@@ -620,7 +625,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
 
         # Assert
-        self.assertIsOnlySchemaLocked(SchemaType.STATE, DirectIngestInstance.PRIMARY)
+        self.assert_is_only_schema_locked(
+            SchemaType.STATE, DirectIngestInstance.PRIMARY
+        )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
@@ -646,7 +653,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
 
         # Assert
-        self.assertIsOnlySchemaLocked(SchemaType.STATE, DirectIngestInstance.SECONDARY)
+        self.assert_is_only_schema_locked(
+            SchemaType.STATE, DirectIngestInstance.SECONDARY
+        )
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
@@ -676,12 +685,13 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertIsOnlySchemaLocked(SchemaType.STATE, DirectIngestInstance.PRIMARY)
+        self.assert_is_only_schema_locked(
+            SchemaType.STATE, DirectIngestInstance.PRIMARY
+        )
 
     def test_check_can_refresh_proceed_state_ingest_locked(
         self,
     ) -> None:
-
         # Grab lock, just like the /acquire_lock... endpoint does
         self.mock_lock_manager.acquire_lock(
             "any_lock_id",
@@ -716,7 +726,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     def test_check_can_refresh_proceed_state_ingest_locked_secondary(
         self,
     ) -> None:
-
         # Grab lock, just like the /acquire_lock... endpoint does
         self.mock_lock_manager.acquire_lock(
             "any_lock_id",
@@ -751,7 +760,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     def test_check_can_refresh_proceed_state_can_proceed(
         self,
     ) -> None:
-
         # Grab lock, just like the /acquire_lock... endpoint does
         self.mock_lock_manager.acquire_lock(
             "any_lock_id",
@@ -786,7 +794,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     def test_check_can_refresh_proceed_state_can_proceed_secondary(
         self,
     ) -> None:
-
         # Grab lock, just like the /acquire_lock... endpoint does
         self.mock_lock_manager.acquire_lock(
             "any_lock_id",
@@ -825,7 +832,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     def test_release_lock_state(
         self,
     ) -> None:
-
         # Grab lock, just like the /create_tasks... endpoint does
         self.mock_lock_manager.acquire_lock(
             "any_lock_id",
@@ -860,7 +866,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     def test_release_lock_state_secondary(
         self,
     ) -> None:
-
         # Grab lock, just like the /create_tasks... endpoint does
         self.mock_lock_manager.acquire_lock(
             "any_lock_id",
@@ -887,3 +892,315 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
+
+
+@mock.patch(
+    f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl",
+    create_autospec(BigQueryClientImpl),
+)
+@mock.patch("time.sleep", Mock(side_effect=lambda _: None))
+@mock.patch(
+    "uuid.uuid4", Mock(return_value=uuid.UUID("8367379ff8674b04adfb9b595b277dc3"))
+)
+class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
+    """Tests the execute_cloud_sql_to_bq_refresh function"""
+
+    def setUp(self) -> None:
+        self.mock_lock_manager = create_autospec(CloudSqlToBQLockManager)
+        self.mock_lock_patcher = mock.patch(
+            f"{REFRESH_CONTROL_PACKAGE_NAME}.CloudSqlToBQLockManager"
+        )
+        self.mock_lock_patcher.start().return_value = self.mock_lock_manager
+
+        self.mock_refresh_bq_dataset_persister = create_autospec(
+            RefreshBQDatasetSuccessPersister
+        )
+        self.mock_refresh_bq_dataset_persister_patcher = mock.patch(
+            f"{REFRESH_CONTROL_PACKAGE_NAME}.RefreshBQDatasetSuccessPersister"
+        )
+        self.mock_refresh_bq_dataset_persister_patcher.start().return_value = (
+            self.mock_refresh_bq_dataset_persister
+        )
+
+    def tearDown(self) -> None:
+        self.mock_lock_patcher.stop()
+        self.mock_refresh_bq_dataset_persister_patcher.stop()
+
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_execute_cloud_sql_to_bq_refresh(
+        self, mock_federated_bq: mock.MagicMock
+    ) -> None:
+        def mock_acquire_lock(
+            lock_id: str,
+            schema_type: SchemaType,
+            ingest_instance: DirectIngestInstance,
+        ) -> None:
+            return None
+
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
+
+        def mock_can_proceed(
+            schema_type: SchemaType, ingest_instance: DirectIngestInstance
+        ) -> bool:
+            return True
+
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+
+        def federated_bq_pass(
+            schema_type: SchemaType,
+            direct_ingest_instance: DirectIngestInstance,
+            dataset_override_prefix: Optional[str] = None,
+        ) -> None:
+            return None
+
+        mock_federated_bq.side_effect = federated_bq_pass
+
+        def mock_record_success(
+            schema_type: SchemaType,
+            direct_ingest_instance: DirectIngestInstance,
+            dataset_override_prefix: Optional[str],
+            runtime_sec: int,
+            cloud_task_id: str,
+        ) -> None:
+            return None
+
+        self.mock_refresh_bq_dataset_persister.record_success_in_bq.side_effect = (
+            mock_record_success
+        )
+
+        cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_prefix=None,
+        )
+
+        self.mock_lock_manager.release_lock.assert_called_once_with(
+            schema_type=SchemaType.STATE, ingest_instance=DirectIngestInstance.PRIMARY
+        )
+        mock_federated_bq.assert_called_once_with(
+            schema_type=SchemaType.STATE,
+            direct_ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_override_prefix=None,
+        )
+
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_execute_cloud_sql_bq_refresh_invalid_schema_type(
+        self, mock_federated_bq: mock.MagicMock
+    ) -> None:
+        with self.assertRaisesRegex(ValueError, r"Unsupported schema type*"):
+            cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
+                schema_type=SchemaType.JUSTICE_COUNTS,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_prefix=None,
+            )
+        self.mock_lock_manager.acquire_lock.assert_not_called()
+        self.mock_lock_manager.can_proceed.assert_not_called()
+        mock_federated_bq.assert_not_called()
+        self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()
+        self.mock_lock_manager.release_lock.assert_not_called()
+
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_execute_cloud_sql_to_bq_refresh_federated_throws(
+        self, mock_federated_bq: mock.MagicMock
+    ) -> None:
+        def mock_acquire_lock(
+            lock_id: str,
+            schema_type: SchemaType,
+            ingest_instance: DirectIngestInstance,
+        ) -> None:
+            return None
+
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
+
+        def mock_can_proceed(
+            schema_type: SchemaType, ingest_instance: DirectIngestInstance
+        ) -> bool:
+            return True
+
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+
+        def federated_bq_pass(
+            schema_type: SchemaType,
+            direct_ingest_instance: DirectIngestInstance,
+            dataset_override_prefix: Optional[str] = None,
+        ) -> None:
+            raise ValueError
+
+        mock_federated_bq.side_effect = federated_bq_pass
+
+        with self.assertRaises(ValueError):
+            cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
+                schema_type=SchemaType.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_prefix=None,
+            )
+        self.mock_lock_manager.acquire_lock.assert_called()
+        self.mock_lock_manager.can_proceed.assert_called()
+        self.mock_lock_manager.release_lock.assert_called()
+        self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()
+
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_execute_cloud_sql_to_bq_refresh_bq_success_throws(
+        self, mock_federated_bq: mock.MagicMock
+    ) -> None:
+        def mock_acquire_lock(
+            lock_id: str,
+            schema_type: SchemaType,
+            ingest_instance: DirectIngestInstance,
+        ) -> None:
+            return None
+
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
+
+        def mock_can_proceed(
+            schema_type: SchemaType, ingest_instance: DirectIngestInstance
+        ) -> bool:
+            return True
+
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+
+        def federated_bq_pass(
+            schema_type: SchemaType,
+            direct_ingest_instance: DirectIngestInstance,
+            dataset_override_prefix: Optional[str] = None,
+        ) -> None:
+            return None
+
+        mock_federated_bq.side_effect = federated_bq_pass
+
+        def mock_record_success(
+            schema_type: SchemaType,
+            direct_ingest_instance: DirectIngestInstance,
+            dataset_override_prefix: Optional[str],
+            runtime_sec: int,
+            cloud_task_id: str,
+        ) -> None:
+            raise ValueError
+
+        self.mock_refresh_bq_dataset_persister.record_success_in_bq.side_effect = (
+            mock_record_success
+        )
+
+        with self.assertRaises(ValueError):
+            cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
+                schema_type=SchemaType.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_prefix=None,
+            )
+        self.mock_lock_manager.acquire_lock.assert_called()
+        self.mock_lock_manager.can_proceed.assert_called()
+        self.mock_lock_manager.release_lock.assert_called()
+
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_execute_cloud_sql_to_bq_refresh_lock_acquisition_timeout(
+        self, mock_federated_bq: mock.MagicMock
+    ) -> None:
+        def mock_acquire_lock(
+            lock_id: str,
+            schema_type: SchemaType,
+            ingest_instance: DirectIngestInstance,
+        ) -> None:
+            return None
+
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
+
+        def mock_can_proceed(
+            schema_type: SchemaType, ingest_instance: DirectIngestInstance
+        ) -> bool:
+            return False
+
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+
+        with self.assertRaisesRegex(
+            ValueError, r"Could not acquire lock after waiting*"
+        ):
+            cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
+                schema_type=SchemaType.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                sandbox_prefix=None,
+            )
+
+        self.mock_lock_manager.release_lock.assert_called()
+        mock_federated_bq.assert_not_called()
+        self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_not_called()
+
+    @parameterized.expand(
+        [
+            (
+                "state_with_primary",
+                SchemaType.STATE,
+                DirectIngestInstance.PRIMARY,
+                None,
+                DirectIngestInstance.PRIMARY,
+            ),
+            (
+                "state_with_secondary",
+                SchemaType.STATE,
+                DirectIngestInstance.SECONDARY,
+                "sandbox",
+                DirectIngestInstance.SECONDARY,
+            ),
+            (
+                "nonstate_with_primary",
+                SchemaType.OPERATIONS,
+                DirectIngestInstance.PRIMARY,
+                None,
+                None,
+            ),
+            (
+                "nonstate_with_secondary",
+                SchemaType.CASE_TRIAGE,
+                DirectIngestInstance.SECONDARY,
+                "sandbox",
+                None,
+            ),
+        ]
+    )
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_execute_cloud_sql_to_bq_refresh_args_check(
+        self,
+        _name: str,
+        schema_called_with: SchemaType,
+        instance_called_with: DirectIngestInstance,
+        sandbox_called_with: Optional[str],
+        instance_in_func_call: DirectIngestInstance,
+        mock_federated_bq: mock.MagicMock,
+    ) -> None:
+        def mock_acquire_lock(
+            lock_id: str,
+            schema_type: SchemaType,
+            ingest_instance: DirectIngestInstance,
+        ) -> None:
+            return None
+
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
+
+        def mock_can_proceed(
+            schema_type: SchemaType, ingest_instance: DirectIngestInstance
+        ) -> bool:
+            return True
+
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+
+        cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
+            schema_type=schema_called_with,
+            ingest_instance=instance_called_with,
+            sandbox_prefix=sandbox_called_with,
+        )
+
+        mock_federated_bq.assert_called_with(
+            schema_type=schema_called_with,
+            direct_ingest_instance=instance_in_func_call,
+            dataset_override_prefix=sandbox_called_with,
+        )
+        self.mock_refresh_bq_dataset_persister.record_success_in_bq.assert_called_with(
+            schema_type=schema_called_with,
+            direct_ingest_instance=instance_called_with,
+            dataset_override_prefix=sandbox_called_with,
+            runtime_sec=mock.ANY,
+            cloud_task_id="AIRFLOW_FEDERATED_REFRESH",
+        )
+        self.mock_lock_manager.release_lock.assert_called_with(
+            schema_type=schema_called_with,
+            ingest_instance=instance_called_with,
+        )

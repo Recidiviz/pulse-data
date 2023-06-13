@@ -17,6 +17,8 @@
 """Endpoints and control logic for the CloudSQL -> BigQuery refresh."""
 import datetime
 import logging
+import time
+import uuid
 from http import HTTPStatus
 from typing import Optional, Tuple
 
@@ -40,6 +42,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.endpoint_helpers import get_value_from_request
 
+# TODO(#21446) Remove these endpoints once we move the callsite to Kubernetes in Airflow.
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
 
 
@@ -227,3 +230,62 @@ def refresh_bq_dataset() -> Tuple[str, HTTPStatus]:
     logging.info("Finished saving success record to database.")
 
     return "", HTTPStatus.OK
+
+
+LOCK_WAIT_SLEEP_INTERVAL_SECONDS = 60  # 1 minute
+LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT = 60 * 60 * 4  # 4 hours
+
+
+def execute_cloud_sql_to_bq_refresh(
+    schema_type: SchemaType,
+    ingest_instance: DirectIngestInstance,
+    sandbox_prefix: Optional[str] = None,
+) -> None:
+    """Executes the Cloud SQL to BQ refresh for a given schema_type, ingest instance and
+    sandbox_prefix."""
+    if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+        raise ValueError(f"Unsupported schema type: [{schema_type}]")
+
+    lock_manager = CloudSqlToBQLockManager()
+    lock_manager.acquire_lock(
+        lock_id=str(uuid.uuid4()),
+        schema_type=schema_type,
+        ingest_instance=ingest_instance,
+    )
+
+    try:
+        secs_waited = 0
+        while (
+            not (can_proceed := lock_manager.can_proceed(schema_type, ingest_instance))
+            and secs_waited < LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT
+        ):
+            time.sleep(LOCK_WAIT_SLEEP_INTERVAL_SECONDS)
+            secs_waited += LOCK_WAIT_SLEEP_INTERVAL_SECONDS
+
+        if not can_proceed:
+            raise ValueError(
+                f"Could not acquire lock after waiting {LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT} seconds for {schema_type}."
+            )
+        start = datetime.datetime.now()
+        federated_bq_schema_refresh(
+            schema_type=schema_type,
+            direct_ingest_instance=ingest_instance
+            if schema_type == SchemaType.STATE
+            else None,
+            dataset_override_prefix=sandbox_prefix,
+        )
+        end = datetime.datetime.now()
+        runtime_sec = int((end - start).total_seconds())
+        success_persister = RefreshBQDatasetSuccessPersister(
+            bq_client=BigQueryClientImpl()
+        )
+        # TODO(#21537) Remove the use of `cloud_task_id` when all tasks have been moved to Kubernetes.
+        success_persister.record_success_in_bq(
+            schema_type=schema_type,
+            direct_ingest_instance=ingest_instance,
+            dataset_override_prefix=sandbox_prefix,
+            runtime_sec=runtime_sec,
+            cloud_task_id="AIRFLOW_FEDERATED_REFRESH",
+        )
+    finally:
+        lock_manager.release_lock(schema_type, ingest_instance)
