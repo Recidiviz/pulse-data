@@ -14,15 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+from typing import Union
+
 import flask
 from flask import Flask
-from typing import Union
+from werkzeug.exceptions import HTTPException
 
 class CSRFProtect:
     def __init__(self, app: Flask): ...
     def exempt(self, view: flask.Blueprint) -> CSRFProtect: ...
 
-class CSRFError(Exception):
+class CSRFError(HTTPException):
     pass
 
 def generate_csrf(secret_key: Union[bytes, str, None]) -> str: ...

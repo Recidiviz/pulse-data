@@ -46,11 +46,11 @@ def handle_validation_error(ex: ValidationError) -> Response:
     )
 
 
-def handle_csrf_error(_: CSRFError) -> Response:
+def handle_csrf_error(error: CSRFError) -> Response:
     return handle_auth_error(
         FlaskException(
             code="invalid_csrf_token",
-            description="The provided X-CSRF-Token header could not be validated",
+            description=f"The provided X-CSRF-Token header could not be validated ({error.description})",
             status_code=HTTPStatus.BAD_REQUEST,
         )
     )
