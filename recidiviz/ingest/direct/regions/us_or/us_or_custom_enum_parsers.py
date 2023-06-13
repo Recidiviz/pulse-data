@@ -22,3 +22,41 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_or_custom_enum_parsers.<function name>
 """
+from typing import Optional
+
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodHousingUnitType,
+)
+
+
+def parse_housing_unit_type(  # TODO(#21278): Update when schema change request for additional types of solitary is in.
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitType]:
+    """
+    Maps |housing_unit|, to its corresponding StateIncarcerationPeriodHousingUnitType.
+    # make task and link to edit these when more housing unit types
+
+    DSU stays are meant to be for a specific amount of time (SEG is also a DSU unit)
+    ASU and AHU are also specified amount of times.
+    Will remap SEG to other solitary confinement when additional enums available.
+
+    IMU and BHU are more program completion based, and can result in long stays.
+    MHI and ICH are mental health special housing units and length of stay is not specified.
+    SHU is utilized at CCCF for DSU sanctioned, BHU programming and IMU programming female AICs.
+    """
+
+    if raw_text in (
+        "%DS%",
+        "%ASU%",
+        "%AHU%",
+        "%SEG%",
+        "%SEG%",
+    ):
+        return StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT
+
+    if raw_text in ("%IMU%", "%BHU%", "%MHI%", "%ICH%", "%SHU%", "%SMU%"):
+        return StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT
+
+    if not raw_text:
+        return None
+    return StateIncarcerationPeriodHousingUnitType.GENERAL

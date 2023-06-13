@@ -1,0 +1,336 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_incarceration_periods` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - PERIOD_ID
+  - LOCATION_TYPE # incarceration_type
+  - MOVE_IN_DATE # admission_date
+  - MOVE_OUT_DATE # release_date
+  - COUNTY
+  - LOCATION_NAME
+  - FACILITY
+  - UNIT_NUMBER # housing_unit
+  - INSTITUTION_RISK # custody_level
+  - ADMISSION_REASON
+  - RELEASE_REASON
+  - RESPONSIBLE_DIVISION # custodial_authority
+unused_columns:
+  - LOCATION_NAME
+  - COUNTY
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    incarceration_periods:
+      - StateIncarcerationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - RECORD_KEY
+                - PERIOD_ID
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: RESPONSIBLE_DIVISION
+              $mappings:
+                StateCustodialAuthority.COUNTY: # should we be seeing C? Might not when we add more custody_type filters in view
+                  - L # Local Control - Jail
+                StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                  - C # Community # should I add filter to not include this?
+                  - D # DOC - non institution/CC
+                StateCustodialAuthority.STATE_PRISON:
+                  - I # Institution
+                StateCustodialAuthority.INTERNAL_UNKNOWN:
+                  - N # Not State Agency
+          incarceration_type:
+            $enum_mapping:
+              $raw_text: LOCATION_TYPE
+              $mappings:
+                StateIncarcerationType.COUNTY_JAIL:
+                  - L # Local Control Jail
+                StateIncarcerationType.STATE_PRISON:
+                  - I # Institution
+          admission_date: MOVE_IN_DATE
+          release_date: MOVE_OUT_DATE
+          facility: FACILITY
+          #county: COUNTY
+          housing_unit: UNIT_NUMBER
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: UNIT_NUMBER
+              $custom_parser: us_or_custom_enum_parsers.parse_housing_unit_type
+          custody_level:
+            $enum_mapping:
+              $raw_text: INSTITUTION_RISK
+              $mappings:
+                StateIncarcerationPeriodCustodyLevel.CLOSE: CLOSE
+                StateIncarcerationPeriodCustodyLevel.MAXIMUM: MAXIMUM
+                StateIncarcerationPeriodCustodyLevel.MEDIUM: MEDIUM
+                StateIncarcerationPeriodCustodyLevel.MINIMUM: MINIMUM
+          specialized_purpose_for_incarceration: $literal_enum(StateSpecializedPurposeForIncarceration.GENERAL)
+          admission_reason:
+            $enum_mapping:
+              $raw_text: ADMISSION_REASON
+              $mappings:
+                StateIncarcerationPeriodAdmissionReason.ESCAPE:
+                  - ESCA # Escape
+                  - FUGI # Fugitive
+                StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
+                  - INTK # INTAKE
+                  - INEM # Intake Escape/Morrissey
+                  - IAIP # Intake Transfer for AIP *?
+                  - INTA # Intake
+                  - INTO # Intake OYA
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
+                  - RADM # Re-admit for ESCA
+                StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - DOC # Return to DOC Custody
+                StateIncarcerationPeriodAdmissionReason.REVOCATION:
+                  - RESC # Parole Rescinded   #IS THIS REVOCATION?
+                  - RTNS # Revoke/Term Felony Prob Supv-Order Required  ##??
+                  - CRTR # REVOKE/TERM MISD PROB SUPV - ORDER REQ'D - more in TBMOVE (only 2 instances)
+                  - ABSC # Absconded Supervision
+                  - VIOL #  VIOLATION
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE: # check these
+                  - JAIL # House in jail
+                  - INTX # Inpatient Alcohol and Drug Treatment
+                  - BNPB # Conv. to Bench Prob. Court Order Req'd. (12 instances)
+                  - REVP # Offender Sentenced to Federal Prison (4 instances)
+                  - IMMI # Immigration Deportation-order req. (12 instances)
+                  - LOCL # Released to Local Control (2 instances)
+                StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR:
+                  - XERD # Admitted in Error and Discharged
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE:
+                  - WKRL # Work Release
+                  - COUR # Out to Court
+                  - MEDI # Medical Leave
+                  - HOSP # Hospitalization (only 1 instance)
+                  - OC # Out Count
+                  - OSH # Oregon State Hospital (only 8 instances)
+                  - CMPO # Compact Out - Oregon Offenders Only
+                  - LEAV # Temporary or Transitional Leave
+                  - TRIP # Supervised Trip From Institution
+                  - OUTC # Outcount / other code
+                  - SHLV # Out on Short Term Leave
+                StateIncarcerationPeriodAdmissionReason.TRANSFER:
+                  - TRAN # Transferred to another location
+                  - HILL # Transfer to Hillcrest
+                  - INAC # Off Sentenced to out-of-State Facility   ## CHECK THIS, potentially should be only release reason
+                  - TRANSFER
+                  - UNIT_CHANGE
+                  - CUST_CHANGE
+                  - INBH # BHS Intake
+                  - INMA # Intake Medical Move
+                #StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - PARO # Parole - Parole Order Required (only 2 instances and in 1989)
+                  - POST # SGL Prison/LC Sentence Expired (only 3 instances from data errors)
+                  - WARR # Warrant for Non-Compliance (1 instance) ** asking if this periods should even be considered incarceration
+                  - PROB # Probation-Status Change Only
+                  - DETA # Detainer
+                  - DETR # Detainer (only 1 instance)
+                  - USAP # Unsupervised Appeal - Court Order Req'd (only 2 instances)
+                  - ADMI # Administrative (1 instance)v
+                  - CCGH # Concurrent Ghost
+                  - CSGH # Consecutive Ghost # not sure what ghost is
+                  - ESLV # Escape from Leave
+                  - FRCW # Forest Crew
+                  - LODG # Lodged out of Institution
+                StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
+                  - MED # (only 2 instances)
+                  - OTC # (only 1 instance)
+                  - LDOU # Douglas County Jail Bed (only 1 instance)
+                  - ESCJ # (only 2 instances)
+                  - GHST # asking OR - external unknown otherwise
+                  - HOT
+                  - RSNT
+                  - OSHF
+                  - OSHM # (only 5 instances)
+                  - OSHS # (13 instances)
+                  - OSHP # (10 instances)
+                  - OSHC
+                  - ESCO # (only 7 instances)
+                  - ICOM # Interstate Compact
+                  - PC
+                  - SPEC # (4 instances)
+                  - PSYC # Psychiatric Treatment (20 instances)
+                  - RENT # Rental Bed
+                  - OSP # Oregon State Penitentiary (only 2 instances)
+                  - MACL # Transfer to Maclaren
+                  - CSUB
+                  - CSXO
+                  - CSKL
+                  - LONG
+                  - CMED
+                  - ERRE # (only 4 instances)
+                  - UNAB # Unauthorized absence
+                  - SLDE
+                  - CDTA # (only 3 instances)
+                  - HOOD # (only 1 instance)
+          release_reason:
+            $enum_mapping:
+              $raw_text: RELEASE_REASON
+              $mappings:
+                StateIncarcerationPeriodReleaseReason.DEATH:
+                  - DIED # Death - Documentation Required
+                  - EXEC # Executed - Institution Only (only 2 instances) ** seperate enum?
+                StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
+                  - PARO # Parole - Parole Order Required
+                  - CNPO # Post Prison Supervision Cont'd - Doc Req
+                  - POST # SGL Prison/LC Sentence Expired
+                  - CONT # Parole Continued - Document Required
+                  - POPA # Post-Prison & Parole Supervision
+                  - CNPS # Post-Prison Supervision & Parole Cont'd
+                  - REIN # Parole Reinstated
+                  - CNPA # Parole Continued - Document Required
+                StateIncarcerationPeriodReleaseReason.COMMUTED:
+                  - ORDE # Court Ordered Release - Order Required
+                  - SCOM # Sentence Commuted - DOC Required (only 8 instances)
+                StateIncarcerationPeriodReleaseReason.TRANSFER:
+                  - TRAN # Transferred to another location
+                  - HILL # Transfer to Hillcrest
+                  - HSBH # Housing Behavioral Health Services
+                  - TRANSFER
+                  - UNIT_CHANGE
+                  - CUST_CHANGE
+                  - MACL # Transfer to Maclaren
+                StateIncarcerationPeriodReleaseReason.ESCAPE:
+                  - ESCA # Escape
+                  - FUGI # Fugitive
+                  - UNAB # Unauthorized absence
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
+                  - RADM # Re-admit for ESCA
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - RCOUR # Code made to denote return from court
+                StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
+                  - COUR # Out to court
+                  - MEDI # Medical Leave
+                  - HOSP # Hospitalization (only 1 instance)
+                  - LEAV # Temporary or Transitional Leave
+                  - OC # Out Count
+                  - WKRL # Work Release
+                  - OUTC # Outcount / other code (only 4 instances)
+                  - TRIP # Supervised Trip From Institution
+                  - HSDN # Health Services Dental ?
+                  - HSMD # Health Services Medical ?
+                  - MEDO # Medical Outcount
+                  - PSYC # Psychiatric Treatment **? check location
+                  - SHLV # # Out on Short Term Leave
+                  - WORK # Work
+                  - PROG # Program
+                StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - INTR # Release to international transfer (only 1 instance)
+                  - RETC # Compact - Return to sender - DOC Req. (only 1 instance)
+                  - IMMI # Immigration Deportation-order req. (only 7 instances)
+                  - INAC # Off Sentenced to out-of-State Facility
+                  - RETU # Return to Sentencing State - Inst. Only
+                  - ICOM # Interstate Compact
+                StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
+                  - EXPI # Sentence Expiration - See longer definition
+                  - LCMP # Completion of 1145 Sentence Obligation
+                StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
+                  - DISC # PA/PPS Discharge prior to max date **ASKING OR
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION:
+                  - XERD # Admitted in Error and Discharged
+                  - XERR # Admitted in Error to prison & released back to field
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  ## OR data does not have frequent admission/release reasons and they more often match to release reason, so the view does such
+                  ## but results in some erroneous values for release reason I.E. ABSC, as a release vs admission reason.
+                  - ABSC # Absconded Supervision   (31 instances)
+                  - VIOL # PA/PPS/PR/LV Viol. to DOC or Local Control OR being admitted to DOC/LC on additional sentences. ***MAYBE SWITCH TO ADMISSION REASON
+                  - PROB # Probation-Status Change Only (23 instances) ** look into why it's showing up
+                  - DETA # Detainer
+                  - EARL # Early Termination of Prob-order req. (only 1 instance)
+                  - DOC # Return to DOC Custody
+                  - REVP # Offender Sentenced to Federal Prison (only 4 instances)
+                  - LOCL # Released to Local Control
+                  - JAIL # House in jail
+                  - CRTR # REVOKE/TERM MISD PROB SUPV - ORDER REQ'D (only 2 instances)
+                  - BNPB # Conv. to Bench Prob. Court Order Req'd. (only 13)
+                  - EDIS # EARNED DISCHARGE (only 2 instances)
+                  - WARR # Warrant for Non-Compliance (only 1 instance)
+                  - SLJU # Second Look Juveniles
+                  - INPR # Inactive Probation
+                  - ABEX # ABSC EXPI/DISM BY COURT or LSA -DOC REQ (only 1 instance)
+                  - APRO # A&D Program Approved
+                  - COMP # Compact Closure Only-Compact Form Req. (only 1 instance)
+                  - RTNS # Revoke/Term Felony Prob Supv-Order Required (only 1 instance)
+                  - CCPR # Concurrent Probation
+                  - APPE # Appeal - Appeal won - Court Order Required
+                  - VACA # Conviction(s) Vacated / No new trial
+                  - USAP # Unsupervised Appeal - Court Order Req'd (only 5 instances)
+                  - CNLV # Leave status cont'd after LC sent served (only 2 instances)
+                  - ACQT # Acquittal After Re-trial/Re-sentencing (only 1 instance)
+                  - SAPP # Supervised Appeal (only 1 instance)
+                  - INTX # Inpatient Alcohol and Drug Treatment (only 1 instance)
+                  - ADMI # Administrative (only 2 instances)
+                  - AIPS # Alternative Incarceration Program Space
+                  - CCGH # Concurrent Ghost
+                  - EMRG # Emergency
+                  - ERRE # Error (only 3 instances)
+                  - ESLV # Escape from Leave
+                  - FRCW # Forest Crew
+                  - GHST # Ghost
+                  - CSGH # Consecutive Ghost
+                  - OSP # Oregon State Penitentiary (only 3 instances)
+                  - HOLD # Hold
+                  - P&PS # Profile and Placement System
+                  - RLSE # Release
+                  - RSNT # Resentencing
+                  - RENT # Rental Bed
+                  - OPMD # Central Placement Decision
+                  - PC # Parole Consideration
+                  - LODG # Lodged out of Institution
+                #StateIncarcerationPeriodReleaseReason.COURT_ORDER:
+                StateIncarcerationPeriodReleaseReason.VACATED:
+                  - VARE # Sentences Vacated & Remanded to Court (only 1 instance)
+                  - DISM # Conviction/Sentence Dismissed
+                StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN:
+                  - IBRO # (only 2 instances)
+                  - EOCI # (only 1 instance)
+                  - SCI # (only 1 instance)
+                  - MED # (only 2 instances)
+                  - DETR # (only 1 instance)
+                  - PRCF # (only 1 instance)
+                  - CLAC # (only 1 instance)
+                  - OTC # (only 1 instance)
+                  - RELE # (only 1 instance)
+                  - AUTO # (only 1 instance)
+                  - ERR* # (only 1 instance)
+                  - SENT # (only 1 instance)
+                  - LDOU # (only 1 instance)
+                  - MORR # (only one instance)
+                  - GCMP # (only 2 instances)
+                  - ESCJ # (only 2 instances)
+                  - KCMP # (only 1 instance)
+                  - ADMM # (only 1 instance)
+                  - CUST
+                  - ADMN
+                  - SPAC
+                  - RULE
+                  - SPEH
+                  - HOT
+                  - STMS
+                  - SPMC
+                  - CMED
+                  - CSUB
+                  - CSKL
+                  - CSXO
+                  - EPAR
+                  - OSHF
+                  - OSHC
+                  - TAIC
+                  - LONG
+                  - SLDE
+                  - SPEC # (only 4 instances
+                  - OSHS
+                  - PREA
+                  - OSHP # (only 10 instances)
+                  - INSP # Intake Moves to Special Housing
+                  - OSH
+                  - ESCO # (only 7 instances)
+                  - OSHM # (only 5 instances)
+                  - DESC # (only 1 instance)
