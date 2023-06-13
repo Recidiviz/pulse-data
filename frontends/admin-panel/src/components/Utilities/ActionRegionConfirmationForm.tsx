@@ -294,18 +294,43 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
                           to take advantage of the following scripts:
                           <ul>
                             <li>
-                              <EmbeddedCode>
-                                copy_raw_state_files_between_projects
-                              </EmbeddedCode>
+                              <b>
+                                If, for entity deletion purposes, you would like
+                                to only copy over the most and least recent
+                                versions of each file, use:
+                              </b>
+                              <ul>
+                                <li>
+                                  <EmbeddedCode>
+                                    copy_least_and_most_recent_files_from_primary_storage_to_secondary_ingest_bucket
+                                  </EmbeddedCode>
+                                </li>
+                                <b style={{ color: "red" }}>
+                                  This script should be used in US_TN, US_MI,
+                                  and US_ND until ingest is in dataflow and can
+                                  handle entity deletion properly.
+                                </b>
+                              </ul>
                             </li>
                             <li>
-                              <EmbeddedCode>
-                                move_raw_state_files_from_storage
-                              </EmbeddedCode>
+                              Otherwise, use the following two scripts:
+                              <ul>
+                                <li>
+                                  <EmbeddedCode>
+                                    copy_raw_state_files_between_projects
+                                  </EmbeddedCode>
+                                </li>
+                                <li>
+                                  <EmbeddedCode>
+                                    move_raw_state_files_from_storage
+                                  </EmbeddedCode>
+                                </li>
+                              </ul>
+                              These will copy and move raw files from the
+                              desired storage bucket to the secondary ingest
+                              bucket.
                             </li>
                           </ul>
-                          These will copy and move raw files from the desired
-                          storage bucket to the secondary ingest bucket.
                         </p>
                       </li>
                       <li>
