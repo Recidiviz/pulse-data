@@ -20,27 +20,14 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
-from recidiviz.task_eligibility.criteria.general import (
-    supervision_level_is_not_internal_unknown,
-    supervision_level_is_not_interstate_compact,
-    supervision_level_is_not_unassigned,
-)
 from recidiviz.task_eligibility.completion_events.general import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
-    fines_fees_eligible,
-    missing_active_sentences_or_zero_tolerance_code_spans_or_ineligible_offenses_expired,
-    no_arrests_in_past_year,
-    no_high_sanctions_in_past_year,
-    no_murder_convictions,
-    no_recent_compliant_reporting_rejections,
-    not_in_judicial_district_17_while_on_probation,
-    not_on_life_sentence_or_lifetime_supervision,
-    not_permanently_rejected_from_compliant_reporting,
-    on_eligible_level_for_sufficient_time,
-    passed_drug_screen_check,
-    special_conditions_are_current,
+    ineligible_for_compliant_reporting_discretionary_criteria,
+)
+from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_to_compliant_reporting_no_discretion import (
+    _REQUIRED_CRITERIA,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -61,22 +48,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        on_eligible_level_for_sufficient_time.VIEW_BUILDER,
-        no_arrests_in_past_year.VIEW_BUILDER,
-        no_high_sanctions_in_past_year.VIEW_BUILDER,
-        fines_fees_eligible.VIEW_BUILDER,
-        passed_drug_screen_check.VIEW_BUILDER,
-        special_conditions_are_current.VIEW_BUILDER,
-        not_in_judicial_district_17_while_on_probation.VIEW_BUILDER,
-        not_permanently_rejected_from_compliant_reporting.VIEW_BUILDER,
-        no_recent_compliant_reporting_rejections.VIEW_BUILDER,
-        not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,
-        no_murder_convictions.VIEW_BUILDER,
-        missing_active_sentences_or_zero_tolerance_code_spans_or_ineligible_offenses_expired.VIEW_BUILDER,
-        supervision_level_is_not_internal_unknown.VIEW_BUILDER,
-        supervision_level_is_not_interstate_compact.VIEW_BUILDER,
-        supervision_level_is_not_unassigned.VIEW_BUILDER,
-    ],
+        criteria.VIEW_BUILDER for criteria in _REQUIRED_CRITERIA
+    ]
+    + [ineligible_for_compliant_reporting_discretionary_criteria.VIEW_BUILDER],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
 
