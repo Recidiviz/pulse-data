@@ -253,7 +253,8 @@ def execute_validation(
     logging.info(
         "Validation run complete. Analyzed a total of %s jobs.", len(validation_jobs)
     )
-    if failed_hard_validations:
+    # Only create GitHub tickets for hard failures on primary ingest instance
+    if failed_hard_validations and ingest_instance == DirectIngestInstance.PRIMARY:
         # Put GitHub filing in a try/except so we don't fail the endpoint completely if we can't
         # talk to GitHub for whatever reason.
         try:
