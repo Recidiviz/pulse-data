@@ -103,7 +103,7 @@ output:
                     $raw_text: OffenderGroup
                     $mappings:
                       StateSupervisionPeriodSupervisionType.ABSCONSION:
-                        - IPSU_PAL
+                        - ISPU_PAL
                         - PAL
                       StateSupervisionPeriodSupervisionType.PAROLE:
                         - ACP
