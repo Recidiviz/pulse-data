@@ -26,6 +26,9 @@ from typing import Dict, Iterable, List, Optional, Type
 
 from airflow.decorators import dag
 from airflow.models import BaseOperator
+from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
+    KubernetesPodOperator,
+)
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
@@ -42,9 +45,11 @@ from recidiviz.airflow.dags.operators.bq_result_sensor import BQResultSensor
 from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
     IAPHTTPRequestOperator,
 )
-from recidiviz.airflow.dags.operators.iap_httprequest_sensor import IAPHTTPRequestSensor
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
+)
+from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    build_recidiviz_kubernetes_pod_operator,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
@@ -127,36 +132,19 @@ def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
 
 
 def trigger_refresh_bq_dataset_operator(
-    schema_type: str, task_group: TaskGroup
-) -> CloudTasksTaskCreateOperator:
-    queue_location = "us-east1"
-    queue_name = "bq-view-update"
-    task_path = CloudTasksClient.task_path(
-        project=project_id,
-        location=queue_location,
-        queue=queue_name,
-        task=uuid.uuid4().hex,
-    )
-    task = tasks_v2.types.Task(
-        name=task_path,
-        app_engine_http_request={
-            "http_method": "POST",
-            "relative_uri": "/cloud_sql_to_bq/refresh_bq_dataset",
-            "body": json.dumps(
-                {
-                    "schema_type": schema_type.upper(),
-                    "ingest_instance": "PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
-                }
-            ).encode(),
-        },
-    )
-    return CloudTasksTaskCreateOperator(
+    schema_type: str,
+) -> KubernetesPodOperator:
+    return build_recidiviz_kubernetes_pod_operator(
         task_id=f"trigger_refresh_bq_dataset_task_{schema_type}",
-        location=queue_location,
-        queue_name=queue_name,
-        task=task,
-        retry=retry,
-        task_group=task_group,
+        container_name=f"trigger_refresh_bq_dataset_{schema_type}",
+        argv=[
+            "python",
+            "-m",
+            "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
+            f"--project_id={project_id}",
+            f"--schema_type={schema_type.upper()}",
+            "--ingest_instance=PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
+        ],
     )
 
 
@@ -266,79 +254,6 @@ def response_can_refresh_proceed_check(response: Response) -> bool:
     """Checks whether the refresh lock can proceed is true."""
     data = response.text
     return data.lower() == "true"
-
-
-def create_bq_refresh_nodes(schema_type: str) -> BQResultSensor:
-    """Creates nodes that will do a bq refresh for given schema type and returns the last node."""
-    task_group = TaskGroup(f"{schema_type.lower()}_bq_refresh")
-    acquire_lock = IAPHTTPRequestOperator(
-        task_id=f"acquire_lock_{schema_type}",
-        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/acquire_lock",
-        url_method="POST",
-        data=json.dumps(
-            {
-                "lock_id": str(uuid.uuid4()),
-                "schema_type": schema_type.upper(),
-                "ingest_instance": "PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
-            }
-        ).encode(),
-        task_group=task_group,
-    )
-
-    wait_for_can_refresh_proceed = IAPHTTPRequestSensor(
-        task_id=f"wait_for_acquire_lock_success_{schema_type}",
-        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/check_can_refresh_proceed",
-        url_method="POST",
-        data=json.dumps(
-            {
-                "schema_type": schema_type.upper(),
-                "ingest_instance": "PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
-            }
-        ).encode(),
-        response_check=response_can_refresh_proceed_check,
-        task_group=task_group,
-    )
-
-    trigger_refresh_bq_dataset = trigger_refresh_bq_dataset_operator(
-        schema_type, task_group
-    )
-
-    wait_for_refresh_bq_dataset = BQResultSensor(
-        task_id=f"wait_for_refresh_bq_dataset_success_{schema_type}",
-        query_generator=FinishedCloudTaskQueryGenerator(
-            project_id=project_id,
-            cloud_task_create_operator_task_id=trigger_refresh_bq_dataset.task_id,
-            tracker_dataset_id="view_update_metadata",
-            tracker_table_id="refresh_bq_dataset_tracker",
-        ),
-        timeout=(60 * 60 * 4),
-        task_group=task_group,
-    )
-
-    release_lock = IAPHTTPRequestOperator(
-        task_id=f"release_lock_{schema_type}",
-        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/release_lock",
-        url_method="POST",
-        data=json.dumps(
-            {
-                "schema_type": schema_type.upper(),
-                "ingest_instance": "PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
-            }
-        ).encode(),
-        trigger_rule=TriggerRule.ALL_DONE,
-        retries=1,
-        task_group=task_group,
-    )
-
-    (
-        acquire_lock
-        >> wait_for_can_refresh_proceed
-        >> trigger_refresh_bq_dataset
-        >> wait_for_refresh_bq_dataset
-        >> release_lock
-    )
-
-    return wait_for_refresh_bq_dataset
 
 
 def create_pipeline_parameters_by_state(
@@ -479,9 +394,13 @@ def create_calculation_dag() -> None:
     2. Update the metric output for each state.
     3. Trigger BigQuery exports for each state and other datasets."""
     with TaskGroup("bq_refresh") as _:
-        state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
-        operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")
-        case_triage_bq_refresh_completion = create_bq_refresh_nodes("CASE_TRIAGE")
+        state_bq_refresh_completion = trigger_refresh_bq_dataset_operator("STATE")
+        operations_bq_refresh_completion = trigger_refresh_bq_dataset_operator(
+            "OPERATIONS"
+        )
+        case_triage_bq_refresh_completion = trigger_refresh_bq_dataset_operator(
+            "CASE_TRIAGE"
+        )
 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",

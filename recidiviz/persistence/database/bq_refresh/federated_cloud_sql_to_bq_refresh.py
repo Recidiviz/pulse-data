@@ -238,7 +238,6 @@ def _copy_regional_dataset_to_multi_region(
     )
 
     try:
-
         bq_client.create_dataset_if_necessary(
             destination_dataset,
             default_table_expiration_ms=(

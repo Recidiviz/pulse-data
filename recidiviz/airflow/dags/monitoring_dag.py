@@ -27,8 +27,6 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 
-GCP_PROJECT_STAGING = "recidiviz-staging"
-
 project_id = os.environ.get("GCP_PROJECT")
 
 
@@ -50,7 +48,7 @@ def create_monitoring_dag() -> None:
         argv=[
             "python",
             "-m",
-            "recidiviz.tools.monitoring.report_metric_export_timeliness",
+            "recidiviz.entrypoints.monitoring.report_metric_export_timeliness",
             f"--project_id={project_id}",
         ],
     )

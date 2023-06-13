@@ -86,7 +86,7 @@ def store_bq_refresh_status_in_big_query(
     dataset_override_prefix: Optional[str],
 ) -> None:
     """Stores BQ refresh status in a BQ table"""
-    if not dataset_override_prefix and not environment.in_gcp():
+    if not dataset_override_prefix and environment.in_test():
         # pylint: disable=import-outside-toplevel
         from unittest.mock import MagicMock
 
