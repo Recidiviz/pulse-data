@@ -385,7 +385,8 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
         ]
 
         converted_output = convert_entities_to_normalized_dicts(
-            person_id=person_id,
+            root_entity_id=person_id,
+            root_entity_id_name="person_id",
             state_code="US_XX",
             entities=entities_to_convert,
             additional_attributes_map=additional_attributes_map,
@@ -497,7 +498,8 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
         ]
 
         converted_output = convert_entities_to_normalized_dicts(
-            person_id=person_id,
+            root_entity_id=person_id,
+            root_entity_id_name="person_id",
             state_code="US_XX",
             entities=entities_to_convert,
             additional_attributes_map=additional_attributes_map,
@@ -562,7 +564,8 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
         )
 
         converted_output = convert_entities_to_normalized_dicts(
-            person_id=person_id,
+            root_entity_id=person_id,
+            root_entity_id_name="person_id",
             state_code="US_XX",
             entities=entities_to_convert,
             additional_attributes_map=additional_attributes_map,

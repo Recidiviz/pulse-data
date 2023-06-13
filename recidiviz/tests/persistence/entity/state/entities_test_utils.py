@@ -50,6 +50,13 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
+from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
+    StateStaffSpecializedCaseloadType,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactReason,
@@ -652,3 +659,104 @@ def generate_full_graph_state_person(
             entity.set_field(id_name, id(entity))
 
     return person
+
+
+def generate_full_graph_state_staff(
+    set_back_edges: bool,
+    set_ids: Optional[bool] = False,
+) -> entities.StateStaff:
+    """Test util for generating a StateStaff that has at least one child of
+    each possible Entity type, with all possible edge types defined between
+    objects.
+
+    Args:
+        set_back_edges: explicitly sets all the back edges on the graph
+            that will get automatically filled in when this entity graph is
+            written to the DB.
+        include_person_back_edges: If set_back_edges is set to True, whether or not to
+            set the back edges to StatePerson. This is usually False when testing
+            calculation pipelines that do not hydrate this edge.
+        set_ids: It True, sets a value on the entity id field (primary key) of each
+            entity.
+
+    Returns:
+        A test instance of a StateStaff."""
+    staff = entities.StateStaff.new_with_defaults(
+        state_code="US_XX", full_name="Staff Name", email="staff@staff.com"
+    )
+
+    staff.external_ids = [
+        entities.StateStaffExternalId.new_with_defaults(
+            state_code="US_XX",
+            external_id="123",
+            id_type="US_XX_STAFF",
+            staff=staff if set_back_edges else None,
+        )
+    ]
+    staff.role_periods = [
+        entities.StateStaffRolePeriod.new_with_defaults(
+            state_code="US_XX",
+            external_id="R1",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 6, 1),
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+            role_type_raw_text="SUP_OF",
+            role_subtype=StateStaffRoleSubtype.SUPERVISION_OFFICER,
+            role_subtype_raw_text="SUP_OF",
+            staff=staff if set_back_edges else None,
+        )
+    ]
+    staff.supervisor_periods = [
+        entities.StateStaffSupervisorPeriod.new_with_defaults(
+            state_code="US_XX",
+            external_id="S1",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 6, 1),
+            supervisor_staff_external_id="S1",
+            supervisor_staff_external_id_type="SUPERVISOR",
+            staff=staff if set_back_edges else None,
+        )
+    ]
+    staff.location_periods = [
+        entities.StateStaffLocationPeriod.new_with_defaults(
+            state_code="US_XX",
+            external_id="L1",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 6, 1),
+            location_external_id="L1",
+            staff=staff if set_back_edges else None,
+        )
+    ]
+    staff.caseload_type_periods = [
+        entities.StateStaffCaseloadTypePeriod.new_with_defaults(
+            state_code="US_XX",
+            external_id="C1",
+            state_staff_specialized_caseload_type=StateStaffSpecializedCaseloadType.OTHER,
+            state_staff_specialized_caseload_type_raw_text="O",
+            start_date=datetime.date(2023, 1, 1),
+            end_date=datetime.date(2023, 6, 1),
+            staff=staff if set_back_edges else None,
+        )
+    ]
+
+    all_entities: Sequence[Entity] = (
+        *[staff],
+        *staff.external_ids,
+        *staff.role_periods,
+        *staff.supervisor_periods,
+        *staff.location_periods,
+        *staff.caseload_type_periods,
+    )
+
+    if set_ids:
+        for entity in all_entities:
+            if entity.get_id():
+                raise ValueError(
+                    f"Found entity [{entity}] with already set id field."
+                    f"Not expected to be set until this part of the "
+                    f"function."
+                )
+            id_name = entity.get_class_id_name()
+            entity.set_field(id_name, id(entity))
+
+    return staff

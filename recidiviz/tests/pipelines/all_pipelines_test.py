@@ -66,19 +66,39 @@ class TestReferenceViews(unittest.TestCase):
                 or hasattr(pipeline, "state_specific_required_reference_tables")
             )
 
+            # TODO(#21376) Properly refactor once strategy for separate normalization is defined.
             if hasattr(pipeline, "required_reference_tables"):
                 all_required_reference_tables.update(
-                    set(pipeline.required_reference_tables())
+                    {
+                        table
+                        for _, reference_tables in pipeline.required_reference_tables().items()
+                        for table in reference_tables
+                    }
+                    if issubclass(pipeline, ComprehensiveNormalizationPipeline)
+                    else set(pipeline.required_reference_tables())
                 )
 
             if hasattr(pipeline, "required_state_based_reference_tables"):
                 all_required_reference_tables.update(
-                    set(pipeline.required_state_based_reference_tables())
+                    {
+                        table
+                        for _, reference_tables in pipeline.required_state_based_reference_tables().items()
+                        for table in reference_tables
+                    }
+                    if issubclass(pipeline, ComprehensiveNormalizationPipeline)
+                    else set(pipeline.required_state_based_reference_tables())
                 )
 
             if hasattr(pipeline, "state_specific_required_reference_tables"):
                 all_required_reference_tables.update(
                     {
+                        view
+                        for _, state_dict in pipeline.state_specific_required_reference_tables().items()
+                        for _, state_views in state_dict.items()
+                        for view in state_views
+                    }
+                    if issubclass(pipeline, ComprehensiveNormalizationPipeline)
+                    else {
                         view
                         for state_views in pipeline.state_specific_required_reference_tables().values()
                         for view in state_views

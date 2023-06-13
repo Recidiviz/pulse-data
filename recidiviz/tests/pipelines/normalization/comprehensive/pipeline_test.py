@@ -38,6 +38,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.pipelines.normalization.comprehensive import pipeline
 from recidiviz.pipelines.normalization.utils import entity_normalization_manager_utils
 from recidiviz.tests.persistence.database import database_test_utils
@@ -104,12 +105,14 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             dataset,
             expected_output_tags=[
                 entity.__name__
-                for manager in self.pipeline_class.required_entity_normalization_managers()
+                for _, managers in self.pipeline_class.required_entity_normalization_managers().items()
+                for manager in managers
                 for entity in manager.normalized_entity_classes()
             ]
             + [
                 f"{child_entity.__name__}_{parent_entity.__name__}"
-                for manager in self.pipeline_class.required_entity_normalization_managers()
+                for _, managers in self.pipeline_class.required_entity_normalization_managers().items()
+                for manager in managers
                 for child_entity, parent_entity in manager.normalized_entity_associations()
             ],
         )
@@ -125,7 +128,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         )
 
     def build_comprehensive_normalization_pipeline_data_dict(
-        self, fake_person_id: int, state_code: str = "US_XX"
+        self, fake_person_id: int, fake_staff_id: int, state_code: str = "US_XX"
     ) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
 
@@ -275,6 +278,38 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
         assessment_data = [normalized_database_base_dict(assessment)]
 
+        staff_external_id = database_test_utils.generate_test_staff_external_id(
+            fake_staff_id
+        )
+        staff_external_id_data = [normalized_database_base_dict(staff_external_id)]
+        staff_caseload_period = (
+            database_test_utils.generate_test_staff_caseload_type_period(fake_staff_id)
+        )
+        staff_caseload_data = [normalized_database_base_dict(staff_caseload_period)]
+        staff_location_period = database_test_utils.generate_test_staff_location_period(
+            fake_staff_id
+        )
+        staff_location_data = [normalized_database_base_dict(staff_location_period)]
+        staff_role_period = database_test_utils.generate_test_staff_role_period(
+            fake_staff_id
+        )
+        staff_role_data = [normalized_database_base_dict(staff_role_period)]
+        staff_supervisor_period = (
+            database_test_utils.generate_test_staff_supervisor_period(fake_staff_id)
+        )
+        staff_supervisor_data = [normalized_database_base_dict(staff_supervisor_period)]
+
+        staff = database_test_utils.generate_test_staff(
+            fake_staff_id,
+            external_ids=[staff_external_id],
+            location_periods=[staff_location_period],
+            role_periods=[staff_role_period],
+            supervisor_periods=[staff_supervisor_period],
+            caseload_type_periods=[staff_caseload_period],
+        )
+
+        staff_data = [normalized_database_base_dict(staff)]
+
         us_mo_sentence_status_data: List[Dict[str, Any]] = (
             [
                 {
@@ -298,7 +333,9 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         data_dict = default_data_dict_for_root_schema_classes(
             [
                 get_state_database_entity_with_name(entity_class.__name__)
-                for entity_class in self.pipeline_class.required_entities()
+                for entity_class in self.pipeline_class.required_entities().get(
+                    StatePerson, []
+                )
             ]
         )
         data_dict_overrides = {
@@ -317,6 +354,12 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateEarlyDischarge.__tablename__: early_discharge_data,
+            schema.StateStaff.__tablename__: staff_data,
+            schema.StateStaffCaseloadTypePeriod.__tablename__: staff_caseload_data,
+            schema.StateStaffExternalId.__tablename__: staff_external_id_data,
+            schema.StateStaffLocationPeriod.__tablename__: staff_location_data,
+            schema.StateStaffRolePeriod.__tablename__: staff_role_data,
+            schema.StateStaffSupervisorPeriod.__tablename__: staff_supervisor_data,
             "state_charge_incarceration_sentence_association": charge_to_incarceration_sentence_association,
             "state_charge_supervision_sentence_association": charge_to_supervision_sentence_association,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
@@ -328,8 +371,9 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
     def test_comprehensive_normalization_pipeline(self) -> None:
         fake_person_id = 12345
+        fake_staff_id = 2345
         data_dict = self.build_comprehensive_normalization_pipeline_data_dict(
-            fake_person_id=fake_person_id
+            fake_person_id=fake_person_id, fake_staff_id=fake_staff_id
         )
 
         self.run_test_pipeline(
@@ -347,7 +391,11 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             all_normalized_entities.update(normalized_entities)
 
         missing_entities = all_normalized_entities.difference(
-            set(self.pipeline_class.required_entities())
+            {
+                item
+                for _, items in self.pipeline_class.required_entities().items()
+                for item in items
+            }
         )
 
         self.assertEqual(set(), missing_entities)

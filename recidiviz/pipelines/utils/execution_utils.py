@@ -380,7 +380,9 @@ def entity_class_can_be_hydrated_in_pipelines(entity_class: Type[Entity]) -> boo
     # If the class's corresponding table does not have the person_id
     # field then we will never bring an entity of this type into
     # pipelines
-    return hasattr(schema_class, state_entities.StatePerson.get_class_id_name())
+    return hasattr(
+        schema_class, state_entities.StatePerson.get_class_id_name()
+    ) or hasattr(schema_class, state_entities.StateStaff.get_class_id_name())
 
 
 @lru_cache(maxsize=None)

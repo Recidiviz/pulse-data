@@ -275,7 +275,8 @@ def convert_entity_trees_to_normalized_versions(
 
 
 def convert_entities_to_normalized_dicts(
-    person_id: int,
+    root_entity_id: int,
+    root_entity_id_name: str,
     state_code: str,
     entities: Sequence[Entity],
     additional_attributes_map: AdditionalAttributesMap,
@@ -402,7 +403,9 @@ def convert_entities_to_normalized_dicts(
                 stack.append(related_schema_entity)
 
         additional_args_for_base_entity = (
-            additional_attributes_map[base_entity_cls_name].get(schema_entity.get_id())
+            additional_attributes_map.get(base_entity_cls_name, {}).get(
+                schema_entity.get_id()
+            )
             or {}
         )
 
@@ -419,7 +422,7 @@ def convert_entities_to_normalized_dicts(
             # The person_id field is not hydrated on any entities we read from BQ for
             # performance reasons. We need to make sure when we write back to BQ, we
             # re-hydrate this field which would otherwise be null.
-            **{"person_id": person_id},
+            **{root_entity_id_name: root_entity_id},
             **additional_args_for_base_entity,
         }
         entity_table_entry = (base_entity_cls_name, entity_table_dict)
