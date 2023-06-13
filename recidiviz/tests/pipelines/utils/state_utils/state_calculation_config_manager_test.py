@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests that all states with defined state-specific delegates are supported in the
 state_calculation_config_manager functions."""
+import datetime
 import unittest
 from typing import Any, Dict, List, Sequence, Type, Union, no_type_check
 from unittest.mock import MagicMock
@@ -27,6 +28,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
     StatePerson,
+    StateStaffSupervisorPeriod,
     StateSupervisionPeriod,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
@@ -69,6 +71,9 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_program_assignm
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_sentence_normalization_delegate import (
     UsXxSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_staff_role_period_normalization_delegate import (
+    UsXxStaffRolePeriodNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
@@ -149,6 +154,7 @@ STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     ),
     "StateSpecificAssessmentNormalizationDelegate": UsXxAssessmentNormalizationDelegate(),
     "StateSpecificSentenceNormalizationDelegate": UsXxSentenceNormalizationDelegate(),
+    "StateSpecificStaffRolePeriodNormalizationDelegate": UsXxStaffRolePeriodNormalizationDelegate(),
 }
 
 
@@ -173,6 +179,15 @@ def test_get_required_state_specific_delegates() -> None:
                 ],
                 StateIncarcerationPeriod.__name__: [
                     StateIncarcerationPeriod.new_with_defaults(state_code=state.value)
+                ],
+                StateStaffSupervisorPeriod.__name__: [
+                    StateStaffSupervisorPeriod.new_with_defaults(
+                        state_code=state.value,
+                        external_id="SSP",
+                        start_date=datetime.date(2020, 1, 2),
+                        supervisor_staff_external_id="SUP1",
+                        supervisor_staff_external_id_type="SUPERVISOR",
+                    )
                 ],
                 "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,

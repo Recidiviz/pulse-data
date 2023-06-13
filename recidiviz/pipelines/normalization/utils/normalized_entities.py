@@ -31,6 +31,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
     StateProgramAssignment,
+    StateStaff,
+    StateStaffRolePeriod,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -85,7 +87,10 @@ def get_entity_class_names_excluded_from_normalization() -> List[str]:
     We never normalize the StatePerson entity, and classes that are excluded from
     pipelines cannot be normalized.
     """
-    return [StatePerson.__name__] + get_entity_class_names_excluded_from_pipelines()
+    return [
+        StatePerson.__name__,
+        StateStaff.__name__,
+    ] + get_entity_class_names_excluded_from_pipelines()
 
 
 def _get_ref_fields_with_reference_class_names(
@@ -443,4 +448,14 @@ class NormalizedStateCharge(StateCharge, NormalizedStateEntity):
 )
 class NormalizedStateEarlyDischarge(StateEarlyDischarge, NormalizedStateEntity):
     """Stores instances of StateEarlyDischarge entities that have been normalized
+    and are prepared to be used in calculations."""
+
+
+@attr.s(
+    eq=False,
+    kw_only=True,
+    field_transformer=add_normalized_entity_validator_to_ref_fields,
+)
+class NormalizedStateStaffRolePeriod(StateStaffRolePeriod, NormalizedStateEntity):
+    """Stores instances of StateStaffRolePeriod entities that have been normalized
     and are prepared to be used in calculations."""

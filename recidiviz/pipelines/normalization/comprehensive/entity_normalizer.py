@@ -16,7 +16,7 @@
 # =============================================================================
 """Entity normalizer for normalizing all entities with configured normalization
 processes."""
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple, Type
 
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
@@ -31,6 +31,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateProgramAssignment,
+    StateStaff,
+    StateStaffRolePeriod,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -55,6 +57,10 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.program_assi
 from recidiviz.pipelines.normalization.utils.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
     StateSpecificSentenceNormalizationDelegate,
+)
+from recidiviz.pipelines.normalization.utils.normalization_managers.staff_role_period_normalization_manager import (
+    StaffRolePeriodNormalizationManager,
+    StateSpecificStaffRolePeriodNormalizationDelegate,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
     SupervisionContactNormalizationManager,
@@ -95,21 +101,30 @@ class ComprehensiveEntityNormalizer:
 
     def normalize_entities(
         self,
-        person_id: int,
+        root_entity_id: int,
+        root_entity_type: Type[Entity],
         normalizer_args: EntityNormalizerContext,
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers.
 
         Note: does not normalize all of the entities that are required by
-        normalization. E.g. StateSupervisionSentences are required to normalize
-        StateSupervisionPeriod entities, but are not themselves normalized.
+        normalization.
 
         Returns a dictionary mapping the entity class name to the list of normalized
         entities, as well as a map of additional attributes that should be persisted
         to the normalized entity tables.
         """
-        return self._normalize_entities(
-            person_id=person_id,
+        # TODO(#21376) Properly refactor once strategy for separate normalization is defined.
+        if root_entity_type == StateStaff:
+            return self._normalize_staff_entities(
+                staff_id=root_entity_id,
+                staff_role_periods=normalizer_args[StateStaffRolePeriod.__name__],
+                staff_role_period_normalization_delegate=normalizer_args[
+                    StateSpecificStaffRolePeriodNormalizationDelegate.__name__
+                ],
+            )
+        return self._normalize_person_entities(
+            person_id=root_entity_id,
             ip_normalization_delegate=normalizer_args[
                 StateSpecificIncarcerationNormalizationDelegate.__name__
             ],
@@ -148,7 +163,7 @@ class ComprehensiveEntityNormalizer:
             ],
         )
 
-    def _normalize_entities(
+    def _normalize_person_entities(
         self,
         person_id: int,
         ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
@@ -168,12 +183,12 @@ class ComprehensiveEntityNormalizer:
         charge_offense_descriptions_to_labels: List[Dict[str, Any]],
         state_person_to_state_staff: List[Dict[str, Any]],
     ) -> EntityNormalizerResult:
-        """Normalizes all entities with corresponding normalization managers."""
+        """Normalizes all entities rooted with StatePerson with corresponding normalization managers."""
 
         staff_external_id_to_staff_id: Dict[
             Tuple[str, str], int
         ] = build_staff_external_id_to_staff_id_map(state_person_to_state_staff)
-        processed_entities = all_normalized_entities(
+        processed_entities = all_normalized_person_entities(
             person_id=person_id,
             ip_normalization_delegate=ip_normalization_delegate,
             sp_normalization_delegate=sp_normalization_delegate,
@@ -196,8 +211,31 @@ class ComprehensiveEntityNormalizer:
 
         return processed_entities
 
+    # pylint: disable=unused-argument
+    def _normalize_staff_entities(
+        self,
+        staff_id: int,
+        staff_role_periods: List[StateStaffRolePeriod],
+        staff_role_period_normalization_delegate: StateSpecificStaffRolePeriodNormalizationDelegate,
+    ) -> EntityNormalizerResult:
+        """Normalizes all entities rooted with StateStaff with corresponding normalization managers."""
+        staff_role_period_normalization_manager = StaffRolePeriodNormalizationManager(
+            staff_role_periods, staff_role_period_normalization_delegate
+        )
+        (
+            processed_staff_role_periods,
+            additional_staff_role_period_attributes,
+        ) = (
+            staff_role_period_normalization_manager.normalized_staff_role_periods_and_additional_attributes()
+        )
 
-def all_normalized_entities(
+        return (
+            {StateStaffRolePeriod.__name__: processed_staff_role_periods},
+            additional_staff_role_period_attributes,
+        )
+
+
+def all_normalized_person_entities(
     person_id: int,
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,

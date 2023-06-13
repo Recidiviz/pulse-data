@@ -18,6 +18,13 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
+from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
+    StateStaffSpecializedCaseloadType,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
 )
@@ -438,3 +445,95 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
     )
 
     return test_person
+
+
+def generate_test_staff_external_id(staff_id: int) -> state_schema.StateStaffExternalId:
+    return state_schema.StateStaffExternalId(
+        staff_external_id_id=123,
+        external_id="123",
+        state_code="US_XX",
+        id_type="TYPE",
+        staff_id=staff_id,
+    )
+
+
+def generate_test_staff_location_period(
+    staff_id: int,
+) -> state_schema.StateStaffLocationPeriod:
+    return state_schema.StateStaffLocationPeriod(
+        staff_location_period_id=123,
+        external_id="123",
+        state_code="US_XX",
+        start_date=datetime.date(2023, 1, 1),
+        end_date=datetime.date(2023, 6, 1),
+        location_external_id="LOC",
+        staff_id=staff_id,
+    )
+
+
+def generate_test_staff_caseload_type_period(
+    staff_id: int,
+) -> state_schema.StateStaffCaseloadTypePeriod:
+    return state_schema.StateStaffCaseloadTypePeriod(
+        staff_caseload_type_period_id=123,
+        external_id="123",
+        state_code="US_XX",
+        state_staff_specialized_caseload_type=StateStaffSpecializedCaseloadType.ADMINISTRATIVE_SUPERVISION,
+        state_staff_specialized_caseload_type_raw_text="AS",
+        start_date=datetime.date(2023, 1, 1),
+        end_date=datetime.date(2023, 6, 1),
+        staff_id=staff_id,
+    )
+
+
+def generate_test_staff_supervisor_period(
+    staff_id: int,
+) -> state_schema.StateStaffSupervisorPeriod:
+    return state_schema.StateStaffSupervisorPeriod(
+        staff_supervisor_period_id=123,
+        external_id="123",
+        state_code="US_XX",
+        start_date=datetime.date(2023, 1, 1),
+        end_date=datetime.date(2023, 6, 1),
+        supervisor_staff_external_id="234",
+        supervisor_staff_external_id_type="SUPERVISOR",
+        staff_id=staff_id,
+    )
+
+
+def generate_test_staff_role_period(staff_id: int) -> state_schema.StateStaffRolePeriod:
+    return state_schema.StateStaffRolePeriod(
+        staff_role_period_id=123,
+        external_id="123",
+        state_code="US_XX",
+        start_date=datetime.date(2023, 1, 1),
+        end_date=datetime.date(2023, 6, 1),
+        role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+        role_type_raw_text="SUPERVISION_OFFICER",
+        role_subtype=StateStaffRoleSubtype.SUPERVISION_OFFICER,
+        role_subtype_raw_text="SUPERVISION_OFFICER",
+        staff_id=staff_id,
+    )
+
+
+def generate_test_staff(
+    staff_id: int,
+    external_ids: Optional[List[state_schema.StateStaffExternalId]] = None,
+    location_periods: Optional[List[state_schema.StateStaffLocationPeriod]] = None,
+    role_periods: Optional[List[state_schema.StateStaffRolePeriod]] = None,
+    supervisor_periods: Optional[List[state_schema.StateStaffLocationPeriod]] = None,
+    caseload_type_periods: Optional[
+        List[state_schema.StateStaffCaseloadTypePeriod]
+    ] = None,
+) -> state_schema.StateStaff:
+    return state_schema.StateStaff(
+        staff_id=staff_id,
+        full_name="FIRST LAST",
+        email="first@agency.com",
+        state_code="US_XX",
+        external_ids=external_ids or [],
+        location_periods=location_periods or [],
+        role_periods=role_periods or [],
+        supervisor_periods=supervisor_periods or [],
+        caseload_type_periods=caseload_type_periods or [],
+    )
