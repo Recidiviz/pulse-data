@@ -291,7 +291,7 @@ recidiviz/tools/deploy/terraform_plan.sh recidiviz-staging
 If the above commands succeed, the installation was successful. For employees, see more information
 on running Terraform at go/terraform.
 
-#### Docker (🐳 [go/docker](go/docker))
+#### Docker (🐳 [go/docker](http://go/docker))
 
 Docker is needed for deploying new versions of our applications.
 
