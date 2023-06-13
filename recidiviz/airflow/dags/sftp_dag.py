@@ -80,6 +80,9 @@ from recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generato
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.gcsfs_utils import read_yaml_config
+from recidiviz.airflow.dags.utils.pagerduty_integration import (
+    pagerduty_integration_email,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
@@ -207,7 +210,11 @@ def queues_were_unpaused(
 @dag(
     dag_id=f"{project_id}_sftp_dag",
     # TODO(apache/airflow#29903) Remove this override and only override mapped task-level retries.
-    default_args={**DEFAULT_ARGS, "retries": 3},  # type: ignore
+    default_args={
+        **DEFAULT_ARGS,  # type: ignore
+        "email": pagerduty_integration_email("pagerduty_integration_sftp_dag"),
+        "retries": 3,
+    },
     schedule=None,
     catchup=False,
     max_active_runs=1,
