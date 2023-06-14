@@ -34,7 +34,8 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-ID_TYPE = "US_MI_DOC_BOOK"
+ID_TYPE_BOOK = "US_MI_DOC_BOOK"
+ID_TYPE = "US_MI_DOC"
 
 US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_NAME = (
     "us_mi_complete_classification_review_form_record"
@@ -80,7 +81,7 @@ three_progress_notes AS (
         USING(plan_of_supervision_id)
       INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON aps.offender_booking_id = pei.external_id
-          AND pei.id_type = "{ID_TYPE}"
+          AND pei.id_type = "{ID_TYPE_BOOK}"
           AND pei.state_code = 'US_MI'
       LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` ss
         ON pei.person_id = ss.person_id 
@@ -215,7 +216,7 @@ case_notes_cte AS (
             on fee_prof.closing_reason_id = ref3.reference_code_id
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON fee_prof.offender_booking_id = pei.external_id
-            AND pei.id_type = "{ID_TYPE}"
+            AND pei.id_type = "{ID_TYPE_BOOK}"
             AND pei.state_code = 'US_MI'
     )
 
@@ -246,7 +247,7 @@ case_notes_cte AS (
         ON code2.reference_code_id = apd.plan_goal_method_id
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON aps.offender_booking_id = pei.external_id
-        AND pei.id_type = "{ID_TYPE}"
+        AND pei.id_type = "{ID_TYPE_BOOK}"
         AND pei.state_code = 'US_MI'
     LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` ss
         ON pei.person_id = ss.person_id 
