@@ -25,6 +25,10 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.outliers.staff_query_template import (
     staff_query_template,
 )
+from recidiviz.calculator.query.state.views.outliers.utils import (
+    get_state_specific_config_exclusions,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -70,6 +74,7 @@ supervision_officer_supervisors AS (
     USING (state_code, staff_id)
   WHERE 
     {today_between_start_date_and_nullable_end_date_exclusive_clause("attrs.start_date", "attrs.end_date_exclusive")}
+    {f'AND {" AND ".join(get_state_specific_config_exclusions(StateCode.US_PA))}' if get_state_specific_config_exclusions(StateCode.US_PA) else ""}
 ) 
 
 SELECT 

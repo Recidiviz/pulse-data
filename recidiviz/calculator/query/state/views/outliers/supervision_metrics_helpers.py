@@ -15,43 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for building supervision metrics views """
-from typing import Dict
-
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
-    MetricUnitOfAnalysisType,
 )
-from recidiviz.common.constants.states import StateCode
-from recidiviz.outliers.constants import (
-    ABSCONSIONS_BENCH_WARRANTS,
-    EARLY_DISCHARGE_REQUESTS,
-    INCARCERATION_STARTS,
-    INCARCERATION_STARTS_AND_INFERRED,
-    INCARCERATION_STARTS_TECHNICAL_VIOLATION,
-    TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
-    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
-)
-from recidiviz.outliers.types import OutliersConfig
-
-OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
-    StateCode.US_IX: OutliersConfig(
-        metrics=[
-            INCARCERATION_STARTS_TECHNICAL_VIOLATION,
-            ABSCONSIONS_BENCH_WARRANTS,
-            INCARCERATION_STARTS,
-            EARLY_DISCHARGE_REQUESTS,
-            TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
-            TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
-        ],
-    ),
-    StateCode.US_PA: OutliersConfig(
-        metrics=[INCARCERATION_STARTS_AND_INFERRED],
-        unit_of_analysis_to_exclusion={
-            MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: ["FAST", "CO"]
-        },
-    ),
-}
+from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 
 
 def supervision_metric_query_template(
