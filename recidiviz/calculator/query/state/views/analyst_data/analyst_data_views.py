@@ -30,6 +30,9 @@ from recidiviz.calculator.query.state.views.analyst_data.early_discharge_session
 from recidiviz.calculator.query.state.views.analyst_data.fines_fees_sessions import (
     FINES_FEES_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.incarceration_incidents_preprocessed import (
+    INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
     INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -243,14 +246,14 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cr_raw_sentence_preprocessing import (
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_disciplinaries_preprocessed import (
-    US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_exemptions_preprocessed import (
     US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_fines_fees_sessions_preprocessed import (
     US_TN_FINES_FEES_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_incarceration_incidents_preprocessed import (
+    US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_invoices_preprocessed import (
     US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
@@ -363,7 +366,8 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CAF_Q8_VIEW_BUILDER,
     US_TN_PRIOR_RECORD_PREPROCESSED_VIEW_BUILDER,
     US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
-    US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER,
+    US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
+    INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER,
     RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
     US_MO_CLASSIFICATION_HEARINGS_PREPROCESSED_RECORD_VIEW_BUILDER,
     *get_person_spans_and_events_view_builders(),

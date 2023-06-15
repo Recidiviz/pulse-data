@@ -37,17 +37,19 @@ US_TN_CAF_Q7_QUERY_TEMPLATE = f"""
         SELECT
             state_code,
             person_id,
-            disciplinary_date AS start_date,
-            DATE_ADD(disciplinary_date, INTERVAL 18 MONTH) AS end_date,
-            CASE WHEN disciplinary_class = 'A' THEN 7
-                WHEN disciplinary_class = 'B' THEN 5
-                WHEN disciplinary_class = 'C' THEN 2
+            incident_date AS start_date,
+            DATE_ADD(incident_date, INTERVAL 18 MONTH) AS end_date,
+            CASE WHEN incident_class = 'A' THEN 7
+                WHEN incident_class = 'B' THEN 5
+                WHEN incident_class = 'C' THEN 2
                 END AS disciplinary_score
         FROM 
-            `{{project_id}}.{{analyst_dataset}}.us_tn_disciplinaries_preprocessed` dis
+            `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized` dis
         WHERE
-            disposition = 'GU' AND disciplinary_class IS NOT NULL
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, disciplinary_date
+            state_code = "US_TN"
+            AND disposition = 'GU'
+            AND incident_class IS NOT NULL
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, incident_date
                                   ORDER BY disciplinary_score DESC) = 1
     )
     ,
