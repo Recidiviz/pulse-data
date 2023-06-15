@@ -627,7 +627,7 @@ FROM
             incident_type,
             incident_type_raw_text
         FROM 
-            `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized`
+            `{project_id}.analyst_data.incarceration_incidents_preprocessed_materialized`
         """,
         attribute_cols=[
             "incident_class",
