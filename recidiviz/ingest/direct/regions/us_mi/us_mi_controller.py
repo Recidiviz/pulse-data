@@ -53,12 +53,13 @@ class UsMiController(BaseDirectIngestController):
             "employment_period",
             "supervision_violations",
             "supervision_violations_probation",
+            "incarceration_periods_v3",
         ]
 
         if environment.in_gcp_production():
-            tags.extend(["assessments_v2", "incarceration_periods_v2"])
+            tags.extend(["assessments_v2"])
 
         else:
-            tags.extend(["assessments_v3", "incarceration_periods_v3"])
+            tags.extend(["assessments_v3"])
 
         return tags
