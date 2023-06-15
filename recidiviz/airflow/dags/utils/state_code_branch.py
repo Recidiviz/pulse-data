@@ -20,7 +20,7 @@ Helper functions for creating branches based on state codes.
 from typing import Any, Dict, Tuple, Union
 
 from airflow.decorators import task
-from airflow.models import BaseOperator
+from airflow.models import BaseOperator, DagRun
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator
 from airflow.utils.task_group import TaskGroup
@@ -73,8 +73,13 @@ def create_state_code_branching(
         )
 
     @task.branch(task_id="state_code_branch_start")
-    def get_selected_branch_ids(**context: Any) -> Any:
-        state_code_filter = context["params"].get("state_code_filter")
+    def get_selected_branch_ids(dag_run: DagRun = None) -> Any:
+        if not dag_run:
+            raise ValueError(
+                "Dag run not passed to task. Should be automatically set due to function being a task."
+            )
+
+        state_code_filter = dag_run.conf.get("state_code_filter")
         selected_state_codes = (
             [state_code_filter] if state_code_filter else branch_by_state_code.keys()
         )
