@@ -28,10 +28,8 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session, aliased
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
-from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers import (
-    OUTLIERS_CONFIGS_BY_STATE,
-)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.outliers.types import MetricOutcome, OutliersMetric
 from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficer,

@@ -22,6 +22,9 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
+from recidiviz.calculator.query.state.views.outliers.utils import (
+    get_all_config_based_query_filters_query_str,
+)
 
 
 def staff_query_template(role: str) -> str:
@@ -48,4 +51,5 @@ INNER JOIN staff
 WHERE staff.state_code IN ({list_to_query_string(get_outliers_enabled_states(), quoted=True)}) 
   AND {today_between_start_date_and_nullable_end_date_exclusive_clause("start_date", "end_date_exclusive")}
   AND attrs.role_subtype = '{role}'
+  {get_all_config_based_query_filters_query_str()}
     """

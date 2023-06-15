@@ -46,6 +46,8 @@ supervision_officer_metrics AS (
 SELECT 
     {{columns}}
 FROM supervision_officer_metrics
+INNER JOIN `{{project_id}}.{{outliers_views_dataset}}.supervision_officers_materialized` officers
+  ON officers.external_id = supervision_officer_metrics.officer_id and officers.state_code = supervision_officer_metrics.state_code
 """
 
 SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -54,9 +56,10 @@ SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=SUPERVISION_OFFICER_METRICS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICER_METRICS_DESCRIPTION,
     aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
+    outliers_views_dataset=dataset_config.OUTLIERS_VIEWS_DATASET,
     should_materialize=True,
     columns=[
-        "state_code",
+        "supervision_officer_metrics.state_code",
         "metric_id",
         "metric_value",
         "period",
