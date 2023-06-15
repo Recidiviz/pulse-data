@@ -21,7 +21,7 @@ import argparse
 import logging
 
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
-    update_bq_tables_schemas_for_schema_type,
+    update_bq_dataset_to_match_sqlalchemy_schema,
 )
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
@@ -34,8 +34,11 @@ from recidiviz.utils.metadata import local_project_id_override
 
 def update_schema(s: SchemaType) -> None:
     interactive_prompt_retry_on_exception(
-        fn=lambda: update_bq_tables_schemas_for_schema_type(
+        fn=lambda: update_bq_dataset_to_match_sqlalchemy_schema(
             schema_type=s,
+            dataset_id=CloudSqlToBQConfig.for_schema_type(
+                s
+            ).unioned_multi_region_dataset(dataset_override_prefix=None),
         ),
         input_text="failed while updating big query table schemas - retry?",
         accepted_response_override="yes",
@@ -55,4 +58,4 @@ if __name__ == "__main__":
     with local_project_id_override(project_id):
         for schema in SchemaType:
             if CloudSqlToBQConfig.is_valid_schema_type(schema):
-                update_schema(s=schema)
+                update_schema(schema)

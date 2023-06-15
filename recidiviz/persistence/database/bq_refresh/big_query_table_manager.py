@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Manages the structure of BigQuery tables that store exports of CloudSQL databases.
-
+"""Manages the structure of BigQuery tables that share a schema with one of the
+SQLAlchemy schemas defined in a schema.py file.
 Used during deploy time to update the schema of the BigQuery datasets so that they
-match that of the schema being deployed before the next CloudSqlToBQ export updates
-the schema. Does not perform any migrations, only adds and deletes columns where
-necessary.
+match that of the schema being deployed before the next CloudSqlToBQ export or data
+pipelines attempt to write these datasets. Does not perform any migrations, only adds
+and deletes columns where necessary.
 """
 from sqlalchemy import Table
 
@@ -69,16 +69,16 @@ def update_bq_schema_for_sqlalchemy_table(
         )
 
 
-def update_bq_tables_schemas_for_schema_type(schema_type: SchemaType) -> None:
+def update_bq_dataset_to_match_sqlalchemy_schema(
+    schema_type: SchemaType, dataset_id: str
+) -> None:
     """For each table defined in the schema, ensures that the schema of the
-    table in BigQuery matches the schema defined in the corresponding schema.py.
+    table the provided BigQuery dataset matches the schema defined in the corresponding
+    schema.py.
     """
     bq_client = BigQueryClientImpl()
     export_config = CloudSqlToBQConfig.for_schema_type(schema_type)
-    bq_dataset_id = export_config.unioned_multi_region_dataset(
-        dataset_override_prefix=None
-    )
-    bq_dataset_ref = bq_client.dataset_ref_for_id(bq_dataset_id)
+    bq_dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
 
     bq_client.create_dataset_if_necessary(bq_dataset_ref)
 
@@ -86,6 +86,6 @@ def update_bq_tables_schemas_for_schema_type(schema_type: SchemaType) -> None:
         update_bq_schema_for_sqlalchemy_table(
             bq_client=bq_client,
             schema_type=schema_type,
-            dataset_id=bq_dataset_id,
+            dataset_id=dataset_id,
             table=table,
         )

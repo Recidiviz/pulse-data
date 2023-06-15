@@ -30,9 +30,22 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     normalized_state_dataset_for_state_code,
+    state_dataset_for_state_code,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
+    DirectIngestControllerFactory,
+)
+from recidiviz.ingest.direct.dataset_config import (
+    ingest_view_materialization_results_dataflow_dataset,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
+    update_bq_dataset_to_match_sqlalchemy_schema,
     update_bq_schema_for_sqlalchemy_table,
 )
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
@@ -41,7 +54,8 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_metric_pipeline_enabled_states,
+    get_ingest_pipeline_enabled_states,
+    get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
@@ -179,7 +193,7 @@ def update_normalized_table_schemas_in_dataset(
 def update_state_specific_normalized_state_schemas() -> None:
     """Updates the tables for each state-specific dataset that stores Dataflow
     normalized state entity output to match expected schemas."""
-    for state_code in get_metric_pipeline_enabled_states():
+    for state_code in get_normalization_pipeline_enabled_states():
         normalized_state_dataset_id = normalized_state_dataset_for_state_code(
             state_code
         )
@@ -252,4 +266,73 @@ def update_supplemental_dataset_schemas(
                 supplemental_metrics_dataset_id,
                 table_id,
                 schema_for_supplemental_dataset,
+            )
+
+
+def update_state_specific_ingest_state_schemas() -> None:
+    """Updates the tables for each state-specific dataset that stores Dataflow
+    state entity output to match expected schemas."""
+    for state_code in get_ingest_pipeline_enabled_states():
+        for ingest_instance in DirectIngestInstance:
+            update_bq_dataset_to_match_sqlalchemy_schema(
+                schema_type=SchemaType.STATE,
+                dataset_id=state_dataset_for_state_code(state_code, ingest_instance),
+            )
+
+
+def update_state_specific_ingest_view_result_schema(
+    ingest_view_dataset_id: str,
+    state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
+) -> None:
+    """Updates each table in the ingest view dataset to match expected schemas."""
+    bq_client = BigQueryClientImpl()
+
+    ingest_view_dataset_ref = bq_client.dataset_ref_for_id(ingest_view_dataset_id)
+    bq_client.create_dataset_if_necessary(ingest_view_dataset_ref)
+
+    controller = DirectIngestControllerFactory.build(
+        region_code=state_code.value,
+        ingest_instance=ingest_instance,
+        allow_unlaunched=True,
+    )
+
+    ingest_view_builders = controller.view_collector.collect_query_builders()
+    for view_builder in ingest_view_builders:
+        query = view_builder.build_query(
+            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_data_datetime_upper_bound=None,
+                limit_zero=True,
+            )
+        )
+        query_job = bq_client.run_query_async(query_str=query, use_query_cache=True)
+        res = query_job.result()
+
+        if bq_client.table_exists(
+            ingest_view_dataset_ref, view_builder.ingest_view_name
+        ):
+            bq_client.update_schema(
+                dataset_id=ingest_view_dataset_ref.dataset_id,
+                table_id=view_builder.ingest_view_name,
+                desired_schema_fields=res.schema,
+            )
+        else:
+            bq_client.create_table_with_schema(
+                dataset_id=ingest_view_dataset_ref.dataset_id,
+                table_id=view_builder.ingest_view_name,
+                schema_fields=res.schema,
+            )
+
+
+def update_state_specific_ingest_view_results_schemas() -> None:
+    """Updates the datasets for ingest view results to match expected schemas."""
+    for state_code in get_ingest_pipeline_enabled_states():
+        for ingest_instance in DirectIngestInstance:
+            update_state_specific_ingest_view_result_schema(
+                ingest_view_materialization_results_dataflow_dataset(
+                    state_code, ingest_instance
+                ),
+                state_code,
+                ingest_instance,
             )

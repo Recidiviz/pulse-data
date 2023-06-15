@@ -208,6 +208,9 @@ class DirectIngestViewQueryBuilder:
         # (e.g. two that each have different date bounds).
         raw_table_subquery_name_prefix: Optional[str] = attr.ib(default=None)
 
+        # If set, the ingest view does not load any rows.
+        limit_zero: bool = attr.ib(default=False)
+
         def __attrs_post_init__(self) -> None:
             if (
                 self.destination_dataset_id
@@ -396,6 +399,11 @@ class DirectIngestViewQueryBuilder:
         query = query.rstrip().rstrip(";")
         return f"{query}\nORDER BY {order_by_cols};"
 
+    @staticmethod
+    def add_limit_zero_suffix(query: str) -> str:
+        query = query.rstrip().rstrip(";")
+        return f"{query}\nLIMIT 0;"
+
     def _raw_table_subquery_clause(
         self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
     ) -> str:
@@ -443,6 +451,8 @@ class DirectIngestViewQueryBuilder:
         select_query_clause = self.add_order_by_suffix(
             query=select_query_clause, order_by_cols=self._order_by_cols
         )
+        if config.limit_zero:
+            select_query_clause = self.add_limit_zero_suffix(query=select_query_clause)
         select_query_clause = select_query_clause.rstrip().rstrip(";")
         return select_query_clause
 
