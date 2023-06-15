@@ -121,6 +121,16 @@ resource "google_bigquery_table" "validation_results" {
         "name": "runtime_seconds",
         "type": "FLOAT64",
         "mode": "NULLABLE"
+    },
+    {
+        "name": "ingest_instance",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "sandbox_dataset_prefix",
+        "type": "STRING",
+        "mode": "NULLABLE"
     }
 ]
 EOF
