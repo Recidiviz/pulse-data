@@ -15,9 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for building supervision metrics views """
-from typing import Dict, List
-
-import attr
+from typing import Dict
 
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
@@ -25,33 +23,30 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     MetricUnitOfAnalysisType,
 )
 from recidiviz.common.constants.states import StateCode
-
-
-@attr.s
-class OutliersConfig:
-    # List of metrics that are relevant for this state,
-    # where each element corresponds to a column name in an aggregated_metrics views
-    metrics: List[str] = attr.ib()
-
-    # Location exclusions; a unit of analysis mapped to a list of ids to exclude
-    unit_of_analysis_to_exclusion: Dict[MetricUnitOfAnalysisType, List[str]] = attr.ib(
-        default=None
-    )
-
+from recidiviz.outliers.constants import (
+    ABSCONSIONS_BENCH_WARRANTS,
+    EARLY_DISCHARGE_REQUESTS,
+    INCARCERATION_STARTS,
+    INCARCERATION_STARTS_AND_INFERRED,
+    INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+    TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
+    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+)
+from recidiviz.outliers.types import OutliersConfig
 
 OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
     StateCode.US_IX: OutliersConfig(
         metrics=[
-            "incarceration_starts_technical_violation",
-            "absconsions_bench_warrants",
-            "incarceration_starts",
-            "task_completions_early_discharge",
-            "task_completions_transfer_to_limited_supervision",
-            "task_completions_full_term_discharge",
+            INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+            ABSCONSIONS_BENCH_WARRANTS,
+            INCARCERATION_STARTS,
+            EARLY_DISCHARGE_REQUESTS,
+            TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+            TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
         ],
     ),
     StateCode.US_PA: OutliersConfig(
-        metrics=["incarceration_starts_and_inferred"],
+        metrics=[INCARCERATION_STARTS_AND_INFERRED],
         unit_of_analysis_to_exclusion={
             MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: ["FAST", "CO"]
         },
@@ -87,8 +82,8 @@ SELECT
     {list_to_query_string(unit_of_analysis.primary_key_columns)},
     period,
     end_date,
-    "{metric}" AS metric_id,
-    {metric} AS metric_value,
+    "{metric.name}" AS metric_id,
+    {metric.name} AS metric_value,
 FROM `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_{unit_of_analysis.level_name_short}_aggregated_metrics_materialized`
 WHERE state_code = '{state_code.value}'
 """
