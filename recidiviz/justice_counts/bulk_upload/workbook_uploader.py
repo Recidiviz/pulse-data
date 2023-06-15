@@ -89,10 +89,10 @@ class WorkbookUploader:
                 stop_words_to_remove={"other"}
             )
         )
-        self.metric_key_to_timerange_to_total_value: Dict[
+        self.agency_name_to_metric_key_to_timerange_to_total_value: Dict[
             str,
-            Dict[Tuple[datetime.date, datetime.date], Optional[int]],
-        ] = defaultdict(dict)
+            Dict[str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]],
+        ] = defaultdict(lambda: defaultdict(dict))
         # A list of existing report IDs
         self.existing_report_ids: List[int]
         # A set of existing report IDs that have been changed/updated after bulk upload
@@ -206,7 +206,7 @@ class WorkbookUploader:
                 column_names=column_names,
                 agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
                 existing_datapoints_dict=existing_datapoints_dict,
-                metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
+                agency_name_to_metric_key_to_timerange_to_total_value=self.agency_name_to_metric_key_to_timerange_to_total_value,
                 child_agency_name_to_agency=self.child_agency_name_to_agency,
             )
             spreadsheet_uploader.upload_sheet(
