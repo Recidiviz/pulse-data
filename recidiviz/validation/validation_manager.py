@@ -26,7 +26,7 @@ from itertools import groupby
 from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import pytz
-from flask import Blueprint
+from flask import Blueprint, request
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -103,7 +103,7 @@ validation_manager_blueprint = Blueprint("validation_manager", __name__)
 @requires_gae_auth
 def handle_validation_request(region_code: str) -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
-
+    logging.info("request data: %s", request.get_data(as_text=True))
     sandbox_prefix: Optional[str] = get_value_from_request("sandbox_prefix")
     try:
         ingest_instance: DirectIngestInstance = DirectIngestInstance(

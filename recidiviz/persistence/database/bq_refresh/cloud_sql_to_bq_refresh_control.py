@@ -23,6 +23,7 @@ from http import HTTPStatus
 from typing import Optional, Tuple
 
 import flask
+from flask import request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
@@ -52,6 +53,7 @@ def acquire_lock() -> Tuple[str, HTTPStatus]:
     """
     Creates a refresh lock for a given schema type. Must provide lock_id in request.
     """
+    logging.info("request data: %s", request.get_data(as_text=True))
     try:
         schema_type = SchemaType(get_value_from_request("schema_type"))
     except ValueError as exc:
@@ -90,6 +92,7 @@ def check_can_refresh_proceed() -> Tuple[str, HTTPStatus]:
     """
     Checks if all other processes that talk to the Postgres DB have stopped so the refresh can proceed. The refresh lock must already have been grabbed via /acquire_lock.
     """
+    logging.info("request data: %s", request.get_data(as_text=True))
     try:
         schema_type = SchemaType(get_value_from_request("schema_type"))
     except ValueError as exc:
@@ -129,6 +132,7 @@ def release_lock() -> Tuple[str, HTTPStatus]:
     """
     Releases refresh lock for a given schema type.
     """
+    logging.info("request data: %s", request.get_data(as_text=True))
     try:
         schema_type = SchemaType(get_value_from_request("schema_type"))
     except ValueError as exc:
@@ -161,6 +165,7 @@ def refresh_bq_dataset() -> Tuple[str, HTTPStatus]:
     On completion, triggers Dataflow pipelines (when necessary), releases the refresh
     lock and restarts any paused ingest work.
     """
+    logging.info("request data: %s", request.get_data(as_text=True))
     try:
         schema_type = SchemaType(get_value_from_request("schema_type"))
     except ValueError as exc:
@@ -194,6 +199,10 @@ def refresh_bq_dataset() -> Tuple[str, HTTPStatus]:
         )
 
     if not can_proceed:
+        logging.exception(
+            "Cannot proceed with refresh before this endpoint was called for [%s].",
+            schema_type.value,
+        )
         return (
             f"Expected to be able to proceed with refresh before this endpoint was "
             f"called for [{schema_type.value}].",
