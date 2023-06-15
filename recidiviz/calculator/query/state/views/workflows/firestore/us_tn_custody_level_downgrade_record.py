@@ -90,21 +90,20 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
         SELECT
             person_id,
             state_code,
-            disciplinary_date AS event_date,
+            incident_date AS event_date,
             incident_type_raw_text,
             CASE WHEN injury_level != "" 
                  THEN CONCAT(incident_type_raw_text, "- Injury:", injury_level)
                  ELSE incident_type_raw_text
                  END AS note_title,
             injury_level,
-            disciplinary_class AS note_body,
+            incident_class AS note_body,
             disposition,
             assault_score,
-        FROM
-            `{{project_id}}.{{analyst_dataset}}.us_tn_disciplinaries_preprocessed` dis
+        FROM 
+            `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized` dis
         WHERE
-            # In TN, we only want to count incidents where disciplinary class is not null or they have a pending disposition
-            (disciplinary_class != "" OR disposition_date IS NULL)      
+            state_code = "US_TN"
     ),
     -- This CTE only keeps disciplinaries with an assault, for Q1 and Q2 info
     assaultive_disciplinary_history AS (

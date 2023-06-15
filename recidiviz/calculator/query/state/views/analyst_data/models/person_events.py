@@ -27,10 +27,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.person_event_typ
 from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
     ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    INCARCERATION_INCIDENTS_FOUND_WHERE_CLAUSE,
-    generate_incident_event_query,
-)
 
 # CTE for generating task eligibility spans with completion events
 _TASK_ELIGIBILITY_SPANS_CTE = """
@@ -620,9 +616,19 @@ FROM
     EventQueryBuilder(
         event_type=PersonEventType.INCARCERATION_INCIDENT,
         description="Incarceration incidents",
-        sql_source=generate_incident_event_query(
-            where_clause=INCARCERATION_INCIDENTS_FOUND_WHERE_CLAUSE
-        ),
+        sql_source="""
+        SELECT
+            state_code,
+            person_id,
+            incident_date,
+            incident_class,
+            injury_level,
+            disposition,
+            incident_type,
+            incident_type_raw_text
+        FROM 
+            `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized`
+        """,
         attribute_cols=[
             "incident_class",
             "injury_level",

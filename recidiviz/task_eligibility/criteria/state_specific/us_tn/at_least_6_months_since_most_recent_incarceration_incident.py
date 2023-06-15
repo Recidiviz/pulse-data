@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a resident has had at least 6 months since the most recent incarceration incident."""
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    INCARCERATION_INCIDENTS_FOUND_WHERE_CLAUSE,
     has_at_least_x_incarceration_incidents_in_time_interval,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -45,8 +45,7 @@ _QUERY_TEMPLATE = f"""
         {has_at_least_x_incarceration_incidents_in_time_interval(
             number_of_incidents=1,
             date_interval = 6, 
-            date_part = "MONTH",
-            where_clause = INCARCERATION_INCIDENTS_FOUND_WHERE_CLAUSE)}
+            date_part = "MONTH")}
     )
 """
 
@@ -55,6 +54,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         state_code=StateCode.US_TN,
         description=_DESCRIPTION,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         meets_criteria_default=True,
     )

@@ -52,14 +52,16 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
         DISTINCT
         state_code,
         person_id,
-        disciplinary_date AS critical_date,
-        disciplinary_date,
+        incident_date AS critical_date,
+        incident_date,
         CAST(NULL AS DATE) AS session_start_date,
         1 AS disciplinary,
       FROM 
-        `{{project_id}}.{{analyst_dataset}}.us_tn_disciplinaries_preprocessed` dis
-      WHERE
-        disposition = 'GU' AND disciplinary_class IS NOT NULL
+            `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized` dis
+        WHERE
+            state_code = "US_TN" 
+            AND disposition = 'GU' 
+            AND incident_class IS NOT NULL
       
       UNION DISTINCT 
     
@@ -67,7 +69,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
         state_code,
         person_id,
         start_date AS critical_date,
-        NULL AS disciplinary_date,
+        NULL AS incident_date,
         start_date AS session_start_date,
         0 AS disciplinary,
       FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
@@ -90,7 +92,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
         state_code,
         person_id,
         critical_date,
-        disciplinary_date,
+        incident_date,
         GREATEST(
             LEAST({nonnull_end_date_clause('next_critical_date')}, DATE_ADD(critical_date, INTERVAL month_lag MONTH)),
             DATE_ADD(critical_date, INTERVAL 6 MONTH)
@@ -109,7 +111,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
           state_code,
           person_id,
           critical_date AS start_date,
-          disciplinary_date,
+          incident_date,
           span_end AS end_date,
           session_start_date,
           -- Disciplinaries should only count against someone for 6 months. After that, we still need the 12 and 18
@@ -133,7 +135,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            NULL AS disciplinary_date,
+            NULL AS incident_date,
             end_date_exclusive AS end_date,
             start_date AS session_start_date,
             0 AS disciplinary,
@@ -154,8 +156,8 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             end_date,
             -- Count if there is any disciplinary in that sub-session
             LOGICAL_OR(disciplinary = 1) AS disciplinary,
-            -- Keep the latest disciplinary_date
-            MAX(disciplinary_date) AS latest_disciplinary_date,
+            -- Keep the latest incident_date
+            MAX(incident_date) AS latest_incident_date,
             -- Sum disciplinaries where there might be overlapping sub-sessions
             SUM(disciplinary) AS sum_disciplinaries,
             -- Keep the last session start date
@@ -205,7 +207,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             SELECT *,
                 -- For each sub-session, calculates time since most recent disciplinary. When there are no disciplinaries,
                 -- we take latest session start date
-                DATE_DIFF(start_date, COALESCE(latest_disciplinary_date,session_start_date), MONTH) AS months_since_latest_disc
+                DATE_DIFF(start_date, COALESCE(latest_incident_date,session_start_date), MONTH) AS months_since_latest_disc
             FROM dedup_cte
         )
     )

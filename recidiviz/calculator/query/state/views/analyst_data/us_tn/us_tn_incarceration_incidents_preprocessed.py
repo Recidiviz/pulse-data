@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Materialized view for zero tolerance contact codes in TN"""
+"""Materialized view for incarceration_incidents built on ingested entities with some
+TN specific preprocessing"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
@@ -27,25 +28,24 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_NAME = "us_tn_disciplinaries_preprocessed"
-
-US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_DESCRIPTION = (
-    """Materialized view for zero tolerance contact codes in TN"""
+US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_NAME = (
+    "us_tn_incarceration_incidents_preprocessed"
 )
 
-# TODO(#21262): Deprecate in favor of state agnostic materialized table
-US_TN_DISCIPLINARIES_PREPROCESSED_QUERY_TEMPLATE = """
+US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_DESCRIPTION = """Materialized view for incarceration_incidents built on ingested entities with some
+    TN specific preprocessing"""
+
+US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
     WITH incidents AS (
         SELECT inc.person_id,
                 inc.state_code,
-                inc.incident_date AS disciplinary_date,
+                inc.incident_date,
                 inc.incident_type,
                 inc.incident_type_raw_text,
-                inc_outcome.hearing_date AS disposition_date,
-                JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.Class") AS disciplinary_class,
+                JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.Class") AS incident_class,
                 JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.InjuryLevel") AS injury_level,
                 JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.Disposition") AS disposition,
-                IncidentID,
+                MIN(inc_outcome.hearing_date) AS hearing_date,
           FROM `{project_id}.{normalized_state_dataset}.state_incarceration_incident` inc
           LEFT JOIN `{project_id}.{normalized_state_dataset}.state_incarceration_incident_outcome` inc_outcome
             USING(incarceration_incident_id)
@@ -55,7 +55,8 @@ US_TN_DISCIPLINARIES_PREPROCESSED_QUERY_TEMPLATE = """
             AND inc.state_code = pei.state_code
           INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.Disciplinary_latest` disc
             ON pei.external_id = disc.OffenderID
-            AND SPLIT(inc.external_id,'-')[SAFE_OFFSET(1)] = disc.IncidentID        
+            AND SPLIT(inc.external_id,'-')[SAFE_OFFSET(1)] = disc.IncidentID
+        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8      
     )
     SELECT *,
         CASE 
@@ -71,15 +72,17 @@ US_TN_DISCIPLINARIES_PREPROCESSED_QUERY_TEMPLATE = """
         END AS assault_score,
     FROM
         incidents
+    # In TN, we only want to count incidents where disciplinary class is not null or they have a pending disposition
+    WHERE incident_class !="" OR hearing_date IS NULL
         
 """
 
-US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    view_id=US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_NAME,
-    description=US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_DESCRIPTION,
-    view_query_template=US_TN_DISCIPLINARIES_PREPROCESSED_QUERY_TEMPLATE,
+    view_id=US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_NAME,
+    description=US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_DESCRIPTION,
+    view_query_template=US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE,
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
@@ -88,4 +91,4 @@ US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER.build_and_print()
+        US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_VIEW_BUILDER.build_and_print()

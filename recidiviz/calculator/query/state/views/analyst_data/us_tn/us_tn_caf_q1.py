@@ -37,15 +37,16 @@ US_TN_CAF_Q1_QUERY_TEMPLATE = f"""
         SELECT
             state_code,
             person_id,
-            disciplinary_date,
+            incident_date,
             incident_type,
             injury_level,
             assault_score,
         FROM 
-            `{{project_id}}.{{analyst_dataset}}.us_tn_disciplinaries_preprocessed` dis
+            `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized` dis
         WHERE
-            assault_score IS NOT NULL
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, disciplinary_date
+            state_code = "US_TN" 
+            AND assault_score IS NOT NULL
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, incident_date
                                   ORDER BY assault_score DESC) = 1
     )
     , 
@@ -54,14 +55,14 @@ US_TN_CAF_Q1_QUERY_TEMPLATE = f"""
         SELECT
             state_code,
             person_id,
-            disciplinary_date AS start_date,
+            incident_date AS start_date,
             CASE 
                 WHEN assault_score = 7 
-                    THEN DATE_ADD(disciplinary_date, INTERVAL 42 MONTH)
+                    THEN DATE_ADD(incident_date, INTERVAL 42 MONTH)
                 WHEN assault_score = 3
-                    THEN DATE_ADD(disciplinary_date, INTERVAL 18 MONTH)
+                    THEN DATE_ADD(incident_date, INTERVAL 18 MONTH)
                 WHEN assault_score = 5
-                    THEN DATE_ADD(disciplinary_date, INTERVAL 18 MONTH)
+                    THEN DATE_ADD(incident_date, INTERVAL 18 MONTH)
                 END AS end_date,
             assault_score,
         FROM unique_person_dates
@@ -77,8 +78,8 @@ US_TN_CAF_Q1_QUERY_TEMPLATE = f"""
         SELECT
             state_code,
             person_id,
-            DATE_ADD(disciplinary_date, INTERVAL 42 MONTH) AS start_date,
-            DATE_ADD(disciplinary_date, INTERVAL 60 MONTH) AS end_date,
+            DATE_ADD(incident_date, INTERVAL 42 MONTH) AS start_date,
+            DATE_ADD(incident_date, INTERVAL 60 MONTH) AS end_date,
             5 AS assault_score,
         FROM
             unique_person_dates
