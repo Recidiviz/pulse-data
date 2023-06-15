@@ -77,12 +77,20 @@ columns:
     description: |-
       DA case number.
   - name: ORS_NUMBER
-    desription: |-
+    description: |-
       Oregon Statute Number.
   - name: ORS_PARAGRAPH
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: INCHOATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: INCHOATE_ORS_NUMBER
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: INCHOATE_ORS_PARAGRAPH
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: FELONY_IS_MISDEMEANOR
     description: |-
       Indicated if crime is a misdemeanor or not.
@@ -118,12 +126,26 @@ columns:
     description: |-
       Severity of the crime.
   - name: OOS_FED_CRIME_IND
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MATRIX_RANGE_FROM
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MATRIX_RANGE_TO
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BAF_NO
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BAF_GROUP_NO
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BOARD_OVRRIDE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PSI_PSR_NO
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SENT_GUIDELINES_APP
     description: |-
       TODO(#17148): Fill in with answer from OR
