@@ -41,6 +41,9 @@ from requests import Response
 from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
     FinishedCloudTaskQueryGenerator,
 )
+from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+    initialize_calculation_dag_group,
+)
 from recidiviz.airflow.dags.operators.bq_result_sensor import BQResultSensor
 from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
     IAPHTTPRequestOperator,
@@ -79,6 +82,9 @@ GCP_PROJECT_STAGING = "recidiviz-staging"
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
+
+# Need a disable expression-not-assigned because the chaining ('>>') doesn't need expressions to be assigned
+# pylint: disable=W0106 expression-not-assigned
 
 if (config_file_opt := os.environ.get("CONFIG_FILE")) is None:
     raise ValueError("Configuration file not specified")
@@ -384,7 +390,6 @@ def metric_export_branches_by_state_code(
     },
     schedule=None,
     catchup=False,
-    max_active_runs=1,
 )
 def create_calculation_dag() -> None:
     """This represents the overall execution of our calculation pipelines.
@@ -393,7 +398,8 @@ def create_calculation_dag() -> None:
     1. Update the normalized state output for each state.
     2. Update the metric output for each state.
     3. Trigger BigQuery exports for each state and other datasets."""
-    with TaskGroup("bq_refresh") as _:
+
+    with TaskGroup("bq_refresh") as bq_refresh:
         state_bq_refresh_completion = trigger_refresh_bq_dataset_operator("STATE")
         operations_bq_refresh_completion = trigger_refresh_bq_dataset_operator(
             "OPERATIONS"
@@ -401,6 +407,8 @@ def create_calculation_dag() -> None:
         case_triage_bq_refresh_completion = trigger_refresh_bq_dataset_operator(
             "CASE_TRIAGE"
         )
+
+    initialize_calculation_dag_group() >> bq_refresh
 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",
