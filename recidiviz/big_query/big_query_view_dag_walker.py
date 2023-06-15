@@ -18,6 +18,7 @@
 and perform actions on each of them in some order."""
 import heapq
 import logging
+import os
 import time
 from collections import deque
 from concurrent import futures
@@ -621,7 +622,11 @@ class BigQueryViewDagWalker:
                 f"seconds. Expected node to process in less than "
                 f"[{allowed_processing_time}] seconds."
             )
-            if environment.in_gcp():
+            if (
+                # TODO(#21394) Update this check properly to reflect environment is in Airflow
+                environment.in_gcp()
+                or os.environ.get("CONTAINER_NAME", None) is not None
+            ):
                 # Runtimes can be more unreliable in GCP due to resource
                 # contention with other running processes, so we do not
                 # throw in GCP. We instead emit an error log which can be
