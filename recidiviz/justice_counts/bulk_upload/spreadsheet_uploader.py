@@ -61,8 +61,9 @@ class SpreadsheetUploader:
             int, Dict[Tuple[Any, Any], List[schema.Report]]
         ],
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
-        metric_key_to_timerange_to_total_value: Dict[
-            str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]
+        agency_name_to_metric_key_to_timerange_to_total_value: Dict[
+            str,
+            Dict[str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]],
         ],
         child_agency_name_to_agency: Dict[str, schema.Agency],
         user_account: Optional[schema.UserAccount] = None,
@@ -76,8 +77,8 @@ class SpreadsheetUploader:
         self.column_names = column_names
         self.agency_id_to_time_range_to_reports = agency_id_to_time_range_to_reports
         self.existing_datapoints_dict = existing_datapoints_dict
-        self.metric_key_to_timerange_to_total_value = (
-            metric_key_to_timerange_to_total_value
+        self.agency_name_to_metric_key_to_timerange_to_total_value = (
+            agency_name_to_metric_key_to_timerange_to_total_value
         )
         self.child_agency_name_to_agency = child_agency_name_to_agency
 
@@ -344,7 +345,7 @@ class SpreadsheetUploader:
                     existing_datapoints_dict=self.existing_datapoints_dict,
                     text_analyzer=self.text_analyzer,
                     metricfile=metricfile,
-                    metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
+                    agency_name_to_metric_key_to_timerange_to_total_value=self.agency_name_to_metric_key_to_timerange_to_total_value,
                 )
                 existing_report = self.agency_id_to_time_range_to_reports.get(
                     curr_agency.id, {}

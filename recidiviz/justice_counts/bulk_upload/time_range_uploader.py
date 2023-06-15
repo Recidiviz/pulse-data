@@ -53,8 +53,9 @@ class TimeRangeUploader:
         text_analyzer: TextAnalyzer,
         metricfile: MetricFile,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
-        metric_key_to_timerange_to_total_value: Dict[
-            str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]
+        agency_name_to_metric_key_to_timerange_to_total_value: Dict[
+            str,
+            Dict[str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]],
         ],
         user_account: Optional[schema.UserAccount] = None,
     ) -> None:
@@ -65,8 +66,8 @@ class TimeRangeUploader:
         self.rows_for_this_time_range = rows_for_this_time_range
         self.text_analyzer = text_analyzer
         self.metricfile = metricfile
-        self.metric_key_to_timerange_to_total_value = (
-            metric_key_to_timerange_to_total_value
+        self.agency_name_to_metric_key_to_timerange_to_total_value = (
+            agency_name_to_metric_key_to_timerange_to_total_value
         )
 
     def upload_time_range(
@@ -163,9 +164,9 @@ class TimeRangeUploader:
                 metric_key_to_errors=metric_key_to_errors,
                 metric_key=metric_key,
             )
-            self.metric_key_to_timerange_to_total_value[self.metricfile.definition.key][
-                self.time_range
-            ] = aggregate_value
+            self.agency_name_to_metric_key_to_timerange_to_total_value[
+                self.agency.name
+            ][self.metricfile.definition.key][self.time_range] = aggregate_value
         else:  # metricfile.disaggregation is not None
             if self.metricfile.disaggregation_column_name is None:
                 raise ValueError(
@@ -229,9 +230,11 @@ class TimeRangeUploader:
 
             # Check that the sum of the disaggregate values is equal to that of the aggregate
             previously_saved_aggregate_value = (
-                self.metric_key_to_timerange_to_total_value.get(
-                    self.metricfile.definition.key, {}
-                ).get(self.time_range)
+                self.agency_name_to_metric_key_to_timerange_to_total_value.get(
+                    self.agency.name, {}
+                )
+                .get(self.metricfile.definition.key, {})
+                .get(self.time_range)
             )
             # if previously_saved_aggregate_value is None, a Missing Total Warning will be thrown
             # (don't need a warning for each breakdown row)
