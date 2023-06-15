@@ -1002,27 +1002,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               }
             />
             <StyledStep
-              title="Move PRIMARY storage raw files to deprecated"
-              description={
-                <p>
-                  Use the command below within the <code>pipenv shell</code> to
-                  move PRIMARY storage raw files to deprecated
-                  <CodeBlock
-                    enabled={
-                      currentStepSection ===
-                      FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION
-                    }
-                  >
-                    python -m
-                    recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
-                    --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
-                    --ingest-instance PRIMARY --skip-prompts True --dry-run
-                    False
-                  </CodeBlock>
-                </p>
-              }
-            />
-            <StyledStep
               title="Clean up PRUNING raw data tables in PRIMARY on BQ"
               description={
                 <p>
@@ -1201,24 +1180,24 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               }
             />
             <StyledStep
-              title="Move SECONDARY storage raw data to PRIMARY"
+              title="Move SECONDARY storage raw files to deprecated"
               description={
-                <div>
-                  <p>Run the following command from the terminal: </p>
+                <p>
+                  Use the command below within the <code>pipenv shell</code> to
+                  move SECONDARY storage raw files to deprecated
                   <CodeBlock
                     enabled={
                       currentStepSection ===
                       FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
                     }
                   >
-                    gsutil -m mv &#39;gs://{projectId}
-                    -direct-ingest-state-storage-secondary/
-                    {stateCode.toLowerCase()}/raw/*&#39; gs://
-                    {projectId}
-                    -direct-ingest-state-storage/
-                    {stateCode.toLowerCase()}/raw/
+                    python -m
+                    recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
+                    --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
+                    --ingest-instance SECONDARY --skip-prompts True --dry-run
+                    False
                   </CodeBlock>
-                </div>
+                </p>
               }
               nextSection={
                 FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY
