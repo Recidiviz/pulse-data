@@ -32,6 +32,7 @@ from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers
     OUTLIERS_CONFIGS_BY_STATE,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.outliers.types import MetricOutcome, OutliersMetric
 from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficer,
     SupervisionOfficerMetric,
@@ -47,6 +48,14 @@ class TargetStatus(Enum):
     MET = "MET"
     NEAR = "NEAR"
     FAR = "FAR"
+
+
+class TargetStatusStrategy(Enum):
+    # This is the default TargetStatusStrategy: the threshold for the target status is calculated by target +/- IQR.
+    IQR_THRESHOLD = "IQR_THRESHOLD"
+    # In some cases, i.e. certain favorable metrics, the target minus the IQR may be <= zero and officers
+    # who have zero rates should be highlighted as outliers, instead of using the IQR threshold logic.
+    ZERO_RATE = "ZERO_RATE"
 
 
 @attr.s
@@ -70,16 +79,24 @@ class MetricContext:
     target: float = attr.ib()
     # All units of analysis for a given state and metric
     entities: List[OfficerMetricEntity] = attr.ib()
+    # Describes how the TargetStatus is calculated (see the Enum definition)
+    target_status_strategy: TargetStatusStrategy = attr.ib(
+        default=TargetStatusStrategy.IQR_THRESHOLD
+    )
 
 
 @attr.s
 class MetricInfo:
     # Unless otherwise specified, the target is the state average for the current period
     target: float = attr.ib()
-    # Maps target status to a list of metric rates for all officers not included in unit_officers
+    # Maps target status to a list of metric rates for all officers not included in highlighted_officers
     other_officers: Dict[TargetStatus, List[float]] = attr.ib()
-    # Officers in a given unit who have the "FAR" status for a given metric
-    unit_officers: List[OfficerMetricEntity] = attr.ib()
+    # Officers for a specific supervisor who have the "FAR" status for a given metric
+    highlighted_officers: List[OfficerMetricEntity] = attr.ib()
+    # Describes how the TargetStatus is calculated (see the Enum definition)
+    target_status_strategy: TargetStatusStrategy = attr.ib(
+        default=TargetStatusStrategy.IQR_THRESHOLD
+    )
 
 
 @attr.s
@@ -112,7 +129,7 @@ class OutliersQuerier:
                             TargetStatus.NEAR: float[],
                             TargetStatus.FAR: float[],
                         },
-                        unit_officers: List[OfficerMetricEntity]
+                        highlighted_officers: List[OfficerMetricEntity]
                     )
                 },
                 metrics_without_outliers: List[str],
@@ -133,11 +150,11 @@ class OutliersQuerier:
                 SupervisionOfficerSupervisor.email,
             ).all()
 
-            metric_id_to_metric_context = {
-                metric_id: self._get_metric_context_from_db(
-                    session, metric_id, end_date, prev_end_date
+            metric_name_to_metric_context = {
+                metric.name: self._get_metric_context_from_db(
+                    session, metric, end_date, prev_end_date
                 )
-                for metric_id in self.get_state_metrics(state_code)
+                for metric in self.get_state_metrics(state_code)
             }
 
             officer_supervisor_id_to_data = {}
@@ -148,7 +165,7 @@ class OutliersQuerier:
                     metrics_with_outliers,
                 ) = self._get_officer_level_data_for_officer_supervisor(
                     external_id,
-                    metric_id_to_metric_context,
+                    metric_name_to_metric_context,
                 )
 
                 officer_supervisor_id_to_data[external_id] = OutliersReportData(
@@ -179,7 +196,7 @@ class OutliersQuerier:
                 TargetStatus.MET: [],
                 TargetStatus.NEAR: [],
             }
-            unit_officers: List[OfficerMetricEntity] = []
+            highlighted_officers: List[OfficerMetricEntity] = []
 
             for entity in entities:
                 target_status = entity.target_status
@@ -190,15 +207,16 @@ class OutliersQuerier:
                     and entity.supervisor_external_id
                     == supervision_officer_supervisor_id
                 ):
-                    unit_officers.append(entity)
+                    highlighted_officers.append(entity)
                 else:
                     other_officer_rates[target_status].append(rate)
 
-            if unit_officers:
+            if highlighted_officers:
                 info = MetricInfo(
                     target=metric_context.target,
                     other_officers=other_officer_rates,
-                    unit_officers=unit_officers,
+                    highlighted_officers=highlighted_officers,
+                    target_status_strategy=metric_context.target_status_strategy,
                 )
                 metrics_results[metric_id] = info
             else:
@@ -209,11 +227,16 @@ class OutliersQuerier:
         return metrics_results, metrics_without_outliers
 
     def _get_metric_context_from_db(
-        self, session: Session, metric_id: str, end_date: date, prev_end_date: date
+        self,
+        session: Session,
+        metric: OutliersMetric,
+        end_date: date,
+        prev_end_date: date,
     ) -> MetricContext:
         """
         For the given metric_id, calculate and hydrate the MetricContext object as defined above.
         """
+        metric_id = metric.name
 
         target = self.get_state_target_from_db(session, metric_id, end_date)
 
@@ -280,6 +303,12 @@ class OutliersQuerier:
             ]
         )
 
+        target_status_strategy = (
+            TargetStatusStrategy.ZERO_RATE
+            if target - iqr <= 0 and metric.outcome_type == MetricOutcome.FAVORABLE
+            else TargetStatusStrategy.IQR_THRESHOLD
+        )
+
         # Generate the OfficerMetricEntity object for all officers
         entities: List[OfficerMetricEntity] = []
         for officer_metric_record in current_period_officer_metrics:
@@ -287,7 +316,9 @@ class OutliersQuerier:
                 officer_metric_record.metric_value
                 / officer_metric_record.avg_daily_population
             )
-            target_status = self.get_target_status(metric_id, rate, target, iqr)
+            target_status = self.get_target_status(
+                metric.outcome_type, rate, target, iqr, target_status_strategy
+            )
 
             prev_period_record = [
                 past_officer_metric_record
@@ -321,19 +352,32 @@ class OutliersQuerier:
                 )
             )
 
-        return MetricContext(target=target, entities=entities)
+        return MetricContext(
+            target=target,
+            entities=entities,
+            target_status_strategy=target_status_strategy,
+        )
 
     @staticmethod
     def get_target_status(
-        metric: str, rate: float, target: float, iqr: float
+        metric_outcome_type: MetricOutcome,
+        rate: float,
+        target: float,
+        iqr: float,
+        target_status_strategy: TargetStatusStrategy,
     ) -> TargetStatus:
-        if "task_completions" in metric:
+
+        if target_status_strategy == TargetStatusStrategy.ZERO_RATE and rate == 0.0:
+            return TargetStatus.FAR
+
+        if metric_outcome_type == MetricOutcome.FAVORABLE:
             if rate >= target:
                 return TargetStatus.MET
             if target - rate <= iqr:
                 return TargetStatus.NEAR
             return TargetStatus.FAR
 
+        # Otherwise, MetricOutcome is ADVERSE
         if rate <= target:
             return TargetStatus.MET
         if rate - target <= iqr:
@@ -341,7 +385,7 @@ class OutliersQuerier:
         return TargetStatus.FAR
 
     @staticmethod
-    def get_state_metrics(state_code: StateCode) -> List[str]:
+    def get_state_metrics(state_code: StateCode) -> List[OutliersMetric]:
         return OUTLIERS_CONFIGS_BY_STATE[state_code].metrics
 
     @staticmethod

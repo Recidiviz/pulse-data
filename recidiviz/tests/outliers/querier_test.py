@@ -20,16 +20,22 @@ import os
 from datetime import date
 from typing import Dict, List, Optional
 from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.outliers.constants import (
+    INCARCERATION_STARTS_AND_INFERRED,
+    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+)
 from recidiviz.outliers.querier.querier import (
     MetricInfo,
     OfficerMetricEntity,
     OutliersQuerier,
     OutliersReportData,
     TargetStatus,
+    TargetStatusStrategy,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
     OutliersBase,
@@ -76,7 +82,7 @@ class TestOutliersQuerier(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_pa")
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx")
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -100,13 +106,22 @@ class TestOutliersQuerier(TestCase):
             cls.temp_db_dir
         )
 
-    def test_get_officer_level_report_data_by_unit(self) -> None:
+    @patch("recidiviz.outliers.querier.querier.OutliersQuerier.get_state_metrics")
+    def test_get_officer_level_report_data_by_supervisor(
+        self, mock_config: MagicMock
+    ) -> None:
+        mock_config.return_value = [
+            INCARCERATION_STARTS_AND_INFERRED,
+            TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+        ]
+
         actual = (
             OutliersQuerier().get_officer_level_report_data_for_all_officer_supervisors(
-                state_code=StateCode.US_PA,
+                state_code=StateCode.US_XX,
                 end_date=TEST_END_DATE,
             )
         )
+
         expected = {
             "101": OutliersReportData(
                 metrics={
@@ -125,7 +140,7 @@ class TestOutliersQuerier(TestCase):
                                 0.17053206002728513,
                             ],
                         },
-                        unit_officers=[
+                        highlighted_officers=[
                             OfficerMetricEntity(
                                 name="Officer 1",
                                 rate=0.26688907422852376,
@@ -141,19 +156,52 @@ class TestOutliersQuerier(TestCase):
                                 supervisor_external_id="101",
                             ),
                         ],
+                        target_status_strategy=TargetStatusStrategy.IQR_THRESHOLD,
                     )
                 },
+                metrics_without_outliers=[
+                    "task_completions_transfer_to_limited_supervision"
+                ],
                 recipient_email_address="supervisor1@recidiviz.org",
-                metrics_without_outliers=[],
             ),
             "102": OutliersReportData(
-                metrics={},
+                metrics={
+                    "task_completions_transfer_to_limited_supervision": MetricInfo(
+                        target=0.008800003960001782,
+                        other_officers={
+                            TargetStatus.FAR: [],
+                            TargetStatus.MET: [
+                                0.26688907422852376,
+                                0.12645777715329493,
+                                0.18409086725207563,
+                                0.03996003996003996,
+                                0.111000111000111,
+                                0.17053206002728513,
+                                0.3333333333333333,
+                            ],
+                            TargetStatus.NEAR: [],
+                        },
+                        highlighted_officers=[
+                            OfficerMetricEntity(
+                                name="Officer 4",
+                                rate=0.0,
+                                target_status=TargetStatus.FAR,
+                                prev_rate=0.0,
+                                supervisor_external_id="102",
+                            )
+                        ],
+                        target_status_strategy=TargetStatusStrategy.ZERO_RATE,
+                    )
+                },
                 metrics_without_outliers=["incarceration_starts_and_inferred"],
                 recipient_email_address="supervisor2@recidiviz.org",
             ),
             "103": OutliersReportData(
                 metrics={},
-                metrics_without_outliers=["incarceration_starts_and_inferred"],
+                metrics_without_outliers=[
+                    "incarceration_starts_and_inferred",
+                    "task_completions_transfer_to_limited_supervision",
+                ],
                 recipient_email_address="supervisor3@recidiviz.org",
             ),
         }
@@ -173,7 +221,7 @@ class TestOutliersQuerier(TestCase):
                             ],
                             "NEAR": [0.18409086725207563, 0.17053206002728513],
                         },
-                        "unit_officers": [
+                        "highlighted_officers": [
                             {
                                 "name": "Officer 1",
                                 "rate": 0.26688907422852376,
@@ -189,25 +237,59 @@ class TestOutliersQuerier(TestCase):
                                 "supervisor_external_id": "101",
                             },
                         ],
+                        "target_status_strategy": "IQR_THRESHOLD",
                     }
                 },
-                "metrics_without_outliers": [],
+                "metrics_without_outliers": [
+                    "task_completions_transfer_to_limited_supervision"
+                ],
                 "recipient_email_address": "supervisor1@recidiviz.org",
             },
             "102": {
-                "metrics": {},
+                "metrics": {
+                    "task_completions_transfer_to_limited_supervision": {
+                        "target": 0.008800003960001782,
+                        "other_officers": {
+                            "FAR": [],
+                            "MET": [
+                                0.26688907422852376,
+                                0.12645777715329493,
+                                0.18409086725207563,
+                                0.03996003996003996,
+                                0.111000111000111,
+                                0.17053206002728513,
+                                0.3333333333333333,
+                            ],
+                            "NEAR": [],
+                        },
+                        "highlighted_officers": [
+                            {
+                                "name": "Officer 4",
+                                "rate": 0.0,
+                                "target_status": "FAR",
+                                "prev_rate": 0.0,
+                                "supervisor_external_id": "102",
+                            }
+                        ],
+                        "target_status_strategy": "ZERO_RATE",
+                    }
+                },
                 "metrics_without_outliers": ["incarceration_starts_and_inferred"],
                 "recipient_email_address": "supervisor2@recidiviz.org",
             },
             "103": {
                 "metrics": {},
-                "metrics_without_outliers": ["incarceration_starts_and_inferred"],
+                "metrics_without_outliers": [
+                    "incarceration_starts_and_inferred",
+                    "task_completions_transfer_to_limited_supervision",
+                ],
                 "recipient_email_address": "supervisor3@recidiviz.org",
             },
         }
 
         actual_json = {
-            unit_id: unit_data.to_json() for unit_id, unit_data in actual.items()
+            supervisor_id: supervisor_data.to_json()
+            for supervisor_id, supervisor_data in actual.items()
         }
         self.assertEqual(expected_json, actual_json)
 

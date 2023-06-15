@@ -428,6 +428,7 @@ def main() -> int:
                 "recidiviz.case_triage.views",
                 "recidiviz.ingest.views",
                 "recidiviz.validation",
+                "recidiviz.outliers",
             }
         ),
         # TODO(#3828): We won't have to explicitly disallow apache_beam once we've
