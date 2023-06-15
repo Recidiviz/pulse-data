@@ -25,7 +25,9 @@ from mock import patch
 from mock.mock import Mock
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines import dataflow_output_table_manager
 from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
@@ -33,7 +35,8 @@ from recidiviz.pipelines.dataflow_config import (
     METRIC_CLUSTERING_FIELDS,
 )
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_metric_pipeline_enabled_states,
+    get_ingest_pipeline_enabled_states,
+    get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.metrics.population_spans.metrics import (
     IncarcerationPopulationSpanMetric,
@@ -270,7 +273,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
     )
     def test_get_all_state_specific_normalized_state_datasets(self) -> None:
         dataset_ids: List[str] = []
-        for state_code in get_metric_pipeline_enabled_states():
+        for state_code in get_normalization_pipeline_enabled_states():
             dataset_ids.append(
                 dataflow_output_table_manager.normalized_state_dataset_for_state_code(
                     state_code
@@ -342,7 +345,7 @@ class SupplementalDatasetTableManagerTest(unittest.TestCase):
         self.dataflow_config_patcher.stop()
 
     def test_update_supplemental_data_schemas_create_table(self) -> None:
-        """Test that update_normalized_state_schema calls the client to create a
+        """Test that update_supplemental_dataset_schemas calls the client to create a
         new table when the table does not yet exist."""
         self.mock_client.table_exists.return_value = False
 
@@ -352,7 +355,7 @@ class SupplementalDatasetTableManagerTest(unittest.TestCase):
         self.mock_client.update_schema.assert_not_called()
 
     def test_update_supplemental_data_schemas_update_table(self) -> None:
-        """Test that update_normalized_state_schema calls the client to update a
+        """Test that update_supplemental_dataset_schemas calls the client to update a
         table when the table already exists."""
         self.mock_client.table_exists.return_value = True
 
@@ -360,3 +363,192 @@ class SupplementalDatasetTableManagerTest(unittest.TestCase):
 
         self.mock_client.update_schema.assert_called()
         self.mock_client.create_table_with_schema.assert_not_called()
+
+
+class IngestDatasetTableManagerTest(unittest.TestCase):
+    """Tests for dataflow_output_table_manager.py"""
+
+    def setUp(self) -> None:
+        self.project_id = "recidiviz-project"
+        self.mock_view_dataset_name = "my_views_dataset"
+        self.mock_dataset = bigquery.dataset.DatasetReference(
+            self.project_id, self.mock_view_dataset_name
+        )
+
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+        self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
+        self.project_number_patcher.start().return_value = "123456789"
+
+        self.bq_client_patcher = mock.patch(
+            "recidiviz.pipelines.dataflow_output_table_manager.BigQueryClientImpl"
+        )
+        self.mock_client = self.bq_client_patcher.start().return_value
+
+        self.mock_client.project_id.return_value = self.project_id
+
+        self.gcs_factory_patcher = mock.patch(
+            "recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.GcsfsFactory.build"
+        )
+        self.fake_fs = FakeGCSFileSystem()
+        self.gcs_factory_patcher.start().return_value = self.fake_fs
+
+        self.fake_config_path = GcsfsFilePath.from_absolute_path(
+            "gs://recidiviz-project-configs/cloud_sql_to_bq_config.yaml"
+        )
+
+        self.fake_fs.upload_from_string(
+            path=self.fake_config_path,
+            contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
+            content_type="text/yaml",
+        )
+
+        self.direct_ingest_controller_patcher = mock.patch(
+            "recidiviz.pipelines.dataflow_output_table_manager.DirectIngestControllerFactory.build"
+        )
+        self.mock_direct_ingest_controller = (
+            self.direct_ingest_controller_patcher.start().return_value
+        )
+
+        self.query_builder_patcher = mock.patch(
+            "recidiviz.ingest.direct.views.direct_ingest_view_query_builder.DirectIngestViewQueryBuilder"
+        )
+        self.mock_query_builder = self.query_builder_patcher.start().return_value
+
+    def tearDown(self) -> None:
+        self.bq_client_patcher.stop()
+        self.project_id_patcher.stop()
+        self.project_number_patcher.stop()
+        self.gcs_factory_patcher.stop()
+        self.direct_ingest_controller_patcher.stop()
+        self.query_builder_patcher.stop()
+
+    @mock.patch(
+        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
+        FAKE_PIPELINE_CONFIG_YAML_PATH,
+    )
+    def test_update_state_specific_ingest_view_results_datasets(self) -> None:
+        def mock_dataset_ref_for_id(
+            dataset_id: str,
+        ) -> bigquery.dataset.DatasetReference:
+            return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
+
+        self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
+
+        self.mock_direct_ingest_controller.view_collector.return_value = mock.ANY
+
+        dataflow_output_table_manager.update_state_specific_ingest_view_results_schemas()
+
+        self.mock_client.create_dataset_if_necessary.assert_has_calls(
+            [
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_xx_dataflow_ingest_view_results_primary"
+                    )
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_xx_dataflow_ingest_view_results_secondary"
+                    )
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_yy_dataflow_ingest_view_results_primary"
+                    )
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_yy_dataflow_ingest_view_results_secondary"
+                    )
+                ),
+            ],
+            any_order=True,
+        )
+
+    def test_update_state_specific_ingest_view_results_schema_create_table(
+        self,
+    ) -> None:
+        """Test that update_state_specific_ingest_view_result_schema calls the client to
+        create a new table when the table does not yet exist."""
+
+        def mock_dataset_ref_for_id(
+            dataset_id: str,
+        ) -> bigquery.dataset.DatasetReference:
+            return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
+
+        self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
+
+        self.mock_client.table_exists.return_value = False
+        self.mock_direct_ingest_controller.view_collector.collect_query_builders.return_value = [
+            self.mock_query_builder
+        ]
+        self.mock_query_builder.build_query.return_value = "SELECT * FROM table"
+        self.mock_query_builder.ingest_view_name.return_value = "us_xx_view"
+
+        self.mock_client.run_query.return_value = mock.create_autospec(
+            bigquery.QueryJob
+        )
+
+        dataflow_output_table_manager.update_state_specific_ingest_view_result_schema(
+            "us_xx_dataflow_ingest_view_results_primary",
+            StateCode.US_XX,
+            DirectIngestInstance.PRIMARY,
+        )
+
+        self.mock_client.create_table_with_schema.assert_called()
+        self.mock_client.update_schema.assert_not_called()
+
+    def test_update_state_specific_ingest_view_results_schema_update_table(
+        self,
+    ) -> None:
+        """Test that update_state_specific_ingest_view_result_schema calls the client to
+        update a table when the table already exists."""
+
+        def mock_dataset_ref_for_id(
+            dataset_id: str,
+        ) -> bigquery.dataset.DatasetReference:
+            return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
+
+        self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
+
+        self.mock_client.table_exists.return_value = True
+        self.mock_direct_ingest_controller.view_collector.collect_query_builders.return_value = [
+            self.mock_query_builder
+        ]
+        self.mock_query_builder.build_query.return_value = "SELECT * FROM table"
+        self.mock_query_builder.ingest_view_name.return_value = "us_xx_view"
+
+        self.mock_client.run_query.return_value = mock.create_autospec(
+            bigquery.QueryJob
+        )
+
+        dataflow_output_table_manager.update_state_specific_ingest_view_result_schema(
+            "us_xx_dataflow_ingest_view_results_primary",
+            StateCode.US_XX,
+            DirectIngestInstance.PRIMARY,
+        )
+        self.mock_client.update_schema.assert_called()
+        self.mock_client.create_table_with_schema.assert_not_called()
+
+    @mock.patch(
+        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
+        FAKE_PIPELINE_CONFIG_YAML_PATH,
+    )
+    def test_get_all_state_specific_ingest_state_datasets(self) -> None:
+        dataset_ids: List[str] = []
+        for state_code in get_ingest_pipeline_enabled_states():
+            for ingest_instance in DirectIngestInstance:
+                dataset_ids.append(
+                    dataflow_output_table_manager.state_dataset_for_state_code(
+                        state_code, ingest_instance
+                    )
+                )
+
+        expected_dataset_ids = [
+            "us_xx_state_primary",
+            "us_xx_state_secondary",
+            "us_yy_state_primary",
+            "us_yy_state_secondary",
+        ]
+
+        self.assertCountEqual(expected_dataset_ids, dataset_ids)

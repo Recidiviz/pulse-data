@@ -23,6 +23,7 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 
 def get_normalization_pipeline_enabled_states() -> Set[StateCode]:
+    """Returns all states that have scheduled normalization pipelines that run."""
     pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
     normalization_pipelines = pipeline_templates_yaml.pop_dicts(
@@ -36,13 +37,19 @@ def get_normalization_pipeline_enabled_states() -> Set[StateCode]:
 
 def get_metric_pipeline_enabled_states() -> Set[StateCode]:
     """Returns all states that have scheduled metric pipelines that run."""
-    pipeline_states: Set[StateCode] = set()
-
     pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
     metric_pipelines = pipeline_templates_yaml.pop_dicts("metric_pipelines")
+    return {
+        StateCode(pipeline.peek("state_code", str)) for pipeline in metric_pipelines
+    }
 
-    for pipeline in metric_pipelines:
-        pipeline_states.add(StateCode(pipeline.peek("state_code", str)))
 
-    return pipeline_states
+def get_ingest_pipeline_enabled_states() -> Set[StateCode]:
+    """Returns all states that have scheduled ingest pipelines that run."""
+    pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
+
+    ingest_pipelines = pipeline_templates_yaml.pop_dicts("ingest_pipelines")
+    return {
+        StateCode(pipeline.peek("state_code", str)) for pipeline in ingest_pipelines
+    }

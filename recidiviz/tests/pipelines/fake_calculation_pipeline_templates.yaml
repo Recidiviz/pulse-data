@@ -7,6 +7,10 @@ normalization_pipelines:
     job_name: us-xx-normalization
     state_code: US_XX
     region: us-west1
+  - pipeline: normalization_pipeline_2
+    job_name: us-yy-normalization
+    state_code: US_YY
+    regions: us-east2
 
 metric_pipelines:
   # Full US_XX calculations with no time limit
@@ -46,3 +50,13 @@ supplemental_dataset_pipelines:
     job_name: us-yy-pipeline-to-run-daily
     state_code: US_YY
     region: us-east1
+
+ingest_pipelines:
+  - pipeline: ingest_pipeline
+    job_name: us-xx-ingest-pipeline
+    state_code: US_XX
+    region: us-east1
+  - pipeline: ingest_pipeline_2
+    job_name: us-yy-ingest-pipeline
+    state_code: US_YY
+    region: us-east2

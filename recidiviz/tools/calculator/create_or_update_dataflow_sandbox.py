@@ -27,8 +27,9 @@ python -m recidiviz.tools.calculator.create_or_update_dataflow_sandbox \
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
         [--state_code STATE_CODE] \
+        [--ingest_instance INGEST_INSTANCE] \
         [--allow_overwrite] \
-        --datasets_to_create metrics normalization supplemental (must be last due to list)
+        --datasets_to_create metrics normalization supplemental ingest (must be last due to list)
 """
 import argparse
 import logging
@@ -39,14 +40,25 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     normalized_state_dataset_for_state_code,
+    state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import (
+    ingest_view_materialization_results_dataflow_dataset,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
+    update_bq_dataset_to_match_sqlalchemy_schema,
+)
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_metric_pipeline_enabled_states,
+    get_ingest_pipeline_enabled_states,
+    get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.dataflow_output_table_manager import (
     update_dataflow_metric_tables_schemas,
     update_normalized_table_schemas_in_dataset,
+    update_state_specific_ingest_view_result_schema,
     update_supplemental_dataset_schemas,
 )
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
@@ -57,7 +69,66 @@ from recidiviz.utils.metadata import local_project_id_override
 # expiration to 72 hours
 TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 72 * 60 * 60 * 1000
 
-SANDBOX_TYPES = ["metrics", "normalization", "supplemental"]
+SANDBOX_TYPES = ["metrics", "normalization", "supplemental", "ingest"]
+
+
+def create_or_update_ingest_output_sandbox(
+    bq_client: BigQueryClientImpl,
+    state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
+    sandbox_dataset_prefix: str,
+    allow_overwrite: bool = False,
+) -> None:
+    """Creates or updates a sandbox state and ingest view results datasets, prefixing the
+    datasets name with the given prefix. Creates one dataset per state_code and ingest instance
+    that has calculation pipelines regularly scheduled."""
+
+    sandbox_ingest_view_results_id = (
+        ingest_view_materialization_results_dataflow_dataset(
+            state_code, ingest_instance, sandbox_dataset_prefix
+        )
+    )
+    sandbox_ingest_view_results_ref = bq_client.dataset_ref_for_id(
+        sandbox_ingest_view_results_id
+    )
+    if (
+        bq_client.dataset_exists(sandbox_ingest_view_results_ref)
+        and not allow_overwrite
+    ):
+        logging.error(
+            "Dataset %s already exists in project %s. To overwrite, "
+            "set --allow_overwrite.",
+            sandbox_ingest_view_results_id,
+            bq_client.project_id,
+        )
+        sys.exit(1)
+    logging.info(
+        "Creating state ingest view result sandbox datasets with prefix %s. Tables will expire "
+        "after 72 hours.",
+        sandbox_dataset_prefix,
+    )
+    update_state_specific_ingest_view_result_schema(
+        sandbox_ingest_view_results_id, state_code, ingest_instance
+    )
+
+    sandbox_state_id = state_dataset_for_state_code(
+        state_code, ingest_instance, sandbox_dataset_prefix
+    )
+    sandbox_state_ref = bq_client.dataset_ref_for_id(sandbox_state_id)
+    if bq_client.dataset_exists(sandbox_state_ref) and not allow_overwrite:
+        logging.error(
+            "Dataset %s already exists in project %s. To overwrite, "
+            "set --allow_overwrite.",
+            sandbox_state_id,
+            bq_client.project_id,
+        )
+        sys.exit(1)
+    logging.info(
+        "Creating state sandbox datasets with prefix %s. Tables will expire "
+        "after 72 hours.",
+        sandbox_dataset_prefix,
+    )
+    update_bq_dataset_to_match_sqlalchemy_schema(SchemaType.STATE, sandbox_state_id)
 
 
 def create_or_update_supplemental_datasets_sandbox(
@@ -80,7 +151,7 @@ def create_or_update_supplemental_datasets_sandbox(
         sys.exit(1)
 
     logging.info(
-        "Creating dataflow metrics sandbox in dataset %s. Tables will expire after 72 hours.",
+        "Creating supplemental dataset sandbox in dataset %s. Tables will expire after 72 hours.",
         sandbox_dataset_ref,
     )
     bq_client.create_dataset_if_necessary(
@@ -151,7 +222,7 @@ def create_or_update_normalized_state_sandbox(
     )
 
     logging.info(
-        "Created normalized state sandbox datasets with prefix %s. Tables will expire "
+        "Creating normalized state sandbox datasets with prefix %s. Tables will expire "
         "after 72 hours.",
         sandbox_dataset_prefix,
     )
@@ -166,18 +237,42 @@ def _create_or_update_dataflow_sandbox(
     datasets_to_create: List[str],
     allow_overwrite: bool,
     state_code_filter: Optional[StateCode],
+    ingest_instance_filter: Optional[DirectIngestInstance],
 ) -> None:
     """Creates or updates a sandbox for all the pipeline types, prefixing the dataset
     name with the given prefix. Creates one dataset per state_code that has
     calculation pipelines regularly scheduled."""
     bq_client = BigQueryClientImpl()
 
-    # First create the sandbox normalized datasets
+    # Create the ingest view results dataset and state datasets:
+    if "ingest" in datasets_to_create:
+        state_codes = (
+            {state_code_filter}
+            if state_code_filter
+            else get_ingest_pipeline_enabled_states()
+        )
+        ingest_instances = (
+            {ingest_instance_filter}
+            if ingest_instance_filter
+            else set(DirectIngestInstance)
+        )
+        for state_code in state_codes:
+            for ingest_instance in ingest_instances:
+                create_or_update_ingest_output_sandbox(
+                    bq_client,
+                    state_code,
+                    ingest_instance,
+                    sandbox_dataset_prefix,
+                    allow_overwrite,
+                )
+
+    # Create the sandbox normalized datasets
     if "normalization" in datasets_to_create:
-        if state_code_filter:
-            state_codes = {state_code_filter}
-        else:
-            state_codes = get_metric_pipeline_enabled_states()
+        state_codes = (
+            {state_code_filter}
+            if state_code_filter
+            else get_normalization_pipeline_enabled_states()
+        )
 
         for state_code in state_codes:
             create_or_update_normalized_state_sandbox(
@@ -218,6 +313,12 @@ def parse_arguments() -> argparse.Namespace:
         "when creating the normalization dataset.",
     )
     parser.add_argument(
+        "--ingest_instance",
+        type=DirectIngestInstance,
+        help="If set, sandbox datasets"
+        "will only be created for this ingest instance. Relevant when creating the ingest datasets.",
+    )
+    parser.add_argument(
         "--sandbox_dataset_prefix",
         dest="sandbox_dataset_prefix",
         type=str,
@@ -256,4 +357,5 @@ if __name__ == "__main__":
             args.datasets_to_create,
             args.allow_overwrite,
             args.state_code,
+            args.ingest_instance,
         )
