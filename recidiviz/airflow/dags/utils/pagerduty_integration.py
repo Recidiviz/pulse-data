@@ -17,13 +17,13 @@
 """Helper function for PagerDuty alerting integration"""
 import logging
 import os
-from typing import Optional
+from typing import List, Optional
 
 from airflow.exceptions import AirflowNotFoundException
 from airflow.models import Connection
 
 
-def pagerduty_integration_email(conn_id: str) -> Optional[list[str]]:
+def pagerduty_integration_email(conn_id: str) -> Optional[List[str]]:
     """Returns the email of the PagerDuty alert integration if the environment is configured to send mail."""
     if not os.getenv("SENDGRID_MAIL_FROM") or not os.getenv("SENDGRID_MAIL_SENDER"):
         logging.warning(
