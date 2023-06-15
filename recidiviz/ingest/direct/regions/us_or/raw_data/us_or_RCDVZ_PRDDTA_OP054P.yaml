@@ -129,13 +129,29 @@ columns:
     description: |-
       Extra good time rewarded.
   - name: MINIMUM_161
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: GUNMIN_161610_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MINIMUM_144
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MINIMUM_163105
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MURMIN_163105_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MINIMUM_163115
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MURMIN_163115_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: FLAG_137635
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: DANG_OFFENDER
     description: |-
       Indicates if dangerous offense.
@@ -167,6 +183,8 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: M40_EARNED_TIME
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: APPLICATION_ID
     description: |-
       Code for look up table.
@@ -174,8 +192,14 @@ columns:
     description: |-
       Code for look up table.
   - name: M40_STATUS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SG_EARNED_TIME_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SG_20_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PROJECTED_COMPLETION_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -204,12 +228,20 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: M11_SENTENCE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PAROLE_DENIED
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: BOARDER_COMPACT_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MERIT_GT_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: TERMINATION_CODE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: TERMINATION_DATE
     is_datetime: True
     description: |-
@@ -218,14 +250,32 @@ columns:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PV_CODE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: INOP_DAYS_AFTER_REVOKE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PPS_SENTENCE_YEARS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PPS_SENTENCE_MONTHS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PPS_SENTENCE_DAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PPS_BEGIN_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SENT_ADD_LOCA
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: FUTURE_HEARING_PENDING
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: SECOND_LOOK_GROUP
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PB_DEFERAL_DAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
