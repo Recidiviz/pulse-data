@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tools for conducting power calculations"""
+"""Tools for conducting power calculations via formulas"""
 
 from logging import warning
 from typing import Optional, Sequence
@@ -28,7 +28,10 @@ from statsmodels.stats.anova import anova_lm
 
 
 class PowerCalc:
-    """Encapsulate all information necessary to perform a power calculation."""
+    """Encapsulate all information necessary to perform a power calculation
+    via formulas. Note that these formulas require assumptions about the
+    distribution of the data that may not be appropriate in real-world
+    circumstances."""
 
     def __init__(
         self,
@@ -278,7 +281,6 @@ class PowerCalc:
 
         # calc for n_clusters
         if param == "n_clusters":
-
             # check that values in x_range for `n_clusters` param are integers.
             if not all(isinstance(x, int) for x in x_range):
                 raise ValueError(
@@ -314,11 +316,14 @@ class PowerCalc:
 
 
 def get_icc(
-    data: pd.DataFrame, outcome_var: str, group_var: str, print_shrink: bool = False
+    data: pd.DataFrame,
+    outcome_column: str,
+    group_column: str,
+    print_shrink: bool = False,
 ) -> float:
     """
     Returns intracluster correlation, that is ratio of variance within
-    `group_var` to overall model error.
+    `group_column` to overall model error.
 
     Formula: ICC = (BMS - WMS) / (BMS + (k - 1) * WMS)
     BMS: between mean squared errors
@@ -327,12 +332,12 @@ def get_icc(
     Params
     ------
     data : pd.DataFrame
-        DataFrame containing `outcome_var` and `group_var`.
+        DataFrame containing `outcome_column` and `group_column`.
 
-    outcome_var : str
+    outcome_column : str
         Column name in `df` containing the measure of interest
 
-    group_var : str
+    group_column : str
         Column name in `df` containing the cluster grouping.
 
     print_shrink : bool, default = False
@@ -343,7 +348,7 @@ def get_icc(
     """
 
     # fit linear model containing entity fixed effects
-    mod = ols(f"{outcome_var} ~ 1 + C({group_var})", data=data).fit()
+    mod = ols(f"{outcome_column} ~ 1 + C({group_column})", data=data).fit()
 
     # ANOVA of the linear model
     a = anova_lm(mod)
@@ -353,7 +358,7 @@ def get_icc(
     wms = a["mean_sq"][1]
 
     # get average number of units per group
-    k = len(data) / len(data[group_var].unique())
+    k = len(data) / len(data[group_column].unique())
 
     # intracluster-correlation equation
     icc = (bms - wms) / (bms + (k - 1) * wms)

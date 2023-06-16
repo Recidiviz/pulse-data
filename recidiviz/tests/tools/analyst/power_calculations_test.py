@@ -18,7 +18,9 @@
 
 import unittest
 
-from recidiviz.tools.experiments.power_calculations import PowerCalc
+from recidiviz.tools.analyst.power_calculations.formula_power_calculations import (
+    PowerCalc,
+)
 
 
 class TestPowerCalc(unittest.TestCase):
