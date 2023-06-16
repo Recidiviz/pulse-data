@@ -29,7 +29,8 @@ import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
-from recidiviz.outliers.querier.querier import OutliersQuerier, OutliersReportData
+from recidiviz.outliers.querier.querier import OutliersQuerier
+from recidiviz.outliers.types import OfficerSupervisorReportData
 from recidiviz.reporting import email_generation
 from recidiviz.reporting.context.available_context import get_report_context
 from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
@@ -210,7 +211,7 @@ def retrieve_data(
             Recipient(
                 email_address=supervisor_info.recipient_email_address,
                 state_code=batch.state_code,
-                data=supervisor_info.metrics,
+                data={"report": supervisor_info},
             )
             for supervisor_info in results_by_supervisor.values()
         ]
@@ -284,7 +285,7 @@ def _retrieve_data_for_overdue_discharge_alert(report_json: str) -> List[Recipie
 
 def _retrieve_data_for_outliers_supervision_officer_supervisor(
     batch: Batch,
-) -> Dict[str, OutliersReportData]:
+) -> Dict[str, OfficerSupervisorReportData]:
     """Retrieves the data for Outliers' supervision officer supervisor reports by unit"""
     batch_datetime = utils.get_datetime_from_batch_id(batch)
     results_by_unit = (

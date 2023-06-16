@@ -29,11 +29,11 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_AND_INFERRED,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
 )
-from recidiviz.outliers.querier.querier import (
-    MetricInfo,
+from recidiviz.outliers.querier.querier import OutliersQuerier
+from recidiviz.outliers.types import (
     OfficerMetricEntity,
-    OutliersQuerier,
-    OutliersReportData,
+    OfficerSupervisorReportData,
+    OutlierMetricInfo,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -123,9 +123,10 @@ class TestOutliersQuerier(TestCase):
         )
 
         expected = {
-            "101": OutliersReportData(
-                metrics={
-                    "incarceration_starts_and_inferred": MetricInfo(
+            "101": OfficerSupervisorReportData(
+                metrics=[
+                    OutlierMetricInfo(
+                        metric=INCARCERATION_STARTS_AND_INFERRED,
                         target=0.13887506249377812,
                         other_officers={
                             TargetStatus.FAR: [],
@@ -158,15 +159,16 @@ class TestOutliersQuerier(TestCase):
                         ],
                         target_status_strategy=TargetStatusStrategy.IQR_THRESHOLD,
                     )
-                },
+                ],
                 metrics_without_outliers=[
-                    "task_completions_transfer_to_limited_supervision"
+                    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION
                 ],
                 recipient_email_address="supervisor1@recidiviz.org",
             ),
-            "102": OutliersReportData(
-                metrics={
-                    "task_completions_transfer_to_limited_supervision": MetricInfo(
+            "102": OfficerSupervisorReportData(
+                metrics=[
+                    OutlierMetricInfo(
+                        metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
                         target=0.008800003960001782,
                         other_officers={
                             TargetStatus.FAR: [],
@@ -192,15 +194,15 @@ class TestOutliersQuerier(TestCase):
                         ],
                         target_status_strategy=TargetStatusStrategy.ZERO_RATE,
                     )
-                },
-                metrics_without_outliers=["incarceration_starts_and_inferred"],
+                ],
+                metrics_without_outliers=[INCARCERATION_STARTS_AND_INFERRED],
                 recipient_email_address="supervisor2@recidiviz.org",
             ),
-            "103": OutliersReportData(
-                metrics={},
+            "103": OfficerSupervisorReportData(
+                metrics=[],
                 metrics_without_outliers=[
-                    "incarceration_starts_and_inferred",
-                    "task_completions_transfer_to_limited_supervision",
+                    INCARCERATION_STARTS_AND_INFERRED,
+                    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
                 ],
                 recipient_email_address="supervisor3@recidiviz.org",
             ),
@@ -208,8 +210,12 @@ class TestOutliersQuerier(TestCase):
 
         expected_json = {
             "101": {
-                "metrics": {
-                    "incarceration_starts_and_inferred": {
+                "metrics": [
+                    {
+                        "metric": {
+                            "name": "incarceration_starts_and_inferred",
+                            "outcome_type": "ADVERSE",
+                        },
                         "target": 0.13887506249377812,
                         "other_officers": {
                             "FAR": [],
@@ -239,15 +245,22 @@ class TestOutliersQuerier(TestCase):
                         ],
                         "target_status_strategy": "IQR_THRESHOLD",
                     }
-                },
+                ],
                 "metrics_without_outliers": [
-                    "task_completions_transfer_to_limited_supervision"
+                    {
+                        "name": "task_completions_transfer_to_limited_supervision",
+                        "outcome_type": "FAVORABLE",
+                    }
                 ],
                 "recipient_email_address": "supervisor1@recidiviz.org",
             },
             "102": {
-                "metrics": {
-                    "task_completions_transfer_to_limited_supervision": {
+                "metrics": [
+                    {
+                        "metric": {
+                            "name": "task_completions_transfer_to_limited_supervision",
+                            "outcome_type": "FAVORABLE",
+                        },
                         "target": 0.008800003960001782,
                         "other_officers": {
                             "FAR": [],
@@ -273,24 +286,35 @@ class TestOutliersQuerier(TestCase):
                         ],
                         "target_status_strategy": "ZERO_RATE",
                     }
-                },
-                "metrics_without_outliers": ["incarceration_starts_and_inferred"],
+                ],
+                "metrics_without_outliers": [
+                    {
+                        "name": "incarceration_starts_and_inferred",
+                        "outcome_type": "ADVERSE",
+                    }
+                ],
                 "recipient_email_address": "supervisor2@recidiviz.org",
             },
             "103": {
-                "metrics": {},
+                "metrics": [],
                 "metrics_without_outliers": [
-                    "incarceration_starts_and_inferred",
-                    "task_completions_transfer_to_limited_supervision",
+                    {
+                        "name": "incarceration_starts_and_inferred",
+                        "outcome_type": "ADVERSE",
+                    },
+                    {
+                        "name": "task_completions_transfer_to_limited_supervision",
+                        "outcome_type": "FAVORABLE",
+                    },
                 ],
                 "recipient_email_address": "supervisor3@recidiviz.org",
             },
         }
+
+        self.assertEqual(actual, expected)
 
         actual_json = {
             supervisor_id: supervisor_data.to_json()
             for supervisor_id, supervisor_data in actual.items()
         }
         self.assertEqual(expected_json, actual_json)
-
-        self.assertEqual(actual, expected)
