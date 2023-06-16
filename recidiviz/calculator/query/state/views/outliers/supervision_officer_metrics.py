@@ -27,6 +27,9 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 from recidiviz.calculator.query.state.views.outliers.supervision_metrics_helpers import (
     supervision_metric_query_template,
 )
+from recidiviz.calculator.query.state.views.outliers.utils import (
+    format_state_specific_officer_aggregated_metric_filters,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -39,8 +42,14 @@ SUPERVISION_OFFICER_METRICS_DESCRIPTION = (
 
 SUPERVISION_OFFICER_METRICS_QUERY_TEMPLATE = f"""
 WITH 
+filtered_supervision_officer_aggregated_metrics AS (
+  SELECT *
+  FROM `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized`
+  WHERE 
+    {format_state_specific_officer_aggregated_metric_filters()}
+),
 supervision_officer_metrics AS (
-    {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.SUPERVISION_OFFICER])}
+    {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.SUPERVISION_OFFICER], cte_source="filtered_supervision_officer_aggregated_metrics")}
 )
 
 SELECT 

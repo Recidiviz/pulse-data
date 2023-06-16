@@ -53,3 +53,16 @@ def get_state_specific_config_exclusions(state_code: StateCode) -> List[str]:
         exclusions.extend(unit_of_analysis_exclusions)
 
     return exclusions
+
+
+def format_state_specific_officer_aggregated_metric_filters() -> str:
+    filters = []
+    for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
+        filters.append(
+            f"""(
+        state_code = '{state_code.value}' {config.supervision_officer_aggregated_metric_filters if config.supervision_officer_aggregated_metric_filters else ""}
+    )
+"""
+        )
+
+    return "    OR\n    ".join(filters)

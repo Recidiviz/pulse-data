@@ -62,6 +62,9 @@ class OutliersConfig:
         default=None
     )
 
+    # A string representing the filters to apply for the state's supervision officer aggregated metrics
+    supervision_officer_aggregated_metric_filters: str = attr.ib(default=None)
+
 
 @attr.s
 class OfficerMetricEntity:
