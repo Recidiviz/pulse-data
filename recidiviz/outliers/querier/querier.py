@@ -17,11 +17,8 @@
 """Implements Querier abstractions for Outliers data sources"""
 from copy import copy
 from datetime import date
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-import attr
-import cattrs
 import numpy as np
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_
@@ -30,7 +27,16 @@ from sqlalchemy.orm import Session, aliased
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
-from recidiviz.outliers.types import MetricOutcome, OutliersMetric
+from recidiviz.outliers.types import (
+    MetricContext,
+    MetricOutcome,
+    OfficerMetricEntity,
+    OfficerSupervisorReportData,
+    OutlierMetricInfo,
+    OutliersMetric,
+    TargetStatus,
+    TargetStatusStrategy,
+)
 from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficer,
     SupervisionOfficerMetric,
@@ -42,85 +48,19 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
-class TargetStatus(Enum):
-    MET = "MET"
-    NEAR = "NEAR"
-    FAR = "FAR"
-
-
-class TargetStatusStrategy(Enum):
-    # This is the default TargetStatusStrategy: the threshold for the target status is calculated by target +/- IQR.
-    IQR_THRESHOLD = "IQR_THRESHOLD"
-    # In some cases, i.e. certain favorable metrics, the target minus the IQR may be <= zero and officers
-    # who have zero rates should be highlighted as outliers, instead of using the IQR threshold logic.
-    ZERO_RATE = "ZERO_RATE"
-
-
-@attr.s
-class OfficerMetricEntity:
-    # The name of the unit of analysis, i.e. full name of a SupervisionOfficer object
-    name: str = attr.ib()
-    # The current rate for this unit of analysis
-    rate: float = attr.ib()
-    # Categorizes how the rate for this OfficerMetricEntity compares to the target value
-    target_status: TargetStatus = attr.ib()
-    # The rate for the prior YEAR period for this unit of analysis;
-    # None if there is no metric rate for the previous period
-    prev_rate: Optional[float] = attr.ib()
-    # The external_id of this OfficerMetricEntity's supervisor
-    supervisor_external_id: str = attr.ib()
-
-
-@attr.s
-class MetricContext:
-    # Unless otherwise specified, the target is the state average for the current period
-    target: float = attr.ib()
-    # All units of analysis for a given state and metric
-    entities: List[OfficerMetricEntity] = attr.ib()
-    # Describes how the TargetStatus is calculated (see the Enum definition)
-    target_status_strategy: TargetStatusStrategy = attr.ib(
-        default=TargetStatusStrategy.IQR_THRESHOLD
-    )
-
-
-@attr.s
-class MetricInfo:
-    # Unless otherwise specified, the target is the state average for the current period
-    target: float = attr.ib()
-    # Maps target status to a list of metric rates for all officers not included in highlighted_officers
-    other_officers: Dict[TargetStatus, List[float]] = attr.ib()
-    # Officers for a specific supervisor who have the "FAR" status for a given metric
-    highlighted_officers: List[OfficerMetricEntity] = attr.ib()
-    # Describes how the TargetStatus is calculated (see the Enum definition)
-    target_status_strategy: TargetStatusStrategy = attr.ib(
-        default=TargetStatusStrategy.IQR_THRESHOLD
-    )
-
-
-@attr.s
-class OutliersReportData:
-    # Metric_ids mapped to MetricInfo objects, where there are officers with "FAR" status in this unit for the metrics
-    metrics: Dict[str, MetricInfo] = attr.ib()
-    # List of metric_ids where there are no outliers, i.e. officers with "FAR" status in this unit
-    metrics_without_outliers: List[str] = attr.ib()
-    recipient_email_address: str = attr.ib()
-
-    def to_json(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
-
-
 class OutliersQuerier:
     """Implements Querier abstractions for Outliers data sources"""
 
     def get_officer_level_report_data_for_all_officer_supervisors(
         self, state_code: StateCode, end_date: date
-    ) -> Dict[str, OutliersReportData]:
+    ) -> Dict[str, OfficerSupervisorReportData]:
         """
         Returns officer-level data by officer supervisor for all officer supervisors in a state in the following format:
         {
             < SupervisionOfficerSupervisor.external_id >: {
-                metrics: {
-                    < metric id >: MetricInfo(
+                metrics: [
+                    OutlierMetricInfo(
+                        metric: OutliersMetric,
                         target: float,
                         other_officers: {
                             TargetStatus.MET: float[],
@@ -128,9 +68,10 @@ class OutliersQuerier:
                             TargetStatus.FAR: float[],
                         },
                         highlighted_officers: List[OfficerMetricEntity]
-                    )
-                },
-                metrics_without_outliers: List[str],
+                    ),
+                    OutlierMetricInfo(), ...
+                ],
+                metrics_without_outliers: List[OutliersMetric],
                 email_address: str
             },
             ...
@@ -149,7 +90,7 @@ class OutliersQuerier:
             ).all()
 
             metric_name_to_metric_context = {
-                metric.name: self._get_metric_context_from_db(
+                metric: self._get_metric_context_from_db(
                     session, metric, end_date, prev_end_date
                 )
                 for metric in self.get_state_metrics(state_code)
@@ -166,7 +107,9 @@ class OutliersQuerier:
                     metric_name_to_metric_context,
                 )
 
-                officer_supervisor_id_to_data[external_id] = OutliersReportData(
+                officer_supervisor_id_to_data[
+                    external_id
+                ] = OfficerSupervisorReportData(
                     metrics=metrics,
                     metrics_without_outliers=metrics_with_outliers,
                     recipient_email_address=email,
@@ -177,16 +120,16 @@ class OutliersQuerier:
     @staticmethod
     def _get_officer_level_data_for_officer_supervisor(
         supervision_officer_supervisor_id: str,
-        metric_id_to_metric_context: Dict[str, MetricContext],
-    ) -> Tuple[Dict[str, MetricInfo], List[str]]:
+        metric_id_to_metric_context: Dict[OutliersMetric, MetricContext],
+    ) -> Tuple[List[OutlierMetricInfo], List[OutliersMetric]]:
         """
         Given the supervision_officer_supervisor_id, get the officer-level data for all officers supervised by
         this officer for the period with end_date=end_date compared to the period with end_date=prev_end_date.
         """
-        metrics_results: Dict[str, MetricInfo] = {}
+        metrics_results: List[OutlierMetricInfo] = []
         metrics_without_outliers = []
 
-        for metric_id, metric_context in metric_id_to_metric_context.items():
+        for metric, metric_context in metric_id_to_metric_context.items():
             entities = metric_context.entities
 
             other_officer_rates: Dict[TargetStatus, List[float]] = {
@@ -210,17 +153,18 @@ class OutliersQuerier:
                     other_officer_rates[target_status].append(rate)
 
             if highlighted_officers:
-                info = MetricInfo(
+                info = OutlierMetricInfo(
+                    metric=metric,
                     target=metric_context.target,
                     other_officers=other_officer_rates,
                     highlighted_officers=highlighted_officers,
                     target_status_strategy=metric_context.target_status_strategy,
                 )
-                metrics_results[metric_id] = info
+                metrics_results.append(info)
             else:
                 # If there are no officers with "FAR" for a given metric in the unit, do not include the data
                 # for the metric in the result.
-                metrics_without_outliers.append(metric_id)
+                metrics_without_outliers.append(metric)
 
         return metrics_results, metrics_without_outliers
 

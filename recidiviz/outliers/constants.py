@@ -27,7 +27,12 @@ from recidiviz.outliers.types import MetricOutcome, OutliersMetric
 
 # Adverse metrics
 INCARCERATION_STARTS_TECHNICAL_VIOLATION = OutliersMetric(
-    name="incarceration_starts_technical_violation", outcome_type=MetricOutcome.ADVERSE
+    name=next(
+        metric.name
+        for metric in metric_config.INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS
+        if metric.name == "incarceration_starts_technical_violation"
+    ),
+    outcome_type=MetricOutcome.ADVERSE,
 )
 
 ABSCONSIONS_BENCH_WARRANTS = OutliersMetric(
@@ -52,10 +57,19 @@ EARLY_DISCHARGE_REQUESTS = OutliersMetric(
 )
 
 TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION = OutliersMetric(
-    name="task_completions_transfer_to_limited_supervision",
+    name=next(
+        metric.name
+        for metric in metric_config.TASK_COMPLETED_METRICS_SUPERVISION
+        if metric.name == "task_completions_transfer_to_limited_supervision"
+    ),
     outcome_type=MetricOutcome.FAVORABLE,
 )
 
 TASK_COMPLETIONS_FULL_TERM_DISCHARGE = OutliersMetric(
-    name="task_completions_full_term_discharge", outcome_type=MetricOutcome.FAVORABLE
+    name=next(
+        metric.name
+        for metric in metric_config.TASK_COMPLETED_METRICS_SUPERVISION
+        if metric.name == "task_completions_full_term_discharge"
+    ),
+    outcome_type=MetricOutcome.FAVORABLE,
 )
