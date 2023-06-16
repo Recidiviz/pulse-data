@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.completion_events.general import (
     transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
-    ineligible_for_compliant_reporting_discretionary_criteria,
+    ineligible_for_compliant_reporting_no_further_requirement,
 )
 from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_to_compliant_reporting_no_discretion import (
     _REQUIRED_CRITERIA,
@@ -50,7 +50,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         criteria.VIEW_BUILDER for criteria in _REQUIRED_CRITERIA
     ]
-    + [ineligible_for_compliant_reporting_discretionary_criteria.VIEW_BUILDER],
+    + [ineligible_for_compliant_reporting_no_further_requirement.VIEW_BUILDER],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
 
