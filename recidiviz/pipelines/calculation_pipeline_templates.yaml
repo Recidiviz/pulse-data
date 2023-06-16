@@ -11,6 +11,12 @@
 normalization_pipelines:
   # Comprehensive normalization pipelines
   - pipeline: comprehensive_normalization
+    job_name: us-ca-normalization
+    state_code: US_CA
+    region: us-east1
+    # TODO(#21010): Remove once data is in prod
+    staging_only: True
+  - pipeline: comprehensive_normalization
     job_name: us-co-normalization
     state_code: US_CO
     region: us-west3
@@ -250,6 +256,22 @@ metric_pipelines:
     state_code: US_MI
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west3
+
+  # Full US_CA calculations with no time limit
+  - pipeline: population_span_metrics
+    job_name: full-us-ca-population-span-metrics
+    state_code: US_CA
+    metric_types: SUPERVISION_POPULATION_SPAN
+    region: us-east1
+    # TODO(#21010): Remove once data is in prod
+    staging_only: True
+  - pipeline: supervision_metrics
+    job_name: full-us-ca-supervision-metrics
+    state_code: US_CA
+    metric_types: SUPERVISION_START
+    region: us-east1
+    # TODO(#21010): Remove once data is in prod
+    staging_only: True
 
   # Daily US_MO calculations
   - pipeline: supervision_metrics

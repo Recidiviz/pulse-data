@@ -28,4 +28,4 @@ class UsCaSupervisionMetricsProducerDelegate(
     """US_CA implementation of the StateSpecificSupervisionMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_CA_SID"
+        return "US_CA_DOC"
