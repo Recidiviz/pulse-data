@@ -17,7 +17,9 @@
 """Query for relevant metadata needed to support upcoming restrictive housing hearing opportunity in Missouri
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    today_between_start_date_and_nullable_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
@@ -37,31 +39,56 @@ from recidiviz.task_eligibility.utils.us_mo_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_NAME = (
-    "us_mo_upcoming_restrictive_housing_hearing_record"
+US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_NAME = (
+    "us_mo_overdue_restrictive_housing_hearing_record"
 )
 
-US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_DESCRIPTION = """
+US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_DESCRIPTION = """
     Query for relevant metadata needed to support upcoming restrictive housing hearing opportunity in Missouri 
     """
 
 US_MO_CDV_MINOR_NUM_MONTHS_TO_DISPLAY = "6"
 US_MO_CDV_MAJOR_NUM_MONTHS_TO_DISPLAY = "12"
 US_MO_CLASSES_RECENT_NUM_MONTHS_TO_DISPLAY = "12"
+US_MO_UPCOMING_HEARING_NUM_DAYS = 7
 
-US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
+US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     WITH base_query AS (
         SELECT
            tes.person_id,
            pei.external_id, 
            tes.state_code,
-           tes.reasons AS reasons,
-        FROM `{{project_id}}.{{task_eligibility_dataset}}.upcoming_restrictive_housing_hearing_materialized`  tes
+           tes.reasons,
+           tes.is_eligible,
+           tes.ineligible_criteria,
+        FROM `{{project_id}}.{{task_eligibility_dataset}}.overdue_restrictive_housing_hearing_materialized`  tes
         LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
           USING(person_id)
-        WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
-            AND tes.is_eligible
+        WHERE 
+            {today_between_start_date_and_nullable_end_date_exclusive_clause("tes.start_date", "tes.end_date")}
             AND tes.state_code = 'US_MO'
+    )
+    ,
+    eligible_and_almost_eligible AS (
+
+        SELECT
+            IF(
+                is_eligible,
+                "OVERDUE",
+                IF(
+                    DATE_DIFF(
+                        DATE(COALESCE(JSON_EXTRACT_SCALAR(reasons[1], '$.reason.next_review_date'), '9999-12-31')),
+                        CURRENT_DATE('US/Pacific'),
+                        DAY
+                    ) BETWEEN 0 and {US_MO_UPCOMING_HEARING_NUM_DAYS},
+                    "UPCOMING",
+                    "OTHER"
+                )
+            ) AS eligibility_category,
+            base_query.*
+        FROM base_query
+        WHERE 
+            'US_MO_IN_RESTRICTIVE_HOUSING' NOT IN UNNEST(ineligible_criteria)            
     )
     ,
     most_recent_hearings AS (
@@ -318,6 +345,9 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             base.external_id,
             base.state_code,
             base.reasons,
+            base.is_eligible,
+            base.eligibility_category,
+            base.ineligible_criteria,
             hearings.most_recent_hearing_date AS metadata_most_recent_hearing_date,
             hearings.most_recent_hearing_type AS metadata_most_recent_hearing_type,
             hearings.most_recent_hearing_facility AS metadata_most_recent_hearing_facility,
@@ -337,7 +367,7 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             TO_JSON(IFNULL(classes_by_person_other.classes, [])) AS metadata_classes_other,
             aic_scores_latest.aic_score as metadata_aic_score,
             TO_JSON(IFNULL(unwaived_enemies_by_person.unwaived_enemies, [])) AS metadata_unwaived_enemies,
-        FROM base_query base
+        FROM eligible_and_almost_eligible base
         LEFT JOIN most_recent_hearings hearings
         USING (person_id)
         LEFT JOIN current_housing_stay housing
@@ -366,12 +396,12 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     SELECT * FROM final
 """
 
-US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_NAME,
-    view_query_template=US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE,
-    description=US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_DESCRIPTION,
     analyst_views_dataset=ANALYST_VIEWS_DATASET,
+    view_id=US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_NAME,
+    view_query_template=US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE,
+    description=US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
@@ -388,4 +418,4 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER = SimpleBigQueryV
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER.build_and_print()
+        US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER.build_and_print()
