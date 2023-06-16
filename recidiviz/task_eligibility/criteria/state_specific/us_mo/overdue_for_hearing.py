@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time during which someone in MO
-has an upcoming restrictive housing hearing.
+is overdue for a Restrictive Housing hearing.
 """
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -28,13 +28,11 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MO_HAS_UPCOMING_HEARING"
+_CRITERIA_NAME = "US_MO_OVERDUE_FOR_HEARING"
 
 _DESCRIPTION = """Describes the spans of time during which someone in MO
-has an upcoming disciplinary hearing.
+is overdue for a Restrictive Housing hearing.
 """
-
-US_MO_HAS_UPCOMING_HEARING_NUM_DAYS = 7
 
 _QUERY_TEMPLATE = f"""
     WITH critical_date_spans AS (
@@ -42,10 +40,9 @@ _QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             hearing_date AS start_datetime,
-            CASE WHEN next_review_date IS NOT NULL 
-                 THEN LEAST(next_review_date, COALESCE(LEAD(hearing_date) OVER hearing_window, '9999-12-31'))
-                 ELSE LEAD(hearing_date) OVER hearing_window
-                 END AS end_datetime,
+            -- Someone is overdue if their next hearing date is past their next review date (or never occurs), and they 
+            -- are no longer overdue once they've had their next hearing.
+            COALESCE(LEAD(hearing_date) OVER hearing_window, '9999-12-31') AS end_datetime,
             next_review_date AS critical_date,
         FROM `{{project_id}}.{{analyst_views_dataset}}.us_mo_classification_hearings_preprocessed_materialized`
         WINDOW hearing_window AS (
@@ -54,7 +51,8 @@ _QUERY_TEMPLATE = f"""
         )
     )
     ,
-    {critical_date_has_passed_spans_cte(US_MO_HAS_UPCOMING_HEARING_NUM_DAYS)}
+    -- Add 1-day lag so that someone is overdue after, but not on, the "next review date"
+    {critical_date_has_passed_spans_cte(meets_criteria_leading_window_days=-1)}
     SELECT 
         state_code,
         person_id,
