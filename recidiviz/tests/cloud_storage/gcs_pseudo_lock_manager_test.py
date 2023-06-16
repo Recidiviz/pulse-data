@@ -378,6 +378,34 @@ class TestGCSPseudoLockManager(unittest.TestCase):
 
         self.assertFalse(lock_manager.no_active_locks_with_prefix(prefix))
 
+    def test_active_lock_names_with_prefix(self) -> None:
+        """Ensures the lock manager returns the lock names with a given prefix"""
+        prefix = "SOME_LOCK_PREFIX"
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+        lock_manager.lock(prefix + "some_suffix")
+        self.assertListEqual(
+            ["SOME_LOCK_PREFIXsome_suffix"],
+            lock_manager.active_lock_names_with_prefix(prefix),
+        )
+
+    def test_active_lock_names_with_prefix_do_not_exist(self) -> None:
+        """Ensures the lock manager returns no lock names if they're unlocked"""
+        prefix = "SOME_LOCK_PREFIX"
+        lock_name = prefix + "some_suffix"
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+        lock_manager.lock(lock_name)
+        lock_manager.unlock(lock_name)
+        self.assertListEqual([], lock_manager.active_lock_names_with_prefix(prefix))
+
+    def test_active_lock_names_with_prefix_ignore_expired(self) -> None:
+        """Ensures the lock manager returns no lock names if they're expired"""
+        prefix = "SOME_LOCK_PREFIX"
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+
+        self._upload_fake_expired_lock(lock_manager, prefix + "some_suffix")
+
+        self.assertListEqual([], lock_manager.active_lock_names_with_prefix(prefix))
+
     def test_get_lock_contents(self) -> None:
         """Tests that the get_lock_contents gets the correct contents from the lock"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)

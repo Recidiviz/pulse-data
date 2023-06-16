@@ -105,16 +105,24 @@ class CloudSqlToBQLockManager:
             blocking_ingest_lock_prefix = (
                 STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
             )
-        elif schema_type == SchemaType.OPERATIONS:
+            active_locks_with_prefix = self.lock_manager.active_lock_names_with_prefix(
+                blocking_ingest_lock_prefix
+            )
+            blocking_ingest_locks_for_instance = [
+                active_lock
+                for active_lock in active_locks_with_prefix
+                if ingest_instance.value in active_lock
+            ]
+            return not blocking_ingest_locks_for_instance
+
+        if schema_type == SchemaType.OPERATIONS:
             # The operations export yields for all types of ingest
             blocking_ingest_lock_prefix = GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
-        else:
-            raise ValueError(f"Unexpected schema type [{schema_type}]")
+            return self.lock_manager.no_active_locks_with_prefix(
+                blocking_ingest_lock_prefix
+            )
 
-        no_blocking_ingest_locks = self.lock_manager.no_active_locks_with_prefix(
-            blocking_ingest_lock_prefix
-        )
-        return no_blocking_ingest_locks
+        raise ValueError(f"Unexpected schema type [{schema_type}]")
 
     def release_lock(
         self, schema_type: SchemaType, ingest_instance: DirectIngestInstance

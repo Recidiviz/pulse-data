@@ -57,6 +57,11 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 blocking_locks=[],
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
+            self.state_ingest_lock_manager_secondary = DirectIngestRegionLockManager(
+                region_code=StateCode.US_XX.value,
+                blocking_locks=[],
+                ingest_instance=DirectIngestInstance.SECONDARY,
+            )
             self.normalized_state_update_lock_manager = (
                 NormalizedStateUpdateLockManager()
             )
@@ -188,6 +193,21 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 )
             )
 
+        # SECONDARY ingest should not block a primary STATE export
+        with self.state_ingest_lock_manager_secondary.using_region_lock(
+            expiration_in_seconds=10
+        ):
+            self.lock_manager.acquire_lock(
+                lock_id="lock1",
+                schema_type=SchemaType.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            )
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.STATE, DirectIngestInstance.PRIMARY
+                )
+            )
+
         # Acquiring the same state export lock again does not crash
         self.lock_manager.acquire_lock(
             lock_id="lock1",
@@ -209,7 +229,8 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                     schema_type=schema_type,
                     ingest_instance=DirectIngestInstance.SECONDARY,
                 )
-            self.assertFalse(
+            # SECONDARY state export should not be blocked by a primary ingest lock
+            self.assertTrue(
                 self.lock_manager.can_proceed(
                     SchemaType.STATE, DirectIngestInstance.SECONDARY
                 )
