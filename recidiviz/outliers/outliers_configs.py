@@ -42,11 +42,18 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
             TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
         ],
+        supervision_officer_aggregated_metric_filters="""
+        AND avg_daily_population BETWEEN 10 AND 150
+        AND prop_period_with_critical_caseload >= 0.75""",
     ),
     StateCode.US_PA: OutliersConfig(
         metrics=[INCARCERATION_STARTS_AND_INFERRED],
         unit_of_analysis_to_exclusion={
             MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: ["FAST", "CO"]
         },
+        supervision_officer_aggregated_metric_filters="""
+        AND avg_daily_population BETWEEN 10 AND 150
+        AND prop_period_with_critical_caseload >= 0.75
+        AND (avg_population_community_confinement / avg_daily_population) <= 0.05""",
     ),
 }

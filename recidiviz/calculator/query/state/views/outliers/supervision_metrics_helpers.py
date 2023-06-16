@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for building supervision metrics views """
+from typing import Optional
+
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
@@ -23,11 +25,17 @@ from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 
 
 def supervision_metric_query_template(
-    unit_of_analysis: MetricUnitOfAnalysis,
+    unit_of_analysis: MetricUnitOfAnalysis, cte_source: Optional[str] = None
 ) -> str:
     """
     Helper for querying supervision_<unit_of_analysis>_aggregated_metrics views
     """
+    source_table = (
+        f"`{{project_id}}.{{aggregated_metrics_dataset}}.supervision_{unit_of_analysis.level_name_short}_aggregated_metrics_materialized`"
+        if not cte_source
+        else cte_source
+    )
+
     subqueries = []
     for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
         subqueries.append(
@@ -38,7 +46,7 @@ SELECT
     end_date,
     "avg_daily_population" AS metric_id,
     avg_daily_population AS metric_value,
-FROM `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_{unit_of_analysis.level_name_short}_aggregated_metrics_materialized`
+FROM {source_table}
 WHERE state_code = '{state_code.value}'
         """
         )
@@ -52,7 +60,7 @@ SELECT
     end_date,
     "{metric.name}" AS metric_id,
     {metric.name} AS metric_value,
-FROM `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_{unit_of_analysis.level_name_short}_aggregated_metrics_materialized`
+FROM {source_table}
 WHERE state_code = '{state_code.value}'
 """
             )
