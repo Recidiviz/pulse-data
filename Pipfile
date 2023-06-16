@@ -216,6 +216,7 @@ blinker = "*"
 beautifulsoup4 = "*"
 paramiko = "*"
 tqdm = "*"
+types-tqdm = "*"
 linearmodels = "*"
 jsonschema = "*"
 # TODO(#4287): Unpin/remove explicit dependency once the latest version of
@@ -240,7 +241,6 @@ twilio = "*"
 twilio-stubs = "*"
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
-
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
