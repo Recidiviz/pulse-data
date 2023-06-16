@@ -14,15 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client may be eligible with discretion for compliant reporting.
+"""Describes the spans of time when a TN client may be eligible either with discretion or almost-eligible
+ for a required criteria. This criteria is true if and only if a person is not already eligible without discretion
+ or further action/requirement
 """
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
-)
-from recidiviz.task_eligibility.eligibility_spans.us_tn.transfer_to_compliant_reporting_no_discretion import (
-    _REQUIRED_CRITERIA,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -30,14 +29,12 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_TN_INELIGIBLE_FOR_COMPLIANT_REPORTING_DISCRETIONARY_CRITERIA"
+_CRITERIA_NAME = "US_TN_INELIGIBLE_FOR_COMPLIANT_REPORTING_NO_FURTHER_REQUIREMENT"
 
 _DESCRIPTION = """
-Describes the spans of time when a TN client may be eligible with discretion for compliant reporting. 
-This means the criteria will be:
-- False if a client is eligible without discretion
-- False if a client is ineligible without discretion based on a required criteria
-- True if a client is ineligible without discretion based on a discretionary criteria
+Describes the spans of time when a TN client may be eligible either with discretion or almost-eligible
+ for a required criteria. This criteria is true if and only if a person is not already eligible without discretion
+ or further action/requirement
 """
 
 
@@ -47,27 +44,11 @@ _QUERY_TEMPLATE = """
         person_id,
         start_date,
         end_date,
-        /*
-         If the ineligible_criteria contains a required criteria, then this criteria takes on the same value as `is_eligible`
-         from `transfer_to_compliant_reporting_no_discretion` (false). If all the required criteria is met,
-         then either:
-         - the person is eligible without discretion or
-         - the person is ineligible without discretion
-         So we take the negation of `is_eligible`         
-        */
-        CASE WHEN REGEXP_CONTAINS(ineligible_criteria2, "{required_criteria}" ) 
-             THEN is_eligible 
-             ELSE NOT is_eligible END AS meets_criteria,
-        TO_JSON(STRUCT(
-            ARRAY_AGG(ineligible_criteria2) AS ineligible_criteria
-        )) AS reason
-    FROM `{project_id}.{task_eligibility_dataset}.transfer_to_compliant_reporting_no_discretion_materialized` tes,
-    UNNEST(ineligible_criteria) AS ineligible_criteria2
+        NOT is_eligible AS meets_criteria,
+        TO_JSON(STRUCT( (ineligible_criteria) AS ineligible_criteria )) AS reason
+    FROM `{project_id}.{task_eligibility_dataset}.transfer_to_compliant_reporting_no_discretion_materialized` tes
     WHERE
         tes.state_code = 'US_TN'
-    GROUP BY
-        1,2,3,4,5
-    
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -78,9 +59,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
             StateCode.US_TN
-        ),
-        required_criteria="|".join(
-            [criteria.VIEW_BUILDER.criteria_name for criteria in _REQUIRED_CRITERIA]
         ),
     )
 )
