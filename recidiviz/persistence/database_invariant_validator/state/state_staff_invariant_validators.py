@@ -30,7 +30,7 @@ from recidiviz.persistence.database.session import Session
 
 
 def state_allows_multiple_ids_same_type(state_code: str) -> bool:
-    if state_code.upper() in ("US_MI",):
+    if state_code.upper() in ("US_MI", "US_IX"):
         return True
 
     # By default, states don't allow multiple different ids of the same type

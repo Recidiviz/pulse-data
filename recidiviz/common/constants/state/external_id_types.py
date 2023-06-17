@@ -30,8 +30,12 @@ source that actually creates the id in the real world.
 US_ID_DOC = "US_ID_DOC"
 # TODO(#10703): Remove US_IX once Atlas is merged into US_ID
 US_IX_DOC = "US_IX_DOC"
-# Identifier for the type of state staff id provided by the IX system
+# Identifier for the type of state staff id provided by the Atlas system (EmployerId)
 US_IX_EMPLOYEE = "US_IX_EMPLOYEE"
+# Identifier for the type of state staff id provided by the legacy CIS system (empl_cd)
+US_IX_CIS_EMPL_CD = "US_IX_CIS_EMPL_CD"
+# Identifier for StaffId which is common across the Atlas system and the legacy CIS system
+US_IX_STAFF_ID = "US_IX_STAFF_ID"
 
 US_MO_DOC = "US_MO_DOC"
 US_MO_SID = "US_MO_SID"

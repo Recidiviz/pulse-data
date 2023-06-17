@@ -13,7 +13,7 @@ input_columns:
   - contact_result
   - verified_employment
   - resulted_in_arrest
-  - StaffId #contact_agent_id
+  - EmployeeId
   - FirstName
   - MiddleName
   - LastName
@@ -26,15 +26,15 @@ output:
           id_type: $literal("US_IX_DOC")
     supervision_contacts:
       - StateSupervisionContact:
-          contacting_staff_external_id: StaffId
+          contacting_staff_external_id: EmployeeId
           contacting_staff_external_id_type:
             $conditional:
               - $if:
-                  $not_null: StaffId
+                  $not_null: EmployeeId
                 $then: $literal("US_IX_EMPLOYEE")
           contacted_agent:
             StateAgent:
-              external_id: StaffId
+              external_id: EmployeeId
               full_name:
                 $person_name:
                   $given_names: FirstName
