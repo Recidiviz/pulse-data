@@ -49,7 +49,7 @@ legacy_contacts AS (
         REGEXP_CONTAINS(Details, r'Contact Result: ARREST') AS resulted_in_arrest,
         -- Some of the converted notes have a placeholder employee in `StaffId`, but the
         -- actual agent that performed the contact is in `InsertUserId`.
-        IFNULL(staff_employee.StaffId, insert_employee.StaffId) AS StaffId,
+        IFNULL(staff_employee.EmployeeId, insert_employee.EmployeeId) AS EmployeeId,
         IFNULL(staff_employee.FirstName, insert_employee.FirstName) AS FirstName,
         IFNULL(staff_employee.MiddleName, insert_employee.MiddleName) AS MiddleName,
         IFNULL(staff_employee.LastName, insert_employee.LastName) AS LastName,
@@ -85,7 +85,7 @@ atlas_contacts AS (
         contact_status as contact_result,
         (SELECT mode FROM UNNEST(ContactModeIds) AS mode WHERE mode IN ('17')) IS NOT NULL AS verified_employment,
         (SELECT mode FROM UNNEST(ContactModeIds) AS mode WHERE mode IN ('2053')) IS NOT NULL AS resulted_in_arrest,
-        e.StaffId,  -- contact_agent_id
+        e.EmployeeId,
         e.FirstName,
         e.MiddleName,
         e.LastName,
@@ -112,7 +112,7 @@ SELECT
     UPPER(contact_result) as contact_result,
     verified_employment,
     resulted_in_arrest,
-    StaffId,
+    EmployeeId,
     FirstName,
     MiddleName,
     LastName
@@ -129,7 +129,7 @@ SELECT
     contact_result,
     verified_employment,
     resulted_in_arrest,
-    StaffId,
+    EmployeeId,
     FirstName,
     MiddleName,
     LastName

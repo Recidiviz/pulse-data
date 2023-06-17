@@ -59,4 +59,7 @@ class UsIxController(BaseDirectIngestController):
             "early_discharge_parole",
             "early_discharge_probation",
             "early_discharge_probation_legacy",
+            "state_staff",
+            "state_staff_role_location_periods",
+            "state_staff_role_location_periods_legacy",
         ]

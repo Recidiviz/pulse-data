@@ -273,6 +273,7 @@ periods_with_attributes AS (
 
         sa.SupervisionAssignmentTypeDesc,
         sa.StaffId,
+        sa.EmployeeId,
         sa.EmployeeTypeName,
         sa.FirstName,
         sa.MiddleName,
@@ -329,6 +330,7 @@ supervision_periods AS (
         DOCLocationToTypeName,
         LegalStatusDesc,
         StaffId,
+        EmployeeId,
         EmployeeTypeName,
         FirstName,
         MiddleName,

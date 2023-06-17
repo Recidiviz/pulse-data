@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violation` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - empl_cd
+  - empl_title
+  - fac_cd
+  - start_date
+  - end_date
+  - period_id
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: empl_cd
+          id_type: $literal("US_IX_CIS_EMPL_CD")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - $literal("CIS")
+                - empl_cd
+                - period_id
+          start_date: start_date
+          end_date: end_date
+          # For now, we're only ingesting supervision officers
+          role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
+          role_subtype:
+            $enum_mapping:
+              $raw_text: empl_title
+              $mappings:
+                StateStaffRoleSubtype.SUPERVISION_OFFICER:
+                  - PROBATION PAROLE OFFICER
+                  - PROBATION/PAROLE OFFICER
+                  - PROBATION PAROLE OFFICER SR
+                  - PROBATION AND PAROLE OFFICER
+                  - "PROBATION & PAROLE OFFICER, SR"
+                  - "PROBATION & PAROLE OFFICER,SR"
+                  - "COEUR D'ALENE CLOSE COMMUNITY SUPERVISION"
+                  - PROBATOIN & PAROLE OFFICER SR
+                  - PROBATION & PATROL OFFICER SR.
+                  - PROBATION & PAROLE OFFICER
+                  - PROBATION/PAROLE OFFICER SR
+                  - PROBATION & PAROLE OFFICER SR
+                  - PROBATION PAROLE OFFICER LEAD
+                  - LEWISON CLOSE CUSTODY SUPERVISION UNIT
+                  - INTENSE SUPERVISION PROG
+                  - CALDWELL CLOSE COMMUNITY SUPERVISION
+                  - PROBATION OFFICER
+                  - PROBATOIN/PAROLE OFFICER
+                  - "PROBATION/PAROLE OFFICER, SR."
+                  - PROBATION & PAROLE
+                  - PROBATION/PAROLE SR.
+                  - D4W CLOSE COMMUNITY SUPERVISION
+                  - D4E CLOSE COMMUNITY SUPERVISION UNIT
+                  - LIMITED SUPERVISION UNIT
+                  - PROBATION AND PAROLE OFCR
+                  - PROBATION PAROLE SR
+                  - PROBATION/PAROL OFFICER SR.
+                  - PROBATION/PAROLE OFFICE
+                  - TWIN FALLS CLOSE CUSTODY SUPERVISION UNIT
+                  - PROBATION/PAROLE
+                  - PROBATION/PAROLE OFFICER SR.
+                  - IDAHO FALLS COMMUNITY SUPERVISION
+                  - PROBATION & PAROLE SR
+                  - "PROBATION/PAROLE OFFICER, SR"
+                StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                  - "P&P SECTION SUPERVISOR"
+                StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER:
+                  - "CHIEF PROBATION PAROLE"
+                  - "DEPUTY CHIEF PROBATION PAROLE"
+                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
+                  - D1 PAROLE REENTRY CASE LOAD
+                  - COURT PROBATION
+                  - PROBATION/PAROLE INTERN
+                  - P&P INTERN
+                  - PAROLE INTERN
+                  - MISD PROBATION CASELOAD
+    location_periods:
+      - StateStaffLocationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - $literal("CIS")
+                - empl_cd
+                - period_id
+          start_date: start_date
+          end_date: end_date
+          location_external_id:
+            $concat:
+              $values:
+                - $literal("CIS")
+                - fac_cd
