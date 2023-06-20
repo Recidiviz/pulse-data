@@ -26,6 +26,7 @@ from airflow.sensors.base import BaseSensorOperator
 from airflow.triggers.temporal import TimeDeltaTrigger
 from airflow.utils.context import Context
 from airflow.utils.state import State
+from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -36,30 +37,43 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 # pylint: disable=W0106 expression-not-assigned
 
 
-@task.short_circuit(task_id="verify_required_parameters")
-def _verify_required_parameters(dag_run: Optional[DagRun] = None) -> bool:
+@task
+def verify_required_parameters(dag_run: Optional[DagRun] = None) -> bool:
     """Verifies that the required parameters are set in the dag_run configuration."""
     if not dag_run:
-        logging.error(
-            "Dag run not passed to task. Should be automatically set due to function being a task."
+        raise ValueError(
+            "Dag run not passed to task. Should be automatically set due to function "
+            "being a task."
         )
-        return False
     ingest_instance = dag_run.conf.get("ingest_instance")
     if not ingest_instance:
-        logging.error("[ingest_instance] must be set in dag_run configuration")
-        return False
+        raise ValueError("[ingest_instance] must be set in dag_run configuration")
 
     if ingest_instance not in {instance.value for instance in DirectIngestInstance}:
-        logging.error("[ingest_instance] not valid DirectIngestInstance.")
-        return False
+        raise ValueError(
+            f"[ingest_instance] not valid DirectIngestInstance: {ingest_instance}."
+        )
 
     state_code_filter = dag_run.conf.get("state_code_filter")
-    if ingest_instance.upper() == "SECONDARY" and not state_code_filter:
-        logging.error(
-            "[state_code_filter] must be set in dag_run configuration for SECONDARY ingest_instance"
+    if ingest_instance == "SECONDARY" and not state_code_filter:
+        raise ValueError(
+            "[state_code_filter] must be set in dag_run configuration for SECONDARY "
+            "ingest_instance"
+        )
+    return True
+
+
+@task.short_circuit(trigger_rule=TriggerRule.ALL_DONE)
+def handle_params_check(has_valid_params: Optional[bool]) -> bool:
+    """Returns True if the DAG should continue, otherwise short circuits."""
+    if has_valid_params is None:
+        logging.info(
+            "Found null has_valid_params, indicating that the params check task sensor "
+            "failed (crashed) - do not continue."
         )
         return False
-    return True
+    logging.info("Found has_valid_params [%s]", has_valid_params)
+    return has_valid_params
 
 
 def _get_all_active_primary_dag_runs(dag_id: str) -> List[DagRun]:
@@ -76,8 +90,9 @@ def _get_all_active_primary_dag_runs(dag_id: str) -> List[DagRun]:
 def _this_dag_run_should_be_canceled(
     ingest_instance: str, run_id: str, primary_dag_runs: List[DagRun]
 ) -> bool:
-    """Returns True if this dag run should be canceled. Will cancel if it is a PRIMARY dag run and
-    is not the first or last dag run in the queue."""
+    """Returns True if this dag run should be canceled. Will cancel if it is a PRIMARY
+    dag run and is not the first or last dag run in the queue.
+    """
     return (
         ingest_instance == "PRIMARY"
         and primary_dag_runs[0].run_id != run_id
@@ -88,32 +103,48 @@ def _this_dag_run_should_be_canceled(
 def _this_dag_run_can_continue(
     ingest_instance: str, run_id: str, primary_dag_runs: List[DagRun]
 ) -> bool:
-    """Returns True if this dag run can continue. Will continue if it is a SECONDARY dag run or
-    if it is the first dag run in the queue."""
+    """Returns True if this dag run can continue. Will continue if it is a SECONDARY dag
+    run or if it is the first dag run in the queue.
+    """
     return ingest_instance == "SECONDARY" or primary_dag_runs[0].run_id == run_id
 
 
 class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
     """Sensor that waits until a dag run can either continue or needs to be canceled."""
 
+    DEFER_WAIT_TIME_SECONDS = 60
+
     def execute(
         self, context: Context, event: Any = None  # pylint: disable=unused-argument
     ) -> str:
-        """Acts as a queue until the dag run can either continue or needs to be canceled."""
+        """Acts as a queue until the dag run can either continue or needs to be
+        canceled.
+        """
         dag_run = context["dag_run"]
         if not dag_run:
             raise ValueError(
-                "Dag run not passed to task. Should be automatically set due to function being a task."
+                "Dag run not passed to task. Should be automatically set due to "
+                "function being a task."
             )
+
+        logging.info(
+            "Checking if DAG can continue with configuration: %s", dag_run.conf
+        )
 
         ingest_instance = dag_run.conf.get("ingest_instance")
         primary_dag_runs = _get_all_active_primary_dag_runs(dag_run.dag_id)
+
+        logging.info(
+            "Found current active primary dag runs: %s",
+            [d.run_id for d in primary_dag_runs],
+        )
 
         if _this_dag_run_should_be_canceled(
             ingest_instance=ingest_instance,
             run_id=dag_run.run_id,
             primary_dag_runs=primary_dag_runs,
         ):
+            logging.info("Cancelling DAG...")
             return "CANCEL"
 
         if _this_dag_run_can_continue(
@@ -121,18 +152,30 @@ class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
             run_id=dag_run.run_id,
             primary_dag_runs=primary_dag_runs,
         ):
+            logging.info("Continuing DAG...")
             return "CONTINUE"
 
-        self.defer(
-            trigger=TimeDeltaTrigger(timedelta(seconds=60)), method_name="execute"
+        logging.info(
+            "Cannot continue or cancel this DAG - deferring for %s seconds",
+            self.DEFER_WAIT_TIME_SECONDS,
         )
-        # Code passed this point should not be called as self.defer will raise an exception
-        raise TaskDeferred(trigger=(timedelta(seconds=60)), method_name="execute")
+        raise TaskDeferred(
+            trigger=TimeDeltaTrigger(timedelta(seconds=self.DEFER_WAIT_TIME_SECONDS)),
+            method_name="execute",
+        )
 
 
-@task.short_circuit(task_id="handle_short_circuiting")
-def _handle_short_circuiting(action_type: str) -> bool:
+@task.short_circuit
+def handle_queueing_result(action_type: Optional[str]) -> bool:
     """Returns True if the DAG should continue, otherwise short circuits."""
+    if action_type is None:
+        logging.info(
+            "Found null action_type, indicating that the queueing sensor failed "
+            "(crashed) failed - do not continue."
+        )
+        return False
+
+    logging.info("Found action_type [%s]", action_type)
     return action_type == "CONTINUE"
 
 
@@ -142,7 +185,7 @@ def initialize_calculation_dag_group() -> Any:
         task_id="wait_to_continue_or_cancel"
     )
     (
-        _verify_required_parameters()
+        handle_params_check(verify_required_parameters())
         >> wait_to_continue_or_cancel
-        >> _handle_short_circuiting(wait_to_continue_or_cancel.output)
+        >> handle_queueing_result(wait_to_continue_or_cancel.output)
     )

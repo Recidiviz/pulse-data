@@ -64,31 +64,46 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
     Tests for the initialize_calculation_dag_group.py task group.
     """
 
-    def test_verify_required_parameters_upstream_of_wait_to_continue_or_cancel(
+    def test_verify_required_parameters_upstream_of_handle_params_check(
         self,
     ) -> None:
 
         verify_required_parameters = test_dag.get_task(
             "initialize_dag.verify_required_parameters"
         )
+        handle_params_check = test_dag.get_task("initialize_dag.handle_params_check")
+
+        self.assertEqual(
+            verify_required_parameters.downstream_task_ids,
+            {handle_params_check.task_id},
+        )
+        self.assertEqual(
+            handle_params_check.upstream_task_ids,
+            {verify_required_parameters.task_id},
+        )
+
+    def test_handle_params_check_upstream_of_wait_to_continue_or_cancel(
+        self,
+    ) -> None:
+        handle_params_check = test_dag.get_task("initialize_dag.handle_params_check")
         wait_to_continue_or_cancel = test_dag.get_task(
             "initialize_dag.wait_to_continue_or_cancel"
         )
 
         self.assertEqual(
-            verify_required_parameters.downstream_task_ids,
+            handle_params_check.downstream_task_ids,
             {wait_to_continue_or_cancel.task_id},
         )
         self.assertEqual(
             wait_to_continue_or_cancel.upstream_task_ids,
-            {verify_required_parameters.task_id},
+            {handle_params_check.task_id},
         )
 
-    def test_wait_to_continue_or_cancel_upstream_of_handle_short_circuiting(
+    def test_wait_to_continue_or_cancel_upstream_of_handle_queueing_result(
         self,
     ) -> None:
-        handle_short_circuiting = test_dag.get_task(
-            "initialize_dag.handle_short_circuiting"
+        handle_queueing_result = test_dag.get_task(
+            "initialize_dag.handle_queueing_result"
         )
         wait_to_continue_or_cancel = test_dag.get_task(
             "initialize_dag.wait_to_continue_or_cancel"
@@ -96,10 +111,10 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
 
         self.assertEqual(
             wait_to_continue_or_cancel.downstream_task_ids,
-            {handle_short_circuiting.task_id},
+            {handle_queueing_result.task_id},
         )
         self.assertEqual(
-            handle_short_circuiting.upstream_task_ids,
+            handle_queueing_result.upstream_task_ids,
             {wait_to_continue_or_cancel.task_id},
         )
 
