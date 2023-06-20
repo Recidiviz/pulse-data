@@ -20,11 +20,17 @@ state entities).
 See recidiviz.tools.calculator.create_or_update_dataflow_sandbox.py for running this
 locally to create sandbox Dataflow datasets.
 """
-from typing import List
+import datetime
+from concurrent import futures
+from typing import Dict, List
 
 import attr
+from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import (
+    BQ_CLIENT_MAX_POOL_SIZE,
+    BigQueryClientImpl,
+)
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
@@ -298,31 +304,44 @@ def update_state_specific_ingest_view_result_schema(
     )
 
     ingest_view_builders = controller.view_collector.collect_query_builders()
-    for view_builder in ingest_view_builders:
-        query = view_builder.build_query(
-            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-                raw_data_datetime_upper_bound=None,
-                limit_zero=True,
-            )
+    ingest_view_name_to_query_job: Dict[str, bigquery.QueryJob] = {}
+    for ingest_view_builder in ingest_view_builders:
+        ingest_view_name_to_query_job[
+            ingest_view_builder.ingest_view_name
+        ] = bq_client.run_query_async(
+            query_str=ingest_view_builder.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                    raw_data_source_instance=ingest_instance,
+                    raw_data_datetime_upper_bound=datetime.datetime.now(),
+                    limit_zero=True,
+                )
+            ),
+            use_query_cache=False,
         )
-        query_job = bq_client.run_query_async(query_str=query, use_query_cache=True)
-        res = query_job.result()
 
-        if bq_client.table_exists(
-            ingest_view_dataset_ref, view_builder.ingest_view_name
-        ):
-            bq_client.update_schema(
-                dataset_id=ingest_view_dataset_ref.dataset_id,
-                table_id=view_builder.ingest_view_name,
-                desired_schema_fields=res.schema,
-            )
-        else:
-            bq_client.create_table_with_schema(
-                dataset_id=ingest_view_dataset_ref.dataset_id,
-                table_id=view_builder.ingest_view_name,
-                schema_fields=res.schema,
-            )
+    with futures.ThreadPoolExecutor(
+        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+    ) as executor:
+        futures_to_ingest_view_name = {
+            executor.submit(job.result): ingest_view_name
+            for ingest_view_name, job in ingest_view_name_to_query_job.items()
+        }
+        for f in futures.as_completed(futures_to_ingest_view_name):
+            ingest_view_name = futures_to_ingest_view_name[f]
+            res = f.result()
+
+            if bq_client.table_exists(ingest_view_dataset_ref, ingest_view_name):
+                bq_client.update_schema(
+                    dataset_id=ingest_view_dataset_ref.dataset_id,
+                    table_id=ingest_view_name,
+                    desired_schema_fields=res.schema,
+                )
+            else:
+                bq_client.create_table_with_schema(
+                    dataset_id=ingest_view_dataset_ref.dataset_id,
+                    table_id=ingest_view_name,
+                    schema_fields=res.schema,
+                )
 
 
 def update_state_specific_ingest_view_results_schemas() -> None:
