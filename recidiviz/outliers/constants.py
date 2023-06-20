@@ -41,7 +41,8 @@ ABSCONSIONS_BENCH_WARRANTS = OutliersMetric(
 )
 
 INCARCERATION_STARTS = OutliersMetric(
-    name=metric_config.INCARCERATION_STARTS.name, outcome_type=MetricOutcome.ADVERSE
+    name=metric_config.INCARCERATION_STARTS.name,
+    outcome_type=MetricOutcome.ADVERSE,
 )
 
 INCARCERATION_STARTS_AND_INFERRED = OutliersMetric(

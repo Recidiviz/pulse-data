@@ -34,6 +34,7 @@ from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
+    OutliersMetricConfig,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -68,6 +69,19 @@ def load_model_fixture(
 
 TEST_END_DATE = date(year=2023, month=5, day=1)
 TEST_PREV_END_DATE = date(year=2023, month=4, day=1)
+
+TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
+    metric=INCARCERATION_STARTS_AND_INFERRED,
+    title_display_name="Incarceration Rate (CPVs & TPVs)",
+    body_display_name="incarceration rate",
+)
+
+TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
+    metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+    title_display_name="Limited Supervision Unit Transfer Rate",
+    body_display_name="Limited Supervision Unit transfer rate(s)",
+    event_name="LSU transfers",
+)
 
 
 @pytest.mark.uses_db
@@ -110,10 +124,7 @@ class TestOutliersQuerier(TestCase):
     def test_get_officer_level_report_data_by_supervisor(
         self, mock_config: MagicMock
     ) -> None:
-        mock_config.return_value = [
-            INCARCERATION_STARTS_AND_INFERRED,
-            TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
-        ]
+        mock_config.return_value = [TEST_METRIC_1, TEST_METRIC_2]
 
         actual = (
             OutliersQuerier().get_officer_level_report_data_for_all_officer_supervisors(
@@ -126,7 +137,7 @@ class TestOutliersQuerier(TestCase):
             "101": OfficerSupervisorReportData(
                 metrics=[
                     OutlierMetricInfo(
-                        metric=INCARCERATION_STARTS_AND_INFERRED,
+                        metric=TEST_METRIC_1,
                         target=0.13887506249377812,
                         other_officers={
                             TargetStatus.FAR: [],
@@ -160,15 +171,13 @@ class TestOutliersQuerier(TestCase):
                         target_status_strategy=TargetStatusStrategy.IQR_THRESHOLD,
                     )
                 ],
-                metrics_without_outliers=[
-                    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION
-                ],
+                metrics_without_outliers=[TEST_METRIC_2],
                 recipient_email_address="supervisor1@recidiviz.org",
             ),
             "102": OfficerSupervisorReportData(
                 metrics=[
                     OutlierMetricInfo(
-                        metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+                        metric=TEST_METRIC_2,
                         target=0.008800003960001782,
                         other_officers={
                             TargetStatus.FAR: [],
@@ -195,14 +204,14 @@ class TestOutliersQuerier(TestCase):
                         target_status_strategy=TargetStatusStrategy.ZERO_RATE,
                     )
                 ],
-                metrics_without_outliers=[INCARCERATION_STARTS_AND_INFERRED],
+                metrics_without_outliers=[TEST_METRIC_1],
                 recipient_email_address="supervisor2@recidiviz.org",
             ),
             "103": OfficerSupervisorReportData(
                 metrics=[],
                 metrics_without_outliers=[
-                    INCARCERATION_STARTS_AND_INFERRED,
-                    TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+                    TEST_METRIC_1,
+                    TEST_METRIC_2,
                 ],
                 recipient_email_address="supervisor3@recidiviz.org",
             ),
@@ -215,6 +224,9 @@ class TestOutliersQuerier(TestCase):
                         "metric": {
                             "name": "incarceration_starts_and_inferred",
                             "outcome_type": "ADVERSE",
+                            "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                            "body_display_name": "incarceration rate",
+                            "event_name": None,
                         },
                         "target": 0.13887506249377812,
                         "other_officers": {
@@ -250,6 +262,9 @@ class TestOutliersQuerier(TestCase):
                     {
                         "name": "task_completions_transfer_to_limited_supervision",
                         "outcome_type": "FAVORABLE",
+                        "title_display_name": "Limited Supervision Unit Transfer Rate",
+                        "body_display_name": "Limited Supervision Unit transfer rate(s)",
+                        "event_name": "LSU transfers",
                     }
                 ],
                 "recipient_email_address": "supervisor1@recidiviz.org",
@@ -260,6 +275,9 @@ class TestOutliersQuerier(TestCase):
                         "metric": {
                             "name": "task_completions_transfer_to_limited_supervision",
                             "outcome_type": "FAVORABLE",
+                            "title_display_name": "Limited Supervision Unit Transfer Rate",
+                            "body_display_name": "Limited Supervision Unit transfer rate(s)",
+                            "event_name": "LSU transfers",
                         },
                         "target": 0.008800003960001782,
                         "other_officers": {
@@ -291,6 +309,9 @@ class TestOutliersQuerier(TestCase):
                     {
                         "name": "incarceration_starts_and_inferred",
                         "outcome_type": "ADVERSE",
+                        "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                        "body_display_name": "incarceration rate",
+                        "event_name": None,
                     }
                 ],
                 "recipient_email_address": "supervisor2@recidiviz.org",
@@ -301,10 +322,16 @@ class TestOutliersQuerier(TestCase):
                     {
                         "name": "incarceration_starts_and_inferred",
                         "outcome_type": "ADVERSE",
+                        "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                        "body_display_name": "incarceration rate",
+                        "event_name": None,
                     },
                     {
                         "name": "task_completions_transfer_to_limited_supervision",
                         "outcome_type": "FAVORABLE",
+                        "title_display_name": "Limited Supervision Unit Transfer Rate",
+                        "body_display_name": "Limited Supervision Unit transfer rate(s)",
+                        "event_name": "LSU transfers",
                     },
                 ],
                 "recipient_email_address": "supervisor3@recidiviz.org",

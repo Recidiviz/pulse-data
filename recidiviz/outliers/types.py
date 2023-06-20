@@ -47,15 +47,51 @@ class TargetStatus(Enum):
 
 @attr.s(eq=False)
 class OutliersMetric:
+    # The metric name/id, which should reference the name from an object in aggregated_metric_configurations.py
+    # This also corresponds to a column name in an aggregated_metric view
     name: str = attr.ib()
+
+    # Whether the metric outcome is favorable or adverse to the best path of a JII
     outcome_type: MetricOutcome = attr.ib()
+
+
+@attr.s(eq=False)
+class OutliersMetricConfig:
+    name: str = attr.ib()
+
+    outcome_type: MetricOutcome = attr.ib()
+
+    # The string used as a display name for a metric, used in email templating
+    title_display_name: str = attr.ib()
+
+    # String used for metric in highlights and other running text
+    body_display_name: str = attr.ib()
+
+    # Event name corresponding to the metric
+    event_name: Optional[str] = attr.ib(default=None)
+
+    @classmethod
+    def build_from_metric(
+        cls,
+        metric: OutliersMetric,
+        title_display_name: str,
+        body_display_name: str,
+        event_name: Optional[str] = None,
+    ) -> "OutliersMetricConfig":
+        return cls(
+            metric.name,
+            metric.outcome_type,
+            title_display_name,
+            body_display_name,
+            event_name,
+        )
 
 
 @attr.s
 class OutliersConfig:
     # List of metrics that are relevant for this state,
     # where each element corresponds to a column name in an aggregated_metrics views
-    metrics: List[OutliersMetric] = attr.ib()
+    metrics: List[OutliersMetricConfig] = attr.ib()
 
     # Location exclusions; a unit of analysis mapped to a list of ids to exclude
     unit_of_analysis_to_exclusion: Dict[MetricUnitOfAnalysisType, List[str]] = attr.ib(
@@ -96,7 +132,7 @@ class MetricContext:
 @attr.s
 class OutlierMetricInfo:
     # The Outliers metric the information corresponds to
-    metric: OutliersMetric = attr.ib()
+    metric: OutliersMetricConfig = attr.ib()
     # Unless otherwise specified, the target is the state average for the current period
     target: float = attr.ib()
     # Maps target status to a list of metric rates for all officers not included in highlighted_officers
@@ -114,7 +150,7 @@ class OfficerSupervisorReportData:
     # List of OutlierMetricInfo objects, representing metrics with outliers for this supervisor
     metrics: List[OutlierMetricInfo] = attr.ib()
     # List of OutliersMetric objects for metrics where there are no outliers
-    metrics_without_outliers: List[OutliersMetric] = attr.ib()
+    metrics_without_outliers: List[OutliersMetricConfig] = attr.ib()
     recipient_email_address: str = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:

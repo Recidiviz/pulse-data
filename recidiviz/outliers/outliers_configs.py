@@ -30,24 +30,61 @@ from recidiviz.outliers.constants import (
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
 )
-from recidiviz.outliers.types import OutliersConfig
+from recidiviz.outliers.types import OutliersConfig, OutliersMetricConfig
 
 OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
     StateCode.US_IX: OutliersConfig(
         metrics=[
-            INCARCERATION_STARTS_TECHNICAL_VIOLATION,
-            ABSCONSIONS_BENCH_WARRANTS,
-            INCARCERATION_STARTS,
-            EARLY_DISCHARGE_REQUESTS,
-            TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
-            TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
+            OutliersMetricConfig.build_from_metric(
+                metric=INCARCERATION_STARTS,
+                title_display_name="Incarceration Rate",
+                body_display_name="incarceration rate",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=ABSCONSIONS_BENCH_WARRANTS,
+                title_display_name="Absconsion Rate",
+                body_display_name="absconsion rate",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
+                title_display_name="Successful Discharge Rate",
+                body_display_name="successful discharge rate",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+                title_display_name="Limited Supervision Unit Transfer Rate",
+                body_display_name="Limited Supervision Unit transfer rate",
+                event_name="LSU transfers",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=EARLY_DISCHARGE_REQUESTS,
+                title_display_name="Earned Discharge Request Rate",
+                body_display_name="Early Discharge request rate",
+                event_name="early discharge requests",
+            ),
         ],
         supervision_officer_aggregated_metric_filters="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
     ),
     StateCode.US_PA: OutliersConfig(
-        metrics=[INCARCERATION_STARTS_AND_INFERRED],
+        metrics=[
+            OutliersMetricConfig.build_from_metric(
+                metric=INCARCERATION_STARTS_AND_INFERRED,
+                title_display_name="Incarceration Rate (CPVs & TPVs)",
+                body_display_name="incarceration rate",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+                title_display_name="Technical Incarceration Rate (TPVs)",
+                body_display_name="technical incarceration rate",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=ABSCONSIONS_BENCH_WARRANTS,
+                title_display_name="Absconsion Rate",
+                body_display_name="absconsion rate",
+            ),
+        ],
         unit_of_analysis_to_exclusion={
             MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: ["FAST", "CO"]
         },
