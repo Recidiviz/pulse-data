@@ -192,9 +192,9 @@ SELECT
     drug_screen_date,
     is_positive_result,
     substance_detected,
-    d.is_positive_result 
+    d.is_positive_result
         AND ROW_NUMBER() OVER (
-            PARTITION BY 
+            PARTITION BY
                 sss.person_id, sss.supervision_super_session_id, is_positive_result
             ORDER BY drug_screen_date
         ) = 1 AS is_initial_within_supervision_super_session,
@@ -262,7 +262,7 @@ QUALIFY
         description="Employment status changes",
         sql_source="""SELECT *
 FROM `{project_id}.sessions.supervision_employment_status_sessions_materialized`
-QUALIFY 
+QUALIFY
     # only keep transitions where the person gained or lost employment
     # edge case: treat jobs at supervision start as employment gains
     # but no job at supervision start is not an employment loss
@@ -290,7 +290,7 @@ FROM
     `{project_id}.sessions.compartment_level_1_super_sessions_materialized` a
 LEFT JOIN
     `{project_id}.sessions.compartment_sessions_materialized` b
-ON 
+ON
     a.person_id = b.person_id
     AND b.session_id BETWEEN a.session_id_start AND a.session_id_end
     AND b.start_sub_reason IS NOT NULL
@@ -324,14 +324,14 @@ FROM
 WHERE
     compartment_level_1 = "INCARCERATION"
     AND compartment_level_2 IN (
-        "PAROLE_BOARD_HOLD", "PENDING_CUSTODY", "TEMPORARY_CUSTODY", "SUSPENSION", 
+        "PAROLE_BOARD_HOLD", "PENDING_CUSTODY", "TEMPORARY_CUSTODY", "SUSPENSION",
         "SHOCK_INCARCERATION"
     )
     -- Exclude transitions between temporary incarceration periods
     AND (
         inflow_from_level_1 != "INCARCERATION"
         OR inflow_from_level_2 NOT IN (
-            "PAROLE_BOARD_HOLD", "PENDING_CUSTODY", "TEMPORARY_CUSTODY", "SUSPENSION", 
+            "PAROLE_BOARD_HOLD", "PENDING_CUSTODY", "TEMPORARY_CUSTODY", "SUSPENSION",
             "SHOCK_INCARCERATION"
         )
     )""",
@@ -348,7 +348,7 @@ WHERE
         event_type=PersonEventType.LIBERTY_START,
         description="Transitions to liberty",
         sql_source="""SELECT *
-FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized` 
+FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized`
 WHERE compartment_level_1 = "LIBERTY"
 """,
         attribute_cols=[
@@ -359,10 +359,19 @@ WHERE compartment_level_1 = "LIBERTY"
         event_date_col="start_date",
     ),
     EventQueryBuilder(
+        event_type=PersonEventType.PAROLE_HEARING,
+        description="Parole board hearings",
+        sql_source="""SELECT *
+FROM `{project_id}.sessions.parole_board_hearing_sessions_materialized`
+""",
+        attribute_cols=["decision", "days_since_incarceration_start"],
+        event_date_col="hearing_date",
+    ),
+    EventQueryBuilder(
         event_type=PersonEventType.PENDING_CUSTODY_START,
         description="Transitions to pending custody status",
         sql_source="""SELECT *
-FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized` 
+FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized`
 WHERE compartment_level_1 = "PENDING_CUSTODY"
 """,
         attribute_cols=[
@@ -386,7 +395,7 @@ FROM (
         assessment_date,
         assessment_score,
         # assessment score change within the same SSS
-        assessment_score - LAG(assessment_score) OVER (PARTITION BY 
+        assessment_score - LAG(assessment_score) OVER (PARTITION BY
             a.state_code, a.person_id, assessment_type, sss.start_date
             ORDER BY assessment_date
         ) AS assessment_score_change,
@@ -427,7 +436,7 @@ QUALIFY
     -- ORDER BY includes officer_id to make ordering deterministic, in the
     -- (rare) case multiple officers start on same day
     COALESCE(
-        LAG(supervising_officer_external_id) OVER (PARTITION BY person_id 
+        LAG(supervising_officer_external_id) OVER (PARTITION BY person_id
         ORDER BY start_date, supervising_officer_external_id), "UNKNOWN"
     ) != COALESCE(supervising_officer_external_id, "UNKNOWN")
 
@@ -470,7 +479,7 @@ WHERE
         event_type=PersonEventType.SUPERVISION_START,
         description="Transitions to supervision",
         sql_source="""SELECT *
-FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized` 
+FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized`
 WHERE compartment_level_1 = "SUPERVISION"
 """,
         attribute_cols=[
