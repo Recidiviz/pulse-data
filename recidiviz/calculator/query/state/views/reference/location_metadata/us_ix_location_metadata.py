@@ -83,11 +83,6 @@ SELECT
       WHEN fac_cd = 'HQ' THEN 'ADMINISTRATIVE'
       ELSE NULL
     END AS location_type,
-            CASE 
-              WHEN UPPER(fac_ldesc) like 'DISTRICT%' and UPPER(fac_ldesc) like '%-%' THEN REPLACE(SPLIT(UPPER(fac_ldesc), '-')[OFFSET(0)], 'OFFICE ', '')
-              WHEN UPPER(fac_ldesc) like 'DISTRICT%' and UPPER(fac_ldesc) like '%,%' THEN REPLACE(SPLIT(UPPER(fac_ldesc), ',')[OFFSET(0)], 'OFFICE ', '')
-              ELSE NULL
-            END AS blah,
     CASE
       WHEN fac_typ = 'P' THEN 
         TO_JSON(
