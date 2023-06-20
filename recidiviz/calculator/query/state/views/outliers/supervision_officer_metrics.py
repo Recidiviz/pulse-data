@@ -50,13 +50,23 @@ filtered_supervision_officer_aggregated_metrics AS (
 ),
 supervision_officer_metrics AS (
     {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.SUPERVISION_OFFICER], cte_source="filtered_supervision_officer_aggregated_metrics")}
+),
+final_supervision_officer_metrics AS (
+  SELECT 
+    supervision_officer_metrics.state_code AS state_code,
+    metric_id,
+    metric_value,
+    period,
+    end_date,
+    officer_id
+  FROM supervision_officer_metrics
+  INNER JOIN `{{project_id}}.{{outliers_views_dataset}}.supervision_officers_materialized` officers
+    ON officers.external_id = supervision_officer_metrics.officer_id and officers.state_code = supervision_officer_metrics.state_code
 )
 
 SELECT 
     {{columns}}
-FROM supervision_officer_metrics
-INNER JOIN `{{project_id}}.{{outliers_views_dataset}}.supervision_officers_materialized` officers
-  ON officers.external_id = supervision_officer_metrics.officer_id and officers.state_code = supervision_officer_metrics.state_code
+FROM final_supervision_officer_metrics
 """
 
 SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -68,7 +78,7 @@ SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     outliers_views_dataset=dataset_config.OUTLIERS_VIEWS_DATASET,
     should_materialize=True,
     columns=[
-        "supervision_officer_metrics.state_code",
+        "state_code",
         "metric_id",
         "metric_value",
         "period",
