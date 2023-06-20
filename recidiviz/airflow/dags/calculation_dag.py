@@ -108,41 +108,25 @@ def flex_dataflow_operator_for_pipeline(
     )
 
 
-def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
-    queue_location = "us-east1"
-    queue_name = "bq-view-update"
-    task_path = CloudTasksClient.task_path(
-        project=project_id,
-        location=queue_location,
-        queue=queue_name,
-        task=uuid.uuid4().hex,
-    )
-    task = tasks_v2.types.Task(
-        name=task_path,
-        app_engine_http_request={
-            "http_method": "POST",
-            "relative_uri": "/view_update/update_all_managed_views",
-            "body": json.dumps({}).encode(),
-        },
-    )
-    return CloudTasksTaskCreateOperator(
-        task_id="trigger_update_all_managed_views_task",
-        location=queue_location,
-        queue_name=queue_name,
-        task=task,
-        retry=retry,
-        # This will trigger the task regardless of the failure or success of the
-        # upstream pipelines.
-        trigger_rule=TriggerRule.ALL_DONE,
+def update_all_managed_views_operator() -> KubernetesPodOperator:
+    return build_recidiviz_kubernetes_pod_operator(
+        task_id="update_all_managed_views",
+        container_name="update_all_managed_views",
+        argv=[
+            "python",
+            "-m",
+            "recidiviz.entrypoints.view_update.update_all_managed_views",
+            f"--project_id={project_id}",
+        ],
     )
 
 
-def trigger_refresh_bq_dataset_operator(
+def refresh_bq_dataset_operator(
     schema_type: str,
 ) -> KubernetesPodOperator:
     return build_recidiviz_kubernetes_pod_operator(
-        task_id=f"trigger_refresh_bq_dataset_task_{schema_type}",
-        container_name=f"trigger_refresh_bq_dataset_{schema_type}",
+        task_id=f"refresh_bq_dataset_{schema_type}",
+        container_name=f"refresh_bq_dataset_{schema_type}",
         argv=[
             "python",
             "-m",
@@ -400,13 +384,9 @@ def create_calculation_dag() -> None:
     3. Trigger BigQuery exports for each state and other datasets."""
 
     with TaskGroup("bq_refresh") as bq_refresh:
-        state_bq_refresh_completion = trigger_refresh_bq_dataset_operator("STATE")
-        operations_bq_refresh_completion = trigger_refresh_bq_dataset_operator(
-            "OPERATIONS"
-        )
-        case_triage_bq_refresh_completion = trigger_refresh_bq_dataset_operator(
-            "CASE_TRIAGE"
-        )
+        state_bq_refresh_completion = refresh_bq_dataset_operator("STATE")
+        operations_bq_refresh_completion = refresh_bq_dataset_operator("OPERATIONS")
+        case_triage_bq_refresh_completion = refresh_bq_dataset_operator("CASE_TRIAGE")
 
     initialize_calculation_dag_group() >> bq_refresh
 
@@ -420,22 +400,7 @@ def create_calculation_dag() -> None:
         retries=3,
         # TODO(#20503): Update to use POST when passing data to endpoint
     )
-
-    with TaskGroup(group_id="view_materialization") as view_materialization:
-        trigger_update_all_views = trigger_update_all_managed_views_operator()
-
-        wait_for_update_all_views = BQResultSensor(
-            task_id="wait_for_view_update_all_success",
-            query_generator=FinishedCloudTaskQueryGenerator(
-                project_id=project_id,
-                cloud_task_create_operator_task_id=trigger_update_all_views.task_id,
-                tracker_dataset_id="view_update_metadata",
-                tracker_table_id="view_update_tracker",
-            ),
-            timeout=(60 * 60 * 4),
-        )
-
-        trigger_update_all_views >> wait_for_update_all_views
+    trigger_update_all_views = update_all_managed_views_operator()
 
     (
         [
@@ -443,7 +408,7 @@ def create_calculation_dag() -> None:
             operations_bq_refresh_completion,
             case_triage_bq_refresh_completion,
         ]
-        >> view_materialization
+        >> trigger_update_all_views
     )
 
     with TaskGroup(group_id="normalization") as normalization_task_group:
@@ -469,7 +434,7 @@ def create_calculation_dag() -> None:
     update_normalized_state >> post_normalization_pipelines
 
     # Metric pipelines should complete before view update starts
-    post_normalization_pipelines >> view_materialization
+    post_normalization_pipelines >> trigger_update_all_views
 
     with TaskGroup(group_id="validations") as validations:
         create_state_code_branching(
@@ -479,7 +444,7 @@ def create_calculation_dag() -> None:
             TriggerRule.NONE_FAILED,
         )
 
-    view_materialization >> validations
+    trigger_update_all_views >> validations
 
     with TaskGroup(group_id="metric_exports") as metric_exports:
         with TaskGroup(group_id="state_specific_metric_exports"):
@@ -499,7 +464,7 @@ def create_calculation_dag() -> None:
             with TaskGroup(group_id=f"{export}_metric_exports"):
                 create_metric_view_data_export_nodes(relevant_product_exports)
 
-    view_materialization >> metric_exports
+    trigger_update_all_views >> metric_exports
 
 
 create_calculation_dag()

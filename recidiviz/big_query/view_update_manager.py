@@ -96,6 +96,7 @@ def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
     )(exception)
 
 
+# TODO(#21446) Remove these endpoints once we move the callsite to Kubernetes in Airflow.
 view_update_manager_blueprint = Blueprint("view_update", __name__)
 
 
@@ -134,6 +135,36 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     logging.info("All managed views successfully updated and materialized.")
 
     return "", HTTPStatus.OK
+
+
+def execute_update_all_managed_views(
+    project_id: str, sandbox_prefix: Optional[str]
+) -> None:
+    start = datetime.datetime.now()
+    view_builders = deployed_view_builders(project_id)
+
+    create_managed_dataset_and_deploy_views_for_view_builders(
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+        view_builders_to_update=view_builders,
+        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+        address_overrides=address_overrides_for_view_builders(
+            view_dataset_override_prefix=sandbox_prefix, view_builders=view_builders
+        )
+        if sandbox_prefix
+        else None,
+        force_materialize=True,
+    )
+    end = datetime.datetime.now()
+    runtime_sec = int((end - start).total_seconds())
+
+    success_persister = AllViewsUpdateSuccessPersister(bq_client=BigQueryClientImpl())
+    success_persister.record_success_in_bq(
+        deployed_view_builders=view_builders,
+        dataset_override_prefix=sandbox_prefix,
+        runtime_sec=runtime_sec,
+        cloud_task_id="AIRFLOW_VIEW_UPDATE",
+    )
+    logging.info("All managed views successfully updated and materialized.")
 
 
 def create_managed_dataset_and_deploy_views_for_view_builders(

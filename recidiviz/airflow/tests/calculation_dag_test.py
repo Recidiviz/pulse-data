@@ -23,13 +23,13 @@ import unittest
 from typing import Set
 from unittest.mock import patch
 
+from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
     KubernetesPodOperator,
 )
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.task_group import TaskGroup
-from more_itertools import one
 
 from recidiviz import pipelines
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
@@ -46,17 +46,12 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
     "calculation_pipeline_templates.yaml",
 )
 
-_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
-    "view_materialization.trigger_update_all_managed_views_task"
-)
-_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
-    "view_materialization.wait_for_view_update_all_success"
-)
+_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_all_managed_views"
+_VALIDATIONS_STATE_CODE_BRANCH_START = "validations.state_code_branch_start"
 _WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = (
     r"validations.(US_[A-Z]{2})_validations.wait_for_validations_completion"
 )
-_TRIGGER_REFRESH_BQ_DATASET_TASK_ID = "bq_refresh.trigger_refresh_bq_dataset_task_STATE"
-_VIEW_MATERIALIZATION_GROUP_ID = "view_materialization"
+_REFRESH_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_STATE"
 
 
 def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
@@ -105,7 +100,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(normalized_state_downstream_dag.task_ids))
 
         self.assertIn(
-            _TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
+            _UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
             normalized_state_downstream_dag.task_ids,
         )
 
@@ -198,11 +193,11 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(dag.task_ids))
 
         metric_exports_group: TaskGroup = dag.task_group_dict["metric_exports"]
-        view_materialization_group: TaskGroup = dag.task_group_dict[
-            _VIEW_MATERIALIZATION_GROUP_ID
-        ]
+        view_materialization: BaseOperator = dag.get_task(
+            _UPDATE_ALL_MANAGED_VIEWS_TASK_ID
+        )
         self.assertIn(
-            view_materialization_group.group_id, metric_exports_group.upstream_group_ids
+            view_materialization.task_id, metric_exports_group.upstream_task_ids
         )
 
     def test_update_all_views_upstream_of_validation(
@@ -213,16 +208,18 @@ class TestCalculationPipelineDag(unittest.TestCase):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        validations_group: TaskGroup = dag.task_group_dict["validations"]
-        view_materialization_group: TaskGroup = dag.task_group_dict[
-            _VIEW_MATERIALIZATION_GROUP_ID
-        ]
+        validations_start: BaseOperator = dag.get_task(
+            _VALIDATIONS_STATE_CODE_BRANCH_START
+        )
+        view_materialization: BaseOperator = dag.get_task(
+            _UPDATE_ALL_MANAGED_VIEWS_TASK_ID
+        )
 
         self.assertIn(
-            validations_group.group_id, view_materialization_group.downstream_group_ids
+            validations_start.task_id, view_materialization.downstream_task_ids
         )
         self.assertNotIn(
-            validations_group.group_id, view_materialization_group.upstream_group_ids
+            validations_start.task_id, view_materialization.upstream_task_ids
         )
 
     def test_trigger_validations_upstream_of_wait(self) -> None:
@@ -268,7 +265,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(pipeline_task_ids))
 
         trigger_task_subdag = dag.partial_subset(
-            task_ids_or_regex=_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
+            task_ids_or_regex=_UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
             include_downstream=False,
             include_upstream=True,
         )
@@ -280,53 +277,34 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_tasks_not_upstream = pipeline_task_ids - upstream_tasks
         self.assertEqual(set(), pipeline_tasks_not_upstream)
 
-    def test_trigger_update_all_managed_views_upstream_of_wait(self) -> None:
-        """Tests that update_all_managed_views trigger happens directly before we wait
-        for the update all views endpoint to finish.
-        """
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        self.assertNotEqual(0, len(dag.task_ids))
-
-        wait_subdag = dag.partial_subset(
-            task_ids_or_regex=_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
-            include_downstream=False,
-            include_upstream=True,
-        )
-        wait_task = one(wait_subdag.leaves)
-
-        self.assertEqual(_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID, wait_task.task_id)
-        self.assertEqual(
-            {_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID},
-            wait_task.upstream_task_ids,
-        )
-
     def test_update_all_managed_views_endpoint(self) -> None:
         """Tests that update_all_managed_views triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        trigger_cloud_task_task = dag.get_task(
-            _TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID
-        )
+        trigger_update_task = dag.get_task(_UPDATE_ALL_MANAGED_VIEWS_TASK_ID)
 
-        if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
+        if not isinstance(trigger_update_task, KubernetesPodOperator):
             raise ValueError(
-                f"Expected type CloudTasksTaskCreateOperator, found "
-                f"[{type(trigger_cloud_task_task)}]."
+                f"Expected type KubernetesPodOperator, found "
+                f"[{type(trigger_update_task)}]."
             )
 
-        self.assertEqual("bq-view-update", trigger_cloud_task_task.queue_name)
-
         self.assertEqual(
-            trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
-            "/view_update/update_all_managed_views",
+            trigger_update_task.arguments,
+            [
+                "run",
+                "python",
+                "-m",
+                "recidiviz.entrypoints.view_update.update_all_managed_views",
+                f"--project_id={_PROJECT_ID}",
+            ],
         )
 
     def test_trigger_refresh_bq_dataset_task(self) -> None:
         """Tests that trigger_refresh_bq_dataset_task triggers the proper script."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        trigger_bq_refresh_task = dag.get_task(_TRIGGER_REFRESH_BQ_DATASET_TASK_ID)
+        trigger_bq_refresh_task = dag.get_task(_REFRESH_BQ_DATASET_TASK_ID)
 
         if not isinstance(trigger_bq_refresh_task, KubernetesPodOperator):
             raise ValueError(

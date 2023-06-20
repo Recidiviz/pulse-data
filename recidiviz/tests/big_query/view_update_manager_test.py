@@ -31,7 +31,10 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
-from recidiviz.big_query.view_update_manager import view_update_manager_blueprint
+from recidiviz.big_query.view_update_manager import (
+    execute_update_all_managed_views,
+    view_update_manager_blueprint,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
@@ -979,4 +982,66 @@ class TestViewUpdateEndpoints(unittest.TestCase):
             dataset_override_prefix="test_prefix",
             runtime_sec=mock.ANY,
             cloud_task_id=current_cloud_task_id,
+        )
+
+
+class TestExecuteUpdateAllManagedViews(unittest.TestCase):
+    """Tests the execute_update_all_managed_views function."""
+
+    def setUp(self) -> None:
+        self.all_views_update_success_persister_patcher = patch(
+            "recidiviz.big_query.view_update_manager.AllViewsUpdateSuccessPersister"
+        )
+        self.all_views_update_success_persister_constructor = (
+            self.all_views_update_success_persister_patcher.start()
+        )
+        self.mock_all_views_update_success_persister = (
+            self.all_views_update_success_persister_constructor.return_value
+        )
+
+    def tearDown(self) -> None:
+        self.all_views_update_success_persister_patcher.stop()
+
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.deployed_view_builders",
+    )
+    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
+    )
+    def test_execute_update_all_managed_views(
+        self,
+        mock_create: MagicMock,
+        _mock_bq_client: MagicMock,
+        _mock_view_builders: MagicMock,
+    ) -> None:
+        execute_update_all_managed_views("test-project", None)
+        mock_create.assert_called()
+        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
+            deployed_view_builders=mock.ANY,
+            dataset_override_prefix=None,
+            runtime_sec=mock.ANY,
+            cloud_task_id="AIRFLOW_VIEW_UPDATE",
+        )
+
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.deployed_view_builders",
+    )
+    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
+    )
+    def test_execute_update_all_managed_views_with_sandbox_prefix(
+        self,
+        mock_create: MagicMock,
+        _mock_bq_client: MagicMock,
+        _mock_view_builders: MagicMock,
+    ) -> None:
+        execute_update_all_managed_views("test-project", "test_prefix")
+        mock_create.assert_called()
+        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
+            deployed_view_builders=mock.ANY,
+            dataset_override_prefix="test_prefix",
+            runtime_sec=mock.ANY,
+            cloud_task_id="AIRFLOW_VIEW_UPDATE",
         )
