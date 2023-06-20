@@ -1017,6 +1017,49 @@ MAX_DAYS_STABLE_EMPLOYMENT_365 = AssignmentSpanMaxDaysMetric(
     span_attribute_filters={},
 )
 
+
+PAROLE_BOARD_HEARINGS = EventCountMetric(
+    name="parole_board_hearings",
+    display_name="Parole Board Hearings",
+    description="Count of parole board hearings",
+    event_types=[PersonEventType.PAROLE_HEARING],
+    event_attribute_filters={},
+)
+
+PAROLE_BOARD_HEARINGS_APPROVED = EventCountMetric(
+    name="parole_board_hearings_approved",
+    display_name="Parole Board Hearings: Approved",
+    description="Count of approved parole board hearings",
+    event_types=[PersonEventType.PAROLE_HEARING],
+    event_attribute_filters={"decision": ["APPROVED"]},
+)
+
+PAROLE_BOARD_HEARINGS_AVG_DAYS_SINCE_INCARCERATION = EventValueMetric(
+    name="parole_board_hearing_avg_days_since_incarceration",
+    display_name="Parole Board Hearings: Avg. Days Since Incarceration Start",
+    description="Average number of days between the start of incarceration and all parole board hearings occurring during the period",
+    event_types=[PersonEventType.PAROLE_HEARING],
+    event_attribute_filters={},
+    event_value_numeric="days_since_incarceration_start",
+    event_count_metric=PAROLE_BOARD_HEARINGS,
+)
+
+PAROLE_BOARD_HEARINGS_CONTINUED = EventCountMetric(
+    name="parole_board_hearings_continued",
+    display_name="Parole Board Hearings: Continued",
+    description="Count of continued parole board hearings",
+    event_types=[PersonEventType.PAROLE_HEARING],
+    event_attribute_filters={"decision": ["CONTINUED"]},
+)
+
+PAROLE_BOARD_HEARINGS_DENIED = EventCountMetric(
+    name="parole_board_hearings_denied",
+    display_name="Parole Board Hearings: Denied",
+    description="Count of denied parole board hearings",
+    event_types=[PersonEventType.PAROLE_HEARING],
+    event_attribute_filters={"decision": ["DENIED"]},
+)
+
 PENDING_CUSTODY_STARTS = EventCountMetric(
     name="pending_custody_starts",
     display_name="Pending Custody Starts",
