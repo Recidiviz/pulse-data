@@ -163,6 +163,8 @@ The versions we've deployed to prod are tracked [here](https://paper.dropbox.com
    4. Within the user's row, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)
    5. Note: By default, all @recidiviz or @csg emails should become Justice Counts Admin, and everyone else should become Agency Admin
 
+**NOTE: Moving forward, whenever an agency is created in production, all CSG users (accounts that are associated with @csg email) should be added to the agency with the 'READ_ONLY' role.**
+
 ## SQLAlchemy Primer
 
 - A _session_ is a "holding zone" for all the objects you’ve loaded (via `session.query()`) or associated with it (via `session.add()`) during its lifespan.
