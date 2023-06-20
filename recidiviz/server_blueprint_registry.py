@@ -28,9 +28,6 @@ from recidiviz.big_query.view_update_manager import view_update_manager_blueprin
 from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
 from recidiviz.metrics.export.view_export_manager import export_blueprint
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
-    cloud_sql_to_bq_blueprint,
-)
 from recidiviz.pipelines.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
 )
@@ -43,7 +40,6 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (backup_manager_blueprint, "/backup_manager"),
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
     (case_triage_ops_blueprint, "/case_triage_ops"),
-    (cloud_sql_to_bq_blueprint, "/cloud_sql_to_bq"),
     (direct_ingest_control, "/direct"),
     (export_blueprint, "/export"),
     (get_workflows_etl_blueprint(), "/practices-etl"),
