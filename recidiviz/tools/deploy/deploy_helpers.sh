@@ -183,24 +183,10 @@ function pre_deploy_configure_infrastructure {
 
     deploy_migrations "${PROJECT}" "${COMMIT_HASH}"
 
-    MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy "$PROJECT")
-
-    if [[ MIGRATION_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
-        # Update the table schemas in BigQuery
-        echo "Updating the BigQuery table schemas to match the versions being deployed"
-        verify_hash "$COMMIT_HASH"
-        run_cmd pipenv run python -m recidiviz.tools.deploy.update_big_query_table_schemas --project-id "${PROJECT}"
-    fi
-
-    # Update the raw data output table schemas.
-    echo "Updating the BigQuery raw data table schemas to match the raw data configs in source."
+    # Update the table schemas in BigQuery
+    echo "Updating BigQuery source table schemas to match code definitions"
     verify_hash "$COMMIT_HASH"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.update_raw_data_table_schemas --project-id "${PROJECT}"
-
-    # Update the Dataflow output table schemas and update all BigQuery views.
-    echo "Updating the BigQuery Dataflow output table schemas to match the corresponding classes"
-    verify_hash "$COMMIT_HASH"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas --project-id "${PROJECT}"
+    run_cmd pipenv run python -m recidiviz.tools.deploy.update_big_query_table_schemas --project-id "${PROJECT}"
 
     echo "Deploying views to test schema"
     verify_hash "$COMMIT_HASH"

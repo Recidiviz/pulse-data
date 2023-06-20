@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages raw data table schema updates based on the YAML files defined in source code."""
-import argparse
 import logging
 import os
 from typing import Any, Dict, List, Tuple
@@ -44,9 +43,7 @@ from recidiviz.tools.utils.script_helpers import (
     interactive_loop_until_tasks_succeed,
     interactive_prompt_retry_on_exception,
 )
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.future_executor import map_fn_with_progress_bar_results
-from recidiviz.utils.metadata import local_project_id_override
 
 TEN_MINUTES = 60 * 10
 
@@ -129,42 +126,30 @@ def update_raw_data_table_schemas(
     )
 
 
-def main() -> None:
+def update_all_raw_data_table_schemas() -> None:
     logging.getLogger().setLevel(logging.INFO)
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--project-id",
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-        required=True,
+    state_codes = get_direct_ingest_states_existing_in_env()
+    bq_client = BigQueryClientImpl()
+    logging.info("Getting raw file configs...")
+    file_kwargs = [
+        {
+            "state_code": state_code,
+            "raw_file_tag": raw_file_tag,
+            "instance": instance,
+            "big_query_client": bq_client,
+        }
+        for state_code in state_codes
+        for instance in DirectIngestInstance
+        for raw_file_tag in get_region_raw_file_config(
+            state_code.value
+        ).raw_file_configs
+    ]
+    create_states_raw_data_datasets_if_necessary(
+        state_codes=state_codes, bq_client=bq_client
     )
-    project_id = parser.parse_args().project_id
-    with local_project_id_override(project_id):
-        state_codes = get_direct_ingest_states_existing_in_env()
-        bq_client = BigQueryClientImpl()
-        logging.info("Getting raw file configs...")
-        file_kwargs = [
-            {
-                "state_code": state_code,
-                "raw_file_tag": raw_file_tag,
-                "instance": instance,
-                "big_query_client": bq_client,
-            }
-            for state_code in state_codes
-            for instance in DirectIngestInstance
-            for raw_file_tag in get_region_raw_file_config(
-                state_code.value
-            ).raw_file_configs
-        ]
-        create_states_raw_data_datasets_if_necessary(
-            state_codes=state_codes, bq_client=bq_client
-        )
-        update_raw_data_table_schemas(
-            file_kwargs=file_kwargs,
-            log_path=os.path.join(
-                get_deploy_logs_dir(), "update_raw_data_table_schemas.log"
-            ),
-        )
-
-
-if __name__ == "__main__":
-    main()
+    update_raw_data_table_schemas(
+        file_kwargs=file_kwargs,
+        log_path=os.path.join(
+            get_deploy_logs_dir(), "update_raw_data_table_schemas.log"
+        ),
+    )

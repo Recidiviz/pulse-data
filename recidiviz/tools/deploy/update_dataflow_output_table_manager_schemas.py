@@ -16,22 +16,20 @@
 # =============================================================================
 """Utilizes library functions from recidiviz.pipelines.dataflow_output_table_manager.py
 to update dataflow, supplemental, and state-specific schemas if necessary"""
-import argparse
 import functools
-import logging
 
 from recidiviz.pipelines.dataflow_output_table_manager import (
     update_dataflow_metric_tables_schemas,
     update_normalized_state_schema,
+    update_state_specific_ingest_state_schemas,
+    update_state_specific_ingest_view_results_schemas,
     update_state_specific_normalized_state_schemas,
     update_supplemental_dataset_schemas,
 )
 from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 
 
-def update_schemas() -> None:
+def update_dataflow_output_schemas() -> None:
     prompt_retry_on_ex = functools.partial(
         interactive_prompt_retry_on_exception,
         accepted_response_override="yes",
@@ -53,16 +51,11 @@ def update_schemas() -> None:
         fn=update_normalized_state_schema,
         input_text="update normalized state schema raised an exception - retry?",
     )
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--project-id",
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-        required=True,
+    prompt_retry_on_ex(
+        fn=update_state_specific_ingest_state_schemas,
+        input_text="update state specific ingest state schemas raised an exception - retry?",
     )
-    project_id = parser.parse_args().project_id
-    with local_project_id_override(project_id):
-        update_schemas()
+    prompt_retry_on_ex(
+        fn=update_state_specific_ingest_view_results_schemas,
+        input_text="update state specific ingest view results schemas raised an exception - retry?",
+    )
