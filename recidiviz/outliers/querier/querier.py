@@ -33,7 +33,7 @@ from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
-    OutliersMetric,
+    OutliersMetricConfig,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -60,7 +60,7 @@ class OutliersQuerier:
             < SupervisionOfficerSupervisor.external_id >: {
                 metrics: [
                     OutlierMetricInfo(
-                        metric: OutliersMetric,
+                        metric: OutliersMetricConfig,
                         target: float,
                         other_officers: {
                             TargetStatus.MET: float[],
@@ -71,7 +71,7 @@ class OutliersQuerier:
                     ),
                     OutlierMetricInfo(), ...
                 ],
-                metrics_without_outliers: List[OutliersMetric],
+                metrics_without_outliers: List[OutliersMetricConfig],
                 email_address: str
             },
             ...
@@ -120,8 +120,8 @@ class OutliersQuerier:
     @staticmethod
     def _get_officer_level_data_for_officer_supervisor(
         supervision_officer_supervisor_id: str,
-        metric_id_to_metric_context: Dict[OutliersMetric, MetricContext],
-    ) -> Tuple[List[OutlierMetricInfo], List[OutliersMetric]]:
+        metric_id_to_metric_context: Dict[OutliersMetricConfig, MetricContext],
+    ) -> Tuple[List[OutlierMetricInfo], List[OutliersMetricConfig]]:
         """
         Given the supervision_officer_supervisor_id, get the officer-level data for all officers supervised by
         this officer for the period with end_date=end_date compared to the period with end_date=prev_end_date.
@@ -171,7 +171,7 @@ class OutliersQuerier:
     def _get_metric_context_from_db(
         self,
         session: Session,
-        metric: OutliersMetric,
+        metric: OutliersMetricConfig,
         end_date: date,
         prev_end_date: date,
     ) -> MetricContext:
@@ -327,7 +327,7 @@ class OutliersQuerier:
         return TargetStatus.FAR
 
     @staticmethod
-    def get_state_metrics(state_code: StateCode) -> List[OutliersMetric]:
+    def get_state_metrics(state_code: StateCode) -> List[OutliersMetricConfig]:
         return OUTLIERS_CONFIGS_BY_STATE[state_code].metrics
 
     @staticmethod
