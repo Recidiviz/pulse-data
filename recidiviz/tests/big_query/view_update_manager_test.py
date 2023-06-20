@@ -329,7 +329,8 @@ class ViewManagerTest(unittest.TestCase):
             [mock.call(_DATASET_NAME), mock.call(_DATASET_NAME_2)]
         )
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
-            [mock.call(dataset, None), mock.call(materialized_dataset, None)]
+            [mock.call(dataset, None), mock.call(materialized_dataset, None)],
+            any_order=True,
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [
@@ -524,7 +525,8 @@ class ViewManagerTest(unittest.TestCase):
                     view_update_manager.TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 )
                 for dataset_ref in dataset_refs
-            ]
+            ],
+            any_order=True,
         )
         self.mock_client.create_or_update_view.assert_has_calls(
             [

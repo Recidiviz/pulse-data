@@ -362,10 +362,8 @@ def metric_export_branches_by_state_code(
     return branches_by_state_code
 
 
-# By setting catchup to False and max_active_runs to 1, we ensure that at
-# most one instance of this DAG is running at a time. Because we set catchup
-# to false, it ensures that new DAG runs aren't enqueued while the old one is
-# waiting to finish.
+# We set catchup to False, it ensures that extra DAG runs aren't enqueued if the DAG
+# is paused and re-enabled.
 @dag(
     dag_id=f"{project_id}_calculation_dag",
     default_args={
