@@ -82,7 +82,7 @@ eligible combination of supervision and initial assessment level */
 )
 SELECT * EXCEPT (description, initial_assessment_level_raw_text),
     TO_JSON(STRUCT(description AS supervision_level_raw_text, 
-                    initial_assessment_level_raw_text AS initial_assessment_level_raw_text)) AS reason,
+                    COALESCE(initial_assessment_level_raw_text, "Not needed") AS initial_assessment_level_raw_text)) AS reason,
 FROM eligibility_spans
 """
 
