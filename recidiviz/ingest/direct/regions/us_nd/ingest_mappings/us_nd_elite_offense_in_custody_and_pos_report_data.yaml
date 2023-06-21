@@ -9,62 +9,14 @@ input_columns:
   - OIC_SANCTION_CODE
   - OIC_SANCTION_DESC
   - EFFECTIVE_DATE
-  - LAST_NAME
-  - FIRST_NAME
   - OIC_INCIDENT_ID
   - AGENCY_INCIDENT_ID
-  - INCIDENT_TYPE_DESC
-  - OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION
-  - REPORT_DATE
-  - OIC_HEARING_ID
-  - OIC_HEARING_TYPE
-  - OIC_HEARING_TYPE_DESC
-  - HEARING_DATE
-  - HEARING_STAFF_NAME
-  - OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT
-  - OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION
-  - OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
-  - OIC_OFFENCE_CATEGORY
-  - OIC_OFFENCE_CODE
-  - OIC_OFFENCE_DESCRIPTION
-  - PLEA_DESCRIPTION
+  - OMS_OWNER_V_OIC_INCIDENTS___INT_LOC_DESCRIPTION
   - FINDING_DESCRIPTION
-  - RESULT_OIC_OFFENCE_CATEGORY
-  - RESULT_OIC_OFFENCE_CODE
-  - RESULT_OIC_OFFENCE_DESCRIPTION
-  - Expr1030
   - SANCTION_SEQ
-  - COMPENSATION_AMOUNT
   - SANCTION_MONTHS
   - SANCTION_DAYS
-  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT
-  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ
-  - OFFENDER_BOOK_ID
-unused_columns:
-  - LAST_NAME
-  - FIRST_NAME
-  - INCIDENT_TYPE_DESC
-  - REPORT_DATE
-  - OIC_HEARING_ID
-  - OIC_HEARING_TYPE
-  - OIC_HEARING_TYPE_DESC
-  - HEARING_DATE
-  - HEARING_STAFF_NAME
-  - OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT
-  - OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION
-  - OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
-  - OIC_OFFENCE_CATEGORY
-  - OIC_OFFENCE_CODE
-  - OIC_OFFENCE_DESCRIPTION
-  - PLEA_DESCRIPTION
-  - RESULT_OIC_OFFENCE_CATEGORY
-  - RESULT_OIC_OFFENCE_CODE
-  - RESULT_OIC_OFFENCE_DESCRIPTION
-  - Expr1030
-  - COMPENSATION_AMOUNT
-  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT
-  - OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ
-  - OFFENDER_BOOK_ID
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -86,7 +38,7 @@ output:
               $function: us_nd_custom_parsers.get_loc_within_facility
               $args:
                 facility: AGY_LOC_ID
-                facility_with_loc: OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION
+                facility_with_loc: OMS_OWNER_V_OIC_INCIDENTS___INT_LOC_DESCRIPTION
           incident_details: INCIDENT_DETAILS
           incident_type:
             $conditional:
@@ -107,12 +59,13 @@ output:
                         - SEXCONTACT
                         - UNAUTH
                         - NON
+                        - REFSEC
                       StateIncarcerationIncidentType.CONTRABAND:
                         - CONT
-                        - GANG
-                        - GANGREL
                         - PROP
                         - TOB
+                        - ALCOHOL
+                        - DRUGS
                       StateIncarcerationIncidentType.MINOR_OFFENSE:
                         - SWIFT
                         - MINOR
@@ -120,6 +73,11 @@ output:
                         - POSREPORT
                       StateIncarcerationIncidentType.REPORT:
                         - STAFFREP
+                        - TATTOO
+                        - LOAN
+                        - MAILVIDEO
+                        - GANG
+                        - GANGREL
                       StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO:
                         - CONV
                       StateIncarcerationIncidentType.VIOLENCE:
@@ -133,6 +91,9 @@ output:
                         - ISSUBNOINJ
                         - SEXUAL
                         - THREAT
+                        - IIHOMICIDE
+                      StateIncarcerationIncidentType.ESCAPE:
+                        - ESCAPE
           incarceration_incident_outcomes:
             - $conditional:
                 - $if:
@@ -188,6 +149,14 @@ output:
                                     - LSE
                                     - CCF
                                     - SREM
+                                    - LWEIGHTMUSIC
+                                    - LPHONE
+                                    - LTABLET
+                                    - LOUTUNITREC
+                                    - LJPAYKIOSK
+                                    - LINUNITREC
+                                    - PRAIR_LOSS
+                                    - CABLE
                                   StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
                                     - RES
                                     - PAY
@@ -209,6 +178,12 @@ output:
                                     - DELETED
                                     - RED
                                     - TRA
+                                    - COMSRV
+                                    - STAR
+                                    - PLAY
+                                    - PLAY_1_1
+                                    - WORK_TEAM
+                                    - REST_JUST
                                   StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
                                     - EXD
                                   StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
