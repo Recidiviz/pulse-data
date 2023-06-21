@@ -22,50 +22,30 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#2399): Update this query to query from raw data table once we can ingest
-#  elite_offense_in_custody_and_pos_report_data.csv
 VIEW_QUERY_TEMPLATE = """
+WITH all_entries AS (
 SELECT 
-    '' AS INCIDENT_TYPE,
-    '' AS INCIDENT_DATE,
-    '' AS INCIDENT_DETAILS,
-    '' AS AGY_LOC_ID,
-    '' AS ROOT_OFFENDER_ID,
-    '' AS OFFENDER_BOOK_ID,
-    '' AS OIC_SANCTION_CODE,
-    '' AS OIC_SANCTION_DESC,
-    '' AS EFFECTIVE_DATE,
-    '' AS LAST_NAME,
-    '' AS FIRST_NAME,
-    '' AS OIC_INCIDENT_ID,
-    '' AS AGENCY_INCIDENT_ID,
-    '' AS INCIDENT_TYPE_DESC,
-    '' AS OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION,
-    '' AS REPORT_DATE,
-    '' AS OIC_HEARING_ID,
-    '' AS OIC_HEARING_TYPE,
-    '' AS OIC_HEARING_TYPE_DESC,
-    '' AS HEARING_DATE,
-    '' AS HEARING_STAFF_NAME,
-    '' AS OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT,
-    '' AS OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION,
-    '' AS OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ,
-    '' AS OIC_OFFENCE_CATEGORY,
-    '' AS OIC_OFFENCE_CODE,
-    '' AS OIC_OFFENCE_DESCRIPTION,
-    '' AS PLEA_DESCRIPTION,
-    '' AS FINDING_DESCRIPTION,
-    '' AS RESULT_OIC_OFFENCE_CATEGORY,
-    '' AS RESULT_OIC_OFFENCE_CODE,
-    '' AS RESULT_OIC_OFFENCE_DESCRIPTION,
-    '' AS Expr1030,
-    '' AS SANCTION_SEQ,
-    '' AS COMPENSATION_AMOUNT,
-    '' AS SANCTION_MONTHS,
-    '' AS SANCTION_DAYS,
-    '' AS OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT,
-    '' AS OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ,
-    '' AS ALIAS_NAME_TYPE,    
+    ROOT_OFFENDER_ID,
+    AGY_LOC_ID,
+    OIC_INCIDENT_ID,
+    INCIDENT_DATE,
+    EFFECTIVE_DATE,
+    INCIDENT_DETAILS,
+    INCIDENT_TYPE,
+    OIC_SANCTION_CODE,
+    OIC_SANCTION_DESC,
+    AGENCY_INCIDENT_ID,
+    OMS_OWNER_V_OIC_INCIDENTS___INT_LOC_DESCRIPTION,
+    FINDING_DESCRIPTION,
+    SANCTION_MONTHS,
+    SANCTION_DAYS,
+    SANCTION_SEQ
+FROM {elite_offense_in_custody_and_pos_report_data}
+)
+-- Excludes entries with malformed dates that make them appear to have occurred before 1900.
+SELECT * 
+FROM all_entries
+WHERE CAST(INCIDENT_DATE AS DATE) > CAST('1900-01-01' AS DATE)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

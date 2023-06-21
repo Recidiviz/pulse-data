@@ -33,6 +33,7 @@ columns:
       External ID of the agency that handled the incident.
   - name: INCIDENT_DATE
     is_datetime: True
+    datetime_sql_parser: "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     description: |-
       The date on which the incident took place.
   - name: INCIDENT_TYPE
@@ -55,6 +56,7 @@ columns:
       specific location appended (DAYRM, YARD, unit code, etc.)
   - name: REPORT_DATE
     is_datetime: True
+    datetime_sql_parser: "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     description: |-
       Date of the incident report.
   - name: OIC_HEARING_ID
@@ -94,6 +96,7 @@ columns:
       - value: SYSTEM GENERATED - OIC
   - name: HEARING_DATE
     is_datetime: True
+    datetime_sql_parser: "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     description: |-
       Date of the hearing.
   - name: HEARING_STAFF_NAME
@@ -191,6 +194,7 @@ columns:
       Open field for comments about sanction.
   - name: EFFECTIVE_DATE
     is_datetime: True
+    datetime_sql_parser: "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
     description: |-
       Date on which the sanction became effective.
   - name: OIC_SANCTION_CODE
