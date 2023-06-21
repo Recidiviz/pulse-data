@@ -18,6 +18,9 @@
 
 from typing import List
 
+from recidiviz.calculator.query.sessions_query_fragments import (
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.event_query_builder import (
     EventQueryBuilder,
 )
@@ -185,7 +188,7 @@ WHERE
     EventQueryBuilder(
         event_type=PersonEventType.DRUG_SCREEN,
         description="Drug screen with a non-null result",
-        sql_source="""
+        sql_source=f"""
 SELECT
     d.state_code,
     d.person_id,
@@ -199,12 +202,12 @@ SELECT
             ORDER BY drug_screen_date
         ) = 1 AS is_initial_within_supervision_super_session,
 FROM
-    `{project_id}.sessions.drug_screens_preprocessed_materialized` d
+    `{{project_id}}.sessions.drug_screens_preprocessed_materialized` d
 INNER JOIN
-    `{project_id}.sessions.supervision_super_sessions_materialized` sss
+    `{{project_id}}.sessions.supervision_super_sessions_materialized` sss
 ON
     d.person_id = sss.person_id
-    AND d.drug_screen_date BETWEEN sss.start_date AND IFNULL(sss.end_date, "9999-01-01")
+    AND d.drug_screen_date BETWEEN sss.start_date AND {nonnull_end_date_exclusive_clause("sss.end_date_exclusive")}
 WHERE
     is_positive_result IS NOT NULL
 """,
@@ -271,6 +274,90 @@ QUALIFY
     ), FALSE)""",
         attribute_cols=["is_employed"],
         event_date_col="employment_status_start_date",
+    ),
+    EventQueryBuilder(
+        event_type=PersonEventType.INCARCERATION_RELEASE,
+        description="Releases from incarceration to supervision or liberty",
+        sql_source=f"""WITH incarceration_sessions AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        compartment_level_2,
+        inflow_from_level_1,
+        inflow_from_level_2,
+        outflow_to_level_1,
+        outflow_to_level_2,
+    FROM
+        `{{project_id}}.sessions.compartment_sessions_materialized`
+    WHERE
+        compartment_level_1 = "INCARCERATION"
+        AND outflow_to_level_1 IN ("LIBERTY", "SUPERVISION")
+)
+,
+sentence_deadline_spans AS (
+    SELECT
+        sentence_span_start.state_code,
+        sentence_span_start.person_id,
+        sentence_span_start.start_date,
+        sentence_span_start.end_date_exclusive,
+        MAX(task_deadlines.projected_incarceration_release_date) AS projected_incarceration_release_snapshot_date,
+        MAX(task_deadlines.parole_eligibility_date) AS parole_eligibility_snapshot_date
+    FROM
+        `{{project_id}}.sessions.sentence_spans_materialized` sentence_span_start,
+        UNNEST(sentence_deadline_id_array) as sentence_deadline_id
+    LEFT JOIN
+        `{{project_id}}.sessions.sentence_deadline_spans_materialized` task_deadlines
+    USING
+        (person_id, state_code, sentence_deadline_id)
+    GROUP BY 1, 2, 3, 4
+)
+SELECT
+    sessions.state_code,
+    sessions.person_id,
+    sessions.start_date,
+    sessions.end_date_exclusive,
+    
+    -- Projected release date as of the start of incarceration session
+    sentence_span_start.parole_eligibility_snapshot_date AS original_parole_eligibility_date,
+    sentence_span_start.projected_incarceration_release_snapshot_date AS original_projected_release_date,
+    
+    -- Projected release date as of the end of incarceration session
+    sentence_span_end.parole_eligibility_snapshot_date AS updated_parole_eligibility_date,
+    sentence_span_end.projected_incarceration_release_snapshot_date AS updated_projected_release_date,
+    
+    sessions.compartment_level_2,
+    sessions.inflow_from_level_1,
+    sessions.inflow_from_level_2,
+    sessions.outflow_to_level_1,
+    sessions.outflow_to_level_2,
+FROM
+    incarceration_sessions sessions
+LEFT JOIN 
+    sentence_deadline_spans sentence_span_start
+ON
+    sessions.person_id = sentence_span_start.person_id
+    AND sessions.start_date BETWEEN sentence_span_start.start_date AND {nonnull_end_date_exclusive_clause("sentence_span_start.end_date_exclusive")}
+LEFT JOIN 
+    sentence_deadline_spans sentence_span_end
+ON
+    sessions.person_id = sentence_span_end.person_id
+    AND sessions.end_date_exclusive BETWEEN sentence_span_end.start_date AND {nonnull_end_date_exclusive_clause("sentence_span_end.end_date_exclusive")}
+""",
+        attribute_cols=[
+            "start_date",
+            "original_parole_eligibility_date",
+            "original_projected_release_date",
+            "updated_parole_eligibility_date",
+            "updated_projected_release_date",
+            "compartment_level_2",
+            "inflow_from_level_1",
+            "inflow_from_level_2",
+            "outflow_to_level_1",
+            "outflow_to_level_2",
+        ],
+        event_date_col="end_date_exclusive",
     ),
     EventQueryBuilder(
         event_type=PersonEventType.INCARCERATION_START,
@@ -384,7 +471,7 @@ WHERE compartment_level_1 = "PENDING_CUSTODY"
     EventQueryBuilder(
         event_type=PersonEventType.RISK_SCORE_ASSESSMENT,
         description="Risk assessments",
-        sql_source="""SELECT *,
+        sql_source=f"""SELECT *,
 IFNULL(assessment_score_change, NULL) > 0 AS assessment_score_increase,
 IFNULL(assessment_score_change, NULL) < 0 AS assessment_score_decrease,
 FROM (
@@ -400,13 +487,13 @@ FROM (
             ORDER BY assessment_date
         ) AS assessment_score_change,
     FROM
-        `{project_id}.sessions.assessment_score_sessions_materialized` a
+        `{{project_id}}.sessions.assessment_score_sessions_materialized` a
     LEFT JOIN
-        `{project_id}.sessions.supervision_super_sessions_materialized` sss
+        `{{project_id}}.sessions.supervision_super_sessions_materialized` sss
     ON
         a.state_code = sss.state_code
         AND a.person_id = sss.person_id
-        AND a.assessment_date BETWEEN sss.start_date AND COALESCE(sss.end_date, "9999-01-01")
+        AND a.assessment_date BETWEEN sss.start_date AND {nonnull_end_date_exclusive_clause("sss.end_date_exclusive")}
     WHERE
         assessment_score IS NOT NULL
         AND assessment_type IS NOT NULL
@@ -419,6 +506,23 @@ FROM (
             "assessment_score_decrease",
         ],
         event_date_col="assessment_date",
+    ),
+    EventQueryBuilder(
+        event_type=PersonEventType.SENTENCES_IMPOSED,
+        description="Sentences imposed",
+        sql_source="""SELECT * FROM `{project_id}.sessions.sentence_imposed_group_summary_materialized`
+""",
+        attribute_cols=[
+            "max_sentence_imposed_group_length_days",
+            "projected_completion_date_max",
+            "projected_completion_date_min",
+            "any_is_drug_uniform",
+            "any_is_violent_uniform",
+            "most_severe_classification_type",
+            "most_severe_classification_subtype",
+            "most_severe_description",
+        ],
+        event_date_col="date_imposed",
     ),
     EventQueryBuilder(
         event_type=PersonEventType.SUPERVISING_OFFICER_CHANGE,
@@ -476,6 +580,76 @@ WHERE
         event_date_col="start_date",
     ),
     EventQueryBuilder(
+        event_type=PersonEventType.SUPERVISION_RELEASE,
+        description="Releases from supervision to liberty",
+        sql_source=f"""WITH supervision_sessions AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        compartment_level_2,
+        inflow_from_level_1,
+        inflow_from_level_2,
+    FROM
+        `{{project_id}}.sessions.compartment_sessions_materialized`
+    WHERE
+        compartment_level_1 = "SUPERVISION"
+        AND outflow_to_level_1 = "LIBERTY"
+)
+,
+sentence_deadline_spans AS (
+    SELECT
+        sentence_span_start.state_code,
+        sentence_span_start.person_id,
+        sentence_span_start.start_date,
+        sentence_span_start.end_date_exclusive,
+        MAX(task_deadlines.projected_supervision_release_date) AS projected_supervision_release_snapshot_date,
+    FROM
+        `{{project_id}}.sessions.sentence_spans_materialized` sentence_span_start,
+        UNNEST(sentence_deadline_id_array) as sentence_deadline_id
+    LEFT JOIN
+        `{{project_id}}.sessions.sentence_deadline_spans_materialized` task_deadlines
+    USING
+        (person_id, state_code, sentence_deadline_id)
+    GROUP BY 1, 2, 3, 4
+)
+SELECT
+    sessions.state_code,
+    sessions.person_id,
+    sessions.start_date,
+    sessions.end_date_exclusive,
+    -- Projected release date as of the start of supervision session
+    sentence_span_start.projected_supervision_release_snapshot_date AS original_projected_release_date,
+    -- Projected release date as of the end of supervision session
+    sentence_span_end.projected_supervision_release_snapshot_date AS updated_projected_release_date,
+    sessions.compartment_level_2,
+    sessions.inflow_from_level_1,
+    sessions.inflow_from_level_2,
+FROM
+    supervision_sessions sessions
+LEFT JOIN 
+    sentence_deadline_spans sentence_span_start
+ON
+    sessions.person_id = sentence_span_start.person_id
+    AND sessions.start_date BETWEEN sentence_span_start.start_date AND {nonnull_end_date_exclusive_clause("sentence_span_start.end_date_exclusive")}
+LEFT JOIN 
+    sentence_deadline_spans sentence_span_end
+ON
+    sessions.person_id = sentence_span_end.person_id
+    AND sessions.end_date_exclusive BETWEEN sentence_span_end.start_date AND {nonnull_end_date_exclusive_clause("sentence_span_end.end_date_exclusive")}
+""",
+        attribute_cols=[
+            "start_date",
+            "original_projected_release_date",
+            "updated_projected_release_date",
+            "compartment_level_2",
+            "inflow_from_level_1",
+            "inflow_from_level_2",
+        ],
+        event_date_col="end_date_exclusive",
+    ),
+    EventQueryBuilder(
         event_type=PersonEventType.SUPERVISION_START,
         description="Transitions to supervision",
         sql_source="""SELECT *
@@ -493,7 +667,7 @@ WHERE compartment_level_1 = "SUPERVISION"
         event_type=PersonEventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
         description="Supervision terminations with an end reason indicating subsequent incarceration. "
         "May contain terminations that do not have an immediate compartment outflow to incarceration",
-        sql_source="""SELECT
+        sql_source=f"""SELECT
     a.state_code,
     a.person_id,
     a.end_date_exclusive,
@@ -507,23 +681,23 @@ WHERE compartment_level_1 = "SUPERVISION"
     COUNT(DISTINCT d.referral_date)
         OVER (PARTITION BY a.person_id, a.end_date_exclusive) AS prior_treatment_referrals_1y,
 FROM
-    `{project_id}.sessions.compartment_sessions_materialized` a
+    `{{project_id}}.sessions.compartment_sessions_materialized` a
 LEFT JOIN
-    `{project_id}.sessions.compartment_level_1_super_sessions_materialized` b
+    `{{project_id}}.sessions.compartment_level_1_super_sessions_materialized` b
 ON
     a.person_id = b.person_id
     -- If person outflows to another supervision compartment, this join will consider all terminations
     -- during the remainder of that supervision compartment super session. Otherwise,
     -- it takes the next compartment level 1 super session.
-    AND a.end_date_exclusive BETWEEN b.start_date AND COALESCE(b.end_date, "9999-01-01")
+    AND a.end_date_exclusive BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
 LEFT JOIN
-    `{project_id}.dataflow_metrics_materialized.most_recent_supervision_termination_metrics_materialized` c
+    `{{project_id}}.dataflow_metrics_materialized.most_recent_supervision_termination_metrics_materialized` c
 ON
     a.person_id = c.person_id
-    AND c.termination_date BETWEEN a.end_date_exclusive AND COALESCE(b.end_date, "9999-01-01")
+    AND c.termination_date BETWEEN a.end_date_exclusive AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
 -- Referrals within one year of supervision termination
 LEFT JOIN
-    `{project_id}.normalized_state.state_program_assignment` d
+    `{{project_id}}.normalized_state.state_program_assignment` d
 ON
     a.person_id = d.person_id
     AND DATE_SUB(a.end_date_exclusive, INTERVAL 365 DAY) <= d.referral_date
