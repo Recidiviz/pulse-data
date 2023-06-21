@@ -452,6 +452,16 @@ def sorted_list_from_str(value: str, delimiter: str = ",") -> List[str]:
     return sorted(unsorted)
 
 
+def join_with_conjunction(items: List[str], conjunction: str = "and") -> str:
+    """Performs a grammatically correct join on a list of strings with commas and/or the provided conjunction."""
+    head = ", ".join(items[:-1])
+    last = items[-1]
+    if head:
+        return f"{head}{',' if len(items) > 2 else ''} {conjunction} {last}"
+
+    return last
+
+
 class NormalizedJSON:
     """A wrapper object around a dictionary that can be serialized as normalized JSON."""
 

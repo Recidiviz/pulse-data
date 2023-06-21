@@ -29,10 +29,11 @@ import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
-from recidiviz.outliers.querier.querier import OutliersQuerier
-from recidiviz.outliers.types import OfficerSupervisorReportData
 from recidiviz.reporting import email_generation
 from recidiviz.reporting.context.available_context import get_report_context
+from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval import (
+    retrieve_data_for_outliers_supervision_officer_supervisor,
+)
 from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
 from recidiviz.reporting.email_reporting_utils import gcsfs_path_for_batch_metadata
 from recidiviz.reporting.recipient import Recipient
@@ -196,7 +197,7 @@ def retrieve_data(
     if batch.report_type == ReportType.OutliersSupervisionOfficerSupervisor:
         # Get data from querier
         results_by_supervisor = (
-            _retrieve_data_for_outliers_supervision_officer_supervisor(batch)
+            retrieve_data_for_outliers_supervision_officer_supervisor(batch)
         )
 
         # Archive data
@@ -281,20 +282,6 @@ def _retrieve_data_for_po_monthly_report(report_json: str) -> List[Recipient]:
 def _retrieve_data_for_overdue_discharge_alert(report_json: str) -> List[Recipient]:
     """Post-processes the overdue discharge alert into `Recipient`s"""
     return [Recipient.from_report_json(item) for item in _json_lines(report_json)]
-
-
-def _retrieve_data_for_outliers_supervision_officer_supervisor(
-    batch: Batch,
-) -> Dict[str, OfficerSupervisorReportData]:
-    """Retrieves the data for Outliers' supervision officer supervisor reports by unit"""
-    batch_datetime = utils.get_datetime_from_batch_id(batch)
-    results_by_unit = (
-        OutliersQuerier().get_officer_level_report_data_for_all_officer_supervisors(
-            batch.state_code, end_date=batch_datetime
-        )
-    )
-
-    return results_by_unit
 
 
 def _write_batch_metadata(

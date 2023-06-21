@@ -1,0 +1,7 @@
+{% extends "common/container.html.jinja2" %}
+
+{% block children %}
+{% if highlights %}
+{% include "outliers_supervision_officer_supervisor/highlights.html.jinja2" %}
+{% endif %}
+{% endblock children %}

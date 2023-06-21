@@ -1,0 +1,36 @@
+{% extends "common/card.html.jinja2" %}
+{% block children %}
+{{ components.layout_table_start() }}
+<tr>
+    {{components.heading("Highlights", size='md')}}
+</tr>
+{{components.y_padding(16)}}
+{% for highlight in highlights.multiple_metrics %}
+<tr>
+    <td class="em_dm_txt_white_80"
+        style="{{brand_styles.fonts.sans_serif}} color: rgba(53, 83, 98, 0.85); font-weight: 500; font-size: 18px;">
+        <strong>{{highlight.name}}</strong>
+        {% for detail in highlight.details %}
+        {% if not loop.first %}
+        and
+        {% else %}
+        {% endif %}
+        {{detail.condition}} {{detail.metrics}}{% if not loop.last %},{% else %}.{% endif %}
+        {% endfor %}
+
+    </td>
+</tr>
+{{components.y_padding(8)}}
+{% endfor %}
+{% if highlights.multiple_metrics %}
+{% endif %}
+{% if highlights.no_outliers %}
+<tr>
+    <td class="em_dm_txt_white_80"
+        style="{{brand_styles.fonts.sans_serif}} color: rgba(53, 83, 98, 0.85); font-weight: 500; font-size: 18px;">
+        <strong>None of the agents in your unit</strong> are far from the state average on {{highlights.no_outliers}}.
+    </td>
+</tr>
+{% endif %}
+{{ components.layout_table_end() }}
+{% endblock children %}

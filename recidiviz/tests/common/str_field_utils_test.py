@@ -20,6 +20,7 @@ from unittest import TestCase
 
 from recidiviz.common.str_field_utils import (
     NormalizedJSON,
+    join_with_conjunction,
     parse_bool,
     parse_date,
     parse_date_from_date_pieces,
@@ -276,4 +277,12 @@ class TestStrFieldUtils(TestCase):
         self.assertEqual(snake_to_title("my name"), "My Name")
         self.assertEqual(
             snake_to_title("SUPERVISION_START_FIRST"), "Supervision Start First"
+        )
+
+    def test_join_with_conjunction(self) -> None:
+        self.assertEqual(join_with_conjunction(["A"]), "A")
+        self.assertEqual(join_with_conjunction(["A", "b"]), "A and b")
+        self.assertEqual(join_with_conjunction(["A", "b", "C"]), "A, b, and C")
+        self.assertEqual(
+            join_with_conjunction(["A", "b", "C"], conjunction="or"), "A, b, or C"
         )

@@ -1,25 +1,24 @@
 {% extends "common/container.html.jinja2" %}
 
 {% block children %}
-  <table align="center" width="600" border="0" cellspacing="0" cellpadding="0" class="em_wrapper Intro"
-    style="width:600px;" role="presentation">
-    {{ components.y_padding(24) }}
-    <tr>
-      <td class="em_head_logo" valign="top" align="left">
-        <a href="https://www.recidiviz.org/"
-          target="_blank" style="text-decoration: none;"
-        >
-          <img src="{{ static_image_path }}/ic_recidiviz.png" width="26" height="26" alt="" border="0" />
-        </a>
-      </td>
-    </tr>
-    {{ components.y_padding(54) }}
-    {% if headline %}
-    <tr>
-      {{components.heading(headline, size="xl")}}
-      {% if learn_more_link -%}
-      <td class="em_defaultlink em_font em_dm_txt_white_80" valign="bottom"
-        style="
+<table align="center" width="600" border="0" cellspacing="0" cellpadding="0" class="em_wrapper Intro"
+  style="width:600px;" role="presentation">
+  {{ components.y_padding(24) }}
+  {% if show_logo %}
+  <tr>
+    <td class="em_head_logo" valign="top" align="left">
+      <a href="https://www.recidiviz.org/" target="_blank" style="text-decoration: none;">
+        <img src="{{ static_image_path }}/ic_recidiviz.png" width="26" height="26" alt="" border="0" />
+      </a>
+    </td>
+  </tr>
+  {{ components.y_padding(54) }}
+  {% endif %}
+  {% if headline %}
+  <tr>
+    {{components.heading(headline, size="xl", align="center")}}
+    {% if learn_more_link -%}
+    <td class="em_defaultlink em_font em_dm_txt_white_80" valign="bottom" style="
           {{brand_styles.fonts.sans_serif}}
           font-size: 16px;
           font-weight: 500;
@@ -27,22 +26,22 @@
           padding: 16px 0;
           text-align: right;
         ">
-        <a href="{{ learn_more_link }}"
-          target="_blank" style="color: inherit; text-decoration: none;">Learn More</a>
-      </td>
-      {% endif -%}
-    </tr>
-    {{ components.card_divider() }}
-    {{components.y_padding(40)}}
-    {% endif %}
-    <tr>
-      <td class="em_headertext em_dm_txt_white" valign="top" align="left" colspan="2"
-        style="{{brand_styles.fonts.sans_serif}} font-size: 19px; font-weight: 500; color: #00413E;">
-        {{ greeting }} <br />
-        <br />
-        {{ message_body }}
-      </td>
-    </tr>
-    {{ components.y_padding(63) }}
-  </table>
+      <a href="{{ learn_more_link }}" target="_blank" style="color: inherit; text-decoration: none;">Learn More</a>
+    </td>
+    {% endif -%}
+  </tr>
+  {{components.y_padding(40)}}
+  {% endif %}
+  {% if message_body %}
+  <tr>
+    <td class="em_headertext em_dm_txt_white" valign="top" align="left" colspan="2"
+      style="{{brand_styles.fonts.sans_serif}} font-size: 19px; font-weight: 500; color: #00413E;">
+      {{ greeting }} <br />
+      <br />
+      {{ message_body }}
+    </td>
+  </tr>
+  {{ components.y_padding(63) }}
+  {% endif %}
+</table>
 {% endblock children %}

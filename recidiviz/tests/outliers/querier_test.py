@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""This class implmenets tests for the OutliersQuerier class"""
+"""This class implements tests for the OutliersQuerier class"""
 import csv
 import os
 from datetime import date
@@ -74,6 +74,7 @@ TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
     metric=INCARCERATION_STARTS_AND_INFERRED,
     title_display_name="Incarceration Rate (CPVs & TPVs)",
     body_display_name="incarceration rate",
+    event_name="incarcerations",
 )
 
 TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
@@ -226,7 +227,7 @@ class TestOutliersQuerier(TestCase):
                             "outcome_type": "ADVERSE",
                             "title_display_name": "Incarceration Rate (CPVs & TPVs)",
                             "body_display_name": "incarceration rate",
-                            "event_name": None,
+                            "event_name": "incarcerations",
                         },
                         "target": 0.13887506249377812,
                         "other_officers": {
@@ -311,7 +312,7 @@ class TestOutliersQuerier(TestCase):
                         "outcome_type": "ADVERSE",
                         "title_display_name": "Incarceration Rate (CPVs & TPVs)",
                         "body_display_name": "incarceration rate",
-                        "event_name": None,
+                        "event_name": "incarcerations",
                     }
                 ],
                 "recipient_email_address": "supervisor2@recidiviz.org",
@@ -324,7 +325,7 @@ class TestOutliersQuerier(TestCase):
                         "outcome_type": "ADVERSE",
                         "title_display_name": "Incarceration Rate (CPVs & TPVs)",
                         "body_display_name": "incarceration rate",
-                        "event_name": None,
+                        "event_name": "incarcerations",
                     },
                     {
                         "name": "task_completions_transfer_to_limited_supervision",
