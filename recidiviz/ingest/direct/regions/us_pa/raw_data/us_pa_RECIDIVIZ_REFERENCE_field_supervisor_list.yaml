@@ -5,11 +5,16 @@ file_description: |-
   3/6/23. The original PDF is titled "Field Supervisors List" and contains all regional
   managers, district directors, district deputy directors, and unit supervisors in
   the state as of the date it was sent.
+
+  Each row in this table represents one supervisor of one unit. Regional Directors are 
+  included many times because they supervise many units in the same region. The secretary
+  is listed once for each unit in the state, since he technically supervises all of them.
 data_classification: source
 primary_key_cols:
   - role
   - lastname
   - firstname
+  - unit_id
 columns:
   - name: role
     description: A code representing the role of the agent.
@@ -28,6 +33,9 @@ columns:
   - name: firstname
     is_pii: True
     description: The first name of the agent.
+  - name: email
+    is_pii: True
+    decription: Agent's email address.
   - name: region
     description: The human-readable name of the supervision region.
   - name: district_office
@@ -42,5 +50,4 @@ columns:
       supervision location grouping we currently know about in PA).
   - name: unit_id
     description: |-
-      The ID of the supervision unit the person in this row supervises. Only
-      populated in rows that contain unit supervisors.
+      The ID of the supervision unit the person in this row supervises.
