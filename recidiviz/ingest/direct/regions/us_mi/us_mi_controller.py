@@ -54,6 +54,7 @@ class UsMiController(BaseDirectIngestController):
             "supervision_violations",
             "supervision_violations_probation",
             "incarceration_periods_v3",
+            "supervision_staff",
         ]
 
         if environment.in_gcp_production():
