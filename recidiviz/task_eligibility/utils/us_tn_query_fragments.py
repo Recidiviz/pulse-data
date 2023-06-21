@@ -18,11 +18,13 @@
 Helper SQL queries for Tennessee
 """
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+
 
 def detainers_cte() -> str:
     """Helper method that returns a CTE getting detainer information in TN"""
 
-    return """
+    return f"""
         -- As discussed with TTs in TN, a detainer is "relevant" until it has been lifted, so we use that as
         -- our end date
         SELECT
@@ -36,15 +38,16 @@ def detainers_cte() -> str:
                  WHEN DetainerMisdemeanorFlag = 'X' THEN 3
                  END AS detainer_score
         FROM 
-            `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Detainer_latest` dis
+            `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Detainer_latest` dis
         INNER JOIN
-            `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+            `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON
             dis.OffenderID = pei.external_id
         AND
             pei.state_code = 'US_TN'
         WHERE
             (DetainerFelonyFlag = 'X' OR DetainerMisdemeanorFlag = 'X')
-            AND DATE(DetainerLiftDate) > DATE(DetainerReceivedDate)
+            AND 
+            {nonnull_end_date_exclusive_clause('DATE(DetainerLiftDate)')} > {nonnull_end_date_exclusive_clause('DATE(DetainerReceivedDate)')}
         
         """
