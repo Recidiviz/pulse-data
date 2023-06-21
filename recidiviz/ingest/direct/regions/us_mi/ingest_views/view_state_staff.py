@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing supervision staff information."""
+"""Query containing state staff information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -98,7 +98,7 @@ ON omni.email_address_lower = compas.lower_Email
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
-    ingest_view_name="supervision_staff",
+    ingest_view_name="state_staff",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="employee_ids_omni",
 )
