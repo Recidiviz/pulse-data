@@ -47,6 +47,7 @@ def build_recidiviz_kubernetes_pod_operator(
         task_id=task_id,
         namespace=namespace,
         image=os.getenv("RECIDIVIZ_APP_ENGINE_IMAGE"),
+        image_pull_policy="Always",
         # This config is provided by Cloud Composer
         config_file="/home/airflow/composer_kube_config",
         cmds=[
