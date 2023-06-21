@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which someone is not
-past their supervision full term completion date (projected max completion date) or within 90 days of it
+past their supervision full term completion date (projected max completion date) or within 90 days of it.
+However, this criteria will be FALSE if no projected max completion date is set.
 """
 from recidiviz.task_eligibility.criteria.general.supervision_past_full_term_completion_date_or_upcoming_90_days import (
     VIEW_BUILDER as past_full_term_completion_builder,
@@ -30,8 +31,10 @@ _CRITERIA_NAME = "SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_90_
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 someone is not past their supervision full term completion date (projected max completion
-date) or within 90 days of it. This criteria is the logical opposite of the
-`SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_90_DAYS` view"""
+date) or within 90 days of it. However, this criteria will be FALSE if no projected max completion date is set. 
+This criteria is therefore not fully the logical opposite of the
+`SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_90_DAYS` view, since both criteria will be FALSE if there
+is no projected max completion date"""
 
 _QUERY_TEMPLATE = f"""
 SELECT
@@ -50,7 +53,6 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         criteria_dataset=past_full_term_completion_builder.dataset_id,
-        meets_criteria_default=True,
     )
 )
 
