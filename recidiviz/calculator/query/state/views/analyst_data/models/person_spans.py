@@ -130,6 +130,57 @@ WHERE
         span_end_date_col="DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY)",
     ),
     SpanQueryBuilder(
+        span_type=PersonSpanType.SENTENCE_SPAN,
+        description="Span of attributes of sentences being served",
+        sql_source="""SELECT
+    spans.state_code,
+    spans.person_id,
+    spans.start_date,
+    spans.end_date_exclusive,
+    -- Characteristics from sentence spans
+    LOGICAL_OR(sentences.is_drug_uniform) AS any_is_drug_uniform,
+    LOGICAL_OR(sentences.is_violent_uniform) AS any_is_violent_uniform,
+    LOGICAL_OR(sentences.crime_against_uniform = "Person") AS any_is_crime_against_person,
+    LOGICAL_OR(sentences.crime_against_uniform = "Property") AS any_is_crime_against_property,
+    LOGICAL_OR(sentences.crime_against_uniform = "Society") AS any_is_crime_against_society,
+    MIN(sentences.effective_date) AS effective_date,
+    MAX(sentences.parole_eligibility_date) AS parole_eligibility_date,
+    MAX(sentences.projected_completion_date_max) AS projected_completion_date_max,
+    -- Expected release dates from sentence deadline spans
+    MAX(task_deadlines.projected_supervision_release_date) AS projected_supervision_release_snapshot_date,
+    MAX(task_deadlines.projected_incarceration_release_date) AS projected_incarceration_release_snapshot_date,
+    MAX(task_deadlines.parole_eligibility_date) AS parole_eligibility_snapshot_date,
+FROM
+    `{project_id}.sessions.sentence_spans_materialized` spans,
+    UNNEST(sentences_preprocessed_id_array) as sentences_preprocessed_id,
+    UNNEST(sentence_deadline_id_array) as sentence_deadline_id
+LEFT JOIN
+    `{project_id}.sessions.sentences_preprocessed_materialized` sentences
+USING
+    (person_id, state_code, sentences_preprocessed_id)
+LEFT JOIN
+    `{project_id}.sessions.sentence_deadline_spans_materialized` task_deadlines
+USING
+    (person_id, state_code, sentence_deadline_id)
+GROUP BY 1, 2, 3, 4
+        """,
+        attribute_cols=[
+            "any_is_crime_against_person",
+            "any_is_crime_against_property",
+            "any_is_crime_against_society",
+            "any_is_drug_uniform",
+            "any_is_violent_uniform",
+            "effective_date",
+            "parole_eligibility_date",
+            "parole_eligibility_snapshot_date",
+            "projected_completion_date_max",
+            "projected_incarceration_release_snapshot_date",
+            "projected_supervision_release_snapshot_date",
+        ],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
         span_type=PersonSpanType.SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE,
         description="Open supervision mismatch (downgrades only), ends when mismatch corrected or supervision period ends",
         sql_source="""SELECT *, "SUPERVISION_DOWNGRADE" AS task_name,
