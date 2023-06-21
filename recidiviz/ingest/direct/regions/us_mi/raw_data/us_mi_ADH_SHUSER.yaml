@@ -37,8 +37,10 @@ columns:
     is_pii: True
   - name: FkShUserManager
   - name: DateCreated
+    description: Date the record was created
     is_datetime: True
   - name: DateUpdated
+    description: Date the record was last updated
     is_datetime: True
   - name: DateDeleted
     is_datetime: True
