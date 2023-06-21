@@ -1,0 +1,10 @@
+{% extends "common/layout.html.jinja2" %}
+
+{% import 'common/components.html.jinja2' as components with context %}
+
+{% block body %}
+{{ components.preview_text(message_body) }}
+{% include "common/message_body.html.jinja2" %}
+
+{% include "outliers_supervision_officer_supervisor/body.html.jinja2" %}
+{% endblock body %}

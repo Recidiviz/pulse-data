@@ -39,16 +39,19 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 metric=INCARCERATION_STARTS,
                 title_display_name="Incarceration Rate",
                 body_display_name="incarceration rate",
+                event_name="incarcerations",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
                 title_display_name="Absconsion Rate",
                 body_display_name="absconsion rate",
+                event_name="absconsions",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
                 title_display_name="Successful Discharge Rate",
                 body_display_name="successful discharge rate",
+                event_name="successful discharges",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
@@ -73,16 +76,19 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 metric=INCARCERATION_STARTS_AND_INFERRED,
                 title_display_name="Incarceration Rate (CPVs & TPVs)",
                 body_display_name="incarceration rate",
+                event_name="incarcerations",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
                 title_display_name="Technical Incarceration Rate (TPVs)",
                 body_display_name="technical incarceration rate",
+                event_name="technical incarcerations",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
                 title_display_name="Absconsion Rate",
                 body_display_name="absconsion rate",
+                event_name="absconsions",
             ),
         ],
         unit_of_analysis_to_exclusion={

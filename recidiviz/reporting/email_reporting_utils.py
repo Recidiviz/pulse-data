@@ -182,5 +182,5 @@ def gcsfs_path_for_batch_metadata(
     )
 
 
-def get_datetime_from_batch_id(batch: Batch) -> datetime.datetime:
-    return datetime.datetime.strptime(batch.batch_id, DATETIME_FORMAT_STR)
+def get_date_from_batch_id(batch: Batch) -> datetime.date:
+    return datetime.datetime.strptime(batch.batch_id, DATETIME_FORMAT_STR).date()

@@ -68,7 +68,7 @@ class OutliersMetricConfig:
     body_display_name: str = attr.ib()
 
     # Event name corresponding to the metric
-    event_name: Optional[str] = attr.ib(default=None)
+    event_name: str = attr.ib()
 
     @classmethod
     def build_from_metric(
@@ -76,7 +76,7 @@ class OutliersMetricConfig:
         metric: OutliersMetric,
         title_display_name: str,
         body_display_name: str,
-        event_name: Optional[str] = None,
+        event_name: str,
     ) -> "OutliersMetricConfig":
         return cls(
             metric.name,
