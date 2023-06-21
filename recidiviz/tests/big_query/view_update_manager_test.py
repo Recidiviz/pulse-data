@@ -16,25 +16,18 @@
 # =============================================================================
 
 """Tests for view_update_manager.py."""
-import json
 import unittest
-from http import HTTPStatus
-from typing import Any, Dict, Iterator, Set, Tuple
+from typing import Iterator, Set, Tuple
 from unittest import mock
 from unittest.mock import MagicMock, call, create_autospec, patch
 
-import flask
-from flask import Flask
 from google.cloud import bigquery
 
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
-from recidiviz.big_query.view_update_manager import (
-    execute_update_all_managed_views,
-    view_update_manager_blueprint,
-)
+from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
@@ -879,112 +872,6 @@ class ViewManagerTest(unittest.TestCase):
                     view.materialized_address.dataset_id,
                     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
                 )
-
-
-@mock.patch(
-    "recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789")
-)
-@mock.patch(
-    "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
-    MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
-)
-class TestViewUpdateEndpoints(unittest.TestCase):
-    """Tests the /view_update/update_all_managed_views endpoint."""
-
-    def setUp(self) -> None:
-        self.app = Flask(__name__)
-        self.app.register_blueprint(view_update_manager_blueprint)
-        self.app.config["TESTING"] = True
-        self.base_headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
-        self.client = self.app.test_client()
-
-        self.mock_project_id = "recidiviz-456"
-        self.metadata_patcher = mock.patch(
-            "recidiviz.big_query.view_update_manager.metadata.project_id"
-        )
-        self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = self.mock_project_id
-
-        self.all_views_update_success_persister_patcher = patch(
-            "recidiviz.big_query.view_update_manager.AllViewsUpdateSuccessPersister"
-        )
-        self.all_views_update_success_persister_constructor = (
-            self.all_views_update_success_persister_patcher.start()
-        )
-        self.mock_all_views_update_success_persister = (
-            self.all_views_update_success_persister_constructor.return_value
-        )
-
-    def tearDown(self) -> None:
-        self.metadata_patcher.stop()
-        self.all_views_update_success_persister_patcher.stop()
-
-    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
-    )
-    def test_update_all_managed_views(
-        self, mock_create: MagicMock, _mock_bq_client: MagicMock
-    ) -> None:
-        """Tests the /view_update/update_all_managed_views endpoint."""
-
-        current_cloud_task_id = "my_cloud_task_id_abcd"
-        headers: Dict[str, Any] = {
-            **self.base_headers,
-            "X-AppEngine-TaskName": current_cloud_task_id,
-        }
-        with self.app.test_request_context():
-            update_all_managed_views_url = flask.url_for(
-                "view_update.update_all_managed_views"
-            )
-            response = self.client.post(
-                update_all_managed_views_url,
-                headers=headers,
-            )
-
-        self.assertEqual(HTTPStatus.OK, response.status_code)
-
-        mock_create.assert_called()
-        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
-            deployed_view_builders=mock.ANY,
-            dataset_override_prefix=None,
-            runtime_sec=mock.ANY,
-            cloud_task_id=current_cloud_task_id,
-        )
-
-    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
-    )
-    def test_update_all_managed_views_with_sandbox_prefix(
-        self, mock_create: MagicMock, _mock_bq_client: MagicMock
-    ) -> None:
-        """Tests the /view_update/update_all_managed_views endpoint with sandbox prefix."""
-
-        current_cloud_task_id = "my_cloud_task_id_abcd"
-        headers: Dict[str, Any] = {
-            **self.base_headers,
-            "X-AppEngine-TaskName": current_cloud_task_id,
-        }
-        with self.app.test_request_context():
-            update_all_managed_views_url = flask.url_for(
-                "view_update.update_all_managed_views"
-            )
-            response = self.client.post(
-                update_all_managed_views_url,
-                headers=headers,
-                data=json.dumps({"sandbox_prefix": "test_prefix"}),
-            )
-
-        self.assertEqual(HTTPStatus.OK, response.status_code)
-
-        mock_create.assert_called()
-        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
-            deployed_view_builders=mock.ANY,
-            dataset_override_prefix="test_prefix",
-            runtime_sec=mock.ANY,
-            cloud_task_id=current_cloud_task_id,
-        )
 
 
 class TestExecuteUpdateAllManagedViews(unittest.TestCase):

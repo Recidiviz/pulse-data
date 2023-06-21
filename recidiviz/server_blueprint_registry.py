@@ -24,7 +24,6 @@ from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import users_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
-from recidiviz.big_query.view_update_manager import view_update_manager_blueprint
 from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
 from recidiviz.metrics.export.view_export_manager import export_blueprint
@@ -44,7 +43,6 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (export_blueprint, "/export"),
     (get_workflows_etl_blueprint(), "/practices-etl"),
     (validation_manager_blueprint, "/validation_manager"),
-    (view_update_manager_blueprint, "/view_update"),
 ]
 
 flask_smorest_api_blueprints_with_url_prefixes: List[

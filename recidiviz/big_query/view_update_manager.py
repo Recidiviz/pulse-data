@@ -20,11 +20,8 @@ import logging
 from concurrent import futures
 from concurrent.futures import Future
 from enum import Enum
-from http import HTTPStatus
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set
 
-from flask import Blueprint
-from google.api_core import retry
 from google.cloud import exceptions
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
@@ -46,10 +43,7 @@ from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
-from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
-from recidiviz.utils import metadata, monitoring, structured_logging
-from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.endpoint_helpers import get_value_from_request
+from recidiviz.utils import monitoring, structured_logging
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
@@ -87,54 +81,6 @@ MAX_WORKERS = 10
 
 # The number of slowest-to-process views to print at the end of processing the full DAG.
 NUM_SLOW_VIEWS_TO_LOG = 25
-
-
-def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
-    """ "A function that will determine whether we should retry a given Google exception."""
-    return retry.if_transient_error(exception) or retry.if_exception_type(
-        exceptions.Conflict
-    )(exception)
-
-
-# TODO(#21446) Remove these endpoints once we move the callsite to Kubernetes in Airflow.
-view_update_manager_blueprint = Blueprint("view_update", __name__)
-
-
-@view_update_manager_blueprint.route("/update_all_managed_views", methods=["POST"])
-@requires_gae_auth
-@retry.Retry(predicate=retry_predicate)
-def update_all_managed_views() -> Tuple[str, HTTPStatus]:
-    """API endpoint to update all managed views."""
-
-    sandbox_prefix: Optional[str] = get_value_from_request("sandbox_prefix")
-
-    start = datetime.datetime.now()
-    view_builders = deployed_view_builders(metadata.project_id())
-
-    create_managed_dataset_and_deploy_views_for_view_builders(
-        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-        view_builders_to_update=view_builders,
-        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-        address_overrides=address_overrides_for_view_builders(
-            view_dataset_override_prefix=sandbox_prefix, view_builders=view_builders
-        )
-        if sandbox_prefix
-        else None,
-        force_materialize=True,
-    )
-    end = datetime.datetime.now()
-    runtime_sec = int((end - start).total_seconds())
-
-    success_persister = AllViewsUpdateSuccessPersister(bq_client=BigQueryClientImpl())
-    success_persister.record_success_in_bq(
-        deployed_view_builders=view_builders,
-        dataset_override_prefix=sandbox_prefix,
-        runtime_sec=runtime_sec,
-        cloud_task_id=get_current_cloud_task_id(),
-    )
-    logging.info("All managed views successfully updated and materialized.")
-
-    return "", HTTPStatus.OK
 
 
 def execute_update_all_managed_views(
