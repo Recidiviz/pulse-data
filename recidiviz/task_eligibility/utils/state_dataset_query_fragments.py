@@ -55,7 +55,6 @@ def violations_within_time_interval_cte(
     date_interval: int = 12,
     date_part: str = "MONTH",
 ) -> str:
-
     """
     Args:
         violation_type (str, optional): Specifies the violation types that should be
@@ -76,6 +75,14 @@ def violations_within_time_interval_cte(
             and ends after a period specified by the user (in <date_interval> and <date_part>)
     """
 
+    violation_type_join = f"""
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_type_entry` vt
+        ON vr.supervision_violation_id = vt.supervision_violation_id
+        AND vr.person_id = vt.person_id
+        AND vr.state_code = vt.state_code
+        {violation_type}
+    """
+
     return f"""
     SELECT
         vr.state_code,
@@ -85,11 +92,7 @@ def violations_within_time_interval_cte(
         COALESCE(v.violation_date, vr.response_date) AS violation_date,
         {bool_column}
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_response` vr
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_type_entry` vt
-        ON vr.supervision_violation_id = vt.supervision_violation_id
-        AND vr.person_id = vt.person_id
-        AND vr.state_code = vt.state_code
-        {violation_type}
+    {violation_type_join if violation_type else ""}
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation` v
         ON vr.supervision_violation_id = v.supervision_violation_id
         AND vr.person_id = v.person_id
