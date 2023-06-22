@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements Querier abstractions for Outliers data sources"""
+import logging
 from copy import copy
 from datetime import date
 from typing import Dict, List, Tuple
@@ -33,11 +34,17 @@ from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
+    OutliersConfig,
     OutliersMetricConfig,
+    SupervisionDistrictReportData,
+    SupervisionOfficerSupervisorMetricEntity,
+    SupervisionOfficerSupervisorMetricInfo,
     TargetStatus,
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
+    SupervisionDistrict,
+    SupervisionDistrictManager,
     SupervisionOfficer,
     SupervisionOfficerMetric,
     SupervisionOfficerSupervisor,
@@ -89,11 +96,13 @@ class OutliersQuerier:
                 SupervisionOfficerSupervisor.email,
             ).all()
 
+            state_config = self.get_outliers_config(state_code)
+
             metric_name_to_metric_context = {
                 metric: self._get_metric_context_from_db(
                     session, metric, end_date, prev_end_date
                 )
-                for metric in self.get_state_metrics(state_code)
+                for metric in state_config.metrics
             }
 
             officer_supervisor_id_to_data = {}
@@ -181,6 +190,7 @@ class OutliersQuerier:
         metric_id = metric.name
 
         target = self.get_state_target_from_db(session, metric_id, end_date)
+        prev_target = self.get_state_target_from_db(session, metric_id, prev_end_date)
 
         officer_metric = aliased(SupervisionOfficerMetric)
         avg_pop_metric = aliased(SupervisionOfficerMetric)
@@ -251,6 +261,20 @@ class OutliersQuerier:
             else TargetStatusStrategy.IQR_THRESHOLD
         )
 
+        prev_iqr = self.get_iqr(
+            [
+                record.metric_value / record.avg_daily_population
+                for record in previous_period_officer_metrics
+            ]
+        )
+
+        prev_target_status_strategy = (
+            TargetStatusStrategy.ZERO_RATE
+            if prev_target - prev_iqr <= 0
+            and metric.outcome_type == MetricOutcome.FAVORABLE
+            else TargetStatusStrategy.IQR_THRESHOLD
+        )
+
         # Generate the OfficerMetricEntity object for all officers
         entities: List[OfficerMetricEntity] = []
         for officer_metric_record in current_period_officer_metrics:
@@ -284,19 +308,61 @@ class OutliersQuerier:
                 else None
             )
 
+            prev_target_status = (
+                self.get_target_status(
+                    metric.outcome_type,
+                    prev_rate,
+                    prev_target,
+                    prev_iqr,
+                    target_status_strategy,
+                )
+                if prev_rate
+                else None
+            )
+
             entities.append(
                 OfficerMetricEntity(
                     name=officer_metric_record.full_name,
                     rate=rate,
                     target_status=target_status,
                     prev_rate=prev_rate,
+                    prev_target_status=prev_target_status,
                     supervisor_external_id=officer_metric_record.supervisor_external_id,
                 )
             )
 
+        # Capturing prev_period_entities ensures that the officer count in the previous period is accurate
+        # since officers may have a metric for one period, but not the other.
+        # We will only use the previous entities to get the count of officers and number of officers
+        # with "FAR" target status in this period, so the previous, previous period values do not matter.
+        prev_period_entities: List[OfficerMetricEntity] = []
+        for prev_officer_metric_record in previous_period_officer_metrics:
+            rate = (
+                prev_officer_metric_record.metric_value
+                / prev_officer_metric_record.avg_daily_population
+            )
+            target_status = self.get_target_status(
+                metric.outcome_type,
+                rate,
+                prev_target,
+                prev_iqr,
+                prev_target_status_strategy,
+            )
+
+            prev_period_entities.append(
+                OfficerMetricEntity(
+                    name=prev_officer_metric_record.full_name,
+                    rate=rate,
+                    target_status=target_status,
+                    prev_rate=None,
+                    prev_target_status=None,
+                    supervisor_external_id=prev_officer_metric_record.supervisor_external_id,
+                )
+            )
         return MetricContext(
             target=target,
             entities=entities,
+            prev_period_entities=prev_period_entities,
             target_status_strategy=target_status_strategy,
         )
 
@@ -325,10 +391,6 @@ class OutliersQuerier:
         if rate - target <= iqr:
             return TargetStatus.NEAR
         return TargetStatus.FAR
-
-    @staticmethod
-    def get_state_metrics(state_code: StateCode) -> List[OutliersMetricConfig]:
-        return OUTLIERS_CONFIGS_BY_STATE[state_code].metrics
 
     @staticmethod
     def get_state_target_from_db(
@@ -361,3 +423,185 @@ class OutliersQuerier:
         q1, q3 = np.percentile(values, [25, 75])
         iqr = q3 - q1
         return iqr
+
+    def get_supervision_district_report_data_by_district(
+        self, state_code: StateCode, end_date: date
+    ) -> Dict[str, SupervisionDistrictReportData]:
+        """
+        Returns supervision district data by district manager for all DMs in a state in the following format:
+        {
+            < SupervisionDistrictManager.external_id >: {
+                recipient_name: str,
+                recipient_email: str,
+                entities: List[SupervisionOfficerSupervisorMetricEntity],
+                officer_label: str,
+            },
+            ...
+        }
+        """
+        db_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name=state_code.value.lower()
+        )
+        end_date = end_date.replace(day=1)
+        prev_end_date = end_date - relativedelta(months=1)
+
+        with SessionFactory.using_database(db_key, autocommit=False) as session:
+
+            state_config = self.get_outliers_config(state_code)
+
+            district_ids = session.query(
+                SupervisionDistrict.external_id.label("district_id")
+            ).all()
+
+            metric_to_metric_context = {
+                metric: self._get_metric_context_from_db(
+                    session, metric, end_date, prev_end_date
+                )
+                for metric in state_config.metrics
+            }
+
+            district_id_to_entities: Dict[
+                str, List[SupervisionOfficerSupervisorMetricEntity]
+            ] = {}
+            for (district_id,) in district_ids:
+                entities = self._get_supervision_district_entities(
+                    session, district_id, metric_to_metric_context
+                )
+
+                district_id_to_entities[district_id] = entities
+
+            district_manager_id_to_report_data: Dict[
+                str, SupervisionDistrictReportData
+            ] = {}
+
+            district_manager_records = session.query(
+                SupervisionDistrictManager.external_id.label("district_manager_id"),
+                SupervisionDistrictManager.full_name.label("district_manager_name"),
+                SupervisionDistrictManager.email.label("district_manager_email"),
+                SupervisionDistrictManager.supervision_district.label("district_id"),
+            ).all()
+
+            for (
+                district_manager_id,
+                district_manager_name,
+                district_manager_email,
+                district_id,
+            ) in district_manager_records:
+
+                if district_id not in district_id_to_entities:
+                    logging.error(
+                        "There is no data for district %s in %s. No report data generated for %s",
+                        district_id,
+                        state_code.value,
+                        district_manager_email,
+                    )
+                    continue
+
+                district_manager_id_to_report_data[
+                    district_manager_id
+                ] = SupervisionDistrictReportData(
+                    recipient_name=district_manager_name,
+                    recipient_email=district_manager_email,
+                    entities=district_id_to_entities[district_id],
+                    officer_label=state_config.supervision_officer_label,
+                )
+
+            return district_manager_id_to_report_data
+
+    @staticmethod
+    def _get_supervision_district_entities(
+        session: Session,
+        district_id: str,
+        metric_to_metric_context: Dict[OutliersMetricConfig, MetricContext],
+    ) -> List[SupervisionOfficerSupervisorMetricEntity]:
+        """
+        Given the district_id, get all the supervisors in the district and the data for all officers supervised by
+        those supervisors.
+        """
+        entities = []
+
+        # Get all supervisors in this district
+        officer_supervisor_records = (
+            session.query(
+                SupervisionOfficerSupervisor.external_id,
+                SupervisionOfficerSupervisor.full_name,
+            )
+            .where(SupervisionOfficerSupervisor.supervision_district == district_id)
+            .all()
+        )
+
+        for (
+            external_id,
+            full_name,
+        ) in officer_supervisor_records:
+            metrics: List[SupervisionOfficerSupervisorMetricInfo] = []
+            for (
+                metric,
+                metric_context,
+            ) in metric_to_metric_context.items():
+                current_period_officer_entities_for_supervisor = [
+                    officer_entity
+                    for officer_entity in metric_context.entities
+                    if officer_entity.supervisor_external_id == external_id
+                ]
+
+                officer_rates: Dict[TargetStatus, List[float]] = {
+                    TargetStatus.MET: [],
+                    TargetStatus.NEAR: [],
+                    TargetStatus.FAR: [],
+                }
+
+                num_officers = len(current_period_officer_entities_for_supervisor)
+                num_officers_far = 0
+
+                for entity in current_period_officer_entities_for_supervisor:
+                    officer_rates[entity.target_status].append(entity.rate)
+
+                    if entity.target_status == TargetStatus.FAR:
+                        num_officers_far += 1
+
+                prev_period_officer_entities_for_supervisor = [
+                    officer_entity
+                    for officer_entity in metric_context.prev_period_entities
+                    if officer_entity.supervisor_external_id == external_id
+                ]
+
+                prev_num_officers = len(prev_period_officer_entities_for_supervisor)
+                prev_num_officers_far = len(
+                    list(
+                        filter(
+                            lambda officer_entity: (
+                                officer_entity.target_status == TargetStatus.FAR
+                            ),
+                            copy(prev_period_officer_entities_for_supervisor),
+                        )
+                    )
+                )
+
+                metric_info = SupervisionOfficerSupervisorMetricInfo(
+                    metric=metric,
+                    officers_far_pct=num_officers_far / num_officers
+                    if num_officers
+                    else 0,
+                    prev_officers_far_pct=prev_num_officers_far / prev_num_officers
+                    if prev_num_officers
+                    else 0,
+                    officer_rates=officer_rates,
+                )
+
+                metrics.append(metric_info)
+
+            supervision_officer_supervisor_entity = (
+                SupervisionOfficerSupervisorMetricEntity(
+                    supervisor_name=full_name,
+                    metrics=metrics,
+                )
+            )
+
+            entities.append(supervision_officer_supervisor_entity)
+
+        return entities
+
+    @staticmethod
+    def get_outliers_config(state_code: StateCode) -> OutliersConfig:
+        return OUTLIERS_CONFIGS_BY_STATE[state_code]
