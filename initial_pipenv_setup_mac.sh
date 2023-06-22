@@ -16,7 +16,7 @@ export CPPFLAGS="-I/usr/local/opt/openssl/include"
 brew install cmake
 
 # Sync dependencies now that environment is setup properly
-pipenv sync --dev
+pipenv sync --dev --verbose
 
 # Install pre-commit hooks
 pipenv run pre-commit install --overwrite
