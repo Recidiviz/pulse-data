@@ -66,6 +66,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 event_name="early discharge requests",
             ),
         ],
+        supervision_officer_label="officer",
         supervision_officer_aggregated_metric_filters="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
@@ -94,6 +95,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         unit_of_analysis_to_exclusion={
             MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: ["FAST", "CO"]
         },
+        supervision_officer_label="agent",
         supervision_officer_aggregated_metric_filters="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75

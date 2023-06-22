@@ -34,12 +34,18 @@ from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
+    OutliersConfig,
     OutliersMetricConfig,
+    SupervisionDistrictReportData,
+    SupervisionOfficerSupervisorMetricEntity,
+    SupervisionOfficerSupervisorMetricInfo,
     TargetStatus,
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
     OutliersBase,
+    SupervisionDistrict,
+    SupervisionDistrictManager,
     SupervisionOfficer,
     SupervisionOfficerMetric,
     SupervisionOfficerSupervisor,
@@ -111,6 +117,10 @@ class TestOutliersQuerier(TestCase):
                 session.add(SupervisionOfficerMetric(**metric))
             for supervisor in load_model_fixture(SupervisionOfficerSupervisor):
                 session.add(SupervisionOfficerSupervisor(**supervisor))
+            for district in load_model_fixture(SupervisionDistrict):
+                session.add(SupervisionDistrict(**district))
+            for manager in load_model_fixture(SupervisionDistrictManager):
+                session.add(SupervisionDistrictManager(**manager))
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -121,11 +131,14 @@ class TestOutliersQuerier(TestCase):
             cls.temp_db_dir
         )
 
-    @patch("recidiviz.outliers.querier.querier.OutliersQuerier.get_state_metrics")
+    @patch("recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_config")
     def test_get_officer_level_report_data_by_supervisor(
         self, mock_config: MagicMock
     ) -> None:
-        mock_config.return_value = [TEST_METRIC_1, TEST_METRIC_2]
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_1, TEST_METRIC_2],
+            supervision_officer_label="officer",
+        )
 
         actual = (
             OutliersQuerier().get_officer_level_report_data_for_all_officer_supervisors(
@@ -159,6 +172,7 @@ class TestOutliersQuerier(TestCase):
                                 rate=0.26688907422852376,
                                 target_status=TargetStatus.FAR,
                                 prev_rate=0.31938677738741617,
+                                prev_target_status=TargetStatus.FAR,
                                 supervisor_external_id="101",
                             ),
                             OfficerMetricEntity(
@@ -166,6 +180,7 @@ class TestOutliersQuerier(TestCase):
                                 rate=0.3333333333333333,
                                 target_status=TargetStatus.FAR,
                                 prev_rate=None,
+                                prev_target_status=None,
                                 supervisor_external_id="101",
                             ),
                         ],
@@ -200,6 +215,7 @@ class TestOutliersQuerier(TestCase):
                                 target_status=TargetStatus.FAR,
                                 prev_rate=0.0,
                                 supervisor_external_id="102",
+                                prev_target_status=None,
                             )
                         ],
                         target_status_strategy=TargetStatusStrategy.ZERO_RATE,
@@ -246,6 +262,7 @@ class TestOutliersQuerier(TestCase):
                                 "rate": 0.26688907422852376,
                                 "target_status": "FAR",
                                 "prev_rate": 0.31938677738741617,
+                                "prev_target_status": "FAR",
                                 "supervisor_external_id": "101",
                             },
                             {
@@ -253,6 +270,7 @@ class TestOutliersQuerier(TestCase):
                                 "rate": 0.3333333333333333,
                                 "target_status": "FAR",
                                 "prev_rate": None,
+                                "prev_target_status": None,
                                 "supervisor_external_id": "101",
                             },
                         ],
@@ -301,6 +319,7 @@ class TestOutliersQuerier(TestCase):
                                 "target_status": "FAR",
                                 "prev_rate": 0.0,
                                 "supervisor_external_id": "102",
+                                "prev_target_status": None,
                             }
                         ],
                         "target_status_strategy": "ZERO_RATE",
@@ -338,7 +357,6 @@ class TestOutliersQuerier(TestCase):
                 "recipient_email_address": "supervisor3@recidiviz.org",
             },
         }
-
         self.assertEqual(actual, expected)
 
         actual_json = {
@@ -346,3 +364,171 @@ class TestOutliersQuerier(TestCase):
             for supervisor_id, supervisor_data in actual.items()
         }
         self.assertEqual(expected_json, actual_json)
+
+    @patch("recidiviz.outliers.querier.querier.OutliersQuerier.get_outliers_config")
+    def test_get_supervision_district_report_data_by_district(
+        self,
+        mock_config: MagicMock,
+    ) -> None:
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_1],
+            supervision_officer_label="officer",
+        )
+
+        actual = OutliersQuerier().get_supervision_district_report_data_by_district(
+            state_code=StateCode.US_XX,
+            end_date=TEST_END_DATE,
+        )
+
+        expected = {
+            "1001": SupervisionDistrictReportData(
+                recipient_name="Manager 1",
+                recipient_email="manager1@recidiviz.org",
+                entities=[
+                    SupervisionOfficerSupervisorMetricEntity(
+                        supervisor_name="Supervisor 1",
+                        metrics=[
+                            SupervisionOfficerSupervisorMetricInfo(
+                                metric=TEST_METRIC_1,
+                                officers_far_pct=0.4,
+                                prev_officers_far_pct=0.25,
+                                officer_rates={
+                                    TargetStatus.MET: [
+                                        0.12645777715329493,
+                                        0.03996003996003996,
+                                    ],
+                                    TargetStatus.NEAR: [0.17053206002728513],
+                                    TargetStatus.FAR: [
+                                        0.26688907422852376,
+                                        0.3333333333333333,
+                                    ],
+                                },
+                            )
+                        ],
+                    )
+                ],
+                officer_label="officer",
+            ),
+            "1002": SupervisionDistrictReportData(
+                recipient_name="Manager 2",
+                recipient_email="manager2@recidiviz.org",
+                entities=[
+                    SupervisionOfficerSupervisorMetricEntity(
+                        supervisor_name="Supervisor 2",
+                        metrics=[
+                            SupervisionOfficerSupervisorMetricInfo(
+                                metric=TEST_METRIC_1,
+                                officers_far_pct=0.0,
+                                prev_officers_far_pct=0.0,
+                                officer_rates={
+                                    TargetStatus.MET: [0.0, 0.111000111000111],
+                                    TargetStatus.NEAR: [0.18409086725207563],
+                                    TargetStatus.FAR: [],
+                                },
+                            )
+                        ],
+                    ),
+                    SupervisionOfficerSupervisorMetricEntity(
+                        supervisor_name="Supervisor 3",
+                        metrics=[
+                            SupervisionOfficerSupervisorMetricInfo(
+                                metric=TEST_METRIC_1,
+                                officers_far_pct=0,
+                                prev_officers_far_pct=0,
+                                officer_rates={
+                                    TargetStatus.MET: [],
+                                    TargetStatus.NEAR: [],
+                                    TargetStatus.FAR: [],
+                                },
+                            )
+                        ],
+                    ),
+                ],
+                officer_label="officer",
+            ),
+        }
+
+        expected_json = {
+            "1001": {
+                "recipient_name": "Manager 1",
+                "recipient_email": "manager1@recidiviz.org",
+                "entities": [
+                    {
+                        "supervisor_name": "Supervisor 1",
+                        "metrics": [
+                            {
+                                "metric": {
+                                    "name": "incarceration_starts_and_inferred",
+                                    "outcome_type": "ADVERSE",
+                                    "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                                    "body_display_name": "incarceration rate",
+                                    "event_name": None,
+                                },
+                                "officers_far_pct": 0.4,
+                                "prev_officers_far_pct": 0.25,
+                                "officer_rates": {
+                                    "MET": [0.12645777715329493, 0.03996003996003996],
+                                    "NEAR": [0.17053206002728513],
+                                    "FAR": [0.26688907422852376, 0.3333333333333333],
+                                },
+                            }
+                        ],
+                    }
+                ],
+                "officer_label": "officer",
+            },
+            "1002": {
+                "recipient_name": "Manager 2",
+                "recipient_email": "manager2@recidiviz.org",
+                "entities": [
+                    {
+                        "supervisor_name": "Supervisor 2",
+                        "metrics": [
+                            {
+                                "metric": {
+                                    "name": "incarceration_starts_and_inferred",
+                                    "outcome_type": "ADVERSE",
+                                    "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                                    "body_display_name": "incarceration rate",
+                                    "event_name": None,
+                                },
+                                "officers_far_pct": 0.0,
+                                "prev_officers_far_pct": 0.0,
+                                "officer_rates": {
+                                    "MET": [0.0, 0.111000111000111],
+                                    "NEAR": [0.18409086725207563],
+                                    "FAR": [],
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "supervisor_name": "Supervisor 3",
+                        "metrics": [
+                            {
+                                "metric": {
+                                    "name": "incarceration_starts_and_inferred",
+                                    "outcome_type": "ADVERSE",
+                                    "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                                    "body_display_name": "incarceration rate",
+                                    "event_name": None,
+                                },
+                                "officers_far_pct": 0,
+                                "prev_officers_far_pct": 0,
+                                "officer_rates": {"MET": [], "NEAR": [], "FAR": []},
+                            }
+                        ],
+                    },
+                ],
+                "officer_label": "officer",
+            },
+        }
+
+        self.assertEqual(actual, expected)
+
+        actual_json = {
+            manager_id: manager_data.to_json()
+            for manager_id, manager_data in actual.items()
+        }
+        print(actual_json)
+        self.assertEqual(actual_json, expected_json)
