@@ -199,6 +199,7 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_instance_status",
         ]
         outliers_table_names = [
+            "supervision_directors",
             "supervision_districts",
             "supervision_units",
             "supervision_officers",
