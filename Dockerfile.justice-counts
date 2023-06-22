@@ -28,6 +28,7 @@ COPY ./recidiviz/common/ common/
 COPY ./recidiviz/persistence/ persistence/
 COPY ./recidiviz/tools/utils/ tools/utils/
 COPY ./recidiviz/utils/ utils/
+COPY ./recidiviz/reporting/sendgrid_client_wrapper.py reporting/sendgrid_client_wrapper.py 
 
 WORKDIR /app
 

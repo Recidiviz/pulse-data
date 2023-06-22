@@ -372,3 +372,22 @@ class AgencyUserAccountAssociationInterface:
             )
             .all()
         )
+
+    @staticmethod
+    def get_user_emails_by_agency_id(session: Session, agency_id: int) -> List[str]:
+
+        user_email_tuples = (
+            session.query(schema.UserAccount.email)
+            .join(
+                schema.AgencyUserAccountAssociation,
+                schema.UserAccount.id
+                == schema.AgencyUserAccountAssociation.user_account_id,
+            )
+            .filter(
+                schema.AgencyUserAccountAssociation.agency_id == agency_id,
+            )
+            .all()
+        )
+
+        user_emails = [user_email_tuple[0] for user_email_tuple in user_email_tuples]
+        return user_emails

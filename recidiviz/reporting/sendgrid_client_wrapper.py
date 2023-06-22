@@ -17,7 +17,7 @@
 """An wrapper class for accessing the SendGridAPIClient"""
 import base64
 import logging
-from typing import Optional, List
+from typing import List, Optional
 
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers import mail as mail_helpers
@@ -25,21 +25,29 @@ from sendgrid.helpers import mail as mail_helpers
 from recidiviz.utils import secrets
 
 _SENDGRID_API_KEY = "sendgrid_api_key"
+_JC_SENDGRID_API_KEY = "justice_counts_sendgrid_api_key"
 
 
 class SendGridClientWrapper:
     """Wrapper class for SendGridAPIClient"""
 
-    def __init__(self) -> None:
-        self.client = SendGridAPIClient(api_key=self._get_sendgrid_api_key())
+    def __init__(self, key_type: Optional[str] = None) -> None:
+        if key_type == "justice_counts":
+            self.client = SendGridAPIClient(
+                api_key=self._get_sendgrid_api_key(secret_id=_JC_SENDGRID_API_KEY)
+            )
+        else:
+            self.client = SendGridAPIClient(
+                api_key=self._get_sendgrid_api_key(secret_id=_SENDGRID_API_KEY)
+            )
 
-    def _get_sendgrid_api_key(self) -> str:
+    def _get_sendgrid_api_key(self, secret_id: str) -> str:
         """Returns the value for the SendGrid API key from the secrets manager."""
-        sendgrid_api_value = secrets.get_secret(_SENDGRID_API_KEY)
+        sendgrid_api_value = secrets.get_secret(secret_id)
         if not sendgrid_api_value:
             raise ValueError(
                 f"Could not get secret value for `Sendgrid API Key`. Provided with "
-                f"key={_SENDGRID_API_KEY}"
+                f"key={secret_id}"
             )
         return sendgrid_api_value
 
