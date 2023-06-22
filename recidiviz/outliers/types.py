@@ -119,7 +119,7 @@ class OfficerMetricEntity:
     # The external_id of this OfficerMetricEntity's supervisor
     supervisor_external_id: str = attr.ib()
     # The target status for the previous period
-    prev_target_status: Optional[TargetStatus] = attr.ib()
+    prev_target_status: Optional[TargetStatus] = attr.ib(default=None)
 
 
 @attr.s
