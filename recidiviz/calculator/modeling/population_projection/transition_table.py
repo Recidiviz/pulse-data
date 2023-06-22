@@ -405,7 +405,7 @@ class TransitionTable:
             raise ValueError("Trying to un-normalize a table that isn't normalized")
 
         for sentence_length in table.index.sort_values(ascending=False):
-            table.loc[sentence_length] *= np.product(
+            table.loc[sentence_length] *= np.prod(
                 1
                 - table.loc[range(1, sentence_length)]
                 .drop("remaining", axis=1)
