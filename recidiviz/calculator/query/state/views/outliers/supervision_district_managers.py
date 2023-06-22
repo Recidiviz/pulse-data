@@ -35,7 +35,39 @@ SUPERVISION_DISTRICT_MANAGERS_QUERY_TEMPLATE = f"""
 WITH 
 supervision_district_managers AS (
     {staff_query_template(role="SUPERVISION_REGIONAL_MANAGER")}
+),
+us_pa_supervision_district_managers AS (
+  SELECT 
+    'US_PA' AS state_code,
+    CAST(ext_id AS STRING) AS external_id,
+    TRIM(CONCAT(COALESCE(firstname, ''), ' ', COALESCE(lastname, ''))) AS full_name,
+    email,
+    district AS supervision_district
+  FROM `{{project_id}}.{{static_reference_dataset}}.us_pa_upper_mgmt`  
+  WHERE role IN ('District Director', 'Deputy District Director')
+),
+us_ix_supervision_district_managers AS (
+  SELECT 
+    state_code,
+    external_id,
+    TRIM(CONCAT(COALESCE(FirstName, ''), ' ', COALESCE(LastName, ''))) AS full_name,
+    email,
+    LocationId AS supervision_district,
+    FROM `{{project_id}}.{{static_reference_dataset}}.us_ix_state_staff_leadership`
+    WHERE role_subtype_raw_text IN ('DISTRICT MANAGER', 'DEPUTY DISTRICT MANAGER')
 )
+
+SELECT 
+    {{columns}}
+FROM us_pa_supervision_district_managers 
+
+UNION ALL
+
+SELECT 
+    {{columns}}
+FROM us_ix_supervision_district_managers  
+
+UNION ALL
 
 SELECT 
     {{columns}}
@@ -49,14 +81,13 @@ SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     description=SUPERVISION_DISTRICT_MANAGERS_DESCRIPTION,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
     columns=[
         "state_code",
         "external_id",
-        "staff_id",
         "full_name",
         "email",
-        "supervisor_external_id",
         "supervision_district",
     ],
 )
