@@ -402,6 +402,7 @@ def main() -> int:
                 "recidiviz.utils",
                 "recidiviz.auth",
                 "recidiviz.cloud_storage",
+                "recidiviz.reporting",
             }
         ),
     )
