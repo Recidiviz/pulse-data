@@ -22,7 +22,6 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
     generate_largest_value_query_fragment,
-    list_to_query_string,
     nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -50,10 +49,8 @@ _SUPERVISION_OFFICER_ATTRIBUTES = [
     "role_subtype",
     "specialized_caseload_type",
     "supervisor_staff_external_id",
+    "supervisor_staff_id",
 ]
-
-# Specify states that do not have unit location information, where we'll use staff supervisor information instead
-_STATES_WITH_UNIT_SUPERVISOR_OVERRIDE = ["US_ND"]
 
 SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE = f"""
 WITH all_staff_attribute_periods AS (
@@ -71,6 +68,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS role_subtype,
         NULL AS specialized_caseload_type,
         NULL AS supervisor_staff_external_id,
+        NULL AS supervisor_staff_id,
     FROM
         `{{project_id}}.{{normalized_state_dataset}}.state_staff_location_period` a
     LEFT JOIN
@@ -94,6 +92,7 @@ WITH all_staff_attribute_periods AS (
         role_subtype,
         NULL AS specialized_caseload_type,
         NULL AS supervisor_staff_external_id,
+        NULL AS supervisor_staff_id,
     FROM
         `{{project_id}}.{{normalized_state_dataset}}.state_staff_role_period`
 
@@ -113,6 +112,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS role_subtype,
         state_staff_specialized_caseload_type AS specialized_caseload_type,
         NULL AS supervisor_staff_external_id,
+        NULL AS supervisor_staff_id,
     FROM
         `{{project_id}}.{{normalized_state_dataset}}.state_staff_caseload_type_period`
 
@@ -120,10 +120,10 @@ WITH all_staff_attribute_periods AS (
 
     -- supervisor periods
     SELECT
-        state_code,
-        staff_id,
-        start_date,
-        end_date,
+        a.state_code,
+        a.staff_id,
+        a.start_date,
+        a.end_date,
         NULL AS supervision_district,
         NULL AS supervision_office,
         NULL AS supervision_unit,
@@ -131,9 +131,16 @@ WITH all_staff_attribute_periods AS (
         NULL AS role_type,
         NULL AS role_subtype,
         NULL AS specialized_caseload_type,
-        supervisor_staff_external_id,
+        a.supervisor_staff_external_id,
+        b.staff_id AS supervisor_staff_id,
     FROM
-        `{{project_id}}.{{normalized_state_dataset}}.state_staff_supervisor_period`
+        `{{project_id}}.{{normalized_state_dataset}}.state_staff_supervisor_period` a
+    INNER JOIN
+        `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` b
+    ON
+        a.state_code = b.state_code
+        AND a.supervisor_staff_external_id = b.external_id
+        AND a.supervisor_staff_external_id_type = b.id_type
 )
 ,
 {create_sub_sessions_with_attributes(table_name="all_staff_attribute_periods",index_columns=["state_code","staff_id"])}
@@ -160,9 +167,7 @@ sub_sessions_dedup AS (
 )
 SELECT
     b.external_id AS officer_id, 
-    a.* EXCEPT (supervision_unit),
-    -- Substitute unit location with unit supervisor in states where only supervisor is hydrated
-    IF(state_code IN ({list_to_query_string(_STATES_WITH_UNIT_SUPERVISOR_OVERRIDE, quoted=True)}), supervisor_staff_external_id, supervision_unit) AS supervision_unit,
+    a.*,
 FROM
     sub_sessions_dedup a
 LEFT JOIN

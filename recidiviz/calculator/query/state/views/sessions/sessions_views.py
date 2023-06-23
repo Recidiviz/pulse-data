@@ -186,6 +186,9 @@ from recidiviz.calculator.query.state.views.sessions.supervision_tool_access_ses
 from recidiviz.calculator.query.state.views.sessions.supervision_unit_sessions import (
     SUPERVISION_UNIT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.supervision_unit_supervisor_sessions import (
+    SUPERVISION_UNIT_SUPERVISOR_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.system_sessions import (
     SYSTEM_SESSIONS_VIEW_BUILDER,
 )
@@ -323,6 +326,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
     SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
     SUPERVISION_UNIT_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_UNIT_SUPERVISOR_SESSIONS_VIEW_BUILDER,
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
     SUPERVISION_TOOL_ACCESS_SESSIONS_VIEW_BUILDER,
     SYSTEM_SESSIONS_VIEW_BUILDER,
