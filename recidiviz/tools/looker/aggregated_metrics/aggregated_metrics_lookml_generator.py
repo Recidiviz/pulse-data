@@ -30,8 +30,6 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     INCARCERATION_STARTS,
-    SUPERVISION_DISTRICT_INFERRED,
-    SUPERVISION_OFFICE_INFERRED,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     METRIC_POPULATIONS_BY_TYPE,
@@ -58,11 +56,6 @@ from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils i
     measure_for_metric,
 )
 
-_EXCLUDED_MEASURES = [
-    SUPERVISION_DISTRICT_INFERRED,
-    SUPERVISION_OFFICE_INFERRED,
-]
-
 
 def get_lookml_views_for_metrics(
     population: MetricPopulation,
@@ -72,9 +65,7 @@ def get_lookml_views_for_metrics(
     """Generates extendable LookML views for the specified population and metrics.
     Optional param `parent_unit_of_analysis` to specify the unit of analysis that forms the root of the explore
     and any relevant shared filters and parameters."""
-    metrics_included = [
-        metric for metric in metrics if metric not in _EXCLUDED_MEASURES
-    ]
+
     time_dimensions_view_label = "Time"
     date_dimensions = [
         DimensionLookMLViewField.for_column(
@@ -140,10 +131,10 @@ def get_lookml_views_for_metrics(
             days_in_period_source=LookMLSqlReferenceType.DIMENSION,
             param_source_view=f"{population.population_name_short}_{parent_name}_aggregated_metrics",
         )
-        for metric in metrics_included
+        for metric in metrics
     ]
     metric_filter_parameter = get_metric_filter_parameter(
-        metrics_included, default_metric=INCARCERATION_STARTS
+        metrics, default_metric=INCARCERATION_STARTS
     )
     metric_value_measure = get_metric_value_measure(
         f"{population.population_name_short}_{parent_name}_aggregated_metrics",
