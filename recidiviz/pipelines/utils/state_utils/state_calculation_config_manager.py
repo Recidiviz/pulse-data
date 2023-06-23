@@ -1176,7 +1176,7 @@ def _get_state_specific_staff_role_period_normalization_delegate(
     if state_code == StateCode.US_NC.value:
         return UsNcStaffRolePeriodNormalizationDelegate()
     if state_code == StateCode.US_ND.value:
-        if not staff_supervisor_periods:
+        if staff_supervisor_periods is None:
             raise ValueError(
                 "Missing StateStaffSupervisorPeriods for UsNdStaffRolePeriodNormalizationDelegate"
             )
