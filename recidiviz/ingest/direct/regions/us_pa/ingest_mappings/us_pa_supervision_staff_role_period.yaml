@@ -2,10 +2,10 @@
 manifest_language: 1.0.0
 input_columns:
   - Employ_Num
-  - JOB_CD
-  - period_seq_num
   - start_date
   - end_date
+  - role_subtype
+  - period_seq_num
 unused_columns: []
 output:
   StateStaff:
@@ -23,10 +23,25 @@ output:
           start_date: start_date
           end_date: end_date
           role_type:
-            $enum_mapping:
-              $raw_text: JOB_CD
-              $custom_parser: us_pa_custom_enum_parsers.role_type_mapper
+            $conditional:
+              - $if:
+                  $equal:
+                    - role_subtype
+                    - $literal("INTERNAL_UNKNOWN")
+                $then: $literal_enum(StateStaffRoleType.INTERNAL_UNKNOWN)
+              - $else: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
           role_subtype:
             $enum_mapping:
-              $raw_text: JOB_CD
-              $custom_parser: us_pa_custom_enum_parsers.role_subtype_mapper
+              $raw_text: role_subtype
+              $mappings:
+                StateStaffRoleSubtype.SUPERVISION_OFFICER:
+                  - "SUPERVISION_OFFICER"
+                StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                  - "SUPERVISION_OFFICER_SUPERVISOR"
+                StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER:
+                  - "District Director"
+                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
+                  - "Regional Director"
+                  - "Deputy District Director"
+                  - "Deputy Secretary"
+                  - "Executive Assistant"

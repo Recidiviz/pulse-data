@@ -28,17 +28,24 @@ WITH staff_in_roster AS (
     SELECT LastName,FirstName,EMAIL_ADDRESS,Employ_Num
     FROM {RECIDIVIZ_REFERENCE_agent_districts}
 )
-
-SELECT 
-    LastName,
-    FirstName,
-    EMAIL_ADDRESS,
-    Employ_Num
+-- Fill in POs and their supervisors from roster
+SELECT *
 FROM staff_in_roster
-UNION ALL
--- Fill in missing agent ids staff employee numbers for 
--- older staff not in the roster.
 
+UNION ALL
+
+-- Fill in upper management from different roster
+SELECT DISTINCT 
+    lastname AS LastName,
+    firstname AS FirstName,
+    email AS EMAIL_ADDRESS,
+    ext_id AS Employ_Num
+FROM {RECIDIVIZ_REFERENCE_field_supervisor_list}
+
+UNION ALL
+
+-- Fill in missing agent ids staff employee numbers for 
+-- older staff not in the staff roster.
 SELECT DISTINCT
     LAST_VALUE(PRL_AGNT_LAST_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE) AS LastName,
     LAST_VALUE(PRL_AGNT_FIRST_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE) AS FirstName,
