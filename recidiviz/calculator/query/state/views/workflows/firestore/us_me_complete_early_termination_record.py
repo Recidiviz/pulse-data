@@ -37,6 +37,7 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     one_criteria_away_from_eligibility,
 )
 from recidiviz.task_eligibility.utils.raw_table_import import (
+    cis_204_notes_cte,
     cis_408_violations_notes_cte,
     cis_425_program_enrollment_notes,
 )
@@ -56,6 +57,8 @@ _PROGRAM_ENROLLMENT_ADDITIONAL_JOIN = f"""
         ON peid.person_id = ss.person_id
             AND CURRENT_DATE('US/Eastern') BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date_exclusive')}
 """
+
+_ET_NOTE_TX_REGEX = "|".join(["EARLY TERMINATION", "EARLY TERM", "EARLY RELEASE"])
 
 _STANDARD_PAROLE_CONDITIONS = ", ".join(
     [
@@ -160,6 +163,15 @@ case_notes_cte AS (
         # We are not surfacing standard supervision conditions, since they apply to all
         #   probationees.
         AND CAST(ct.Condition_Type_Cd AS INT64) NOT IN ({_STANDARD_PAROLE_CONDITIONS})
+
+    UNION ALL
+
+    -- ET-related notes
+    {cis_204_notes_cte("Notes: Early Termination")}
+    WHERE 
+        REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{_ET_NOTE_TX_REGEX}') 
+        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{_ET_NOTE_TX_REGEX}')
+    GROUP BY 1,2,3,4,5   
 
     UNION ALL
 
