@@ -157,3 +157,5 @@ products:
     states:
       - state_code: US_PA
         environment: production
+      - state_code: US_IX
+        environment: production
