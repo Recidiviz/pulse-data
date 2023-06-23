@@ -45,6 +45,8 @@ _SUPERVISION_OFFICER_ATTRIBUTES = [
     "supervision_office",
     "supervision_unit",
     "supervision_unit_name",
+    "supervision_district_inferred",
+    "supervision_office_inferred",
     "role_type",
     "role_subtype",
     "specialized_caseload_type",
@@ -64,6 +66,8 @@ WITH all_staff_attribute_periods AS (
         JSON_EXTRACT_SCALAR(location_metadata, "$.supervision_office_id") AS supervision_office,
         JSON_EXTRACT_SCALAR(location_metadata, "$.supervision_unit_id") AS supervision_unit,
         JSON_EXTRACT_SCALAR(location_metadata, "$.supervision_unit_name") AS supervision_unit_name,
+        NULL AS supervision_district_inferred,
+        NULL AS supervision_office_inferred,
         NULL AS role_type,
         NULL AS role_subtype,
         NULL AS specialized_caseload_type,
@@ -78,6 +82,34 @@ WITH all_staff_attribute_periods AS (
 
     UNION ALL
 
+    -- inferred location periods (based on client locations)
+    SELECT
+        a.state_code,
+        b.staff_id,
+        a.start_date,
+        a.end_date_exclusive AS end_date,
+        NULL AS supervision_district,
+        NULL AS supervision_office,
+        NULL AS supervision_unit,
+        NULL AS supervision_unit_name,
+        a.primary_district AS supervision_district_inferred,
+        a.primary_office AS supervision_office_inferred,
+        NULL AS role_type,
+        NULL AS role_subtype,
+        NULL AS specialized_caseload_type,
+        NULL AS supervisor_staff_external_id,
+        NULL AS supervisor_staff_id,
+    FROM
+        `{{project_id}}.sessions.supervision_officer_inferred_location_sessions_materialized` a
+    INNER JOIN
+        `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` b
+    ON
+        #TODO(#21702): Replace join with `staff_id` once refactor is complete
+        a.state_code = b.state_code
+        AND a.supervising_officer_external_id = b.external_id
+
+    UNION ALL
+
     -- role periods
     SELECT
         state_code,
@@ -88,6 +120,8 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervision_office,
         NULL AS supervision_unit,
         NULL AS supervision_unit_name,
+        NULL AS supervision_district_inferred,
+        NULL AS supervision_office_inferred,
         role_type,
         role_subtype,
         NULL AS specialized_caseload_type,
@@ -108,6 +142,8 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervision_office,
         NULL AS supervision_unit,
         NULL AS supervision_unit_name,
+        NULL AS supervision_district_inferred,
+        NULL AS supervision_office_inferred,
         NULL AS role_type,
         NULL AS role_subtype,
         state_staff_specialized_caseload_type AS specialized_caseload_type,
@@ -128,6 +164,8 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervision_office,
         NULL AS supervision_unit,
         NULL AS supervision_unit_name,
+        NULL AS supervision_district_inferred,
+        NULL AS supervision_office_inferred,
         NULL AS role_type,
         NULL AS role_subtype,
         NULL AS specialized_caseload_type,

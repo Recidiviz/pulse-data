@@ -25,8 +25,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
     AVG_DAILY_CASELOAD_OFFICER,
     PROP_PERIOD_WITH_CRITICAL_CASELOAD,
-    SUPERVISION_DISTRICT_INFERRED,
-    SUPERVISION_OFFICE_INFERRED,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
@@ -34,7 +32,6 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulation,
     MetricPopulationType,
@@ -76,8 +73,6 @@ def _query_template_and_format_args(
         period,
         population_start_date AS start_date,
         population_end_date AS end_date,
-        c.district AS {SUPERVISION_DISTRICT_INFERRED.name},
-        c.office AS {SUPERVISION_OFFICE_INFERRED.name},
         -- Proportion of the analysis period where officer has a valid caseload size
         SUM(
             IF(
@@ -124,20 +119,10 @@ def _query_template_and_format_args(
     ON
         b.start_date < a.population_end_date
         AND {nonnull_end_date_clause("b.end_date")} > a.population_start_date
-    #TODO(#21583): Remove this join and pull inferred location as an attribute column instead of a metric
-    LEFT JOIN (
-        SELECT 
-            *, date AS population_start_date
-        FROM
-            `{{project_id}}.{{analyst_views_dataset}}.supervision_officer_primary_office_materialized`
-        ) c
-    USING 
-        ({aggregation_level.get_primary_key_columns_query_string()}, population_start_date)
     GROUP BY {group_by_range_str}
 """
             return cte, {
                 "aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID,
-                "analyst_views_dataset": ANALYST_VIEWS_DATASET,
             }
         if aggregation_level.level_type in [
             MetricUnitOfAnalysisType.SUPERVISION_UNIT,
@@ -157,8 +142,8 @@ def _query_template_and_format_args(
     FROM (
         SELECT 
             a.*, 
-            IFNULL(b.supervision_district, a.supervision_district_inferred) AS district, 
-            IFNULL(b.supervision_office, a.supervision_office_inferred) AS office,
+            IFNULL(b.supervision_district, b.supervision_district_inferred) AS district, 
+            IFNULL(b.supervision_office, b.supervision_office_inferred) AS office,
             b.supervisor_staff_id AS unit_supervisor,
         FROM
             `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized` a
