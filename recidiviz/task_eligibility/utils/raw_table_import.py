@@ -50,7 +50,6 @@ def cis_319_after_csswa(table: str = "sub_sessions_with_attributes") -> str:
 
 
 def cis_204_notes_cte(criteria_name: str) -> str:
-
     """Helper method that returns a query that pulls
     up case notes with the format needed to be aggregated
 
@@ -117,8 +116,8 @@ def cis_408_violations_notes_cte(
     SELECT 
         csp.external_id,
         "{violation_type_for_criteria}" AS criteria,
-        COALESCE(viol.note_title, "No violations found") AS note_title,
-        COALESCE(note_body, "") AS note_body,
+        COALESCE(viol.note_title, "None") AS note_title,
+        COALESCE(note_body, "No violations found") AS note_body,
         event_date AS event_date
     FROM current_supervision_pop_cte csp
     LEFT JOIN (
