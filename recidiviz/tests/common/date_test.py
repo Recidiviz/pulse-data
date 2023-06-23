@@ -18,6 +18,7 @@
 import datetime
 import unittest
 
+import pandas as pd
 from freezegun import freeze_time
 from parameterized import parameterized
 
@@ -26,6 +27,7 @@ from recidiviz.common.date import (
     DateRangeDiff,
     NonNegativeDateRange,
     PotentiallyOpenDateRange,
+    calendar_unit_date_diff,
     convert_critical_dates_to_time_spans,
     is_date_str,
     merge_sorted_date_ranges,
@@ -34,6 +36,87 @@ from recidiviz.common.date import (
     split_range_by_birthdate,
     today_in_iso,
 )
+
+
+class TestCalendarUnitDateDiff(unittest.TestCase):
+    """Tests for calendar_unit_date_diff"""
+
+    # add list of accepted units for use in test cases
+    accepted_units = ["days", "months", "years"]
+
+    # common start and end date test cases
+    start_date = datetime.date(2000, 1, 1)
+    end_date = datetime.date(2001, 2, 2)
+    year_diff = 1
+    month_diff = 13
+    day_diff = (end_date - start_date).days
+    accepted_diffs = [day_diff, month_diff, year_diff]
+
+    def test_valid_units(self) -> None:
+        "Ensures that calendar_unit_date_diff accepts valid units"
+
+        for unit in self.accepted_units:
+            calendar_unit_date_diff(self.start_date, self.end_date, unit)
+        with self.assertRaises(ValueError):
+            calendar_unit_date_diff(self.start_date, self.end_date, "not_a_unit")
+
+    def test_valid_date_types(self) -> None:
+        """Ensures that calendar_unit_date_diff accepts valid date types and returns
+        the same value regardless of type provided."""
+
+        for unit in self.accepted_units:
+            datetime_date_result = calendar_unit_date_diff(
+                self.start_date, self.end_date, unit
+            )
+            datetime_datetime_result = calendar_unit_date_diff(
+                pd.to_datetime(self.start_date), pd.to_datetime(self.end_date), unit
+            )
+            datetime_str_result = calendar_unit_date_diff(
+                self.start_date.isoformat(), self.end_date.isoformat(), unit
+            )
+            assert (
+                datetime_date_result == datetime_datetime_result == datetime_str_result
+            )
+
+    def test_valid_dates(self) -> None:
+        "Ensure error raised if date is not valid"
+
+        with self.assertRaises(ValueError):
+            calendar_unit_date_diff("not_a_date", "not_a_date_either", "days")
+
+    def test_start_date_precede_end_date(self) -> None:
+        "Ensure error raised if start date is after end date"
+
+        with self.assertRaises(ValueError):
+            calendar_unit_date_diff(self.end_date, self.start_date, "days")
+
+    def test_calendar_unit_date_diff(self) -> None:
+        "Ensures that calendar_unit_date_diff returns the correct values"
+
+        # same day
+        for unit in self.accepted_units:
+            self.assertEqual(
+                calendar_unit_date_diff(self.start_date, self.start_date, unit),
+                0,
+            )
+
+        # same day with not same time
+        for unit in self.accepted_units:
+            self.assertEqual(
+                calendar_unit_date_diff(
+                    self.start_date,
+                    self.start_date + datetime.timedelta(hours=1),
+                    unit,
+                ),
+                0,
+            )
+
+        # not same day
+        for unit, value in zip(self.accepted_units, self.accepted_diffs):
+            self.assertEqual(
+                calendar_unit_date_diff(self.start_date, self.end_date, unit),
+                value,
+            )
 
 
 class TestMungeDateString(unittest.TestCase):
@@ -103,7 +186,6 @@ class TestDateRange(unittest.TestCase):
         )
 
     def test_portion_overlapping_with_month(self) -> None:
-
         self.assertEqual(
             None, self.negative_day_range.portion_overlapping_with_month(2019, 2)
         )

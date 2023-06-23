@@ -19,9 +19,10 @@ import datetime
 import re
 from abc import ABCMeta, abstractmethod
 from calendar import isleap
-from typing import Iterable, Iterator, List, Optional, Tuple, TypeVar
+from typing import Iterable, Iterator, List, Optional, Tuple, TypeVar, Union
 
 import attr
+import pandas as pd
 
 # Date Parsing
 
@@ -103,6 +104,86 @@ def first_day_of_next_year(date: datetime.date) -> datetime.date:
 
 def today_in_iso() -> str:
     return datetime.date.today().strftime("%Y-%m-%d")
+
+
+# helper function for getting days, months, or years between dates
+def calendar_unit_date_diff(
+    start_date: Union[datetime.date, datetime.datetime, str],
+    end_date: Union[datetime.date, datetime.datetime, str],
+    time_unit: str,
+) -> int:
+    """
+    Returns an integer representing the number of full calendar units (specified with
+    `time_unit`) that have passed between the `start_date` and `end_date`. Supported
+    unit options are "days", "months", "years". As an example, with a start_date of
+    "2018-02-15" and an end_date of "2018-04-14", 60 days have passed, but only 1 full
+    calendar month has passed. With an end_date value of "2018-04-16" the output would
+    change to "2" because two full calendar months have passed at that point.
+
+    Params:
+    ------
+    start_date: string
+        Date in string format representing the start date
+
+    end_date: string
+        Date in string format representing the end date
+
+    time_unit: string
+        Unit of time that date difference calculation outputs. Can be "years", "months",
+        or "days"
+    """
+
+    # Check that time unit option is in supported list
+    time_unit_options = ["days", "months", "years"]
+    if time_unit not in time_unit_options:
+        raise ValueError(f"Invalid time unit. Expected one of: {time_unit_options}")
+
+    # Convert strings/dates to datetime objects
+    if isinstance(start_date, (datetime.date, str)):
+        start_date = pd.to_datetime(start_date)
+    if isinstance(end_date, (datetime.date, str)):
+        end_date = pd.to_datetime(end_date)
+
+    # check dates formatted correctly, otherwise throw error
+    # this is required for mypy since pd.to_datetime doesn't necessarily return
+    # a datetime object.
+    if not (
+        isinstance(start_date, datetime.datetime)
+        and isinstance(end_date, datetime.datetime)
+    ):
+        raise ValueError(
+            "Could not format `start_date` or `end_date` as datetime objects."
+        )
+
+    # Check that start date precedes the end date
+    if end_date < start_date:
+        raise ValueError("`end_date` must be >= `start date`")
+
+    if time_unit == "days":
+        # get number of (complete) days between dates
+        if end_date == start_date:
+            # the timedelta between two identical datetimes is -1, so use zero here
+            diff_result = 0
+        else:
+            diff_result = (end_date - start_date).days
+
+    elif time_unit == "months":
+        # get number of (complete) months between dates
+        diff_result = (
+            (end_date.year - start_date.year) * 12
+            + (end_date.month - start_date.month)
+            - (1 if end_date.day < start_date.day else 0)
+        )
+
+    else:  # time_unit == "years"
+        # get number of (complete) years between dates
+        diff_result = end_date.year - start_date.year
+        if end_date.month < start_date.month:
+            diff_result -= 1
+        elif end_date.month == start_date.month and end_date.day < start_date.day:
+            diff_result -= 1
+
+    return diff_result
 
 
 @attr.s

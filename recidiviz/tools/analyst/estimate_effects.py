@@ -16,11 +16,79 @@
 # =============================================================================
 """Tools for estimating the effects of experiments, both randomized and natural."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pandas as pd
+import statsmodels.formula.api as smf
 from linearmodels import PanelOLS
 from linearmodels.panel.results import PanelEffectsResults
+
+
+# function for calculating partial regression residuals of X & Y variable against a set
+# of controls
+def partial_regression(
+    data: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+    control_columns: Optional[Union[str, list]] = "1",
+    return_append_string: Optional[str] = "_resid",
+) -> pd.DataFrame:
+    """
+    Returns pandas DataFrame consisting of X and Y series residualized on a set of
+    control variables via ordinary least squares regression.
+
+    Params:
+    ------
+    data: pandas DataFrame
+    x_column : str
+        Column name in `data` with the endogenous variable of interest.
+
+    y_column : str
+        Column name in `data` with the exogenous variable of interest.
+
+    control_columns : str or list, default '1'
+        List of string column names in `data` associated with other exogenous variables,
+        or a string of the right side of the OLS formula consisting of other exogenous
+        variables. The effect of these variables will be removed by OLS regression.
+        Default ('1') performs no residualization and returns df['x_column'] and
+        df['y_column'].
+
+    return_append_string (Optional) : str, default '_resid'
+        String to append to residualized `x_column` and `y_column` column names in returned
+        dataframe. If no value is provided, append default '_resid'.
+
+    """
+
+    # Checks input type of control variables, and converts `control_columns` object to
+    # string formula if input is a list
+    if isinstance(control_columns, list):
+        control_formula = " + ".join(control_columns)
+    elif isinstance(control_columns, str):
+        control_formula = control_columns
+    else:
+        raise ValueError(
+            "`control_columns` must be either a list of exogenous variables or a string of"
+            " the right side OLS formula"
+        )
+
+    # Regress exogenous variable on control variables, and calculate residual errors
+    res_model_x = smf.ols(f"{x_column} ~ {control_formula}", data=data).fit()
+    # actual = predicted + error
+    # error = actual - predicted
+    x_error = data[x_column] - res_model_x.predict(data)
+
+    # Regress endogenous variable on control variables, and calculate residual errors
+    res_model_y = smf.ols(f"{y_column} ~ {control_formula}", data=data).fit()
+    y_error = data[y_column] - res_model_y.predict(data)
+
+    residualized_data = pd.DataFrame(
+        {
+            f"{x_column}{return_append_string}": x_error,
+            f"{y_column}{return_append_string}": y_error,
+        }
+    )
+
+    return residualized_data
 
 
 def validate_df(
