@@ -71,7 +71,7 @@ columns:
         description: "TODO(#7424): Update with definition."
       - value: DA
         description: "TODO(#7424): Update with definition."
-      - value: NULL
+      - value: "NULL"
         description: "TODO(#7424): Update with definition."
       - value: X3
         description: "TODO(#7424): Update with definition."
@@ -105,7 +105,7 @@ columns:
         description: ACTIVE
       - value: I
         description: INACTIVE
-      - value: NULL
+      - value: "NULL"
         description: "TODO(#7424): Update with definition."
       - value: R
         description: REVOKED

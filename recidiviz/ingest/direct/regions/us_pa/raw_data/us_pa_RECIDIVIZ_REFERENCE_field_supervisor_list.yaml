@@ -31,7 +31,7 @@ columns:
     description: The first name of the agent.
   - name: email
     is_pii: True
-    decription: Agent's email address.
+    description: Agent's email address.
   - name: region
     description: The human-readable name of the supervision region.
   - name: district_id

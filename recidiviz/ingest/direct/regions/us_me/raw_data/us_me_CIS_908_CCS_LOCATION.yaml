@@ -33,7 +33,7 @@ columns:
       - value: 8
         description: US and Canadian States and territories
       - value: 9
-        desription: County jails
+        description: County jails
       - value: 11
         description: Dispositions - locations include Federal, Puerto Rico, and Other County
       - value: 12
