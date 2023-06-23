@@ -30,11 +30,8 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     INCARCERATION_STARTS,
-    SUPERVISION_DISTRICT,
     SUPERVISION_DISTRICT_INFERRED,
-    SUPERVISION_OFFICE,
     SUPERVISION_OFFICE_INFERRED,
-    SUPERVISION_UNIT,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     METRIC_POPULATIONS_BY_TYPE,
@@ -62,11 +59,8 @@ from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils i
 )
 
 _EXCLUDED_MEASURES = [
-    SUPERVISION_DISTRICT,
     SUPERVISION_DISTRICT_INFERRED,
-    SUPERVISION_OFFICE,
     SUPERVISION_OFFICE_INFERRED,
-    SUPERVISION_UNIT,
 ]
 
 

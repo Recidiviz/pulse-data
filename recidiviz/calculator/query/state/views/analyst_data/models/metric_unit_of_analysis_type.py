@@ -65,8 +65,8 @@ class MetricUnitOfAnalysis:
     # List of columns present in the assignment table that serve as the primary keys of the table
     primary_key_columns: List[str]
 
-    # List of attribute columns in the assignment table that provide additional information about the level of analysis
-    attribute_columns: List[str]
+    # List of columns that provide information about the unit of analysis which does not change over time
+    static_attribute_columns: List[str]
 
     # Dictionary of additional bigquery dataset args for assembly of a bigquery view builder
     dataset_kwargs: Dict[str, str]
@@ -82,18 +82,22 @@ class MetricUnitOfAnalysis:
 
     @property
     def index_columns(self) -> List[str]:
-        """Returns concatenated list of primary key and attribute columns"""
-        return self.primary_key_columns + self.attribute_columns
+        """Returns concatenated list of primary key and static attribute columns"""
+        return self.primary_key_columns + self.static_attribute_columns
 
     def get_primary_key_columns_query_string(self, prefix: Optional[str] = None) -> str:
         """Returns string containing comma separated primary key column names with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""
         return ", ".join(f"{prefix_str}{column}" for column in self.primary_key_columns)
 
-    def get_attribute_columns_query_string(self, prefix: Optional[str] = None) -> str:
-        """Returns string containing comma separated attribute column names with optional prefix"""
+    def get_static_attribute_columns_query_string(
+        self, prefix: Optional[str] = None
+    ) -> str:
+        """Returns string containing comma separated static attribute column names with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""
-        return ", ".join(f"{prefix_str}{column}" for column in self.attribute_columns)
+        return ", ".join(
+            f"{prefix_str}{column}" for column in self.static_attribute_columns
+        )
 
     def get_index_columns_query_string(self, prefix: Optional[str] = None) -> str:
         """Returns string containing comma separated index column names with optional prefix"""
@@ -126,7 +130,7 @@ METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
         level_type=MetricUnitOfAnalysisType.FACILITY,
         client_assignment_query="SELECT * FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
         primary_key_columns=["state_code", "facility"],
-        attribute_columns=["facility_name"],
+        static_attribute_columns=["facility_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.STATE_CODE: MetricUnitOfAnalysis(
@@ -134,7 +138,7 @@ METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
         client_assignment_query="SELECT * "
         "FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`",
         primary_key_columns=["state_code"],
-        attribute_columns=[],
+        static_attribute_columns=[],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: MetricUnitOfAnalysis(
@@ -142,7 +146,7 @@ METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
         client_assignment_query="SELECT * "
         "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
         primary_key_columns=["state_code", "district"],
-        attribute_columns=["district_name"],
+        static_attribute_columns=["district_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_OFFICE: MetricUnitOfAnalysis(
@@ -150,7 +154,7 @@ METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
         client_assignment_query="SELECT * "
         "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
         primary_key_columns=["state_code", "district", "office"],
-        attribute_columns=["district_name", "office_name"],
+        static_attribute_columns=["district_name", "office_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_UNIT: MetricUnitOfAnalysis(
@@ -158,7 +162,7 @@ METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
         client_assignment_query="SELECT * "
         "FROM `{project_id}.{sessions_dataset}.supervision_unit_sessions_materialized`",
         primary_key_columns=["state_code", "district", "unit"],
-        attribute_columns=["unit_name"],
+        static_attribute_columns=["unit_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_OFFICER: MetricUnitOfAnalysis(
@@ -174,7 +178,7 @@ ON
     AND a.supervising_officer_external_id = b.external_id
 """,
         primary_key_columns=["state_code", "officer_id"],
-        attribute_columns=["officer_name"],
+        static_attribute_columns=["officer_name"],
         dataset_kwargs={
             "reference_views_dataset": REFERENCE_VIEWS_DATASET,
             "sessions_dataset": SESSIONS_DATASET,
@@ -184,7 +188,7 @@ ON
         level_type=MetricUnitOfAnalysisType.PERSON_ID,
         client_assignment_query="SELECT * FROM `{project_id}.{sessions_dataset}.system_sessions_materialized`",
         primary_key_columns=["state_code", "person_id"],
-        attribute_columns=[],
+        static_attribute_columns=[],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
 }

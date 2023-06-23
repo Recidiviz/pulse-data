@@ -25,11 +25,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
     AVG_DAILY_CASELOAD_OFFICER,
     PROP_PERIOD_WITH_CRITICAL_CASELOAD,
-    SUPERVISION_DISTRICT,
     SUPERVISION_DISTRICT_INFERRED,
-    SUPERVISION_OFFICE,
     SUPERVISION_OFFICE_INFERRED,
-    SUPERVISION_UNIT,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
@@ -75,7 +72,7 @@ def _query_template_and_format_args(
     """
     if population.population_type == MetricPopulationType.SUPERVISION:
         if aggregation_level.level_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
-            group_by_range = range(1, len(aggregation_level.primary_key_columns) + 9)
+            group_by_range = range(1, len(aggregation_level.primary_key_columns) + 6)
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
             cte = f"""
     SELECT
@@ -85,9 +82,6 @@ def _query_template_and_format_args(
         population_end_date AS end_date,
         c.district AS {SUPERVISION_DISTRICT_INFERRED.name},
         c.office AS {SUPERVISION_OFFICE_INFERRED.name},
-        r.supervision_district AS {SUPERVISION_DISTRICT.name},
-        r.supervision_office AS {SUPERVISION_OFFICE.name},
-        r.supervision_unit AS {SUPERVISION_UNIT.name},
         -- Proportion of the analysis period where officer has a valid caseload size
         SUM(
             IF(
@@ -134,6 +128,7 @@ def _query_template_and_format_args(
     ON
         b.start_date < a.population_end_date
         AND {nonnull_end_date_clause("b.end_date")} > a.population_start_date
+    #TODO(#21583): Remove this join and pull inferred location as an attribute column instead of a metric
     LEFT JOIN (
         SELECT 
             *, date AS population_start_date
@@ -171,12 +166,18 @@ def _query_template_and_format_args(
         AVG(assignments) AS {AVG_ASSIGNMENTS_OFFICER.name},
     FROM (
         SELECT 
-            *, 
-            {SUPERVISION_DISTRICT_INFERRED.name} AS district, 
-            {SUPERVISION_OFFICE_INFERRED.name} AS office,
-            {SUPERVISION_UNIT.name} AS unit,
+            a.*, 
+            IFNULL(b.supervision_district, a.supervision_district_inferred) AS district, 
+            IFNULL(b.supervision_office, a.supervision_office_inferred) AS office,
+            b.supervision_unit AS unit,
         FROM
-            `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized`
+            `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized` a
+        INNER JOIN
+            `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` b
+        ON
+            a.state_code = b.state_code
+            AND a.officer_id = b.officer_id
+            AND a.end_date BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
     )
     GROUP BY
         {aggregation_level.get_primary_key_columns_query_string()},

@@ -1111,14 +1111,6 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
-SUPERVISION_DISTRICT = MiscAggregatedMetric(
-    name="supervision_district",
-    display_name="Primary Supervision District (State Roster)",
-    description="District assignment for the officer, based on state-provided roster",
-    populations=[MetricPopulationType.SUPERVISION],
-    aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
-)
-
 SUPERVISION_DISTRICT_INFERRED = MiscAggregatedMetric(
     name="supervision_district_inferred",
     display_name="Primary Supervision District (Inferred)",
@@ -1127,13 +1119,6 @@ SUPERVISION_DISTRICT_INFERRED = MiscAggregatedMetric(
     aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
 )
 
-SUPERVISION_OFFICE = MiscAggregatedMetric(
-    name="supervision_office",
-    display_name="Primary Supervision Office (Roster)",
-    description="Office assignment for the officer, based on state-provided roster",
-    populations=[MetricPopulationType.SUPERVISION],
-    aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
-)
 
 SUPERVISION_OFFICE_INFERRED = MiscAggregatedMetric(
     name="supervision_office_inferred",
@@ -1143,13 +1128,6 @@ SUPERVISION_OFFICE_INFERRED = MiscAggregatedMetric(
     aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
 )
 
-SUPERVISION_UNIT = MiscAggregatedMetric(
-    name="supervision_unit",
-    display_name="Primary Supervision Unit ID (Roster)",
-    description="Supervision unit ID of the officer, based on state-provided roster",
-    populations=[MetricPopulationType.SUPERVISION],
-    aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
-)
 
 PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
     name="prop_period_with_critical_caseload",

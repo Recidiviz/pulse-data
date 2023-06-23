@@ -27,12 +27,12 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 
 
 class MetricUnitOfAnalysissByTypeTest(unittest.TestCase):
-    # check that index columns have no repeats
+    # check that index/attribute columns have no repeats
     def test_index_columns_no_repeats(self) -> None:
         for _, value in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
             if len(value.index_columns) != len(set(value.index_columns)):
                 raise ValueError(
-                    "MetricUnitOfAnalysisType `primary_key_columns` and `attribute_columns`"
+                    "MetricUnitOfAnalysisType `primary_key_columns` and `static_attribute_columns`"
                     " cannot have repeated/shared values."
                 )
 
@@ -60,7 +60,7 @@ class MetricUnitOfAnalysisTest(unittest.TestCase):
             level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
             client_assignment_query="SELECT * FROM `{project_id}.{my_dataset}.my_table`",
             primary_key_columns=["region_code", "my_officer_id"],
-            attribute_columns=["my_officer_attribute"],
+            static_attribute_columns=["my_officer_attribute"],
             dataset_kwargs={"my_dataset": "custom_dataset"},
         )
         query_string = my_metric_aggregation_level.get_index_columns_query_string(
