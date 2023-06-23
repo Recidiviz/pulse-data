@@ -473,6 +473,98 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
+    @patch("uuid.uuid4")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_enqueue_sms_request_success(
+        self,
+        mock_task_manager: MagicMock,
+        mock_firestore: MagicMock,
+        mock_uuid: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+        mock_uuid.return_value = "MY UUID"
+
+        request_body = {
+            "recipientExternalId": PERSON_EXTERNAL_ID,
+            "senderId": STAFF_ID,
+            "message": "Hello, is it me you're looking for?",
+            "recipientPhoneNumber": "5153338822",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_CA/enqueue_sms_request",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_task_body = {
+            "recipient": f"+1{request_body['recipientPhoneNumber']}",
+            "mid": "MY UUID",
+            "message": request_body["message"],
+        }
+        mock_task_manager.return_value.create_task.assert_called_once()
+        self.assertEqual(
+            mock_task_manager.return_value.create_task.call_args.kwargs["body"],
+            expected_task_body,
+        )
+        mock_firestore.return_value.set_document.assert_called_once()
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    def test_enqueue_sms_request_failure_unauthorized_state(
+        self,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        request_body = {
+            "recipientExternalId": PERSON_EXTERNAL_ID,
+            "senderId": STAFF_ID,
+            "message": "I can see it in your eyes",
+            "recipientPhoneNumber": "5153338822",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/enqueue_sms_request",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_enqueue_sms_request_create_task_failure(
+        self,
+        mock_task_manager: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+        mock_task_manager.return_value.create_task.side_effect = Exception
+
+        request_body = {
+            "recipientExternalId": PERSON_EXTERNAL_ID,
+            "senderId": STAFF_ID,
+            "message": "I can see it in your smile",
+            "recipientPhoneNumber": "5153338822",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_CA/enqueue_sms_request",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        mock_task_manager.return_value.create_task.assert_called_once()
+        mock_firestore.return_value.set_document.assert_called_once()
+        self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
+
     @patch("twilio.rest.api.v2010.account.message.MessageList.create")
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_valid_twilio_request(

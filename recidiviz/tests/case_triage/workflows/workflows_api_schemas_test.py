@@ -16,7 +16,8 @@
 #  =============================================================================
 """Implements tests for the Workflows API schemas."""
 from recidiviz.case_triage.workflows.api_schemas import (
-    WorkflowsHandleSendSmsSchema,
+    WorkflowsEnqueueSmsRequestSchema,
+    WorkflowsSendSmsRequestSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.tests.case_triage.api_schemas_test_utils import (
@@ -173,11 +174,11 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     )
 
 
-class WorkflowsHandleSendSmsSchemaTest(SchemaTestCase):
-    """Tests for WorkflowsHandleSendSmsSchema"""
+class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
+    """Tests for WorkflowsSendSmsRequestSchema"""
 
     camel_case = False
-    schema = WorkflowsHandleSendSmsSchema
+    schema = WorkflowsSendSmsRequestSchema
 
     VALID_NUMBER = "+12223334444"
     MID = "AAA-BBBB-XX-DD"
@@ -210,5 +211,89 @@ class WorkflowsHandleSendSmsSchemaTest(SchemaTestCase):
             "recipient": "15556667777",
             "mid": MID,
             "message": "That'll do, pig. That'll do.",
+        }
+    )
+
+
+class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
+    """Tests for WorkflowsEnqueueSmsRequestSchema"""
+
+    camel_case = True
+    schema = WorkflowsEnqueueSmsRequestSchema
+
+    VALID_NUMBER = "2223334444"
+    INVALID_NUMBER_PREFIXED_BY_1 = "12223334444"
+    INVALID_NUMBER_AREA_CODE_STARTS_WITH_1 = "1223334444"
+    INVALID_NUMBER_AREA_CODE_STARTS_WITH_0 = "0223334444"
+    INVALID_NUMBER_FORMATTED = "(222) 333-4444"
+    INVALID_NUMBER_E164 = "+12223334444"
+
+    test_valid_data = valid_schema_test(
+        {
+            "recipient_phone_number": VALID_NUMBER,
+            "message": "I must not fear",
+            "recipient_external_id": "paul.atreides",
+            "sender_id": "rev.mum.mohiam",
+        }
+    )
+
+    test_invalid_number_prefixed_by_1 = invalid_schema_test(
+        {
+            "recipient_phone_number": INVALID_NUMBER_PREFIXED_BY_1,
+            "message": "Fear is the mind-killer",
+            "recipient_external_id": "paul.atreides",
+            "sender_id": "rev.mum.mohiam",
+        }
+    )
+
+    test_invalid_number_area_code_starts_with_1 = invalid_schema_test(
+        {
+            "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
+            "message": "Fear is the little-death that brings total obliteration",
+            "recipient_external_id": "paul.atreides",
+            "sender_id": "rev.mum.mohiam",
+        }
+    )
+
+    test_invalid_number_area_code_starts_with_0 = invalid_schema_test(
+        {
+            "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_0,
+            "message": "I will face my fear",
+            "recipient_external_id": "paul.atreides",
+            "sender_id": "rev.mum.mohiam",
+        }
+    )
+
+    test_invalid_number_formatted = invalid_schema_test(
+        {
+            "recipient_phone_number": INVALID_NUMBER_FORMATTED,
+            "message": "I will permit it to pass over me and through me",
+            "recipient_external_id": "paul.atreides",
+            "sender_id": "rev.mum.mohiam",
+        }
+    )
+
+    test_invalid_number_e164 = invalid_schema_test(
+        {
+            "recipient_phone_number": INVALID_NUMBER_E164,
+            "message": "And when it has gone past, I will turn the inner eye to see its path",
+            "recipient_external_id": "paul.atreides",
+            "sender_id": "rev.mum.mohiam",
+        }
+    )
+
+    test_invalid_missing_sender_id = invalid_schema_test(
+        {
+            "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
+            "message": "Where the fear has gone there will be nothing",
+            "recipient_external_id": "paul.atreides",
+        }
+    )
+
+    test_invalid_missing_recipient_id = invalid_schema_test(
+        {
+            "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
+            "message": "Only I will remain",
+            "sender_id": "rev.mum.mohiam",
         }
     )

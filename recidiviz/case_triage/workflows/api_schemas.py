@@ -88,27 +88,43 @@ class ProxySchema(Schema):
     timeout = fields.Integer(load_default=360)
 
 
-class WorkflowsSendSmsSchema(CamelOrSnakeCaseSchema):
+def validate_phone_number(phone_number: str) -> None:
     """
-    The schema expected by the /workflows/external_request/enqueue_sms_request
+    Validates that a string is a 10-digit number without an area code that starts with a 0 or 1
+    e.g. 2223334444 is allowed and 1112223333 or 0112223333 are not
+    """
+    if not re.match(r"[2-9]\d{9}", phone_number):
+        raise ValidationError(f"{phone_number} is not a valid US phone number")
+
+
+class WorkflowsEnqueueSmsRequestSchema(CamelOrSnakeCaseSchema):
+    """
+    The schema expected by the /workflows/external_request/<state>/enqueue_sms_request
     Camel-cased keys are expected since the request is coming from the dashboards app
     """
 
     message = fields.Str(required=True)
-    recipient = fields.Str(required=True)
-    sender = fields.Str(required=True)
+    recipient_phone_number = fields.Str(required=True, validate=validate_phone_number)
+    recipient_external_id = fields.Str(required=True)
+    sender_id = fields.Str(required=True)
 
 
-def validate_phone_number(phone_number: str) -> None:
-    if not re.match(r"\+1\d{10}", phone_number):
-        raise ValidationError("Phone number not a US phone number using E.164")
-
-
-class WorkflowsHandleSendSmsSchema(CamelOrSnakeCaseSchema):
+def validate_e164_phone_number(phone_number: str) -> None:
     """
-    The schema expected by the /workflows/external_request/send_sms_request.
+    Validates that a string matches E.164 schema for a US phone number
+    e.g. +12223334444
+    """
+    if not re.match(r"\+1\d{10}", phone_number):
+        raise ValidationError(
+            f"{phone_number} is not a valid US phone number using E.164"
+        )
+
+
+class WorkflowsSendSmsRequestSchema(CamelOrSnakeCaseSchema):
+    """
+    The schema expected by the /workflows/external_request/<state>/send_sms_request.
     """
 
     message = fields.Str(required=True)
-    recipient = fields.Str(required=True, validate=validate_phone_number)
+    recipient = fields.Str(required=True, validate=validate_e164_phone_number)
     mid = fields.Str(required=True)

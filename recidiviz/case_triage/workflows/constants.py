@@ -17,6 +17,8 @@
 """Contains Workflows constants"""
 from enum import Enum
 
+from recidiviz.common.constants.states import StateCode
+
 
 class ExternalSystemRequestStatus(Enum):
     IN_PROGRESS = "IN_PROGRESS"
@@ -27,3 +29,6 @@ class ExternalSystemRequestStatus(Enum):
 class WorkflowsUsTnVotersRightsCode(Enum):
     VRRE = "VRRE"
     VRRI = "VRRI"
+
+
+WORKFLOWS_SMS_ENABLED_STATES = {StateCode.US_CA.value}

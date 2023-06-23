@@ -18,6 +18,7 @@
 import datetime
 import logging
 import re
+import uuid
 from http import HTTPStatus
 from typing import Optional
 
@@ -32,10 +33,14 @@ from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_ap
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.workflows.api_schemas import (
     ProxySchema,
-    WorkflowsHandleSendSmsSchema,
+    WorkflowsEnqueueSmsRequestSchema,
+    WorkflowsSendSmsRequestSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
-from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
+from recidiviz.case_triage.workflows.constants import (
+    WORKFLOWS_SMS_ENABLED_STATES,
+    ExternalSystemRequestStatus,
+)
 from recidiviz.case_triage.workflows.interface import (
     WorkflowsUsTnExternalRequestInterface,
 )
@@ -305,12 +310,91 @@ def create_workflows_api_blueprint() -> Blueprint:
             HTTPStatus.OK,
         )
 
+    @workflows_api.post("/external_request/<state>/enqueue_sms_request")
+    @requires_api_schema(WorkflowsEnqueueSmsRequestSchema)
+    def handle_enqueue_sms_request(
+        state: str,
+    ) -> Response:
+        state_code = state.upper()
+
+        if state_code not in WORKFLOWS_SMS_ENABLED_STATES:
+            return jsonify_response(
+                f"Unsupported sender state: {state_code}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        recipient_external_id = g.api_data["recipient_external_id"]
+        recipient_phone_number = g.api_data["recipient_phone_number"]
+        # TODO(#21749): [Workflows][Twilio] Ensure sender id matches auth token
+        sender_id = g.api_data["sender_id"]
+        message = g.api_data["message"]
+
+        mid = str(uuid.uuid4())
+        firestore_client = FirestoreClientImpl()
+        client_firestore_id = f"{state.lower()}_{recipient_external_id}"
+        month_code = datetime.date.today().strftime("%m_%Y")
+
+        firestore_path = (
+            f"clientUpdatesV2/{client_firestore_id}/milestonesMessages/{month_code}"
+        )
+
+        try:
+            cloud_task_manager = SingleCloudTaskQueueManager(
+                queue_info_cls=CloudTaskQueueInfo,
+                queue_name=WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE,
+            )
+
+            headers_copy = dict(request.headers)
+            headers_copy["Referer"] = cloud_run_metadata.url
+
+            cloud_task_manager.create_task(
+                absolute_uri=f"{cloud_run_metadata.url}"
+                f"/workflows/external_request/{state_code}/send_sms_request",
+                body={
+                    "mid": mid,
+                    "message": message,
+                    "recipient": f"+1{recipient_phone_number}",
+                },
+                headers=headers_copy,
+            )
+        except Exception as e:
+            logging.error(e)
+            firestore_client.set_document(
+                firestore_path,
+                {
+                    "messageDetails.status": ExternalSystemRequestStatus.FAILURE.value,
+                    "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                },
+                merge=True,
+            )
+            return make_response(
+                jsonify(
+                    message=f"An unknown error occurred while queueing the send_sms_request task: {e}",
+                ),
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        logging.info("Enqueued send_sms_request task")
+
+        firestore_client.set_document(
+            firestore_path,
+            {
+                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                "messageDetails.status": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                "messageDetails.mid": mid,
+                "messageDetails.sentBy": sender_id,
+            },
+            merge=True,
+        )
+
+        return make_response(jsonify(), HTTPStatus.OK)
+
     @workflows_api.post("/external_request/<state>/send_sms_request")
     def handle_send_sms_request(state: str) -> Response:
         cloud_task_body = get_cloud_task_json_body()
 
         # Validate schema
-        data = load_api_schema(WorkflowsHandleSendSmsSchema, cloud_task_body)
+        data = load_api_schema(WorkflowsSendSmsRequestSchema, cloud_task_body)
 
         message = data["message"]
         recipient = data["recipient"]
