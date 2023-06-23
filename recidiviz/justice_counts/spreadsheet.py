@@ -515,7 +515,7 @@ class SpreadsheetInterface:
         )
 
     @staticmethod
-    def convert_file_to_excel(file: Any, filename: str) -> pd.ExcelFile:
+    def convert_file_to_excel(file: Any, filename: str) -> Tuple[pd.ExcelFile, str]:
         # source: https://stackoverflow.com/questions/47379476/how-to-convert-bytes-data-into-a-python-pandas-dataframe
         # Note that invalid metrics will be caught in workbook_uploader._add_invalid_sheet_name_error()
         # new_file_name is the path of the new xlsx file that we create in line 520
@@ -528,7 +528,7 @@ class SpreadsheetInterface:
             csv_df = pd.read_csv(file)
             csv_df.to_excel(new_file_name, sheet_name=metric, index=False)
             xls = pd.ExcelFile(new_file_name)
-        else:
-            xls = pd.ExcelFile(file)
+            return xls, new_file_name
 
-        return xls
+        xls = pd.ExcelFile(file)
+        return xls, filename
