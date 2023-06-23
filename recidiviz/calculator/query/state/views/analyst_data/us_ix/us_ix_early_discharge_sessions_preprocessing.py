@@ -37,7 +37,26 @@ US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION = (
 DISCHARGE_SESSION_DIFF_DAYS = "7"
 
 US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = f"""
-WITH early_terminations_ix AS (
+WITH us_ix_ed_probation AS (
+  SELECT 
+    sess.person_id,
+    sess.end_date AS ed_date,
+  FROM `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` proj
+  INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
+    ON proj.state_code = sess.state_code
+    AND proj.person_id = sess.person_id
+    --only look at projected supervision completion date spans that overlap with the end of a probation session
+    AND proj.start_date < {nonnull_end_date_exclusive_clause('sess.end_date_exclusive')}
+    AND sess.end_date <= {nonnull_end_date_exclusive_clause('proj.end_date_exclusive')}
+  WHERE proj.state_code = 'US_IX'
+    AND sess.end_reason IN ('DISCHARGE') 
+    AND compartment_level_2 IN ('PROBATION', 'INFORMAL_PROBATION')
+    AND compartment_level_1  IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
+    -- only include sessions where the projected max completion date for that session is at least two weeks 
+    -- after their discharge date
+    AND DATE_DIFF(proj.projected_completion_date_max, sess.end_date_exclusive, DAY) > 14
+),
+us_ix_ed_parole AS (
   SELECT 
     DISTINCT
       person_id,
@@ -46,6 +65,13 @@ WITH early_terminations_ix AS (
   WHERE state_code = 'US_IX'
     AND decision = 'SENTENCE_TERMINATION_GRANTED'
     AND decision_status = 'DECIDED'
+),
+us_ix_ed_all AS (
+  SELECT *
+  FROM us_ix_ed_probation
+  UNION ALL 
+  SELECT *
+  FROM us_ix_ed_parole
 ),
 
 us_ix_supervision_sessions AS (
@@ -66,7 +92,7 @@ us_ix_ed_sessions AS (
     ses.end_date,
     ABS(DATE_DIFF(et.ed_date, ses.end_date, DAY)) AS discharge_to_session_end_days,
     ses.outflow_to_level_1,
-  FROM early_terminations_ix et
+  FROM us_ix_ed_all et
   INNER JOIN us_ix_supervision_sessions ses
     ON ses.person_id = et.person_id
     AND DATE_SUB(ed_date, INTERVAL 1 DAY) 
