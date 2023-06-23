@@ -346,13 +346,52 @@ class DirectIngestRawFileConfig:
         primary_key_cols = file_config_dict.pop("primary_key_cols", list)
         file_description = file_config_dict.pop("file_description", str)
         data_class = file_config_dict.pop("data_classification", str)
-        columns = file_config_dict.pop("columns", list)
+        column_infos: List[RawTableColumnInfo] = []
+        for column in file_config_dict.pop_dicts("columns"):
+            column_name = column.pop("name", str)
 
-        column_names = [column["name"] for column in columns]
+            known_value_infos = None
+            if (known_values := column.pop_dicts_optional("known_values")) is not None:
+                known_value_infos = []
+                for known_value in known_values:
+                    known_value_value = str(known_value.pop("value", object))
+                    known_value_infos.append(
+                        ColumnEnumValueInfo(
+                            value=known_value_value,
+                            description=known_value.pop_optional("description", str),
+                        )
+                    )
+                    if len(known_value) > 0:
+                        raise ValueError(
+                            f"Found unexpected config values for raw file column "
+                            f"[{column_name}] known_value [{known_value_value}] in "
+                            f"[{file_tag}]: {repr(known_value.get())}"
+                        )
+            column_infos.append(
+                RawTableColumnInfo(
+                    name=column_name,
+                    is_datetime=column.pop_optional("is_datetime", bool) or False,
+                    is_pii=column.pop_optional("is_pii", bool) or False,
+                    description=column.pop_optional("description", str),
+                    known_values=known_value_infos,
+                    datetime_sql_parsers=column.pop_list_optional(
+                        "datetime_sql_parsers", str
+                    ),
+                )
+            )
+            if len(column) > 0:
+                raise ValueError(
+                    f"Found unexpected config values for raw file column "
+                    f"[{column_name}] in [{file_tag}]: {repr(column.get())}"
+                )
+
+        column_names = [column.name for column in column_infos]
         if len(column_names) != len(set(column_names)):
             raise ValueError(f"Found duplicate columns in raw_file [{file_tag}]")
 
-        missing_columns = set(primary_key_cols) - {column["name"] for column in columns}
+        missing_columns = set(primary_key_cols) - {
+            column.name for column in column_infos
+        }
         if missing_columns:
             raise ValueError(
                 f"Column(s) marked as primary keys not listed in"
@@ -386,33 +425,14 @@ class DirectIngestRawFileConfig:
                 f"Found unexpected config values for raw file"
                 f"[{file_tag}]: {repr(file_config_dict.get())}"
             )
+
         return DirectIngestRawFileConfig(
             file_tag=file_tag,
             file_path=file_path,
             file_description=file_description,
             data_classification=RawDataClassification(data_class),
             primary_key_cols=primary_key_cols,
-            columns=[
-                RawTableColumnInfo(
-                    name=column["name"],
-                    is_datetime=column.get("is_datetime", False),
-                    is_pii=column.get("is_pii", False),
-                    description=column.get("description", None),
-                    known_values=[
-                        ColumnEnumValueInfo(
-                            value=str(x["value"]),
-                            description=x.get("description", None),
-                        )
-                        for x in column["known_values"]
-                    ]
-                    if "known_values" in column
-                    else None,
-                    datetime_sql_parsers=list(column["datetime_sql_parsers"])
-                    if "datetime_sql_parsers" in column
-                    else None,
-                )
-                for column in columns
-            ],
+            columns=column_infos,
             supplemental_order_by_clause=supplemental_order_by_clause
             if supplemental_order_by_clause is not None
             else "",

@@ -524,7 +524,7 @@ columns:
       To indicate if a body search was conducted during the movement - all fields are U for Unknown or null.
     known_values:
       - value: "U"
-        desciption: Unknown
+        description: Unknown
   - name: LEGALFILEJACKETSENT
     description: |-
       TODO(#12372)

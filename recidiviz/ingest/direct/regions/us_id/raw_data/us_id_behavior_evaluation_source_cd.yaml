@@ -21,4 +21,4 @@ columns:
       - value: T
         description: "True"
       - value: F
-        desciption: "False"
+        description: "False"

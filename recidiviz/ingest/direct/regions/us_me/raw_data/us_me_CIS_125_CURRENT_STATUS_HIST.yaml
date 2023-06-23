@@ -283,11 +283,11 @@ columns:
   - name: Effct_Date
     description: |-
       The date that the status starts.
-    is_dateime: True
+    is_datetime: True
   - name: End_Date
     description: |-
       The date that the status ends. If this date is in the future, then the status is still active.
-    is_dateime: True
+    is_datetime: True
   - name: End_Datetime
   - name: Furlough_Ind
   - name: Hospital_Ind
@@ -295,7 +295,7 @@ columns:
     description: |-
       The date that the status ends. If this date is 12/31/9999 then the status is still active and the End_Date shows
       the anticipated end date or in some cases the End_Date is NULL.
-    is_dateime: True
+    is_datetime: True
   - name: Modified_By_Tx
     is_pii: True
   - name: Modified_On_Date

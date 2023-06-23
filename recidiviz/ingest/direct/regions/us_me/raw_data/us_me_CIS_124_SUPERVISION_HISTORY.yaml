@@ -15,7 +15,7 @@ columns:
   - name: Assignment_Date
     description: |-
       The date the supervising officer was assigned to the client.
-    is_dateime: True
+    is_datetime: True
   - name: Cis_100_Client_Id
     description: |-
       The assigned client's MEDOC ID
@@ -115,7 +115,7 @@ columns:
   - name: Supervision_End_Date
     description: |-
       The date when the supervising officer's assignment ended or will end.
-    is_dateime: True
+    is_datetime: True
   - name: Supervision_History_Id
     description: |-
       The primary key for the CIS_124_SUPERVISION_HISTORY table.
