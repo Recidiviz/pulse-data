@@ -30,15 +30,11 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
-    join_on_columns_fragment,
     nonnull_current_date_clause,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulation,
     MetricPopulationType,
@@ -137,17 +133,11 @@ def _query_template_and_format_args(
         ) c
     USING 
         ({aggregation_level.get_primary_key_columns_query_string()}, population_start_date)
-    LEFT JOIN 
-        `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` r
-    ON
-        {join_on_columns_fragment(columns=aggregation_level.primary_key_columns, table1="b", table2="r")}
-        AND population_end_date BETWEEN r.start_date AND {nonnull_end_date_exclusive_clause("r.end_date_exclusive")}
     GROUP BY {group_by_range_str}
 """
             return cte, {
                 "aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID,
                 "analyst_views_dataset": ANALYST_VIEWS_DATASET,
-                "sessions_dataset": SESSIONS_DATASET,
             }
         if aggregation_level.level_type in [
             MetricUnitOfAnalysisType.SUPERVISION_UNIT,
@@ -169,7 +159,7 @@ def _query_template_and_format_args(
             a.*, 
             IFNULL(b.supervision_district, a.supervision_district_inferred) AS district, 
             IFNULL(b.supervision_office, a.supervision_office_inferred) AS office,
-            b.supervision_unit AS unit,
+            b.supervisor_staff_id AS unit_supervisor,
         FROM
             `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized` a
         INNER JOIN

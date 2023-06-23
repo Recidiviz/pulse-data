@@ -164,25 +164,8 @@ class SupervisionUnitMetric(MetricBase, OutliersBase):
     """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_unit_metrics`"""
 
     __tablename__ = "supervision_unit_metrics"
-    # The id of the unit's district the metric is measured for
-    district = Column(
-        String,
-        primary_key=True,
-        nullable=False,
-    )
-    # The id of the unit the metric is measured for
-    unit = Column(String, primary_key=True, nullable=False)
-
-    __tableargs__ = (
-        ForeignKeyConstraint(
-            ["state_code", "district", "unit"],
-            [
-                "supervision_units.state_code",
-                "supervision_units.supervision_district_id",
-                "supervision_units.external_id",
-            ],
-        ),
-    )
+    # The staff id of the unit supervisor the metric is measured for
+    unit_supervisor = Column(String, primary_key=True, nullable=False)
 
 
 class SupervisionDistrictMetric(MetricBase, OutliersBase):

@@ -35,8 +35,6 @@ COLUMN_SOURCE_DICT = {
     "office": "supervision_office",
     "office_name": "supervision_office_name",
     "officer_id": "supervising_officer_external_id",
-    "unit_name": "supervision_unit_name",
-    "unit": "supervision_unit",
 }
 
 
@@ -160,9 +158,9 @@ METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
     MetricUnitOfAnalysisType.SUPERVISION_UNIT: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
         client_assignment_query="SELECT * "
-        "FROM `{project_id}.{sessions_dataset}.supervision_unit_sessions_materialized`",
-        primary_key_columns=["state_code", "district", "unit"],
-        static_attribute_columns=["unit_name"],
+        "FROM `{project_id}.{sessions_dataset}.supervision_unit_supervisor_sessions_materialized`",
+        primary_key_columns=["state_code", "unit_supervisor"],
+        static_attribute_columns=["unit_supervisor_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_OFFICER: MetricUnitOfAnalysis(

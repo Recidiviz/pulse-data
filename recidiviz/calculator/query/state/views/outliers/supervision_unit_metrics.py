@@ -61,8 +61,7 @@ SUPERVISION_UNIT_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "metric_value",
         "period",
         "end_date",
-        "district",
-        "unit",
+        "unit_supervisor",
     ],
 )
 
