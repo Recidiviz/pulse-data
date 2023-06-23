@@ -87,7 +87,7 @@ Source table:
 
 Primary key columns: `{aggregation_level.get_primary_key_columns_query_string()}`
 
-Additional attribute columns: `{aggregation_level.get_attribute_columns_query_string()}`
+Static attribute columns: `{aggregation_level.get_static_attribute_columns_query_string()}`
 
 ### Metrics:
 |	Metric	|	Description	|   Metric Type    |   Conditions   |
