@@ -1111,6 +1111,24 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
+SUPERVISION_DISTRICT_INFERRED = MiscAggregatedMetric(
+    name="supervision_district_inferred",
+    display_name="Primary Supervision District (Inferred)",
+    description="District containing the majority of an officer's clients on the first day of the analysis period",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
+)
+
+
+SUPERVISION_OFFICE_INFERRED = MiscAggregatedMetric(
+    name="supervision_office_inferred",
+    display_name="Primary Supervision Office (Inferred)",
+    description="Office containing the majority of an officer's clients on the first day of the analysis period",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
+)
+
+
 PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
     name="prop_period_with_critical_caseload",
     display_name="Proportion Of Analysis Period With Critical Caseload",
