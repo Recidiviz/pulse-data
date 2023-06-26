@@ -14,8 +14,8 @@
 
 {% macro section_heading(text) %}
   <tr>
-    <td class="em_heading em_dm_txt_white" valign="top" align="left"
-      style="{{brand_styles.fonts.sans_serif}} padding-left: 3px; font-weight: 500; font-size: 24px; color: #00413E;">
+    <td class="em_heading em_dm_txt_white" valign="top" align="center"
+      style="{{brand_styles.fonts.sans_serif}} font-weight: 500; font-size: 16px; color: #547485;">
       {{ text }} 
     </td>
   </tr>
@@ -166,4 +166,36 @@
       {% endfor %}
     </tbody>
   </table>
+{% endmacro %}
+
+{% macro circle(color, diameter) %}
+<span style="display: inline-block; vertical-align: super;"><!--[if mso]>
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="http://" style="height:{{diameter}};v-text-anchor:middle;width:{{diameter}};" arcsize="600%" stroke="f" fillcolor="{{color}}">
+<w:anchorlock/>
+<center>
+<![endif]-->
+  <span
+    style="background-color:{{color}};border-radius:600px;display:inline-block;font-family:sans-serif;font-size:1px;font-weight:bold;line-height:{{diameter}};text-align:center;text-decoration:none;width:{{diameter}};-webkit-text-size-adjust:none;">
+    &nbsp;</span>
+  <!--[if mso]>
+</center>
+</v:roundrect>
+<![endif]-->
+</span>
+{% endmacro %}
+
+{% macro pill(color, width, height) %}
+<span style="display: inline-block; vertical-align: super;"><!--[if mso]>
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="http://" style="height:{{height}};v-text-anchor:middle;width:{{width}};" arcsize="600%" stroke="f" fillcolor="{{color}}">
+<w:anchorlock/>
+<center>
+<![endif]-->
+  <span
+    style="background-color:{{color}};border-radius:600px;display:inline-block;font-family:sans-serif;font-size:1px;font-weight:bold;line-height:{{height}};text-align:center;text-decoration:none;width:{{width}};-webkit-text-size-adjust:none;">
+    &nbsp;</span>
+  <!--[if mso]>
+</center>
+</v:roundrect>
+<![endif]-->
+</span>
 {% endmacro %}

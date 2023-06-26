@@ -17,7 +17,7 @@
 
 import { z } from "zod";
 
-import { GoalStatus, goalStatusSchema } from "../schema/helpers";
+import { TargetStatus, targetStatusSchema } from "../schema/helpers";
 
 export const outliersSupervisorChartInputSchema = z.object({
   stateCode: z.string(),
@@ -27,16 +27,18 @@ export const outliersSupervisorChartInputSchema = z.object({
     target: z.number(),
     otherOfficers: z
       // receiving this as a mapping is more size-efficient over the network...
-      .record(goalStatusSchema, z.array(z.number()))
+      .record(targetStatusSchema, z.array(z.number()))
       // ...but spreading the mapping across all records will make plotting easier
       .transform((mapping) => {
-        const flattenedRecords: { value: number; goalStatus: GoalStatus }[] =
-          [];
-        goalStatusSchema.options.forEach((goalStatus) => {
-          const values = mapping[goalStatus];
+        const flattenedRecords: {
+          value: number;
+          targetStatus: TargetStatus;
+        }[] = [];
+        targetStatusSchema.options.forEach((targetStatus) => {
+          const values = mapping[targetStatus];
           if (values) {
             flattenedRecords.push(
-              ...values.map((value) => ({ value, goalStatus }))
+              ...values.map((value) => ({ value, targetStatus }))
             );
           }
         });
@@ -46,8 +48,8 @@ export const outliersSupervisorChartInputSchema = z.object({
       z.object({
         name: z.string(),
         rate: z.number(),
-        goalStatus: goalStatusSchema,
-        previousRate: z.number(),
+        targetStatus: targetStatusSchema,
+        prevRate: z.number(),
       })
     ),
   }),

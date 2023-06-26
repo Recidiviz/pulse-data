@@ -15,12 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { GoalStatus } from "../../server/generate/schema/helpers";
+import { TargetStatus } from "../../server/generate/schema/helpers";
 import { OUTLIERS_GOAL_COLORS } from "../constants";
 import { SwarmPoint } from "./calculateSwarm";
 
 export type SwarmedCircleGroupProps = JSX.IntrinsicElements["g"] & {
-  data: SwarmPoint<{ goalStatus: GoalStatus }>[];
+  data: SwarmPoint<{ targetStatus: TargetStatus }>[];
   radius: number;
   opacity: number;
 };
@@ -43,7 +43,7 @@ export function SwarmedCircleGroup({
           r={radius}
           cx={position}
           cy={offset}
-          fill={OUTLIERS_GOAL_COLORS[datum.goalStatus]}
+          fill={OUTLIERS_GOAL_COLORS[datum.targetStatus]}
           fillOpacity={opacity}
         />
       ))}

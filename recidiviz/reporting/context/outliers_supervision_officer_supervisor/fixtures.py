@@ -22,6 +22,7 @@ from recidiviz.outliers.constants import (
     EARLY_DISCHARGE_REQUESTS,
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+    TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
 )
 from recidiviz.outliers.querier.querier import (
@@ -44,6 +45,12 @@ metric_fixtures = {
         body_display_name="absconsion rate",
         event_name="absconsions",
     ),
+    TASK_COMPLETIONS_FULL_TERM_DISCHARGE: OutliersMetricConfig.build_from_metric(
+        metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
+        title_display_name="Successful Completion Rate",
+        body_display_name="successful completion rate",
+        event_name="successful completions",
+    ),
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION: OutliersMetricConfig.build_from_metric(
         metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
         title_display_name="Limited Supervision Unit Transfer Rate",
@@ -64,8 +71,9 @@ metric_fixtures = {
     ),
 }
 
-target_fixture = 0.05428241659992843
-other_officers_fixture = {
+target_fixture_adverse = 0.05428241659992843
+
+other_officers_fixture_adverse = {
     TargetStatus.MET: [
         0.013664782299427202,
         0,
@@ -85,8 +93,59 @@ other_officers_fixture = {
     ],
 }
 
+target_fixture_favorable = 0.093735
+other_officers_fixture_favorable = {
+    TargetStatus.FAR: [
+        0.013664782299427202,
+        0,
+        0,
+        0.01986070301447383,
+        0.023395936157938592,
+    ],
+    TargetStatus.NEAR: [
+        0.05557247259439707,
+        0.06803989188181564,
+        0.0880180859080633,
+    ],
+    TargetStatus.MET: [
+        0.24142872891632675,
+        0.2114256751864456,
+        0.10346978115432588,
+    ],
+}
+
+target_fixture_favorable_zero = 0.038641985
+other_officers_fixture_favorable_zero = {
+    TargetStatus.NEAR: [
+        0.013664782299427202,
+        0.014664782299427202,
+        0.017299427202,
+        0.01986070301447383,
+        0.023395936157938592,
+    ],
+    TargetStatus.MET: [
+        0.05557247259439707,
+        0.06803989188181564,
+        0.0880180859080633,
+        0.24142872891632675,
+        0.2114256751864456,
+        0.10346978115432588,
+    ],
+    TargetStatus.FAR: [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ],
+}
+
 # there is no particular order to these, can be mixed and matched as needed
-highlighted_officers_fixture = [
+highlighted_officers_fixture_adverse = [
     OfficerMetricEntity(
         "Tatiana Alvarez-Thomas",
         0.19904024430145054,
@@ -105,6 +164,44 @@ highlighted_officers_fixture = [
     ),
     OfficerMetricEntity(
         "Ryan Luna", 0.129823, TargetStatus.FAR, 0.121354, "abc123", "1"
+    ),
+]
+
+highlighted_officers_fixture_favorable = [
+    OfficerMetricEntity(
+        "Tony Farmer",
+        0.01854,
+        TargetStatus.FAR,
+        0,
+        "abc123",
+        "1",
+    ),
+    OfficerMetricEntity(
+        "Samuel Dunn",
+        0,
+        TargetStatus.FAR,
+        0,
+        "abc123",
+        "1",
+    ),
+]
+
+highlighted_officers_fixture_favorable_zero = [
+    OfficerMetricEntity(
+        "Tatiana Alvarez-Thomas",
+        0,
+        TargetStatus.FAR,
+        0.01854,
+        "abc123",
+        "1",
+    ),
+    OfficerMetricEntity(
+        "Samuel Dunn",
+        0,
+        TargetStatus.FAR,
+        0,
+        "abc123",
+        "1",
     ),
 ]
 

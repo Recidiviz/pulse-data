@@ -19,7 +19,7 @@ import {
   OutliersSupervisorChartInput,
   outliersSupervisorChartInputSchema,
 } from "../../server/generate/outliersSupervisorChart/types";
-import { goalStatusSchema } from "../../server/generate/schema/helpers";
+import { targetStatusSchema } from "../../server/generate/schema/helpers";
 import { officersDataZeroMode } from "../SwarmedCircleGroup/fixtures";
 
 export const fittingSupervisorData: OutliersSupervisorChartInput["data"] = {
@@ -27,20 +27,20 @@ export const fittingSupervisorData: OutliersSupervisorChartInput["data"] = {
     {
       name: "Tatiana Alvarez-Thomas",
       rate: 0.19904024430145054,
-      goalStatus: "far",
-      previousRate: 0.15804024430145053,
+      targetStatus: targetStatusSchema.enum.FAR,
+      prevRate: 0.15804024430145053,
     },
     {
       name: "Mario McCarthy",
       rate: 0.10228673915480327,
-      goalStatus: "far",
-      previousRate: 0.08228673915480327,
+      targetStatus: targetStatusSchema.enum.FAR,
+      prevRate: 0.08228673915480327,
     },
     {
       name: "Ryan Luna",
       rate: 0.129823,
-      previousRate: 0.121354,
-      goalStatus: goalStatusSchema.enum.far,
+      prevRate: 0.121354,
+      targetStatus: targetStatusSchema.enum.FAR,
     },
   ],
   target: 0.05428241659992843,
@@ -57,21 +57,21 @@ overflowingSupervisorData.highlightedOfficers.push(
     {
       name: "Julian Stewart",
       rate: 0.265398,
-      previousRate: 0.27423,
-      goalStatus: goalStatusSchema.enum.far,
+      prevRate: 0.27423,
+      targetStatus: targetStatusSchema.enum.FAR,
     },
 
     {
       name: "Grace Fletcher",
       rate: 0.173946,
-      previousRate: 0.085724,
-      goalStatus: goalStatusSchema.enum.far,
+      prevRate: 0.085724,
+      targetStatus: targetStatusSchema.enum.FAR,
     },
     {
       name: "Kenneth Hodges",
       rate: 0.16195862,
-      previousRate: 0.22047,
-      goalStatus: goalStatusSchema.enum.far,
+      prevRate: 0.22047,
+      targetStatus: targetStatusSchema.enum.FAR,
     },
   ]
 );

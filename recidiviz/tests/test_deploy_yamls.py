@@ -89,6 +89,14 @@ class TestDeployYamls(unittest.TestCase):
             production_vpc_connector,
         )
 
+        # We expect the asset generation service URLs to differ, but both are expected to be Cloud Run URLs
+        asset_gen_diff = diff["values_changed"].pop(
+            "root['env_variables']['ASSET_GENERATION_URL']"
+        )
+        pattern = r"^https://asset-generation-.+-uc\.a\.run\.app$"
+        self.assertIsNotNone(re.match(pattern, asset_gen_diff["old_value"]))
+        self.assertIsNotNone(re.match(pattern, asset_gen_diff["new_value"]))
+
         # There should be no other values changed between the two
         self.assertFalse(diff.pop("values_changed"))
         # Aside from the few values changed, there should be no other changes

@@ -8,8 +8,8 @@
 {% for highlight in highlights.multiple_metrics %}
 <tr>
     <td class="em_dm_txt_white_80"
-        style="{{brand_styles.fonts.sans_serif}} color: rgba(53, 83, 98, 0.85); font-weight: 500; font-size: 18px;">
-        <strong>{{highlight.name}}</strong>
+        style="{{brand_styles.fonts.sans_serif}} color: #4C6E80; font-weight: 500; font-size: 18px;">
+        <strong style="color: #032322;">{{highlight.name}}</strong>
         {% for detail in highlight.details %}
         {% if not loop.first %}
         and
@@ -27,8 +27,8 @@
 {% if highlights.no_outliers %}
 <tr>
     <td class="em_dm_txt_white_80"
-        style="{{brand_styles.fonts.sans_serif}} color: rgba(53, 83, 98, 0.85); font-weight: 500; font-size: 18px;">
-        <strong>None of the agents in your unit</strong> are far from the state average on {{highlights.no_outliers}}.
+        style="{{brand_styles.fonts.sans_serif}} color: #4C6E80; font-weight: 500; font-size: 18px;">
+        <strong style="color: #032322;">None of the {{officer_label}}s in your unit</strong> are far from the state average on {{highlights.no_outliers}}.
     </td>
 </tr>
 {% endif %}

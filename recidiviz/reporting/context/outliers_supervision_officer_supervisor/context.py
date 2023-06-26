@@ -49,6 +49,7 @@ from collections import defaultdict
 from itertools import groupby
 from typing import List, Optional
 
+from dateutil.relativedelta import relativedelta
 from jinja2 import Template
 
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
@@ -60,11 +61,15 @@ from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+    TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
 )
+from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.outliers.types import (
+    MetricOutcome,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
+    OutliersConfig,
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
@@ -74,15 +79,27 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.reporting.asset_generation.constants import RETRIEVE_API_BASE
+from recidiviz.reporting.asset_generation.outliers_supervisor_chart import (
+    OutliersSupervisorChartResponse,
+    prepare_data,
+    request_asset,
+)
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval import (
     retrieve_data_for_outliers_supervision_officer_supervisor,
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
     create_fixture,
-    highlighted_officers_fixture,
+    highlighted_officers_fixture_adverse,
+    highlighted_officers_fixture_favorable,
+    highlighted_officers_fixture_favorable_zero,
     metric_fixtures,
-    other_officers_fixture,
-    target_fixture,
+    other_officers_fixture_adverse,
+    other_officers_fixture_favorable,
+    other_officers_fixture_favorable_zero,
+    target_fixture_adverse,
+    target_fixture_favorable,
+    target_fixture_favorable_zero,
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.types import (
     Highlights,
@@ -104,11 +121,13 @@ from recidiviz.utils.metadata import local_project_id_override
 class OutliersSupervisionOfficerSupervisorContext(ReportContext):
     """Report context for the Outliers Supervision Officer Supervisor email."""
 
+    _chart_width = 571
+
     def get_report_type(self) -> ReportType:
         return ReportType.OutliersSupervisionOfficerSupervisor
 
     def get_required_recipient_data_fields(self) -> List[str]:
-        return ["report"]
+        return ["report", "config"]
 
     @property
     def html_template(self) -> Template:
@@ -119,18 +138,110 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
     def _prepare_for_generation(self) -> dict:
         prepared_data = {
             "headline": f"Your {self._report_month} Unit Report",
+            "state_name": self.batch.state_code.get_state().name,
+            "officer_label": self._config.supervision_officer_label,
+            "metric_periods": {
+                "current": self._current_metric_period,
+                "previous": self._previous_metric_period,
+            },
+            "chart_width": self._chart_width,
+            "asset_url_base": RETRIEVE_API_BASE,
+            "show_metric_section_headings": self._show_metric_section_headings,
+            "favorable_metrics": [
+                self._prepare_metric(m)
+                for m in self._report_data.metrics
+                if m.metric.outcome_type == MetricOutcome.FAVORABLE
+            ],
+            "adverse_metrics": [
+                self._prepare_metric(m)
+                for m in self._report_data.metrics
+                if m.metric.outcome_type == MetricOutcome.ADVERSE
+            ],
             "highlights": self._highlights,
         }
         self.prepared_data = prepared_data
         return prepared_data
 
     @property
+    def _report_date(self) -> datetime.date:
+        return get_date_from_batch_id(self.batch)
+
+    @property
     def _report_month(self) -> str:
-        return get_date_from_batch_id(self.batch).strftime("%B")
+        return self._report_date.strftime("%B")
 
     @property
     def _report_data(self) -> OfficerSupervisorReportData:
         return self.recipient_data["report"]
+
+    @property
+    def _config(self) -> OutliersConfig:
+        return self.recipient_data["config"]
+
+    def _prepare_metric(self, metric_info: OutlierMetricInfo) -> dict:
+        return {
+            "title_display_name": metric_info.metric.title_display_name,
+            "body_display_name": metric_info.metric.body_display_name,
+            "legend_zero": metric_info.target_status_strategy
+            == TargetStatusStrategy.ZERO_RATE,
+            "far_direction": "above"
+            if metric_info.metric.outcome_type == MetricOutcome.ADVERSE
+            else "below",
+            "event_name": metric_info.metric.event_name,
+            "chart": {
+                "url": self._request_chart(metric_info).url,
+                "alt_text": self._chart_alt_text(metric_info),
+            },
+        }
+
+    def _request_chart(
+        self, metric_info: OutlierMetricInfo
+    ) -> OutliersSupervisorChartResponse:
+        return request_asset(
+            self.batch.state_code,
+            f"{self.recipient.email_address}-{metric_info.metric.name}",
+            self._chart_width,
+            prepare_data(metric_info),
+        )
+
+    def _chart_alt_text(self, metric_info: OutlierMetricInfo) -> str:
+        if metric_info.target_status_strategy == TargetStatusStrategy.ZERO_RATE:
+            highlight_condition = f"{'have' if len(metric_info.highlighted_officers) > 1 else 'has'} zero {metric_info.metric.event_name}"
+        elif metric_info.target_status_strategy == TargetStatusStrategy.IQR_THRESHOLD:
+            highlight_condition = f"{'are' if len(metric_info.highlighted_officers) > 1 else 'is'} far from the state average"
+        else:
+            raise ValueError(
+                f"target_status_strategy {metric_info.target_status_strategy} is not supported"
+            )
+
+        highlighted_names = join_with_conjunction(
+            [o.name for o in metric_info.highlighted_officers]
+        )
+        return f"Swarm plot of all {metric_info.metric.body_display_name}s in the state where {highlighted_names} {highlight_condition} for the current reporting period."
+
+    @property
+    def _show_metric_section_headings(self) -> bool:
+        """Only True if there is more than one type of metric configured for the current state"""
+        outcome_types = set(m.outcome_type for m in self._config.metrics)
+        return len(outcome_types) > 1
+
+    def _get_metric_period(self, date: datetime.date) -> str:
+        end_month = date.strftime("%b")
+        end_year = date.strftime("%y")
+
+        period_start = date - relativedelta(years=1)
+        start_month = period_start.strftime("%b")
+        start_year = period_start.strftime("%y")
+
+        return f"{start_month} &rsquo;{start_year}&ndash;{end_month} &rsquo;{end_year}"
+
+    @property
+    def _current_metric_period(self) -> str:
+        return self._get_metric_period(self._report_date)
+
+    @property
+    def _previous_metric_period(self) -> str:
+        return self._get_metric_period(self._report_date - relativedelta(months=1))
 
     @property
     def _highlights(self) -> Highlights:
@@ -234,21 +345,27 @@ if __name__ == "__main__":
             [
                 create_fixture(
                     metric_fixtures[INCARCERATION_STARTS],
-                    target_fixture,
-                    other_officers_fixture,
-                    highlighted_officers_fixture,
+                    target_fixture_adverse,
+                    other_officers_fixture_adverse,
+                    highlighted_officers_fixture_adverse,
                 ),
                 create_fixture(
                     metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
-                    target_fixture,
-                    other_officers_fixture,
-                    highlighted_officers_fixture[:1],
+                    target_fixture_adverse,
+                    other_officers_fixture_adverse,
+                    highlighted_officers_fixture_adverse[:1],
+                ),
+                create_fixture(
+                    metric_fixtures[TASK_COMPLETIONS_FULL_TERM_DISCHARGE],
+                    target_fixture_favorable,
+                    other_officers_fixture_favorable,
+                    highlighted_officers_fixture_favorable,
                 ),
                 create_fixture(
                     metric_fixtures[TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION],
-                    target_fixture,
-                    other_officers_fixture,
-                    highlighted_officers_fixture[:1],
+                    target_fixture_favorable_zero,
+                    other_officers_fixture_favorable_zero,
+                    highlighted_officers_fixture_favorable_zero,
                     TargetStatusStrategy.ZERO_RATE,
                 ),
             ],
@@ -256,6 +373,16 @@ if __name__ == "__main__":
                 metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
             ],
             "test-outliers-supervisor@recidiviz.org",
+        )
+        test_config = OutliersConfig(
+            metrics=[
+                metric_fixtures[INCARCERATION_STARTS],
+                metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+                metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
+                metric_fixtures[TASK_COMPLETIONS_FULL_TERM_DISCHARGE],
+                metric_fixtures[TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION],
+            ],
+            supervision_officer_label="officer",
         )
     elif known_args.cmd == "db":
         # Fixture data is for may 2023
@@ -265,6 +392,8 @@ if __name__ == "__main__":
             else datetime.datetime(2023, 5, 1)
         )
         test_state_code = known_args.state_code
+
+        test_config = OUTLIERS_CONFIGS_BY_STATE[test_state_code]
 
         # # init the database collection to fetch from local
         database_manager = StateSegmentedDatabaseManager(
@@ -292,6 +421,7 @@ if __name__ == "__main__":
         state_code=batch.state_code,
         data={
             "report": test_report,
+            "config": test_config,
         },
     )
     context = OutliersSupervisionOfficerSupervisorContext(batch, recipient)

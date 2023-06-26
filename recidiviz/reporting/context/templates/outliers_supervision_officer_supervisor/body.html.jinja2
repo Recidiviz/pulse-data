@@ -4,4 +4,14 @@
 {% if highlights %}
 {% include "outliers_supervision_officer_supervisor/highlights.html.jinja2" %}
 {% endif %}
+{% if adverse_metrics %}
+{% with metrics_section_heading="Adverse Outcomes", metrics=adverse_metrics %}
+{% include "outliers_supervision_officer_supervisor/metrics.html.jinja2" %}
+{% endwith %}
+{% endif %}
+{% if favorable_metrics %}
+{% with metrics_section_heading="Favorable Outcomes", metrics=favorable_metrics %}
+{% include "outliers_supervision_officer_supervisor/metrics.html.jinja2" %}
+{% endwith %}
+{% endif %}
 {% endblock children %}

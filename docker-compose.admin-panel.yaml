@@ -31,3 +31,14 @@ services:
       - GOOGLE_CLOUD_PROJECT=recidiviz-staging
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
+      - ASSET_GENERATION_URL=http://asset-generation-service:5174
+  asset_generation:
+    container_name: asset-generation-service
+    image: us-docker.pkg.dev/recidiviz-staging/asset-generation/default:latest
+    # to avoid clobbering the local node environment, we do not mount the entire package directory
+    volumes:
+      - "./nodejs/asset-generation/local:/app/local"
+      - "./nodejs/asset-generation/src:/app/src"
+    ports:
+      - "5174:5174"
+    command: yarn dev
