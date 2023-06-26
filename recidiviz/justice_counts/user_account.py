@@ -137,3 +137,11 @@ class UserAccountInterface:
         return (
             session.query(UserAccount).filter(UserAccount.email == email).one_or_none()
         )
+
+    @staticmethod
+    def get_csg_users(session: Session) -> List[UserAccount]:
+        return (
+            session.query(UserAccount)
+            .filter(UserAccount.email.contains("@csg.org"))
+            .all()
+        )
