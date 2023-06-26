@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements Querier abstractions for Outliers data sources"""
-import logging
 from copy import copy
 from datetime import date
 from typing import Dict, List, Tuple
@@ -34,15 +33,17 @@ from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
+    OutliersAggregatedMetricEntity,
+    OutliersAggregatedMetricInfo,
+    OutliersAggregationType,
     OutliersConfig,
     OutliersMetricConfig,
-    SupervisionDistrictReportData,
-    SupervisionOfficerSupervisorMetricEntity,
-    SupervisionOfficerSupervisorMetricInfo,
+    OutliersUpperManagementReportData,
     TargetStatus,
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
+    SupervisionDirector,
     SupervisionDistrict,
     SupervisionDistrictManager,
     SupervisionOfficer,
@@ -226,6 +227,7 @@ class OutliersQuerier:
                 avg_pop_metric.metric_value.label("avg_daily_population"),
                 SupervisionOfficer.full_name,
                 SupervisionOfficer.supervisor_external_id,
+                SupervisionOfficer.supervision_district,
             )
             .all()
         )
@@ -328,6 +330,7 @@ class OutliersQuerier:
                     prev_rate=prev_rate,
                     prev_target_status=prev_target_status,
                     supervisor_external_id=officer_metric_record.supervisor_external_id,
+                    supervision_district=officer_metric_record.supervision_district,
                 )
             )
 
@@ -357,6 +360,7 @@ class OutliersQuerier:
                     prev_rate=None,
                     prev_target_status=None,
                     supervisor_external_id=prev_officer_metric_record.supervisor_external_id,
+                    supervision_district=prev_officer_metric_record.supervision_district,
                 )
             )
         return MetricContext(
@@ -426,18 +430,20 @@ class OutliersQuerier:
 
     def get_supervision_district_report_data_by_district(
         self, state_code: StateCode, end_date: date
-    ) -> Dict[str, SupervisionDistrictReportData]:
+    ) -> List[OutliersUpperManagementReportData]:
         """
-        Returns supervision district data by district manager for all DMs in a state in the following format:
-        {
-            < SupervisionDistrictManager.external_id >: {
+        Returns supervision district data (aggregated by officer supervisors in the district) for each district manager
+        in a state in the following format:
+        [
+            OutliersAggregatedMetricInfo(
                 recipient_name: str,
                 recipient_email: str,
-                entities: List[SupervisionOfficerSupervisorMetricEntity],
-                officer_label: str,
-            },
+                # Each entity is for a single supervisor in the district manager's district
+                entities: List[OutliersAggregatedMetricEntity],
+                entity_label: str,
+            ),
             ...
-        }
+        ]
         """
         db_key = SQLAlchemyDatabaseKey(
             SchemaType.OUTLIERS, db_name=state_code.value.lower()
@@ -446,7 +452,6 @@ class OutliersQuerier:
         prev_end_date = end_date - relativedelta(months=1)
 
         with SessionFactory.using_database(db_key, autocommit=False) as session:
-
             state_config = self.get_outliers_config(state_code)
 
             district_ids = session.query(
@@ -461,18 +466,39 @@ class OutliersQuerier:
             }
 
             district_id_to_entities: Dict[
-                str, List[SupervisionOfficerSupervisorMetricEntity]
+                str, List[OutliersAggregatedMetricEntity]
             ] = {}
             for (district_id,) in district_ids:
-                entities = self._get_supervision_district_entities(
-                    session, district_id, metric_to_metric_context
+                entities = []
+                officer_supervisor_records = (
+                    session.query(
+                        SupervisionOfficerSupervisor.external_id,
+                        SupervisionOfficerSupervisor.full_name,
+                    )
+                    .where(
+                        SupervisionOfficerSupervisor.supervision_district == district_id
+                    )
+                    .all()
                 )
 
-                district_id_to_entities[district_id] = entities
+                for (
+                    external_id,
+                    full_name,
+                ) in officer_supervisor_records:
+                    metrics = self._get_all_metrics_information(
+                        metric_to_metric_context,
+                        OutliersAggregationType.SUPERVISION_OFFICER_SUPERVISOR,
+                        external_id,
+                    )
 
-            district_manager_id_to_report_data: Dict[
-                str, SupervisionDistrictReportData
-            ] = {}
+                    entity = OutliersAggregatedMetricEntity(
+                        name=full_name,
+                        metrics=metrics,
+                    )
+
+                    entities.append(entity)
+
+                district_id_to_entities[district_id] = entities
 
             district_manager_records = session.query(
                 SupervisionDistrictManager.external_id.label("district_manager_id"),
@@ -481,127 +507,222 @@ class OutliersQuerier:
                 SupervisionDistrictManager.supervision_district.label("district_id"),
             ).all()
 
-            for (
-                district_manager_id,
-                district_manager_name,
-                district_manager_email,
-                district_id,
-            ) in district_manager_records:
-
-                if district_id not in district_id_to_entities:
-                    logging.error(
-                        "There is no data for district %s in %s. No report data generated for %s",
-                        district_id,
-                        state_code.value,
-                        district_manager_email,
-                    )
-                    continue
-
-                district_manager_id_to_report_data[
-                    district_manager_id
-                ] = SupervisionDistrictReportData(
+            data = [
+                OutliersUpperManagementReportData(
                     recipient_name=district_manager_name,
                     recipient_email=district_manager_email,
-                    entities=district_id_to_entities[district_id],
-                    officer_label=state_config.supervision_officer_label,
+                    entities=district_id_to_entities[district_id]
+                    if district_id_to_entities[district_id]
+                    else [],
+                    entity_label=state_config.supervision_officer_label,
                 )
+                for (
+                    district_manager_id,
+                    district_manager_name,
+                    district_manager_email,
+                    district_id,
+                ) in district_manager_records
+            ]
 
-            return district_manager_id_to_report_data
-
-    @staticmethod
-    def _get_supervision_district_entities(
-        session: Session,
-        district_id: str,
-        metric_to_metric_context: Dict[OutliersMetricConfig, MetricContext],
-    ) -> List[SupervisionOfficerSupervisorMetricEntity]:
-        """
-        Given the district_id, get all the supervisors in the district and the data for all officers supervised by
-        those supervisors.
-        """
-        entities = []
-
-        # Get all supervisors in this district
-        officer_supervisor_records = (
-            session.query(
-                SupervisionOfficerSupervisor.external_id,
-                SupervisionOfficerSupervisor.full_name,
-            )
-            .where(SupervisionOfficerSupervisor.supervision_district == district_id)
-            .all()
-        )
-
-        for (
-            external_id,
-            full_name,
-        ) in officer_supervisor_records:
-            metrics: List[SupervisionOfficerSupervisorMetricInfo] = []
-            for (
-                metric,
-                metric_context,
-            ) in metric_to_metric_context.items():
-                current_period_officer_entities_for_supervisor = [
-                    officer_entity
-                    for officer_entity in metric_context.entities
-                    if officer_entity.supervisor_external_id == external_id
-                ]
-
-                officer_rates: Dict[TargetStatus, List[float]] = {
-                    TargetStatus.MET: [],
-                    TargetStatus.NEAR: [],
-                    TargetStatus.FAR: [],
-                }
-
-                num_officers = len(current_period_officer_entities_for_supervisor)
-                num_officers_far = 0
-
-                for entity in current_period_officer_entities_for_supervisor:
-                    officer_rates[entity.target_status].append(entity.rate)
-
-                    if entity.target_status == TargetStatus.FAR:
-                        num_officers_far += 1
-
-                prev_period_officer_entities_for_supervisor = [
-                    officer_entity
-                    for officer_entity in metric_context.prev_period_entities
-                    if officer_entity.supervisor_external_id == external_id
-                ]
-
-                prev_num_officers = len(prev_period_officer_entities_for_supervisor)
-                prev_num_officers_far = len(
-                    list(
-                        filter(
-                            lambda officer_entity: (
-                                officer_entity.target_status == TargetStatus.FAR
-                            ),
-                            copy(prev_period_officer_entities_for_supervisor),
-                        )
-                    )
-                )
-
-                metric_info = SupervisionOfficerSupervisorMetricInfo(
-                    metric=metric,
-                    officers_far_pct=num_officers_far / num_officers
-                    if num_officers
-                    else 0,
-                    prev_officers_far_pct=prev_num_officers_far / prev_num_officers
-                    if prev_num_officers
-                    else 0,
-                    officer_rates=officer_rates,
-                )
-
-                metrics.append(metric_info)
-
-            supervision_officer_supervisor_entity = (
-                SupervisionOfficerSupervisorMetricEntity(
-                    supervisor_name=full_name,
-                    metrics=metrics,
-                )
-            )
-
-            entities.append(supervision_officer_supervisor_entity)
-
-        return entities
+            return data
 
     @staticmethod
     def get_outliers_config(state_code: StateCode) -> OutliersConfig:
         return OUTLIERS_CONFIGS_BY_STATE[state_code]
+
+    def get_supervision_director_report_data(
+        self, state_code: StateCode, end_date: date
+    ) -> List[OutliersUpperManagementReportData]:
+        """
+        Returns supervision district data for all districts in a state in the following format:
+        [
+            OutliersAggregatedMetricInfo(
+                recipient_name: str,
+                recipient_email: str,
+                entities: List[OutliersAggregatedMetricEntity],  # Each entity is for a single district's information
+                entity_label: "district",
+            ),
+            ...
+        ]
+        """
+        db_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name=state_code.value.lower()
+        )
+        end_date = end_date.replace(day=1)
+        prev_end_date = end_date - relativedelta(months=1)
+
+        with SessionFactory.using_database(db_key, autocommit=False) as session:
+            state_config = self.get_outliers_config(state_code)
+
+            metric_to_metric_context = {
+                metric: self._get_metric_context_from_db(
+                    session, metric, end_date, prev_end_date
+                )
+                for metric in state_config.metrics
+            }
+
+            # Get all the districts for the state
+            districts_ids = session.query(
+                SupervisionDistrict.external_id.label("district_id"),
+                SupervisionDistrict.name.label("district_name"),
+            ).all()
+
+            # Get OutliersAggregatedMetricEntity objects for every district
+            entities = []
+            for (
+                district_id,
+                district_name,
+            ) in districts_ids:
+                # Get the aggregated officer data for the given district
+                metrics = self._get_all_metrics_information(
+                    metric_to_metric_context,
+                    OutliersAggregationType.SUPERVISION_DISTRICT,
+                    district_id,
+                )
+
+                entity = OutliersAggregatedMetricEntity(
+                    name=district_name,
+                    metrics=metrics,
+                )
+                entities.append(entity)
+
+            # Every SupervisionDirector in the state should receive the data for all the districts
+            directors = session.query(
+                SupervisionDirector.email,
+                SupervisionDirector.full_name,
+            ).all()
+
+            data = [
+                OutliersUpperManagementReportData(
+                    recipient_name=full_name,
+                    recipient_email=email,
+                    entities=entities,
+                    entity_label="district",
+                )
+                for (
+                    email,
+                    full_name,
+                ) in directors
+            ]
+
+            return data
+
+    @staticmethod
+    def _get_filtered_officer_entities(
+        metric_context: MetricContext,
+        aggregation_type: OutliersAggregationType,
+        filter_value: str,
+    ) -> Tuple[List[OfficerMetricEntity], List[OfficerMetricEntity]]:
+        """
+        Return the relevant officer entities from the current and previous period entities for the metric.
+
+        If the aggregation type is SUPERVISION_OFFICER_SUPERVISOR, then filter the entities by the supervisor id.
+        If the aggregation type is SUPERVISION_DISTRICT, filter the officer entities by district_id.
+        """
+        current_period_entities, prev_period_entities = [], []
+        if aggregation_type == OutliersAggregationType.SUPERVISION_OFFICER_SUPERVISOR:
+            # Get the OfficerMetricEntity objects for officers who have a given supervisor
+            current_period_entities = [
+                officer_entity
+                for officer_entity in metric_context.entities
+                if officer_entity.supervisor_external_id == filter_value
+            ]
+
+            prev_period_entities = [
+                officer_entity
+                for officer_entity in metric_context.prev_period_entities
+                if officer_entity.supervisor_external_id == filter_value
+            ]
+
+        if aggregation_type == OutliersAggregationType.SUPERVISION_DISTRICT:
+            # Get the OfficerMetricEntity objects for officers who are in a given district
+            current_period_entities = [
+                officer_entity
+                for officer_entity in metric_context.entities
+                if officer_entity.supervision_district == filter_value
+            ]
+
+            prev_period_entities = [
+                officer_entity
+                for officer_entity in metric_context.prev_period_entities
+                if officer_entity.supervision_district == filter_value
+            ]
+
+        return current_period_entities, prev_period_entities
+
+    @staticmethod
+    def _get_aggregated_metric_info(
+        metric: OutliersMetricConfig,
+        current_period_entities: List[OfficerMetricEntity],
+        prev_period_entitieis: List[OfficerMetricEntity],
+    ) -> OutliersAggregatedMetricInfo:
+        """
+        For the given metric, return the aggregated officer-level metric information.
+        """
+        officer_rates: Dict[TargetStatus, List[float]] = {
+            TargetStatus.MET: [],
+            TargetStatus.NEAR: [],
+            TargetStatus.FAR: [],
+        }
+
+        num_officers = len(current_period_entities)
+        num_officers_far = 0
+
+        for entity in current_period_entities:
+            officer_rates[entity.target_status].append(entity.rate)
+
+            if entity.target_status == TargetStatus.FAR:
+                num_officers_far += 1
+
+        prev_num_officers = len(prev_period_entitieis)
+        prev_num_officers_far = len(
+            list(
+                filter(
+                    lambda officer_entity: (
+                        officer_entity.target_status == TargetStatus.FAR
+                    ),
+                    copy(prev_period_entitieis),
+                )
+            )
+        )
+
+        return OutliersAggregatedMetricInfo(
+            metric=metric,
+            officers_far_pct=num_officers_far / num_officers if num_officers else 0,
+            prev_officers_far_pct=prev_num_officers_far / prev_num_officers
+            if prev_num_officers
+            else 0,
+            officer_rates=officer_rates,
+        )
+
+    def _get_all_metrics_information(
+        self,
+        metric_to_metric_context: Dict[OutliersMetricConfig, MetricContext],
+        aggregation_type: OutliersAggregationType,
+        filter_value: str,
+    ) -> List[OutliersAggregatedMetricInfo]:
+        """
+        For all the metrics in the metric_context, get the officer-level aggregated information and filtered using
+        the aggregation_type and filter_value.
+        """
+        metrics: List[OutliersAggregatedMetricInfo] = []
+        for (
+            metric,
+            metric_context,
+        ) in metric_to_metric_context.items():
+            # Get the current and previous period entities filtered for the filter_value and aggregation_type
+            (
+                current_period_entities,
+                prev_period_entities,
+            ) = self._get_filtered_officer_entities(
+                metric_context, aggregation_type, filter_value
+            )
+
+            # For the relevant entities, get the aggregated information
+            metric_info = self._get_aggregated_metric_info(
+                metric, current_period_entities, prev_period_entities
+            )
+
+            metrics.append(metric_info)
+
+        return metrics
