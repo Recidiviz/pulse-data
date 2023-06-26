@@ -45,6 +45,11 @@ class TargetStatus(Enum):
     FAR = "FAR"
 
 
+class OutliersAggregationType(Enum):
+    SUPERVISION_DISTRICT = "SUPERVISION_DISTRICT"
+    SUPERVISION_OFFICER_SUPERVISOR = "SUPERVISION_OFFICER_SUPERVISOR"
+
+
 @attr.s(eq=False)
 class OutliersMetric:
     # The metric name/id, which should reference the name from an object in aggregated_metric_configurations.py
@@ -118,6 +123,8 @@ class OfficerMetricEntity:
     prev_rate: Optional[float] = attr.ib()
     # The external_id of this OfficerMetricEntity's supervisor
     supervisor_external_id: str = attr.ib()
+    # The supervision district the officer is assigned to
+    supervision_district: str = attr.ib()
     # The target status for the previous period
     prev_target_status: Optional[TargetStatus] = attr.ib(default=None)
 
@@ -165,39 +172,38 @@ class OfficerSupervisorReportData:
 
 
 ######################################
-# Data classes for the Supervision District Manager email
+# Data classes for upper management emails
 ######################################
 @attr.s
-class SupervisionOfficerSupervisorMetricInfo:
+class OutliersAggregatedMetricInfo:
     # The Outliers metric the information corresponds to
     metric: OutliersMetricConfig = attr.ib()
-    # The percentage of this supervisor's officers with "FAR" target status for a specific metric in the current period
+    # The percentage of officers with "FAR" target status for this metric in the current period
     officers_far_pct: float = attr.ib()
-    # The percentage of this supervisor's officers with "FAR" target status for a specific metric in the previous period
+    # The percentage of officers with "FAR" target status for this metric in the previous period
     prev_officers_far_pct: float = attr.ib()
-    # Maps target status to list of officer rates with the respective status for the current period for all officers
-    # that have the same supervisor
+    # Maps target status to list of officer rates with the respective status for all officers in the current period
     officer_rates: Dict[TargetStatus, List[float]] = attr.ib()
 
 
 @attr.s
-class SupervisionOfficerSupervisorMetricEntity:
-    # The full name of the supervision officer supervisor
-    supervisor_name: str = attr.ib()
-    # Maps the metric id to the corresponding SupervisionOfficerSupervisorMetricInfo object
-    metrics: List[SupervisionOfficerSupervisorMetricInfo] = attr.ib()
+class OutliersAggregatedMetricEntity:
+    # The name of the entity, e.g. district name or officer supervisor name
+    name: str = attr.ib()
+    # The metric information for all metrics for this entity
+    metrics: List[OutliersAggregatedMetricInfo] = attr.ib()
 
 
 @attr.s
-class SupervisionDistrictReportData:
-    # The name of the recipient, e.g. a SupervisionDistrictManager
+class OutliersUpperManagementReportData:
+    # The name of the recipient, e.g. a SupervisionDistrictManager or SupervisionDirector
     recipient_name: str = attr.ib()
     # The recipient's email address
     recipient_email: str = attr.ib()
-    # The entities for this supervision district
-    entities: List[SupervisionOfficerSupervisorMetricEntity] = attr.ib()
-    # The copy for how to refer to a supervision officer
-    officer_label: str = attr.ib()
+    # The entities relevant for recipient
+    entities: List[OutliersAggregatedMetricEntity] = attr.ib()
+    # The copy for how to refer to an entity, i.e. "officer" or "district"
+    entity_label: str = attr.ib()
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)

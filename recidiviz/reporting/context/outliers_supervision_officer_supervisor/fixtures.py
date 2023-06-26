@@ -93,6 +93,7 @@ highlighted_officers_fixture = [
         TargetStatus.FAR,
         0.15804024430145053,
         "abc123",
+        "1",
     ),
     OfficerMetricEntity(
         "Mario McCarthy",
@@ -100,13 +101,10 @@ highlighted_officers_fixture = [
         TargetStatus.FAR,
         0.08228673915480327,
         "abc123",
+        "1",
     ),
     OfficerMetricEntity(
-        "Ryan Luna",
-        0.129823,
-        TargetStatus.FAR,
-        0.121354,
-        "abc123",
+        "Ryan Luna", 0.129823, TargetStatus.FAR, 0.121354, "abc123", "1"
     ),
 ]
 
