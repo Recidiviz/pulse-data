@@ -129,6 +129,7 @@ output:
                         - "100" # Escape Walkaways
                         - "98" # Escape Limited Furlough
                         - "24" # Sentence Reduced to Misdemeanor
+                        - "128" # Held Under Custody - Probation Violation Processing
                       StateIncarcerationPeriodAdmissionReason.TRANSFER:
                         - "117" # Transfer In ... Institutional or Caseload
                         - "6" # Visitor In
