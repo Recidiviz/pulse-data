@@ -1,0 +1,163 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationIncident` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - MISCONDUCT_CHARGE_ID # incident_id
+  - LOCATION_CODE # facility
+  - MISCONDUCT_LOCATION # location_within_facility
+  - LONG_DESCRIPTION # incident_type
+  - MISCONDUCT_SANCTION_ID # outcome_id
+  - EFFECTIVE_DATE # incident_date
+  - MAPPED_VIOLATION_SEVERITY_LEVEL # incident_metadata mtrlms
+  - RULE_FINDING # incident_metadata mtrule
+  - DECISION_DATE # hearing_date mtofdr
+  - SUBMITTED_DATE # report_date mtofdr
+  - DISCIPLINARY_SANCTION # outcome_type mtsanc
+  - START_DATE # date_effective (outcome) mtsanc
+  - ACTUAL_DAYS # punishment_length_days mtsanc
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                - RECORD_KEY
+                - MISCONDUCT_CHARGE_ID
+          incident_date: EFFECTIVE_DATE
+          facility: LOCATION_CODE
+          location_within_facility: MISCONDUCT_LOCATION
+          incident_type:
+            $enum_mapping:
+              $raw_text: LONG_DESCRIPTION
+              $mappings:
+                StateIncarcerationIncidentType.CONTRABAND:
+                  - Property I
+                  - Property II
+                  - Contraband I
+                  - Contraband II
+                  - Contraband III
+                  - Possession of a Weapon
+                  - Possession of an Escape Device
+                  - Possess a Weapon or Escape Dev
+                  - Possess Body Mod Paraphernalia
+                  - Possess a Weapon
+                  - Drug Possession
+                  - Posses of an Electronic Device
+                  - Possess an Escape Device
+                StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                  - Distribution I
+                  - Distribution II
+                  - Extortion I
+                  - Extortion II
+                  - Forgery
+                  - Gambling
+                  - Arson
+                  - Sexual Solicitation
+                  - Racketeering
+                  - Employee/Inmate Relationships
+                  - Sexual Harassment
+                  - Fraud
+                  - Hostage Taking
+                  - Bribery
+                StateIncarcerationIncidentType.ESCAPE:
+                  - Escape
+                  - Escape I
+                  - Escape II
+                  - Leave Violation
+                  - Unauthorized Departure
+                StateIncarcerationIncidentType.MINOR_OFFENSE:
+                  - Disrespect I
+                  - Disrespect II
+                  - Disrespect III
+                  - Disobedience of an Order
+                  - Disobedience of Order I
+                  - Disobedience of an Order I
+                  - Disobedience of an Order II
+                  - Disobedience of an Order III
+                  - Unauthorized Use Info System I
+                  - Unauthorized Use Info Systm II
+                  - Un Area
+                  - Unauthorized Area I
+                  - Unauthorized Area II
+                  - Unauthorized Organization I
+                  - Unauthorized Organization II
+                  - Unauthorized Organization III
+                  - False Info to Employees I
+                  - False Info to Employees II
+                  - Disturbance
+                  - Body Modification
+                  - Compromising an Employee
+                  - Tattooing/Body Piercing
+                  - Tattooing/Body piercing
+                  - Non-Assaultive Sexual Activity
+                StateIncarcerationIncidentType.REPORT:
+                  - Non-assaultive Sexual Activity
+                  - DWOP statement to Author # Dismissed without Prejudice - author can refile
+                StateIncarcerationIncidentType.VIOLENCE:
+                  - AIC Assault I
+                  - AIC Assault II
+                  - AIC Assault III
+                  - Assault I
+                  - Assault II
+                  - Assault III
+                  - Staff Assault I
+                  - Staff Assault II
+                  - Inmate Assault II
+                  - Sexual Assault/Abuse
+                  - Sexual Assault
+                  - Sexual Coercion
+                  - Assault of a Member of Public
+          incident_metadata:
+            $json_dict:
+              SEVERITY: MAPPED_VIOLATION_SEVERITY_LEVEL
+              FINDING: RULE_FINDING
+          incarceration_incident_outcomes:
+            - StateIncarcerationIncidentOutcome:
+                external_id:
+                  $concat:
+                    $values:
+                      - RECORD_KEY
+                      - MISCONDUCT_CHARGE_ID
+                      - MISCONDUCT_SANCTION_ID
+                hearing_date: DECISION_DATE
+                date_effective: START_DATE
+                report_date: SUBMITTED_DATE
+                outcome_type:
+                  $enum_mapping:
+                    $raw_text: DISCIPLINARY_SANCTION # Application_ID: MTA, Tabble_ID: SC
+                    $mappings:
+                      StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                        - EXWK # Extra work
+                      StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                        - REST # Restitution
+                        - FINE # Fine
+                      StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
+                        - SGTR # Statutory Good Time Retraction
+                        - TR # Time Retraction
+                        - XGTR # Extra Good Time Retraction
+                        - PRD # Extension of Parole Release
+                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                        - MSAN # Merged per OAR 291-105-0066(8)
+                        - MDT # Multi-Disciplinary Team
+                        - BV # Basic Visits
+                        - CONF # Confiscate Contraband
+                        - OTHR # Other disciplinary action
+                        - NSAN # No Sanction imposed per OAR
+                        - SUSP # Suspended Sanctions
+                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                        - LSRY # Loss of Segregation Rec Yard
+                        - LPRG # Loss of  Program
+                        - LOP # Loss of privileges
+                      StateIncarcerationIncidentOutcomeType.SOLITARY:
+                        - DSU # Disciplinary Segregation
+                      StateIncarcerationIncidentOutcomeType.WARNING:
+                        - VRBL # Verbal Warning
+                punishment_length_days: ACTUAL_DAYS
