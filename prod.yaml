@@ -28,6 +28,7 @@ env_variables:
   FROM_EMAIL_NAME: Recidiviz Reports
   ALERTS_FROM_EMAIL_ADDRESS: serena@recidiviz.org
   ALERTS_FROM_EMAIL_NAME: Serena Chang
+  ASSET_GENERATION_URL: https://asset-generation-buq47yc7fa-uc.a.run.app
 
 # Per zenhub-tasks#358, our app engine needs egress traffic to be issued on a static IP address:
 # Reference doc: https://cloud.google.com/appengine/docs/standard/python/outbound-ip-addresses#static-ip

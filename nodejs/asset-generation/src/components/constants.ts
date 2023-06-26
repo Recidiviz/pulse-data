@@ -18,8 +18,10 @@
 import { palette } from "@recidiviz/design-system";
 import { lighten } from "polished";
 
+import { TargetStatus } from "../server/generate/schema/helpers";
+
 export const OUTLIERS_GOAL_COLORS = {
-  far: palette.data.crimson1,
-  near: palette.data.gold1,
-  met: lighten(0.45)(palette.slate),
-};
+  FAR: palette.data.crimson1,
+  NEAR: palette.data.gold1,
+  MET: lighten(0.45)(palette.slate),
+} satisfies Record<TargetStatus, string>;

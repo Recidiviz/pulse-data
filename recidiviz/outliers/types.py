@@ -158,6 +158,9 @@ class OutlierMetricInfo:
         default=TargetStatusStrategy.IQR_THRESHOLD
     )
 
+    def to_dict(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)
+
 
 @attr.s
 class OfficerSupervisorReportData:
@@ -167,7 +170,7 @@ class OfficerSupervisorReportData:
     metrics_without_outliers: List[OutliersMetricConfig] = attr.ib()
     recipient_email_address: str = attr.ib()
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
 
 

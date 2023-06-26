@@ -44,7 +44,7 @@ const formatTarget = format(".1%");
 function getValueExtent(data: ChartProps["data"]) {
   const allValues = [
     ...data.otherOfficers.map((o) => o.value),
-    ...data.highlightedOfficers.map((o) => [o.rate, o.previousRate]),
+    ...data.highlightedOfficers.map((o) => [o.rate, o.prevRate]),
   ]
     .flat()
     .sort();
@@ -207,7 +207,7 @@ export function OutliersSupervisorChart({
           .sort((a, b) => descending(a.rate, b.rate))
           .map((e, i) => {
             const cx = xScale(e.rate);
-            const prevX = xScale(e.previousRate);
+            const prevX = xScale(e.prevRate);
             const labelText = e.name;
 
             return (
@@ -228,7 +228,7 @@ export function OutliersSupervisorChart({
                 />
                 <circle
                   r={HIGHLIGHT_DOT_RADIUS}
-                  fill={OUTLIERS_GOAL_COLORS[e.goalStatus]}
+                  fill={OUTLIERS_GOAL_COLORS[e.targetStatus]}
                 />
                 <SwarmLabel {...getLabelProps(labelText, cx, prevX, width)}>
                   {labelText}

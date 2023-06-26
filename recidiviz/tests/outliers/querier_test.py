@@ -369,7 +369,7 @@ class TestOutliersQuerier(TestCase):
         self.assertEqual(actual, expected)
 
         actual_json = {
-            supervisor_id: supervisor_data.to_json()
+            supervisor_id: supervisor_data.to_dict()
             for supervisor_id, supervisor_data in actual.items()
         }
         self.assertEqual(expected_json, actual_json)

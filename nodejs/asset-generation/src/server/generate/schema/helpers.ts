@@ -17,6 +17,6 @@
 
 import { z } from "zod";
 
-export const goalStatusSchema = z.enum(["met", "near", "far"]);
+export const targetStatusSchema = z.enum(["MET", "NEAR", "FAR"]);
 
-export type GoalStatus = z.infer<typeof goalStatusSchema>;
+export type TargetStatus = z.infer<typeof targetStatusSchema>;

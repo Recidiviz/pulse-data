@@ -1,0 +1,61 @@
+{% extends "common/card.html.jinja2" %}
+{% block children %}
+{{ components.layout_table_start() }}
+<tr>
+    {{components.heading(metric.title_display_name, size='md')}}
+</tr>
+{{components.y_padding(16)}}
+<tr>
+    <td style="{{brand_styles.fonts.sans_serif}} font-weight: 500; font-size: 16px; color: #5C7585;">
+        {# name may have internal capitalization that we don't want |capitalize to clobber #}
+        {{metric.body_display_name|first|capitalize}}{{metric.body_display_name[1:]}}s of all {{state_name}}
+        {{officer_label}}s</td>
+</tr>
+{{components.y_padding(12)}}
+<tr>
+    <td style="{{brand_styles.fonts.sans_serif}} font-weight: 500; font-size: 14px; color: #8497A3;">
+        <span style="white-space: nowrap;">
+            <strong style="font-weight: 900; font-size: 16px; color: #8C979F;">- - -</strong>
+            State average
+        </span>
+        &nbsp;
+        {% if metric.legend_zero %}
+            <span style="white-space: nowrap;">{{components.circle("#B6253D", "12px")}} 
+                {{officer_label|capitalize}}s with no {{metric.event_name}}
+            </span>
+        {% else %}
+            <span style="white-space: nowrap;">{{components.circle("#B6253D", "12px")}} Far {{metric.far_direction}} state average</span>
+            &nbsp;
+            <span style="white-space: nowrap;">{{components.circle("#E0A852", "12px")}} Slightly {{metric.far_direction}} state average</span>
+        {% endif %}
+    </td>
+</tr>
+{{components.y_padding(4)}}
+<tr>
+    <td style="{{brand_styles.fonts.sans_serif}} font-weight: 500; font-size: 14px; color: #8497A3;">
+        <span style="white-space: nowrap;">{{components.circle("#012322", "12px")}} Current period ({{metric_periods.current}})</span>
+        &nbsp;
+        <span style="white-space: nowrap;">{{components.pill("#BFCCD2", "24px", "12px")}} Change since prior period
+        ({{metric_periods.previous}})</span>
+    </td>
+</tr>
+{{components.y_padding(24)}}
+<tr>
+    <td>
+        {# this is a layout trick to emulate CSS "max-width" across clients, since Outlook does not support it #}
+        {# see https://stackoverflow.com/a/24499931 #}
+        {{components.layout_table_start()}}
+            <tr>
+                <td></td>
+                <td width="{{chart_width}}">
+                    <img src="{{asset_url_base}}{{metric.chart.url}}" 
+                        alt="{{metric.chart.alt_text}}" 
+                        style="display: block; width: 100%;" />
+                </td>
+                <td></td>
+            </tr>
+        {{components.layout_table_end()}}
+    </td>
+</tr>
+{{ components.layout_table_end() }}
+{% endblock children %}
