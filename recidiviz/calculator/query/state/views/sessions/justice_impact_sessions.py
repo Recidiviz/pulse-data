@@ -26,25 +26,29 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 # below we define relative weights for different types of justice involvement, each
-# scaled relative to non-solitary incarceration = 1. These weights are determined
+# scaled relative to minimum security incarceration = 1. These weights are determined
 # by UXR with JIIs.
-SOLITARY_CONFINEMENT_WEIGHT = 3
-SUPERVISION_WEIGHT = 1 / 50
-LIMITED_UNSUPERVISED_WEIGHT = 1 / 100
+MAX_SECURITY_WEIGHT = 30
+SOLITARY_CONFINEMENT_WEIGHT = 7.5
+MEDIUM_SECURITY_WEIGHT = 2.5
+SUPERVISION_WEIGHT = 1 / 25
+LIMITED_UNSUPERVISED_WEIGHT = 1 / 50
 
 _VIEW_NAME = "justice_impact_sessions"
 
 _VIEW_DESCRIPTION = f"""
 This table contains spans of justice impact weighted by the relative impact of each
-compartment (as determined by UXR with JIIs). The weights are relative to 
-non-solitary incarceration such that a reduction in a person-year of (weighted) justice 
+compartment (as determined by UXR with JIIs). The weights are relative to
+min. security incarceration such that a reduction in a person-year of (weighted) justice
 impact is equally valued, on average, by JIIs. Metrics calculated using this table
 facilitate apples-to-apples comparisons of the impact of Recidiviz tools on different
 justice compartments.
 
 Weights are defined as follows:
+- Max Security Incarceration: {MAX_SECURITY_WEIGHT}
 - Solitary confinement: {SOLITARY_CONFINEMENT_WEIGHT}
-- Incarceration: 1
+- Medium Security Incarceration: {MEDIUM_SECURITY_WEIGHT}
+- Min Security Incarceration: 1
 - Supervision: {SUPERVISION_WEIGHT}
 - Limited/unsupervised: {LIMITED_UNSUPERVISED_WEIGHT}
 """
@@ -68,7 +72,18 @@ WITH weights AS (
             ) THEN {SOLITARY_CONFINEMENT_WEIGHT}
             WHEN compartment_level_1 IN (
                 "INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY"
-            ) THEN 1
+            ) THEN
+                -- determine security level of incarceration
+                CASE
+                    WHEN correctional_level IN (
+                        "MAXIMUM"
+                    ) THEN {MAX_SECURITY_WEIGHT}
+                    WHEN correctional_level IN (
+                        "MEDIUM", "CLOSE"
+                    ) THEN {MEDIUM_SECURITY_WEIGHT}
+                    -- the rest is assumed minimum security or equivalent
+                    -- this includes MINIMUM, RESTRICTIVE_MINIMUM, and INTERNAL_UNKNOWN
+                    ELSE 1 END
             -- all remaining compartments supervision or investigation
             -- first, handle unconventional supervision (ignore qualitative factors)
             WHEN compartment_level_1 IN (
