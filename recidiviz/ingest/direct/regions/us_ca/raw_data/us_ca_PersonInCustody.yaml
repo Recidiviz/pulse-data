@@ -38,3 +38,8 @@ columns:
   - name: CurrentLocation
     description: >-
       TODO(#15297)
+  - name: Birthday
+    description: >-
+      The person's birthday.
+    is_datetime: True
+    is_pii: True
