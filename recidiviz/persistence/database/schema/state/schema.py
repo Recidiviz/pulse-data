@@ -727,6 +727,8 @@ state_staff_role_subtype = Enum(
     state_enum_strings.state_staff_role_subtype_supervision_officer,
     state_enum_strings.state_staff_role_subtype_supervision_officer_supervisor,
     state_enum_strings.state_staff_role_subtype_supervision_regional_manager,
+    state_enum_strings.state_staff_role_subtype_supervision_district_manager,
+    state_enum_strings.state_staff_role_subtype_supervision_state_leadership,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_staff_role_subtype",
