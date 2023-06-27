@@ -143,10 +143,15 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             if fixture_type == RawDataDiffFixtureType.EXISTING
             else file_tag + f"__{new_file_id}",
         )
+        region_config = get_region_raw_file_config(
+            region_code=self.state_code.value, region_module=fake_regions
+        )
         self.create_mock_table(
             address=address,
             schema=DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
-                mock_data.columns.values
+                region_raw_file_config=region_config,
+                file_tag=file_tag,
+                columns=mock_data.columns.values,
             ),
         )
         self.load_rows_into_table(address, mock_data.to_dict("records"))
