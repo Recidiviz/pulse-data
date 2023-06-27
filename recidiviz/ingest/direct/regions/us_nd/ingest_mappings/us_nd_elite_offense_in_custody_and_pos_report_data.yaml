@@ -17,6 +17,10 @@ input_columns:
   - SANCTION_MONTHS
   - SANCTION_DAYS
 unused_columns: []
+# TODO(#2399): Once we are capable of handling historical and nightly ingest of
+#  'elite_offense_in_custody_and_pos_report_data', remove this check.
+launch_env:
+  $env: is_local
 output:
   StatePerson:
     external_ids:

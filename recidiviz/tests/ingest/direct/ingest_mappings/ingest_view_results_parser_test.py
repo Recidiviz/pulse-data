@@ -140,10 +140,14 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
         self,
         ingest_instance: DirectIngestInstance,
         is_production: bool,
+        is_staging: bool,
+        is_local: bool,
         results_update_datetime: datetime.datetime,
     ):
         self.ingest_instance = ingest_instance
         self.is_production = is_production
+        self.is_staging = is_staging
+        self.is_local = is_local
         self.results_update_datetime = results_update_datetime
 
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
@@ -203,8 +207,14 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
         return CustomFunctionRegistry(custom_functions_root_module=custom_python)
 
     def get_env_property(self, property_name: str) -> Union[bool, str]:
+        if property_name == "test_is_local":
+            return self.is_local
+        if property_name == "test_is_staging":
+            return self.is_staging
         if property_name == "test_is_production":
             return self.is_production
+        if property_name == "test_is_secondary_instance":
+            return self.ingest_instance == DirectIngestInstance.SECONDARY
         if property_name == "test_is_primary_instance":
             return self.ingest_instance == DirectIngestInstance.PRIMARY
 
@@ -232,6 +242,8 @@ class IngestViewFileParserTest(unittest.TestCase):
         ingest_view_name: str,
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
         is_production: bool = False,
+        is_staging: bool = False,
+        is_local: bool = False,
         results_update_datetime: datetime.datetime = datetime.datetime.now(),
     ) -> List[Entity]:
         """Runs a single parsing test for a fixture ingest view with the given name,
@@ -239,7 +251,11 @@ class IngestViewFileParserTest(unittest.TestCase):
         """
         parser = IngestViewResultsParser(
             FakeSchemaIngestViewResultsParserDelegate(
-                ingest_instance, is_production, results_update_datetime
+                ingest_instance,
+                is_production,
+                is_staging,
+                is_local,
+                results_update_datetime,
             )
         )
         contents_handle = LocalFileContentsHandle(
@@ -262,15 +278,21 @@ class IngestViewFileParserTest(unittest.TestCase):
         ingest_view_name: str,
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
         is_production: bool = False,
+        is_staging: bool = False,
+        is_local: bool = False,
         results_update_datetime: datetime.datetime = datetime.datetime.now(),
     ) -> EntityTreeManifest:
         delegate = FakeSchemaIngestViewResultsParserDelegate(
-            ingest_instance, is_production, results_update_datetime
+            ingest_instance,
+            is_production,
+            is_staging,
+            is_local,
+            results_update_datetime,
         )
         parser = IngestViewResultsParser(delegate)
-        manifest_ast, _ = parser.parse_manifest(
+        manifest_ast = parser.parse_manifest(
             manifest_path=delegate.get_ingest_view_manifest_path(ingest_view_name),
-        )
+        ).output
         return manifest_ast
 
     def test_simple_output(self) -> None:
@@ -2479,3 +2501,41 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"in the ingest manifest.$",
         ):
             self._run_parse_manifest_for_ingest_view("set_primary_key_no_external_id")
+
+    def test_should_launch_environment_matches(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                name="ELAINE BENES",
+                birthdate=datetime.date(1962, 1, 29),
+                external_ids=[],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="JERRY SEINFELD",
+                birthdate=datetime.date(1954, 4, 29),
+                external_ids=[],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                name="COSMOS KRAMER",
+                external_ids=[],
+            ),
+        ]
+        results = self._run_parse_for_ingest_view(
+            "should_launch",
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            is_staging=True,
+        )
+        self.assertEqual(results, expected_output)
+
+    def test_should_launch_environment_doesnt_match(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot parse results for ingest view \[should_launch\] because should_launch is false.",
+        ):
+            _ = self._run_parse_for_ingest_view(
+                "should_launch",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                is_production=True,
+            )

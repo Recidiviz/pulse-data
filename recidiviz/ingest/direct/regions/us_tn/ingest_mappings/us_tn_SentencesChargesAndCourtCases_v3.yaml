@@ -43,6 +43,8 @@ input_columns:
   - ReleaseEligibilityDate
 unused_columns:
   - ChargeOffense
+launch_env:
+  $env: is_staging
 variables:
   - is_incarceration_sentence:
       $or:

@@ -18,6 +18,8 @@ input_columns:
   - LastName
   - FKCoSyRecSupervisionLevel
 unused_columns: []
+launch_env:
+  $env: is_staging
 output:
   StatePerson:
     external_ids:

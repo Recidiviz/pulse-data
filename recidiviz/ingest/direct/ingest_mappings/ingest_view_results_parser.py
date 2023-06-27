@@ -18,8 +18,9 @@
 manifest file for this ingest view.
 """
 import os
-from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Callable, Dict, Iterator, List, Optional, Set, Union
 
+import attr
 from more_itertools import one
 
 from recidiviz.common.common_utils import bidirectional_set_difference
@@ -39,6 +40,15 @@ from recidiviz.utils.yaml_dict import YAMLDict
 # This key tracks the version number for the actual mappings manifest structure,
 # allowing us to gate any breaking changes in the file syntax etc.
 MANIFEST_LANGUAGE_VERSION_KEY = "manifest_language"
+
+
+@attr.define(kw_only=True, frozen=True)
+class IngestViewManifest:
+    manifest_language_version: str
+    input_columns: List[str]
+    unused_columns: List[str]
+    should_launch: bool
+    output: EntityTreeManifest
 
 
 class IngestViewResultsParser:
@@ -63,13 +73,19 @@ class IngestViewResultsParser:
         """
 
         manifest_path = self.delegate.get_ingest_view_manifest_path(ingest_view_name)
-        output_manifest, expected_input_columns = self.parse_manifest(manifest_path)
+        ingest_view_manifest = self.parse_manifest(manifest_path)
         result = []
+        if not ingest_view_manifest.should_launch:
+            raise ValueError(
+                f"Cannot parse results for ingest view [{ingest_view_name}] because "
+                f"should_launch is false."
+            )
+
         for i, row in enumerate(contents_iterator):
-            self._validate_row_columns(i, row, expected_input_columns)
+            self._validate_row_columns(i, row, set(ingest_view_manifest.input_columns))
 
             try:
-                output_tree = output_manifest.build_from_row(row)
+                output_tree = ingest_view_manifest.output.build_from_row(row)
             except Exception as e:
                 if result_callable:
                     result_callable(i, row, e)
@@ -108,7 +124,7 @@ class IngestViewResultsParser:
                 f"results row [{row_number}]: {missing_from_results}"
             )
 
-    def parse_manifest(self, manifest_path: str) -> Tuple[EntityTreeManifest, Set[str]]:
+    def parse_manifest(self, manifest_path: str) -> IngestViewManifest:
         """Parses the provided manifest, returning a hydrated AST (abstract syntax tree)
         for the output, as well as the set of expected input columns for any CSVs we use
         this manifest to parse.
@@ -146,6 +162,19 @@ class IngestViewResultsParser:
                 )
                 variable_manifests[variable_name] = variable_manifest
 
+        raw_launch_env_manifest = manifest_dict.pop_dict_optional("launch_env")
+        should_launch = True
+        if raw_launch_env_manifest:
+            should_launch_value = build_manifest_from_raw_typed(
+                raw_field_manifest=raw_launch_env_manifest,
+                delegate=self.delegate,
+                variable_manifests=variable_manifests,
+                expected_result_type=bool,
+            ).build_from_row({})
+            should_launch = (
+                should_launch_value if should_launch_value is not None else True
+            )
+
         raw_entity_manifest = manifest_dict.pop_dict("output")
         entity_cls_name = one(raw_entity_manifest.keys())
         entity_cls = self.delegate.get_entity_cls(entity_cls_name=entity_cls_name)
@@ -172,7 +201,13 @@ class IngestViewResultsParser:
             referenced_variables=output_manifest.variables_referenced(),
         )
 
-        return output_manifest, set(input_columns)
+        return IngestViewManifest(
+            manifest_language_version=version,
+            input_columns=input_columns,
+            unused_columns=unused_columns,
+            should_launch=should_launch,
+            output=output_manifest,
+        )
 
     @staticmethod
     def _validate_input_columns_lists(
