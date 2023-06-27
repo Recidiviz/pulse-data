@@ -15,10 +15,31 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Utilities for api calls."""
+import logging
 from http import HTTPStatus
 
 from flask import Response, jsonify, make_response
 
+from recidiviz.firestore.firestore_client import FirestoreClientImpl
+
 
 def jsonify_response(message: str, response_code: HTTPStatus) -> Response:
     return make_response(jsonify(message=message), response_code)
+
+
+def allowed_twilio_dev_recipient(recipient_phone_number: str) -> bool:
+    """
+    Checks the supplied number against a configuration stored in firestore and returns
+    True if we are allowed to message this recipient from dev/staging
+    """
+    firestore_client = FirestoreClientImpl()
+    path = "configs/dev"
+
+    try:
+        config = firestore_client.get_document(path).get().to_dict()
+        return config.get("allowedTwilioRecipients", {}).get(
+            recipient_phone_number, False
+        )
+    except Exception as e:
+        logging.error(e)
+        return False

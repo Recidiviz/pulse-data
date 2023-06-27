@@ -44,7 +44,10 @@ from recidiviz.case_triage.workflows.constants import (
 from recidiviz.case_triage.workflows.interface import (
     WorkflowsUsTnExternalRequestInterface,
 )
-from recidiviz.case_triage.workflows.utils import jsonify_response
+from recidiviz.case_triage.workflows.utils import (
+    allowed_twilio_dev_recipient,
+    jsonify_response,
+)
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
     on_successful_authorization_recidiviz_only,
@@ -55,7 +58,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     get_cloud_task_json_body,
 )
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
-from recidiviz.utils.environment import in_gcp
+from recidiviz.utils.environment import get_gcp_environment, in_gcp, in_gcp_production
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.secrets import get_secret
 
@@ -329,6 +332,14 @@ def create_workflows_api_blueprint() -> Blueprint:
         sender_id = g.api_data["sender_id"]
         message = g.api_data["message"]
 
+        if not in_gcp_production() and not allowed_twilio_dev_recipient(
+            recipient_phone_number
+        ):
+            return jsonify_response(
+                f"{recipient_phone_number} is not an allowed recipient in f{get_gcp_environment()}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
         mid = str(uuid.uuid4())
         firestore_client = FirestoreClientImpl()
         client_firestore_id = f"{state.lower()}_{recipient_external_id}"
@@ -403,6 +414,14 @@ def create_workflows_api_blueprint() -> Blueprint:
         if state_code != "US_CA":
             return jsonify_response(
                 f"Unsupported sender state: {state_code}", HTTPStatus.UNAUTHORIZED
+            )
+
+        if not in_gcp_production() and not allowed_twilio_dev_recipient(
+            recipient[2:]  # Strip off the +1 at the beginning
+        ):
+            return jsonify_response(
+                f"{recipient} is not an allowed recipient in GCP environment: {get_gcp_environment()}",
+                HTTPStatus.UNAUTHORIZED,
             )
 
         sid = get_secret("twilio_sid")

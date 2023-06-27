@@ -91,11 +91,19 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     def setUp(self) -> None:
         super().setUp()
 
+        self.allowed_twilio_patch = mock.patch(
+            "recidiviz.case_triage.workflows.workflows_routes.allowed_twilio_dev_recipient",
+            return_value=True,
+        )
+
+        self.allowed_twilio_patch.start()
+
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
         self.fake_url = "http://fake-url.com"
 
     def tearDown(self) -> None:
+        self.allowed_twilio_patch.stop()
         super().tearDown()
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
@@ -565,10 +573,38 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_firestore.return_value.set_document.assert_called_once()
         self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
 
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.allowed_twilio_dev_recipient"
+    )
+    def test_enqueue_sms_request_failure_not_allowed_number(
+        self,
+        mock_allowed_recipient: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+        mock_allowed_recipient.return_value = False
+
+        request_body = {
+            "recipientExternalId": PERSON_EXTERNAL_ID,
+            "senderId": STAFF_ID,
+            "message": "You're all I've ever wanted and my arms are open wide",
+            "recipientPhoneNumber": "5153338822",
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_CA/enqueue_sms_request",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+
     @patch("twilio.rest.api.v2010.account.message.MessageList.create")
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_valid_twilio_request(
-        self, mock_get_secret: MagicMock, mock_twilio_messages: MagicMock
+        self,
+        mock_get_secret: MagicMock,
+        mock_twilio_messages: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
 
@@ -662,6 +698,28 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         mock_twilio_messages.assert_called()
         mock_get_secret.assert_called()
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.allowed_twilio_dev_recipient"
+    )
+    def test_can_only_send_to_allowed_recipients(
+        self,
+        mock_allowed_recipient: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+        mock_allowed_recipient.return_value = False
+
+        response = self.test_client.post(
+            "/workflows/external_request/us_ca/send_sms_request",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "message": "Message!",
+                "recipient": "+12223334444",
+                "mid": "ABC",
+            },
+        )
+        assert_type(response.get_json(), dict)
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
 
 
 def make_cors_test(
