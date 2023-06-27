@@ -18,9 +18,7 @@
 The DAG configuration to run the calculation pipelines in Dataflow simultaneously.
 This file is uploaded to GCS on deploy.
 """
-import json
 import os
-import uuid
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Type
 
@@ -29,22 +27,15 @@ from airflow.models import BaseOperator
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
     KubernetesPodOperator,
 )
-from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
-from google.cloud import tasks_v2
-from google.cloud.tasks_v2 import CloudTasksClient
 from more_itertools import one
 from requests import Response
 
-from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
-    FinishedCloudTaskQueryGenerator,
-)
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
     initialize_calculation_dag_group,
 )
-from recidiviz.airflow.dags.operators.bq_result_sensor import BQResultSensor
 from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
     IAPHTTPRequestOperator,
 )
@@ -138,40 +129,18 @@ def refresh_bq_dataset_operator(
     )
 
 
-def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperator:
-    queue_location = "us-east1"
-    queue_name = "validations"
-    task_path = CloudTasksClient.task_path(
-        project=project_id,
-        location=queue_location,
-        queue=queue_name,
-        task=uuid.uuid4().hex,
-    )
-
-    def create_validation_task(validation_state_code: str) -> tasks_v2.types.Task:
-        return tasks_v2.types.Task(
-            name=task_path,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/validation_manager/validate/{validation_state_code}",
-                "body": json.dumps(
-                    {
-                        "ingest_instance": "PRIMARY",
-                        # TODO(#21342): Pass in ingest instance from parameter when added.
-                    }
-                ).encode(),
-            },
-        )
-
-    return CloudTasksTaskCreateOperator(
-        task_id="trigger_validations_task",
-        location=queue_location,
-        queue_name=queue_name,
-        task=create_validation_task(state_code),
-        retry=retry,
-        # This will trigger the task regardless of the failure or success of the
-        # upstream pipelines.
-        trigger_rule=TriggerRule.ALL_DONE,
+def trigger_validations_operator(state_code: str) -> KubernetesPodOperator:
+    return build_recidiviz_kubernetes_pod_operator(
+        task_id=f"execute_validations_{state_code}",
+        container_name=f"trigger_validations_{state_code}",
+        argv=[
+            "python",
+            "-m",
+            "recidiviz.entrypoints.validation.validate",
+            f"--project_id={project_id}",
+            f"--state_code={state_code}",
+            "--ingest_instance=PRIMARY",  # TODO(#21342): Pass in ingest instance from parameter when added.
+        ],
     )
 
 
@@ -285,24 +254,10 @@ def post_normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]
 
 def validation_branches_by_state_code(
     states_to_validate: Iterable[str],
-) -> Dict[str, TaskGroup]:
+) -> Dict[str, BaseOperator]:
     branches_by_state_code = {}
     for state_code in states_to_validate:
-        with TaskGroup(group_id=f"{state_code}_validations") as state_specific_group:
-            trigger_state_validations = trigger_validations_operator(state_code)
-
-            wait_for_state_validations = BQResultSensor(
-                task_id="wait_for_validations_completion",
-                query_generator=FinishedCloudTaskQueryGenerator(
-                    project_id=project_id,
-                    cloud_task_create_operator_task_id=trigger_state_validations.task_id,
-                    tracker_dataset_id="validation_results",
-                    tracker_table_id="validations_completion_tracker",
-                ),
-            )
-            trigger_state_validations >> wait_for_state_validations
-
-        branches_by_state_code[state_code] = state_specific_group
+        branches_by_state_code[state_code] = trigger_validations_operator(state_code)
     return branches_by_state_code
 
 

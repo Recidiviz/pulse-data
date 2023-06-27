@@ -94,6 +94,7 @@ def main(
         ingest_instance=ingest_instance,
         validation_name_filter=validation_regex,
         sandbox_dataset_prefix=sandbox_dataset_prefix,
+        file_tickets_on_failure=False,
     )
 
 

@@ -18,7 +18,6 @@
 Unit test to test the calculation pipeline DAG logic.
 """
 import os
-import re
 import unittest
 from typing import Set
 from unittest.mock import patch
@@ -28,7 +27,6 @@ from airflow.models.dagbag import DagBag
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
     KubernetesPodOperator,
 )
-from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.task_group import TaskGroup
 
 from recidiviz import pipelines
@@ -48,9 +46,6 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 
 _UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_all_managed_views"
 _VALIDATIONS_STATE_CODE_BRANCH_START = "validations.state_code_branch_start"
-_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = (
-    r"validations.(US_[A-Z]{2})_validations.wait_for_validations_completion"
-)
 _REFRESH_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_STATE"
 _EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
 
@@ -223,32 +218,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
             validations_start.task_id, view_materialization.upstream_task_ids
         )
 
-    def test_trigger_validations_upstream_of_wait(self) -> None:
-        """Tests that the validations trigger happens directly before we wait
-        for the validations to finish.
-        """
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        self.assertNotEqual(0, len(dag.task_ids))
-
-        wait_subdag = dag.partial_subset(
-            task_ids_or_regex=_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX,
-            include_downstream=False,
-            include_upstream=False,
-        )
-        self.assertNotEqual(0, len(wait_subdag.tasks))
-        for wait_task in wait_subdag.tasks:
-            match = re.match(_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX, wait_task.task_id)
-            if not match:
-                raise ValueError(f"Found unexpected node: {wait_task.task_id}")
-            trigger_task = dag.get_task(
-                f"validations.{match.group(1).upper()}_validations.trigger_validations_task"
-            )
-            self.assertEqual(
-                trigger_task.downstream_task_ids,
-                {wait_task.task_id},
-            )
-
     def test_view_update_downstream_of_all_pipelines(
         self,
     ) -> None:
@@ -326,25 +295,29 @@ class TestCalculationPipelineDag(unittest.TestCase):
             ],
         )
 
-    def test_validations_endpoint(self) -> None:
+    def test_validations_task(self) -> None:
         """Tests that validation triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        trigger_cloud_task_task = dag.get_task(
-            "validations.US_ND_validations.trigger_validations_task"
-        )
+        trigger_validation_task = dag.get_task("validations.execute_validations_US_ND")
 
-        if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
+        if not isinstance(trigger_validation_task, KubernetesPodOperator):
             raise ValueError(
-                f"Expected type CloudTasksTaskCreateOperator, found "
-                f"[{type(trigger_cloud_task_task)}]."
+                f"Expected type KubernetesPodOperator, found "
+                f"[{type(trigger_validation_task)}]."
             )
 
-        self.assertEqual("validations", trigger_cloud_task_task.queue_name)
-
         self.assertEqual(
-            trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
-            "/validation_manager/validate/US_ND",
+            trigger_validation_task.arguments,
+            [
+                "run",
+                "python",
+                "-m",
+                "recidiviz.entrypoints.validation.validate",
+                f"--project_id={_PROJECT_ID}",
+                "--state_code=US_ND",
+                "--ingest_instance=PRIMARY",
+            ],
         )
 
     def test_trigger_metric_view_data_operator(self) -> None:
