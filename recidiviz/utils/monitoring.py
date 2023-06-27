@@ -26,6 +26,12 @@ from opencensus.stats import stats as stats_module
 from opencensus.stats import view as view_module
 from opencensus.tags import TagContext, TagMap
 
+CUSTOM_METRIC_NAMESPACE = "custom.googleapis.com/opencensus"
+
+
+def monitoring_metric_url(view: view_module.View) -> str:
+    return f"{CUSTOM_METRIC_NAMESPACE}/{view.name}"
+
 
 # pylint: disable=protected-access
 def stats() -> stats_module._Stats:
@@ -84,7 +90,7 @@ def with_region_tag(func: Callable) -> Callable:
         region_code: str,
         *args: Any,
         ingest_instance: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Any:
         with push_region_tag(region_code, ingest_instance):
             return func(region_code, *args, **kwargs)

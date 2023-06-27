@@ -32,6 +32,7 @@ from recidiviz.metrics.export.products.product_configs import (
 from recidiviz.monitoring.export_timeliness import (
     MISSING_FILE_CREATION_TIMESTAMP,
     UTC_EPOCH,
+    build_blob_recent_reading_query,
     generate_expected_file_uris,
     produce_export_timeliness_metrics,
     seconds_since_epoch,
@@ -67,6 +68,12 @@ TEST_EXPORT_CONFIG = ExportViewCollectionConfig(
             description="other test view",
             view_query_template="select 2",
         ),
+        SimpleBigQueryViewBuilder(
+            dataset_id="test_dataset",
+            view_id="newly_added_test_view",
+            description="other test view",
+            view_query_template="select 2",
+        ),
     ],
 )
 
@@ -90,6 +97,12 @@ mock_test_view_blob = build_mock_obj(
     }
 )
 
+blob_uris = {
+    "test_view": "gs://test-project-test-export/test_view.json",
+    "other_test_view": "gs://test-project-test-export/other_test_view.json",
+    "newly_added_export": "gs://test-project-test-export/newly_added_test_view.json",
+}
+
 
 class TestExportTimeliness(unittest.TestCase):
     """Tests for export timeliness"""
@@ -98,8 +111,19 @@ class TestExportTimeliness(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "test-project"
 
+        self.recent_blob_readings_by_query = {
+            build_blob_recent_reading_query(blob_uris["test_view"]): [1],
+            build_blob_recent_reading_query(blob_uris["other_test_view"]): [1],
+            build_blob_recent_reading_query(blob_uris["newly_added_export"]): [],
+        }
+        self.client_patcher = patch("google.cloud.monitoring_v3.QueryServiceClient")
+        self.client_patcher.start().return_value.query_time_series = (
+            lambda request: self.recent_blob_readings_by_query[request.query]
+        )
+
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
+        self.client_patcher.stop()
 
     def test_generate_expected_file_uris(self) -> None:
         result = generate_expected_file_uris(TEST_EXPORT_CONFIG)
@@ -107,8 +131,9 @@ class TestExportTimeliness(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                "gs://test-project-test-export/test_view.json",
-                "gs://test-project-test-export/other_test_view.json",
+                blob_uris["test_view"],
+                blob_uris["other_test_view"],
+                blob_uris["newly_added_export"],
             },
         )
 
@@ -117,20 +142,14 @@ class TestExportTimeliness(unittest.TestCase):
 
     def test_produce_export_timeliness_metrics(self) -> None:
         results = produce_export_timeliness_metrics(
-            {
-                "gs://test-project-test-export/test_view.json",
-                "gs://test-project-test-export/other_test_view.json",
-            },
+            set(blob_uris.values()),
             [mock_test_view_blob],
         )
 
-        self.assertEqual(
+        self.assertCountEqual(
             results,
             [
-                ("gs://test-project-test-export/test_view.json", 86400),
-                (
-                    "gs://test-project-test-export/other_test_view.json",
-                    MISSING_FILE_CREATION_TIMESTAMP,
-                ),
+                (blob_uris["test_view"], 86400),
+                (blob_uris["other_test_view"], MISSING_FILE_CREATION_TIMESTAMP),
             ],
         )
