@@ -32,7 +32,12 @@ WITH
 us_pa_supervision_directors AS (
   SELECT 
     'US_PA' AS state_code,
-    TRIM(CONCAT(COALESCE(firstname, ''), ' ', COALESCE(lastname, ''))) AS full_name,
+    TO_JSON_STRING(
+        STRUCT (
+            firstname AS given_names,  
+            lastname AS surname
+        )
+    ) AS full_name,
     email,
   FROM `{project_id}.{static_reference_dataset}.us_pa_upper_mgmt`  
   WHERE role IN ('Executive Assistant', 'Deputy Secretary', 'Regional Director')
@@ -40,7 +45,14 @@ us_pa_supervision_directors AS (
 us_ix_supervision_directors AS (
   SELECT 
     state_code,
-    TRIM(CONCAT(COALESCE(FirstName, ''), ' ', COALESCE(LastName, ''))) AS full_name,
+    TO_JSON_STRING(
+        STRUCT (
+            FirstName AS given_names,
+            MiddleName AS middle_names,
+            Suffix AS name_suffix,    
+            LastName AS surname
+        )
+    ) AS full_name,
     email,
     FROM `{project_id}.{static_reference_dataset}.us_ix_state_staff_leadership`
     WHERE role_subtype_raw_text IN ('STATE LEADERSHIP')
