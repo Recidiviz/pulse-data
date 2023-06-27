@@ -93,6 +93,22 @@ def get_project_for_environment(environment: GCPEnvironment) -> str:
     raise ValueError(f"Unknown environment {environment}")
 
 
+def get_environment_for_project(project: str) -> GCPEnvironment:
+    """Get the environment for the given project
+
+    Args:
+        project: The project to get the environment for
+
+    Returns:
+        The environment for the given project
+    """
+    if project == GCP_PROJECT_STAGING:
+        return GCPEnvironment.STAGING
+    if project == GCP_PROJECT_PRODUCTION:
+        return GCPEnvironment.PRODUCTION
+    raise ValueError(f"Unknown project {project}")
+
+
 def in_gcp_production() -> bool:
     return in_gcp() and get_gcp_environment() == GCPEnvironment.PRODUCTION.value
 

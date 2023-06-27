@@ -32,13 +32,13 @@ from opencensus.stats import aggregation, measure, view
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata, monitoring, structured_logging, trace
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.endpoint_helpers import get_value_from_request
-from recidiviz.utils.environment import get_gcp_environment
+from recidiviz.utils.environment import get_environment_for_project
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
-from recidiviz.utils.metadata import project_id
 from recidiviz.validation.configured_validations import (
     get_all_validations,
     get_validation_global_config,
@@ -141,11 +141,42 @@ def handle_validation_request(region_code: str) -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+def execute_validation_request(
+    state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
+    sandbox_prefix: Optional[str] = None,
+) -> None:
+    if ingest_instance == DirectIngestInstance.SECONDARY and not sandbox_prefix:
+        raise ValueError(
+            "Sandbox prefix must be specified for secondary ingest instance"
+        )
+
+    start_datetime = datetime.datetime.now()
+    run_id, num_validations_run = execute_validation(
+        region_code=state_code.value,
+        ingest_instance=ingest_instance,
+        sandbox_dataset_prefix=sandbox_prefix,
+    )
+    end_datetime = datetime.datetime.now()
+
+    runtime_sec = int((end_datetime - start_datetime).total_seconds())
+
+    store_validation_run_completion_in_big_query(
+        validation_run_id=run_id,
+        num_validations_run=num_validations_run,
+        cloud_task_id="AIRFLOW_VALIDATION",
+        validations_runtime_sec=runtime_sec,
+        sandbox_dataset_prefix=sandbox_prefix,
+        ingest_instance=ingest_instance,
+    )
+
+
 def execute_validation(
     region_code: str,
     ingest_instance: DirectIngestInstance,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
+    file_tickets_on_failure: bool = True,
 ) -> Tuple[str, int]:
     """Executes validation checks for |region_code|.
     |ingest_instance| is the ingest instance used to generate the data that is being validated. This determines which
@@ -254,7 +285,11 @@ def execute_validation(
         "Validation run complete. Analyzed a total of %s jobs.", len(validation_jobs)
     )
     # Only create GitHub tickets for hard failures on primary ingest instance
-    if failed_hard_validations and ingest_instance == DirectIngestInstance.PRIMARY:
+    if (
+        failed_hard_validations
+        and ingest_instance == DirectIngestInstance.PRIMARY
+        and file_tickets_on_failure
+    ):
         # Put GitHub filing in a try/except so we don't fail the endpoint completely if we can't
         # talk to GitHub for whatever reason.
         try:
@@ -397,9 +432,7 @@ def _file_tickets_for_failing_validations(
 ) -> None:
     """Files GitHub tickets for failed validations that do not already have an associated ticket."""
     logging.info("Filing GitHub tickets for failed validations")
-    if (env := get_gcp_environment()) is None:
-        # If we don't know if we're in prod or staging, don't bother filing tickets
-        return
+    env = get_environment_for_project(project=metadata.project_id()).value
     github_client = github_helperbot_client()
 
     for region, validations in groupby(
@@ -414,7 +447,7 @@ def _file_tickets_for_failing_validations(
             name_str = f"`{name}`"
             env_str = f"[{env}]"
             ticket_body = f"""Automated data validation found a hard failure for {name_str} in {env} environment.
-Admin Panel link: https://{project_id()}.ue.r.appspot.com/admin/validation_metadata/status/details/{name}?stateCode={region}
+Admin Panel link: https://{metadata.project_id()}.ue.r.appspot.com/admin/validation_metadata/status/details/{name}?stateCode={region}
 Failure details: {validation.result_details.failure_description()}
 Description: {validation.validation_job.validation.view_builder.description}
 """

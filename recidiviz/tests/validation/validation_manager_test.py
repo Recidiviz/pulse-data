@@ -29,9 +29,10 @@ from mock import MagicMock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.utils.matchers import UnorderedCollection
-from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
     SamenessDataValidationCheck,
@@ -49,6 +50,8 @@ from recidiviz.validation.validation_config import (
 )
 from recidiviz.validation.validation_manager import (
     _fetch_validation_jobs_to_perform,
+    execute_validation,
+    execute_validation_request,
     validation_manager_blueprint,
 )
 from recidiviz.validation.validation_models import (
@@ -190,17 +193,13 @@ class TestHandleRequest(TestCase):
 
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
-        self.project_id_patcher.start().return_value = "recidiviz-456"
-        self.project_id_patcher_2 = patch(
-            "recidiviz.validation.validation_manager.project_id"
-        )
-        self.project_id_patcher_2.start().return_value = "recidiviz-456"
+        self.project_id_patcher.start().return_value = GCP_PROJECT_STAGING
         self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
         self.project_number_patcher.start().return_value = "123456789"
         self.environment_patcher = patch(
-            "recidiviz.validation.validation_manager.get_gcp_environment"
+            "recidiviz.validation.validation_manager.get_environment_for_project"
         )
-        self.environment_patcher.start().return_value = GCPEnvironment.STAGING.value
+        self.environment_patcher.start().return_value = GCPEnvironment.STAGING
 
         app = Flask(__name__)
         app.register_blueprint(validation_manager_blueprint)
@@ -211,7 +210,6 @@ class TestHandleRequest(TestCase):
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
-        self.project_id_patcher_2.stop()
         self.project_number_patcher.stop()
         self.environment_patcher.stop()
 
@@ -328,7 +326,6 @@ class TestHandleRequest(TestCase):
     def test_handle_request_should_failure_secondary_with_no_sandbox_prefix(
         self,
     ) -> None:
-
         data = {"ingest_instance": "SECONDARY"}
         response = self.client.post(
             "/validate/US_XX", headers=APP_ENGINE_HEADERS, data=json.dumps(data)
@@ -597,6 +594,513 @@ class TestHandleRequest(TestCase):
             ingest_instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,
         )
+
+
+class TestExecuteValidationRequest(TestCase):
+    """Tests for execute_validation_request."""
+
+    def setUp(self) -> None:
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = "recidiviz-456"
+        self.environment_patcher = patch(
+            "recidiviz.validation.validation_manager.get_environment_for_project"
+        )
+        self.environment_patcher.start().return_value = GCPEnvironment.STAGING
+
+        self._TEST_VALIDATIONS = get_test_validations()
+
+    def tearDown(self) -> None:
+        self.project_id_patcher.stop()
+        self.environment_patcher.stop()
+
+    @patch(
+        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
+    )
+    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
+    )
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
+    )
+    def test_execute_validation_request_happy_path_no_failures(
+        self,
+        mock_store_run_success: MagicMock,
+        mock_store_validation_results: MagicMock,
+        mock_fetch_validations: MagicMock,
+        mock_run_job: MagicMock,
+        mock_emit_opencensus_failure_events: MagicMock,
+        mock_file_tickets_for_failing_validations: MagicMock,
+    ) -> None:
+        mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        mock_run_job.return_value = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[0],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.SUCCESS
+            ),
+        )
+
+        execute_validation_request(
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        self.assertEqual(5, mock_run_job.call_count)
+        for job in self._TEST_VALIDATIONS:
+            mock_run_job.assert_any_call(job)
+
+        mock_emit_opencensus_failure_events.assert_not_called()
+        mock_file_tickets_for_failing_validations.assert_not_called()
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(5, len(results))
+
+        mock_store_run_success.assert_called_with(
+            cloud_task_id="AIRFLOW_VALIDATION",
+            num_validations_run=5,
+            validations_runtime_sec=mock.ANY,
+            validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
+        )
+
+    @patch(
+        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
+    )
+    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
+    )
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
+    )
+    def test_execute_validation_request_happy_path_no_failures_secondary_with_sandbox_prefix(
+        self,
+        mock_store_run_success: MagicMock,
+        mock_store_validation_results: MagicMock,
+        mock_fetch_validations: MagicMock,
+        mock_run_job: MagicMock,
+        mock_emit_opencensus_failure_events: MagicMock,
+        mock_file_tickets_for_failing_validations: MagicMock,
+    ) -> None:
+        mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        mock_run_job.return_value = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[0],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.SUCCESS
+            ),
+        )
+
+        execute_validation_request(
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            sandbox_prefix="test_prefix",
+        )
+
+        self.assertEqual(5, mock_run_job.call_count)
+        for job in self._TEST_VALIDATIONS:
+            mock_run_job.assert_any_call(job)
+
+        mock_emit_opencensus_failure_events.assert_not_called()
+        mock_file_tickets_for_failing_validations.assert_not_called()
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(5, len(results))
+
+        mock_store_run_success.assert_called_with(
+            cloud_task_id="AIRFLOW_VALIDATION",
+            num_validations_run=5,
+            validations_runtime_sec=mock.ANY,
+            validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            sandbox_dataset_prefix="test_prefix",
+        )
+
+    def test_execute_validation_request_should_failure_secondary_with_no_sandbox_prefix(
+        self,
+    ) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Sandbox prefix must be specified for secondary ingest instance",
+        ):
+            execute_validation_request(
+                state_code=StateCode.US_XX,
+                ingest_instance=DirectIngestInstance.SECONDARY,
+            )
+
+    @patch("recidiviz.validation.validation_manager.github_helperbot_client")
+    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
+    )
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
+    )
+    def test_execute_validation_request_with_job_failures_and_validation_failures(
+        self,
+        mock_store_run_success: MagicMock,
+        mock_store_validation_results: MagicMock,
+        mock_fetch_validations: MagicMock,
+        mock_run_job: MagicMock,
+        mock_emit_opencensus_failure_events: MagicMock,
+        mock_github_client: MagicMock,
+    ) -> None:
+        mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        mock_github_repo = MagicMock()
+        mock_github_repo.get_issues.return_value = [
+            Issue(
+                requester=MagicMock(),
+                headers=MagicMock(),
+                attributes={"title": "[staging][US_XX] `test_3`"},
+                completed=MagicMock(),
+            )
+        ]
+        mock_github_client.return_value.get_repo.return_value = mock_github_repo
+        first_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[1],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
+        )
+        second_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[2],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
+        )
+        third_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[3],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD, dev_mode=True
+            ),
+        )
+        mock_run_job.side_effect = [
+            DataValidationJobResult(
+                validation_job=self._TEST_VALIDATIONS[0],
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
+            ),
+            first_failure,
+            second_failure,
+            third_failure,
+            ValueError("Job failed to run!"),
+        ]
+
+        execute_validation_request(
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        self.assertEqual(len(self._TEST_VALIDATIONS), mock_run_job.call_count)
+        for job in self._TEST_VALIDATIONS:
+            mock_run_job.assert_any_call(job)
+
+        mock_emit_opencensus_failure_events.assert_called_with(
+            UnorderedCollection([self._TEST_VALIDATIONS[4]]),
+            UnorderedCollection([first_failure, second_failure]),
+        )
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(5, len(results))
+
+        mock_store_run_success.assert_called_with(
+            cloud_task_id="AIRFLOW_VALIDATION",
+            num_validations_run=5,
+            validations_runtime_sec=mock.ANY,
+            validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
+        )
+
+        expected_labels = ["Validation", "Region: US_XX", "Team: State Pod"]
+        expected_calls = [
+            call(
+                title="[staging][US_XX] `test_2`",
+                body=mock.ANY,
+                labels=expected_labels,
+            ),
+            call(
+                title="[staging][US_XX] `test_4`",
+                body=mock.ANY,
+                labels=expected_labels,
+            ),
+        ]
+        self.assertCountEqual(
+            mock_github_repo.create_issue.call_args_list, expected_calls
+        )
+
+    @patch("recidiviz.validation.validation_manager.github_helperbot_client")
+    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
+    )
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
+    )
+    def test_execute_validation_request_happy_path_some_failures(
+        self,
+        mock_store_run_success: MagicMock,
+        mock_store_validation_results: MagicMock,
+        mock_fetch_validations: MagicMock,
+        mock_run_job: MagicMock,
+        mock_emit_opencensus_failure_events: MagicMock,
+        mock_github_client: MagicMock,
+    ) -> None:
+        mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        mock_github_repo = MagicMock()
+        mock_github_repo.get_issues.return_value = [
+            Issue(
+                requester=MagicMock(),
+                headers=MagicMock(),
+                attributes={"title": "[staging][US_XX] `test_3`"},
+                completed=MagicMock(),
+            )
+        ]
+        mock_github_client.return_value.get_repo.return_value = mock_github_repo
+
+        first_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[1],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
+        )
+        second_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[2],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
+        )
+        third_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[3],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD, dev_mode=True
+            ),
+        )
+        mock_run_job.side_effect = [
+            DataValidationJobResult(
+                validation_job=self._TEST_VALIDATIONS[0],
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
+            ),
+            first_failure,
+            second_failure,
+            third_failure,
+            DataValidationJobResult(
+                validation_job=self._TEST_VALIDATIONS[4],
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
+            ),
+        ]
+
+        execute_validation_request(
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        self.assertEqual(5, mock_run_job.call_count)
+        for job in self._TEST_VALIDATIONS:
+            mock_run_job.assert_any_call(job)
+
+        mock_emit_opencensus_failure_events.assert_called_with(
+            [], UnorderedCollection([first_failure, second_failure])
+        )
+        mock_store_validation_results.assert_called_once()
+        self.assertEqual(1, len(mock_store_validation_results.call_args[0]))
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(5, len(results))
+
+        mock_store_run_success.assert_called_with(
+            cloud_task_id="AIRFLOW_VALIDATION",
+            num_validations_run=5,
+            validations_runtime_sec=mock.ANY,
+            validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
+        )
+
+        expected_labels = ["Validation", "Region: US_XX", "Team: State Pod"]
+        expected_calls = [
+            call(
+                title="[staging][US_XX] `test_2`",
+                body=mock.ANY,
+                labels=expected_labels,
+            ),
+            call(
+                title="[staging][US_XX] `test_4`",
+                body=mock.ANY,
+                labels=expected_labels,
+            ),
+        ]
+        self.assertCountEqual(
+            mock_github_repo.create_issue.call_args_list, expected_calls
+        )
+
+    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
+    )
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
+    )
+    def test_execute_validation_request_happy_path_nothing_configured(
+        self,
+        mock_store_run_success: MagicMock,
+        mock_store_validation_results: MagicMock,
+        mock_fetch_validations: MagicMock,
+        mock_run_job: MagicMock,
+        mock_emit_opencensus_failure_events: MagicMock,
+    ) -> None:
+        mock_fetch_validations.return_value = []
+
+        execute_validation_request(
+            state_code=StateCode.US_XX,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+        mock_run_job.assert_not_called()
+        mock_emit_opencensus_failure_events.assert_not_called()
+        mock_store_validation_results.assert_called_once()
+        ((results,), _kwargs) = mock_store_validation_results.call_args
+        self.assertEqual(0, len(results))
+
+        mock_store_run_success.assert_called_with(
+            cloud_task_id="AIRFLOW_VALIDATION",
+            num_validations_run=0,
+            validations_runtime_sec=mock.ANY,
+            validation_run_id=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            sandbox_dataset_prefix=None,
+        )
+
+    @patch(
+        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
+    )
+    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
+    )
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
+    )
+    def test_execute_validation_files_tickets(
+        self,
+        _mock_store_run_success: MagicMock,
+        _mock_store_validation_results: MagicMock,
+        mock_fetch_validations: MagicMock,
+        mock_run_job: MagicMock,
+        _mock_emit_opencensus_failure_events: MagicMock,
+        mock_file_tickets_for_failing_validations: MagicMock,
+    ) -> None:
+        mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        first_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[1],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
+        )
+        second_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[2],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
+        )
+        third_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[3],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD, dev_mode=True
+            ),
+        )
+        mock_run_job.side_effect = [
+            DataValidationJobResult(
+                validation_job=self._TEST_VALIDATIONS[0],
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
+            ),
+            first_failure,
+            second_failure,
+            third_failure,
+            ValueError("Job failed to run!"),
+        ]
+        _ = execute_validation(
+            region_code=StateCode.US_XX.value,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+        mock_file_tickets_for_failing_validations.assert_called()
+
+    @patch(
+        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
+    )
+    @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
+    @patch("recidiviz.validation.validation_manager._run_job")
+    @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_results_in_big_query"
+    )
+    @patch(
+        "recidiviz.validation.validation_manager.store_validation_run_completion_in_big_query"
+    )
+    def test_execute_validation_doesnt_file_tickets(
+        self,
+        _mock_store_run_success: MagicMock,
+        _mock_store_validation_results: MagicMock,
+        mock_fetch_validations: MagicMock,
+        mock_run_job: MagicMock,
+        _mock_emit_opencensus_failure_events: MagicMock,
+        mock_file_tickets_for_failing_validations: MagicMock,
+    ) -> None:
+        mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        first_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[1],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
+        )
+        second_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[2],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
+        )
+        third_failure = DataValidationJobResult(
+            validation_job=self._TEST_VALIDATIONS[3],
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD, dev_mode=True
+            ),
+        )
+        mock_run_job.side_effect = [
+            DataValidationJobResult(
+                validation_job=self._TEST_VALIDATIONS[0],
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
+            ),
+            first_failure,
+            second_failure,
+            third_failure,
+            ValueError("Job failed to run!"),
+        ]
+        _ = execute_validation(
+            region_code=StateCode.US_XX.value,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            file_tickets_on_failure=False,
+        )
+        mock_file_tickets_for_failing_validations.assert_not_called()
 
 
 class TestFetchValidations(TestCase):
