@@ -34,7 +34,12 @@ us_pa_supervision_district_managers AS (
   SELECT 
     'US_PA' AS state_code,
     CAST(ext_id AS STRING) AS external_id,
-    TRIM(CONCAT(COALESCE(firstname, ''), ' ', COALESCE(lastname, ''))) AS full_name,
+    TO_JSON_STRING(
+        STRUCT (
+            FirstName AS given_names, 
+            LastName AS surname
+        )
+    ) AS full_name,
     email,
     district AS supervision_district
   FROM `{project_id}.{static_reference_dataset}.us_pa_upper_mgmt`  
@@ -44,7 +49,14 @@ us_ix_supervision_district_managers AS (
   SELECT 
     state_code,
     external_id,
-    TRIM(CONCAT(COALESCE(FirstName, ''), ' ', COALESCE(LastName, ''))) AS full_name,
+    TO_JSON_STRING(
+        STRUCT (
+            FirstName AS given_names, 
+            MiddleName AS middle_names,
+            Suffix AS name_suffix,  
+            LastName AS surname
+        )
+    ) AS full_name,
     email,
     LocationId AS supervision_district,
     FROM `{project_id}.{static_reference_dataset}.us_ix_state_staff_leadership`

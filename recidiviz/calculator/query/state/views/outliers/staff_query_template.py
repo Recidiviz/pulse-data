@@ -29,24 +29,17 @@ from recidiviz.calculator.query.state.views.outliers.utils import (
 
 def staff_query_template(role: str) -> str:
     return f"""
-WITH staff AS (
-  SELECT * except (full_name),
-    JSON_EXTRACT_SCALAR(full_name, '$.given_names')  AS given_names,
-    JSON_EXTRACT_SCALAR(full_name, '$.surname')  AS surname
-  FROM `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff
-)
-
 SELECT
     attrs.officer_id AS external_id,
     attrs.staff_id,
     attrs.state_code,
-    TRIM(CONCAT(COALESCE(given_names, ''), ' ', COALESCE(surname, ''))) AS full_name,
+    staff.full_name,
     staff.email,
     attrs.supervision_district,
     attrs.supervision_unit, 
     attrs.supervisor_staff_external_id AS supervisor_external_id
 FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` attrs
-INNER JOIN staff 
+INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff 
     USING (staff_id, state_code)
 WHERE staff.state_code IN ({list_to_query_string(get_outliers_enabled_states(), quoted=True)}) 
   AND {today_between_start_date_and_nullable_end_date_exclusive_clause("start_date", "end_date_exclusive")}

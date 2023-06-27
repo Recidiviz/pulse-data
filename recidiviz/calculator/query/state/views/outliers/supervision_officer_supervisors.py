@@ -62,7 +62,7 @@ supervision_officer_supervisors AS (
     current_us_pa_supervisor_ids.state_code,
     current_us_pa_supervisor_ids.external_id,
     current_us_pa_supervisor_ids.staff_id,
-    TRIM(CONCAT(COALESCE(JSON_EXTRACT_SCALAR(full_name, '$.given_names'), ''), ' ', COALESCE(JSON_EXTRACT_SCALAR(full_name, '$.surname'), ''))) AS full_name,
+    full_name,
     staff.email,
     attrs.supervisor_staff_external_id AS supervisor_external_id,
     attrs.supervision_district,
