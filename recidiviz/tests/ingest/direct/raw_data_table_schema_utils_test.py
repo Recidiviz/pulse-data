@@ -33,6 +33,14 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.raw_data_table_schema_utils import (
     update_raw_data_table_schema,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    FILE_ID_COL_DESCRIPTION,
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_DESCRIPTION,
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_DESCRIPTION,
+    UPDATE_DATETIME_COL_NAME,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
@@ -86,31 +94,37 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
         self.schema: List[bigquery.SchemaField] = [
             bigquery.SchemaField(
                 name="primary_key_col",
+                description="is primary key",
                 field_type=bigquery.enums.SqlTypeNames.STRING.value,
                 mode="NULLABLE",
             ),
             bigquery.SchemaField(
                 name="column 1",
+                description="desc",
                 field_type=bigquery.enums.SqlTypeNames.STRING.value,
                 mode="NULLABLE",
             ),
             bigquery.SchemaField(
                 name="column 2",
+                description="",
                 field_type=bigquery.enums.SqlTypeNames.STRING.value,
                 mode="NULLABLE",
             ),
             bigquery.SchemaField(
-                name="file_id",
+                name=FILE_ID_COL_NAME,
+                description=FILE_ID_COL_DESCRIPTION,
                 field_type=bigquery.enums.SqlTypeNames.INTEGER.value,
                 mode="REQUIRED",
             ),
             bigquery.SchemaField(
-                name="update_datetime",
+                name=UPDATE_DATETIME_COL_NAME,
+                description=UPDATE_DATETIME_COL_DESCRIPTION,
                 field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
                 mode="REQUIRED",
             ),
             bigquery.SchemaField(
-                name="is_deleted",
+                name=IS_DELETED_COL_NAME,
+                description=IS_DELETED_COL_DESCRIPTION,
                 field_type=bigquery.enums.SqlTypeNames.BOOLEAN.value,
                 mode="REQUIRED",
             ),

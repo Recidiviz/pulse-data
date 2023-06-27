@@ -22,6 +22,7 @@ from types import ModuleType
 from typing import Dict, List, Optional, Set, Tuple
 
 import attr
+from more_itertools import one
 
 from recidiviz.cloud_storage.gcsfs_csv_reader import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.common import attr_validators
@@ -248,6 +249,18 @@ class DirectIngestRawFileConfig:
             for encoding in COMMON_RAW_FILE_ENCODINGS
             if encoding.upper() != self.encoding.upper()
         ]
+
+    def get_column_info(self, column_name: str) -> RawTableColumnInfo:
+        """Returns information about the column with the provided |column_name|. Throws
+        if that column does not exist in the table.
+        """
+        infos = [c for c in self.columns if c.name == column_name]
+        if len(infos) != 1:
+            raise ValueError(
+                f"Expected to find exactly one entry for column [{column_name}], "
+                f"found: {infos}"
+            )
+        return one(infos)
 
     @property
     def documented_columns(self) -> List[RawTableColumnInfo]:

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,13 @@
 """Constants used by the direct ingest system."""
 
 # Recidiviz-managed raw data columns
-UPDATE_DATETIME_COL_NAME = "update_datetime"
 FILE_ID_COL_NAME = "file_id"
+FILE_ID_COL_DESCRIPTION = "The ID of the file this row was extracted from"
 IS_DELETED_COL_NAME = "is_deleted"
+IS_DELETED_COL_DESCRIPTION = (
+    "Whether this row is inferred deleted via omission from more recent files"
+)
+UPDATE_DATETIME_COL_NAME = "update_datetime"
+UPDATE_DATETIME_COL_DESCRIPTION = (
+    "The timestamp of the file this row was extracted from"
+)

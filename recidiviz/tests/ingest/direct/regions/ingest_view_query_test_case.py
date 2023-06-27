@@ -39,6 +39,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
     augment_raw_data_df_with_metadata_columns,
     check_found_columns_are_subset_of_config,
+    get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
@@ -304,6 +305,7 @@ class IngestViewQueryTestCase(
     def setUp(self) -> None:
         super().setUp()
         self.region_code: str
+
         # TODO(#19137): Get the view builder directly instead of requiring the test to
         # do that.
         self.ingest_view: DirectIngestViewQueryBuilder
@@ -328,9 +330,12 @@ class IngestViewQueryTestCase(
         file_tag: str,
         mock_data: pd.DataFrame,
     ) -> None:
+        region_config = get_region_raw_file_config(region_code)
         bq_schema = (
             DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
-                mock_data.columns.values
+                region_raw_file_config=region_config,
+                file_tag=file_tag,
+                columns=mock_data.columns.values,
             )
         )
         mock_schema = PostgresTableSchema.from_big_query_schema_fields(
@@ -406,10 +411,13 @@ class IngestViewEmulatorQueryTestCase(
             ),
             table_id=file_tag,
         )
+        region_config = get_region_raw_file_config(region_code)
         self.create_mock_table(
             address=address,
             schema=DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
-                mock_data.columns.values
+                region_raw_file_config=region_config,
+                file_tag=file_tag,
+                columns=mock_data.columns.values,
             ),
         )
         self.load_rows_into_table(address, mock_data.to_dict("records"))

@@ -86,7 +86,9 @@ def _get_raw_data_table_schema(
         IS_DELETED_COL_NAME,
     ]
     schema = DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
-        columns
+        region_raw_file_config=region_config,
+        file_tag=raw_file_tag,
+        columns=columns,
     )
 
     return schema
