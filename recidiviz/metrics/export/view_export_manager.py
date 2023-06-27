@@ -49,6 +49,7 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
+from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export import export_config
 from recidiviz.metrics.export.export_config import ExportBigQueryViewConfig
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
@@ -104,6 +105,7 @@ monitoring.register_views(
     [failed_metric_export_validation_view, failed_metric_export_view]
 )
 
+# TODO(#21446) Remove these endpoints once we move the callsite to Kubernetes in Airflow.
 export_blueprint = Blueprint("export", __name__)
 
 
@@ -203,6 +205,70 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     logging.info("Finished saving success record to database.")
 
     return "", HTTPStatus.OK
+
+
+def execute_metric_view_data_export(
+    export_job_name: str,
+    state_code: Optional[StateCode],
+    destination_override: Optional[str],
+    sandbox_prefix: Optional[str],
+) -> None:
+    """Exports data in BigQuery metric views to cloud storage buckets."""
+    logging.info(
+        "Attempting to export view data to cloud storage for export_job_name [%s], state_code [%s], destination_override [%s], sandbox_prefix [%s]",
+        export_job_name,
+        state_code,
+        destination_override,
+        sandbox_prefix,
+    )
+    if sandbox_prefix and not destination_override:
+        raise ValueError("Sandbox prefix requires destination override")
+
+    product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
+    export_launched = product_configs.is_export_launched_in_env(
+        export_job_name=export_job_name,
+        state_code=state_code.value if state_code else None,
+    )
+
+    start = datetime.datetime.now()
+    if export_launched:
+        relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
+            export_job_name.upper()
+        )
+
+        if not relevant_export_collection:
+            raise ValueError(
+                f"No export configs matching export name: [{export_job_name.upper()}]"
+            )
+
+        export_view_data_to_cloud_storage(
+            export_job_name=export_job_name,
+            state_code=state_code.value if state_code else None,
+            destination_override=destination_override,
+            address_overrides=address_overrides_for_view_builders(
+                view_dataset_override_prefix=sandbox_prefix,
+                view_builders=relevant_export_collection.view_builders_to_export,
+            )
+            if sandbox_prefix
+            else None,
+        )
+
+    end = datetime.datetime.now()
+    runtime_sec = int((end - start).total_seconds())
+
+    success_persister = MetricViewDataExportSuccessPersister(
+        bq_client=BigQueryClientImpl()
+    )
+    # TODO(#21537) Remove the use of `cloud_task_id` when all tasks have been moved to Kubernetes.
+    success_persister.record_success_in_bq(
+        export_job_name=export_job_name,
+        state_code=state_code.value if state_code else None,
+        destination_override=destination_override,
+        sandbox_dataset_prefix=sandbox_prefix,
+        runtime_sec=runtime_sec,
+        cloud_task_id="AIRFLOW_METRIC_EXPORT",
+    )
+    logging.info("Finished saving success record to database.")
 
 
 def get_configs_for_export_name(

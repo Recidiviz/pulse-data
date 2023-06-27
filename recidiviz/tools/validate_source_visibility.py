@@ -288,6 +288,7 @@ def main() -> int:
                 "recidiviz.metrics.export.products",
                 "recidiviz.tools.utils.script_helpers",
                 "recidiviz.utils.environment",
+                "recidiviz.utils.metadata",
                 "recidiviz.utils.yaml_dict",
             }
         ),

@@ -23,7 +23,8 @@ import attr
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export import products as products_module
-from recidiviz.utils import environment
+from recidiviz.utils import environment, metadata
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCPEnvironment
 from recidiviz.utils.yaml_dict import YAMLDict
 
 PRODUCTS_CONFIG_PATH = os.path.join(
@@ -42,9 +43,12 @@ def in_configured_export_environment(configured_environment: str) -> bool:
     """Returns whether or not the configured_environment matches the current
     environment. If we are in prod, then the configured_environment must be
     production. Everything is configured if we are in staging."""
+    configured_project_id = environment.get_project_for_environment(
+        GCPEnvironment(configured_environment)
+    )
     return (
-        not environment.in_gcp_production()
-        or configured_environment == environment.get_gcp_environment()
+        not metadata.project_id() == GCP_PROJECT_PRODUCTION
+        or configured_project_id == metadata.project_id()
     )
 
 
@@ -153,7 +157,9 @@ class ProductConfigs:
         ]
 
     def is_export_launched_in_env(
-        self, export_job_name: str, state_code: Optional[str] = None
+        self,
+        export_job_name: str,
+        state_code: Optional[str] = None,
     ) -> bool:
         """Returns whether the export corresponding to the given export_job_name and,
         if provided, state_code has been launched in the current environment.

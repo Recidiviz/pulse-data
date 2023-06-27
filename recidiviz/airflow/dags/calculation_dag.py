@@ -177,65 +177,35 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
 
 def trigger_metric_view_data_operator(
     export_job_name: str, state_code: Optional[str]
-) -> CloudTasksTaskCreateOperator:
-    queue_location = "us-east1"
-    queue_name = "metric-view-export"
-    endpoint = "/export/metric_view_data"
-    task_path = CloudTasksClient.task_path(
-        project=project_id,
-        location=queue_location,
-        queue=queue_name,
-        task=uuid.uuid4().hex,
-    )
-    task = tasks_v2.types.Task(
-        name=task_path,
-        app_engine_http_request={
-            "http_method": "POST",
-            "relative_uri": endpoint,
-            "body": json.dumps(
-                {
-                    "export_job_name": export_job_name,
-                    "state_code": state_code,
-                }
-            ).encode(),
-        },
-    )
-    return CloudTasksTaskCreateOperator(
-        task_id=f"trigger_{export_job_name.lower()}{f'_{state_code.lower()}' if state_code else ''}_metric_view_data_export",
-        location=queue_location,
-        queue_name=queue_name,
-        task=task,
-        retry=retry,
+) -> KubernetesPodOperator:
+    state_code_component = f"_{state_code.lower()}" if state_code else ""
+    return build_recidiviz_kubernetes_pod_operator(
+        task_id=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
+        container_name=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
+        argv=[
+            "python",
+            "-m",
+            "recidiviz.entrypoints.metric_export.metric_view_export",
+            f"--project_id={project_id}",
+            f"--export_job_name={export_job_name}",
+        ]
+        + ([f"--state_code={state_code}"] if state_code else []),
     )
 
 
 def create_metric_view_data_export_nodes(
     relevant_product_exports: List[ProductExportConfig],
-) -> List[CloudTasksTaskCreateOperator]:
+) -> List[KubernetesPodOperator]:
     """Creates trigger nodes and wait conditions for metric view data exports based on provided export job filter."""
-    metric_view_data_triggers: List[CloudTasksTaskCreateOperator] = []
+    metric_view_data_triggers: List[KubernetesPodOperator] = []
     for export in relevant_product_exports:
         export_job_name = export["export_job_name"]
         state_code = export["state_code"]
-        trigger_metric_view_data = trigger_metric_view_data_operator(
+        export_metric_view_data = trigger_metric_view_data_operator(
             export_job_name=export_job_name,
             state_code=state_code,
         )
-
-        wait_for_metric_view_data_export = BQResultSensor(
-            task_id=f"wait_for_{export_job_name.lower()}{f'_{state_code.lower()}' if state_code else ''}_metric_view_data_export_success",
-            query_generator=FinishedCloudTaskQueryGenerator(
-                project_id=project_id,
-                cloud_task_create_operator_task_id=trigger_metric_view_data.task_id,
-                tracker_dataset_id="view_update_metadata",
-                tracker_table_id="metric_view_data_export_tracker",
-            ),
-            timeout=(60 * 60 * 4),
-        )
-
-        trigger_metric_view_data >> wait_for_metric_view_data_export
-
-        metric_view_data_triggers.append(trigger_metric_view_data)
+        metric_view_data_triggers.append(export_metric_view_data)
 
     return metric_view_data_triggers
 
