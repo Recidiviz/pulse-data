@@ -30,7 +30,7 @@ from recidiviz.metrics.export.products.product_configs import (
     ProductStateConfig,
 )
 from recidiviz.tests.ingest import fixtures
-from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 
 class TestProductConfig(unittest.TestCase):
@@ -177,12 +177,9 @@ class TestProductConfigs(unittest.TestCase):
                 export_job_name="EXPORT",
             )
 
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_is_export_launched_in_env_is_launched(
-        self,
-        mock_get_gcp_environment: Mock,
-    ) -> None:
-        mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
+    @mock.patch("recidiviz.utils.metadata.project_id")
+    def test_is_export_launched_in_env_is_launched(self, mock_project_id: Mock) -> None:
+        mock_project_id.return_value = GCP_PROJECT_PRODUCTION
         product_configs = ProductConfigs.from_file(
             path=fixtures.as_filepath("fixture_products.yaml", "../fixtures")
         )
@@ -192,12 +189,12 @@ class TestProductConfigs(unittest.TestCase):
         )
         self.assertTrue(export_config)
 
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
+    @mock.patch("recidiviz.utils.metadata.project_id")
     def test_is_export_launched_in_env_not_launched(
         self,
-        mock_get_gcp_environment: Mock,
+        mock_project_id: Mock,
     ) -> None:
-        mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
+        mock_project_id.return_value = GCP_PROJECT_PRODUCTION
         product_configs = ProductConfigs.from_file(
             path=fixtures.as_filepath("fixture_products.yaml", "../fixtures")
         )

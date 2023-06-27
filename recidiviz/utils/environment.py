@@ -77,6 +77,22 @@ def get_gcp_environment() -> Optional[str]:
     return os.getenv("RECIDIVIZ_ENV")
 
 
+def get_project_for_environment(environment: GCPEnvironment) -> str:
+    """Get the project for the given environment
+
+    Args:
+        environment: The environment to get the project for
+
+    Returns:
+        The project for the given environment
+    """
+    if environment == GCPEnvironment.STAGING:
+        return GCP_PROJECT_STAGING
+    if environment == GCPEnvironment.PRODUCTION:
+        return GCP_PROJECT_PRODUCTION
+    raise ValueError(f"Unknown environment {environment}")
+
+
 def in_gcp_production() -> bool:
     return in_gcp() and get_gcp_environment() == GCPEnvironment.PRODUCTION.value
 

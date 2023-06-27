@@ -35,21 +35,24 @@ from recidiviz.big_query.export.export_query_config import (
     ExportValidationType,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.metrics.export import view_export_manager
 from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
 from recidiviz.metrics.export.view_export_manager import (
     ViewExportConfigurationError,
+    execute_metric_view_data_export,
     export_blueprint,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.ingest import fixtures
-from recidiviz.utils.environment import GCPEnvironment
-
-
-@mock.patch(
-    "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    GCPEnvironment,
 )
+
+
 @mock.patch(
     "recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789")
 )
@@ -79,7 +82,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 "export.metric_view_data_export"
             )
         self.mock_state_code = "US_XX"
-        self.mock_project_id = "test-project"
+        self.mock_project_id = GCP_PROJECT_STAGING
         self.mock_dataset_id = "base_dataset"
         self.mock_dataset = bigquery.dataset.DatasetReference(
             self.mock_project_id, self.mock_dataset_id
@@ -583,14 +586,12 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 cloud_task_id=current_cloud_task_id,
             )
 
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
     @mock.patch(
         "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
     )
     def test_metric_view_data_export_not_launched_in_env(
         self,
         mock_export_view_data_to_cloud_storage: Mock,
-        mock_get_gcp_environment: Mock,
     ) -> None:
         with self.app.test_request_context():
             current_cloud_task_id = "my_cloud_task_id_abcd"
@@ -600,7 +601,8 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             }
 
             mock_export_view_data_to_cloud_storage.return_value = None
-            mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
+            self.mock_project_id_fn = self.metadata_patcher.start()
+            self.mock_project_id_fn.return_value = GCP_PROJECT_PRODUCTION
             response = self.client.post(
                 self.metric_view_data_export_url,
                 headers=headers,
@@ -748,4 +750,103 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(
                 b"Missing required export_job_name URL parameter", response.data
+            )
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_execute_metric_view_data_export(
+        self, mock_export_view_data_to_cloud_storage: Mock
+    ) -> None:
+        mock_export_view_data_to_cloud_storage.return_value = None
+        execute_metric_view_data_export(
+            export_job_name="EXPORT",
+            state_code=StateCode.US_WW,
+            destination_override=None,
+            sandbox_prefix=None,
+        )
+        mock_export_view_data_to_cloud_storage.assert_called()
+        execute_metric_view_data_export(
+            export_job_name="export",
+            state_code=StateCode.US_WW,
+            destination_override=None,
+            sandbox_prefix=None,
+        )
+        mock_export_view_data_to_cloud_storage.assert_called()
+
+    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_execute_metric_view_data_export_persists_success(
+        self, mock_export_view_data_to_cloud_storage: Mock, _mock_bq_client: MagicMock
+    ) -> None:
+        export_job_name = "export"
+        state_code = StateCode.US_WW
+        destination_override = "gs://recidiviz-456-my-bucket/my_subdir"
+        sandbox_prefix = "test_sandbox"
+        execute_metric_view_data_export(
+            export_job_name=export_job_name,
+            state_code=state_code,
+            destination_override=destination_override,
+            sandbox_prefix=sandbox_prefix,
+        )
+        mock_export_view_data_to_cloud_storage.assert_called()
+        self.mock_metric_view_data_export_success_persister.record_success_in_bq.assert_called_with(
+            export_job_name=export_job_name,
+            state_code=state_code.value,
+            destination_override=destination_override,
+            sandbox_dataset_prefix=sandbox_prefix,
+            runtime_sec=mock.ANY,
+            cloud_task_id="AIRFLOW_METRIC_EXPORT",
+        )
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_execute_metric_view_data_export_not_launched_in_env(
+        self,
+        mock_export_view_data_to_cloud_storage: Mock,
+    ) -> None:
+        mock_export_view_data_to_cloud_storage.return_value = None
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = GCP_PROJECT_PRODUCTION
+        execute_metric_view_data_export(
+            export_job_name="EXPORT",
+            state_code=StateCode.US_WW,
+            destination_override=None,
+            sandbox_prefix=None,
+        )
+        mock_export_view_data_to_cloud_storage.assert_not_called()
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_execute_metric_view_data_export_state_agnostic(
+        self, mock_export_view_data_to_cloud_storage: Mock
+    ) -> None:
+        mock_export_view_data_to_cloud_storage.return_value = None
+        execute_metric_view_data_export(
+            export_job_name="MOCK_EXPORT_NAME",
+            state_code=StateCode.US_WW,
+            destination_override=None,
+            sandbox_prefix=None,
+        )
+        mock_export_view_data_to_cloud_storage.assert_called()
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_execute_metric_view_data_export_has_sandbox_prefix_missing_destination_override(
+        self, mock_export_view_data_to_cloud_storage: Mock
+    ) -> None:
+        mock_export_view_data_to_cloud_storage.return_value = None
+        with self.assertRaisesRegex(
+            ValueError, r"Sandbox prefix requires destination override"
+        ):
+            execute_metric_view_data_export(
+                export_job_name="EXPORT",
+                state_code=StateCode.US_XX,
+                destination_override=None,
+                sandbox_prefix="test_prefix",
             )

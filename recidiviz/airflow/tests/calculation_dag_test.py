@@ -52,6 +52,7 @@ _WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = (
     r"validations.(US_[A-Z]{2})_validations.wait_for_validations_completion"
 )
 _REFRESH_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_STATE"
+_EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
 
 
 def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
@@ -344,4 +345,27 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertEqual(
             trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
             "/validation_manager/validate/US_ND",
+        )
+
+    def test_trigger_metric_view_data_operator(self) -> None:
+        """Tests the trigger_metric_view_data_operator triggers the proper script."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        trigger_metric_view_data_task = dag.get_task(_EXPORT_METRIC_VIEW_DATA_TASK_ID)
+        if not isinstance(trigger_metric_view_data_task, KubernetesPodOperator):
+            raise ValueError(
+                f"Expected type KubernetesPodOperator, found "
+                f"[{type(trigger_metric_view_data_task)}]."
+            )
+
+        self.assertEqual(
+            trigger_metric_view_data_task.arguments,
+            [
+                "run",
+                "python",
+                "-m",
+                "recidiviz.entrypoints.metric_export.metric_view_export",
+                f"--project_id={_PROJECT_ID}",
+                "--export_job_name=INGEST_METADATA",
+            ],
         )
