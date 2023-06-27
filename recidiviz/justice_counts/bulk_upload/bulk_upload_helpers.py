@@ -45,6 +45,8 @@ NORMALIZERS: List[Normalizer] = [
     REMOVE_WORDS_WITH_NON_CHARACTERS,  # remove anything not a character or space
     # multiple whitespaces
     REMOVE_MULTIPLE_WHITESPACES,
+    # remove the word "origin" that may show up in race/ethnicity breakdowns
+    ("origin", ""),
 ]
 
 PYTHON_TYPE_TO_READABLE_NAME = {"int": "a number", "float": "a number", "str": "text"}
@@ -70,7 +72,7 @@ def fuzzy_match_against_options(
     score, as long as the score is above a cutoff.
     """
     option_to_score = {
-        option: fuzz.token_set_ratio(
+        option: fuzz.ratio(  # type: ignore[attr-defined]
             analyzer.normalize_text(text, stem_tokens=True, normalizers=NORMALIZERS),
             analyzer.normalize_text(option, stem_tokens=True, normalizers=NORMALIZERS),
         )

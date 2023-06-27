@@ -85,8 +85,11 @@ class WorkbookUploader:
         self.text_analyzer = TextAnalyzer(
             configuration=TextMatchingConfiguration(
                 # We don't want to treat "other" as a stop word,
-                # because it's a valid breakdown category
-                stop_words_to_remove={"other"}
+                # because it's a valid breakdown category. We
+                # also don't want to treat "not" as a stop word because
+                # it is an important distinction between breakdowns
+                # (i.e Not Hispanic v. Hispanic).
+                stop_words_to_remove={"other", "not"}
             )
         )
         self.agency_name_to_metric_key_to_timerange_to_total_value: Dict[
