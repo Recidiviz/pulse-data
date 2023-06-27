@@ -17,10 +17,12 @@
 """Export timeliness monitoring"""
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from google.cloud import storage
+# TODO(python/mypy#10360): Direct imports are used to workaround mypy issue
+import google.cloud.monitoring_v3 as monitoring_v3  # pylint: disable=consider-using-from-import
+from google.cloud.storage import Blob, Client
 from opencensus.metrics.transport import DEFAULT_INTERVAL, GRACE_PERIOD
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
@@ -34,7 +36,8 @@ from recidiviz.metrics.export.export_config import (
     ExportViewCollectionConfig,
 )
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
-from recidiviz.utils import monitoring
+from recidiviz.utils import metadata, monitoring
+from recidiviz.utils.monitoring import monitoring_metric_url
 
 m_export_file_age = measure.MeasureInt(
     "bigquery/metric_view_export_manager/export_file_age",
@@ -55,6 +58,7 @@ export_file_age_view = opencensus_view.View(
 )
 
 MISSING_FILE_CREATION_TIMESTAMP = 0
+NEWLY_ADDED_EXPORT_GRACE_PERIOD = timedelta(hours=24)
 UTC_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
@@ -79,8 +83,37 @@ def seconds_since_epoch(dt: datetime) -> int:
     return round((dt - UTC_EPOCH).total_seconds())
 
 
+def build_blob_recent_reading_query(
+    blob_uri: str, *, lookback: timedelta = NEWLY_ADDED_EXPORT_GRACE_PERIOD
+) -> str:
+    return f"""
+    fetch k8s_container
+      | metric "{monitoring_metric_url(export_file_age_view)}"
+      | filter eq(resource.project_id, "{metadata.project_id()}")
+      | filter metric.{monitoring.TagKey.EXPORT_FILE} = "{blob_uri}"
+      | filter val() != {MISSING_FILE_CREATION_TIMESTAMP}
+      | within {int(lookback.total_seconds())}s
+    """
+
+
+def blob_has_recent_readings(
+    blob_uri: str, *, lookback: timedelta = NEWLY_ADDED_EXPORT_GRACE_PERIOD
+) -> bool:
+    """Returns if the blob has non-missing readings in the lookback period"""
+    query_client = monitoring_v3.QueryServiceClient()
+
+    request = monitoring_v3.QueryTimeSeriesRequest(
+        name=f"projects/{metadata.project_id()}",
+        query=build_blob_recent_reading_query(blob_uri, lookback=lookback),
+    )
+
+    results = query_client.query_time_series(request)
+
+    return len(list(results)) > 0
+
+
 def produce_export_timeliness_metrics(
-    expected_file_uris: set[str], actual_blobs: list[storage.Blob]
+    expected_file_uris: set[str], actual_blobs: list[Blob]
 ) -> list[tuple[str, int]]:
     blob_uris_to_blob = {GcsfsPath.from_blob(blob).uri(): blob for blob in actual_blobs}
 
@@ -96,6 +129,8 @@ def produce_export_timeliness_metrics(
         [
             (blob_uri, MISSING_FILE_CREATION_TIMESTAMP)
             for blob_uri in (expected_file_uris - blob_uris_to_blob.keys())
+            # Don't trigger alerts for exports that have not gone through their first calculation dag run
+            if blob_has_recent_readings(blob_uri)
         ]
     )
 
@@ -110,7 +145,7 @@ def report_export_timeliness_metrics() -> None:
 
     product_configs = ProductConfigs.from_file()
 
-    client = storage.Client()
+    storage_client = Client()
 
     for export in product_configs.get_all_export_configs():
         export_job_name = export["export_job_name"]
@@ -126,7 +161,7 @@ def report_export_timeliness_metrics() -> None:
 
         produced_metrics = produce_export_timeliness_metrics(
             expected_file_uris,
-            list(client.list_blobs(output_directory.bucket_name)),
+            list(storage_client.list_blobs(output_directory.bucket_name)),
         )
 
         for blob_uri, creation_timestamp in produced_metrics:

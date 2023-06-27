@@ -24,6 +24,8 @@ from opencensus.stats.aggregation import (
 from opencensus.stats.measure import BaseMeasure
 
 class View:
+    name: str
+
     def __init__(
         self,
         _name: str,
