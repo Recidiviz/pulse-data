@@ -19,29 +19,31 @@ import { z } from "zod";
 
 import {
   chartInputSchemaBase,
-  targetStatusSchema,
   valuesByTargetStatusSchema,
 } from "../schema/helpers";
 
-export const outliersSupervisorChartInputSchema = chartInputSchemaBase.extend({
+export const outliersAggregatedChartInputSchema = chartInputSchemaBase.extend({
+  aggregationType: z.enum([
+    "SUPERVISION_DISTRICT",
+    "SUPERVISION_OFFICER_SUPERVISOR",
+  ]),
   data: z.object({
     target: z.number(),
-    otherOfficers: valuesByTargetStatusSchema,
-    highlightedOfficers: z.array(
+    entities: z.array(
       z.object({
         name: z.string(),
-        rate: z.number(),
-        targetStatus: targetStatusSchema,
-        prevRate: z.number(),
+        officersFarPct: z.number(),
+        prevOfficersFarPct: z.number(),
+        officerRates: valuesByTargetStatusSchema,
       })
     ),
   }),
 });
 
-export type OutliersSupervisorChartInput = z.input<
-  typeof outliersSupervisorChartInputSchema
+export type OutliersAggregatedChartInput = z.input<
+  typeof outliersAggregatedChartInputSchema
 >;
 
-export type OutliersSupervisorChartInputTransformed = z.infer<
-  typeof outliersSupervisorChartInputSchema
+export type OutliersAggregatedChartInputTransformed = z.infer<
+  typeof outliersAggregatedChartInputSchema
 >;

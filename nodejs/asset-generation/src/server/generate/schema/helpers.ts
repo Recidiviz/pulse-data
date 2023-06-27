@@ -20,3 +20,29 @@ import { z } from "zod";
 export const targetStatusSchema = z.enum(["MET", "NEAR", "FAR"]);
 
 export type TargetStatus = z.infer<typeof targetStatusSchema>;
+
+export const valuesByTargetStatusSchema = z
+  // receiving this as a mapping is more size-efficient over the network...
+  .record(targetStatusSchema, z.array(z.number()))
+  // ...but spreading the mapping across all records will make plotting easier
+  .transform((mapping) => {
+    const flattenedRecords: {
+      value: number;
+      targetStatus: TargetStatus;
+    }[] = [];
+    targetStatusSchema.options.forEach((targetStatus) => {
+      const values = mapping[targetStatus];
+      if (values) {
+        flattenedRecords.push(
+          ...values.map((value) => ({ value, targetStatus }))
+        );
+      }
+    });
+    return flattenedRecords;
+  });
+
+export const chartInputSchemaBase = z.object({
+  stateCode: z.string(),
+  id: z.string(),
+  width: z.number(),
+});
