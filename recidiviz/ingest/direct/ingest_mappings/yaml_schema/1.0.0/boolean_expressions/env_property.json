@@ -11,6 +11,12 @@
   "required": ["$env"],
   "examples": [
     {
+      "$env": "is_local"
+    },
+    {
+      "$env": "is_staging"
+    },
+    {
       "$env": "is_production"
     },
     {

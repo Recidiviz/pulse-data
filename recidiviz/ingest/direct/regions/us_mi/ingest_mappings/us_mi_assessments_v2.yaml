@@ -17,6 +17,9 @@ input_columns:
   - MiddleInitial
   - LastName
 unused_columns: []
+# TODO(#21726) Write unit tests to ensure that this and v3 don't overlap environments.
+launch_env:
+  $env: is_production
 output:
   StatePerson:
     external_ids:

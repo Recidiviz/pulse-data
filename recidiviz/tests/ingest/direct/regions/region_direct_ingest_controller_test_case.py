@@ -82,6 +82,7 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     clear_db_ids,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.utils import environment
 from recidiviz.utils.environment import in_ci
 from recidiviz.utils.log_helpers import write_html_diff_to_file
 from recidiviz.utils.types import assert_type
@@ -91,6 +92,7 @@ FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
 @pytest.mark.uses_db
 @freeze_time("2019-09-27")
+@patch.object(environment, "in_gcp_staging", return_value=True)
 class RegionDirectIngestControllerTestCase(unittest.TestCase):
     """Class with basic functionality for tests of all region-specific
     BaseDirectIngestControllers.
@@ -141,6 +143,10 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "recidiviz-staging"
 
+        self.environment_patcher = patch("recidiviz.utils.environment.in_gcp_staging")
+        self.mock_environment_fn = self.environment_patcher.start()
+        self.mock_environment_fn.return_value = True
+
         self.main_database_key = self._main_database_key()
         self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
             SchemaType.OPERATIONS
@@ -184,6 +190,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
             self.main_database_key
         )
         self.metadata_patcher.stop()
+        self.environment_patcher.stop()
         self.entity_matching_error_threshold_patcher.stop()
 
         self._validate_integration_test()

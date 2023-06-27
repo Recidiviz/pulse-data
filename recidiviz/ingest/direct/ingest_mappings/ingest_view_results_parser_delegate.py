@@ -109,6 +109,8 @@ class IngestViewResultsParserDelegate:
 _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
 
 # Supported $env properties
+IS_LOCAL_PROPERTY_NAME = "is_local"
+IS_STAGING_PROPERTY_NAME = "is_staging"
 IS_PRODUCTION_PROPERTY_NAME = "is_production"
 IS_PRIMARY_INSTANCE_PROPERTY_NAME = "is_primary_instance"
 IS_SECONDARY_INSTANCE_PROPERTY_NAME = "is_secondary_instance"
@@ -236,6 +238,10 @@ class IngestViewResultsParserDelegateImpl(
         )
 
     def get_env_property(self, property_name: str) -> Union[bool, str]:
+        if property_name == IS_LOCAL_PROPERTY_NAME:
+            return not environment.in_gcp()
+        if property_name == IS_STAGING_PROPERTY_NAME:
+            return environment.in_gcp_staging()
         if property_name == IS_PRODUCTION_PROPERTY_NAME:
             return environment.in_gcp_production()
         if property_name == IS_PRIMARY_INSTANCE_PROPERTY_NAME:

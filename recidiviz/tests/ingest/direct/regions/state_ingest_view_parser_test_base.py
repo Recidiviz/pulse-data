@@ -22,6 +22,7 @@ import re
 import unittest
 from abc import abstractmethod
 from typing import List, Sequence
+from unittest.mock import patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
@@ -50,7 +51,12 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
     direct_ingest_fixture_path,
 )
-from recidiviz.utils.environment import in_ci
+from recidiviz.utils import environment
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    in_ci,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
 
 YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
@@ -79,29 +85,27 @@ class StateIngestViewParserTestBase:
     def _region(self) -> DirectIngestRegion:
         return get_direct_ingest_region(self.region_code())
 
-    @classmethod
-    def _main_ingest_instance(cls) -> DirectIngestInstance:
-        # We assume we're ingesting into the SECONDARY ingest instance, which
-        # should always have the latest ingest logic updates released to it.
-        return DirectIngestInstance.SECONDARY
-
-    def _build_parser(self) -> IngestViewResultsParser:
+    def _build_parser(
+        self, ingest_instance: DirectIngestInstance
+    ) -> IngestViewResultsParser:
         results_update_datetime = datetime.datetime.now()
         region = self._region()
         return IngestViewResultsParser(
             delegate=IngestViewResultsParserDelegateImpl(
                 region=region,
                 schema_type=self.schema_type(),
-                ingest_instance=self._main_ingest_instance(),
+                ingest_instance=ingest_instance,
                 results_update_datetime=results_update_datetime,
             )
         )
 
     def _parse_manifest(self, file_tag: str) -> EntityTreeManifest:
-        parser = self._build_parser()
-        manifest_ast, _ = parser.parse_manifest(
+        # We arbitrarily pick the SECONDARY instance here - it should not matter for
+        # parsing the manifest.
+        parser = self._build_parser(DirectIngestInstance.SECONDARY)
+        manifest_ast = parser.parse_manifest(
             manifest_path=parser.delegate.get_ingest_view_manifest_path(file_tag),
-        )
+        ).output
         return manifest_ast
 
     def _parse_enum_manifest_test(
@@ -122,6 +126,10 @@ class StateIngestViewParserTestBase:
         ingest_view_name: str,
         expected_output: Sequence[Entity],
         debug: bool = False,
+        project: str = GCP_PROJECT_STAGING,
+        # By default, we assume we're ingesting into the SECONDARY ingest instance,
+        # which should always have the latest ingest logic updates released to it.
+        ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
     ) -> None:
         """Runs a test that parses the ingest view into Python entities.
 
@@ -131,20 +139,25 @@ class StateIngestViewParserTestBase:
         # TODO(#15801): Move the fixture files to `ingest_view` subdirectory.
         self._check_test_matches_file_tag(ingest_view_name)
 
-        parser = self._build_parser()
+        in_gcp_staging = project == GCP_PROJECT_STAGING
+        in_gcp_prod = project == GCP_PROJECT_PRODUCTION
+        parser = self._build_parser(ingest_instance)
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
             file_name=f"{ingest_view_name}.csv",
             fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
         )
-        parsed_output = parser.parse(
-            ingest_view_name=ingest_view_name,
-            contents_iterator=csv.DictReader(
-                LocalFileContentsHandle(
-                    fixture_path, cleanup_file=False
-                ).get_contents_iterator()
-            ),
-        )
+        with patch.object(
+            environment, "in_gcp_staging", return_value=in_gcp_staging
+        ), patch.object(environment, "in_gcp_production", return_value=in_gcp_prod):
+            parsed_output = parser.parse(
+                ingest_view_name=ingest_view_name,
+                contents_iterator=csv.DictReader(
+                    LocalFileContentsHandle(
+                        fixture_path, cleanup_file=False
+                    ).get_contents_iterator()
+                ),
+            )
 
         if debug:
             if in_ci():
@@ -196,9 +209,13 @@ class StateIngestViewParserTestBase:
             return
 
         # Make sure building all manifests doesn't crash
-        parser = self._build_parser()
+        parser = self._build_parser(
+            # We arbitrarily pick the SECONDARY instance here - it should not matter for
+            # parsing the manifest.
+            DirectIngestInstance.SECONDARY
+        )
         for manifest_path in self._ingest_view_manifest_paths():
-            manifest_ast, _ = parser.parse_manifest(manifest_path)
+            manifest_ast = parser.parse_manifest(manifest_path).output
             self.test.assertIsInstance(manifest_ast, EntityTreeManifest)
 
     def test_all_ingest_view_manifests_are_tested(self) -> None:
