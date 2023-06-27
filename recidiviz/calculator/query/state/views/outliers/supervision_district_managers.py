@@ -19,9 +19,6 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.views.outliers.staff_query_template import (
-    staff_query_template,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -31,11 +28,8 @@ SUPERVISION_DISTRICT_MANAGERS_VIEW_NAME = "supervision_district_managers"
 SUPERVISION_DISTRICT_MANAGERS_DESCRIPTION = """A district or regional manager, usually a supervisor of supervisors who is associated with a supervision district"""
 
 
-SUPERVISION_DISTRICT_MANAGERS_QUERY_TEMPLATE = f"""
+SUPERVISION_DISTRICT_MANAGERS_QUERY_TEMPLATE = """
 WITH 
-supervision_district_managers AS (
-    {staff_query_template(role="SUPERVISION_REGIONAL_MANAGER")}
-),
 us_pa_supervision_district_managers AS (
   SELECT 
     'US_PA' AS state_code,
@@ -43,7 +37,7 @@ us_pa_supervision_district_managers AS (
     TRIM(CONCAT(COALESCE(firstname, ''), ' ', COALESCE(lastname, ''))) AS full_name,
     email,
     district AS supervision_district
-  FROM `{{project_id}}.{{static_reference_dataset}}.us_pa_upper_mgmt`  
+  FROM `{project_id}.{static_reference_dataset}.us_pa_upper_mgmt`  
   WHERE role IN ('District Director', 'Deputy District Director')
 ),
 us_ix_supervision_district_managers AS (
@@ -53,25 +47,19 @@ us_ix_supervision_district_managers AS (
     TRIM(CONCAT(COALESCE(FirstName, ''), ' ', COALESCE(LastName, ''))) AS full_name,
     email,
     LocationId AS supervision_district,
-    FROM `{{project_id}}.{{static_reference_dataset}}.us_ix_state_staff_leadership`
+    FROM `{project_id}.{static_reference_dataset}.us_ix_state_staff_leadership`
     WHERE role_subtype_raw_text IN ('DISTRICT MANAGER', 'DEPUTY DISTRICT MANAGER')
 )
 
 SELECT 
-    {{columns}}
+    {columns}
 FROM us_pa_supervision_district_managers 
 
 UNION ALL
 
 SELECT 
-    {{columns}}
+    {columns}
 FROM us_ix_supervision_district_managers  
-
-UNION ALL
-
-SELECT 
-    {{columns}}
-FROM supervision_district_managers
 """
 
 SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -79,8 +67,6 @@ SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=SUPERVISION_DISTRICT_MANAGERS_VIEW_NAME,
     view_query_template=SUPERVISION_DISTRICT_MANAGERS_QUERY_TEMPLATE,
     description=SUPERVISION_DISTRICT_MANAGERS_DESCRIPTION,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
     columns=[
