@@ -23,6 +23,8 @@ date they appeared as a supervisor.
 If a person was most recently included as an officer, have start_date as the first date 
 they appeared as an officer.
 
+If a person appears in the roster but never appears in the case history data, they are
+currently excluded from the results of this view.
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -81,6 +83,8 @@ SELECT
     END AS role_subtype,
     1 AS period_seq_num
 FROM all_periods
+WHERE start_date IS NOT NULL -- excludes people who appear in roster but never in case history
+
 
 UNION ALL
 
