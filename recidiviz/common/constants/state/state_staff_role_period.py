@@ -55,8 +55,14 @@ class StateStaffRoleSubtype(StateEntityEnum):
     SUPERVISION_OFFICER_SUPERVISOR = (
         state_enum_strings.state_staff_role_subtype_supervision_officer_supervisor
     )
+    SUPERVISION_DISTRICT_MANAGER = (
+        state_enum_strings.state_staff_role_subtype_supervision_district_manager
+    )
     SUPERVISION_REGIONAL_MANAGER = (
         state_enum_strings.state_staff_role_subtype_supervision_regional_manager
+    )
+    SUPERVISION_STATE_LEADERSHIP = (
+        state_enum_strings.state_staff_role_subtype_supervision_state_leadership
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
@@ -78,7 +84,12 @@ _STATE_STAFF_ROLE_TYPE_SUBTYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = 
     " regular contact with clients.",
     StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR: "A parole and/or probation officer"
     "/agent who serves in a manager or supervisor role and doesn't supervise a typical caseload.",
-    StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER: "A district or regional manager, "
-    "usually a supervisor of supervisors, but may sometimes supervise parole "
+    StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER: "A district or regional manager, "
+    "usually a supervisor of supervisors in a single district, but may sometimes supervise parole "
     "officers/agents directly and also sometimes carry a caseload when the agency is short-staffed.",
+    StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER: "A regional manager usually oversees "
+    "multiple supervision districts.",
+    StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP: "State leadership oversees the administration "
+    "of supervision in the entire state as opposed to specific "
+    "locations within the state.",
 }

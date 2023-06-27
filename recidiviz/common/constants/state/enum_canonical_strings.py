@@ -267,7 +267,9 @@ state_staff_role_subtype_supervision_officer = "SUPERVISION_OFFICER"
 state_staff_role_subtype_supervision_officer_supervisor = (
     "SUPERVISION_OFFICER_SUPERVISOR"
 )
+state_staff_role_subtype_supervision_district_manager = "SUPERVISION_DISTRICT_MANAGER"
 state_staff_role_subtype_supervision_regional_manager = "SUPERVISION_REGIONAL_MANAGER"
+state_staff_role_subtype_supervision_state_leadership = "SUPERVISION_STATE_LEADERSHIP"
 
 # state_supervision_sentence.py
 state_supervision_sentence_supervision_type_community_corrections = (
