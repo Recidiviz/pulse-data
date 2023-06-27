@@ -18,6 +18,8 @@
 import { json, Router } from "express";
 
 import { authMiddleware } from "../authMiddleware";
+import { outliersAggregatedChartRoute } from "./outliersAggregatedChart/route";
+import { outliersAggregatedChartInputSchema } from "./outliersAggregatedChart/types";
 import { outliersSupervisorChartRoute } from "./outliersSupervisorChart/route";
 import { outliersSupervisorChartInputSchema } from "./outliersSupervisorChart/types";
 import { schemaMiddleware } from "./schema/middleware";
@@ -25,10 +27,16 @@ import { schemaMiddleware } from "./schema/middleware";
 export const routes = Router();
 
 routes.use(json());
+routes.use(authMiddleware);
 
 routes.post(
   "/outliers-supervisor-chart",
-  authMiddleware,
   schemaMiddleware(outliersSupervisorChartInputSchema),
   outliersSupervisorChartRoute
+);
+
+routes.post(
+  "/outliers-aggregated-chart",
+  schemaMiddleware(outliersAggregatedChartInputSchema),
+  outliersAggregatedChartRoute
 );
