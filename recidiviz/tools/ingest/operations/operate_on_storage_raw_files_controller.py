@@ -26,10 +26,7 @@ from typing import List, Optional, Tuple
 
 from progress.bar import Bar
 
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsDirectoryPath,
-    normalize_relative_path,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_cp,
     gsutil_get_storage_subdirs_containing_raw_files,
@@ -153,7 +150,7 @@ class OperateOnStorageRawFilesController:
 
     def _get_subdirs_to_operate_on(self) -> List[str]:
         return gsutil_get_storage_subdirs_containing_raw_files(
-            storage_bucket_path=self.source_region_storage_dir_path.abs_path(),
+            storage_bucket_path=self.source_region_storage_dir_path,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
             file_tag_filters=self.file_tag_filters,
@@ -203,7 +200,7 @@ class OperateOnStorageRawFilesController:
 
         to_path = GcsfsDirectoryPath.from_dir_and_subdir(
             self.destination_region_storage_dir_path,
-            normalize_relative_path(relative_to_source),
+            relative_to_source,
         ).uri()
 
         if not self.file_tag_filters:

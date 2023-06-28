@@ -102,6 +102,9 @@ class GcsfsDirectoryPath(GcsfsPath):
     def abs_path(self) -> str:
         return os.path.join(self.bucket_name, self.relative_path)
 
+    def wildcard_path(self) -> "GcsfsFilePath":
+        return GcsfsFilePath.from_directory_and_file_name(self, "**")
+
     @classmethod
     def from_absolute_path(cls, path_str: str) -> "GcsfsDirectoryPath":
         match = re.match(cls.PATH_REGEX, path_str)
