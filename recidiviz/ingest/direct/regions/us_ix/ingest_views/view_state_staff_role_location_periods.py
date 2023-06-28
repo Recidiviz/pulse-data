@@ -79,6 +79,8 @@ VIEW_QUERY_TEMPLATE = f"""
             UPPER(EmployeeTypeName) not like '%HEARING%' AND
             UPPER(EmployeeTypeName) not like '%COMMISSION%'
         )
+        -- exclude the leadership folks that are going to be ingested in a different view (state_staff_role_location_periods_leadership)
+        AND EmployeeId not in (SELECT EmployeeId FROM {{RECIDIVIZ_REFERENCE_leadership_roster}})
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

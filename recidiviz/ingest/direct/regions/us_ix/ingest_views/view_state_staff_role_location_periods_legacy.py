@@ -92,6 +92,9 @@ VIEW_QUERY_TEMPLATE = f"""
             UPPER(empl_title) not like '%HEARING%' AND
             UPPER(empl_title) not like '%COMMISSION%'
         )
+        -- exclude the leadership folks that are going to be ingested in a different view (state_staff_role_location_periods_leadership)
+        -- (since this view is off of legacy data which is static, we know these are the only two leadership people in the view)
+        AND empl_cd not in ('3538', '3178')
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

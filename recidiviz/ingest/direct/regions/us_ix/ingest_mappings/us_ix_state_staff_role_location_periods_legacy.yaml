@@ -69,7 +69,7 @@ output:
                   - "PROBATION/PAROLE OFFICER, SR"
                 StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
                   - "P&P SECTION SUPERVISOR"
-                StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER:
+                StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
                   - "CHIEF PROBATION PAROLE"
                   - "DEPUTY CHIEF PROBATION PAROLE"
                 StateStaffRoleSubtype.INTERNAL_UNKNOWN:
