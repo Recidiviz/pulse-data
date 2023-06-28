@@ -150,6 +150,9 @@ from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed impo
 from recidiviz.calculator.query.state.views.sessions.session_location_names import (
     SESSION_LOCATION_NAMES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.state_to_legacy_supervising_officer_external_id_type import (
+    STATE_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_TYPE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_downgrade_sessions import (
     SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,
 )
@@ -319,6 +322,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
     REVOCATION_SESSIONS_VIEW_BUILDER,
     SESSION_LOCATION_NAMES_VIEW_BUILDER,
+    STATE_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_TYPE_VIEW_BUILDER,
     SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
     SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
