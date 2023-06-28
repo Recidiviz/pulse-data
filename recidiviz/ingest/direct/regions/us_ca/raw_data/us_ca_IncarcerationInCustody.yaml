@@ -43,3 +43,6 @@ columns:
   - name: ParoleEndReason
     description: |-
       TODO(#15297)
+  - name: tcid
+    description: |-
+      TODO(#15297)
