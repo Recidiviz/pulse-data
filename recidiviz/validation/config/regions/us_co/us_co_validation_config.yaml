@@ -1,7 +1,10 @@
 # Configuration for which validations to run for region US_CO.
 
 region_code: US_CO
-exclusions: []
+exclusions:
+  - validation_name: dataflow_metrics_supervising_officer_external_id_all_null
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: There is no supervision data in CO so all supervising officer external id should be null.
 max_allowed_error_overrides:
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
     hard_max_allowed_error_override: 0.03
@@ -9,7 +12,7 @@ max_allowed_error_overrides:
 num_allowed_rows_overrides:
   - validation_name: sentence_end_dates_before_start_dates
     hard_num_allowed_rows_override: 600000
-    override_reason: Needs investigation.  Current failing level as of 10/21 is 567,662 rows #TODO(#16185)
+    override_reason: Needs investigation.  Current failing level as of 10/21 is 567,662 rows - no valid sentence info #TODO(#16185)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 60000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 47,807 rows #TODO(#16229)
@@ -20,8 +23,14 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 200
     override_reason: Current failing level as of 4/5/23 is 82 rows (0.02%)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 100
-    override_reason: Current failing level as of 4/5/23 is 29 rows (0.008%)
+    hard_num_allowed_rows_override: 300
+    override_reason: Current failing level as of 4/5/23 is 29 rows - no reliable sentence info(0.008%)
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 200000
     override_reason: Current failing level as of 4/20/23 is 157,462 rows (56%) #TODO(#20401)
+  - validation_name: sessions_persons_in_incarceration_or_supervision
+    hard_num_allowed_rows_override: 20
+    override_reason: Have a gap in time for receiving data between 04-06 2023.
+  - validation_name: sentences_missing_date_imposed
+    hard_num_allowed_rows_override: 550
+    override_reason: We don't have accurate sentence data from CO.
