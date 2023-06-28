@@ -82,7 +82,6 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     clear_db_ids,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
-from recidiviz.utils import environment
 from recidiviz.utils.environment import in_ci
 from recidiviz.utils.log_helpers import write_html_diff_to_file
 from recidiviz.utils.types import assert_type
@@ -92,7 +91,6 @@ FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
 @pytest.mark.uses_db
 @freeze_time("2019-09-27")
-@patch.object(environment, "in_gcp_staging", return_value=True)
 class RegionDirectIngestControllerTestCase(unittest.TestCase):
     """Class with basic functionality for tests of all region-specific
     BaseDirectIngestControllers.
