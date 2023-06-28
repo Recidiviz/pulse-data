@@ -2010,6 +2010,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Destination already exists
         self.mock_client.get_dataset.return_value = mock.MagicMock()
 
+        self.mock_client.create_table.return_value = mock.MagicMock()
+
         def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
             if dataset_id == destination_dataset_id:
                 tables = []
@@ -2080,7 +2082,8 @@ class BigQueryClientImplTest(unittest.TestCase):
                     ),
                     exists_ok=False,
                 ),
-            ]
+            ],
+            any_order=True,
         )
 
     def test_copy_dataset_tables_overwrite(self) -> None:

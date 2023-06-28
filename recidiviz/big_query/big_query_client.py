@@ -46,6 +46,12 @@ from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.size import total_size
 from recidiviz.utils.string import StrictStringFormatter
@@ -891,6 +897,149 @@ class BigQueryClientImpl(BigQueryClient):
         except exceptions.NotFound:
             return False
 
+    def table_has_field(self, table: bigquery.Table, field: str) -> bool:
+        return any(f.name == field for f in table.schema)
+
+    def states_with_special_access_policies(self) -> Dict[str, str]:
+        restricted_access_state_code_to_access_group: Dict[str, str] = {
+            "US_OZ": "s-oz-data@recidiviz.org",
+            # TODO(#20822) "US_MI": "s-mi-data@recidiviz.org",
+            # TODO(#20823) "US_PA": "s-pa-data@recidiviz.org",
+        }
+        return restricted_access_state_code_to_access_group
+
+    def apply_column_based_row_level_policies(
+        self, table: bigquery.Table, state_code_field: str
+    ) -> None:
+        """Applies row-level permissions to the provided table based on the state code
+        in the provided |state_code_field| column.
+        """
+        restricted_access_state_code_to_access_group = (
+            self.states_with_special_access_policies()
+        )
+
+        logging.info(
+            "Applying row-level access policies to [%s.%s.%s] based on field [%s]",
+            table.project,
+            table.dataset_id,
+            table.table_id,
+            state_code_field,
+        )
+        queries = []
+        for (
+            state_code,
+            access_group_email,
+        ) in restricted_access_state_code_to_access_group.items():
+            queries.append(
+                f"""
+                -- Security group allowed to see {state_code} data
+                CREATE OR REPLACE ROW ACCESS POLICY 
+                ALLOW_{state_code}_ACCESS_{state_code_field} 
+                ON `{table.project}.{table.dataset_id}.{table.table_id}`
+                GRANT TO ("group:{access_group_email}") 
+                FILTER USING ({state_code_field} = "{state_code}");
+                """
+            )
+
+        filtered_states_str = ", ".join(
+            [
+                f'"{state_code}"'
+                for state_code in restricted_access_state_code_to_access_group
+            ]
+        )
+        queries.append(
+            f"""
+                -- Security group allowed to see all data from non-restricted states
+                CREATE OR REPLACE ROW ACCESS POLICY ALL_OTHER_ACCESS_{state_code_field} 
+                ON `{table.project}.{table.dataset_id}.{table.table_id}`
+                GRANT TO ("group:s-default-state-data@recidiviz.org") FILTER USING (
+                    {state_code_field} NOT IN ({filtered_states_str})
+                );
+            """
+        )
+        query = "\n".join(queries)
+        query_job = self.client.query(query)
+        query_job.result()
+
+    def restricted_access_dataset_to_access_group(self) -> Dict[str, str]:
+        """All tables belonging to datasets defined in this function should
+        have row level permissions applied
+        """
+        restricted_access_state_code_to_access_group = (
+            self.states_with_special_access_policies()
+        )
+        restricted_access_dataset_to_access_group = {}
+        for (
+            state_code,
+            security_group,
+        ) in restricted_access_state_code_to_access_group.items():
+            for instance in DirectIngestInstance:
+                instance_datasets_with_raw_data = [
+                    raw_tables_dataset_for_region(
+                        state_code=StateCode(state_code),
+                        instance=instance,
+                        sandbox_dataset_prefix=None,
+                    ),
+                    raw_latest_views_dataset_for_region(
+                        state_code=StateCode(state_code),
+                        instance=instance,
+                        sandbox_dataset_prefix=None,
+                    ),
+                ]
+                for dataset in instance_datasets_with_raw_data:
+                    restricted_access_dataset_to_access_group[dataset] = security_group
+
+        return restricted_access_dataset_to_access_group
+
+    def apply_dataset_based_row_level_policies(self, table: bigquery.Table) -> None:
+        """Applies row-level permissions to all rows in the provided table, if it is
+        an identified restricted-access dataset (e.g. a raw data dataset).
+        """
+        restricted_access_dataset_to_access_group = (
+            self.restricted_access_dataset_to_access_group()
+        )
+        if table.dataset_id not in restricted_access_dataset_to_access_group:
+            return
+
+        logging.info(
+            """Applying row-level access policy to [%s.%s.%s], 
+            which is in a restricted-access dataset.""",
+            table.project,
+            table.dataset_id,
+            table.table_id,
+        )
+        query = f"""
+        CREATE OR REPLACE ROW ACCESS POLICY 
+        RESTRICT_DATASET_TO_MEMBERS_OF_STATE_SECURITY_GROUP 
+        ON `{table.project}.{table.dataset_id}.{table.table_id}`
+        GRANT TO 
+        ("group:{restricted_access_dataset_to_access_group[table.dataset_id]}") 
+        FILTER USING (TRUE);
+        """
+        query_job = self.client.query(query)
+        query_job.result()
+
+    def drop_row_level_permissions(self, table: bigquery.Table) -> None:
+        query = f"""
+            -- Dropping row-level permissions 
+            DROP ALL ROW ACCESS POLICIES 
+            ON `{table.project}.{table.dataset_id}.{table.table_id}`
+        """
+        query_job = self.client.query(query)
+        query_job.result()
+
+    def apply_row_level_permissions(self, table: bigquery.Table) -> None:
+        self.drop_row_level_permissions(table)
+        for field in ["state_code", "region_code"]:
+            if self.table_has_field(table, field):
+                self.apply_column_based_row_level_policies(table, field)
+
+        # We need to apply row level permissions to all tables that have
+        # dataset-level restricted access policies, even if they have no
+        # state_code/region_code columns
+        if table.dataset_id in self.restricted_access_dataset_to_access_group():
+            self.apply_dataset_based_row_level_policies(table)
+
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
         return self.client.list_tables(dataset_id)
 
@@ -912,7 +1061,9 @@ class BigQueryClientImpl(BigQueryClient):
     def create_table(
         self, table: bigquery.Table, overwrite: bool = False
     ) -> bigquery.Table:
-        return self.client.create_table(table, exists_ok=overwrite)
+        created_table = self.client.create_table(table, exists_ok=overwrite)
+        self.apply_row_level_permissions(created_table)
+        return created_table
 
     def create_or_update_view(
         self, view: BigQueryView, might_exist: bool = True
@@ -1683,6 +1834,7 @@ class BigQueryClientImpl(BigQueryClient):
         )
         table.schema = updated_table_schema
         self.client.update_table(table, ["schema"])
+        self.apply_row_level_permissions(table)
 
     def _remove_unused_fields_from_schema(
         self,
