@@ -24,11 +24,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     generate_largest_value_query_fragment,
     nonnull_end_date_clause,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    REFERENCE_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -74,9 +70,9 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_external_id,
         NULL AS supervisor_staff_id,
     FROM
-        `{{project_id}}.{{normalized_state_dataset}}.state_staff_location_period` a
+        `{{project_id}}.normalized_state.state_staff_location_period` a
     LEFT JOIN
-        `{{project_id}}.{{reference_views_dataset}}.location_metadata_materialized` b
+        `{{project_id}}.reference_views.location_metadata_materialized` b
     USING
         (state_code, location_external_id)
 
@@ -102,7 +98,7 @@ WITH all_staff_attribute_periods AS (
     FROM
         `{{project_id}}.sessions.supervision_officer_inferred_location_sessions_materialized` a
     INNER JOIN
-        `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` b
+        `{{project_id}}.normalized_state.state_staff_external_id` b
     ON
         #TODO(#21702): Replace join with `staff_id` once refactor is complete
         a.state_code = b.state_code
@@ -128,7 +124,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_external_id,
         NULL AS supervisor_staff_id,
     FROM
-        `{{project_id}}.{{normalized_state_dataset}}.state_staff_role_period`
+        `{{project_id}}.normalized_state.state_staff_role_period`
 
     UNION ALL
 
@@ -150,7 +146,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervisor_staff_external_id,
         NULL AS supervisor_staff_id,
     FROM
-        `{{project_id}}.{{normalized_state_dataset}}.state_staff_caseload_type_period`
+        `{{project_id}}.normalized_state.state_staff_caseload_type_period`
 
     UNION ALL
 
@@ -172,9 +168,9 @@ WITH all_staff_attribute_periods AS (
         a.supervisor_staff_external_id,
         b.staff_id AS supervisor_staff_id,
     FROM
-        `{{project_id}}.{{normalized_state_dataset}}.state_staff_supervisor_period` a
+        `{{project_id}}.normalized_state.state_staff_supervisor_period` a
     INNER JOIN
-        `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` b
+        `{{project_id}}.normalized_state.state_staff_external_id` b
     ON
         a.state_code = b.state_code
         AND a.supervisor_staff_external_id = b.external_id
@@ -209,11 +205,21 @@ SELECT
 FROM
     sub_sessions_dedup a
 LEFT JOIN
-    `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` b
+    `{{project_id}}.normalized_state.state_staff_external_id` b
 USING
     (state_code, staff_id)
+INNER JOIN
+    `{{project_id}}.sessions.state_to_legacy_supervising_officer_external_id_type_materialized` c
+USING
+    (state_code, id_type)
 WHERE
     role_type = "SUPERVISION_OFFICER"
+-- Pick the largest (usually most recent) external_id for the small subset of staff_id's
+-- having more than one external_id for a single id_type.
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY a.staff_id 
+    ORDER BY b.external_id DESC
+) = 1
 """
 
 SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -221,9 +227,7 @@ SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_NAME,
     view_query_template=SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_DESCRIPTION,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    reference_views_dataset=REFERENCE_VIEWS_DATASET,
-    clustering_fields=["state_code", "officer_id"],
+    clustering_fields=["state_code", "staff_id"],
     should_materialize=True,
 )
 
