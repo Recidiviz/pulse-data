@@ -601,7 +601,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             }
 
             mock_export_view_data_to_cloud_storage.return_value = None
-            self.mock_project_id_fn = self.metadata_patcher.start()
             self.mock_project_id_fn.return_value = GCP_PROJECT_PRODUCTION
             response = self.client.post(
                 self.metric_view_data_export_url,
@@ -809,7 +808,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         mock_export_view_data_to_cloud_storage: Mock,
     ) -> None:
         mock_export_view_data_to_cloud_storage.return_value = None
-        self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = GCP_PROJECT_PRODUCTION
         execute_metric_view_data_export(
             export_job_name="EXPORT",
