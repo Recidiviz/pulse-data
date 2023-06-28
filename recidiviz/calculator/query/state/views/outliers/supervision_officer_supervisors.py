@@ -18,17 +18,10 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.bq_utils import (
-    today_between_start_date_and_nullable_end_date_exclusive_clause,
-)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.outliers.staff_query_template import (
     staff_query_template,
 )
-from recidiviz.calculator.query.state.views.outliers.utils import (
-    get_state_specific_config_exclusions,
-)
-from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,46 +35,6 @@ WITH
 supervision_officer_supervisors AS (
     {staff_query_template(role="SUPERVISION_OFFICER_SUPERVISOR")}
 )
--- TODO(#21119): Remove US_PA logic when role_subtype=SUPERVISION_OFFICER_SUPERVISOR is hydrated
-, current_us_pa_supervisor_ids AS (
-  SELECT
-    supervisor.state_code,
-    supervisor_external_id.staff_id AS staff_id,
-    supervisor.supervisor_staff_external_id AS external_id,
-  FROM `{{project_id}}.{{normalized_state_dataset}}.state_staff_supervisor_period` supervisor
-  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` supervisor_external_id
-    ON supervisor.state_code = supervisor_external_id.state_code
-    AND supervisor.supervisor_staff_external_id = supervisor_external_id.external_id
-    AND supervisor.supervisor_staff_external_id_type = supervisor_external_id.id_type
-  WHERE supervisor.state_code = 'US_PA'
-    AND {today_between_start_date_and_nullable_end_date_exclusive_clause("supervisor.start_date", "supervisor.end_date")}
-  GROUP BY 1, 2, 3
-)
-, us_pa_supervision_officer_supervisors AS (
-  SELECT
-    current_us_pa_supervisor_ids.state_code,
-    current_us_pa_supervisor_ids.external_id,
-    current_us_pa_supervisor_ids.staff_id,
-    full_name,
-    staff.email,
-    attrs.supervisor_staff_external_id AS supervisor_external_id,
-    attrs.supervision_district,
-    attrs.supervision_unit
-  FROM current_us_pa_supervisor_ids
-  INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` attrs 
-    USING (staff_id, state_code)
-  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff 
-    USING (state_code, staff_id)
-  WHERE 
-    {today_between_start_date_and_nullable_end_date_exclusive_clause("attrs.start_date", "attrs.end_date_exclusive")}
-    {f'AND {" AND ".join(get_state_specific_config_exclusions(StateCode.US_PA))}' if get_state_specific_config_exclusions(StateCode.US_PA) else ""}
-) 
-
-SELECT 
-    {{columns}}
-FROM us_pa_supervision_officer_supervisors
-
-UNION ALL
 
 SELECT 
     {{columns}}

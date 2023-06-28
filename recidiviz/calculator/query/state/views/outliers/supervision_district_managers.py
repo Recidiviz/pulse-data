@@ -28,6 +28,7 @@ SUPERVISION_DISTRICT_MANAGERS_VIEW_NAME = "supervision_district_managers"
 SUPERVISION_DISTRICT_MANAGERS_DESCRIPTION = """A district or regional manager, usually a supervisor of supervisors who is associated with a supervision district"""
 
 
+# TODO(#21877): Remove state-specific work arounds for district managers
 SUPERVISION_DISTRICT_MANAGERS_QUERY_TEMPLATE = """
 WITH 
 us_pa_supervision_district_managers AS (
