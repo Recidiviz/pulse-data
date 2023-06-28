@@ -205,7 +205,7 @@ class MoveFilesFromStorageController:
 
     def get_date_subdir_paths(self) -> List[str]:
         return gsutil_get_storage_subdirs_containing_raw_files(
-            storage_bucket_path=self.source_storage_bucket.abs_path(),
+            storage_bucket_path=self.source_storage_bucket,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
         )

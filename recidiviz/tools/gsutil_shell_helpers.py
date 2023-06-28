@@ -19,6 +19,7 @@ import logging
 import os
 from typing import List, Optional
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.date import is_between_date_strs_inclusive, is_date_str
 from recidiviz.tools.utils.script_helpers import run_command
 
@@ -111,7 +112,7 @@ def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
 
 
 def gsutil_get_storage_subdirs_containing_raw_files(
-    storage_bucket_path: str,
+    storage_bucket_path: GcsfsDirectoryPath,
     upper_bound_date: Optional[str],
     lower_bound_date: Optional[str],
     file_tag_filters: Optional[List[str]] = None,
@@ -120,8 +121,8 @@ def gsutil_get_storage_subdirs_containing_raw_files(
     region."""
     # We search with a double wildcard and then filter in python because it is much
     # faster than doing `gs://{storage_bucket_path}/raw/*/*/*/`
-    all_files_wildcard = f"gs://{storage_bucket_path}/raw/**"
-    paths = gsutil_ls(all_files_wildcard)
+    raw_data_path = GcsfsDirectoryPath.from_dir_and_subdir(storage_bucket_path, "raw")
+    paths = gsutil_ls(raw_data_path.wildcard_path().uri())
 
     all_subdirs = {os.path.dirname(path) for path in paths}
 
