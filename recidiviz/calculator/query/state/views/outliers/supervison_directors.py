@@ -26,7 +26,7 @@ SUPERVISION_DIRECTORS_VIEW_NAME = "supervision_directors"
 
 SUPERVISION_DIRECTORS_DESCRIPTION = """A upper-level management member, either state leadership or someone who oversees multiple districts"""
 
-
+# TODO(#21876): Remove state-specific work arounds for state leadership
 SUPERVISION_DIRECTORS_QUERY_TEMPLATE = """
 WITH 
 us_pa_supervision_directors AS (
