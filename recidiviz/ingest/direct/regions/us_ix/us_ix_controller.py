@@ -62,4 +62,6 @@ class UsIxController(BaseDirectIngestController):
             "state_staff",
             "state_staff_role_location_periods",
             "state_staff_role_location_periods_legacy",
+            "state_staff_supervisor_periods",
+            "state_staff_role_location_periods_leadership",
         ]

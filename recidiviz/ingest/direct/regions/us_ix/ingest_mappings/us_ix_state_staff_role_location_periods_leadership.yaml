@@ -4,7 +4,7 @@
 manifest_language: 1.0.0
 input_columns:
   - EmployeeId
-  - EmployeeTypeName
+  - Role
   - LocationId
   - start_date
   - end_date
@@ -26,19 +26,16 @@ output:
                 - period_id
           start_date: start_date
           end_date: end_date
-          # For now, we're only ingesting supervision officers
-          role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
+          role_type: $literal_enum(StateStaffRoleType.INTERNAL_UNKNOWN)
           role_subtype:
             $enum_mapping:
-              $raw_text: EmployeeTypeName
+              $raw_text: Role
               $mappings:
-                StateStaffRoleSubtype.SUPERVISION_OFFICER:
-                  - "P&P OFFICER, LEAD"
-                  - "P&P OFFICER, SR"
                 StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
-                  - "P&P DISTRICT MANAGER"
-                StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
-                  - "P&P SECTION SUPERVISOR"
+                  - "DISTRICT MANAGER"
+                  - "DEPUTY DISTRICT MANAGER"
+                StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
+                  - "STATE LEADERSHIP"
     location_periods:
       - StateStaffLocationPeriod:
           external_id:
