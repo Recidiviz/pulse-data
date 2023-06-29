@@ -23,7 +23,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import environment
 
 
 class UsNdController(BaseDirectIngestController):
@@ -56,14 +55,7 @@ class UsNdController(BaseDirectIngestController):
             "elite_offendersentenceterms",
             "elite_state_charges",
             "elite_externalmovements_incarceration_periods",
-        ]
-
-        if not environment.in_gcp():
-            # TODO(#2399): Once we are capable of handling historical and nightly ingest of
-            #  'elite_offense_in_custody_and_pos_report_data', remove this check.
-            tags.append("elite_offense_in_custody_and_pos_report_data")
-
-        tags += [
+            "elite_offense_in_custody_and_pos_report_data",
             # Docstars - supervision-focused
             "docstars_offenders",
             "docstars_offendercasestable_with_officers",
@@ -78,5 +70,4 @@ class UsNdController(BaseDirectIngestController):
             "docstars_staff_supervisor_periods"
             # TODO(#1918): Integrate bed assignment / location history
         ]
-
         return tags
