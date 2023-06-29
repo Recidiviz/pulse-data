@@ -141,18 +141,30 @@ def refresh_bq_dataset_operator(schema_type: str) -> KubernetesPodOperator:
     )
 
 
-def trigger_validations_operator(state_code: str) -> KubernetesPodOperator:
-    return build_recidiviz_kubernetes_pod_operator(
-        task_id=f"execute_validations_{state_code}",
-        container_name=f"execute_validations_{state_code}",
-        arguments=[
+def execute_validations_operator(state_code: str) -> KubernetesPodOperator:
+    def get_kubernetes_arguments(
+        dag_run: DagRun, task_instance: TaskInstance
+    ) -> List[str]:
+        additional_args = []
+
+        sandbox_prefix = get_sandbox_prefix(task_instance)
+        if sandbox_prefix:
+            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
+
+        return [
             "python",
             "-m",
             "recidiviz.entrypoints.validation.validate",
             f"--project_id={project_id}",
             f"--state_code={state_code}",
-            "--ingest_instance=PRIMARY",  # TODO(#21342): Pass in ingest instance from parameter when added.
-        ],
+            f"--ingest_instance={get_ingest_instance(dag_run)}",
+            *additional_args,
+        ]
+
+    return build_recidiviz_kubernetes_pod_operator(
+        task_id=f"execute_validations_{state_code}",
+        container_name=f"execute_validations_{state_code}",
+        arguments=get_kubernetes_arguments,
     )
 
 
@@ -269,7 +281,7 @@ def validation_branches_by_state_code(
 ) -> Dict[str, BaseOperator]:
     branches_by_state_code = {}
     for state_code in states_to_validate:
-        branches_by_state_code[state_code] = trigger_validations_operator(state_code)
+        branches_by_state_code[state_code] = execute_validations_operator(state_code)
     return branches_by_state_code
 
 
