@@ -17,7 +17,7 @@
 """
 Helper functions for creating branches based on state codes.
 """
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 from airflow.decorators import task
 from airflow.models import BaseOperator, DagRun
@@ -25,6 +25,10 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
+
+from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+    get_state_code_filter,
+)
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -73,13 +77,13 @@ def create_state_code_branching(
         )
 
     @task.branch(task_id="state_code_branch_start")
-    def get_selected_branch_ids(dag_run: DagRun = None) -> Any:
+    def get_selected_branch_ids(dag_run: Optional[DagRun] = None) -> Any:
         if not dag_run:
             raise ValueError(
                 "Dag run not passed to task. Should be automatically set due to function being a task."
             )
 
-        state_code_filter = dag_run.conf.get("state_code_filter")
+        state_code_filter = get_state_code_filter(dag_run)
         selected_state_codes = (
             [state_code_filter] if state_code_filter else branch_by_state_code.keys()
         )

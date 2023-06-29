@@ -20,7 +20,8 @@ Unit test to test the calculation pipeline DAG logic.
 import os
 import unittest
 from typing import Set
-from unittest.mock import patch
+from unittest import mock
+from unittest.mock import MagicMock, patch
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
@@ -34,6 +35,10 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
+
+# Need to import calculation_dag inside test suite so environment variables are set before importing,
+# otherwise calculation_dag will raise an Error and not import.
+# pylint: disable=C0415 import-outside-toplevel
 
 _PROJECT_ID = "recidiviz-testing"
 CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
@@ -54,17 +59,23 @@ def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
     return f"bq_refresh.{schema_type.lower()}_bq_refresh.release_lock_{schema_type.upper()}"
 
 
-@patch(
-    "os.environ",
-    {
-        "GCP_PROJECT": _PROJECT_ID,
-        "CONFIG_FILE": CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
-    },
-)
 class TestCalculationPipelineDag(unittest.TestCase):
     """Tests the calculation pipeline DAGs."""
 
     CALCULATION_DAG_ID = f"{_PROJECT_ID}_calculation_dag"
+
+    def setUp(self) -> None:
+        self.environment_patcher = patch(
+            "os.environ",
+            {
+                "GCP_PROJECT": _PROJECT_ID,
+                "CONFIG_FILE": CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
+            },
+        )
+        self.environment_patcher.start()
+
+    def tearDown(self) -> None:
+        self.environment_patcher.stop()
 
     def test_bq_refresh_downstream_initialize_dag(self) -> None:
         """Tests that the `bq_refresh` task is downstream of initialize_dag."""
@@ -247,7 +258,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_tasks_not_upstream = pipeline_task_ids - upstream_tasks
         self.assertEqual(set(), pipeline_tasks_not_upstream)
 
-    def test_update_all_managed_views_endpoint(self) -> None:
+    def test_update_all_managed_views_endpoint_exists(self) -> None:
         """Tests that update_all_managed_views triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
@@ -259,10 +270,22 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_update_task)}]."
             )
 
-        self.assertEqual(
-            trigger_update_task.arguments,
-            [
-                "run",
+    @patch(
+        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
+    )
+    def test_update_all_managed_views_endpoint(
+        self, mock_build_kubernetes_pod_creator: MagicMock
+    ) -> None:
+        from recidiviz.airflow.dags.calculation_dag import (
+            update_all_managed_views_operator,
+        )
+
+        update_all_managed_views_operator()
+
+        mock_build_kubernetes_pod_creator.assert_called_once_with(
+            task_id="update_all_managed_views",
+            container_name="update_all_managed_views",
+            arguments=[
                 "python",
                 "-m",
                 "recidiviz.entrypoints.view_update.update_all_managed_views",
@@ -270,22 +293,50 @@ class TestCalculationPipelineDag(unittest.TestCase):
             ],
         )
 
-    def test_trigger_refresh_bq_dataset_task(self) -> None:
-        """Tests that trigger_refresh_bq_dataset_task triggers the proper script."""
+    def test_refresh_bq_dataset_task_exists(self) -> None:
+        """Tests that refresh_bq_dataset_task triggers the proper script."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        trigger_bq_refresh_task = dag.get_task(_REFRESH_BQ_DATASET_TASK_ID)
+        bq_refresh_task = dag.get_task(_REFRESH_BQ_DATASET_TASK_ID)
 
-        if not isinstance(trigger_bq_refresh_task, KubernetesPodOperator):
+        if not isinstance(bq_refresh_task, KubernetesPodOperator):
             raise ValueError(
                 f"Expected type KubernetesPodOperator, found "
-                f"[{type(trigger_bq_refresh_task)}]."
+                f"[{type(bq_refresh_task)}]."
             )
 
+    @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
+    @patch(
+        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
+    )
+    def test_refresh_bq_dataset_task(
+        self,
+        mock_build_kubernetes_pod_creator: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
+        mock_get_ingest_instance: MagicMock,
+    ) -> None:
+        """Tests that refresh_bq_dataset_task triggers the proper script."""
+        from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
+
+        mock_get_sandbox_prefix.return_value = None
+        mock_get_ingest_instance.return_value = "PRIMARY"
+
+        refresh_bq_dataset_operator("STATE")
+
+        mock_build_kubernetes_pod_creator.assert_called_once_with(
+            task_id="refresh_bq_dataset_STATE",
+            container_name="refresh_bq_dataset_STATE",
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_creator.mock_calls[0].kwargs["arguments"]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
         self.assertEqual(
-            trigger_bq_refresh_task.arguments,
+            arguments(MagicMock(), MagicMock()),
             [
-                "run",
                 "python",
                 "-m",
                 "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
@@ -295,8 +346,49 @@ class TestCalculationPipelineDag(unittest.TestCase):
             ],
         )
 
-    def test_validations_task(self) -> None:
-        """Tests that validation triggers the proper endpoint."""
+    @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
+    @patch(
+        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
+    )
+    def test_refresh_bq_dataset_task_secondary(
+        self,
+        mock_build_kubernetes_pod_creator: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
+        mock_get_ingest_instance: MagicMock,
+    ) -> None:
+        """Tests that refresh_bq_dataset_task triggers the proper script."""
+        from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
+
+        mock_get_sandbox_prefix.return_value = "test_prefix"
+        mock_get_ingest_instance.return_value = "SECONDARY"
+
+        refresh_bq_dataset_operator("STATE")
+
+        mock_build_kubernetes_pod_creator.assert_called_once_with(
+            task_id="refresh_bq_dataset_STATE",
+            container_name="refresh_bq_dataset_STATE",
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_creator.mock_calls[0].kwargs["arguments"]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
+        self.assertEqual(
+            arguments(MagicMock(), MagicMock()),
+            [
+                "python",
+                "-m",
+                "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
+                f"--project_id={_PROJECT_ID}",
+                "--schema_type=STATE",
+                "--ingest_instance=SECONDARY",
+                "--sandbox_prefix=test_prefix",
+            ],
+        )
+
+    def test_validations_task_exists(self) -> None:
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         trigger_validation_task = dag.get_task("validations.execute_validations_US_ND")
@@ -307,10 +399,21 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_validation_task)}]."
             )
 
-        self.assertEqual(
-            trigger_validation_task.arguments,
-            [
-                "run",
+    @patch(
+        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
+    )
+    def test_validations_task(
+        self, mock_build_kubernetes_pod_creator: MagicMock
+    ) -> None:
+        """Tests that validation triggers the proper endpoint."""
+        from recidiviz.airflow.dags.calculation_dag import trigger_validations_operator
+
+        trigger_validations_operator(state_code="US_ND")
+
+        mock_build_kubernetes_pod_creator.assert_called_once_with(
+            task_id="execute_validations_US_ND",
+            container_name="execute_validations_US_ND",
+            arguments=[
                 "python",
                 "-m",
                 "recidiviz.entrypoints.validation.validate",
@@ -320,10 +423,10 @@ class TestCalculationPipelineDag(unittest.TestCase):
             ],
         )
 
-    def test_trigger_metric_view_data_operator(self) -> None:
-        """Tests the trigger_metric_view_data_operator triggers the proper script."""
+    def test_trigger_metric_view_data_operator_exists(self) -> None:
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+
         trigger_metric_view_data_task = dag.get_task(_EXPORT_METRIC_VIEW_DATA_TASK_ID)
         if not isinstance(trigger_metric_view_data_task, KubernetesPodOperator):
             raise ValueError(
@@ -331,10 +434,25 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_metric_view_data_task)}]."
             )
 
-        self.assertEqual(
-            trigger_metric_view_data_task.arguments,
-            [
-                "run",
+    @patch(
+        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
+    )
+    def test_trigger_metric_view_data_operator(
+        self, mock_build_kubernetes_pod_creator: MagicMock
+    ) -> None:
+        """Tests the trigger_metric_view_data_operator triggers the proper script."""
+        from recidiviz.airflow.dags.calculation_dag import (
+            trigger_metric_view_data_operator,
+        )
+
+        trigger_metric_view_data_operator(
+            export_job_name="INGEST_METADATA", state_code=None
+        )
+
+        mock_build_kubernetes_pod_creator.assert_called_once_with(
+            task_id="export_ingest_metadata_metric_view_data",
+            container_name="export_ingest_metadata_metric_view_data",
+            arguments=[
                 "python",
                 "-m",
                 "recidiviz.entrypoints.metric_export.metric_view_export",

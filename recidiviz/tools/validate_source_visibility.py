@@ -273,25 +273,25 @@ def main() -> int:
             valid_module_prefixes=make_module_matcher(valid_prefixes),
         )
 
+    valid_calculation_dag_prefixes = {
+        "recidiviz.airflow.dags",
+        "recidiviz.pipelines",
+        "recidiviz.calculator.query.state.dataset_config",
+        "recidiviz.cloud_functions.cloud_function_utils",
+        "recidiviz.cloud_storage",
+        "recidiviz.common.attr_validators",
+        "recidiviz.common.constants.states",
+        "recidiviz.ingest.direct.types.direct_ingest_instance",
+        "recidiviz.metrics.export.products",
+        "recidiviz.tools.utils.script_helpers",
+        "recidiviz.utils.environment",
+        "recidiviz.utils.metadata",
+        "recidiviz.utils.yaml_dict",
+    }
+
     success &= check_dependencies_for_entrypoint(
         "recidiviz/airflow/dags/calculation_dag.py",
-        valid_module_prefixes=make_module_matcher(
-            {
-                "recidiviz.airflow.dags",
-                "recidiviz.pipelines",
-                "recidiviz.calculator.query.state.dataset_config",
-                "recidiviz.cloud_functions.cloud_function_utils",
-                "recidiviz.cloud_storage",
-                "recidiviz.common.attr_validators",
-                "recidiviz.common.constants.states",
-                "recidiviz.ingest.direct.types.direct_ingest_instance",
-                "recidiviz.metrics.export.products",
-                "recidiviz.tools.utils.script_helpers",
-                "recidiviz.utils.environment",
-                "recidiviz.utils.metadata",
-                "recidiviz.utils.yaml_dict",
-            }
-        ),
+        valid_module_prefixes=make_module_matcher(valid_calculation_dag_prefixes),
         allowed_missing_module_prefixes=make_module_matcher(set()),
     )
 
@@ -299,6 +299,7 @@ def main() -> int:
         "recidiviz/airflow/tests/calculation_dag_test.py",
         valid_module_prefixes=make_module_matcher(
             {
+                *valid_calculation_dag_prefixes,
                 "recidiviz.airflow",
             }
         ),
