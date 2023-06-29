@@ -17,10 +17,6 @@
 """Creates the view builder and view for state experiment assignments."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
-from recidiviz.calculator.query.state.dataset_config import (
-    SESSIONS_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -38,7 +34,7 @@ WITH last_day_of_data AS (
         state_code,
         MIN(last_day_of_data) AS last_day_of_data,
     FROM
-        `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+        `{project_id}.sessions.compartment_sessions_materialized`
     GROUP BY 1
 )
 
@@ -50,7 +46,9 @@ WITH last_day_of_data AS (
         variant_id,
         variant_date,
     FROM
-        `{project_id}.{static_reference_dataset}.experiment_state_assignments_materialized`
+        `{project_id}.static_reference_tables.experiment_assignments_materialized`
+    WHERE
+        unit_type = "STATE"
 )
 
 -- Add state-level last day data observed
@@ -64,8 +62,6 @@ STATE_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=STATE_ASSIGNMENTS_VIEW_NAME,
     view_query_template=STATE_ASSIGNMENTS_QUERY_TEMPLATE,
     description=STATE_ASSIGNMENTS_VIEW_DESCRIPTION,
-    sessions_dataset=SESSIONS_DATASET,
-    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
     clustering_fields=["experiment_id"],
 )
