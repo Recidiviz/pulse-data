@@ -38,11 +38,13 @@ output:
                   - "SUPERVISION_OFFICER"
                 StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
                   - "SUPERVISION_OFFICER_SUPERVISOR"
-                StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER:
+                StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
                   - "District Director"
-                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
-                  - "Regional Director"
                   - "Deputy District Director"
+                StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER:
+                  - "Regional Director"
+                StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
                   - "Deputy Secretary"
                   - "Executive Assistant"
+                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
                   - "INTERNAL_UNKNOWN"
