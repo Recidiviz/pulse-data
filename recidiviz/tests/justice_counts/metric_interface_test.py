@@ -268,7 +268,13 @@ class TestMetricInterface(TestCase):
                                 "value": 20,
                                 "enabled": None,
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
+                                ],
                             },
                             {
                                 "datapoints": None,
@@ -449,7 +455,13 @@ class TestMetricInterface(TestCase):
                                 "value": 10,
                                 "enabled": True,
                                 "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense is not known.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
+                                ],
                             },
                             {
                                 "datapoints": None,
@@ -931,7 +943,13 @@ class TestMetricInterface(TestCase):
                                 "label": "Unknown Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
+                                ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -1174,7 +1192,13 @@ class TestMetricInterface(TestCase):
                                 "label": "Unknown Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
+                                ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -1417,7 +1441,13 @@ class TestMetricInterface(TestCase):
                                 "label": "Unknown Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
+                                ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -1671,7 +1701,13 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
+                                ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -2097,7 +2133,13 @@ class TestMetricInterface(TestCase):
                                         "value": 24062,
                                     }
                                 ],
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
+                                ],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },

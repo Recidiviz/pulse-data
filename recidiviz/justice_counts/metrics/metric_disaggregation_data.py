@@ -279,7 +279,8 @@ class MetricAggregatedDimensionData:
                 }
                 json["contexts"] = []
                 if dimension_to_contexts is not None:
-                    # contexts we expect for this dimension, according to its definition. For OTHER contexts, this should always be a singleton list
+                    # contexts we expect for this dimension, according to its definition.
+                    # For OTHER and UNKNOWN contexts, this should always be a singleton list
                     definition_contexts = dimension_to_contexts.get(dimension, [])
                     # contexts that were actually passed in via POST
                     # construct dict of actual context key to actual context value

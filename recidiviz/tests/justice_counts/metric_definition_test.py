@@ -32,7 +32,7 @@ class TestAggregatedDimension(TestCase):
     """Implements tests for the Justice Counts AggregatedDimension class."""
 
     def test_dimension_to_contexts(self) -> None:
-        # Has an OTHER member
+        # Has an OTHER and UNKNOWN member
         if (
             law_enforcement.reported_crime.aggregated_dimensions is not None
         ):  # pylint: disable=unsubscriptable-object
@@ -80,11 +80,19 @@ class TestAggregatedDimension(TestCase):
                             required=False,
                         )
                     ],
+                    agg_dim.dimension.UNKNOWN: [  # type: ignore[attr-defined]
+                        Context(
+                            key=ContextKey.ADDITIONAL_CONTEXT,
+                            value_type=ValueType.TEXT,
+                            label="Please describe what data is being included in this breakdown.",
+                            required=False,
+                        )
+                    ],
                 },
             )
 
-        # Does not have an OTHER member
-        if law_enforcement.calls_for_service.aggregated_dimensions is not None:
+        # Does not have an OTHER or UNKNOWN member
+        if law_enforcement.staff.aggregated_dimensions is not None:
             # pylint: disable=unsubscriptable-object
             agg_dim = law_enforcement.staff.aggregated_dimensions[
                 1

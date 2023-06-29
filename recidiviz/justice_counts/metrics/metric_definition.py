@@ -147,8 +147,8 @@ class AggregatedDimension:
             will have the 'includes excludes description' context. This is used in the UI
             to provide text boxes to describe additional data alements included in the
             agency's metric definition.
-            - OTHER dimension members can have the 'additional context' context. This is
-             used in the UI to provide additional context text boxes for OTHER dimensions"""
+            - OTHER and UNKNOWN dimension members can have the 'additional context' context. This is
+             used in the UI to provide additional context text boxes for OTHER and UNKNOWN dimensions"""
         dim_to_contexts: Dict[DimensionBase, List[Context]] = {}
         for member in self.dimension:  # type: ignore[attr-defined]
             context_lst = []
@@ -164,7 +164,8 @@ class AggregatedDimension:
                         required=False,
                     )
                 )
-            if member.name.strip() == "OTHER":
+            member_name = member.name.strip()
+            if member_name in ["OTHER", "UNKNOWN"]:
                 context_lst.append(
                     Context(
                         key=ContextKey.ADDITIONAL_CONTEXT,
