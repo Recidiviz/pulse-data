@@ -599,7 +599,7 @@ class JusticeCountsSchemaTestObjects:
                                     "contexts": [
                                         {
                                             "key": "ADDITIONAL_CONTEXT",
-                                            "value": "User entered text...",
+                                            "value": "Other user entered text...",
                                         }
                                     ],
                                 },
@@ -607,6 +607,12 @@ class JusticeCountsSchemaTestObjects:
                                     "key": StaffType.UNKNOWN.value,
                                     "enabled": True,
                                     "settings": [],
+                                    "contexts": [
+                                        {
+                                            "key": "ADDITIONAL_CONTEXT",
+                                            "value": "Unknown user entered text...",
+                                        }
+                                    ],
                                 },
                                 {
                                     "key": StaffType.VACANT.value,

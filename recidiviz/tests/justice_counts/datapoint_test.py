@@ -300,9 +300,15 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                             FundingType.OTHER: [
                                 MetricContextData(
                                     key=ContextKey["ADDITIONAL_CONTEXT"],
-                                    value="User entered text...",
+                                    value="Other user entered text...",
                                 )
-                            ]
+                            ],
+                            FundingType.UNKNOWN: [
+                                MetricContextData(
+                                    key=ContextKey["ADDITIONAL_CONTEXT"],
+                                    value="Unknown user entered text...",
+                                )
+                            ],
                         }
                     ),
                 ],
@@ -314,13 +320,22 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 1)
-            datapoint = datapoints[0]
-            self.assertEqual(datapoint.context_key, "ADDITIONAL_CONTEXT")
-            self.assertEqual(datapoint.value, "User entered text...")
+            self.assertEqual(len(datapoints), 2)
+
+            other_datapoint = datapoints[0]
+            self.assertEqual(other_datapoint.context_key, "ADDITIONAL_CONTEXT")
+            self.assertEqual(other_datapoint.value, "Other user entered text...")
             self.assertEqual(
-                datapoint.dimension_identifier_to_member,
+                other_datapoint.dimension_identifier_to_member,
                 {"metric/prisons/funding/type": "OTHER"},
+            )
+
+            unknown_datapoint = datapoints[1]
+            self.assertEqual(unknown_datapoint.context_key, "ADDITIONAL_CONTEXT")
+            self.assertEqual(unknown_datapoint.value, "Unknown user entered text...")
+            self.assertEqual(
+                unknown_datapoint.dimension_identifier_to_member,
+                {"metric/prisons/funding/type": "UNKNOWN"},
             )
 
             # Test build_metric_key_to_datapoints() and get_aggregated_dimension_data()
@@ -328,11 +343,16 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 DatapointInterface.build_metric_key_to_datapoints(datapoints)
             )
             metric_datapoints = metric_key_to_data_points[
-                datapoint.metric_definition_key
+                other_datapoint.metric_definition_key
             ]
             self.assertEqual(
                 metric_datapoints.dimension_to_context_key_to_datapoints,
-                {FundingType.OTHER: {datapoint.context_key: datapoint}},
+                {
+                    FundingType.OTHER: {other_datapoint.context_key: other_datapoint},
+                    FundingType.UNKNOWN: {
+                        unknown_datapoint.context_key: unknown_datapoint
+                    },
+                },
             )
 
             agg_dims = metric_datapoints.get_aggregated_dimension_data(
@@ -343,10 +363,16 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 {
                     FundingType.OTHER: [
                         MetricContextData(
-                            key=ContextKey(datapoint.context_key),
-                            value=datapoint.get_value(),
+                            key=ContextKey(other_datapoint.context_key),
+                            value=other_datapoint.get_value(),
                         )
-                    ]
+                    ],
+                    FundingType.UNKNOWN: [
+                        MetricContextData(
+                            key=ContextKey(unknown_datapoint.context_key),
+                            value=unknown_datapoint.get_value(),
+                        )
+                    ],
                 },
             )
 

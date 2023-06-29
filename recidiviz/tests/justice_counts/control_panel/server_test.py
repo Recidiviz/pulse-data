@@ -1514,10 +1514,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             # Check that GET request suceeded
             self.assertEqual(response.status_code, 200)
             # For all dimensions, their 'context' field has 4 possible cases
-            # dimension has an empty contexts lists (no dimension_to_includes_excludes, not an OTHER member)
-            # dimension has singleton list [{"key": "ADDITIONAL_CONTEXT", "value": None}] (no dimension_to_includes_excludes, is an OTHER member)
-            # dimension has singleton list [{"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (has dimension_to_includes_excludes, is not an OTHER member)
-            # dimension has list of 2 contexts [{"key": "ADDITIONAL_CONTEXT", "value": None}, {"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (has dimension_to_includes_excludes and is an OTHER member)
+            # dimension has an empty contexts lists (no dimension_to_includes_excludes, not an OTHER or UNKNOWN member)
+            # dimension has singleton list [{"key": "ADDITIONAL_CONTEXT", "value": None}] (no dimension_to_includes_excludes, is an OTHER or UNKNOWN member)
+            # dimension has singleton list [{"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (has dimension_to_includes_excludes, is not an OTHER or UNKNOWN member)
+            # dimension has list of 2 contexts [{"key": "ADDITIONAL_CONTEXT", "value": None}, {"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (has dimension_to_includes_excludes and is an OTHER or UNKNOWN member)
             if response.json is not None:
                 for settings in response.json:
                     for disaggregations in settings["disaggregations"]:
@@ -1530,10 +1530,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             )  # type: ignore[abstract]
                             includes_excludes = dimension.get("includes_excludes", [])
                             if (
-                                dimension_enum.name.strip() == "OTHER"  # type: ignore[attr-defined]
+                                dimension_enum.name.strip() in ["OTHER", "UNKNOWN"]  # type: ignore[attr-defined]
                                 and includes_excludes != []
                             ):
-                                # OTHER dimension within the aggregation, and dimension has includes/excludes
+                                # OTHER or UNKNOWN dimension within the aggregation, and dimension has includes/excludes
                                 self.assertEqual(
                                     dimension["contexts"],
                                     [
@@ -1549,8 +1549,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                         },
                                     ],
                                 )
-                            elif dimension_enum.name.strip() == "OTHER":  # type: ignore[attr-defined]
-                                # OTHER dimension within the aggregation, dimension does not have includes/excludes
+                            elif dimension_enum.name.strip() in ["OTHER", "UNKNOWN"]:  # type: ignore[attr-defined]
+                                # OTHER or UNKNOWN dimension within the aggregation, dimension does not have includes/excludes
                                 self.assertEqual(
                                     dimension["contexts"],
                                     [
@@ -1562,7 +1562,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                     ],
                                 )
                             elif includes_excludes != []:
-                                # not an OTHER dimension, and dimension has includes/excludes
+                                # not an OTHER or UNKNOWN dimension, and dimension has includes/excludes
                                 self.assertEqual(
                                     dimension["contexts"],
                                     [
@@ -1615,7 +1615,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     and d.dimension_identifier_to_member is not None
                 ):
                     datapoints_with_additional_context.append(d)
-            self.assertEqual(len(datapoints_with_additional_context), 1)
+            self.assertEqual(len(datapoints_with_additional_context), 2)
             self.assertEqual(
                 datapoints_with_additional_context[0].metric_definition_key,
                 "PRISONS_TOTAL_STAFF",
@@ -1626,11 +1626,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 datapoints_with_additional_context[0].value,
-                "User entered text...",
+                "Other user entered text...",
             )
             self.assertEqual(
                 datapoints_with_additional_context[0].dimension_identifier_to_member,
                 {"metric/prisons/staff/type": "OTHER"},
+            )
+            self.assertEqual(
+                datapoints_with_additional_context[1].value,
+                "Unknown user entered text...",
+            )
+            self.assertEqual(
+                datapoints_with_additional_context[1].dimension_identifier_to_member,
+                {"metric/prisons/staff/type": "UNKNOWN"},
             )
 
             # GET request
@@ -1639,15 +1647,28 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(response.status_code, 200)
             # Check that the we can get the previoulsy stored additional context
             if response.json is not None:
-                contexts = response.json[2]["disaggregations"][0]["dimensions"][4][
+                other_context = response.json[2]["disaggregations"][0]["dimensions"][4][
                     "contexts"
                 ]
+                unknown_context = response.json[2]["disaggregations"][0]["dimensions"][
+                    5
+                ]["contexts"]
             self.assertEqual(
-                contexts,
+                other_context,
                 [
                     {
                         "key": "ADDITIONAL_CONTEXT",
-                        "value": "User entered text...",
+                        "value": "Other user entered text...",
+                        "label": "Please describe what data is being included in this breakdown.",
+                    }
+                ],
+            )
+            self.assertEqual(
+                unknown_context,
+                [
+                    {
+                        "key": "ADDITIONAL_CONTEXT",
+                        "value": "Unknown user entered text...",
                         "label": "Please describe what data is being included in this breakdown.",
                     }
                 ],
@@ -1682,12 +1703,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_datapoint_histories), 0)
             agency_datapoints = self.session.query(Datapoint).all()
 
-            # 20 total datapoints:
+            # 21 total datapoints:
             #  3 enabled/disabled metric datapoints (one for each metric): PRISONS_BUDGET, PRISONS_TOTAL_STAFF, PRISONS_GRIEVANCES_UPHELD
             #  7 enabled/disabled dimension datapoints (one for each dimension)
             #  8 includes/excludes datapoints (2 at the metric level, 6 at the disaggregation level)
-            #  2 context datapoint
-            self.assertEqual(len(agency_datapoints), 20)
+            #  3 context datapoint
+            self.assertEqual(len(agency_datapoints), 21)
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,
@@ -1758,7 +1779,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_datapoint_histories), 2)
             agency_datapoints = self.session.query(Datapoint).all()
             # Amount of agency_datapoints won't change. Only two datapoints were updated.
-            self.assertEqual(len(agency_datapoints), 20)
+            self.assertEqual(len(agency_datapoints), 21)
             includes_excludes_key_and_dimension_to_datapoint = {
                 (
                     d.includes_excludes_key,
