@@ -29,6 +29,8 @@ in the same parent folder, this will look like:
 
 # pylint: disable=W0611, W0614  # unused imports
 # pylint: disable=C0411  # import order
+# pylint: disable=C0413  # wrong-import-position
+
 
 # imports for notebooks
 import datetime
@@ -49,7 +51,6 @@ from IPython import get_ipython
 from IPython.display import display
 from tqdm.notebook import tqdm
 
-from recidiviz.tools.analyst.plots import RECIDIVIZ_COLORS, add_legend
 
 # adds pulse-data repo to path
 # note that file structure must be:
@@ -59,6 +60,8 @@ from recidiviz.tools.analyst.plots import RECIDIVIZ_COLORS, add_legend
 module_path = os.path.abspath(os.path.join("../../pulse-data"))
 sys.path.append(module_path)
 
+# imports from pulse-data
+from recidiviz.tools.analyst.plots import RECIDIVIZ_COLORS, add_legend  # isort:skip
 
 # IPython magics - only run if in notebook environment
 def is_notebook() -> bool:
