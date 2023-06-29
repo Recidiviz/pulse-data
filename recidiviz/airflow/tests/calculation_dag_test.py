@@ -399,27 +399,86 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_validation_task)}]."
             )
 
+    @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
     @patch(
         "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
     )
     def test_validations_task(
-        self, mock_build_kubernetes_pod_creator: MagicMock
+        self,
+        mock_build_kubernetes_pod_creator: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
+        mock_get_ingest_instance: MagicMock,
     ) -> None:
         """Tests that validation triggers the proper endpoint."""
-        from recidiviz.airflow.dags.calculation_dag import trigger_validations_operator
+        from recidiviz.airflow.dags.calculation_dag import execute_validations_operator
 
-        trigger_validations_operator(state_code="US_ND")
+        mock_get_sandbox_prefix.return_value = None
+        mock_get_ingest_instance.return_value = "PRIMARY"
+
+        execute_validations_operator(state_code="US_ND")
 
         mock_build_kubernetes_pod_creator.assert_called_once_with(
             task_id="execute_validations_US_ND",
             container_name="execute_validations_US_ND",
-            arguments=[
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_creator.mock_calls[0].kwargs["arguments"]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
+        self.assertEqual(
+            arguments(MagicMock(), MagicMock()),
+            [
                 "python",
                 "-m",
                 "recidiviz.entrypoints.validation.validate",
                 f"--project_id={_PROJECT_ID}",
                 "--state_code=US_ND",
                 "--ingest_instance=PRIMARY",
+            ],
+        )
+
+    @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
+    @patch(
+        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
+    )
+    def test_validations_task_secondary(
+        self,
+        mock_build_kubernetes_pod_creator: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
+        mock_get_ingest_instance: MagicMock,
+    ) -> None:
+        """Tests that validation triggers the proper endpoint."""
+        from recidiviz.airflow.dags.calculation_dag import execute_validations_operator
+
+        mock_get_sandbox_prefix.return_value = "test_prefix"
+        mock_get_ingest_instance.return_value = "SECONDARY"
+
+        execute_validations_operator(state_code="US_ND")
+
+        mock_build_kubernetes_pod_creator.assert_called_once_with(
+            task_id="execute_validations_US_ND",
+            container_name="execute_validations_US_ND",
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_creator.mock_calls[0].kwargs["arguments"]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
+        self.assertEqual(
+            arguments(MagicMock(), MagicMock()),
+            [
+                "python",
+                "-m",
+                "recidiviz.entrypoints.validation.validate",
+                f"--project_id={_PROJECT_ID}",
+                "--state_code=US_ND",
+                "--ingest_instance=SECONDARY",
+                "--sandbox_prefix=test_prefix",
             ],
         )
 
