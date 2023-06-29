@@ -138,7 +138,7 @@ VIEW_QUERY_TEMPLATE = f"""
         end_date,
         row_number() OVER(partition by officer_EmployeeId order by start_date, end_date nulls last) as period_id
     FROM final_periods
-    WHERE ACTIVE = 'Y'
+    WHERE ACTIVE = 'Y' and supervisor_EmployeeId is not null and officer_EmployeeId is not null
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
