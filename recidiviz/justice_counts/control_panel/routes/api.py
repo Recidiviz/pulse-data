@@ -55,8 +55,8 @@ from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_BUCKET_REGEX
 from recidiviz.justice_counts.utils.datapoint_utils import filter_deprecated_datapoints
+from recidiviz.justice_counts.utils.email import send_confirmation_email
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 from recidiviz.utils.environment import in_development, in_gcp, in_gcp_staging
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.pubsub_helper import (
@@ -1112,26 +1112,43 @@ def get_api_blueprint(
                 system_str, _ = os.path.split(attributes[OBJECT_ID])
                 system = schema.System[system_str]
 
-            SpreadsheetInterface.ingest_workbook_from_gcs(
+            # get metric definition for spreadsheet
+            metric_definitions = (
+                SpreadsheetInterface.get_metric_definitions_for_workbook(
+                    system=system, agency=agency
+                )
+            )
+            (
+                _,
+                metric_key_to_errors,
+                _,
+                _,
+                _,
+            ) = SpreadsheetInterface.ingest_workbook_from_gcs(
                 session=current_session,
                 bucket_name=bucket_name,
                 system=system,
                 agency=agency,
                 filename=file_name,
+                metric_definitions=metric_definitions,
             )
 
             current_session.commit()
 
-            _send_confirmation_email(
+            send_confirmation_email(
+                session=current_session,
                 success=True,
                 file_name=file_name,
                 agency_id=agency_id_str,
+                metric_key_to_errors=metric_key_to_errors,
+                metric_definitions=metric_definitions,
             )
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
             logging.exception(e)
-            _send_confirmation_email(
+            send_confirmation_email(
+                session=current_session,
                 success=False,
                 file_name=file_name,
                 agency_id=agency_id_str,
@@ -1139,35 +1156,6 @@ def get_api_blueprint(
 
             # Return 200 to acknowledge the message from pubsub
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
-
-    def _send_confirmation_email(success: bool, file_name: str, agency_id: str) -> None:
-        send_grid_client = SendGridClientWrapper(key_type="justice_counts")
-
-        user_emails = (
-            AgencyUserAccountAssociationInterface.get_user_emails_by_agency_id(
-                session=current_session, agency_id=int(agency_id)
-            )
-        )
-
-        if success:
-            subject_str = "Publisher: Automated Bulk Upload Success"
-            html = f"Congratulations! The following file has been uploaded to Publisher: {file_name}.\nThe team will review the file and reach out if there are any issues."
-        else:
-            subject_str = "Publisher: Automated Bulk Upload Failure"
-            html = f"An error was encountered while uploading the {file_name} file to Publisher.\nThe team will review the file and reach out to you regarding next steps."
-        for user_email in user_emails:
-            # TODO(#21717) Un-gate email notifications
-            if "@recidiviz.org" in user_email and in_gcp_staging():
-                try:
-                    send_grid_client.send_message(
-                        to_email=user_email,
-                        from_email="no-reply@justice-counts.org",
-                        from_email_name="Justice Counts",
-                        subject=subject_str,
-                        html_content=html,
-                    )
-                except Exception as e:
-                    logging.exception("Failed to send confirmation email: %s", e)
 
     @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
     @auth_decorator

@@ -439,6 +439,7 @@ class SpreadsheetInterface:
         system: schema.System,
         agency: schema.Agency,
         filename: str,
+        metric_definitions: List[MetricDefinition],
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -475,12 +476,9 @@ class SpreadsheetInterface:
                 session=session, agency_id=agency.id
             )
         )
-        # get metric definition for spreadsheet
-        metric_definitions = SpreadsheetInterface.get_metric_definitions_for_workbook(
-            system=system, agency=agency
-        )
+
         file_bytes = gcs_file_system.download_as_bytes(path=source_path)
-        xls = SpreadsheetInterface.convert_file_to_excel(
+        xls, filename = SpreadsheetInterface.convert_file_to_excel(
             file=file_bytes, filename=filename
         )
 
