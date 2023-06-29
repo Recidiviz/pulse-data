@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Type
 
 from airflow.decorators import dag
-from airflow.models import BaseOperator
+from airflow.models import BaseOperator, DagRun, TaskInstance
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
     KubernetesPodOperator,
 )
@@ -34,6 +34,8 @@ from more_itertools import one
 from requests import Response
 
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+    get_ingest_instance,
+    get_sandbox_prefix,
     initialize_calculation_dag_group,
 )
 from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
@@ -103,7 +105,7 @@ def update_all_managed_views_operator() -> KubernetesPodOperator:
     return build_recidiviz_kubernetes_pod_operator(
         task_id="update_all_managed_views",
         container_name="update_all_managed_views",
-        argv=[
+        arguments=[
             "python",
             "-m",
             "recidiviz.entrypoints.view_update.update_all_managed_views",
@@ -112,28 +114,38 @@ def update_all_managed_views_operator() -> KubernetesPodOperator:
     )
 
 
-def refresh_bq_dataset_operator(
-    schema_type: str,
-) -> KubernetesPodOperator:
-    return build_recidiviz_kubernetes_pod_operator(
-        task_id=f"refresh_bq_dataset_{schema_type}",
-        container_name=f"refresh_bq_dataset_{schema_type}",
-        argv=[
+def refresh_bq_dataset_operator(schema_type: str) -> KubernetesPodOperator:
+    def get_kubernetes_arguments(
+        dag_run: DagRun, task_instance: TaskInstance
+    ) -> List[str]:
+        additional_args = []
+
+        sandbox_prefix = get_sandbox_prefix(task_instance)
+        if sandbox_prefix:
+            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
+
+        return [
             "python",
             "-m",
             "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
             f"--project_id={project_id}",
             f"--schema_type={schema_type.upper()}",
-            "--ingest_instance=PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
-        ],
+            f"--ingest_instance={get_ingest_instance(dag_run)}",
+            *additional_args,
+        ]
+
+    return build_recidiviz_kubernetes_pod_operator(
+        task_id=f"refresh_bq_dataset_{schema_type}",
+        container_name=f"refresh_bq_dataset_{schema_type}",
+        arguments=get_kubernetes_arguments,
     )
 
 
 def trigger_validations_operator(state_code: str) -> KubernetesPodOperator:
     return build_recidiviz_kubernetes_pod_operator(
         task_id=f"execute_validations_{state_code}",
-        container_name=f"trigger_validations_{state_code}",
-        argv=[
+        container_name=f"execute_validations_{state_code}",
+        arguments=[
             "python",
             "-m",
             "recidiviz.entrypoints.validation.validate",
@@ -151,7 +163,7 @@ def trigger_metric_view_data_operator(
     return build_recidiviz_kubernetes_pod_operator(
         task_id=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
         container_name=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
-        argv=[
+        arguments=[
             "python",
             "-m",
             "recidiviz.entrypoints.metric_export.metric_view_export",

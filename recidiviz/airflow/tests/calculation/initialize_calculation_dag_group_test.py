@@ -64,22 +64,18 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
     Tests for the initialize_calculation_dag_group.py task group.
     """
 
-    def test_verify_required_parameters_upstream_of_handle_params_check(
+    def test_verify_and_update_parameters_upstream_of_handle_params_check(
         self,
     ) -> None:
 
-        verify_required_parameters = test_dag.get_task(
-            "initialize_dag.verify_required_parameters"
+        verify_and_update_parameters = test_dag.get_task(
+            "initialize_dag.verify_and_update_parameters"
         )
         handle_params_check = test_dag.get_task("initialize_dag.handle_params_check")
 
         self.assertEqual(
-            verify_required_parameters.downstream_task_ids,
-            {handle_params_check.task_id},
-        )
-        self.assertEqual(
             handle_params_check.upstream_task_ids,
-            {verify_required_parameters.task_id},
+            {verify_and_update_parameters.task_id},
         )
 
     def test_handle_params_check_upstream_of_wait_to_continue_or_cancel(

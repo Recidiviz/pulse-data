@@ -17,9 +17,12 @@
 """
 A factory function for building KubernetesPodOperators that run our appengine image
 """
+import logging
 import os
-from typing import List
+from typing import Callable, List, Optional, Union
 
+from airflow.decorators import task
+from airflow.models import DagRun, TaskInstance
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
     KubernetesPodOperator,
 )
@@ -28,7 +31,7 @@ from kubernetes.client import models as k8s
 
 def build_recidiviz_kubernetes_pod_operator(
     task_id: str,
-    argv: List[str],
+    arguments: Union[Callable[[DagRun, TaskInstance], List[str]], List[str]],
     container_name: str,
 ) -> KubernetesPodOperator:
     """
@@ -42,6 +45,27 @@ def build_recidiviz_kubernetes_pod_operator(
     argv: List of commands to run in the pipenv shell
     container_name: Name to group Kubernetes pod metrics
     """
+
+    @task(task_id=f"set_kubernetes_arguments_{task_id}")
+    def get_kubernetes_arguments(
+        dag_run: Optional[DagRun] = None,
+        task_instance: Optional[TaskInstance] = None,
+    ) -> List[str]:
+        if not task_instance:
+            raise ValueError(
+                "task_instance not provided. This should be automatically set by Airflow."
+            )
+        if not dag_run:
+            raise ValueError(
+                "dag_run not provided. This should be automatically set by Airflow."
+            )
+
+        argv = arguments(dag_run, task_instance) if callable(arguments) else arguments
+        logging.info(
+            "Found arguments for task [%s]: %s", task_instance.task_id, " ".join(argv)
+        )
+        return ["run", *argv]
+
     namespace = "composer-user-workloads"
     return KubernetesPodOperator(
         task_id=task_id,
@@ -53,10 +77,7 @@ def build_recidiviz_kubernetes_pod_operator(
         cmds=[
             "pipenv",
         ],
-        arguments=[
-            "run",
-            *argv,
-        ],
+        arguments=get_kubernetes_arguments(),
         env_vars={
             # TODO(census-instrumentation/opencensus-python#796)
             "CONTAINER_NAME": container_name,

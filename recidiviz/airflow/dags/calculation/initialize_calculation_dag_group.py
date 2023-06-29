@@ -16,12 +16,12 @@
 # =============================================================================
 """Handles queueing of calculation dags."""
 import logging
-from datetime import timedelta
-from typing import Any, List, Optional, Set
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set, Union
 
 from airflow.decorators import task, task_group
 from airflow.exceptions import TaskDeferred
-from airflow.models import DagRun
+from airflow.models import DagRun, TaskInstance
 from airflow.sensors.base import BaseSensorOperator
 from airflow.triggers.temporal import TimeDeltaTrigger
 from airflow.utils.context import Context
@@ -37,15 +37,26 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 # pylint: disable=W0106 expression-not-assigned
 
 
-@task
-def verify_required_parameters(dag_run: Optional[DagRun] = None) -> bool:
-    """Verifies that the required parameters are set in the dag_run configuration."""
+INITIALIZE_DAG_GROUP_ID = "initialize_dag"
+UPDATE_PARAMETERS_TASK_ID = "verify_and_update_parameters"
+UPDATE_PARAMETERS_FULL_TASK_ID = (
+    f"{INITIALIZE_DAG_GROUP_ID}.{UPDATE_PARAMETERS_TASK_ID}"
+)
+
+
+@task(task_id=UPDATE_PARAMETERS_TASK_ID)
+def verify_and_update_parameters(
+    dag_run: Optional[DagRun] = None,
+) -> Dict[str, Optional[Union[str, bool]]]:
+    """Verifies that the required parameters are set in the dag_run configuration and
+    returns additional parameters that can be referenced throughout the DAG run.
+    """
     if not dag_run:
         raise ValueError(
             "Dag run not passed to task. Should be automatically set due to function "
             "being a task."
         )
-    ingest_instance = dag_run.conf.get("ingest_instance")
+    ingest_instance = get_ingest_instance(dag_run)
     if not ingest_instance:
         raise ValueError("[ingest_instance] must be set in dag_run configuration")
 
@@ -54,26 +65,61 @@ def verify_required_parameters(dag_run: Optional[DagRun] = None) -> bool:
             f"[ingest_instance] not valid DirectIngestInstance: {ingest_instance}."
         )
 
-    state_code_filter = dag_run.conf.get("state_code_filter")
-    if ingest_instance == "SECONDARY" and not state_code_filter:
+    sandbox_prefix: Optional[str] = None
+    if ingest_instance == "SECONDARY":
+        state_code_filter = get_state_code_filter(dag_run)
+        if not state_code_filter:
+            raise ValueError(
+                "[state_code_filter] must be set in dag_run configuration for SECONDARY "
+                "ingest_instance"
+            )
+        sandbox_prefix = f"{state_code_filter.lower()}_secondary_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+        logging.info("Setting sandbox prefix to %s", sandbox_prefix)
+    return {
+        "sandbox_prefix": sandbox_prefix,
+        # TODO(#21079): We need this because we want positive confirmation that the
+        #  parameters have been set and can't yet test this in unittests. Remove the
+        #  "parameters_set" checks once we can confirm the parameters get set in the
+        #  correct task via a unittest.
+        "parameters_set": True,
+    }
+
+
+def get_sandbox_prefix(task_instance: TaskInstance) -> Optional[str]:
+    parameters_set = task_instance.xcom_pull(
+        task_ids=UPDATE_PARAMETERS_FULL_TASK_ID, key="parameters_set"
+    )
+    if not parameters_set:
         raise ValueError(
-            "[state_code_filter] must be set in dag_run configuration for SECONDARY "
-            "ingest_instance"
+            f"Parameters not set in task id {UPDATE_PARAMETERS_FULL_TASK_ID}."
         )
-    return True
+
+    return task_instance.xcom_pull(
+        task_ids=UPDATE_PARAMETERS_FULL_TASK_ID, key="sandbox_prefix"
+    )
+
+
+def get_ingest_instance(dag_run: DagRun) -> str:
+    return dag_run.conf.get("ingest_instance").upper()
+
+
+def get_state_code_filter(dag_run: DagRun) -> Optional[str]:
+    return dag_run.conf.get("state_code_filter")
 
 
 @task.short_circuit(trigger_rule=TriggerRule.ALL_DONE)
-def handle_params_check(has_valid_params: Optional[bool]) -> bool:
+def handle_params_check(
+    variables: Optional[Dict[str, Optional[Union[str, bool]]]],
+) -> bool:
     """Returns True if the DAG should continue, otherwise short circuits."""
-    if has_valid_params is None:
+    if variables is None:
         logging.info(
             "Found null has_valid_params, indicating that the params check task sensor "
             "failed (crashed) - do not continue."
         )
         return False
-    logging.info("Found has_valid_params [%s]", has_valid_params)
-    return has_valid_params
+    logging.info("Found properly set variables [%s]", variables)
+    return True
 
 
 def _get_all_active_primary_dag_runs(dag_id: str) -> List[DagRun]:
@@ -131,7 +177,7 @@ class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
             "Checking if DAG can continue with configuration: %s", dag_run.conf
         )
 
-        ingest_instance = dag_run.conf.get("ingest_instance")
+        ingest_instance = get_ingest_instance(dag_run)
         primary_dag_runs = _get_all_active_primary_dag_runs(dag_run.dag_id)
 
         logging.info(
@@ -179,13 +225,13 @@ def handle_queueing_result(action_type: Optional[str]) -> bool:
     return action_type == "CONTINUE"
 
 
-@task_group(group_id="initialize_dag")
+@task_group(group_id=INITIALIZE_DAG_GROUP_ID)
 def initialize_calculation_dag_group() -> Any:
     wait_to_continue_or_cancel = WaitUntilCanContinueOrCancelSensorAsync(
         task_id="wait_to_continue_or_cancel"
     )
     (
-        handle_params_check(verify_required_parameters())
+        handle_params_check(verify_and_update_parameters())
         >> wait_to_continue_or_cancel
         >> handle_queueing_result(wait_to_continue_or_cancel.output)
     )

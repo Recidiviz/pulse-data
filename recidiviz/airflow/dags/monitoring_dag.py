@@ -45,7 +45,7 @@ def create_monitoring_dag() -> None:
     build_recidiviz_kubernetes_pod_operator(
         task_id="generate_export_timeliness_metrics",
         container_name="generate_export_timeliness_metric",
-        argv=[
+        arguments=[
             "python",
             "-m",
             "recidiviz.entrypoints.monitoring.report_metric_export_timeliness",
