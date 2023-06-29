@@ -17,11 +17,6 @@
 """Creates the view builder and view for officer experiment assignments."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DATASET
-from recidiviz.calculator.query.state.dataset_config import (
-    PO_REPORT_DATASET,
-    SESSIONS_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -39,7 +34,7 @@ WITH last_day_of_data AS (
         state_code,
         MIN(last_day_of_data) AS last_day_of_data,
     FROM
-        `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+        `{project_id}.sessions.compartment_sessions_materialized`
     GROUP BY 1
 )
 
@@ -48,11 +43,13 @@ WITH last_day_of_data AS (
     SELECT
         experiment_id,
         state_code,
-        officer_external_id,
+        unit_id AS officer_external_id,
         variant_id,
         variant_date,
     FROM
-        `{project_id}.{static_reference_dataset}.experiment_officer_assignments_materialized`
+        `{project_id}.static_reference_tables.experiment_assignments_materialized`
+    WHERE
+        unit_type = "OFFICER"
 )
 
 -- state-level assignments passed through to officers, e.g. statewide feature rollouts
@@ -64,9 +61,9 @@ WITH last_day_of_data AS (
       variant_id,
       variant_date,
     FROM
-      `experiments.state_assignments_materialized` a
+      `{project_id}.experiments.state_assignments_materialized` a
     INNER JOIN
-      `sessions.supervision_officer_sessions_materialized` b
+      `{project_id}.sessions.supervision_officer_sessions_materialized` b
     ON
       a.state_code = b.state_code
       AND variant_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
@@ -81,7 +78,7 @@ WITH last_day_of_data AS (
         "RECEIVED_ACCESS" AS variant_id,
         received_access AS variant_date,
     FROM
-        `{project_id}.{static_reference_dataset}.case_triage_users`
+        `{project_id}.static_reference_tables.case_triage_users`
 )
 
 -- When officers receive first monthly report
@@ -93,9 +90,9 @@ WITH last_day_of_data AS (
         "RECEIVED_EMAIL" AS variant_id,
         DATE(events.event_datetime) AS variant_date,
     FROM
-        `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
+        `{project_id}.po_report_views.sendgrid_po_report_email_events_materialized` events
     INNER JOIN
-        `{project_id}.{static_reference_dataset}.po_report_recipients` users
+        `{project_id}.static_reference_tables.po_report_recipients` users
     ON
         events.email = users.email_address
     WHERE
@@ -128,9 +125,6 @@ OFFICER_ASSIGNMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=OFFICER_ASSIGNMENTS_VIEW_NAME,
     view_query_template=OFFICER_ASSIGNMENTS_QUERY_TEMPLATE,
     description=OFFICER_ASSIGNMENTS_VIEW_DESCRIPTION,
-    po_report_dataset=PO_REPORT_DATASET,
-    sessions_dataset=SESSIONS_DATASET,
-    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
     clustering_fields=["experiment_id"],
 )

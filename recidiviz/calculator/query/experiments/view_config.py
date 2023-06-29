@@ -30,14 +30,8 @@ from recidiviz.calculator.query.experiments.views.experiments import (
 from recidiviz.calculator.query.experiments.views.officer_assignments import (
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.experiments.views.officer_attributes import (
-    OFFICER_ATTRIBUTES_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.experiments.views.person_assignments import (
     PERSON_ASSIGNMENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.experiments.views.person_attributes import (
-    PERSON_ATTRIBUTES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.experiments.views.state_assignments import (
     STATE_ASSIGNMENTS_VIEW_BUILDER,
@@ -48,8 +42,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_BUILDER,
     EXPERIMENTS_VIEW_BUILDER,
     OFFICER_ASSIGNMENTS_VIEW_BUILDER,
-    OFFICER_ATTRIBUTES_VIEW_BUILDER,
     PERSON_ASSIGNMENTS_VIEW_BUILDER,
-    PERSON_ATTRIBUTES_VIEW_BUILDER,
     STATE_ASSIGNMENTS_VIEW_BUILDER,
 ]
