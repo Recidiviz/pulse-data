@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - BDGNO
+  - FNAME
+  - MINTL
+  - LNAME
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: BDGNO
+          id_type: $literal("US_MO_STAFF_BADGE_NUMBER")
+          # TODO(#21868): Badge numbers are unreliable identification as they can be changed and reused.
+          # This approach creates an external ID for each unique badge number; this approach may need to be
+          # changed in the future.
+    full_name:
+      $person_name:
+        $given_names: FNAME
+        $middle_names: MINTL
+        $surname: LNAME
+    # TODO(#21867): Ingest emails when we find a table linking badge numbers to email addresses
