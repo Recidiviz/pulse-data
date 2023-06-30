@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
-    supervision_past_full_term_completion_date,
+    is_past_full_term_completion_date,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,7 +35,7 @@ someone is past their supervision full term completion date (projected max compl
 date) or within 90 days of their full term completion date"""
 
 _QUERY_TEMPLATE = f"""
-{supervision_past_full_term_completion_date(meets_criteria_leading_window_days=90)}
+{is_past_full_term_completion_date(meets_criteria_leading_window_days=90)}
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (

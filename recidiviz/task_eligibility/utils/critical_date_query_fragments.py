@@ -183,14 +183,39 @@ def critical_date_exists_spans_cte() -> str:
     )"""
 
 
-def supervision_past_full_term_completion_date(
+def is_past_full_term_completion_date(
     meets_criteria_leading_window_days: int = 0,
+    compartment_level_1_filter: str = "SUPERVISION",
 ) -> str:
-    """Returns a criteria query that has spans of time when the projected completion date has passed or is
-    coming up while someone is on supervision. This function calls on the `critical_date_has_passed_spans_cte` and
-    takes |meets_criteria_leading_window_days| as a modifier. This is a standalone function that can be called
-    when creating criteria queries.
     """
+    Returns a criteria query that has spans of time when the projected completion date
+    has passed or is coming up while someone is on supervision or incarceration. This is
+    a standalone function that can be called when creating criteria queries.
+
+    Args:
+        meets_criteria_leading_window_days (int, optional): Modifier to move the start_date
+            by a constant value to account, for example, for time before the critical date
+            where some criteria is met. Defaults to 0. This is passed to the
+            `critical_date_has_passed_spans_cte` function.
+        compartment_level_1_filter (str, optional): Either 'SUPERVISION' OR
+            'INCARCERATION'. Defaults to "SUPERVISION".
+
+    Raises:
+        ValueError: if compartment_level_1_filter is different from "supervision" or
+            "incarceration".
+
+    Returns:
+        str: criteria query that has spans of time when the projected completion date
+            has passed or is coming up while someone is on supervision or incarceration
+    """
+
+    compartment_level_1 = compartment_level_1_filter.lower()
+
+    if compartment_level_1 not in ("supervision", "incarceration"):
+        raise ValueError(
+            "'compartment_level_1_filter` only accepts values of `supervision` or `incarceration`"
+        )
+
     return f"""
     WITH critical_date_spans AS (
         SELECT
@@ -199,7 +224,7 @@ def supervision_past_full_term_completion_date(
             start_date AS start_datetime,
             end_date AS end_datetime,
             {revert_nonnull_end_date_clause('projected_completion_date_max')} AS critical_date
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized`
+        FROM `{{project_id}}.{{sessions_dataset}}.{compartment_level_1}_projected_completion_date_spans_materialized`
     ),
     {critical_date_has_passed_spans_cte(meets_criteria_leading_window_days)}
     SELECT
