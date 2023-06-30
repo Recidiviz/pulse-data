@@ -16,10 +16,11 @@
 # =============================================================================
 """Defines routes for the Justice Counts API endpoints in the admin panel."""
 
+import itertools
 from http import HTTPStatus
 from typing import List, Tuple
 
-from flask import Blueprint, Response, jsonify, make_response, request
+from flask import Blueprint, Response, jsonify, request
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
 
@@ -54,29 +55,20 @@ def _get_auth0_client() -> Auth0Client:
     return _auth0_client
 
 
+def get_role_from_email(email: str) -> schema.UserAccountRole:
+    if "@recidiviz.org" in email:
+        return schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+
+    if "@csg.org" in email:
+        return schema.UserAccountRole.READ_ONLY
+
+    return schema.UserAccountRole.AGENCY_ADMIN
+
+
 def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Justice Counts Admin Panel API routes to an input Blueprint."""
 
-    @bp.route("/api/justice_counts_tools/agencies", methods=["GET"])
-    @requires_gae_auth
-    def get_all_agencies() -> Tuple[Response, HTTPStatus]:
-        """Returns all Agency records."""
-        with SessionFactory.using_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
-        ) as session:
-            return (
-                jsonify(
-                    {
-                        "agencies": [
-                            agency.to_json()
-                            for agency in AgencyInterface.get_agencies(session=session)
-                        ],
-                        "systems": [enum.value for enum in schema.System],
-                    }
-                ),
-                HTTPStatus.OK,
-            )
-
+    # Agency
     @bp.route("/api/justice_counts_tools/agencies", methods=["POST"])
     @requires_gae_auth
     def create_agency() -> Tuple[Response, HTTPStatus]:
@@ -143,141 +135,105 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 HTTPStatus.OK,
             )
 
-    @bp.route("/api/justice_counts_tools/agency/<agency_id>/users", methods=["PATCH"])
+    @bp.route("/api/justice_counts_tools/agencies", methods=["GET"])
     @requires_gae_auth
-    def update_agency_user_role(agency_id: int) -> Tuple[Response, HTTPStatus]:
-        """Update a User's role in an Agency."""
+    def get_all_agencies() -> Tuple[Response, HTTPStatus]:
+        """Returns all Agency records."""
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
-            request_json = assert_type(request.json, dict)
-            role = assert_type(request_json.get("role"), str)
-            email = assert_type(request_json.get("email"), str)
-
-            user = UserAccountInterface.get_user_by_email(session=session, email=email)
-            if not user:
-                return (
-                    make_response(
-                        "No user was found.",
-                        HTTPStatus.INTERNAL_SERVER_ERROR,
-                    ),
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                )
-
-            agency = AgencyInterface.get_agency_by_id(
-                session=session,
-                agency_id=int(agency_id),
-            )
-            AgencyUserAccountAssociationInterface.update_user_role(
-                role=role,
-                user=user,
-                agency=agency,
-                session=session,
-            )
-            session.commit()
             return (
-                jsonify({"agency": agency.to_json()}),
+                jsonify(
+                    {
+                        "agencies": [
+                            agency.to_json()
+                            for agency in AgencyInterface.get_agencies(session=session)
+                        ],
+                        "systems": [enum.value for enum in schema.System],
+                    }
+                ),
                 HTTPStatus.OK,
             )
 
-    @bp.route("/api/justice_counts_tools/agency/<agency_id>/users", methods=["DELETE"])
+    @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["PUT"])
     @requires_gae_auth
-    def remove_agency_users(agency_id: int) -> Tuple[Response, HTTPStatus]:
-        """Remove a User from an Agency."""
+    def update_agency(agency_id: int) -> Tuple[Response, HTTPStatus]:
+        """
+        Updates Agency name and systems in our DB.
+        """
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
-            emails = assert_type(request_json.get("emails"), list)
-
-            if emails is None:
-                raise ValueError("email is required")
-
-            for email in emails:
-                AgencyUserAccountAssociationInterface.remove_user_from_agency(
-                    email=email,
-                    agency_id=int(agency_id),
-                    session=session,
-                )
-            session.commit()
-            agency = AgencyInterface.get_agency_by_id(
-                session=session, agency_id=int(agency_id)
-            )
-            return (
-                jsonify({"agency": agency.to_json()}),
-                HTTPStatus.OK,
-            )
-
-    @bp.route("/api/justice_counts_tools/agency/<super_agency_id>", methods=["DELETE"])
-    @requires_gae_auth
-    def remove_child_agencies_from_super_agency(
-        super_agency_id: int,
-    ) -> Tuple[Response, HTTPStatus]:
-        """Removes a child agency from a super agency."""
-        with SessionFactory.using_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
-        ) as session:
-            request_json = assert_type(request.json, dict)
+            name = request_json.get("name")
+            systems = request_json.get("systems")
             child_agency_ids = request_json.get("child_agency_ids")
+            is_superagency = request_json.get("is_superagency")
 
-            if child_agency_ids is None:
-                raise ValueError("List of child agency ids is required.")
+            if systems is not None:
+                AgencyInterface.update_agency_systems(
+                    session=session, systems=systems, agency_id=agency_id
+                )
 
-            child_agencies = AgencyInterface.get_agencies_by_id(
-                session=session, agency_ids=child_agency_ids
-            )
-            AgencyUserAccountAssociationInterface.remove_child_agencies_from_super_agency(
-                session=session,
-                child_agencies=child_agencies,
-                super_agency_id=super_agency_id,
-            )
-            session.commit()
+            if name is not None:
+                AgencyInterface.update_agency_name(
+                    session=session, agency_id=agency_id, name=name
+                )
+
+            if is_superagency is not None:
+                agency = AgencyInterface.update_is_superagency(
+                    session=session, agency_id=agency_id, is_superagency=is_superagency
+                )
+                return (
+                    jsonify({"agency": agency.to_json()}),
+                    HTTPStatus.OK,
+                )
+
+            if child_agency_ids is not None:
+                # Remove all child agencies
+                agency = AgencyInterface.get_agency_by_id(
+                    session=session,
+                    agency_id=agency_id,
+                )
+                existing_child_agencies = AgencyInterface.get_child_agencies_for_agency(
+                    session=session, agency=agency
+                )
+                AgencyUserAccountAssociationInterface.remove_child_agencies_from_super_agency(
+                    session=session,
+                    child_agencies=existing_child_agencies,
+                    super_agency_id=agency_id,
+                )
+
+                # Add new child agencies
+                AgencyUserAccountAssociationInterface.add_child_agencies_to_super_agency(
+                    session=session,
+                    super_agency_id=agency_id,
+                    child_agency_ids=child_agency_ids,
+                )
+
+                session.commit()
+
+                return (
+                    jsonify(
+                        {
+                            "agencies": [
+                                agency.to_json()
+                                for agency in AgencyInterface.get_agencies(
+                                    session=session
+                                )
+                            ],
+                            "systems": [enum.value for enum in schema.System],
+                        }
+                    ),
+                    HTTPStatus.OK,
+                )
+
             return (
-                jsonify({"agencies": [agency.to_json() for agency in child_agencies]}),
+                jsonify({"status": "ok"}),
                 HTTPStatus.OK,
             )
 
-    @bp.route("/api/justice_counts_tools/users", methods=["GET"])
-    @requires_gae_auth
-    def get_all_users() -> Tuple[Response, HTTPStatus]:
-        """Returns all UserAccount records."""
-
-        with SessionFactory.using_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
-        ) as session:
-            db_users = UserAccountInterface.get_users(session=session)
-            agency_ids_to_fetch = set()
-            for user in db_users:
-                for assoc in user.agency_assocs:
-                    agency_ids_to_fetch.add(assoc.agency_id)
-
-            agencies_by_id = {
-                agency.id: agency
-                for agency in AgencyInterface.get_agencies_by_id(
-                    session=session, agency_ids=list(agency_ids_to_fetch)
-                )
-            }
-
-            user_json = []
-            for user in db_users:
-                user_agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
-                user_json.append(
-                    user.to_json(
-                        agencies=list(
-                            filter(
-                                None,
-                                [
-                                    agencies_by_id.get(agency_id)
-                                    for agency_id in user_agency_ids
-                                ],
-                            )
-                        )
-                    )
-                )
-            return (
-                jsonify({"users": user_json}),
-                HTTPStatus.OK,
-            )
+    # UserAccount
 
     @bp.route("/api/justice_counts_tools/users", methods=["POST"])
     @requires_gae_auth
@@ -330,11 +286,53 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 HTTPStatus.OK,
             )
 
+    @bp.route("/api/justice_counts_tools/users", methods=["GET"])
+    @requires_gae_auth
+    def get_all_users() -> Tuple[Response, HTTPStatus]:
+        """Returns all UserAccount records."""
+
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            db_users = UserAccountInterface.get_users(session=session)
+            agency_ids_to_fetch = set()
+            for user in db_users:
+                for assoc in user.agency_assocs:
+                    agency_ids_to_fetch.add(assoc.agency_id)
+
+            agencies_by_id = {
+                agency.id: agency
+                for agency in AgencyInterface.get_agencies_by_id(
+                    session=session, agency_ids=list(agency_ids_to_fetch)
+                )
+            }
+
+            user_json = []
+            for user in db_users:
+                user_agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+                user_json.append(
+                    user.to_json(
+                        agencies=list(
+                            filter(
+                                None,
+                                [
+                                    agencies_by_id.get(agency_id)
+                                    for agency_id in user_agency_ids
+                                ],
+                            )
+                        )
+                    )
+                )
+            return (
+                jsonify({"users": user_json}),
+                HTTPStatus.OK,
+            )
+
     @bp.route("/api/justice_counts_tools/users", methods=["PUT"])
     @requires_gae_auth
     def update_user() -> Tuple[Response, HTTPStatus]:
         """
-        Updates a User. Updates name and agency ids in our DB.
+        Updates a User's name in the DB.
         """
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
@@ -342,22 +340,14 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             request_json = assert_type(request.json, dict)
             name = request_json.get("name")
             auth0_user_id = request_json.get("auth0_user_id")
-            agency_ids = request_json.get("agency_ids")
-            role = request_json.get("role")
 
             if auth0_user_id is None:
                 raise ValueError("auth0_user_id is required")
 
-            agencies = AgencyInterface.get_agencies_by_id(
-                session=session, agency_ids=agency_ids or []
-            )
-            user = UserAccountInterface.create_or_update_user(
+            UserAccountInterface.create_or_update_user(
                 session=session,
                 name=name,
                 auth0_user_id=auth0_user_id,
-            )
-            UserAccountInterface.add_or_update_user_agency_association(
-                session=session, user=user, agencies=agencies, role=role
             )
 
             return (
@@ -365,55 +355,133 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 HTTPStatus.OK,
             )
 
-    @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["PUT"])
+    # AgencyUserAccountAssociation
+
+    @bp.route("/api/justice_counts_tools/users", methods=["PATCH"])
     @requires_gae_auth
-    def update_agency(agency_id: int) -> Tuple[Response, HTTPStatus]:
+    def update_user_accounts() -> Tuple[Response, HTTPStatus]:
         """
-        Updates an name and systems in our DB.
+        Updates the AgencyUserAccountAssociations of an individual user.
         """
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
-            name = request_json.get("name")
-            systems = request_json.get("systems")
-            child_agency_id = request_json.get("child_agency_id")
-            is_superagency = request_json.get("is_superagency")
+            email = assert_type(request_json.get("email"), str)
+            agency_ids = assert_type(request_json.get("agency_ids"), list)
 
-            if systems is not None:
-                AgencyInterface.update_agency_systems(
-                    session=session, systems=systems, agency_id=agency_id
-                )
+            agencies = AgencyInterface.get_agencies_by_id(
+                session=session, agency_ids=agency_ids or []
+            )
 
-            if name is not None:
-                AgencyInterface.update_agency_name(
-                    session=session, agency_id=agency_id, name=name
-                )
+            child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
+                session=session, agency_ids=agency_ids
+            )
 
-            if is_superagency is not None:
-                agency = AgencyInterface.update_is_superagency(
-                    session=session, agency_id=agency_id, is_superagency=is_superagency
-                )
-                return (
-                    jsonify({"agency": agency.to_json()}),
-                    HTTPStatus.OK,
-                )
+            child_agencies_to_add = [
+                a for a in child_agencies if a.id not in set(agency_ids)
+            ]
 
-            if child_agency_id is not None:
-                AgencyUserAccountAssociationInterface.add_child_agency_to_super_agency(
+            new_agencies = agencies + child_agencies_to_add
+
+            user = UserAccountInterface.get_user_by_email(session=session, email=email)
+
+            if user is None:
+                raise ValueError("No user can be found with the provided email.")
+
+            role = get_role_from_email(email=email)
+
+            # Remove all existing associations
+            for assoc in user.agency_assocs:
+                session.delete(assoc)
+
+            session.commit()
+
+            # Add user back to agencies
+            UserAccountInterface.add_or_update_user_agency_association(
+                session=session,
+                user=user,
+                agencies=new_agencies,
+                role=role,
+            )
+
+            user_json = user.to_json(agencies=new_agencies)
+
+            return (
+                jsonify({"user": user_json}),
+                HTTPStatus.OK,
+            )
+
+    @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["PATCH"])
+    @requires_gae_auth
+    def update_agency_users(agency_id: int) -> Tuple[Response, HTTPStatus]:
+        """
+        Updates the AgencyUserAccountAssociations of an individual agency.
+        """
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            emails = assert_type(request_json.get("emails"), list)
+            role = request_json.get("role")
+
+            if emails is None:
+                raise ValueError("emails are required")
+
+            users = UserAccountInterface.get_users_by_email(
+                session=session, emails=set(emails)
+            )
+            user_account_ids = [u.id for u in users]
+
+            agency = AgencyInterface.get_agency_by_id(
+                session=session, agency_id=agency_id
+            )
+
+            child_agencies = AgencyInterface.get_child_agencies_for_agency(
+                session=session, agency=agency
+            )
+
+            child_agency_assocs = itertools.chain.from_iterable(
+                [child_agency.user_account_assocs for child_agency in child_agencies]
+            )
+            # Remove all existing associations
+            assocs_to_remove = agency.user_account_assocs + [
+                assoc
+                for assoc in child_agency_assocs
+                if assoc.user_account_id in set(user_account_ids)
+            ]
+            for assoc in assocs_to_remove:
+                session.delete(assoc)
+
+            session.commit()
+
+            # Add users back to agencies
+            updated_agencies = [agency] + child_agencies
+            for user in users:
+                role = (
+                    role if role is not None else get_role_from_email(email=user.email)
+                )
+                # The only use case for sending a role is in the `AgencyDetails` page
+                # where admins can update the role of an individual user.
+                # In that case `emails` will only have one email, so the
+                # role provided will be the new role of the user being updated.
+
+                UserAccountInterface.add_or_update_user_agency_association(
                     session=session,
-                    super_agency_id=agency_id,
-                    child_agency_id=child_agency_id,
-                )
-                updated_child_agency = AgencyInterface.get_agency_by_id(
-                    session=session, agency_id=child_agency_id
-                )
-                return (
-                    jsonify({"agency": updated_child_agency.to_json()}),
-                    HTTPStatus.OK,
+                    user=user,
+                    role=role,
+                    agencies=updated_agencies,
                 )
 
             return (
-                jsonify({"status": "ok"}),
+                jsonify(
+                    {
+                        "agencies": [
+                            agency.to_json()
+                            for agency in AgencyInterface.get_agencies(session=session)
+                        ],
+                        "systems": [enum.value for enum in schema.System],
+                    }
+                ),
                 HTTPStatus.OK,
             )

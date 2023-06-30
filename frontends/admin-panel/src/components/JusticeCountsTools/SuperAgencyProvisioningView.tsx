@@ -30,12 +30,9 @@ import {
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { getAgencies } from "../../AdminPanelAPI";
-import {
-  addChildAgencyToSuperAgency,
-  removeChildAgenciesFromSuperAgency,
-  updateAgency,
-} from "../../AdminPanelAPI/JusticeCountsTools";
+import { updateAgency } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
+import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   Agency,
@@ -46,7 +43,6 @@ import {
   StateCode,
   StateCodeKey,
 } from "./constants";
-import { formLayout, formTailLayout } from "../constants";
 
 type SuperAgencyRecord = {
   id: number;
@@ -127,110 +123,59 @@ const SuperAgencyProvisioningView = (): JSX.Element => {
 
   const onUpdateChildAgencies = async (
     newChildAgencyIds: number[],
-    currentChildAgencyIds: number[],
     currentAgency: Agency
   ) => {
-    // This function supports the UI functionality where child agencies can be added or removed
-    // to super agencies. Child agencies can be removed from a super agency individually or all
-    // child agencies can be cleared (via an X button). Child agencies can only be added one at a time.
-    if (newChildAgencyIds.length < currentChildAgencyIds.length) {
-      // Remove child agency
-      const removedChildAgenciesList = currentChildAgencyIds.filter(
-        (id) => !newChildAgencyIds.includes(id)
+    /**  */
+    try {
+      const response = await updateAgency(
+        /** name */ null,
+        /** systems */ null,
+        /** agencyId */ currentAgency.id,
+        /** isSuperAgency */ null,
+        /** childAgencyIds */ newChildAgencyIds
       );
-      try {
-        const response = await removeChildAgenciesFromSuperAgency(
-          currentAgency.id,
-          removedChildAgenciesList
-        );
-        if (!response.ok) {
-          const { error } = (await response.json()) as ErrorResponse;
-          message.error(`An error occured: ${error}`);
-          return;
-        }
-        const { agencies } = (await response.json()) as AgenciesResponse;
-        const updatedAgencies = data?.agencies || [];
-        agencies.forEach((currAgency) => {
-          const agencyIndex = data?.agencies
-            .map((a) => a.id)
-            .indexOf(currAgency.id);
-          if (agencyIndex !== undefined && data !== undefined) {
-            updatedAgencies[agencyIndex] = currAgency;
-          } else {
-            message.error(`${currAgency.name} cannot be found.`);
-          }
-        });
-        setData({
-          agencies: updatedAgencies,
-          systems: data?.systems || [],
-        });
-        const msg =
-          removedChildAgenciesList.length === 1
-            ? `${
-                data?.agencies
-                  .filter((a) => a.id === removedChildAgenciesList[0])
-                  .map((a) => a.name)[0]
-              } was removed as a child agency from ${currentAgency.name}!`
-            : `All child agencies were removed from ${currentAgency.name}!`;
-        message.success(msg);
-      } catch (err) {
-        message.error(`An error occured: ${err}`);
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
+        message.error(`An error occured: ${error}`);
+        return;
       }
-    } else {
-      // Add child agency
-      const newChildAgencyIdList = newChildAgencyIds.filter(
-        (id) => !currentChildAgencyIds.includes(id)
+      const { agencies } = (await response.json()) as AgenciesResponse;
+      setData({
+        agencies,
+        systems: data?.systems || [],
+      });
+      message.success(
+        `Child agencies in ${currentAgency.name} were successfully updated.`
       );
-      try {
-        const response = await addChildAgencyToSuperAgency(
-          currentAgency.id /** superAgencyId */,
-          newChildAgencyIdList[0] /** childAgencyId */
-        );
-        if (!response.ok) {
-          const { error } = (await response.json()) as ErrorResponse;
-          message.error(`An error occured: ${error}`);
-          return;
-        }
-        const { agency } = (await response.json()) as AgencyResponse;
-        const agencyIndex = data?.agencies.map((a) => a.id).indexOf(agency.id);
-        if (agencyIndex !== undefined && data !== undefined) {
-          const updatedAgencies = data.agencies;
-          updatedAgencies[agencyIndex] = agency;
-          setData({
-            agencies: updatedAgencies,
-            systems: data?.systems || [],
-          });
-          message.success(
-            `${agency.name} was added to as a child agency to ${currentAgency.name}!`
-          );
-        } else {
-          message.error("Agency cannot be found.");
-        }
-      } catch (err) {
-        message.error(`An error occured: ${err}`);
-      }
+    } catch (err) {
+      message.error(`An error occured: ${err}`);
     }
   };
 
   const onCreateSuperagency = async ({ agencyId }: { agencyId: number }) => {
     setShowSpinner(true);
     try {
-      const response = await updateAgency(null, null, agencyId, true);
+      const response = await updateAgency(
+        /** name */ null,
+        /** systems */ null,
+        /** agencyId */ agencyId,
+        /** isSuperAgency */ true,
+        /** childAgencyIds */ null
+      );
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
         return;
       }
       const { agency } = (await response.json()) as AgencyResponse;
-      const agencyIndex = data?.agencies.map((a) => a.id).indexOf(agency.id);
-      if (agencyIndex !== undefined && data !== undefined) {
-        const updatedAgencies = data.agencies;
-        updatedAgencies[agencyIndex] = agency;
-        setData({
-          agencies: updatedAgencies,
-          systems: data?.systems || [],
-        });
-      }
+      const newAgencyData = {
+        agencies:
+          data?.agencies.map((currAgency) =>
+            currAgency.id === agency.id ? agency : currAgency
+          ) || [],
+        systems: data?.systems || [],
+      };
+      setData(newAgencyData);
       form.resetFields();
       setShowSpinner(false);
       message.success(`"Superagency added!`);
@@ -286,11 +231,7 @@ const SuperAgencyProvisioningView = (): JSX.Element => {
                 .indexOf(input.toLowerCase()) >= 0
             }
             onChange={(newChildAgencyIds: number[]) => {
-              onUpdateChildAgencies(
-                newChildAgencyIds,
-                currentChildAgencyIds,
-                agency
-              );
+              onUpdateChildAgencies(newChildAgencyIds, agency);
             }}
             style={{ minWidth: 500 }}
           >

@@ -61,6 +61,10 @@ class AgencyUserAccountAssociationInterface:
             session=session, agency_id=agency_id
         )
 
+        child_agencies = AgencyInterface.get_child_agencies_for_agency(
+            session=session, agency=new_agency
+        )
+
         if len(existing_users) == 1:
             # If there is an existing user, update the users list of agency ids.
             existing_user = existing_users[0]
@@ -78,7 +82,7 @@ class AgencyUserAccountAssociationInterface:
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
                 user=existing_users[0],
-                agencies=[new_agency],
+                agencies=[new_agency] + child_agencies,
                 invitation_status=schema.UserAccountInvitationStatus.PENDING,
             )
 
@@ -109,17 +113,17 @@ class AgencyUserAccountAssociationInterface:
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
                 user=user,
-                agencies=[new_agency],
+                agencies=[new_agency] + child_agencies,
                 invitation_status=schema.UserAccountInvitationStatus.PENDING,
             )
 
     @staticmethod
-    def remove_user_from_agency(
+    def remove_user_from_agencies(
         email: str,
-        agency_id: int,
+        agency_ids: List[int],
         session: Session,
     ) -> None:
-        """This method removes the agency_id from the users metadata in auth0 and
+        """This method removes the agency_ids from the users metadata in auth0 and
         deletes in the AgencyUserAccountAssociation between the user and the agency
         in the Justice Counts DB."""
         users = UserAccountInterface.get_users_by_email(session=session, emails={email})
@@ -132,10 +136,10 @@ class AgencyUserAccountAssociationInterface:
         user = users[0]
 
         # Update user in Justice Counts DB
-        UserAccountInterface.remove_user_from_agency(
+        UserAccountInterface.remove_user_from_agencies(
             session=session,
             user=user,
-            agency_id=agency_id,
+            agency_ids=agency_ids,
         )
 
     @staticmethod
@@ -340,26 +344,29 @@ class AgencyUserAccountAssociationInterface:
             session.delete(assoc)
 
     @staticmethod
-    def add_child_agency_to_super_agency(
-        session: Session, child_agency_id: int, super_agency_id: int
+    def add_child_agencies_to_super_agency(
+        session: Session, child_agency_ids: List[int], super_agency_id: int
     ) -> None:
-        child_agency = AgencyInterface.get_agency_by_id(
-            session=session, agency_id=child_agency_id
+        child_agencies = AgencyInterface.get_agencies_by_id(
+            session=session, agency_ids=child_agency_ids
         )
-        child_agency.super_agency_id = super_agency_id
+        for child_agency in child_agencies:
+            child_agency.super_agency_id = super_agency_id
+
         super_agency_users = (
             AgencyUserAccountAssociationInterface.get_users_by_agency_id(
                 session=session, agency_id=super_agency_id
             )
         )
         for user_assoc in super_agency_users:
-            # Add all super agency users as admins to the new child agency
-            new_assoc = schema.AgencyUserAccountAssociation(
-                agency_id=child_agency_id,
-                user_account_id=user_assoc.user_account_id,
-                role=schema.UserAccountRole.AGENCY_ADMIN,
-            )
-            session.merge(new_assoc)
+            # Add all super agency users as admins to the new child agencies
+            for child_agency in child_agencies:
+                new_assoc = schema.AgencyUserAccountAssociation(
+                    agency_id=child_agency.id,
+                    user_account_id=user_assoc.user_account_id,
+                    role=user_assoc.role,
+                )
+                session.merge(new_assoc)
 
     @staticmethod
     def get_users_by_agency_id(

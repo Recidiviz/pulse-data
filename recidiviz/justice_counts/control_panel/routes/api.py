@@ -263,9 +263,9 @@ def get_api_blueprint(
                     "no email was provided in the request body.",
                     500,
                 )
-            AgencyUserAccountAssociationInterface.remove_user_from_agency(
+            AgencyUserAccountAssociationInterface.remove_user_from_agencies(
                 email=email,
-                agency_id=int(agency_id),
+                agency_ids=[int(agency_id)],
                 session=current_session,
             )
 
@@ -432,8 +432,7 @@ def get_api_blueprint(
             for agency in agencies:
                 agency_json = agency.to_json()
                 child_agencies = AgencyInterface.get_child_agencies_for_agency(
-                    session=current_session,
-                    agency=agency,
+                    session=current_session, agency=agency
                 )
                 agency_json["child_agencies"] = [
                     child_agency.to_json(core_attributes_only=True)

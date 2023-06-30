@@ -32,17 +32,15 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { createAgency, getAgencies } from "../../AdminPanelAPI";
 import {
-  addUserToAgencyOrUpdateRole,
   getUsers,
-  removeUsersFromAgency,
   updateAgency,
+  updateAgencyUsers,
 } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   Agency,
-  AgencyResponse,
   AgencyTeamMember,
   CreateAgencyRequest,
   CreateAgencyResponse,
@@ -53,7 +51,6 @@ import {
   StateCodeKey,
   System,
   UsersResponse,
-  getRoleFromEmail,
 } from "./constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
@@ -161,7 +158,13 @@ const AgencyProvisioningView = (): JSX.Element => {
 
   const onNameChange = async (agency: Agency, name: string) => {
     try {
-      const response = await updateAgency(name, null, agency.id);
+      const response = await updateAgency(
+        /** name */ name,
+        /** systems */ null,
+        /** agency_id */ agency.id,
+        /** isSuperagency */ null,
+        /** childAgencyIds */ null
+      );
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
@@ -175,7 +178,13 @@ const AgencyProvisioningView = (): JSX.Element => {
 
   const onSystemsChange = async (systems: string[], agency: Agency) => {
     try {
-      const response = await updateAgency(null, systems, agency.id);
+      const response = await updateAgency(
+        /** name */ null,
+        /** systems */ systems,
+        /** agency_id */ agency.id,
+        /** isSuperagency */ null,
+        /** childAgencyIds */ null
+      );
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
@@ -189,83 +198,31 @@ const AgencyProvisioningView = (): JSX.Element => {
 
   const onUpdateTeamMember = async (
     newTeamMemberEmails: string[],
-    currentTeamMemberEmails: string[],
     currentAgency: Agency
   ) => {
-    // This function supports the UI functionality where user can be added or removed
-    // from agencies. Users can be removed from an agency individually or all users
-    // can be cleared (via an X button). Users can only be added one at a time.
-    if (newTeamMemberEmails.length < currentTeamMemberEmails.length) {
-      // Remove user from agency
-      const removedMemberEmailsList = currentTeamMemberEmails.filter(
-        (email) => !newTeamMemberEmails.includes(email)
+    try {
+      const response = await updateAgencyUsers(
+        /** agencyId */ currentAgency.id.toString(),
+        /** emails */ newTeamMemberEmails,
+        /** role */ null
       );
-      try {
-        const response = await removeUsersFromAgency(
-          currentAgency.id,
-          removedMemberEmailsList
-        );
-        if (!response.ok) {
-          const { error } = (await response.json()) as ErrorResponse;
-          message.error(`An error occured: ${error}`);
-          return;
-        }
-        const { agency } = (await response.json()) as AgencyResponse;
-        const agencyIndex = data?.agencies.map((a) => a.id).indexOf(agency.id);
-        if (agencyIndex !== undefined && data !== undefined) {
-          const updatedAgencies = data.agencies;
-          updatedAgencies[agencyIndex] = agency;
-          setData({
-            agencies: updatedAgencies,
-            systems: data?.systems || [],
-          });
-          const msg =
-            removedMemberEmailsList.length === 1
-              ? `User with email '${removedMemberEmailsList[0]}' was removed from ${currentAgency.name}!`
-              : `All users were removed from ${currentAgency.name}!`;
-          message.success(msg);
-        } else {
-          message.error("Agency cannot be found.");
-        }
-      } catch (err) {
-        message.error(`An error occured: ${err}`);
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
+        message.error(`An error occured: ${error}`);
+        return;
       }
-    } else {
-      // Add user to agency
-      const addedMemberList = newTeamMemberEmails.filter(
-        (x) => !currentTeamMemberEmails.includes(x)
-      );
-      const userEmail = addedMemberList[0];
-      const role = getRoleFromEmail(userEmail);
-      try {
-        const response = await addUserToAgencyOrUpdateRole(
-          currentAgency.id.toString(),
-          userEmail,
-          role
-        );
-        if (!response.ok) {
-          const { error } = (await response.json()) as ErrorResponse;
-          message.error(`An error occured: ${error}`);
-          return;
-        }
-        const { agency } = (await response.json()) as AgencyResponse;
-        const agencyIndex = data?.agencies.map((a) => a.id).indexOf(agency.id);
-        if (agencyIndex !== undefined && data !== undefined) {
-          const updatedAgencies = data.agencies;
-          updatedAgencies[agencyIndex] = agency;
-          setData({
-            agencies: updatedAgencies,
-            systems: data?.systems || [],
-          });
-          message.success(
-            `User with email '${userEmail}' was added to ${currentAgency.name}!`
-          );
-        } else {
-          message.error("Agency cannot be found.");
-        }
-      } catch (err) {
-        message.error(`An error occured: ${err}`);
-      }
+      const { agencies, systems } = (await response.json()) as AgenciesResponse;
+      setData({
+        agencies,
+        systems,
+      });
+      const successMessage =
+        currentAgency.is_superagency === true
+          ? `${currentAgency.name} and child agencies were successfully updated!`
+          : `${currentAgency.name} was successfully updated!`;
+      message.success(successMessage);
+    } catch (err) {
+      message.error(`An error occured: ${err}`);
     }
   };
 
@@ -356,11 +313,7 @@ const AgencyProvisioningView = (): JSX.Element => {
                 .indexOf(input.toLowerCase()) >= 0
             }
             onChange={(newTeamMemberEmails: string[]) => {
-              onUpdateTeamMember(
-                newTeamMemberEmails,
-                currentTeamMemberEmails,
-                agency
-              );
+              onUpdateTeamMember(newTeamMemberEmails, agency);
             }}
             style={{ minWidth: 250 }}
           >
@@ -401,7 +354,9 @@ const AgencyProvisioningView = (): JSX.Element => {
           showSizeChanger: true,
           size: "small",
         }}
-        rowKey={(agency) => agency.id}
+        rowKey={(agency) => JSON.stringify(agency.id.toString() + agency.team)}
+        // If the user is added to a Superagency, the table will re-render so that we can
+        // can see the cells of the child agencies with the name of the user we added as well.
       />
       <Form
         {...formLayout}
