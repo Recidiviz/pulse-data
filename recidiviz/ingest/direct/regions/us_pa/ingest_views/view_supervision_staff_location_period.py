@@ -26,10 +26,20 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 SELECT ORG_ID, Employ_Num, 
 -- Including all agents who are present in the roster, irrespective of start date
--- TODO(#18022):We should be building these periods based on actual start and end dates of employment; these are arbitrary, temporary placeholders.
+-- TODO(#21909): Update all start_date fields in this view to match start_date in the role_periods view.
 DATE('1900-01-01') AS start_date, 
 NULL as end_date
 FROM {RECIDIVIZ_REFERENCE_agent_districts}
+
+UNION ALL
+
+SELECT 
+    district_id,
+    ext_id, 
+    DATE('1900-01-01') AS start_date, 
+    NULL as end_date
+FROM {RECIDIVIZ_REFERENCE_field_supervisor_list} 
+WHERE role IN ('District Director','Deputy District Director')
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
