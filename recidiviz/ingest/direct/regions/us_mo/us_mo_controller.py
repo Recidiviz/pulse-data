@@ -52,4 +52,5 @@ class UsMoController(BaseDirectIngestController):
             "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
             "tak028_tak042_tak076_tak024_violation_reports",
             "tak291_tak292_tak024_citations",
+            "supervision_staff",
         ]
