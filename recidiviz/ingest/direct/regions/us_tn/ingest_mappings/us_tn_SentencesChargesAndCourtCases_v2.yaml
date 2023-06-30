@@ -43,7 +43,6 @@ input_columns:
   - ReleaseEligibilityDate
 unused_columns:
   - ChargeOffense
-# TODO(#21726) Write unit tests to ensure that this and v3 don't overlap environments.
 launch_env:
   $env: is_production
 variables:

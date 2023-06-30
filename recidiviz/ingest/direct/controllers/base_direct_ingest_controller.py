@@ -347,8 +347,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
     # TODO(#10128): Once we are fully on v2, we should turn the state specific
     # controllers into delegates that just implement this and region code, instead of
     # letting them inherit from the base controller.
-    # TODO(#21726): Write tests to ensure that launch envs in the ingest manifests
-    # match the envs here in the rank list.
     @classmethod
     @abc.abstractmethod
     def _get_ingest_view_rank_list(

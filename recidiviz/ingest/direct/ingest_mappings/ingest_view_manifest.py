@@ -1688,7 +1688,6 @@ class OrConditionManifest(ManifestNode[bool]):
 
 @attr.s(kw_only=True)
 class InvertConditionManifest(ManifestNode[bool]):
-
     # Manifest node key for inverted ContainsConditionManifest
     NOT_IN_CONDITION_KEY = "$not_in"
 
