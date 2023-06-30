@@ -33,7 +33,8 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
-from recidiviz.ingest.direct import regions, templates
+from recidiviz.common.file_system import is_non_empty_code_directory
+from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -46,6 +47,12 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
+    IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegateImpl,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
     UpdateRawTableMigration,
@@ -66,9 +73,12 @@ from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
     FakeDirectIngestInstanceStatusManager,
 )
+from recidiviz.tests.ingest.direct import direct_ingest_fixtures
+from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCPEnvironment
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
@@ -173,7 +183,6 @@ class DirectIngestRegionDirStructureBase:
 
     def test_manifest_yaml_format(self) -> None:
         def validate_manifest_contents(file_path: str, file_contents: object) -> None:
-
             if not isinstance(file_contents, dict):
                 self.test.fail(
                     f"File contents type [{type(file_contents)}], expected dict."
@@ -316,11 +325,11 @@ class DirectIngestRegionDirStructureBase:
         ]
     )
     def test_collect_and_print_ingest_views(
-        self, _name: str, project_id: str, environment: GCPEnvironment
+        self, _name: str, project_id: str, env: GCPEnvironment
     ) -> None:
         with patch(
             "recidiviz.utils.environment.get_gcp_environment",
-            return_value=environment.value,
+            return_value=env.value,
         ), patch("recidiviz.utils.metadata.project_id", return_value=project_id):
             for region_code in self.region_dir_names:
                 region = get_direct_ingest_region(
@@ -529,3 +538,280 @@ class DirectIngestRegionTemplateDirStructure(
     @property
     def region_module_override(self) -> ModuleType:
         return templates
+
+
+class TestControllerWithIngestManifestCollection(unittest.TestCase):
+    """Test that various regions match the ingest rank list of the ingest controller."""
+
+    def setUp(self) -> None:
+        self.combinations = [
+            (region_code, ingest_instance, project)
+            for region_code in get_existing_direct_ingest_states()
+            for ingest_instance in list(DirectIngestInstance)
+            for project in sorted(environment.GCP_PROJECTS)
+        ]
+
+    def test_ingest_rank_list_matches_manifests(
+        self,
+    ) -> None:
+        for region_code, ingest_instance, project in self.combinations:
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=region_code.value
+            )
+            controller_cls = DirectIngestControllerFactory.get_controller_class(region)
+            ingest_view_manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IngestViewResultsParserDelegateImpl(
+                    region=region,
+                    schema_type=SchemaType.STATE,
+                    ingest_instance=ingest_instance,
+                    results_update_datetime=datetime.now(),
+                ),
+            )
+            with patch.object(
+                metadata, "project_id", return_value=project
+            ), patch.object(
+                environment,
+                "in_gcp_staging",
+                return_value=(project == environment.GCP_PROJECT_STAGING),
+            ), patch.object(
+                environment,
+                "in_gcp_production",
+                return_value=(project == environment.GCP_PROJECT_PRODUCTION),
+            ):
+                # pylint: disable=protected-access
+                self.assertListEqual(
+                    sorted(
+                        controller_cls._get_ingest_view_rank_list(
+                            ingest_instance=ingest_instance
+                        )
+                    ),
+                    sorted(ingest_view_manifest_collector.launchable_ingest_views()),
+                    "The ingest rank list does not match the ingest view manifests for "
+                    f"[{region_code.value}] [{ingest_instance.value}] [{project}]",
+                )
+
+    def _get_related_ingest_view_pairs(
+        self, ingest_view_names: List[str]
+    ) -> List[Tuple[str, str]]:
+        pairs = set()
+        for ingest_view in ingest_view_names:
+            for ingest_view_2 in ingest_view_names:
+                if ingest_view >= ingest_view_2:
+                    # Skip if view 2 is alphabetically less than view 1 to avoid dupes
+                    continue
+                regex = r"(?P<name>.*)(?P<version>_v[0-9])"
+                match_1 = re.match(regex, ingest_view)
+                match_2 = re.match(regex, ingest_view_2)
+
+                base_ingest_view_name_1 = (
+                    match_1.group("name") if match_1 else ingest_view
+                )
+                base_ingest_view_name_2 = (
+                    match_2.group("name") if match_2 else ingest_view_2
+                )
+                if base_ingest_view_name_1 == base_ingest_view_name_2:
+                    pairs.add((ingest_view, ingest_view_2))
+        return list(pairs)
+
+    def test_get_related_ingest_view_pairs(self) -> None:
+        self.assertEqual(
+            [("my_ip_view", "my_ip_view_v2")],
+            self._get_related_ingest_view_pairs(
+                ["my_ip_view", "my_ip_view_v2", "my_other_view"]
+            ),
+        )
+
+        self.assertEqual(
+            [("state_person", "state_person_v2")],
+            self._get_related_ingest_view_pairs(
+                ["state_person", "state_person_external_id", "state_person_v2"]
+            ),
+        )
+
+        self.assertEqual(
+            [("assessments_v2", "assessments_v3")],
+            self._get_related_ingest_view_pairs(
+                ["state_person", "assessments_v2", "assessments_v3"]
+            ),
+        )
+
+        self.assertEqual([], self._get_related_ingest_view_pairs([]))
+        self.assertEqual([], self._get_related_ingest_view_pairs(["state_person"]))
+
+    def test_ingest_views_with_similar_names_are_in_different_environments(
+        self,
+    ) -> None:
+        for region_code, ingest_instance, project in self.combinations:
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=region_code.value
+            )
+            with patch.object(
+                metadata, "project_id", return_value=project
+            ), patch.object(
+                environment,
+                "in_gcp_staging",
+                return_value=(project == environment.GCP_PROJECT_STAGING),
+            ), patch.object(
+                environment,
+                "in_gcp_production",
+                return_value=(project == environment.GCP_PROJECT_PRODUCTION),
+            ):
+                ingest_view_manifest_collector = IngestViewManifestCollector(
+                    region=region,
+                    delegate=IngestViewResultsParserDelegateImpl(
+                        region=region,
+                        schema_type=SchemaType.STATE,
+                        ingest_instance=ingest_instance,
+                        results_update_datetime=datetime.now(),
+                    ),
+                )
+                ingest_view_names = list(
+                    ingest_view_manifest_collector.ingest_view_to_manifest
+                )
+                related_ingest_view_pairs = self._get_related_ingest_view_pairs(
+                    ingest_view_names
+                )
+                for ingest_view, ingest_view_2 in related_ingest_view_pairs:
+                    manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
+                        ingest_view
+                    ]
+                    manifest_2 = ingest_view_manifest_collector.ingest_view_to_manifest[
+                        ingest_view_2
+                    ]
+                    self.assertFalse(
+                        manifest.should_launch and manifest_2.should_launch,
+                        f"Found related {region_code.value} views, [{ingest_view}] and "
+                        f"[{ingest_view_2}], which are both configured to launch in "
+                        f"[{project}] and [{ingest_instance}]",
+                    )
+
+    def test_ingest_view_result_fixture_files_have_corresponding_yaml(self) -> None:
+        for region_code in get_existing_direct_ingest_states():
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=region_code.value
+            )
+            ingest_view_manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IngestViewResultsParserDelegateImpl(
+                    region=region,
+                    schema_type=SchemaType.STATE,
+                    # Pick an arbitrary instance, it doesn't matter
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                    results_update_datetime=datetime.now(),
+                ),
+            )
+            fixtures_directory = os.path.join(
+                os.path.dirname(direct_ingest_fixtures.__file__),
+                region_code.value.lower(),
+            )
+            fixture_file_names = [
+                os.path.splitext(fixture_file)[0]
+                for fixture_file in os.listdir(fixtures_directory)
+                if fixture_file.endswith(".csv")
+            ]
+
+            extra_fixtures = set(fixture_file_names) - set(
+                ingest_view_manifest_collector.ingest_view_to_manifest.keys()
+            )
+
+            self.assertSetEqual(
+                extra_fixtures,
+                set(),
+                f"Found fixtures in {fixtures_directory} with no corresponding "
+                f"ingest mappings (candidates for cleanup): {extra_fixtures}",
+            )
+
+    def test_ingest_view_fixture_files_is_subset_of_ingest_mappings(self) -> None:
+        for region_code in get_existing_direct_ingest_states():
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=region_code.value
+            )
+            ingest_view_manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IngestViewResultsParserDelegateImpl(
+                    region=region,
+                    schema_type=SchemaType.STATE,
+                    # Pick an arbitrary instance, it doesn't matter
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                    results_update_datetime=datetime.now(),
+                ),
+            )
+            region_fixtures_directory = os.path.join(
+                os.path.dirname(direct_ingest_fixtures.__file__),
+                region_code.value.lower(),
+            )
+            if "ingest_view" not in os.listdir(region_fixtures_directory):
+                continue
+            ingest_view_fixture_directories = [
+                directory
+                for directory in os.listdir(
+                    os.path.join(region_fixtures_directory, "ingest_view")
+                )
+                if os.path.isdir(
+                    os.path.join(region_fixtures_directory, "ingest_view", directory)
+                )
+                and is_non_empty_code_directory(
+                    os.path.join(region_fixtures_directory, "ingest_view", directory)
+                )
+            ]
+            set_of_ingest_view_fixture_directories = set(
+                ingest_view_fixture_directories
+            )
+            set_of_ingest_views = set(
+                ingest_view_manifest_collector.ingest_view_to_manifest.keys()
+            )
+
+            extra_fixture_directories = (
+                set_of_ingest_view_fixture_directories - set_of_ingest_views
+            )
+
+            self.assertSetEqual(
+                extra_fixture_directories,
+                set(),
+                f"Found fixtures directories in {region_fixtures_directory} with "
+                f"no corresponding ingest mappings (candidates for cleanup): "
+                f"{extra_fixture_directories}",
+            )
+
+    def test_ingest_views_have_corresponding_yaml(self) -> None:
+        for region_code in get_existing_direct_ingest_states():
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=region_code.value
+            )
+            ingest_view_manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IngestViewResultsParserDelegateImpl(
+                    region=region,
+                    schema_type=SchemaType.STATE,
+                    # Pick an arbitrary instance, it doesn't matter
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                    results_update_datetime=datetime.now(),
+                ),
+            )
+            if region.region_module.__file__ is None:
+                raise ValueError(f"No file associated with {region.region_module}.")
+            ingest_view_directory = os.path.join(
+                os.path.dirname(region.region_module.__file__),
+                region.region_code.lower(),
+                "ingest_views",
+            )
+            ingest_view_files = [
+                os.path.splitext(ingest_view)[0].replace("view_", "")
+                for ingest_view in os.listdir(ingest_view_directory)
+                if ingest_view.startswith("view_")
+            ]
+
+            extra_ingest_view_files = set(ingest_view_files) - set(
+                ingest_view_manifest_collector.ingest_view_to_manifest.keys()
+            )
+            self.assertSetEqual(
+                extra_ingest_view_files,
+                set(),
+                f"Found ingest views in {ingest_view_directory} with "
+                f"no corresponding ingest mappings (candidates for cleanup): "
+                f"{extra_ingest_view_files}",
+            )
+
+    # TODO(#21897) Write unit test that checks that any raw input fixture has a
+    # corresponding output file in the ingest view test directory.
