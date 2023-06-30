@@ -17,21 +17,13 @@
 
 import { User } from "../components/JusticeCountsTools/constants";
 import {
-  deleteWithUrlAndBody,
   getResource,
   patchWithURLAndBody,
   postWithURLAndBody,
   putWithURLAndBody,
 } from "./utils";
 
-// Agency Provisioning
-export const getAgencies = async (): Promise<Response> => {
-  return getResource(`/api/justice_counts_tools/agencies`);
-};
-
-export const getAgency = (agencyId: string) => (): Promise<Response> => {
-  return getResource(`/api/justice_counts_tools/agency/${agencyId}`);
-};
+// Agency
 
 export const createAgency = async (
   name: string,
@@ -47,24 +39,30 @@ export const createAgency = async (
   });
 };
 
-export const addUserToAgencyOrUpdateRole = async (
-  agencyId: string,
-  email: string,
-  role: string
-): Promise<Response> => {
-  return patchWithURLAndBody(
-    `/api/justice_counts_tools/agency/${agencyId}/users`,
-    {
-      email,
-      role,
-    }
-  );
+export const getAgency = (agencyId: string) => (): Promise<Response> => {
+  return getResource(`/api/justice_counts_tools/agency/${agencyId}`);
 };
 
-// User Provisioning
-export const getUsers = async (): Promise<Response> => {
-  return getResource(`/api/justice_counts_tools/users`);
+export const getAgencies = async (): Promise<Response> => {
+  return getResource(`/api/justice_counts_tools/agencies`);
 };
+
+export const updateAgency = async (
+  name: string | null,
+  systems: string[] | null,
+  agencyId: number,
+  isSuperagency?: boolean | null,
+  childAgencyIds?: number[] | null
+): Promise<Response> => {
+  return putWithURLAndBody(`/api/justice_counts_tools/agency/${agencyId}`, {
+    name,
+    systems,
+    is_superagency: isSuperagency,
+    child_agency_ids: childAgencyIds,
+  });
+};
+
+// User Account
 
 export const createUser = async (
   email: string,
@@ -76,65 +74,39 @@ export const createUser = async (
   });
 };
 
+export const getUsers = async (): Promise<Response> => {
+  return getResource(`/api/justice_counts_tools/users`);
+};
+
 export const updateUser = async (
-  user: User,
-  name: string | null,
-  agencyIds: number[] | null,
-  role: string | null
+  auth0UserId: string,
+  name: string
 ): Promise<Response> => {
   return putWithURLAndBody(`/api/justice_counts_tools/users`, {
+    auth0_user_id: auth0UserId,
     name,
-    auth0_user_id: user.auth0_user_id,
+  });
+};
+
+// AgencyUserAccountAssociation
+
+export const updateUsersAccounts = async (
+  user: User,
+  agencyIds: number[] | null
+): Promise<Response> => {
+  return patchWithURLAndBody(`/api/justice_counts_tools/users`, {
+    email: user.email,
     agency_ids: agencyIds,
+  });
+};
+
+export const updateAgencyUsers = async (
+  agencyId: string,
+  emails: string[] | null,
+  role: string | null
+): Promise<Response> => {
+  return patchWithURLAndBody(`/api/justice_counts_tools/agency/${agencyId}`, {
+    emails,
     role,
   });
-};
-
-export const removeUsersFromAgency = async (
-  agencyId: number,
-  emails: string[]
-): Promise<Response> => {
-  return deleteWithUrlAndBody(
-    `/api/justice_counts_tools/agency/${agencyId}/users`,
-    {
-      emails,
-    }
-  );
-};
-
-export const updateAgency = async (
-  name: string | null,
-  systems: string[] | null,
-  agencyId: number,
-  isSuperagency?: boolean | null
-): Promise<Response> => {
-  return putWithURLAndBody(`/api/justice_counts_tools/agency/${agencyId}`, {
-    name,
-    systems,
-    is_superagency: isSuperagency,
-  });
-};
-
-export const removeChildAgenciesFromSuperAgency = async (
-  superAgencyId: number,
-  childAgencyIds: number[]
-): Promise<Response> => {
-  return deleteWithUrlAndBody(
-    `/api/justice_counts_tools/agency/${superAgencyId}`,
-    {
-      child_agency_ids: childAgencyIds,
-    }
-  );
-};
-
-export const addChildAgencyToSuperAgency = async (
-  superAgencyId: number,
-  childAgencyId: number
-): Promise<Response> => {
-  return putWithURLAndBody(
-    `/api/justice_counts_tools/agency/${superAgencyId}`,
-    {
-      child_agency_id: childAgencyId,
-    }
-  );
 };

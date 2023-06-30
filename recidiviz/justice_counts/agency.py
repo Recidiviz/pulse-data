@@ -161,3 +161,13 @@ class AgencyInterface:
             .filter(schema.Agency.super_agency_id == agency.id)
             .all()
         )
+
+    @staticmethod
+    def get_child_agencies_by_agency_ids(
+        session: Session, agency_ids: List[int]
+    ) -> List[schema.Agency]:
+        return (
+            session.query(schema.Agency)
+            .filter(schema.Agency.super_agency_id.in_(agency_ids))
+            .all()
+        )

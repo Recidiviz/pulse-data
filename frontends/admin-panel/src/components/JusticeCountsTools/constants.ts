@@ -60,22 +60,12 @@ export type CreateUserRequest = {
   name: string;
 };
 
-export type CreateUserResponse = {
+export type UserResponse = {
   user: User;
 };
 
 export type UsersResponse = {
   users: User[];
-};
-
-export const getRoleFromEmail = (email: string): string => {
-  if (email.includes("@recidiviz.org")) {
-    return "JUSTICE_COUNTS_ADMIN";
-  }
-  if (email.includes("@csg.org")) {
-    return "READ_ONLY";
-  }
-  return "AGENCY_ADMIN";
 };
 
 export enum System {

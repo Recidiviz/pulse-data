@@ -30,17 +30,20 @@ import {
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { getAgencies, getUsers } from "../../AdminPanelAPI";
-import { createUser, updateUser } from "../../AdminPanelAPI/JusticeCountsTools";
+import {
+  createUser,
+  updateUser,
+  updateUsersAccounts,
+} from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   Agency,
   CreateUserRequest,
-  CreateUserResponse,
   ErrorResponse,
-  getRoleFromEmail,
   User,
+  UserResponse,
   UsersResponse,
 } from "./constants";
 
@@ -62,7 +65,7 @@ const UserProvisioningView = (): JSX.Element => {
         const { error } = (await response.json()) as ErrorResponse;
         throw error;
       }
-      const { user } = (await response.json()) as CreateUserResponse;
+      const { user } = (await response.json()) as UserResponse;
       setUsersData({
         users: [...(usersData?.users || []), user],
       });
@@ -75,28 +78,35 @@ const UserProvisioningView = (): JSX.Element => {
     }
   };
 
-  const onAgencyChange = async (user: User, agencyIds: number[]) => {
+  const onAgencyChange = async (updatedUser: User, agencyIds: number[]) => {
     try {
-      const role = getRoleFromEmail(user.email);
-      const response = await updateUser(user, null, agencyIds, role);
+      const response = await updateUsersAccounts(updatedUser, agencyIds);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
-        message.error(`An error occured: ${error}`);
+        message.error(`An error occurred: ${error}`);
         return;
       }
+      const { user } = (await response.json()) as UserResponse;
+      const newUsersData = {
+        users:
+          usersData?.users.map((currUser) =>
+            currUser.auth0_user_id === user.auth0_user_id ? user : currUser
+          ) || [],
+      };
+      setUsersData(newUsersData);
       message.success(
-        `${user.email} moved to ${agenciesData?.agencies
-          .filter((agency) => agencyIds.includes(agency.id))
-          ?.map((agency) => agency.name)}!`
+        `${user.email} moved to ${user?.agencies?.map(
+          (agency) => agency.name
+        )}!`
       );
     } catch (err) {
-      message.error(`An error occured: ${err}`);
+      message.error(`An error occurred: ${err}`);
     }
   };
 
   const onNameChange = async (user: User, name: string) => {
     try {
-      const response = await updateUser(user, name, null, null);
+      const response = await updateUser(user.auth0_user_id, name);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
@@ -198,11 +208,6 @@ const UserProvisioningView = (): JSX.Element => {
             showSearch
             optionFilterProp="children"
             disabled={showSpinner}
-            filterOption={(input, option) =>
-              (option?.children as unknown as string)
-                .toLowerCase()
-                .indexOf(input.toLowerCase()) >= 0
-            }
             onChange={(agencyIds: number[]) => onAgencyChange(user, agencyIds)}
             style={{ minWidth: 250 }}
           >
@@ -217,7 +222,6 @@ const UserProvisioningView = (): JSX.Element => {
       },
     },
   ];
-
   return (
     <>
       <PageHeader title="User Provisioning" />
@@ -229,7 +233,9 @@ const UserProvisioningView = (): JSX.Element => {
           showSizeChanger: true,
           size: "small",
         }}
-        rowKey={(user) => user.auth0_user_id}
+        rowKey={(user) => JSON.stringify(user.auth0_user_id + user.agencies)}
+        // If the user is added to a Superagency, the table will re-render so that we can
+        // can see the cells of the child agencies with the name of the user we added as well.
       />
       <Form
         {...formLayout}
