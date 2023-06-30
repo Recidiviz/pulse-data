@@ -38,18 +38,18 @@ from recidiviz.utils.metadata import local_project_id_override
 # about supervision for each time interval
 
 
-# movement reason ids associated with supervision period starts
-# 9/20: remove 27, 28 as movement start reasons since these are releases from SAI where they're released from MDOC jurisdiction
-start_movement_reason_ids = "'112', '119', '77', '141', '145', '86', '2', '110', '130', '88', '120', '157', '89', '151', '150', '152', '87', '127', '90', '5'"
-
-# movement reason ids associated with supervision period ends
-end_movement_reason_ids = "'112', '119', '29', '122', '21', '148', '118', '25', '22', '38', '78', '39', '31', '126', '40', '146', '143', '134', '147', '124', '123', '115', '23', '42', '32', '121', '129', '142', '41', '36', '30', '125', '140', '106', '103', '102', '105', '128', '104', '133', '137', '136', '91', '13', '11', '159', '158', '12', '15', '14', '10', '16', '111', '19', '92', '138', '156', '89', '151', '37', '108', '18', '17', '79', '24', '139', '154', '131', '149', '144', '114', '153', '113', '95', '5'"
-
 # held in custody movement reasons
 held_in_custody_movement_reason_ids = "'105', '128', '104', '106', '103', '102', '156'"
 
-# revocation movement reasons
-revocation_movement_reason_ids = "'17', '129'"
+# movement reason ids associated with supervision period starts
+# 9/20: remove 27, 28 as movement start reasons since these are releases from SAI where they're released from MDOC jurisdiction
+start_movement_reason_ids = (
+    "'112', '119', '77', '141', '145', '86', '2', '110', '130', '88', '120', '157', '89', '151', '150', '152', '87', '127', '90', '5', "
+    + held_in_custody_movement_reason_ids
+)
+
+# movement reason ids associated with supervision period ends
+end_movement_reason_ids = "'112', '119', '29', '122', '21', '148', '118', '25', '22', '38', '78', '39', '31', '126', '40', '146', '143', '134', '147', '124', '123', '115', '23', '42', '32', '121', '129', '142', '41', '36', '30', '125', '140', '106', '103', '102', '105', '128', '104', '133', '137', '136', '91', '13', '11', '159', '158', '12', '15', '14', '10', '16', '111', '19', '92', '138', '156', '89', '151', '37', '108', '18', '17', '79', '24', '139', '154', '131', '149', '144', '114', '153', '113', '95', '5'"
 
 # 9/20: location types that are supervision offices
 supervision_locs = "'221', '7965', '2145', '224'"
@@ -142,10 +142,7 @@ movement_periods as (
         (date(movement_datetime)) as movement_start, 
         (date(next_movement_date)) as movement_end,
         movement_reason_id,
-        -- if the end of this period is being held in custody but the movement after that is revocation, replace held in custody with revocation as the next movement reason so that the revocation will be capture in our data
-        case when next_movement_reason_id in ({held_in_custody_movement_reason_ids}) and next_next_movement_reason_id in ({revocation_movement_reason_ids}) then next_next_movement_reason_id
-             else next_movement_reason_id
-            end as next_movement_reason_id,
+        next_movement_reason_id,
         dest_name,
         dest_location_type_id,
         offender_external_movement_id
