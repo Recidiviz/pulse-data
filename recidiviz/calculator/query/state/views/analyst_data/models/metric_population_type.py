@@ -99,16 +99,20 @@ METRIC_POPULATIONS_BY_TYPE = {
     MetricPopulationType.JUSTICE_INVOLVED: MetricPopulation(
         population_type=MetricPopulationType.JUSTICE_INVOLVED,
         conditions_dict={
-            # every compartment except
-            # "DEATH", "ERRONEOUS_RELEASE", "INTERNAL_UNKNOWN", "LIBERTY", "SUSPENSION"
-            "compartment_level_1": [
-                "INCARCERATION",
-                "INCARCERATION_OUT_OF_STATE",
-                "SUPERVISION",
-                "SUPERVISION_OUT_OF_STATE",
-                "INVESTIGATION",
-                "PENDING_SUPERVISION",
-                "PENDING_CUSTODY",
+            # every compartment in the union of incarceration and supervision
+            "compartment_level_1": ["INCARCERATION", "SUPERVISION"],
+            "compartment_level_2": [
+                StateSpecializedPurposeForIncarceration.GENERAL.value,
+                StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD.value,
+                StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION.value,
+                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON.value,
+                StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY.value,
+                StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT.value,
+                StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT.value,
+                StateSupervisionPeriodSupervisionType.DUAL.value,
+                StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION.value,
+                StateSupervisionPeriodSupervisionType.PAROLE.value,
+                StateSupervisionPeriodSupervisionType.PROBATION.value,
             ],
         },
     ),
