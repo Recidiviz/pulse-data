@@ -28,7 +28,8 @@ input_columns:
   - position
   - prev_movement_reason_id
   - most_recent_supervision_level_id
-unused_columns: []
+unused_columns:
+  - next_order_type_id_list
 output:
   StatePerson:
     external_ids:
@@ -508,8 +509,6 @@ output:
                         - "28" # Released from SAI - Complete
                         - "27" # Released from SAI - Incomplete
                         - "86" # First Parole
-                        - "152" # Reinstated on Parole from a County Jail
-                        - "150" # Reinstated on Parole from TRV
                         - "88" # Paroled in Custody
                       StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION:
                         - "89" # Reinstated on Parole While at Large
@@ -517,7 +516,9 @@ output:
                       StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION:
                         - "90" # Reparoled While on Same Term
                         - "127" # Reinstated on Probation
-                        - "157" # Probationer Released With Pending  Violation
+                        - "157" # Probationer Released With Pending Violation
+                        - "152" # Reinstated on Parole from a County Jail
+                        - "150" # Reinstated on Parole from TRV
                       StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                         - "110" # Out of State Case Activated in Michigan for Parole Suprvn
                         - "130" # Out of State Case Activated in Michigan for Probation Suprv.
@@ -525,61 +526,25 @@ output:
                       StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
                         - "5" # Transfer Between Offices in Michigan
                         - "1" # Report to Office
+                        # Held in custody admission reasons
+                        - "105" # Held Under Custody - Parole Violation Processing
+                        - "128" # Held Under Custody - Probation Violation Processing
+                        - "104" # Held Under Custody - REP Violation Processing
+                        - "106" # Held Under Custody
+                        - "103" # Held Under Custody - Jail Sentence
+                        - "102" # Held Under Custody - New Criminal Processing
+                        - "156" # Probationer Held Under Custody
                       StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
                         # Not sure exactly how Other Movement is used but it's often from a sherriffs department to a supervision office
                         - "3" # Other Movement
           termination_reason:
             $conditional:
-              # if movement reason is intake and order type id list is currently null but the next period it's not null, then end this as investigation
-              - $if:
-                  $and:
-                    - $equal:
-                        - movement_reason_id
-                        - $literal("2") # Intake
-                    - $is_null: order_type_id_list
-                    - $not_null: period_end
-                    - $not_null: next_order_type_id_list
-                $then: $literal_enum(StateSupervisionPeriodTerminationReason.INVESTIGATION)
-              # if movement reason is intake and legal order is valued and period end date is valued and the next period is a start of probation movement
-              # then mark termination reason as TRANSFER WITHIN STATE because this should already be of type PROBATION
-              - $else_if:
-                  $and:
-                    - $equal:
-                        - movement_reason_id
-                        - $literal("2") # Intake
-                    - $not_null: order_type_id_list
-                    - $not_null: period_end
-                    - $in:
-                        $value: movement_reason_id
-                        $options:
-                          - $literal("77")
-                          - $literal("120")
-                $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
               # if not the two cases above and the next record is associated with the same movement_id, then the next period must have been constructed because some other field changed
-              - $else_if:
+              - $if:
                   $equal:
                     - offender_external_movement_id
                     - next_offender_external_movement_id
                 $then: $literal_enum(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE)
-              # if not any of the above cases and it's intake and the next movement reason is 143 (Discharged After Special Investigation Only), then map to discharge
-              - $else_if:
-                  $and:
-                    - $equal:
-                        - movement_reason_id
-                        - $literal("2") # Intake
-                    - $equal:
-                        - next_movement_reason_id
-                        - $literal("143") # Discharged After Special Investigation Only
-                $then: $literal_enum(StateSupervisionPeriodTerminationReason.DISCHARGE)
-              # if not any of the above cases and it's the last intake period with a valued end date and legal order is still null, then termination reason = investigation
-              - $else_if:
-                  $and:
-                    - $equal:
-                        - movement_reason_id
-                        - $literal("2") # Intake
-                    - $is_null: order_type_id_list
-                    - $not_null: period_end
-                $then: $literal_enum(StateSupervisionPeriodTerminationReason.INVESTIGATION)
               # if this is an absconder situation
               - $else_if:
                   $and:
@@ -607,17 +572,21 @@ output:
                           - $literal("90") # Reparoled While on Same Term
                           - $literal("151") # Reinstated on Parole from Absconder Status
                 $then: $literal_enum(StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION)
-              # else if the movement is "Other Movement" and the destination location is out of state of outside of MDOC jurisdiction, map to TRANSFER_TO_OTHER_JURISDICTION
+              # else if the movement is "Other Movement" or IC rejected and the destination location is out of state of outside of MDOC jurisdiction, map to TRANSFER_TO_OTHER_JURISDICTION
               - $else_if:
                   $and:
-                    - $equal:
-                        - next_movement_reason_id
-                        - $literal("3")
+                    - $in:
+                        $value: next_movement_reason_id
+                        $options:
+                          - $literal("3") # Other Movement
+                          - $literal("137") # Interstate Compact Transfer Request Rescinded
+                          - $literal("133") # Interstate Compact Case Rejected for Supervision
+                          - $literal("136") # Jurisdiction Activated in Error
                     - $in:
                         $value: dest_location_type_id
                         $options:
-                          - $literal("2155")
-                          - $literal("5772")
+                          - $literal("2155") # State
+                          - $literal("5772") # Outside of MDOC Jurisdiction
                 $then:
                   $enum_mapping:
                     $raw_text:
@@ -631,6 +600,12 @@ output:
                       StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
                         - "next_movement_reason_id-3-destination_type-2155"
                         - "next_movement_reason_id-3-destination_type-5772"
+                        - "next_movement_reason_id-137-destination_type-2155"
+                        - "next_movement_reason_id-137-destination_type-5772"
+                        - "next_movement_reason_id-133-destination_type-2155"
+                        - "next_movement_reason_id-133-destination_type-5772"
+                        - "next_movement_reason_id-136-destination_type-2155"
+                        - "next_movement_reason_id-136-destination_type-5772"
               # else map based on next_movement_reason_id
               - $else:
                   $enum_mapping:
@@ -669,6 +644,7 @@ output:
                         - "123" # Discharged Sentenced to Jail Only
                         - "146" # Discharge From Prison Under HYTA Without Probation
                         - "143" # Discharged After Special Investigation Only
+                        - "28" # Released from SAI - Complete
                       StateSupervisionPeriodTerminationReason.EXPIRATION:
                         - "32" # Discharged from Parole
                         - "121" # Discharged from Probation
@@ -698,7 +674,6 @@ output:
                         - "105" # Held Under Custody - Parole Violation Processing
                         - "128" # Held Under Custody - Probation Violation Processing
                         - "104" # Held Under Custody - REP Violation Processing
-                        - "37" # Released to Court on Writ
                         - "108" # Released to Mntl Hlth Hospital/ Other Crimnl Justce Agencies
                         - "79" # Returned to Court from Bond
                         - "95" # Temporary Release - Outside Hospital/Funerals Only
@@ -715,14 +690,8 @@ output:
                         - "118" # Client Number Reassignment
                         - "5" # Transfer Between Offices in Michigan
                         - "1" # Report to Office
-                      StateSupervisionPeriodTerminationReason.VACATED:
-                        - "148" # Charge(s) Dismissed by Court
-                        - "25" # Conviction Reversed by Court
-                        - "23" # Discharged by Court - Nolle Prosequi
-                      StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
-                        # NOTE: Not sure how to categorize these (since these are sort of unexpected)
-                        #       but they almost always happen after intake or absconsion
-                        #      (and therefore would be taken care of in the first two conditions of this mapping)
+                        # NOTE: Not sure how to categorize these exactly (since these are sort of unexpected)
+                        #       but they almost always happen after intake or absconsion (which would get taken care of above)
                         - "86" # First Parole
                         - "127" # Reinstated on Probation
                         - "88" # Paroled in Custody
@@ -733,22 +702,27 @@ output:
                         - "77" # Court Resentenced to Probation
                         - "87" # Reinstated on Parole from the Institution
                         - "145" # Discharge From Prison Under HYTA & Continued on Probation
-                        - "28" # Released from SAI - Complete
                         - "152" # Reinstated on Parole from a County Jail
                         - "141" # Disch. Prison MAX - Transfer for Probation
                         - "27" # Released from SAI - Incomplete
                         - "130" # Out of State Case Activated in Michigan for Probation Suprv.
-                        # NOTE: Only appears in really old data so ignoring for now
-                        - "21" # CRP Additional Felony Out to Court (REP Only)
-                        - "140" # Failure To Appear For Sentencing
-                        - "150" # Reinstated on Parole from TRV
-                        # Not sure how to categorize these
-                        - "138" # Plea Withdrawn
-                        - "136" # Jurisdiction Activated in Error
-                        - "91" # Limited Furlough
                         - "19" # Out of State Parolee Sentenced in Michigan
                         - "133" # Interstate Compact Case Rejected for Supervision
                         - "137" # Interstate Compact Transfer Request Rescinded
+                        - "37" # Released to Court on Writ
+                        - "150" # Reinstated on Parole from TRV
+                        - "136" # Jurisdiction Activated in Error
+                      StateSupervisionPeriodTerminationReason.VACATED:
+                        - "148" # Charge(s) Dismissed by Court
+                        - "25" # Conviction Reversed by Court
+                        - "23" # Discharged by Court - Nolle Prosequi
+                      StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                        # NOTE: Only appears in really old data so ignoring for now
+                        - "21" # CRP Additional Felony Out to Court (REP Only)
+                        - "140" # Failure To Appear For Sentencing
+                        # Not sure how to categorize these
+                        - "138" # Plea Withdrawn
+                        - "91" # Limited Furlough
                         # If we've reached this part of the logic, then the only type of "Other Movement" transfer that's left are those that involve a supervision office
                         # but otherwise we don't have much information
                         - "3" # Other Movement
@@ -768,6 +742,18 @@ output:
                         - dest_location_type_id
                         - $literal("2155")
                 $then: $literal_enum(StateSupervisionLevel.INTERNAL_UNKNOWN)
+              - $else_if:
+                  $in:
+                    $value: movement_reason_id
+                    $options:
+                      - $literal("105") # Held Under Custody - Parole Violation Processing
+                      - $literal("128") # Held Under Custody - Probation Violation Processing
+                      - $literal("104") # Held Under Custody - REP Violation Processing
+                      - $literal("106") # Held Under Custody
+                      - $literal("103") # Held Under Custody - Jail Sentence
+                      - $literal("102") # Held Under Custody - New Criminal Processing
+                      - $literal("156") # Probationer Held Under Custody
+                $then: $literal_enum(StateSupervisionLevel.IN_CUSTODY)
               - $else:
                   $enum_mapping:
                     $raw_text:
