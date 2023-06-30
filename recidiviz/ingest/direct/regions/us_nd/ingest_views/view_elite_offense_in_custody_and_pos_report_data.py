@@ -45,7 +45,7 @@ FROM {elite_offense_in_custody_and_pos_report_data}
 -- Excludes entries with malformed dates that make them appear to have occurred before 1900.
 SELECT * 
 FROM all_entries
-WHERE CAST(INCIDENT_DATE AS DATE) > CAST('1900-01-01' AS DATE)
+WHERE CAST(INCIDENT_DATE AS DATETIME) > CAST('1900-01-01' AS DATETIME)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
