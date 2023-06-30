@@ -205,21 +205,28 @@ SELECT
 FROM
     sub_sessions_dedup a
 LEFT JOIN
-    `{{project_id}}.normalized_state.state_staff_external_id` b
+(
+    # Mapping of staff_id to external_id based on legacy id_types
+    SELECT
+        staff_id,
+        external_id,
+    FROM
+        `{{project_id}}.normalized_state.state_staff_external_id` b
+    INNER JOIN
+        `{{project_id}}.sessions.state_to_legacy_supervising_officer_external_id_type_materialized` c
+    USING
+        (state_code, id_type)
+    -- Pick the largest (usually most recent) external_id for the small subset of staff_id's
+    -- having more than one external_id for a single id_type.
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY staff_id 
+        ORDER BY external_id DESC
+    ) = 1
+) b
 USING
-    (state_code, staff_id)
-INNER JOIN
-    `{{project_id}}.sessions.state_to_legacy_supervising_officer_external_id_type_materialized` c
-USING
-    (state_code, id_type)
+    (staff_id)
 WHERE
     role_type = "SUPERVISION_OFFICER"
--- Pick the largest (usually most recent) external_id for the small subset of staff_id's
--- having more than one external_id for a single id_type.
-QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY a.staff_id 
-    ORDER BY b.external_id DESC
-) = 1
 """
 
 SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
