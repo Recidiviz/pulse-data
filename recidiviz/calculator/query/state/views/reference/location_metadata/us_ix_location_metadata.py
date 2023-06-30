@@ -63,6 +63,11 @@ SELECT
             WHEN UPPER(LocationName) like 'DISTRICT %' AND UPPER(LocationName) like '%-%' THEN REPLACE(SPLIT(UPPER(LocationName), ' - ')[OFFSET(0)], 'OFFICE ', '')
             WHEN UPPER(LocationName) like 'DISTRICT %' AND UPPER(LocationName) like '%,%' THEN REPLACE(SPLIT(UPPER(LocationName), ',')[OFFSET(0)], 'OFFICE ', '') 
             ELSE NULL
+          END AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+          CASE 
+            WHEN UPPER(LocationName) like 'DISTRICT %' AND UPPER(LocationName) like '%-%' THEN REPLACE(SPLIT(UPPER(LocationName), ' - ')[OFFSET(0)], 'OFFICE ', '')
+            WHEN UPPER(LocationName) like 'DISTRICT %' AND UPPER(LocationName) like '%,%' THEN REPLACE(SPLIT(UPPER(LocationName), ',')[OFFSET(0)], 'OFFICE ', '') 
+            ELSE NULL
           END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value}
         )
       )
@@ -89,6 +94,11 @@ SELECT
           STRUCT(
             fac_cd AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
             UPPER(fac_ldesc) AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
+            CASE 
+              WHEN UPPER(fac_ldesc) like 'DISTRICT%' and UPPER(fac_ldesc) like '%-%' THEN REPLACE(SPLIT(UPPER(fac_ldesc), '-')[OFFSET(0)], 'OFFICE ', '')
+              WHEN UPPER(fac_ldesc) like 'DISTRICT%' and UPPER(fac_ldesc) like '%,%' THEN REPLACE(SPLIT(UPPER(fac_ldesc), ',')[OFFSET(0)], 'OFFICE ', '')
+              ELSE NULL
+            END AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
             CASE 
               WHEN UPPER(fac_ldesc) like 'DISTRICT%' and UPPER(fac_ldesc) like '%-%' THEN REPLACE(SPLIT(UPPER(fac_ldesc), '-')[OFFSET(0)], 'OFFICE ', '')
               WHEN UPPER(fac_ldesc) like 'DISTRICT%' and UPPER(fac_ldesc) like '%,%' THEN REPLACE(SPLIT(UPPER(fac_ldesc), ',')[OFFSET(0)], 'OFFICE ', '')
