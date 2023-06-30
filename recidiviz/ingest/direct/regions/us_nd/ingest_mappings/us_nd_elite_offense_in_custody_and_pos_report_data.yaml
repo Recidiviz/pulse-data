@@ -78,6 +78,7 @@ output:
                         - MAILVIDEO
                         - GANG
                         - GANGREL
+                        - BRIBERY
                       StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO:
                         - CONV
                       StateIncarcerationIncidentType.VIOLENCE:
@@ -157,6 +158,7 @@ output:
                                     - LINUNITREC
                                     - PRAIR_LOSS
                                     - CABLE
+                                    - LOSS_EMESS
                                   StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
                                     - RES
                                     - PAY
