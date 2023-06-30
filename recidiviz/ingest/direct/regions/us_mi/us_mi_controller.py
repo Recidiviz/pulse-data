@@ -22,7 +22,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import environment
 
 
 class UsMiController(BaseDirectIngestController):
@@ -56,12 +55,7 @@ class UsMiController(BaseDirectIngestController):
             "incarceration_periods_v3",
             "state_staff",
             "state_staff_role_period",
+            "assessments_v3",
         ]
-
-        if environment.in_gcp_production():
-            tags.extend(["assessments_v2"])
-
-        else:
-            tags.extend(["assessments_v3"])
 
         return tags
