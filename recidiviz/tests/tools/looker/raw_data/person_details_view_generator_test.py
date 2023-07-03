@@ -16,7 +16,12 @@
 # =============================================================================
 """Unit tests for person details LookML View generation"""
 
+import filecmp
+import os
+import tempfile
 import unittest
+
+from freezegun import freeze_time
 
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     generate_lookml_views,
@@ -24,9 +29,24 @@ from recidiviz.tools.looker.raw_data.person_details_view_generator import (
 
 
 class LookMLViewTest(unittest.TestCase):
-    """Tests LookML generation function"""
+    """Tests LookML view generation functions"""
 
+    @freeze_time("2000-06-30")
     def test_generate_lookml_views(self) -> None:
-        # TODO(#21937): This is a placeholder, fill in a test of actual functionality
-        # Test passes if this doesn't crash
-        generate_lookml_views()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            generate_lookml_views(tmp_dir)
+            fixtures_dir = os.path.join(os.path.dirname(__file__), "fixtures")
+
+            for fixtures_path, _, filenames in os.walk(fixtures_dir):
+                # Get the fixtures inner directory corresponding to the temp inner directory
+                relpath = os.path.relpath(fixtures_path, start=fixtures_dir)
+                tmp_path = os.path.join(tmp_dir, relpath)
+
+                # Ensure every .lkml file in the fixture directory is equal
+                # byte-by-byte to the one in the temp directory
+                lkml_filenames = filter(lambda name: name.endswith(".lkml"), filenames)
+                _, mismatch, errors = filecmp.cmpfiles(
+                    tmp_path, fixtures_path, lkml_filenames, shallow=False
+                )
+                self.assertFalse(mismatch)
+                self.assertFalse(errors)
