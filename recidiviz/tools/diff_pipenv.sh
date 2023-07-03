@@ -39,11 +39,22 @@ expected=$( (pipenv requirements --dev || pipenv lock -r --dev) \
 # - Sort, in case the above affected the sort order
 installed=$(pipenv run pip freeze | tr _ - | tr "[:upper:]" "[:lower:]" | sort) || exit_on_fail
 
+
+function process_explicit_exceptions {
+  # As of pipenv==2023.7.3, `pipenv requirements` does not try to fetch files from VCS requirements
+  # This means its output differs from `pip freeze` which includes metadata about built package wheels
+  # Explicitly except any editable VCS packages from the Pipfile
+  echo "$0" | grep -v "opencensus-ext-flask"
+}
+
 # Diff returns 1 if there are differences and >1 if an error occurred. We only want to fail here if there was an actual
 # error.
 ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}")
 ACCEPTABLE_RETURN_CODES=(0 1)
+expected=$(process_explicit_exceptions echo "$expected")
+installed=$(process_explicit_exceptions echo "$installed")
 differences=$(diff <(echo "$expected") <(echo "${installed}") --ignore-space-change) || exit_on_fail
+## Adds explicit exceptions for known differences between pip freeze and pipenv requirements output
 ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}")
 
 # If there are packages from the lock file that are not installed, print an error and fail.
