@@ -6,28 +6,28 @@ primary_key_cols:
   - PBCaseTypeId
 columns:
   - name: PBCaseTypeId
-    description: TODO(#19673)
+    description: PB case type ID
   - name: PBCaseTypeDesc
-    description: TODO(#19673)
+    description: PB case type desc
   - name: Abbreviation
-    description: TODO(#19673)
+    description: Abbreviation
   - name: Inactive
-    description: TODO(#19673)
+    description: Inactive boolean
   - name: Locking
-    description: TODO(#19673)
+    description: Locking number
   - name: InsertUserId
-    description: TODO(#19673)
+    description: Employee ID of user who inputed
     is_pii: True
   - name: InsertDate
-    description: TODO(#19673)
+    description: Insert date
     is_datetime: True
   - name: UpdateUserId
-    description: TODO(#19673)
+    description: Employee ID of user who updated
     is_pii: True
   - name: UpdateDate
-    description: TODO(#19673)
+    description: Update date
     is_datetime: True
   - name: IsCustom
-    description: TODO(#19673)
+    description: Is custom boolean
   - name: SystemRow
-    description: TODO(#19673)
+    description: System row

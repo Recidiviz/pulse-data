@@ -6,26 +6,24 @@ primary_key_cols:
   - BOPVoteValueId
 columns:
   - name: BOPVoteValueId
-    description: TODO(#19673)
+    description: ID of BOP vote value
   - name: BOPVoteValueName
-    description: TODO(#19673)
+    description: Name of BOP vote value
   - name: Inactive
-    description: TODO(#19673)
+    description: Inactive boolean
   - name: Locking
-    description: TODO(#19673)
+    description: Locking number
   - name: InsertDate
-    description: TODO(#19673)
+    description: Date of insert
     is_datetime: True
   - name: InsertUserId
-    description: TODO(#19673)
+    description: User ID of employee who insterted
     is_pii: True
   - name: UpdateDate
-    description: TODO(#19673)
+    description: Date of update
     is_datetime: True
   - name: UpdateUserId
-    description: TODO(#19673)
+    description: User ID of employee who updated
     is_pii: True
   - name: SystemRow
-    description: TODO(#19673)
   - name: IsCustom
-    description: TODO(#19673)
