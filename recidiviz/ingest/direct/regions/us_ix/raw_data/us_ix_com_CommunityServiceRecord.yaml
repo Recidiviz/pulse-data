@@ -6,37 +6,37 @@ primary_key_cols:
   - CommunityServiceRecordId
 columns:
   - name: CommunityServiceRecordId
-    description: TODO(#19673)
+    description: Community service record ID
   - name: OffenderId
-    description: TODO(#19673)
+    description: An ID to reference a specific individual in who is in custody or under supervision.
     is_pii: True
   - name: StartDate
-    description: TODO(#19673)
+    description: Start date
     is_datetime: True
   - name: EndDate
-    description: TODO(#19673)
+    description: End date
     is_datetime: True
   - name: TimeServedSeconds
-    description: TODO(#19673)
+    description: Time served in seconds
   - name: WorkSite
-    description: TODO(#19673)
+    description: Work site name
     is_pii: True
   - name: Comment
-    description: TODO(#19673)
+    description: Text of any comment
     is_pii: True
   - name: Inactive
-    description: TODO(#19673)
+    description: Inactive boolean
   - name: Locking
-    description: TODO(#19673)
+    description: Locking number
   - name: InsertUserId
-    description: TODO(#19673)
+    description: User ID of employee who inserted
     is_pii: True
   - name: InsertDate
-    description: TODO(#19673)
+    description: Insert date
     is_datetime: True
   - name: UpdateUserId
-    description: TODO(#19673)
+    description: User ID of employee who updated
     is_pii: True
   - name: UpdateDate
-    description: TODO(#19673)
+    description: Update date
     is_datetime: True

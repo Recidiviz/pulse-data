@@ -1,71 +1,115 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: bop_BOPHearing
-file_description: Atlas table containing records of each parole board hearing
+file_description: |-
+  Atlas table containing records of each parole board hearing
 data_classification: source
 primary_key_cols:
   - BOPHearingId
 columns:
   - name: BOPHearingId
-    description: TODO(#19673)
+    description: |-
+      Bureau of Prisons (BOP) hearing ID
   - name: PBCaseId
-    description: TODO(#19673)
+    description: |-
+      Parole Board case ID
+    is_pii: True
   - name: BOPDocketId
-    description: TODO(#19673)
+    description: |-
+      BOP Docket ID
   - name: BOPHearingTypeId
-    description: TODO(#19673)
+    description: |-
+      ID for the type of BOP hearing
+    known_values:
+      - value: 10
+        description: Absentia
+      - value: 3
+        description: Hearing
+      - value: 4
+        description: HOR Review
+      - value: 5
+        description: Review
+      - value: 6
+        description: Disposition Review
+      - value: 7
+        description: Revocation Hearing
+      - value: 8
+        description: Executive Decision
+      - value: 9
+        description: Top
   - name: HearingStartDate
-    description: TODO(#19673)
+    description: |-
+      Start date of hearing
     is_datetime: True
   - name: ExecutiveStartDate
-    description: TODO(#19673)
+    description: |-
+      executive start date
     is_datetime: True
   - name: HearingResumeDate
-    description: TODO(#19673)
+    description: |-
+      Date the hearing resumes
     is_datetime: True
   - name: HearingEndDate
-    description: TODO(#19673)
+    description: |-
+      End date of hearing
     is_datetime: True
   - name: TentativeParoleDate
-    description: TODO(#19673)
+    description: |-
+      Tentative date for parole
     is_datetime: True
   - name: EstimateHearingDate
-    description: TODO(#19673)
+    description: |-
+      Estimated date of hearing
     is_datetime: True
   - name: DecisionSubmitDate
-    description: TODO(#19673)
+    description: |-
+      Date decision was submitted
     is_datetime: True
   - name: ReinstateDate
-    description: TODO(#19673)
+    description: |-
+      Date reinstated
     is_datetime: True
   - name: Minute
-    description: TODO(#19673)
+    description: |-
+      Duration in minutes
     is_pii: True
   - name: Comment
-    description: TODO(#19673)
+    description: |-
+      Text of comments
     is_pii: True
   - name: Inactive
-    description: TODO(#19673)
+    description: |-
+      Inactive boolean
   - name: Locking
-    description: TODO(#19673)
+    description: |-
+      Locking number
   - name: InsertDate
-    description: TODO(#19673)
+    description: |-
+      Date of insert
     is_datetime: True
   - name: InsertUserId
-    description: TODO(#19673)
+    description: |-
+      Insert ID
     is_pii: True
   - name: UpdateDate
-    description: TODO(#19673)
+    description: |-
+      Update date
     is_datetime: True
   - name: UpdateUserId
-    description: TODO(#19673)
+    description: |-
+      User ID of employee who updated
     is_pii: True
   - name: ForfeitureDays
-    description: TODO(#19673)
+    description: |-
+      Days of forfeiture
   - name: SentencingCaseNumber
-    description: TODO(#19673)
+    description: |-
+      Sentencing Case number, TODO(#19673) to determine if PII
+
   - name: ForfeitureFinalizedDate
-    description: TODO(#19673)
+    description: |-
+      Date of finalized forfeiture
     is_datetime: True
   - name: ForfeitureRecordedDate
-    description: TODO(#19673)
+    description: |-
+      Date of recorded forfeiture
     is_datetime: True
