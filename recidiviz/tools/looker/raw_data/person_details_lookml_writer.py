@@ -47,8 +47,7 @@ def main(looker_dir: str) -> None:
     # TODO(#21937): Generate views here
     # TODO(#21938): Generate explores here
     # TODO(#21939): Generate dashboards here
-    print(looker_dir)
-    generate_lookml_views()
+    generate_lookml_views(looker_dir)
 
 
 if __name__ == "__main__":
