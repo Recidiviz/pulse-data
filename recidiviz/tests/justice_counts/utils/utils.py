@@ -248,6 +248,45 @@ class JusticeCountsSchemaTestObjects:
             last_modified_at=datetime.datetime.fromisoformat("2023-07-05T08:00:00"),
             created_at=datetime.date.fromisoformat("2023-12-30"),
         )
+        self.test_report_annual_three = schema.Report(
+            source=self.test_agency_A,
+            type="ANNUAL",
+            instance="2023 Annual Metrics",
+            status=schema.ReportStatus.DRAFT,
+            date_range_start=datetime.date.fromisoformat("2022-01-01"),
+            date_range_end=datetime.date.fromisoformat("2023-01-01"),
+            modified_by=[self.test_user_B.id],
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+            last_modified_at=datetime.datetime.fromisoformat("2023-07-05T08:00:00"),
+            created_at=datetime.date.fromisoformat("2023-12-30"),
+        )
+        self.test_report_annual_four = schema.Report(
+            source=self.test_agency_A,
+            type="ANNUAL",
+            instance="2023 Annual Metrics",
+            status=schema.ReportStatus.DRAFT,
+            date_range_start=datetime.date.fromisoformat("2023-06-01"),
+            date_range_end=datetime.date.fromisoformat("2024-06-01"),
+            modified_by=[self.test_user_B.id],
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+            last_modified_at=datetime.datetime.fromisoformat("2023-07-05T08:00:00"),
+            created_at=datetime.date.fromisoformat("2023-12-30"),
+        )
+        self.test_report_annual_five = schema.Report(
+            source=self.test_agency_A,
+            type="ANNUAL",
+            instance="2023 Annual Metrics",
+            status=schema.ReportStatus.DRAFT,
+            date_range_start=datetime.date.fromisoformat("2021-06-01"),
+            date_range_end=datetime.date.fromisoformat("2022-06-01"),
+            modified_by=[self.test_user_B.id],
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+            last_modified_at=datetime.datetime.fromisoformat("2023-07-05T08:00:00"),
+            created_at=datetime.date.fromisoformat("2023-12-30"),
+        )
         self.test_report_monthly_C = schema.Report(
             source=self.test_agency_C,
             type="MONTHLY",

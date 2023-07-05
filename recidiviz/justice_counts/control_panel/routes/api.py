@@ -544,6 +544,136 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    ### Home ###
+
+    @api_blueprint.route("/home/<agency_id>", methods=["GET"])
+    @auth_decorator
+    def get_home_metadata(agency_id: int) -> Response:
+        """Get the agency metrics, latest annual and monthly reports
+        to power the task cards in the homepage.
+
+        Returns:
+        {
+            agency_metrics: List[Metrics],
+            monthly_report: Report,
+            annual_reports: Dict[<Starting Month>, Report]
+        }
+        """
+        try:
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
+
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=agency_id
+            )
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=current_session, agency_id=int(agency_id)
+            )
+            sorted_reports = sorted(
+                reports, key=lambda report: report.date_range_start, reverse=True
+            )
+            # Find the first (latest) monthly report in the sorted reports list
+            latest_monthly_report = next(
+                (
+                    report
+                    for report in sorted_reports
+                    if ReportInterface.get_reporting_frequency(report).value
+                    == "MONTHLY"
+                ),
+                None,
+            )
+            # Get a list of all annual reports
+            annual_reports: List[schema.Report] = [
+                report
+                for report in sorted_reports
+                if ReportInterface.get_reporting_frequency(report).value == "ANNUAL"
+            ]
+            # Build a dictionary to group annual reports by starting month (Jan == 1, Dec == 12)
+            # e.g. { 1: [<Annual Reports>], 2: ... }
+            latest_annual_reports: dict[int, list] = defaultdict(list)
+
+            for report in annual_reports:
+                starting_month = report.date_range_start.month
+                latest_annual_reports[starting_month].append(report)
+
+            for starting_month, reports in latest_annual_reports.items():
+                latest_annual_reports[starting_month] = [
+                    sorted(
+                        reports,
+                        key=lambda report: report.date_range_start,
+                        reverse=True,
+                    )
+                ][0]
+
+            # Prep our latest monthly & annual reports to be jsonified
+            latest_monthly_report_definition_json = {}
+            latest_annual_report_definition_json = {}
+            latest_annual_reports_json = {}
+
+            if latest_monthly_report is not None:
+                latest_monthly_report_metrics = ReportInterface.get_metrics_by_report(
+                    session=current_session,
+                    report=latest_monthly_report,
+                )
+                latest_monthly_report_definition_json = (
+                    ReportInterface.to_json_response(
+                        report=latest_monthly_report,
+                        editor_id_to_json={},
+                    )
+                )
+                latest_monthly_report_metrics_json = [
+                    report_metric.to_json(
+                        entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
+                    )
+                    for report_metric in latest_monthly_report_metrics
+                ]
+                latest_monthly_report_definition_json[
+                    "metrics"
+                ] = latest_monthly_report_metrics_json
+
+            for month, annual_reports_list in latest_annual_reports.items():
+                latest_annual_report = annual_reports_list[0]
+                latest_annual_report_metrics = ReportInterface.get_metrics_by_report(
+                    session=current_session,
+                    report=latest_annual_report,
+                )
+                latest_annual_report_definition_json = ReportInterface.to_json_response(
+                    report=latest_annual_report,
+                    editor_id_to_json={},
+                )
+                latest_annual_report_metrics_json = [
+                    report_metric.to_json(
+                        entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
+                    )
+                    for report_metric in latest_annual_report_metrics
+                ]
+                latest_annual_report_definition_json[
+                    "metrics"
+                ] = latest_annual_report_metrics_json
+                latest_annual_reports_json[month] = latest_annual_report_definition_json
+
+            agency_metrics = DatapointInterface.get_metric_settings_by_agency(
+                session=current_session, agency=agency
+            )
+            agency_metrics_json = [
+                metric.to_json(entry_point=DatapointGetRequestEntryPoint.METRICS_TAB)
+                for metric in agency_metrics
+            ]
+
+            return jsonify(
+                {
+                    "agency_metrics": agency_metrics_json,
+                    "monthly_report": latest_monthly_report_definition_json,
+                    "annual_reports": latest_annual_reports_json,
+                }
+            )
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     ### Reports Overview ###
 
     @api_blueprint.route("/agencies/<agency_id>/reports", methods=["GET"])
