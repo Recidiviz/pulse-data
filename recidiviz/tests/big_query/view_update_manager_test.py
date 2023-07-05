@@ -910,7 +910,6 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
             deployed_view_builders=mock.ANY,
             dataset_override_prefix=None,
             runtime_sec=mock.ANY,
-            cloud_task_id="AIRFLOW_VIEW_UPDATE",
         )
 
     @mock.patch(
@@ -932,5 +931,4 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
             deployed_view_builders=mock.ANY,
             dataset_override_prefix="test_prefix",
             runtime_sec=mock.ANY,
-            cloud_task_id="AIRFLOW_VIEW_UPDATE",
         )

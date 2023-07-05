@@ -81,13 +81,11 @@ def execute_cloud_sql_to_bq_refresh(
         success_persister = RefreshBQDatasetSuccessPersister(
             bq_client=BigQueryClientImpl()
         )
-        # TODO(#21537) Remove the use of `cloud_task_id` when all tasks have been moved to Kubernetes.
         success_persister.record_success_in_bq(
             schema_type=schema_type,
             direct_ingest_instance=ingest_instance,
             dataset_override_prefix=sandbox_prefix,
             runtime_sec=runtime_sec,
-            cloud_task_id="AIRFLOW_FEDERATED_REFRESH",
         )
     finally:
         lock_manager.release_lock(schema_type, ingest_instance)

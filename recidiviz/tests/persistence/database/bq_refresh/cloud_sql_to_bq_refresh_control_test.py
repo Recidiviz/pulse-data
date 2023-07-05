@@ -104,7 +104,6 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
             direct_ingest_instance: DirectIngestInstance,
             dataset_override_prefix: Optional[str],
             runtime_sec: int,
-            cloud_task_id: str,
         ) -> None:
             return None
 
@@ -217,7 +216,6 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
             direct_ingest_instance: DirectIngestInstance,
             dataset_override_prefix: Optional[str],
             runtime_sec: int,
-            cloud_task_id: str,
         ) -> None:
             raise ValueError
 
@@ -342,7 +340,6 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
             direct_ingest_instance=instance_called_with,
             dataset_override_prefix=sandbox_called_with,
             runtime_sec=mock.ANY,
-            cloud_task_id="AIRFLOW_FEDERATED_REFRESH",
         )
         self.mock_lock_manager.release_lock.assert_called_with(
             schema_type=schema_called_with,

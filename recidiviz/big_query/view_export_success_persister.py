@@ -23,7 +23,6 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.success_persister import (
-    CLOUD_TASK_ID_COL,
     SUCCESS_TIMESTAMP_COL,
     SuccessPersister,
 )
@@ -48,14 +47,11 @@ class MetricViewDataExportSuccessPersister(SuccessPersister):
         self,
         export_job_name: str,
         runtime_sec: int,
-        cloud_task_id: str,
         state_code: Optional[str],
         destination_override: Optional[str],
         sandbox_dataset_prefix: Optional[str],
     ) -> None:
-
         success_row = {
-            CLOUD_TASK_ID_COL: cloud_task_id,
             SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
             EXPORT_JOB_NAME_COL: export_job_name,
             STATE_CODE_COL: state_code,
@@ -68,11 +64,6 @@ class MetricViewDataExportSuccessPersister(SuccessPersister):
 
     def _get_table_schema(self) -> List[bigquery.SchemaField]:
         return [
-            bigquery.SchemaField(
-                name=CLOUD_TASK_ID_COL,
-                field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="REQUIRED",
-            ),
             bigquery.SchemaField(
                 name=SUCCESS_TIMESTAMP_COL,
                 field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,

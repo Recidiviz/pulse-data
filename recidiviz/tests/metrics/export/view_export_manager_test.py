@@ -535,7 +535,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             destination_override=destination_override,
             sandbox_dataset_prefix=sandbox_prefix,
             runtime_sec=mock.ANY,
-            cloud_task_id="AIRFLOW_METRIC_EXPORT",
         )
 
     @mock.patch(

@@ -33,7 +33,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 
 VIEW_UPDATE_METADATA_DATASET = "view_update_metadata"
 
-CLOUD_TASK_ID_COL = "cloud_task_id"
 SUCCESS_TIMESTAMP_COL = "success_timestamp"
 NUM_DEPLOYED_VIEWS_COL = "num_deployed_views"
 
@@ -81,12 +80,10 @@ class AllViewsUpdateSuccessPersister(SuccessPersister):
         deployed_view_builders: List[BigQueryViewBuilder],
         dataset_override_prefix: Optional[str],
         runtime_sec: int,
-        cloud_task_id: str,
     ) -> None:
         num_deployed_views = len(deployed_view_builders)
 
         success_row = {
-            CLOUD_TASK_ID_COL: cloud_task_id,
             SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
             DATASET_OVERRIDE_PREFIX: dataset_override_prefix,
             NUM_DEPLOYED_VIEWS_COL: num_deployed_views,
@@ -97,11 +94,6 @@ class AllViewsUpdateSuccessPersister(SuccessPersister):
 
     def _get_table_schema(self) -> List[bigquery.SchemaField]:
         return [
-            bigquery.SchemaField(
-                name=CLOUD_TASK_ID_COL,
-                field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="REQUIRED",
-            ),
             bigquery.SchemaField(
                 name=SUCCESS_TIMESTAMP_COL,
                 field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
@@ -137,11 +129,8 @@ class RefreshBQDatasetSuccessPersister(SuccessPersister):
         direct_ingest_instance: DirectIngestInstance,
         dataset_override_prefix: Optional[str],
         runtime_sec: int,
-        cloud_task_id: str,
     ) -> None:
-
         success_row = {
-            CLOUD_TASK_ID_COL: cloud_task_id,
             SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
             SCHEMA_TYPE_COL: schema_type.value,
             DIRECT_INGEST_INSTANCE_COL: direct_ingest_instance.value,
@@ -153,11 +142,6 @@ class RefreshBQDatasetSuccessPersister(SuccessPersister):
 
     def _get_table_schema(self) -> List[bigquery.SchemaField]:
         return [
-            bigquery.SchemaField(
-                name=CLOUD_TASK_ID_COL,
-                field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="REQUIRED",
-            ),
             bigquery.SchemaField(
                 name=SUCCESS_TIMESTAMP_COL,
                 field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,

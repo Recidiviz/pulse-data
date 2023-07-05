@@ -114,7 +114,6 @@ def execute_validation_request(
     store_validation_run_completion_in_big_query(
         validation_run_id=run_id,
         num_validations_run=num_validations_run,
-        cloud_task_id="AIRFLOW_VALIDATION",
         validations_runtime_sec=runtime_sec,
         sandbox_dataset_prefix=sandbox_prefix,
         ingest_instance=ingest_instance,
