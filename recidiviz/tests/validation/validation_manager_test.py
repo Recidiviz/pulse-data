@@ -241,7 +241,6 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(5, len(results))
 
         mock_store_run_success.assert_called_with(
-            cloud_task_id="AIRFLOW_VALIDATION",
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
@@ -295,7 +294,6 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(5, len(results))
 
         mock_store_run_success.assert_called_with(
-            cloud_task_id="AIRFLOW_VALIDATION",
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
@@ -394,7 +392,6 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(5, len(results))
 
         mock_store_run_success.assert_called_with(
-            cloud_task_id="AIRFLOW_VALIDATION",
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
@@ -504,7 +501,6 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(5, len(results))
 
         mock_store_run_success.assert_called_with(
-            cloud_task_id="AIRFLOW_VALIDATION",
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
@@ -560,7 +556,6 @@ class TestExecuteValidationRequest(TestCase):
         self.assertEqual(0, len(results))
 
         mock_store_run_success.assert_called_with(
-            cloud_task_id="AIRFLOW_VALIDATION",
             num_validations_run=0,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,

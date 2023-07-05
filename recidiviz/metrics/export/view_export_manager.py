@@ -156,14 +156,12 @@ def execute_metric_view_data_export(
     success_persister = MetricViewDataExportSuccessPersister(
         bq_client=BigQueryClientImpl()
     )
-    # TODO(#21537) Remove the use of `cloud_task_id` when all tasks have been moved to Kubernetes.
     success_persister.record_success_in_bq(
         export_job_name=export_job_name,
         state_code=state_code.value if state_code else None,
         destination_override=destination_override,
         sandbox_dataset_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
-        cloud_task_id="AIRFLOW_METRIC_EXPORT",
     )
     logging.info("Finished saving success record to database.")
 

@@ -621,7 +621,6 @@ class TestValidationResultStorage(unittest.TestCase):
         store_validation_run_completion_in_big_query(
             validation_run_id="abc123",
             num_validations_run=10,
-            cloud_task_id="my-task-id",
             validations_runtime_sec=5,
             ingest_instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,
@@ -632,7 +631,6 @@ class TestValidationResultStorage(unittest.TestCase):
             mock_table,
             [
                 {
-                    "cloud_task_id": "my-task-id",
                     "run_id": "abc123",
                     "success_timestamp": "2022-01-01T00:00:00+00:00",
                     "num_validations_run": 10,
@@ -655,7 +653,6 @@ class TestValidationResultStorage(unittest.TestCase):
         store_validation_run_completion_in_big_query(
             validation_run_id="abc123",
             num_validations_run=10,
-            cloud_task_id="my-task-id",
             validations_runtime_sec=5,
             ingest_instance=DirectIngestInstance.PRIMARY,
             sandbox_dataset_prefix=None,

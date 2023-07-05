@@ -191,7 +191,6 @@ def store_validation_results_in_big_query(
     )
 
 
-CLOUD_TASK_ID_COL = "cloud_task_id"
 VALIDATION_RUN_ID_COL = "run_id"
 REGION_CODE_COL = "region_code"
 SUCCESS_TIMESTAMP_COL = "success_timestamp"
@@ -209,7 +208,6 @@ def store_validation_run_completion_in_big_query(
     validation_run_id: str,
     num_validations_run: int,
     validations_runtime_sec: int,
-    cloud_task_id: str,
     ingest_instance: DirectIngestInstance,
     sandbox_dataset_prefix: Optional[str],
 ) -> None:
@@ -219,10 +217,7 @@ def store_validation_run_completion_in_big_query(
     """
 
     if not environment.in_gcp():
-        logging.info(
-            "Skipping storing validation run completion in BigQuery for task [%s].",
-            cloud_task_id,
-        )
+        logging.info("Skipping storing validation run completion in BigQuery for task.")
         return
 
     bq_client = BigQueryClientImpl()
@@ -230,11 +225,6 @@ def store_validation_run_completion_in_big_query(
         bq_client=bq_client,
         table_address=VALIDATIONS_COMPLETION_TRACKER_BIGQUERY_ADDRESS,
         table_schema=[
-            bigquery.SchemaField(
-                name=CLOUD_TASK_ID_COL,
-                field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="REQUIRED",
-            ),
             bigquery.SchemaField(
                 name=VALIDATION_RUN_ID_COL,
                 field_type=bigquery.enums.SqlTypeNames.STRING.value,
@@ -276,7 +266,6 @@ def store_validation_run_completion_in_big_query(
     success_row_streamer.stream_rows(
         [
             {
-                CLOUD_TASK_ID_COL: cloud_task_id,
                 VALIDATION_RUN_ID_COL: validation_run_id,
                 SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
                 NUM_VALIDATIONS_RUN_COL: num_validations_run,

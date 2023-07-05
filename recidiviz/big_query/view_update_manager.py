@@ -108,7 +108,6 @@ def execute_update_all_managed_views(
         deployed_view_builders=view_builders,
         dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
-        cloud_task_id="AIRFLOW_VIEW_UPDATE",
     )
     logging.info("All managed views successfully updated and materialized.")
 
