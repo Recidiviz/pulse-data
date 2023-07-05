@@ -20,6 +20,7 @@ columns:
     is_pii: True
   - name: Amended_Date
   - name: Apply_Det_Days_Ind
+    description: Y if we need to apply days in County Jail to sentence; N otherwise.
   - name: Cis_319_Term_Id
     description: |-
       Foreign-key association to the CIS_319_TERM table.
@@ -234,6 +235,7 @@ columns:
     description: The original release date for a community supervision status.
     is_datetime: True
   - name: Comments_Tx
+    description: Free text field with comments about sentences. Days in county jail are usually described here.
     is_pii: True
   - name: Count_Num
   - name: Court_Finding_Date
@@ -266,6 +268,7 @@ columns:
   - name: Days_Earned_Num
   - name: Days_Lost_Num
   - name: Days_Served_Det_Num
+    description: Number of days served in county before being transferred to MEDOC.
   - name: Days_Served_Num
   - name: Detention_Conduct_Days_Num
   - name: Detention_Days_Num
