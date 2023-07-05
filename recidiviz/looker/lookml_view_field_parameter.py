@@ -17,8 +17,11 @@
 """Creates LookMLViewFieldParameter object and associated functions"""
 import abc
 from enum import Enum
+from typing import Union
 
 import attr
+
+from recidiviz.looker.parameterized_value import ParameterizedValue
 
 
 class LookMLFieldCategory(Enum):
@@ -111,7 +114,7 @@ class LookMLFieldParameter:
         return FieldParameterPrecision(precision)
 
     @classmethod
-    def sql(cls, sql: str) -> "LookMLFieldParameter":
+    def sql(cls, sql: Union[str, ParameterizedValue]) -> "LookMLFieldParameter":
         return FieldParameterSql(sql)
 
     @classmethod
@@ -322,7 +325,7 @@ class FieldParameterSql(LookMLFieldParameter):
     (see https://cloud.google.com/looker/docs/reference/param-field-sql).
     """
 
-    sql_text: str
+    sql_text: Union[str, ParameterizedValue]
 
     @property
     def key(self) -> str:
@@ -330,6 +333,8 @@ class FieldParameterSql(LookMLFieldParameter):
 
     @property
     def value_text(self) -> str:
+        if isinstance(self.sql_text, ParameterizedValue):
+            return f"{self.sql_text.build_liquid_template()} ;;"
         return f"{self.sql_text} ;;"
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
