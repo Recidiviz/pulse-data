@@ -78,6 +78,14 @@ WITH
             RecommendedCustody,	
         FROM Classification_filter	
         WHERE CustLevel = 1
+    ), Lag_MovementType AS (
+        SELECT *, 
+            LAG(MovementType) OVER (PARTITION BY OffenderID ORDER BY MovementDateTime) AS LAST_MovementType,
+        FROM filter_to_only_incarceration
+    ), clean_custody_changes AS (
+        SELECT * 
+        FROM Lag_MovementType
+        WHERE (MovementType != 'CUSTCHANGEFH' OR RIGHT(LAST_MovementType, 2) IN  ('FA', 'FH', 'CT'))
     ),
     initial_setup as (
         SELECT
@@ -110,7 +118,7 @@ WITH
                 WHEN REGEXP_CONTAINS(attributes.DeathDate, r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]') THEN DeathDate
             END AS DeathDate,
             'GENERAL' as HousingUnit
-        FROM filter_to_only_incarceration
+        FROM clean_custody_changes
         LEFT JOIN {OffenderAttributes} as attributes
             USING (OffenderID)
         -- Filter out rows that are not associated physical movements from facilities.
