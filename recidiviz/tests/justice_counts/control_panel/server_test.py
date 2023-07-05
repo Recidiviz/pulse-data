@@ -153,6 +153,60 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             b"window.APP_CONFIG = {'audience': 'http://localhost', 'clientId': 'test_client_id', 'domain': 'auth0.localhost'}; window.SEGMENT_KEY = 'fake_segment_key';",
         )
 
+    def test_get_home_metadata(self) -> None:
+        user_A = self.test_schema_objects.test_user_A
+        agency_A = self.test_schema_objects.test_agency_A
+        current_association = schema.AgencyUserAccountAssociation(
+            user_account=user_A, agency=agency_A
+        )
+        monthly_report_old = self.test_schema_objects.test_report_monthly
+        monthly_report_latest = self.test_schema_objects.test_report_monthly_two
+        annual_report_calendar_old = self.test_schema_objects.test_report_annual_three
+        annual_report_calendar_latest = self.test_schema_objects.test_report_annual_two
+        annual_report_fiscal_old = self.test_schema_objects.test_report_annual_five
+        annual_report_fiscal_latest = self.test_schema_objects.test_report_annual_four
+
+        self.session.add_all(
+            [
+                user_A,
+                agency_A,
+                current_association,
+                monthly_report_old,
+                monthly_report_latest,
+                annual_report_calendar_old,
+                annual_report_calendar_latest,
+                annual_report_fiscal_old,
+                annual_report_fiscal_latest,
+            ]
+        )
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
+            response = self.client.get(f"/api/home/{agency_A.id}")
+            agency_metrics_response = self.client.get(
+                f"/api/agencies/{agency_A.id}/metrics"
+            )
+
+        response_json = assert_type(response.json, dict)
+        agency_metrics_response_json = assert_type(agency_metrics_response.json, list)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            len(response_json["agency_metrics"]), len(agency_metrics_response_json)
+        )
+        self.assertEqual(
+            response_json["monthly_report"].get("id"), monthly_report_latest.id
+        )
+        self.assertEqual(
+            response_json["annual_reports"]["1"].get("id"),
+            annual_report_calendar_latest.id,
+        )
+        self.assertEqual(
+            response_json["annual_reports"]["6"].get("id"),
+            annual_report_fiscal_latest.id,
+        )
+
     def test_get_guidance_progress(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         agency_A = self.test_schema_objects.test_agency_A
