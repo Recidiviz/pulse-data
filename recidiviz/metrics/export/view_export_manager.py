@@ -17,10 +17,8 @@
 """Export data from BigQuery metric views to configurable locations."""
 import datetime
 import logging
-from http import HTTPStatus
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence
 
-from flask import Blueprint
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
 
@@ -48,7 +46,6 @@ from recidiviz.big_query.view_export_success_persister import (
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export import export_config
 from recidiviz.metrics.export.export_config import ExportBigQueryViewConfig
@@ -60,15 +57,12 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
 )
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
-    BadProductExportSpecificationError,
     ProductConfigs,
 )
 from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import (
     WithMetadataQueryBigQueryViewExporter,
 )
 from recidiviz.utils import monitoring
-from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.endpoint_helpers import get_value_from_request
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
@@ -105,106 +99,9 @@ monitoring.register_views(
     [failed_metric_export_validation_view, failed_metric_export_view]
 )
 
-# TODO(#21446) Remove these endpoints once we move the callsite to Kubernetes in Airflow.
-export_blueprint = Blueprint("export", __name__)
-
 
 class ViewExportConfigurationError(Exception):
     """Error thrown when views are misconfigured."""
-
-
-@export_blueprint.route("/metric_view_data", methods=["POST"])
-@requires_gae_auth
-def metric_view_data_export() -> Tuple[str, HTTPStatus]:
-    """Exports data in BigQuery metric views to cloud storage buckets.
-
-    Body Payload:
-        export_job_name: Name of job to initiate export for (e.g. PO_MONTHLY).
-        state_code: (Optional) State code to initiate export for (e.g. US_ID)
-                    State code must be present if the job is not state agnostic.
-        destination_override: (Optional) Override the destination bucket for the export.
-        sandbox_prefix: (Optional) Use a dataset prefix for the export.
-    Args:
-        N/A
-    Returns:
-        N/A
-    """
-
-    export_job_name = get_value_from_request("export_job_name")
-    state_code = get_value_from_request("state_code")
-    destination_override = get_value_from_request("destination_override")
-    sandbox_prefix = get_value_from_request("sandbox_prefix")
-    logging.info(
-        "Attempting to export view data to cloud storage for export_job_name [%s], state_code [%s], destination_override [%s], sandbox_prefix [%s]",
-        export_job_name,
-        state_code,
-        destination_override,
-        sandbox_prefix,
-    )
-
-    if not export_job_name:
-        return (
-            "Missing required export_job_name URL parameter",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    if sandbox_prefix and not destination_override:
-        return (
-            "Sandbox prefix requires destination override",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
-    try:
-        export_launched = product_configs.is_export_launched_in_env(
-            export_job_name=export_job_name, state_code=state_code
-        )
-    except BadProductExportSpecificationError as e:
-        logging.exception(e)
-        return str(e), HTTPStatus.BAD_REQUEST
-
-    start = datetime.datetime.now()
-
-    if export_launched:
-        relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
-            export_job_name.upper()
-        )
-
-        if not relevant_export_collection:
-            raise ValueError(
-                f"No export configs matching export name: [{export_job_name.upper()}]"
-            )
-
-        export_view_data_to_cloud_storage(
-            export_job_name=export_job_name,
-            state_code=state_code,
-            destination_override=destination_override,
-            address_overrides=address_overrides_for_view_builders(
-                view_dataset_override_prefix=sandbox_prefix,
-                view_builders=relevant_export_collection.view_builders_to_export,
-            )
-            if sandbox_prefix
-            else None,
-        )
-
-    end = datetime.datetime.now()
-    runtime_sec = int((end - start).total_seconds())
-
-    success_persister = MetricViewDataExportSuccessPersister(
-        bq_client=BigQueryClientImpl()
-    )
-    success_persister.record_success_in_bq(
-        export_job_name=export_job_name,
-        state_code=state_code,
-        destination_override=destination_override,
-        sandbox_dataset_prefix=sandbox_prefix,
-        runtime_sec=runtime_sec,
-        cloud_task_id=get_current_cloud_task_id(),
-    )
-
-    logging.info("Finished saving success record to database.")
-
-    return "", HTTPStatus.OK
 
 
 def execute_metric_view_data_export(

@@ -21,22 +21,17 @@ import logging
 import re
 import uuid
 from concurrent import futures
-from http import HTTPStatus
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import pytz
-from flask import Blueprint, request
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
-from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata, monitoring, structured_logging, trace
-from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.endpoint_helpers import get_value_from_request
 from recidiviz.utils.environment import get_environment_for_project
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.validation.configured_validations import (
@@ -94,51 +89,6 @@ failed_validations_view = view.View(
 )
 
 monitoring.register_views([failed_validations_view, failed_to_run_validations_view])
-
-
-validation_manager_blueprint = Blueprint("validation_manager", __name__)
-
-
-@validation_manager_blueprint.route("/validate/<region_code>", methods=["POST"])
-@requires_gae_auth
-def handle_validation_request(region_code: str) -> Tuple[str, HTTPStatus]:
-    """API endpoint to service data validation requests."""
-    logging.info("request data: %s", request.get_data(as_text=True))
-    sandbox_prefix: Optional[str] = get_value_from_request("sandbox_prefix")
-    try:
-        ingest_instance: DirectIngestInstance = DirectIngestInstance(
-            get_value_from_request("ingest_instance")
-        )
-    except ValueError as exc:
-        return str(exc), HTTPStatus.BAD_REQUEST
-
-    if ingest_instance == DirectIngestInstance.SECONDARY and not sandbox_prefix:
-        return (
-            "Sandbox prefix must be specified for secondary ingest instance",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    cloud_task_id = get_current_cloud_task_id()
-    start_datetime = datetime.datetime.now()
-    run_id, num_validations_run = execute_validation(
-        region_code=region_code.upper(),
-        ingest_instance=ingest_instance,
-        sandbox_dataset_prefix=sandbox_prefix,
-    )
-    end_datetime = datetime.datetime.now()
-
-    runtime_sec = int((end_datetime - start_datetime).total_seconds())
-
-    store_validation_run_completion_in_big_query(
-        validation_run_id=run_id,
-        num_validations_run=num_validations_run,
-        cloud_task_id=cloud_task_id,
-        validations_runtime_sec=runtime_sec,
-        sandbox_dataset_prefix=sandbox_prefix,
-        ingest_instance=ingest_instance,
-    )
-
-    return "", HTTPStatus.OK
 
 
 def execute_validation_request(

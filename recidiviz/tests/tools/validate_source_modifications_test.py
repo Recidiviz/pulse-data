@@ -137,26 +137,18 @@ class CheckAssertionsTest(unittest.TestCase):
     def test_endpoint_docs_happy(self) -> None:
         modified_files = [
             "recidiviz/ingest/direct/direct_ingest_control.py",
-            "recidiviz/validation/validation_manager.py",
             "docs/endpoints/direct/handle_new_files.md",
-            "docs/endpoints/validation_manager/validate/region_code.md",
         ]
         self._run_test(modified_files, [], [])
 
     def test_endpoint_docs_unhappy(self) -> None:
         modified_files = [
             "recidiviz/ingest/direct/direct_ingest_control.py",
-            "recidiviz/metrics/export/view_export_manager.py",
         ]
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
                 frozenset(["recidiviz/ingest/direct/direct_ingest_control.py"]),
                 frozenset(["docs/endpoints/direct"]),
-                "endpoints_docs",
-            ),
-            (
-                frozenset(["recidiviz/metrics/export/view_export_manager.py"]),
-                frozenset(["docs/endpoints/export/metric_view_data.md"]),
                 "endpoints_docs",
             ),
         ]
