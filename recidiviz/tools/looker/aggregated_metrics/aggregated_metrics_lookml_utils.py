@@ -46,6 +46,7 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLFieldType,
     LookMLSqlReferenceType,
 )
+from recidiviz.looker.parameterized_value import ParameterizedValue
 
 
 def _generate_lookml_measure_fragment(
@@ -206,18 +207,15 @@ def get_metric_value_measure(
         if isinstance(p, lookml_view_field_parameter.FieldParameterViewLabel)
     )
 
-    metric_parameter_clauses = []
-    for ix, allowed_value_param in enumerate(metric_filter_parameter.allowed_values()):
-        allowed_value = allowed_value_param.value_param
-        conditional_str = "elsif"
-        if ix == 0:
-            conditional_str = "if"
-        metric_parameter_clauses.append(
-            f"""{{% {conditional_str} {view_name}.{metric_filter_parameter.field_name}._parameter_value == "{allowed_value}" %}} ${{{allowed_value}_measure}}"""
-        )
-    metric_parameter_clauses.append("{% endif %}")
-
-    sql_text = "\n      ".join(metric_parameter_clauses)
+    allowed_values = [
+        param.value_param for param in metric_filter_parameter.allowed_values()
+    ]
+    sql_value = ParameterizedValue(
+        parameter_name=f"{view_name}.{metric_filter_parameter.field_name}",
+        parameter_options=allowed_values,
+        value_builder=lambda s: "${" + s + "_measure}",
+        indentation_level=3,
+    )
     additional_params = (
         [LookMLFieldParameter.group_label(aggregation_level.pretty_name)]
         if aggregation_level
@@ -232,6 +230,6 @@ def get_metric_value_measure(
             *additional_params,
             LookMLFieldParameter.type(LookMLFieldType.NUMBER),
             LookMLFieldParameter.view_label(view_label_parameter.text),
-            LookMLFieldParameter.sql(sql_text),
+            LookMLFieldParameter.sql(sql_value),
         ],
     )
