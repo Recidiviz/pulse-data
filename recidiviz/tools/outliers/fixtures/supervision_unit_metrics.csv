@@ -1,5 +1,0 @@
-state_code,metric_id,metric_value,period,end_date,unit_supervisor
-US_XX,incarceration_starts_and_inferred,10,YEAR,2023-04-01,00001
-US_XX,incarceration_starts_and_inferred,11,YEAR,2023-04-01,00002
-US_XX,incarceration_starts_and_inferred,3,YEAR,2023-05-01,00003
-US_XX,incarceration_starts_and_inferred,4,YEAR,2023-05-01,00001
