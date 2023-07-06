@@ -5,6 +5,7 @@ manifest_language: 1.0.0
 input_columns:
   - OffenderID
   - CAFDate
+  - ClassificationDate
   - CAFScore
   - ScheduleAScore
   - ScheduleBScore
@@ -64,3 +65,4 @@ output:
               ScheduleBScore: ScheduleBScore
               CAFScore: CAFScore
               CAFSite: CAFSiteID
+              ClassificationDate: ClassificationDate
