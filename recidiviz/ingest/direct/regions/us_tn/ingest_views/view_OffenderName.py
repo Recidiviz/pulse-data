@@ -72,7 +72,8 @@ WITH normalized_rows AS (
         A.AddressLine2,
         A.AddressCity,
         A.AddressState, 
-        A.AddressZip
+        A.AddressZip,
+        PhoneNumber
     FROM filtered_out_nicknames
     LEFT JOIN {Address} A
     ON OffenderID = A.PersonId
