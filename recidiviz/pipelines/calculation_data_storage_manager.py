@@ -61,6 +61,7 @@ from recidiviz.pipelines.normalized_state_update_lock_manager import (
     NormalizedStateUpdateLockManager,
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import gcp_only
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -92,6 +93,7 @@ def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+@gcp_only
 def execute_update_normalized_state_dataset(
     state_codes_filter: Optional[List[StateCode]], sandbox_dataset_prefix: Optional[str]
 ) -> None:

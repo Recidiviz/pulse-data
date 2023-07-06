@@ -55,6 +55,7 @@ from recidiviz.pipelines.normalized_state_update_lock_manager import (
 from recidiviz.tools.calculator.update_sandbox_normalized_state_dataset import (
     build_address_overrides_for_update,
 )
+from recidiviz.utils.environment import GCPEnvironment
 
 FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -155,6 +156,12 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             self.mock_always_unbounded_date_metrics
         )
 
+        self.environment_patcher = mock.patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=GCPEnvironment.PRODUCTION.value,
+        )
+        self.environment_patcher.start()
+
         self.fs_patcher = mock.patch(
             "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build",
             mock.Mock(return_value=FakeGCSFileSystem()),
@@ -171,6 +178,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.client = app.test_client()
 
     def tearDown(self) -> None:
+        self.environment_patcher.stop()
+
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
@@ -797,7 +806,14 @@ class CalculationDataStorageManagerTestRealConfig(unittest.TestCase):
         ]
         self.mock_client.project_id.return_value = self.project_id
 
+        self.environment_patcher = mock.patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=GCPEnvironment.PRODUCTION.value,
+        )
+        self.environment_patcher.start()
+
     def tearDown(self) -> None:
+        self.environment_patcher.stop()
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()

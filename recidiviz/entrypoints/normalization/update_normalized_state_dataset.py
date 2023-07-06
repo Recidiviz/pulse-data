@@ -25,20 +25,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.calculation_data_storage_manager import (
     execute_update_normalized_state_dataset,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses arguments for the Cloud SQL to BQ refresh process."""
     parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--project_id",
-        help="The project that the refresh should occur in",
-        choices=GCP_PROJECTS,
-        required=True,
-    )
     parser.add_argument(
         "--state_code_filter",
         help="the state to update",
@@ -60,8 +51,7 @@ if __name__ == "__main__":
 
     known_args, _ = parse_arguments(sys.argv)
 
-    with local_project_id_override(project_id_override=known_args.project_id):
-        execute_update_normalized_state_dataset(
-            [known_args.state_code_filter] if known_args.state_code_filter else None,
-            known_args.sandbox_prefix,
-        )
+    execute_update_normalized_state_dataset(
+        [known_args.state_code_filter] if known_args.state_code_filter else None,
+        known_args.sandbox_prefix,
+    )

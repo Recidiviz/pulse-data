@@ -28,7 +28,11 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    GCPEnvironment,
+)
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
@@ -887,8 +891,14 @@ class TestExecuteUpdateAllManagedViews(unittest.TestCase):
         self.mock_all_views_update_success_persister = (
             self.all_views_update_success_persister_constructor.return_value
         )
+        self.environment_patcher = mock.patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=GCPEnvironment.PRODUCTION.value,
+        )
+        self.environment_patcher.start()
 
     def tearDown(self) -> None:
+        self.environment_patcher.stop()
         self.all_views_update_success_persister_patcher.stop()
 
     @mock.patch(

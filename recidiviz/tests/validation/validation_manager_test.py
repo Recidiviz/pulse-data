@@ -185,16 +185,25 @@ class TestExecuteValidationRequest(TestCase):
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
-        self.environment_patcher = patch(
+
+        self.environment_patcher = mock.patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=GCPEnvironment.STAGING.value,
+        )
+        self.environment_patcher.start()
+        self.environment_for_project_patcher = patch(
             "recidiviz.validation.validation_manager.get_environment_for_project"
         )
-        self.environment_patcher.start().return_value = GCPEnvironment.STAGING
+        self.environment_for_project_patcher.start().return_value = (
+            GCPEnvironment.STAGING
+        )
 
         self._TEST_VALIDATIONS = get_test_validations()
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         self.environment_patcher.stop()
+        self.environment_for_project_patcher.stop()
 
     @patch(
         "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"

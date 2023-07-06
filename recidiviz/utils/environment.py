@@ -162,6 +162,50 @@ def local_only(func: Callable) -> Callable:
     return check_env
 
 
+def gcp_only(func: Callable) -> Callable:
+    """Decorator function to verify request only runs locally
+
+    Decorator function to check run environment. If prod / served on GCP,
+    exits before any work can be done.
+
+    Args:
+        N/A
+
+    Returns:
+        If running locally, results of decorated function.
+        If not, nothing.
+    """
+
+    @wraps(func)
+    def check_env(*args: Any, **kwargs: Any) -> Any:
+        """Decorator child-method to fail if runtime is in prod
+
+        This is the function the decorator uses to test whether or not our
+        runtime is in prod, and if so error out.
+
+        Args:
+            args, kwargs: Any arguments passed to that request handler
+
+        Returns:
+            Output of the decorated function, if running locally
+            HTTP 500 and error logs, if running in prod
+        """
+
+        deployed = in_gcp()
+
+        if not deployed:
+            # Local environment - fail
+            logging.error("This API call is not allowed locally.")
+            raise RuntimeError("Not available, see service logs.")
+
+        # GCP environment - continue
+        logging.info("GCP environment, proceeding.")
+
+        return func(*args, **kwargs)
+
+    return check_env
+
+
 def in_test() -> bool:
     """Check whether we are running in a test"""
     # Pytest sets recidiviz.called_from_test in conftest.py

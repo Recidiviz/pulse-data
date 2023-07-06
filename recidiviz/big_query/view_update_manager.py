@@ -44,6 +44,7 @@ from recidiviz.big_query.view_update_manager_utils import (
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
 from recidiviz.utils import monitoring, structured_logging
+from recidiviz.utils.environment import gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
@@ -83,6 +84,7 @@ MAX_WORKERS = 10
 NUM_SLOW_VIEWS_TO_LOG = 25
 
 
+@gcp_only
 def execute_update_all_managed_views(
     project_id: str, sandbox_prefix: Optional[str]
 ) -> None:

@@ -63,6 +63,7 @@ from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import
     WithMetadataQueryBigQueryViewExporter,
 )
 from recidiviz.utils import monitoring
+from recidiviz.utils.environment import gcp_only
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
@@ -104,6 +105,7 @@ class ViewExportConfigurationError(Exception):
     """Error thrown when views are misconfigured."""
 
 
+@gcp_only
 def execute_metric_view_data_export(
     export_job_name: str,
     state_code: Optional[StateCode],

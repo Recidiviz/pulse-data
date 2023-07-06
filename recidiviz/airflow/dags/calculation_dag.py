@@ -105,7 +105,6 @@ def update_all_managed_views_operator() -> KubernetesPodOperator:
             "python",
             "-m",
             "recidiviz.entrypoints.view_update.update_all_managed_views",
-            f"--project_id={project_id}",
         ],
     )
 
@@ -124,7 +123,6 @@ def refresh_bq_dataset_operator(schema_type: str) -> KubernetesPodOperator:
             "python",
             "-m",
             "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
-            f"--project_id={project_id}",
             f"--schema_type={schema_type.upper()}",
             f"--ingest_instance={get_ingest_instance(dag_run)}",
             *additional_args,
@@ -156,7 +154,6 @@ def execute_update_normalized_state() -> None:
             "python",
             "-m",
             "recidiviz.entrypoints.update_normalized_state_dataset",
-            f"--project_id={project_id}",
             *additional_args,
         ]
 
@@ -182,7 +179,6 @@ def execute_validations_operator(state_code: str) -> KubernetesPodOperator:
             "python",
             "-m",
             "recidiviz.entrypoints.validation.validate",
-            f"--project_id={project_id}",
             f"--state_code={state_code}",
             f"--ingest_instance={get_ingest_instance(dag_run)}",
             *additional_args,
@@ -206,7 +202,6 @@ def trigger_metric_view_data_operator(
             "python",
             "-m",
             "recidiviz.entrypoints.metric_export.metric_view_export",
-            f"--project_id={project_id}",
             f"--export_job_name={export_job_name}",
         ]
         + ([f"--state_code={state_code}"] if state_code else []),

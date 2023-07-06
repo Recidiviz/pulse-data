@@ -49,7 +49,6 @@ def create_monitoring_dag() -> None:
             "python",
             "-m",
             "recidiviz.entrypoints.monitoring.report_metric_export_timeliness",
-            f"--project_id={project_id}",
         ],
     )
 

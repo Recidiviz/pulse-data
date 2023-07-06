@@ -26,20 +26,12 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control i
     execute_cloud_sql_to_bq_refresh,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.utils.environment import GCP_PROJECTS
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses arguments for the Cloud SQL to BQ refresh process."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--project_id",
-        help="The project that the refresh should occur in",
-        choices=GCP_PROJECTS,
-        required=True,
-    )
     parser.add_argument(
         "--schema_type",
         help="The schema type that the refresh should occur for",
@@ -69,9 +61,8 @@ if __name__ == "__main__":
 
     known_args, _ = parse_arguments(sys.argv)
 
-    with local_project_id_override(project_id_override=known_args.project_id):
-        execute_cloud_sql_to_bq_refresh(
-            known_args.schema_type,
-            known_args.ingest_instance,
-            known_args.sandbox_prefix,
-        )
+    execute_cloud_sql_to_bq_refresh(
+        known_args.schema_type,
+        known_args.ingest_instance,
+        known_args.sandbox_prefix,
+    )

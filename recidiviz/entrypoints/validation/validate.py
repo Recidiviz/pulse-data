@@ -23,8 +23,6 @@ from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils.environment import GCP_PROJECTS
-from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.validation_manager import execute_validation_request
 
 
@@ -32,13 +30,6 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parse arguments for the validation script."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--project_id",
-        help="Project ID to validate",
-        type=str,
-        choices=GCP_PROJECTS,
-        required=True,
-    )
     parser.add_argument(
         "--state_code",
         help="State code to validate",
@@ -65,9 +56,9 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args, unknown_args = parse_arguments(sys.argv[1:])
-    with local_project_id_override(args.project_id):
-        execute_validation_request(
-            state_code=args.state_code,
-            ingest_instance=args.ingest_instance,
-            sandbox_prefix=args.sandbox_prefix,
-        )
+
+    execute_validation_request(
+        state_code=args.state_code,
+        ingest_instance=args.ingest_instance,
+        sandbox_prefix=args.sandbox_prefix,
+    )

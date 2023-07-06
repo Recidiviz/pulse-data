@@ -154,8 +154,14 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             "recidiviz.metrics.export.view_export_manager.GcsfsFactory.build"
         )
         self.gcs_factory_patcher.start().return_value = FakeGCSFileSystem()
+        self.environment_patcher = mock.patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=GCPEnvironment.PRODUCTION.value,
+        )
+        self.environment_patcher.start()
 
     def tearDown(self) -> None:
+        self.environment_patcher.stop()
         self.client_patcher.stop()
         self.export_config_patcher.stop()
         self.metadata_patcher.stop()
@@ -163,13 +169,8 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.mock_cloud_task_client_patcher.stop()
         self.metric_view_data_export_success_persister_patcher.stop()
 
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_get_configs_for_export_name(
-        self, mock_environment: mock.MagicMock
-    ) -> None:
+    def test_get_configs_for_export_name(self) -> None:
         """Tests get_configs_for_export_name function to ensure that export names correctly match"""
-
-        mock_environment.return_value = GCPEnvironment.PRODUCTION.value
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
             export_name=self.mock_export_name,
             state_code=self.mock_state_code,
@@ -213,13 +214,8 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         )
         self.assertEqual(expected_view_config_list, export_configs_for_filter)
 
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_get_configs_for_export_name_state_agnostic(
-        self, mock_environment: mock.MagicMock
-    ) -> None:
+    def test_get_configs_for_export_name_state_agnostic(self) -> None:
         """Tests get_configs_for_export_name function to ensure that export names correctly match"""
-
-        mock_environment.return_value = GCPEnvironment.PRODUCTION.value
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
             export_name=self.mock_export_name
         )
