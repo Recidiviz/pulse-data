@@ -25,9 +25,7 @@ from unittest.mock import MagicMock, patch
 
 from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
-from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
-    KubernetesPodOperator,
-)
+from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 
 from recidiviz import pipelines
@@ -35,6 +33,7 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
+from recidiviz.utils.environment import GCPEnvironment
 
 # Need to import calculation_dag inside test suite so environment variables are set before importing,
 # otherwise calculation_dag will raise an Error and not import.
@@ -73,9 +72,15 @@ class TestCalculationPipelineDag(unittest.TestCase):
             },
         )
         self.environment_patcher.start()
+        self.project_environment_patcher = patch(
+            "recidiviz.utils.environment.get_environment_for_project",
+            return_value=GCPEnvironment.STAGING,
+        )
+        self.project_environment_patcher.start()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
+        self.project_environment_patcher.stop()
 
     def test_bq_refresh_downstream_initialize_dag(self) -> None:
         """Tests that the `bq_refresh` task is downstream of initialize_dag."""

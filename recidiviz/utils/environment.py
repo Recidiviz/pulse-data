@@ -44,6 +44,7 @@ GCP_PROJECT_PRODUCTION = "recidiviz-123"
 GCP_ENVIRONMENTS = {env.value for env in GCPEnvironment}
 GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 
+RECIDIVIZ_ENV = "RECIDIVIZ_ENV"
 
 # TODO(#21450) Rename to in_app_engine_env
 def in_gcp() -> bool:
@@ -74,7 +75,7 @@ def get_gcp_environment() -> Optional[str]:
     Returns:
         The gae instance we are running in, or None if it is not set
     """
-    return os.getenv("RECIDIVIZ_ENV")
+    return os.getenv(RECIDIVIZ_ENV)
 
 
 def get_project_for_environment(environment: GCPEnvironment) -> str:

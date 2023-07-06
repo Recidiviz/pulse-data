@@ -24,9 +24,7 @@ from typing import Dict, Iterable, List, Optional, Type
 
 from airflow.decorators import dag
 from airflow.models import BaseOperator, DagRun, TaskInstance
-from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
-    KubernetesPodOperator,
-)
+from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry

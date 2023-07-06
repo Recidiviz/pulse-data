@@ -14,7 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Dict
+from typing import Dict, Optional
 
 class V1ResourceRequirements:
     def __init__(self, requests: Dict[str, str]) -> None: ...
+
+class V1EnvVar:
+    name: str
+    value: str
+
+    def __init__(
+        self, name: Optional[str] = None, value: Optional[str] = None
+    ) -> None: ...
