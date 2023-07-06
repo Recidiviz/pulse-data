@@ -17,4 +17,20 @@ view: state_raw_data_shared_fields {
     }
     default_value: "raw_data_up_to_date_views"
   }
+
+  dimension: file_id {
+    description: "Ingest file ID, NULL for raw up to date views"
+    type: number
+    sql: {% if view_type._parameter_value == 'raw_data' %} ${TABLE}.file_id
+      {% elsif view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
+  }
+
+  dimension: is_deleted {
+    description: "Whether table is deleted, NULL for raw up to date views"
+    type: yesno
+    sql: {% if view_type._parameter_value == 'raw_data' %} ${TABLE}.is_deleted
+      {% elsif view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
+  }
 }
