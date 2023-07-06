@@ -27,7 +27,7 @@ from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.utils.string import StrictStringFormatter
 
 VIEW_TEMPLATE = """{include_clause}view: {view_name} {{
-{extends_clause}{table_clause}{field_declarations}
+{extension_required}{extends_clause}{table_clause}{field_declarations}
 }}"""
 
 VIEW_FILE_TEMPLATE = """# This file was automatically generated using a pulse-data script on {date_str}.
@@ -49,6 +49,7 @@ class LookMLView:
     fields: List[LookMLViewField] = attr.ib(factory=list)
     included_paths: List[str] = attr.ib(factory=list)
     extended_views: List[str] = attr.ib(factory=list)
+    extension_required: bool = attr.ib(default=False)
 
     def __attrs_post_init__(self) -> None:
         field_names = [field.field_name for field in self.fields]
@@ -64,6 +65,10 @@ class LookMLView:
                 [f'include: "{path}"\n' for path in self.included_paths]
             )
 
+        extension_required_clause = ""
+        if self.extension_required:
+            extension_required_clause = "  extension: required\n"
+
         extends_clause = ""
         if self.extended_views:
             extends_str = ",\n".join(
@@ -74,6 +79,7 @@ class LookMLView:
         return StrictStringFormatter().format(
             VIEW_TEMPLATE,
             include_clause=include_clause,
+            extension_required=extension_required_clause,
             extends_clause=extends_clause,
             view_name=self.view_name,
             table_clause=self.table.build() if self.table else "",
