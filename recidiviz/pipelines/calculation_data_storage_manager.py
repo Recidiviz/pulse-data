@@ -61,7 +61,6 @@ from recidiviz.pipelines.normalized_state_update_lock_manager import (
     NormalizedStateUpdateLockManager,
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.endpoint_helpers import get_value_from_request
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -93,25 +92,14 @@ def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@calculation_data_storage_manager_blueprint.route(
-    "/update_normalized_state_dataset", methods=["POST", "GET"]
-)
-@requires_gae_auth
-def update_normalized_state_dataset_endpoint() -> Tuple[str, HTTPStatus]:
+def execute_update_normalized_state_dataset(
+    state_codes_filter: Optional[List[StateCode]], sandbox_dataset_prefix: Optional[str]
+) -> None:
     """Calls the _update_normalized_state_dataset function."""
 
-    state_codes_filter: Optional[List[str]] = get_value_from_request(
-        "state_codes_filter"
-    )
-
-    sandbox_dataset_prefix: Optional[str] = get_value_from_request(
-        "sandbox_dataset_prefix"
-    )
-
     if state_codes_filter and not sandbox_dataset_prefix:
-        return (
-            "Must provide sandbox_dataset_prefix when providing state_codes_filter",
-            HTTPStatus.BAD_REQUEST,
+        raise ValueError(
+            "Must provide sandbox_dataset_prefix when providing state_codes_filter"
         )
 
     if sandbox_dataset_prefix and not state_codes_filter:
@@ -138,8 +126,6 @@ def update_normalized_state_dataset_endpoint() -> Tuple[str, HTTPStatus]:
         state_codes_filter=state_codes_filter_set,
         address_overrides=address_overrides,
     )
-
-    return "", HTTPStatus.OK
 
 
 def _delete_empty_datasets() -> None:

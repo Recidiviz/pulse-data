@@ -277,7 +277,6 @@ def main() -> int:
         "recidiviz.airflow.dags",
         "recidiviz.pipelines",
         "recidiviz.calculator.query.state.dataset_config",
-        "recidiviz.cloud_functions.cloud_function_utils",
         "recidiviz.cloud_storage",
         "recidiviz.common.attr_validators",
         "recidiviz.common.constants.states",

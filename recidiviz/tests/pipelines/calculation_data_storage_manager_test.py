@@ -38,6 +38,10 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.pipelines import calculation_data_storage_manager, dataflow_config
 from recidiviz.pipelines.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
+    execute_update_normalized_state_dataset,
+)
+from recidiviz.pipelines.dataflow_orchestration_utils import (
+    get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
@@ -684,69 +688,86 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager.update_normalized_state_dataset"
     )
-    def test_update_normalized_state_dataset_endpoint(
+    def test_execute_update_normalized_state_dataset_endpoint(
         self, mock_update: mock.MagicMock
     ) -> None:
         """Tests that the _update_normalized_state_dataset function is called when the
-        /update_normalized_state_dataset endpoint is hit."""
-        headers = {"X-Appengine-Cron": "test-cron"}
-        response = self.client.get("/update_normalized_state_dataset", headers=headers)
+        execute_update_normalized_state_dataset is called."""
 
-        self.assertEqual(200, response.status_code)
-        mock_update.assert_called()
+        execute_update_normalized_state_dataset(
+            state_codes_filter=None, sandbox_dataset_prefix=None
+        )
+        mock_update.assert_called_with(address_overrides=None, state_codes_filter=None)
 
+    @patch(
+        "recidiviz.pipelines.calculation_data_storage_manager.build_address_overrides_for_update"
+    )
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager.update_normalized_state_dataset"
     )
-    def test_update_normalized_state_dataset_endpoint_with_state_codes_and_sandbox_dataset_prefix(
-        self, mock_update: mock.MagicMock
+    def test_execute_update_normalized_state_dataset_with_state_codes_and_sandbox_dataset_prefix(
+        self, mock_update: mock.MagicMock, mock_build_address_overrides: mock.MagicMock
     ) -> None:
         """Tests that the _update_normalized_state_dataset function is called when the
-        /update_normalized_state_dataset endpoint is hit."""
-        headers = {"X-Appengine-Cron": "test-cron"}
-        body = {"state_codes_filter": ["US_XX"], "sandbox_dataset_prefix": "test"}
-        response = self.client.post(
-            "/update_normalized_state_dataset", headers=headers, json=body
+        execute_update_normalized_state endpoint is hit."""
+        expected_state_codes_filter = [StateCode.US_XX]
+        execute_update_normalized_state_dataset(
+            state_codes_filter=expected_state_codes_filter,
+            sandbox_dataset_prefix="test_prefix",
+        )
+        mock_update.assert_called_with(
+            address_overrides=mock.ANY,
+            state_codes_filter=frozenset(expected_state_codes_filter),
         )
 
-        self.assertEqual(200, response.status_code)
-        mock_update.assert_called()
+        mock_build_address_overrides.assert_called_with(
+            dataset_override_prefix="test_prefix",
+            states_to_override=frozenset(expected_state_codes_filter),
+        )
 
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager.update_normalized_state_dataset"
     )
-    def test_update_normalized_state_dataset_endpoint_with_only_state_codes(
+    def test_execute_update_normalized_state_dataset_with_only_state_codes(
         self, mock_update: mock.MagicMock
     ) -> None:
         """Tests that the _update_normalized_state_dataset function is not called when the
-        /update_normalized_state_dataset endpoint is hit with only state_codes_filter. Endpoint requires both
+        execute_update_normalized_state_dataset is called with only state_codes_filter. Function requires both
         state_codes_filter and sandbox_dataset_prefix."""
-        headers = {"X-Appengine-Cron": "test-cron"}
-        body = {"state_codes_filter": ["US_XX"]}
-        response = self.client.post(
-            "/update_normalized_state_dataset", headers=headers, json=body
-        )
-
-        self.assertEqual(400, response.status_code)
+        mock_update.assert_not_called()
+        with self.assertRaises(ValueError):
+            expected_state_codes_filter = [StateCode.US_XX]
+            execute_update_normalized_state_dataset(
+                state_codes_filter=expected_state_codes_filter,
+                sandbox_dataset_prefix=None,
+            )
         mock_update.assert_not_called()
 
+    @patch(
+        "recidiviz.pipelines.calculation_data_storage_manager.build_address_overrides_for_update"
+    )
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager.update_normalized_state_dataset"
     )
     def test_update_normalized_state_dataset_endpoint_with_only_sandbox_dataset_prefix(
-        self, mock_update: mock.MagicMock
+        self, mock_update: mock.MagicMock, mock_build_address_overrides: mock.MagicMock
     ) -> None:
         """Tests that the _update_normalized_state_dataset function is called when the
         /update_normalized_state_dataset endpoint is hit with only sandbox_dataset_prefix.
         """
-        headers = {"X-Appengine-Cron": "test-cron"}
-        body = {"sandbox_dataset_prefix": "test"}
-        response = self.client.post(
-            "/update_normalized_state_dataset", headers=headers, json=body
+        states_codes_filter = frozenset(get_normalization_pipeline_enabled_states())
+        execute_update_normalized_state_dataset(
+            state_codes_filter=None, sandbox_dataset_prefix="test_prefix"
+        )
+        mock_update.assert_called_with(
+            address_overrides=mock.ANY,
+            state_codes_filter=states_codes_filter,
         )
 
-        self.assertEqual(200, response.status_code)
-        mock_update.assert_called()
+        mock_build_address_overrides.assert_called_with(
+            dataset_override_prefix="test_prefix",
+            states_to_override=states_codes_filter,
+        )
 
 
 class CalculationDataStorageManagerTestRealConfig(unittest.TestCase):
