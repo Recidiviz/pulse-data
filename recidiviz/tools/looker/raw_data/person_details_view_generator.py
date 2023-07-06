@@ -22,11 +22,16 @@ import os
 
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
+    DimensionGroupLookMLViewField,
     DimensionLookMLViewField,
+    LookMLFieldDatatype,
     LookMLFieldParameter,
     ParameterLookMLViewField,
 )
-from recidiviz.looker.lookml_view_field_parameter import LookMLFieldType
+from recidiviz.looker.lookml_view_field_parameter import (
+    LookMLFieldType,
+    LookMLTimeframesOption,
+)
 from recidiviz.looker.parameterized_value import ParameterizedValue
 
 RAW_DATA_OPTION = "raw_data"
@@ -92,9 +97,46 @@ def generate_shared_fields_view() -> LookMLView:
         ],
     )
 
+    update_datetime_sql = ParameterizedValue(
+        parameter_name="view_type",
+        parameter_options=[RAW_DATA_OPTION, RAW_DATA_UP_TO_DATE_VIEWS_OPTION],
+        value_builder=lambda s: "${TABLE}.update_datetime"
+        if s == RAW_DATA_OPTION
+        else "NULL",
+        indentation_level=3,
+    )
+    update_datetime_dimension_group = DimensionGroupLookMLViewField(
+        field_name="update_datetime",
+        parameters=[
+            LookMLFieldParameter.description(
+                "Time of most recent update, NULL for raw up to date views"
+            ),
+            LookMLFieldParameter.type(LookMLFieldType.TIME),
+            LookMLFieldParameter.timeframes(
+                [
+                    LookMLTimeframesOption.RAW,
+                    LookMLTimeframesOption.TIME,
+                    LookMLTimeframesOption.DATE,
+                    LookMLTimeframesOption.WEEK,
+                    LookMLTimeframesOption.MONTH,
+                    LookMLTimeframesOption.QUARTER,
+                    LookMLTimeframesOption.YEAR,
+                ]
+            ),
+            LookMLFieldParameter.datatype(LookMLFieldDatatype.DATETIME),
+            LookMLFieldParameter.sql(update_datetime_sql),
+        ],
+    )
+
     view = LookMLView(
         view_name="state_raw_data_shared_fields",
-        fields=[view_type_param, file_id_dimension, is_deleted_dimension],
+        extension_required=True,
+        fields=[
+            view_type_param,
+            file_id_dimension,
+            is_deleted_dimension,
+            update_datetime_dimension_group,
+        ],
     )
     return view
 
