@@ -23,9 +23,6 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.calculator.query.state.views.outliers.supervision_district_managers import (
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_district_metrics import (
-    SUPERVISION_DISTRICT_METRICS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_districts import (
     SUPERVISION_DISTRICTS_VIEW_BUILDER,
 )
@@ -41,9 +38,6 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers import
 from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics import (
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervision_unit_metrics import (
-    SUPERVISION_UNIT_METRICS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.outliers.supervision_units import (
     SUPERVISION_UNITS_VIEW_BUILDER,
 )
@@ -54,12 +48,10 @@ from recidiviz.calculator.query.state.views.outliers.supervison_directors import
 OUTLIERS_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
     SUPERVISION_DIRECTORS_VIEW_BUILDER,
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
-    SUPERVISION_DISTRICT_METRICS_VIEW_BUILDER,
     SUPERVISION_DISTRICTS_VIEW_BUILDER,
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
     SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
     SUPERVISION_OFFICERS_VIEW_BUILDER,
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
-    SUPERVISION_UNIT_METRICS_VIEW_BUILDER,
     SUPERVISION_UNITS_VIEW_BUILDER,
 ]
