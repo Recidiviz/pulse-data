@@ -23,10 +23,12 @@ from typing import Callable, List, Optional, Union
 
 from airflow.decorators import task
 from airflow.models import DagRun, TaskInstance
-from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import (
-    KubernetesPodOperator,
-)
+from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from kubernetes.client import models as k8s
+
+from recidiviz.utils.environment import RECIDIVIZ_ENV, get_environment_for_project
+
+_project_id = os.environ.get("GCP_PROJECT")
 
 
 def build_recidiviz_kubernetes_pod_operator(
@@ -78,11 +80,17 @@ def build_recidiviz_kubernetes_pod_operator(
             "pipenv",
         ],
         arguments=get_kubernetes_arguments(),
-        env_vars={
+        env_vars=[
             # TODO(census-instrumentation/opencensus-python#796)
-            "CONTAINER_NAME": container_name,
-            "NAMESPACE": namespace,
-        },
+            k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name),
+            k8s.V1EnvVar(name="NAMESPACE", value=namespace),
+            k8s.V1EnvVar(
+                name=RECIDIVIZ_ENV,
+                value=get_environment_for_project(_project_id).value
+                if _project_id
+                else "",
+            ),
+        ],
         container_resources=k8s.V1ResourceRequirements(
             requests={"cpu": "2000m", "memory": "1Gi"}
         ),
