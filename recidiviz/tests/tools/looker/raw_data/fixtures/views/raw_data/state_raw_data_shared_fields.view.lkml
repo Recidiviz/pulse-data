@@ -2,6 +2,7 @@
 # To regenerate, see `recidiviz/tools/looker/raw_data/person_details_view_generator.py`.
 
 view: state_raw_data_shared_fields {
+  extension: required
 
 
   parameter: view_type {
@@ -30,6 +31,24 @@ view: state_raw_data_shared_fields {
     description: "Whether table is deleted, NULL for raw up to date views"
     type: yesno
     sql: {% if view_type._parameter_value == 'raw_data' %} ${TABLE}.is_deleted
+      {% elsif view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
+  }
+
+  dimension_group: update_datetime {
+    description: "Time of most recent update, NULL for raw up to date views"
+    type: time
+    timeframes: [
+      raw,
+      time,
+      date,
+      week,
+      month,
+      quarter,
+      year
+    ]
+    datatype: datetime
+    sql: {% if view_type._parameter_value == 'raw_data' %} ${TABLE}.update_datetime
       {% elsif view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
       {% endif %} ;;
   }
