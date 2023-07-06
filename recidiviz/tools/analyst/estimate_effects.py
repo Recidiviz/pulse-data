@@ -95,6 +95,7 @@ def validate_df(
     df: pd.DataFrame,
     outcome_column: str,
     unit_of_analysis_column: str,
+    unit_of_treatment_column: str,
     date_column: str,
     weight_column: Optional[str] = None,
     other_columns: Optional[List[str]] = None,
@@ -118,6 +119,10 @@ def validate_df(
         Column name of categorical column with units of analysis (e.g. districts
         or officers)
 
+    unit_of_treatment_column : str
+        Column name of categorical column with units of treatment (e.g. districts
+        or officers)
+
     date_column : str
         Column name of datetime column with dates of observations
 
@@ -136,6 +141,7 @@ def validate_df(
     >>> df = pd.DataFrame(
     ...     {
     ...         "district": ["A", "A", "B", "B"],
+    ...         "officer": ["C", "C", "D", "D"],
     ...         "treated": [True, True, False, False,]
     ...         "date": [
     ...             pd.to_datetime("2020-01-01"),
@@ -147,7 +153,7 @@ def validate_df(
     ...         "outcome": [1, 3, 2, 2],
     ...     }
     ... )
-    >>> validate_df(df, "outcome", "district", "date", "treated", ["post_treat"])
+    >>> validate_df(df, "outcome", "district", "officer", "treated", "date", "weights", ["post_treat"])
     """
 
     # add weights if not provided
@@ -160,7 +166,13 @@ def validate_df(
         raise ValueError("Column names in df must be unique")
 
     # ensure df has necessary columns
-    all_columns = [outcome_column, unit_of_analysis_column, date_column, weight_column]
+    all_columns = [
+        outcome_column,
+        unit_of_analysis_column,
+        unit_of_treatment_column,
+        date_column,
+        weight_column,
+    ]
     if other_columns:
         all_columns.extend(other_columns)
     for col in all_columns:
@@ -172,25 +184,28 @@ def validate_df(
     for var in [outcome_column, weight_column]:
         if df[var].dtype not in [int, float]:
             raise TypeError(f"Column `{var}` must be numeric")
-    # check unit of analysis is string
-    if df[unit_of_analysis_column].dtype != "object":
-        raise TypeError(f"Column `{unit_of_analysis_column}` must be string")
+    # check unit of analysis and unit of treatment are strings
+    for var in [unit_of_analysis_column, unit_of_treatment_column]:
+        if df[var].dtype != "object":
+            raise TypeError(f"Column `{var}` must be string")
     # date column
     if df[date_column].dtype != "datetime64[ns]":
         raise TypeError(f"Column `{date_column}` must be datetime")
 
-    # subset to necessary columns
-    df = df[all_columns]
+    # subset to necessary columns, max one copy of each
+    return_cols = []
+    for col in all_columns:
+        if col not in return_cols:
+            return_cols.append(col)
+    df = df[return_cols]
 
     # ensure no missing values
     if df.isnull().sum().sum() > 0:
         raise ValueError("Missing values found in df")
 
-    # ensure df is unique on unit of analysis and date
-    if len(df) != len(df[[unit_of_analysis_column, date_column]].drop_duplicates()):
-        raise ValueError(
-            f"Dataframe is not unique on {unit_of_analysis_column} and {date_column}"
-        )
+    df[
+        [unit_of_analysis_column, unit_of_treatment_column, date_column]
+    ].drop_duplicates()
 
     return df
 
@@ -229,6 +244,7 @@ def est_did_effect(
     outcome_column: str,
     interaction_column: str,
     unit_of_analysis_column: str,
+    unit_of_treatment_column: str,
     date_column: str,
     weight_column: Optional[str] = None,
     cluster_column: Optional[str] = None,
@@ -279,6 +295,7 @@ def est_did_effect(
     >>> df = pd.DataFrame(
     ...     {
     ...         "district": ["A", "A", "B", "B"],
+    ...         "officer": ["C", "C", "D", "D"],
     ...         "treated": [True, True, False, False,]
     ...         "date": [
     ...             pd.to_datetime("2020-01-01"),
@@ -295,6 +312,7 @@ def est_did_effect(
     ...     outcome_column="outcome",
     ...     interaction_column="post_treat",
     ...     unit_of_analysis_column="district",
+    ...     unit_of_treatment_column="officer",
     ...     date_column="date",
     ... )
 
@@ -309,6 +327,7 @@ def est_did_effect(
         df=df,
         outcome_column=outcome_column,
         unit_of_analysis_column=unit_of_analysis_column,
+        unit_of_treatment_column=unit_of_treatment_column,
         date_column=date_column,
         weight_column=weight_column,
         other_columns=other_columns,
@@ -350,6 +369,7 @@ def est_es_effect(
     outcome_column: str,
     treated_column: str,
     unit_of_analysis_column: str,
+    unit_of_treatment_column: str,
     date_column: str,
     weight_column: Optional[str] = None,
     cluster_column: Optional[str] = None,
@@ -399,6 +419,7 @@ def est_es_effect(
     >>> df = pd.DataFrame(
     ...     {
     ...         "district": ["A", "A", "A", "A"],
+    ...         "officer": ["B", "B", "B", "B"],
     ...         "treated": [False, False, True, True,]
     ...         "date": [
     ...             pd.to_datetime("2020-01-01"),
@@ -414,6 +435,7 @@ def est_es_effect(
     ...     outcome_column="outcome",
     ...     treated_column="post_treat",
     ...     unit_of_analysis_column="district",
+    ...     unit_of_treatment_column="officer",
     ...     date_column="date",
     ... )
 
@@ -428,6 +450,7 @@ def est_es_effect(
         df=df,
         outcome_column=outcome_column,
         unit_of_analysis_column=unit_of_analysis_column,
+        unit_of_treatment_column=unit_of_treatment_column,
         date_column=date_column,
         weight_column=weight_column,
         other_columns=other_columns,
