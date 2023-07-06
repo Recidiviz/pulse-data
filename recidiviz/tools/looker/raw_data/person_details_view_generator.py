@@ -22,10 +22,15 @@ import os
 
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
+    DimensionLookMLViewField,
     LookMLFieldParameter,
     ParameterLookMLViewField,
 )
 from recidiviz.looker.lookml_view_field_parameter import LookMLFieldType
+from recidiviz.looker.parameterized_value import ParameterizedValue
+
+RAW_DATA_OPTION = "raw_data"
+RAW_DATA_UP_TO_DATE_VIEWS_OPTION = "raw_data_up_to_date_views"
 
 
 def generate_shared_fields_view() -> LookMLView:
@@ -42,17 +47,54 @@ def generate_shared_fields_view() -> LookMLView:
             LookMLFieldParameter.description(
                 "Used to select whether the view has the most recent version (raw data up to date views) or all data"
             ),
-            LookMLFieldParameter.allowed_value("Raw Data", "raw_data"),
+            LookMLFieldParameter.allowed_value("Raw Data", RAW_DATA_OPTION),
             LookMLFieldParameter.allowed_value(
-                "Raw Data Up To Date Views", "raw_data_up_to_date_views"
+                "Raw Data Up To Date Views", RAW_DATA_UP_TO_DATE_VIEWS_OPTION
             ),
-            LookMLFieldParameter.default_value("raw_data_up_to_date_views"),
+            LookMLFieldParameter.default_value(RAW_DATA_UP_TO_DATE_VIEWS_OPTION),
+        ],
+    )
+
+    # Dimensions
+    file_id_sql = ParameterizedValue(
+        parameter_name="view_type",
+        parameter_options=[RAW_DATA_OPTION, RAW_DATA_UP_TO_DATE_VIEWS_OPTION],
+        value_builder=lambda s: "${TABLE}.file_id" if s == RAW_DATA_OPTION else "NULL",
+        indentation_level=3,
+    )
+    file_id_dimension = DimensionLookMLViewField(
+        field_name="file_id",
+        parameters=[
+            LookMLFieldParameter.description(
+                "Ingest file ID, NULL for raw up to date views"
+            ),
+            LookMLFieldParameter.type(LookMLFieldType.NUMBER),
+            LookMLFieldParameter.sql(file_id_sql),
+        ],
+    )
+
+    is_deleted_sql = ParameterizedValue(
+        parameter_name="view_type",
+        parameter_options=[RAW_DATA_OPTION, RAW_DATA_UP_TO_DATE_VIEWS_OPTION],
+        value_builder=lambda s: "${TABLE}.is_deleted"
+        if s == RAW_DATA_OPTION
+        else "NULL",
+        indentation_level=3,
+    )
+    is_deleted_dimension = DimensionLookMLViewField(
+        field_name="is_deleted",
+        parameters=[
+            LookMLFieldParameter.description(
+                "Whether table is deleted, NULL for raw up to date views"
+            ),
+            LookMLFieldParameter.type(LookMLFieldType.YESNO),
+            LookMLFieldParameter.sql(is_deleted_sql),
         ],
     )
 
     view = LookMLView(
         view_name="state_raw_data_shared_fields",
-        fields=[view_type_param],
+        fields=[view_type_param, file_id_dimension, is_deleted_dimension],
     )
     return view
 
