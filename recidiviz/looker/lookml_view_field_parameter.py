@@ -17,7 +17,7 @@
 """Creates LookMLViewFieldParameter object and associated functions"""
 import abc
 from enum import Enum
-from typing import Union
+from typing import List, Union
 
 import attr
 
@@ -53,6 +53,16 @@ class LookMLFieldDatatype(Enum):
 class LookMLSqlReferenceType(Enum):
     TABLE_COLUMN = "table_column"
     DIMENSION = "dimension"
+
+
+class LookMLTimeframesOption(Enum):
+    DATE = "date"
+    MONTH = "month"
+    QUARTER = "quarter"
+    RAW = "raw"
+    TIME = "time"
+    WEEK = "week"
+    YEAR = "year"
 
 
 @attr.define
@@ -120,6 +130,12 @@ class LookMLFieldParameter:
     @classmethod
     def type(cls, type_param: LookMLFieldType) -> "LookMLFieldParameter":
         return FieldParameterType(type_param)
+
+    @classmethod
+    def timeframes(
+        cls, options: List[LookMLTimeframesOption]
+    ) -> "LookMLFieldParameter":
+        return FieldParameterTimeframes(options)
 
 
 # DISPLAY PARAMETERS
@@ -389,3 +405,29 @@ class FieldParameterType(LookMLFieldParameter):
                 LookMLFieldType.YESNO,
             )
         return False
+
+
+@attr.define
+class FieldParameterTimeframes(LookMLFieldParameter):
+    """Generates a `timeframes` field parameter,
+    to be used with a `dimension_group` field of type `time`
+    https://cloud.google.com/looker/docs/reference/param-field-dimension-group#timeframes
+    """
+
+    timeframe_options: List[LookMLTimeframesOption] = attr.field(
+        validator=attr.validators.min_len(1)
+    )
+
+    @property
+    def key(self) -> str:
+        return "timeframes"
+
+    @property
+    def value_text(self) -> str:
+        str_options = [t.value for t in self.timeframe_options]
+        if len(self.timeframe_options) == 1:
+            return f"[{str_options[0]}]"
+        return "[\n      " + ",\n      ".join(str_options) + "\n    ]"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category == LookMLFieldCategory.DIMENSION_GROUP
