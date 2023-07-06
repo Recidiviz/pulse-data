@@ -32,6 +32,7 @@ _DUMMY_DF = pd.DataFrame(
     {
         "outcome": [1, 1, 1, 2],
         "unit_of_analysis": ["a", "a", "b", "b"],
+        "unit_of_treatment": ["c", "c", "d", "d"],
         "start_date": pd.to_datetime(["2020-01-01", "2020-02-01"] * 2),
         "weights": [1] * 4,
         "other_column": ["a", "b", "c", "d"],
@@ -46,6 +47,7 @@ _DUMMY_DF = pd.DataFrame(
 _EXPECTED_COLUMNS = [
     "outcome",
     "unit_of_analysis",
+    "unit_of_treatment",
     "start_date",
     "weights",
 ]
@@ -63,6 +65,7 @@ class TestValidateDf(unittest.TestCase):
             df=_DUMMY_DF,
             outcome_column="outcome",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
             weight_column="weights",
             other_columns=_OTHER_COLUMNS,
@@ -88,6 +91,7 @@ class TestValidateDf(unittest.TestCase):
             df=_DUMMY_DF,
             outcome_column="outcome",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
             other_columns=_OTHER_COLUMNS,
         )
@@ -109,6 +113,7 @@ class TestValidateDf(unittest.TestCase):
             df=_DUMMY_DF,
             outcome_column="outcome",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
         )
 
@@ -127,6 +132,7 @@ class TestValidateDf(unittest.TestCase):
                 df=_DUMMY_DF,
                 outcome_column="bad_outcome",
                 unit_of_analysis_column="unit_of_analysis",
+                unit_of_treatment_column="unit_of_treatment",
                 date_column="start_date",
             )
 
@@ -136,6 +142,7 @@ class TestValidateDf(unittest.TestCase):
                 df=_DUMMY_DF,
                 outcome_column="outcome",
                 unit_of_analysis_column="bad_unit_of_analysis",
+                unit_of_treatment_column="unit_of_treatment",
                 date_column="start_date",
             )
 
@@ -145,6 +152,7 @@ class TestValidateDf(unittest.TestCase):
                 df=_DUMMY_DF,
                 outcome_column="outcome",
                 unit_of_analysis_column="unit_of_analysis",
+                unit_of_treatment_column="unit_of_treatment",
                 date_column="bad_start_date",
             )
 
@@ -157,6 +165,7 @@ class TestValidateDf(unittest.TestCase):
                 df=_DUMMY_DF,
                 outcome_column="missing_outcome",
                 unit_of_analysis_column="unit_of_analysis",
+                unit_of_treatment_column="unit_of_treatment",
                 date_column="start_date",
             )
 
@@ -166,6 +175,7 @@ class TestValidateDf(unittest.TestCase):
                 df=_DUMMY_DF,
                 outcome_column="outcome",
                 unit_of_analysis_column="missing_unit_of_analysis",
+                unit_of_treatment_column="unit_of_treatment",
                 date_column="start_date",
             )
 
@@ -175,7 +185,18 @@ class TestValidateDf(unittest.TestCase):
                 df=_DUMMY_DF,
                 outcome_column="outcome",
                 unit_of_analysis_column="unit_of_analysis",
+                unit_of_treatment_column="unit_of_treatment",
                 date_column="missing_date",
+            )
+
+        # missing unit_of_treatment column
+        with self.assertRaises(ValueError):
+            validate_df(
+                df=_DUMMY_DF,
+                outcome_column="outcome",
+                unit_of_analysis_column="unit_of_analysis",
+                unit_of_treatment_column="missing_unit_of_treatment",
+                date_column="start_date",
             )
 
     def test_validate_df_unique_columns(self) -> None:
@@ -189,8 +210,24 @@ class TestValidateDf(unittest.TestCase):
                 ),
                 outcome_column="outcome",
                 unit_of_analysis_column="unit_of_analysis",
+                unit_of_treatment_column="unit_of_treatment",
                 date_column="start_date",
             )
+
+    def test_validate_df_returns_unique_columns(self) -> None:
+        "Validate that validate_df returns unique columns"
+
+        # get output of validate_df with repeat unit of analysis and treatment columns
+        validated_df = validate_df(
+            df=_DUMMY_DF,
+            outcome_column="outcome",
+            unit_of_analysis_column="unit_of_treatment",
+            unit_of_treatment_column="unit_of_treatment",
+            date_column="start_date",
+        )
+
+        # verify unique columns in validated_df
+        self.assertEqual(len(set(validated_df.columns)), len(validated_df.columns))
 
 
 class TestEffectEstimationFunctions(unittest.TestCase):
@@ -241,6 +278,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             outcome_column="outcome",
             interaction_column="post_treat",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
         )
 
@@ -250,6 +288,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             outcome_column="outcome",
             interaction_column="post_treat",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
             weight_column="weights",
         )
@@ -260,6 +299,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             outcome_column="outcome",
             interaction_column="post_treat",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
             cluster_column="cluster_column",
         )
@@ -275,6 +315,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             outcome_column="outcome",
             interaction_column="post_treat",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
             control_columns=["controls"],
         )
@@ -295,6 +336,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             outcome_column="outcome",
             treated_column="treated",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
         )
 
@@ -304,6 +346,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             outcome_column="outcome",
             treated_column="treated",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
             weight_column="weights",
         )
@@ -314,6 +357,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             outcome_column="outcome",
             treated_column="treated",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
             cluster_column="cluster_column",
         )
@@ -329,6 +373,7 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             outcome_column="outcome",
             treated_column="treated",
             unit_of_analysis_column="unit_of_analysis",
+            unit_of_treatment_column="unit_of_treatment",
             date_column="start_date",
             control_columns=["controls"],
         )

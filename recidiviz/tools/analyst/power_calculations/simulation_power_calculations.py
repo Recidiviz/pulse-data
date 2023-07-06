@@ -101,6 +101,7 @@ def simulate_rollout(
     >>> df = pd.DataFrame(
     ...     {
     ...         "district": ["A", "A", "B", "B"],
+    ...         "officer": ["C", "C", "D", "D"],
     ...         "treated": [True, True, False, False,]
     ...         "start_date": [
     ...             pd.to_datetime("2020-01-01"),
@@ -114,7 +115,7 @@ def simulate_rollout(
     >>> simulate_rollout(
     ...     df,
     ...     outcome_column="outcome",
-    ...     unit_of_analysis_column="district",
+    ...     unit_of_analysis_column="officer",
     ...     unit_of_treatment_column="district",
     ...     treatment_column="treated",
     ...     date_column="start_date",
@@ -125,12 +126,12 @@ def simulate_rollout(
     """
 
     other_columns = [treatment_column]
-    if unit_of_treatment_column != unit_of_analysis_column:
-        other_columns.append(unit_of_treatment_column)
+
     df = validate_df(
         df=df,
         outcome_column=outcome_column,
         unit_of_analysis_column=unit_of_analysis_column,
+        unit_of_treatment_column=unit_of_treatment_column,
         date_column=date_column,
         weight_column=weight_column,
         other_columns=other_columns,
@@ -160,6 +161,7 @@ def simulate_rollout(
 
         `df` must have columns:
         - unit_of_analysis_column
+        - unit_of_treatment_column
         - `sampled_column`
         - weight_column,
         - treatment_column,
@@ -167,17 +169,21 @@ def simulate_rollout(
         The returned dataframe has the same columns.
         """
 
+        # set unit as the distinct combination of unit_of_analysis_column and
+        # unit_of_treatment_column
+        unit = list(set([unit_of_analysis_column, unit_of_treatment_column]))
+
         # sample from pre-rollout periods, with replacement
         future = df[
             [
-                unit_of_analysis_column,
+                *unit,
                 sampled_column,
                 weight_column,
                 treatment_column,
             ]
         ].copy()
         # sample with replacement within unit, dropping date column and `column`
-        future = future.groupby(unit_of_analysis_column).sample(
+        future = future.groupby(unit).sample(
             n=periods,
             replace=True,
         )
@@ -187,7 +193,7 @@ def simulate_rollout(
         # TODO(#21614): generalize to other date granularities
         future_dates = [
             last_period + relativedelta(months=i) for i in range(1, periods + 1)
-        ] * df[unit_of_analysis_column].nunique()
+        ] * len(df[unit].drop_duplicates())
         future = pd.concat(
             [
                 future.reset_index(drop=True),
@@ -350,7 +356,7 @@ def get_simulated_power_curve(
     ...         "outcome": [1, 3, 2, 2],
     ...     }
     ... )
-    >>> df = get_simulated_did_power_curve(
+    >>> df = get_simulated_power_curve(
     ...     iters=1000,
     ...     df=df,
     ...     outcome="outcome",
@@ -373,6 +379,7 @@ def get_simulated_power_curve(
         df=df,
         outcome_column=outcome_column,
         unit_of_analysis_column=unit_of_analysis_column,
+        unit_of_treatment_column=unit_of_treatment_column,
         date_column=date_column,
         weight_column=weight_column,
         other_columns=other_columns,
@@ -383,6 +390,11 @@ def get_simulated_power_curve(
 
     # detect if DiD or Event Study
     event_study = df[treatment_column].nunique() == 1
+
+    # print weighted baseline mean in treatment group
+    dfsub = df.loc[df[treatment_column] & (df[date_column] == df[date_column].max())]
+    baseline_mean = np.average(dfsub[outcome_column], weights=dfsub[weight_column])
+    print(f"Baseline (weighted) mean in treatment group: {baseline_mean:0.3g}")
 
     # print assumptions if True
     if assumptions:
@@ -433,6 +445,7 @@ def get_simulated_power_curve(
                     outcome_column=outcome_column,
                     treated_column="treat_post",
                     unit_of_analysis_column=unit_of_analysis_column,
+                    unit_of_treatment_column=unit_of_treatment_column,
                     date_column=date_column,
                     weight_column=weight_column,
                     cluster_column=unit_of_treatment_column if clustered else None,
@@ -445,6 +458,7 @@ def get_simulated_power_curve(
                     outcome_column=outcome_column,
                     interaction_column="treat_post",
                     unit_of_analysis_column=unit_of_analysis_column,
+                    unit_of_treatment_column=unit_of_treatment_column,
                     date_column=date_column,
                     weight_column=weight_column,
                     cluster_column=unit_of_treatment_column if clustered else None,
@@ -486,6 +500,7 @@ def get_simulated_power_curve(
         # print MDE @ 80% power
         mde = dfpow.loc[(dfpow.index > 0) & (dfpow.power >= 0.8)].head(1).index[0]
         print(f"Min. detectable effect @ 80% power: {mde:0.3g}")
+        print(f"Min. detectable effect as %: {100 * mde / baseline_mean:0.3g}%")
 
         # plots, if option selected
         if plot:
