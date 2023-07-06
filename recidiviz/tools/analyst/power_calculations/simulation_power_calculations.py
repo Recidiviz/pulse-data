@@ -24,12 +24,17 @@ from dateutil.relativedelta import relativedelta
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
-from recidiviz.tools.analyst.estimate_effects import est_did_effect, validate_df
+from recidiviz.tools.analyst.estimate_effects import (
+    est_did_effect,
+    est_es_effect,
+    validate_df,
+)
 
 
 def simulate_rollout(
     df: pd.DataFrame,
     outcome_column: str,
+    unit_of_analysis_column: str,
     unit_of_treatment_column: str,
     treatment_column: str = "treated",
     date_column: str = "start_date",
@@ -54,9 +59,13 @@ def simulate_rollout(
     outcome_column : str
         Column name of numeric outcome variable
 
-    unit_of_treatment_column : str
+    unit_of_analysis_column: str
+        Column with unit of analysis (e.g. district or officer)
+
+    unit_of_treatment_column: str
         Column name of categorical column with units of treatment (e.g. districts
-        or officers). Note that this can be different than the unit of analysis of `df`.
+        or officers). Note that this can be the same or different than
+        `unit_of_analysis_column`.
 
     treatment_column : str, default = "treated"
         Column name of boolean column = True in units that should be considered
@@ -105,6 +114,7 @@ def simulate_rollout(
     >>> simulate_rollout(
     ...     df,
     ...     outcome_column="outcome",
+    ...     unit_of_analysis_column="district",
     ...     unit_of_treatment_column="district",
     ...     treatment_column="treated",
     ...     date_column="start_date",
@@ -114,13 +124,16 @@ def simulate_rollout(
     ... )
     """
 
+    other_columns = [treatment_column]
+    if unit_of_treatment_column != unit_of_analysis_column:
+        other_columns.append(unit_of_treatment_column)
     df = validate_df(
         df=df,
         outcome_column=outcome_column,
-        unit_of_analysis_column=unit_of_treatment_column,
+        unit_of_analysis_column=unit_of_analysis_column,
         date_column=date_column,
         weight_column=weight_column,
-        other_columns=[treatment_column],
+        other_columns=other_columns,
     )
 
     # TODO(#21614): generalize to other date granularities
@@ -131,40 +144,82 @@ def simulate_rollout(
             "Currently only monthly date granularity is supported."
         )
 
-    # create dataframe via sampling from pre-rollout periods, with replacement
-    future = (
-        df[[unit_of_treatment_column, treatment_column, outcome_column, weight_column]]
-        .groupby(unit_of_treatment_column)
-        .sample(n=post_rollout_periods, replace=True)
-        .sort_values([unit_of_treatment_column])
-        .reset_index(drop=True)
-    )
+    # get last period
+    last_period = df[date_column].max()
 
-    # add treatment effect to treatment group only
-    if simulated_effect is not None:
-        future[outcome_column] += simulated_effect * future[treatment_column].astype(
-            int
+    # helper function for getting future values of a given variable using
+    # pre-period values
+    def get_future_values(
+        df: pd.DataFrame,
+        sampled_column: str,
+        periods: int,
+    ) -> pd.DataFrame:
+        """
+        Takes dataframe `df` and returns additional `periods` periods of sampled
+        values from `sampled_column`.
+
+        `df` must have columns:
+        - unit_of_analysis_column
+        - `sampled_column`
+        - weight_column,
+        - treatment_column,
+
+        The returned dataframe has the same columns.
+        """
+
+        # sample from pre-rollout periods, with replacement
+        future = df[
+            [
+                unit_of_analysis_column,
+                sampled_column,
+                weight_column,
+                treatment_column,
+            ]
+        ].copy()
+        # sample with replacement within unit, dropping date column and `column`
+        future = future.groupby(unit_of_analysis_column).sample(
+            n=periods,
+            replace=True,
         )
 
-    # add date column
-    last_month = df[date_column].max()
-    future_dates = [
-        last_month + relativedelta(months=i) for i in range(1, post_rollout_periods + 1)
-    ] * df[unit_of_treatment_column].nunique()
-    future = pd.concat(
-        [future, pd.Series(future_dates, name=date_column, dtype="datetime64[ns]")],
-        axis=1,
-    )
+        # at this point we have n * K samples for n periods and K units.
+        # add date column with future dates
+        # TODO(#21614): generalize to other date granularities
+        future_dates = [
+            last_period + relativedelta(months=i) for i in range(1, periods + 1)
+        ] * df[unit_of_analysis_column].nunique()
+        future = pd.concat(
+            [
+                future.reset_index(drop=True),
+                pd.Series(future_dates, name=date_column, dtype="datetime64[ns]"),
+            ],
+            axis=1,
+        )
 
-    # append to original df
-    df_all = (
-        pd.concat([df[future.columns], future], axis=0)
-        .sort_values([unit_of_treatment_column, date_column])
-        .reset_index(drop=True)
-    )
+        # return dataframe
+        return future
+
+    # get future outcomes and weights, if necessary
+    if post_rollout_periods > 0:
+        future = get_future_values(df, outcome_column, post_rollout_periods)
+
+        # add treatment effect to treatment group only
+        if simulated_effect is not None:
+            future[outcome_column] += simulated_effect * future[
+                treatment_column
+            ].astype(int)
+
+        # append to original df
+        df_all = (
+            pd.concat([df[future.columns], future], axis=0)
+            .sort_values([unit_of_analysis_column, date_column])
+            .reset_index(drop=True)
+        )
+    else:
+        df_all = df.copy()
 
     # new treatment indicator for treatment * post rollout
-    df_all["post"] = df_all[date_column] > last_month
+    df_all["post"] = df_all[date_column] > last_period
     df_all["treat_post"] = df_all[treatment_column] & df_all.post
 
     if show_plot:
@@ -183,17 +238,18 @@ def simulate_rollout(
             )
             .reset_index()
         )
-        for t in [False, True]:
+        # iterate over boolean treatment column, may be only True for event studies
+        for t in df_agg[treatment_column].unique():
             dfsub = df_agg.loc[(df_agg[treatment_column] == t)]
-            label = "Treated " if t else "Control "
+            label = "Treated" if t else "Control"
             plt.plot(dfsub[date_column], dfsub[outcome_column], label=label)
         plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
         plt.title(plot_title)
         plt.ylim(0)
 
-        # add vertical line halfway between last_month and rollout date
+        # add vertical line halfway between last_period and rollout date
         plt.axvline(
-            last_month + relativedelta(days=15),
+            last_period + relativedelta(days=15),
             color="black",
             linestyle="dashed",
             alpha=0.5,
@@ -202,7 +258,7 @@ def simulate_rollout(
     return df_all
 
 
-def get_simulated_did_power_curve(
+def get_simulated_power_curve(
     iters: int,
     df: pd.DataFrame,
     outcome_column: str,
@@ -210,7 +266,7 @@ def get_simulated_did_power_curve(
     unit_of_treatment_column: str,
     treatment_column: str = "treated",
     date_column: str = "start_date",
-    post_rollout_periods: int = 3,
+    post_rollout_periods: Optional[List[int]] = None,
     weight_column: Optional[str] = None,
     control_columns: Optional[List[str]] = None,
     compliance: float = 1.0,
@@ -222,7 +278,7 @@ def get_simulated_did_power_curve(
     curve.
 
     WARNING: this can take a while.
-    Complexity ~ len(df) ** 2 * iters
+    Complexity ~ len(df) ** 2 * iters * len(post_rollout_periods)
 
     Params
     ------
@@ -250,8 +306,10 @@ def get_simulated_did_power_curve(
     date_column : str, default = "start_date"
         Column name of datetime column with dates of observations
 
-    post_rollout_periods : int, default = 3
-        Number of months of simulated post-rollout observations to add
+    post_rollout_periods : List[int], default = [1, 2, 3]
+        Number of months of simulated post-rollout observations to add. If multiple
+        values are provided, the simulation will be run for each value and a line
+        for each duration will be plotted.
 
     weight_column: Optional[str], default = None
         Column name of numeric column with sample weights (i.e. populations). If None,
@@ -300,15 +358,17 @@ def get_simulated_did_power_curve(
     ...     unit_of_treatment_column="district",
     ...     treatment_column="treated",
     ...     date_column="date",
-    ...     post_rollout_periods=3,
+    ...     post_rollout_periods=[1, 2, 3],
     ...     assumptions=True,
     ...     plot=True,
     ... )
     """
 
-    other_columns = [unit_of_treatment_column]
+    other_columns = [treatment_column]
     if control_columns:
         other_columns.extend(control_columns)
+    if unit_of_treatment_column != unit_of_analysis_column:
+        other_columns.append(unit_of_treatment_column)
     df = validate_df(
         df=df,
         outcome_column=outcome_column,
@@ -320,6 +380,9 @@ def get_simulated_did_power_curve(
 
     # detect if clustered treatment
     clustered = unit_of_treatment_column != unit_of_analysis_column
+
+    # detect if DiD or Event Study
+    event_study = df[treatment_column].nunique() == 1
 
     # print assumptions if True
     if assumptions:
@@ -334,95 +397,108 @@ def get_simulated_did_power_curve(
         print(f"Treatment months: {post_rollout_periods}")
         print(f"Compliance rate: {compliance}")
 
-    # get dfs for storing results
-    dfpow = pd.DataFrame()
-    dfres = pd.DataFrame(index=range(iters))
+    # print total simulation rounds
+    if not post_rollout_periods:
+        post_rollout_periods = [1, 2, 3]
+    print(
+        f"Starting simulation. Total simulation rounds: {iters * len(post_rollout_periods)}"
+    )
 
-    # loop over effect sizes
-    print(f"Starting simulation. Total simulation rounds: {iters}")
+    # loop over post_rollout_periods
+    for period_count in post_rollout_periods:
+        print(f"Starting simulation for {period_count} post-rollout periods")
 
-    for i in tqdm(range(iters)):
-        # simulate treatment effect
-        dfsim = simulate_rollout(
-            df=df,
-            outcome_column=outcome_column,
-            unit_of_treatment_column=unit_of_treatment_column,
-            treatment_column=treatment_column,
-            date_column=date_column,
-            post_rollout_periods=post_rollout_periods,
-            weight_column=weight_column,
-            simulated_effect=0,
-        )
+        # get dfs for storing results
+        dfpow = pd.DataFrame()
+        dfres = pd.DataFrame(index=range(iters))
 
-        # get treatment effect results
-        if clustered:
-            res = est_did_effect(
-                df=dfsim,
+        for i in tqdm(range(iters)):
+            # simulate treatment effect
+            dfsim = simulate_rollout(
+                df=df,
                 outcome_column=outcome_column,
-                interaction_column="treat_post",
                 unit_of_analysis_column=unit_of_analysis_column,
+                unit_of_treatment_column=unit_of_treatment_column,
+                treatment_column=treatment_column,
                 date_column=date_column,
+                post_rollout_periods=period_count,
                 weight_column=weight_column,
-                cluster_column=unit_of_treatment_column,
-                control_columns=control_columns,
-            )
-        else:
-            res = est_did_effect(
-                df=dfsim,
-                outcome_column=outcome_column,
-                interaction_column="treat_post",
-                unit_of_analysis_column=unit_of_analysis_column,
-                date_column=date_column,
-                weight_column=weight_column,
-                control_columns=control_columns,
+                simulated_effect=0,
             )
 
-        dfres.loc[i, "meaneffect"] = res.params["treat_post"]
-        dfres.loc[i, "lb"] = res.conf_int().loc["treat_post"].lower
-        dfres.loc[i, "ub"] = res.conf_int().loc["treat_post"].upper
+            # get treatment effect results
+            if event_study:
+                res = est_es_effect(
+                    df=dfsim,
+                    outcome_column=outcome_column,
+                    treated_column="treat_post",
+                    unit_of_analysis_column=unit_of_analysis_column,
+                    date_column=date_column,
+                    weight_column=weight_column,
+                    cluster_column=unit_of_treatment_column if clustered else None,
+                    control_columns=control_columns,
+                )
+            # diff-in-diff
+            else:
+                res = est_did_effect(
+                    df=dfsim,
+                    outcome_column=outcome_column,
+                    interaction_column="treat_post",
+                    unit_of_analysis_column=unit_of_analysis_column,
+                    date_column=date_column,
+                    weight_column=weight_column,
+                    cluster_column=unit_of_treatment_column if clustered else None,
+                    control_columns=control_columns,
+                )
 
-    # figure out when power = 0 and = 1
-    # lb will (usually) be negative, ub will be (usually) be positive
-    #  because simulated effect is centered at zero.
-    maxeffect = max(abs(dfres.lb.min()), dfres.ub.max())
-    mineffect = -1 * maxeffect
+            dfres.loc[i, "meaneffect"] = res.params["treat_post"]
+            dfres.loc[i, "lb"] = res.conf_int().loc["treat_post"].lower
+            dfres.loc[i, "ub"] = res.conf_int().loc["treat_post"].upper
 
-    # get dfpow for mineffect to maxeffect
-    dfres_og = dfres.copy()
-    for effect in np.linspace(mineffect, maxeffect, 200):
-        # scale by `effect`
-        for c in dfres_og.columns:
-            dfres[c] = dfres_og[c] + effect
+        # figure out when power = 0 and = 1
+        # lb will (usually) be negative, ub will be (usually) be positive
+        #  because simulated effect is centered at zero.
+        maxeffect = max(abs(dfres.lb.min()), dfres.ub.max())
+        mineffect = -1 * maxeffect
 
-        # intuition: add effect to bounds, see if both bounds
-        #  positive or negative. If so, effect is "found".
-        dfres["effect_found"] = np.array(
-            dfres.apply(lambda x: (x.ub * x.lb) > 0, 1), dtype="int"
-        )
+        # get dfpow for mineffect to maxeffect
+        dfres_og = dfres.copy()
+        for effect in np.linspace(mineffect, maxeffect, 200):
+            # scale by `effect`
+            for c in dfres_og.columns:
+                dfres[c] = dfres_og[c] + effect
 
-        # calc power
-        dfpow.loc[effect, "power"] = dfres.effect_found.mean()
-        dfpow.loc[effect, "effect_plow"] = dfres.meaneffect.quantile(0.025)
-        dfpow.loc[effect, "effect_phigh"] = dfres.meaneffect.quantile(0.975)
-        dfpow.loc[effect, "first_effect"] = abs(
-            dfres.loc[dfres.effect_found == 1].meaneffect
-        ).min()
+            # intuition: add effect to bounds, see if both bounds
+            #  positive or negative. If so, effect is "found".
+            dfres["effect_found"] = np.array(
+                dfres.apply(lambda x: (x.ub * x.lb) > 0, 1), dtype="int"
+            )
 
-    # dfpow now saturated
-    # print MDE @ 80% power
-    mde = dfpow.loc[(dfpow.index > 0) & (dfpow.power >= 0.8)].head(1).index[0]
-    print(f"Min. detectable effect @ 80% power: {mde:0.3g}")
+            # calc power
+            dfpow.loc[effect, "power"] = dfres.effect_found.mean()
+            dfpow.loc[effect, "effect_plow"] = dfres.meaneffect.quantile(0.025)
+            dfpow.loc[effect, "effect_phigh"] = dfres.meaneffect.quantile(0.975)
+            dfpow.loc[effect, "first_effect"] = abs(
+                dfres.loc[dfres.effect_found == 1].meaneffect
+            ).min()
 
-    # plots, if option selected
+        # dfpow now saturated
+        # print MDE @ 80% power
+        mde = dfpow.loc[(dfpow.index > 0) & (dfpow.power >= 0.8)].head(1).index[0]
+        print(f"Min. detectable effect @ 80% power: {mde:0.3g}")
+
+        # plots, if option selected
+        if plot:
+            # power curve
+            dfpowsub = dfpow.loc[dfpow.index >= 0]
+            plt.plot(dfpowsub.index, dfpowsub.power, label=f"{period_count} periods")
+
+    # add labels to plot, if necessary
     if plot:
-        # power curve
-        dfpowsub = dfpow.loc[dfpow.index >= 0]
-        plt.plot(dfpowsub.index, dfpowsub.power, label="Power curve")
         plt.title(f"Power curve for {outcome_column} using simulation")
         plt.xlabel("True effect")
         plt.ylabel("Power")
-        plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
+        plt.legend(loc="center left", bbox_to_anchor=(1, 0.5), title="Power Curves")
         plt.ylim(0, 1.1)
-        plt.show()
 
     return dfpow.rename_axis(index="effect_size")

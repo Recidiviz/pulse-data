@@ -178,6 +178,20 @@ class TestValidateDf(unittest.TestCase):
                 date_column="missing_date",
             )
 
+    def test_validate_df_unique_columns(self) -> None:
+        """Validate that error thrown if repeat columns in df"""
+        with self.assertRaises(ValueError, msg="Column names in df must be unique"):
+            validate_df(
+                df=_DUMMY_DF.rename(
+                    columns={
+                        "other_column": "outcome",
+                    }
+                ),
+                outcome_column="outcome",
+                unit_of_analysis_column="unit_of_analysis",
+                date_column="start_date",
+            )
+
 
 class TestEffectEstimationFunctions(unittest.TestCase):
     "Tests for effect estimation functions in estimate_effects.py"
