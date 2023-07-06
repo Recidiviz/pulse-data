@@ -108,6 +108,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "experiments",
     "external_reference_views",
     "externally_shared_views",
+    "impact_dashboard",
     "ingest_metadata",
     "justice_counts",
     "justice_counts_corrections",

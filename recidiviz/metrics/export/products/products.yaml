@@ -159,3 +159,10 @@ products:
         environment: production
       - state_code: US_IX
         environment: production
+  - name: IMPACT
+    description: Impact is a tracking product web tool to share impact metrics with partners.
+    exports:
+      - IMPACT
+    states:
+      - state_code: US_TN
+        environment: staging

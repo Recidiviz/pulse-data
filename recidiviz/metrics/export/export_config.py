@@ -47,6 +47,9 @@ from recidiviz.calculator.query.state.views.dashboard.population_projections.pop
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
     VITALS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import (
+    IMPACT_DASHBOARD_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     OUTLIERS_VIEW_BUILDERS,
 )
@@ -381,6 +384,15 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_name="OUTLIERS",
         export_output_formats_and_validations={
             # TODO(#20729): Validate that the export is non-empty
+            ExportOutputFormatType.HEADERLESS_CSV: []
+        },
+    ),
+    # Impact Views
+    ExportViewCollectionConfig(
+        view_builders_to_export=IMPACT_DASHBOARD_VIEW_BUILDERS,
+        output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="IMPACT",
+        export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: []
         },
     ),
