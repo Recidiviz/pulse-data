@@ -19,6 +19,7 @@
 import unittest
 
 from recidiviz.looker.lookml_view_field import (
+    DimensionGroupLookMLViewField,
     DimensionLookMLViewField,
     MeasureLookMLViewField,
     ParameterLookMLViewField,
@@ -26,6 +27,7 @@ from recidiviz.looker.lookml_view_field import (
 from recidiviz.looker.lookml_view_field_parameter import (
     LookMLFieldParameter,
     LookMLFieldType,
+    LookMLTimeframesOption,
 )
 
 
@@ -60,6 +62,30 @@ class LookMLViewTest(unittest.TestCase):
                     LookMLFieldParameter.allowed_value("Second Value", "value2"),
                     LookMLFieldParameter.default_value("value1"),
                     LookMLFieldParameter.sql("${TABLE}.value1"),
+                ],
+            )
+
+    def test_disallowed_timeframes_throw(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"The following parameter types are not allowed for "
+            r"\[dimension\] fields: \['timeframes'\]",
+        ):
+            _ = DimensionLookMLViewField(
+                field_name="my_dimension",
+                parameters=[
+                    LookMLFieldParameter.timeframes(
+                        [LookMLTimeframesOption.DATE, LookMLTimeframesOption.MONTH]
+                    )
+                ],
+            )
+
+    def test_view_field_empty_timeframes_throw(self) -> None:
+        with self.assertRaises(ValueError):
+            _ = DimensionGroupLookMLViewField(
+                field_name="my_dimension_group",
+                parameters=[
+                    LookMLFieldParameter.timeframes([]),
                 ],
             )
 
@@ -126,3 +152,54 @@ class LookMLViewTest(unittest.TestCase):
     sql: ${TABLE}.date_dim ;;
   }"""
         self.assertEqual(view_field, expected_view_field)
+
+    def test_view_field_dimension_group_timeframes(self) -> None:
+        view_field = DimensionGroupLookMLViewField(
+            field_name="my_dimension_group",
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.TIME),
+                LookMLFieldParameter.timeframes(
+                    [LookMLTimeframesOption.DATE, LookMLTimeframesOption.MONTH]
+                ),
+                LookMLFieldParameter.sql("${TABLE}.time"),
+            ],
+        ).build()
+        expected_view_field = """
+  dimension_group: my_dimension_group {
+    type: time
+    timeframes: [
+      date,
+      month
+    ]
+    sql: ${TABLE}.time ;;
+  }"""
+        self.assertEqual(view_field, expected_view_field)
+
+    def test_view_field_dimension_group_missing_type_throw(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Type parameter must be `duration` or `time` for a `dimension_group`.",
+        ):
+            _ = DimensionGroupLookMLViewField(
+                field_name="my_dimension_group",
+                parameters=[
+                    LookMLFieldParameter.timeframes(
+                        [LookMLTimeframesOption.DATE, LookMLTimeframesOption.MONTH]
+                    ),
+                ],
+            )
+
+    def test_view_field_timeframes_wrong_type_throw(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"`timeframes` may only be used when type parameter is `time`.",
+        ):
+            _ = DimensionGroupLookMLViewField(
+                field_name="my_dimension_group",
+                parameters=[
+                    LookMLFieldParameter.type(LookMLFieldType.DURATION),
+                    LookMLFieldParameter.timeframes(
+                        [LookMLTimeframesOption.DATE, LookMLTimeframesOption.MONTH]
+                    ),
+                ],
+            )

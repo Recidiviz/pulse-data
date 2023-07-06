@@ -23,6 +23,7 @@ import attr
 from recidiviz.looker.lookml_view_field_parameter import (
     FieldParameterAllowedValue,
     FieldParameterDatatype,
+    FieldParameterTimeframes,
     FieldParameterType,
     LookMLFieldCategory,
     LookMLFieldDatatype,
@@ -182,3 +183,42 @@ class ParameterLookMLViewField(LookMLViewField):
 
     def allowed_values(self) -> List[FieldParameterAllowedValue]:
         return [p for p in self.parameters if isinstance(p, FieldParameterAllowedValue)]
+
+
+@attr.define
+class DimensionGroupLookMLViewField(LookMLViewField):
+    """Defines a LookML dimension group field object."""
+
+    def __attrs_post_init__(self) -> None:
+        super().__attrs_post_init__()
+
+        # Enforce that type is always time or date
+        has_type_time = any(
+            isinstance(param, FieldParameterType)
+            and param.field_type is LookMLFieldType.TIME
+            for param in self.parameters
+        )
+
+        has_type_duration = any(
+            isinstance(param, FieldParameterType)
+            and param.field_type is LookMLFieldType.DURATION
+            for param in self.parameters
+        )
+
+        if not has_type_time and not has_type_duration:
+            raise ValueError(
+                "Type parameter must be `duration` or `time` for a `dimension_group`."
+            )
+
+        # Enforce that timeframes is always used with type: time
+        if (
+            any(
+                isinstance(param, FieldParameterTimeframes) for param in self.parameters
+            )
+            and not has_type_time
+        ):
+            raise ValueError(
+                "`timeframes` may only be used when type parameter is `time`."
+            )
+
+    field_category = LookMLFieldCategory.DIMENSION_GROUP
