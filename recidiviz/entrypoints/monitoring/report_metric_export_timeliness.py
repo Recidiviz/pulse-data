@@ -27,18 +27,11 @@ import sys
 from typing import List, Tuple
 
 from recidiviz.monitoring.export_timeliness import report_export_timeliness_metrics
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--project_id",
-        help="The project_id where the GCS metric export files exist",
-        required=True,
-    )
 
     return parser.parse_known_args(argv)
 
@@ -49,5 +42,4 @@ if __name__ == "__main__":
 
     known_args, _ = parse_arguments(sys.argv)
 
-    with local_project_id_override(known_args.project_id):
-        report_export_timeliness_metrics()
+    report_export_timeliness_metrics()

@@ -33,6 +33,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager impo
     CloudSqlToBQLockManager,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils.environment import GCPEnvironment
 
 REFRESH_CONTROL_PACKAGE_NAME = cloud_sql_to_bq_refresh_control.__name__
 INGEST_CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
@@ -65,8 +66,14 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
         self.mock_refresh_bq_dataset_persister_patcher.start().return_value = (
             self.mock_refresh_bq_dataset_persister
         )
+        self.environment_patcher = mock.patch(
+            "recidiviz.utils.environment.get_gcp_environment",
+            return_value=GCPEnvironment.PRODUCTION.value,
+        )
+        self.environment_patcher.start()
 
     def tearDown(self) -> None:
+        self.environment_patcher.stop()
         self.mock_lock_patcher.stop()
         self.mock_refresh_bq_dataset_persister_patcher.stop()
 

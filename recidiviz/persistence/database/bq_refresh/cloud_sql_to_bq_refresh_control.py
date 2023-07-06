@@ -33,11 +33,13 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     federated_bq_schema_refresh,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils.environment import gcp_only
 
 LOCK_WAIT_SLEEP_INTERVAL_SECONDS = 60  # 1 minute
 LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT = 60 * 60 * 4  # 4 hours
 
 
+@gcp_only
 def execute_cloud_sql_to_bq_refresh(
     schema_type: SchemaType,
     ingest_instance: DirectIngestInstance,

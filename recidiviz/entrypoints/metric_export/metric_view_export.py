@@ -23,20 +23,12 @@ from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.view_export_manager import execute_metric_view_data_export
-from recidiviz.utils.environment import GCP_PROJECTS
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses arguments for the Metric View Export process."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--project_id",
-        help="The project that the export should occur in",
-        choices=GCP_PROJECTS,
-        required=True,
-    )
     parser.add_argument(
         "--state_code",
         help="The state code that the export should occur for",
@@ -67,10 +59,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args, unknown_args = parse_arguments(sys.argv[1:])
 
-    with local_project_id_override(args.project_id):
-        execute_metric_view_data_export(
-            state_code=args.state_code,
-            export_job_name=args.export_job_name,
-            sandbox_prefix=args.sandbox_prefix,
-            destination_override=args.destination_override,
-        )
+    execute_metric_view_data_export(
+        state_code=args.state_code,
+        export_job_name=args.export_job_name,
+        sandbox_prefix=args.sandbox_prefix,
+        destination_override=args.destination_override,
+    )

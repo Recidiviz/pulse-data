@@ -294,7 +294,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "python",
                 "-m",
                 "recidiviz.entrypoints.view_update.update_all_managed_views",
-                f"--project_id={_PROJECT_ID}",
             ],
         )
 
@@ -345,7 +344,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "python",
                 "-m",
                 "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
-                f"--project_id={_PROJECT_ID}",
                 "--schema_type=STATE",
                 "--ingest_instance=PRIMARY",
             ],
@@ -386,7 +384,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "python",
                 "-m",
                 "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
-                f"--project_id={_PROJECT_ID}",
                 "--schema_type=STATE",
                 "--ingest_instance=SECONDARY",
                 "--sandbox_prefix=test_prefix",
@@ -439,7 +436,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "python",
                 "-m",
                 "recidiviz.entrypoints.validation.validate",
-                f"--project_id={_PROJECT_ID}",
                 "--state_code=US_ND",
                 "--ingest_instance=PRIMARY",
             ],
@@ -480,7 +476,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "python",
                 "-m",
                 "recidiviz.entrypoints.validation.validate",
-                f"--project_id={_PROJECT_ID}",
                 "--state_code=US_ND",
                 "--ingest_instance=SECONDARY",
                 "--sandbox_prefix=test_prefix",
@@ -520,7 +515,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "python",
                 "-m",
                 "recidiviz.entrypoints.metric_export.metric_view_export",
-                f"--project_id={_PROJECT_ID}",
                 "--export_job_name=INGEST_METADATA",
             ],
         )

@@ -37,6 +37,7 @@ from recidiviz.metrics.export.export_config import (
 )
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.utils import metadata, monitoring
+from recidiviz.utils.environment import gcp_only
 from recidiviz.utils.monitoring import monitoring_metric_url
 
 m_export_file_age = measure.MeasureInt(
@@ -137,6 +138,7 @@ def produce_export_timeliness_metrics(
     return metrics
 
 
+@gcp_only
 def report_export_timeliness_metrics() -> None:
     """Collects file age from the GCS buckets used in exports and creates measurements"""
     monitoring.register_views([export_file_age_view])

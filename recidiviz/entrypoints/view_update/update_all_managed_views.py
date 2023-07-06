@@ -22,20 +22,12 @@ import sys
 from typing import List, Tuple
 
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
-from recidiviz.utils.environment import GCP_PROJECTS
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses arguments for the managed views update process."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--project_id",
-        help="The project that the refresh should occur in",
-        choices=GCP_PROJECTS,
-        required=True,
-    )
     parser.add_argument(
         "--sandbox_prefix",
         help="The sandbox prefix for which the refresh needs to write to",
@@ -51,7 +43,4 @@ if __name__ == "__main__":
 
     known_args, _ = parse_arguments(sys.argv)
 
-    with local_project_id_override(project_id_override=known_args.project_id):
-        execute_update_all_managed_views(
-            known_args.project_id, known_args.sandbox_prefix
-        )
+    execute_update_all_managed_views(known_args.project_id, known_args.sandbox_prefix)

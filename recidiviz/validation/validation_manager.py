@@ -32,7 +32,7 @@ from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata, monitoring, structured_logging, trace
-from recidiviz.utils.environment import get_environment_for_project
+from recidiviz.utils.environment import gcp_only, get_environment_for_project
 from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
 from recidiviz.validation.configured_validations import (
     get_all_validations,
@@ -91,6 +91,7 @@ failed_validations_view = view.View(
 monitoring.register_views([failed_validations_view, failed_to_run_validations_view])
 
 
+@gcp_only
 def execute_validation_request(
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
