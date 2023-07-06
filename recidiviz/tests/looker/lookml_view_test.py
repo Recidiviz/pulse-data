@@ -52,6 +52,17 @@ class LookMLViewTest(unittest.TestCase):
 }"""
         self.assertEqual(view, expected_view)
 
+    def test_extension_required_lookml_view(self) -> None:
+        view = LookMLView(
+            view_name="my_extension_required_view",
+            extension_required=True,
+        ).build()
+        expected_view = """view: my_extension_required_view {
+  extension: required
+
+}"""
+        self.assertEqual(view, expected_view)
+
     def test_derived_table_lookml_view(self) -> None:
         derived_table_query = """
     SELECT col1, col2
