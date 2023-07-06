@@ -23,10 +23,16 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH CAF_base AS (
+WITH latest_Classification AS (
+  SELECT t.OffenderID, ClassificationDate, (DATE(CAFDate)) AS CAFDate
+  FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY OffenderId, CAFDate ORDER BY ClassificationSequenceNumber DESC) AS seq 
+        FROM {Classification}) t
+  WHERE seq = 1
+), CAF_base AS (
     SELECT 
-        OffenderID,
-        CAFDate,
+        ca.OffenderID,
+        ca.CAFDate,
+        (DATE(ClassificationDate)) AS ClassificationDate,
         CAFScore,
         ScheduleAScore,
         ScheduleBScore,
@@ -41,10 +47,13 @@ WITH CAF_base AS (
         CategoryScore9 AS Question8,
         CategoryScore10 AS Question9,
         CAFSiteID, 
-        ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY CAFDate) AS CAF_ID,
-    FROM {CAFScore}
+        ROW_NUMBER() OVER (PARTITION BY ca.OffenderID ORDER BY ca.CAFDate) AS CAF_ID,
+    FROM {CAFScore} ca
+    LEFT JOIN latest_Classification cl
+    ON ca.OffenderId = cl.OffenderId
+    AND (DATE(ca.CAFDate)) = cl.CAFDate
 )
-SELECT * from CAF_base
+SELECT * FROM CAF_base
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
