@@ -16,6 +16,7 @@ input_columns:
   - AddressCity
   - AddressState
   - AddressZip
+  - PhoneNumber
 unused_columns: []
 output:
   StatePerson:
@@ -60,3 +61,4 @@ output:
         $city: AddressCity
         $state: AddressState
         $zip: AddressZip
+    current_phone_number: PhoneNumber
