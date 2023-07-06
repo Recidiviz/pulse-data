@@ -155,6 +155,10 @@ def validate_df(
         df["weights"] = 1
         weight_column = "weights"
 
+    # ensure all column names in df unique
+    if len(df.columns) != len(set(df.columns)):
+        raise ValueError("Column names in df must be unique")
+
     # ensure df has necessary columns
     all_columns = [outcome_column, unit_of_analysis_column, date_column, weight_column]
     if other_columns:
