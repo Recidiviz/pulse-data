@@ -34,10 +34,8 @@ from requests import Response
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
     get_ingest_instance,
     get_sandbox_prefix,
+    get_state_code_filter,
     initialize_calculation_dag_group,
-)
-from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
-    IAPHTTPRequestOperator,
 )
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
@@ -136,6 +134,37 @@ def refresh_bq_dataset_operator(schema_type: str) -> KubernetesPodOperator:
         task_id=f"refresh_bq_dataset_{schema_type}",
         container_name=f"refresh_bq_dataset_{schema_type}",
         arguments=get_kubernetes_arguments,
+    )
+
+
+def execute_update_normalized_state() -> None:
+    def get_kubernetes_arguments(
+        dag_run: DagRun, task_instance: TaskInstance
+    ) -> List[str]:
+        additional_args = []
+
+        state_code_filter = get_state_code_filter(dag_run)
+
+        if state_code_filter:
+            additional_args.append(f"--state_code_filter={state_code_filter}")
+
+        sandbox_prefix = get_sandbox_prefix(task_instance)
+        if sandbox_prefix:
+            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
+
+        return [
+            "python",
+            "-m",
+            "recidiviz.entrypoints.update_normalized_state_dataset",
+            f"--project_id={project_id}",
+            *additional_args,
+        ]
+
+    return build_recidiviz_kubernetes_pod_operator(
+        task_id="update_normalized_state",
+        container_name="update_normalized_state",
+        arguments=get_kubernetes_arguments,
+        trigger_rule=TriggerRule.ALL_DONE,
     )
 
 
@@ -335,16 +364,9 @@ def create_calculation_dag() -> None:
 
     initialize_calculation_dag_group() >> bq_refresh
 
-    update_normalized_state = IAPHTTPRequestOperator(
-        task_id="update_normalized_state",
-        url=f"https://{project_id}.appspot.com/calculation_data_storage_manager/update_normalized_state_dataset",
-        # This will trigger the task regardless of the failure or success of the
-        # normalization pipelines
-        trigger_rule=TriggerRule.ALL_DONE,
-        # this endpoint fails ephemerally sometimes and we want to retry and not fail the entire dag when this happens
-        retries=3,
-        # TODO(#20503): Update to use POST when passing data to endpoint
-    )
+    with TaskGroup("update_normalized_state") as update_normalized_state:
+        execute_update_normalized_state()
+
     trigger_update_all_views = update_all_managed_views_operator()
 
     (

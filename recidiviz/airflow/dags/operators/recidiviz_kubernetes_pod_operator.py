@@ -24,6 +24,7 @@ from typing import Callable, List, Optional, Union
 from airflow.decorators import task
 from airflow.models import DagRun, TaskInstance
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+from airflow.utils.trigger_rule import TriggerRule
 from kubernetes.client import models as k8s
 
 from recidiviz.utils.environment import RECIDIVIZ_ENV, get_environment_for_project
@@ -35,6 +36,7 @@ def build_recidiviz_kubernetes_pod_operator(
     task_id: str,
     arguments: Union[Callable[[DagRun, TaskInstance], List[str]], List[str]],
     container_name: str,
+    trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
 ) -> KubernetesPodOperator:
     """
     Builds an operator that launches a container using the appengine image in the user workloads Kubernetes namespace
@@ -94,4 +96,5 @@ def build_recidiviz_kubernetes_pod_operator(
         container_resources=k8s.V1ResourceRequirements(
             requests={"cpu": "2000m", "memory": "1Gi"}
         ),
+        trigger_rule=trigger_rule,
     )

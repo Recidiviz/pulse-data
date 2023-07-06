@@ -104,7 +104,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(dag.task_ids))
 
         normalized_state_downstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state"],
+            task_ids_or_regex=["update_normalized_state.update_normalized_state"],
             include_downstream=True,
             include_upstream=False,
         )
@@ -127,11 +127,11 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(dag.task_ids))
 
         normalization_group: TaskGroup = dag.task_group_dict["normalization"]
-        update_normalized_state_task = dag.get_task("update_normalized_state")
+        update_normalized_state_group = dag.task_group_dict["update_normalized_state"]
 
         self.assertIn(
-            update_normalized_state_task.task_id,
-            normalization_group.downstream_task_ids,
+            update_normalized_state_group.group_id,
+            normalization_group.downstream_group_ids,
         )
 
     def test_update_normalized_state_upstream_of_non_normalization_pipelines(
@@ -152,7 +152,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state"],
+            task_ids_or_regex=["update_normalized_state.update_normalized_state"],
             include_downstream=True,
             include_upstream=False,
         )
@@ -183,7 +183,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state"],
+            task_ids_or_regex=["update_normalized_state.update_normalized_state"],
             include_downstream=True,
             include_upstream=False,
         )
