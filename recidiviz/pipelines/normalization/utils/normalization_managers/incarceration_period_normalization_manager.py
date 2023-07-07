@@ -240,6 +240,16 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
             )
         )
 
+    def infer_additional_periods(
+        self,
+        person_id: int,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Some states may require additional incarceration periods to be inserted
+        based on gaps in information.
+        """
+        return incarceration_periods
+
     def normalization_relies_on_supervision_periods(self) -> bool:
         """State-specific implementations of this class should return whether the IP
         normalization logic for the state relies on information in
@@ -282,8 +292,10 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         ],
         incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
         field_index: CoreEntityFieldIndex,
+        person_id: Optional[int],
         earliest_death_date: Optional[date] = None,
     ):
+        self._person_id = person_id
         self._original_incarceration_periods = deepcopy(incarceration_periods)
         self._normalized_incarceration_periods_and_additional_attributes: Optional[
             Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap]
@@ -371,6 +383,15 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             mid_processing_periods = self._sort_and_infer_missing_dates_and_statuses(
                 mid_processing_periods
             )
+
+            # Infer missing periods
+            if self._person_id:
+                mid_processing_periods = (
+                    self.normalization_delegate.infer_additional_periods(
+                        self._person_id, mid_processing_periods
+                    )
+                )
+
             original_sorted_periods = deepcopy(mid_processing_periods)
 
             # Handle any periods that may have been erroneously set to have a
