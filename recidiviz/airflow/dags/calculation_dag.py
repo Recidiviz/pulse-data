@@ -41,7 +41,7 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
-    build_recidiviz_kubernetes_pod_operator,
+    build_kubernetes_pod_task_group,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
@@ -97,9 +97,9 @@ def flex_dataflow_operator_for_pipeline(
     )
 
 
-def update_all_managed_views_operator() -> KubernetesPodOperator:
-    return build_recidiviz_kubernetes_pod_operator(
-        task_id="update_all_managed_views",
+def update_all_managed_views_operator() -> TaskGroup:
+    return build_kubernetes_pod_task_group(
+        group_id="update_all_managed_views",
         container_name="update_all_managed_views",
         arguments=[
             "python",
@@ -128,14 +128,14 @@ def refresh_bq_dataset_operator(schema_type: str) -> KubernetesPodOperator:
             *additional_args,
         ]
 
-    return build_recidiviz_kubernetes_pod_operator(
-        task_id=f"refresh_bq_dataset_{schema_type}",
+    return build_kubernetes_pod_task_group(
+        group_id=f"refresh_bq_dataset_{schema_type}",
         container_name=f"refresh_bq_dataset_{schema_type}",
         arguments=get_kubernetes_arguments,
     )
 
 
-def execute_update_normalized_state() -> None:
+def execute_update_normalized_state() -> TaskGroup:
     def get_kubernetes_arguments(
         dag_run: DagRun, task_instance: TaskInstance
     ) -> List[str]:
@@ -157,15 +157,15 @@ def execute_update_normalized_state() -> None:
             *additional_args,
         ]
 
-    return build_recidiviz_kubernetes_pod_operator(
-        task_id="update_normalized_state",
+    return build_kubernetes_pod_task_group(
+        group_id="update_normalized_state",
         container_name="update_normalized_state",
         arguments=get_kubernetes_arguments,
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
 
-def execute_validations_operator(state_code: str) -> KubernetesPodOperator:
+def execute_validations_operator(state_code: str) -> TaskGroup:
     def get_kubernetes_arguments(
         dag_run: DagRun, task_instance: TaskInstance
     ) -> List[str]:
@@ -184,8 +184,8 @@ def execute_validations_operator(state_code: str) -> KubernetesPodOperator:
             *additional_args,
         ]
 
-    return build_recidiviz_kubernetes_pod_operator(
-        task_id=f"execute_validations_{state_code}",
+    return build_kubernetes_pod_task_group(
+        group_id=f"execute_validations_{state_code}",
         container_name=f"execute_validations_{state_code}",
         arguments=get_kubernetes_arguments,
     )
@@ -193,10 +193,10 @@ def execute_validations_operator(state_code: str) -> KubernetesPodOperator:
 
 def trigger_metric_view_data_operator(
     export_job_name: str, state_code: Optional[str]
-) -> KubernetesPodOperator:
+) -> TaskGroup:
     state_code_component = f"_{state_code.lower()}" if state_code else ""
-    return build_recidiviz_kubernetes_pod_operator(
-        task_id=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
+    return build_kubernetes_pod_task_group(
+        group_id=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
         container_name=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
         arguments=[
             "python",
@@ -210,9 +210,9 @@ def trigger_metric_view_data_operator(
 
 def create_metric_view_data_export_nodes(
     relevant_product_exports: List[ProductExportConfig],
-) -> List[KubernetesPodOperator]:
+) -> List[TaskGroup]:
     """Creates trigger nodes and wait conditions for metric view data exports based on provided export job filter."""
-    metric_view_data_triggers: List[KubernetesPodOperator] = []
+    metric_view_data_triggers: List[TaskGroup] = []
     for export in relevant_product_exports:
         export_job_name = export["export_job_name"]
         state_code = export["state_code"]
@@ -359,8 +359,7 @@ def create_calculation_dag() -> None:
 
     initialize_calculation_dag_group() >> bq_refresh
 
-    with TaskGroup("update_normalized_state") as update_normalized_state:
-        execute_update_normalized_state()
+    update_normalized_state = execute_update_normalized_state()
 
     trigger_update_all_views = update_all_managed_views_operator()
 

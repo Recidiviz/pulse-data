@@ -24,6 +24,7 @@ from typing import Callable, List, Optional, Union
 from airflow.decorators import task
 from airflow.models import DagRun, TaskInstance
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from kubernetes.client import models as k8s
 
@@ -32,12 +33,12 @@ from recidiviz.utils.environment import RECIDIVIZ_ENV, get_environment_for_proje
 _project_id = os.environ.get("GCP_PROJECT")
 
 
-def build_recidiviz_kubernetes_pod_operator(
-    task_id: str,
+def build_kubernetes_pod_task_group(
+    group_id: str,
     arguments: Union[Callable[[DagRun, TaskInstance], List[str]], List[str]],
     container_name: str,
     trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
-) -> KubernetesPodOperator:
+) -> TaskGroup:
     """
     Builds an operator that launches a container using the appengine image in the user workloads Kubernetes namespace
     This is useful for launching arbitrary tools from within our pipenv environment.
@@ -45,56 +46,63 @@ def build_recidiviz_kubernetes_pod_operator(
     For information regarding the KuberenetesPodOperator:
     https://airflow.apache.org/docs/apache-airflow-providers-cncf-kubernetes/stable/operators.html
 
-    task_id: name of the airflow task
+    group_id: name of the airflow task group
     argv: List of commands to run in the pipenv shell
     container_name: Name to group Kubernetes pod metrics
     """
 
-    @task(task_id=f"set_kubernetes_arguments_{task_id}")
-    def get_kubernetes_arguments(
-        dag_run: Optional[DagRun] = None,
-        task_instance: Optional[TaskInstance] = None,
-    ) -> List[str]:
-        if not task_instance:
-            raise ValueError(
-                "task_instance not provided. This should be automatically set by Airflow."
-            )
-        if not dag_run:
-            raise ValueError(
-                "dag_run not provided. This should be automatically set by Airflow."
-            )
+    with TaskGroup(group_id) as task_group:
 
-        argv = arguments(dag_run, task_instance) if callable(arguments) else arguments
-        logging.info(
-            "Found arguments for task [%s]: %s", task_instance.task_id, " ".join(argv)
-        )
-        return ["run", *argv]
+        @task
+        def set_kubernetes_arguments(
+            dag_run: Optional[DagRun] = None,
+            task_instance: Optional[TaskInstance] = None,
+        ) -> List[str]:
+            if not task_instance:
+                raise ValueError(
+                    "task_instance not provided. This should be automatically set by Airflow."
+                )
+            if not dag_run:
+                raise ValueError(
+                    "dag_run not provided. This should be automatically set by Airflow."
+                )
 
-    namespace = "composer-user-workloads"
-    return KubernetesPodOperator(
-        task_id=task_id,
-        namespace=namespace,
-        image=os.getenv("RECIDIVIZ_APP_ENGINE_IMAGE"),
-        image_pull_policy="Always",
-        # This config is provided by Cloud Composer
-        config_file="/home/airflow/composer_kube_config",
-        cmds=[
-            "pipenv",
-        ],
-        arguments=get_kubernetes_arguments(),
-        env_vars=[
-            # TODO(census-instrumentation/opencensus-python#796)
-            k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name),
-            k8s.V1EnvVar(name="NAMESPACE", value=namespace),
-            k8s.V1EnvVar(
-                name=RECIDIVIZ_ENV,
-                value=get_environment_for_project(_project_id).value
-                if _project_id
-                else "",
+            argv = (
+                arguments(dag_run, task_instance) if callable(arguments) else arguments
+            )
+            logging.info(
+                "Found arguments for task [%s]: %s",
+                task_instance.task_id,
+                " ".join(argv),
+            )
+            return ["run", *argv]
+
+        namespace = "composer-user-workloads"
+        KubernetesPodOperator(
+            task_id="execute_entrypoint_operator",
+            namespace=namespace,
+            image=os.getenv("RECIDIVIZ_APP_ENGINE_IMAGE"),
+            image_pull_policy="Always",
+            # This config is provided by Cloud Composer
+            config_file="/home/airflow/composer_kube_config",
+            cmds=[
+                "pipenv",
+            ],
+            arguments=set_kubernetes_arguments(),
+            env_vars=[
+                # TODO(census-instrumentation/opencensus-python#796)
+                k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name),
+                k8s.V1EnvVar(name="NAMESPACE", value=namespace),
+                k8s.V1EnvVar(
+                    name=RECIDIVIZ_ENV,
+                    value=get_environment_for_project(_project_id).value
+                    if _project_id
+                    else "",
+                ),
+            ],
+            container_resources=k8s.V1ResourceRequirements(
+                requests={"cpu": "2000m", "memory": "1Gi"}
             ),
-        ],
-        container_resources=k8s.V1ResourceRequirements(
-            requests={"cpu": "2000m", "memory": "1Gi"}
-        ),
-        trigger_rule=trigger_rule,
-    )
+            trigger_rule=trigger_rule,
+        )
+    return task_group

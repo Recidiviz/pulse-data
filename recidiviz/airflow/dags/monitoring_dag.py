@@ -23,7 +23,7 @@ import os
 from airflow.decorators import dag
 
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
-    build_recidiviz_kubernetes_pod_operator,
+    build_kubernetes_pod_task_group,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 
@@ -42,8 +42,8 @@ project_id = os.environ.get("GCP_PROJECT")
     max_active_runs=1,
 )
 def create_monitoring_dag() -> None:
-    build_recidiviz_kubernetes_pod_operator(
-        task_id="generate_export_timeliness_metrics",
+    build_kubernetes_pod_task_group(
+        group_id="generate_export_timeliness_metrics",
         container_name="generate_export_timeliness_metric",
         arguments=[
             "python",
