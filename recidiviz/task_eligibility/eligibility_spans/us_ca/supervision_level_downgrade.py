@@ -27,12 +27,12 @@ from recidiviz.task_eligibility.completion_events.general import (
     supervision_level_downgrade,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    housing_type_is_not_transient,
     no_supervision_violation_within_6_months,
     supervision_level_is_high_for_6_months,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ca import (
     assessment_level_3_or_lower,
+    housing_type_is_not_transient,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,

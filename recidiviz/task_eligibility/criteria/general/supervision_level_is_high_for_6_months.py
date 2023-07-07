@@ -17,6 +17,7 @@
 """This criteria view builder defines spans of time where clients have been on HIGH
 supervision level for 6 months as tracked by our `sessions` dataset.
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -29,13 +30,13 @@ _CRITERIA_NAME = "SUPERVISION_LEVEL_IS_HIGH_FOR_6_MONTHS"
 _DESCRIPTION = """This criteria view builder defines spans of time where clients have been on HIGH
 supervision level for 6 months as tracked by our `sessions` dataset."""
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
 
 WITH clients_on_high_with_6months AS (
     SELECT 
         *,
         DATE_ADD(start_date, INTERVAL 6 MONTH) start_date_plus_6mo
-    FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
+    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized`
     WHERE supervision_level = 'HIGH'
 )
 SELECT 
@@ -46,7 +47,7 @@ SELECT
     TRUE as meets_criteria,
     TO_JSON(STRUCT(start_date_plus_6mo AS high_start_date)) AS reason,
 FROM clients_on_high_with_6months
-WHERE end_date_exclusive > start_date_plus_6mo
+WHERE {nonnull_end_date_clause('end_date_exclusive')} > start_date_plus_6mo
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
