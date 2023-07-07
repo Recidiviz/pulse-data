@@ -32,7 +32,10 @@ from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_clients_
     US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -72,6 +75,8 @@ WORKFLOWS_CONFIGS_WITH_CLIENTS = [
 WORKFLOWS_SUPERVISION_STATES = [
     config.state_code.value for config in WORKFLOWS_CONFIGS_WITH_CLIENTS
 ]
+
+WORKFLOWS_SUPERVISION_STATES.append("US_CA")
 
 
 def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
@@ -137,6 +142,9 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_ca_raw_data_dataset=raw_tables_dataset_for_region(
+        state_code=StateCode.US_CA, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
     workflows_supervision_states=list_to_query_string(

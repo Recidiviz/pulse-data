@@ -38,7 +38,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             -- to make sure we choose the officer that aligns with other compartment session attributes.
           #   There are officers with more than one legitimate external id. We are merging these ids and
           #   so must move all clients to the merged id.
-          IFNULL(ids.external_id_mapped, sessions.supervising_officer_external_id_end) AS officer_id,
+          COALESCE(ca_pp.BadgeNumber, ids.external_id_mapped, sessions.supervising_officer_external_id_end) AS officer_id,
           sessions.supervision_district_name_end AS district,
           projected_end.projected_completion_date_max AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
@@ -63,14 +63,19 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_sessions_materialized`
             -- TODO(#19840): Remove US_MI exclusion
             WHERE (state_code = "US_MI" OR end_date IS NULL)
-                AND supervising_officer_external_id IS NOT NULL
+                AND (state_code = "US_CA" OR supervising_officer_external_id IS NOT NULL)
         ) active_officer
             ON sessions.state_code = active_officer.state_code
             AND sessions.person_id = active_officer.person_id
+        LEFT JOIN (
+            SELECT * FROM `{{project_id}}.{{us_ca_raw_data_dataset}}.PersonParole`
+              WHERE update_datetime = '2023-05-10T00:00:00'
+        ) ca_pp
+            ON pei.person_external_id = ca_pp.OffenderId
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
-          AND sessions.supervising_officer_external_id_end IS NOT NULL
+          AND (sessions.state_code = "US_CA" OR sessions.supervising_officer_external_id_end IS NOT NULL)
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY person_id
             ORDER BY person_external_id,
