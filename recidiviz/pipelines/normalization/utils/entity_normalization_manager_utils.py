@@ -203,6 +203,7 @@ def normalized_periods_for_calculations(
     if incarceration_periods:
         ip_normalization_manager = (
             IncarcerationPeriodNormalizationManager(
+                person_id=person_id,
                 incarceration_periods=incarceration_periods,
                 normalization_delegate=ip_normalization_delegate,
                 normalized_supervision_period_index=supervision_period_index,

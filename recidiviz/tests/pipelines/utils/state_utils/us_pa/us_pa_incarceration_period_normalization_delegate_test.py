@@ -89,6 +89,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         violation_responses = violation_responses or []
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
+            person_id=None,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsPaIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,

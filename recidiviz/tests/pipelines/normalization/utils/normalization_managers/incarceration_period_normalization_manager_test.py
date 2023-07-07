@@ -59,6 +59,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod],
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
+        """Normalizes incarceration periods for calculations"""
         # None of the state-agnostic tests rely on supervision periods
         sp_index = None
         # None of the state-agnostic tests rely on violation responses
@@ -67,6 +68,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         incarceration_sentences = None
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
+            person_id=None,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
@@ -1309,6 +1311,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         ]
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
+            person_id=None,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=None,
@@ -1350,6 +1353,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
         violation_responses = None
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
+            person_id=None,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
