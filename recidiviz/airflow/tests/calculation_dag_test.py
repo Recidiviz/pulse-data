@@ -48,10 +48,14 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
     "calculation_pipeline_templates.yaml",
 )
 
-_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_all_managed_views"
+_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
+    "update_all_managed_views.execute_entrypoint_operator"
+)
 _VALIDATIONS_STATE_CODE_BRANCH_START = "validations.state_code_branch_start"
-_REFRESH_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_STATE"
-_EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
+_REFRESH_BQ_DATASET_TASK_ID = (
+    "bq_refresh.refresh_bq_dataset_STATE.execute_entrypoint_operator"
+)
+_EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data.execute_entrypoint_operator"
 
 
 def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
@@ -104,7 +108,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(dag.task_ids))
 
         normalized_state_downstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state.update_normalized_state"],
+            task_ids_or_regex=["update_normalized_state.execute_entrypoint_operator"],
             include_downstream=True,
             include_upstream=False,
         )
@@ -152,7 +156,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state.update_normalized_state"],
+            task_ids_or_regex=["update_normalized_state.execute_entrypoint_operator"],
             include_downstream=True,
             include_upstream=False,
         )
@@ -183,7 +187,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state.update_normalized_state"],
+            task_ids_or_regex=["update_normalized_state.execute_entrypoint_operator"],
             include_downstream=True,
             include_upstream=False,
         )
@@ -275,11 +279,9 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_update_task)}]."
             )
 
-    @patch(
-        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
-    )
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_update_all_managed_views_endpoint(
-        self, mock_build_kubernetes_pod_creator: MagicMock
+        self, mock_build_kubernetes_pod_task_group: MagicMock
     ) -> None:
         from recidiviz.airflow.dags.calculation_dag import (
             update_all_managed_views_operator,
@@ -287,8 +289,8 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         update_all_managed_views_operator()
 
-        mock_build_kubernetes_pod_creator.assert_called_once_with(
-            task_id="update_all_managed_views",
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="update_all_managed_views",
             container_name="update_all_managed_views",
             arguments=[
                 "python",
@@ -311,12 +313,10 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
     @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch(
-        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
-    )
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_refresh_bq_dataset_task(
         self,
-        mock_build_kubernetes_pod_creator: MagicMock,
+        mock_build_kubernetes_pod_task_group: MagicMock,
         mock_get_sandbox_prefix: MagicMock,
         mock_get_ingest_instance: MagicMock,
     ) -> None:
@@ -328,13 +328,15 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         refresh_bq_dataset_operator("STATE")
 
-        mock_build_kubernetes_pod_creator.assert_called_once_with(
-            task_id="refresh_bq_dataset_STATE",
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="refresh_bq_dataset_STATE",
             container_name="refresh_bq_dataset_STATE",
             arguments=mock.ANY,
         )
 
-        arguments = mock_build_kubernetes_pod_creator.mock_calls[0].kwargs["arguments"]
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
         if not callable(arguments):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
@@ -351,12 +353,10 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
     @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch(
-        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
-    )
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_refresh_bq_dataset_task_secondary(
         self,
-        mock_build_kubernetes_pod_creator: MagicMock,
+        mock_build_kubernetes_pod_task_group: MagicMock,
         mock_get_sandbox_prefix: MagicMock,
         mock_get_ingest_instance: MagicMock,
     ) -> None:
@@ -368,13 +368,15 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         refresh_bq_dataset_operator("STATE")
 
-        mock_build_kubernetes_pod_creator.assert_called_once_with(
-            task_id="refresh_bq_dataset_STATE",
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="refresh_bq_dataset_STATE",
             container_name="refresh_bq_dataset_STATE",
             arguments=mock.ANY,
         )
 
-        arguments = mock_build_kubernetes_pod_creator.mock_calls[0].kwargs["arguments"]
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
         if not callable(arguments):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
@@ -393,7 +395,9 @@ class TestCalculationPipelineDag(unittest.TestCase):
     def test_validations_task_exists(self) -> None:
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        trigger_validation_task = dag.get_task("validations.execute_validations_US_ND")
+        trigger_validation_task = dag.get_task(
+            "validations.execute_validations_US_ND.execute_entrypoint_operator"
+        )
 
         if not isinstance(trigger_validation_task, KubernetesPodOperator):
             raise ValueError(
@@ -403,12 +407,10 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
     @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch(
-        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
-    )
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_validations_task(
         self,
-        mock_build_kubernetes_pod_creator: MagicMock,
+        mock_build_kubernetes_pod_task_group: MagicMock,
         mock_get_sandbox_prefix: MagicMock,
         mock_get_ingest_instance: MagicMock,
     ) -> None:
@@ -420,13 +422,15 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         execute_validations_operator(state_code="US_ND")
 
-        mock_build_kubernetes_pod_creator.assert_called_once_with(
-            task_id="execute_validations_US_ND",
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="execute_validations_US_ND",
             container_name="execute_validations_US_ND",
             arguments=mock.ANY,
         )
 
-        arguments = mock_build_kubernetes_pod_creator.mock_calls[0].kwargs["arguments"]
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
         if not callable(arguments):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
@@ -443,12 +447,10 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
     @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch(
-        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
-    )
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_validations_task_secondary(
         self,
-        mock_build_kubernetes_pod_creator: MagicMock,
+        mock_build_kubernetes_pod_task_group: MagicMock,
         mock_get_sandbox_prefix: MagicMock,
         mock_get_ingest_instance: MagicMock,
     ) -> None:
@@ -460,13 +462,15 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         execute_validations_operator(state_code="US_ND")
 
-        mock_build_kubernetes_pod_creator.assert_called_once_with(
-            task_id="execute_validations_US_ND",
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="execute_validations_US_ND",
             container_name="execute_validations_US_ND",
             arguments=mock.ANY,
         )
 
-        arguments = mock_build_kubernetes_pod_creator.mock_calls[0].kwargs["arguments"]
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
         if not callable(arguments):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
@@ -493,11 +497,9 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_metric_view_data_task)}]."
             )
 
-    @patch(
-        "recidiviz.airflow.dags.calculation_dag.build_recidiviz_kubernetes_pod_operator"
-    )
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_trigger_metric_view_data_operator(
-        self, mock_build_kubernetes_pod_creator: MagicMock
+        self, mock_build_kubernetes_pod_task_group: MagicMock
     ) -> None:
         """Tests the trigger_metric_view_data_operator triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import (
@@ -508,8 +510,8 @@ class TestCalculationPipelineDag(unittest.TestCase):
             export_job_name="INGEST_METADATA", state_code=None
         )
 
-        mock_build_kubernetes_pod_creator.assert_called_once_with(
-            task_id="export_ingest_metadata_metric_view_data",
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="export_ingest_metadata_metric_view_data",
             container_name="export_ingest_metadata_metric_view_data",
             arguments=[
                 "python",
