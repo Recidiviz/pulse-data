@@ -19,6 +19,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.workflows.us_ca.supervision_staff_template import (
+    US_CA_SUPERVISION_STAFF_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_id.supervision_staff_template import (
     US_ID_SUPERVISION_STAFF_TEMPLATE,
 )
@@ -42,7 +45,10 @@ from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_staff_te
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -62,6 +68,7 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
         , me_staff AS ({US_ME_STAFF_TEMPLATE})
         , mi_staff AS ({US_MI_SUPERVISION_STAFF_TEMPLATE})
         , mo_staff AS ({US_MO_INCARCERATION_STAFF_TEMPLATE})
+        , ca_staff AS ({US_CA_SUPERVISION_STAFF_TEMPLATE})
     
     SELECT {{columns}} FROM tn_staff
     UNION ALL 
@@ -76,6 +83,8 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
     SELECT {{columns}} FROM mi_staff
     UNION ALL
     SELECT {{columns}} FROM mo_staff
+    UNION ALL
+    SELECT {{columns}} FROM ca_staff
 """
 
 STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -99,6 +108,7 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
@@ -112,6 +122,12 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     ),
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_ca_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_CA, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_ca_raw_tables_dataset=raw_tables_dataset_for_region(
+        state_code=StateCode.US_CA, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
 )
