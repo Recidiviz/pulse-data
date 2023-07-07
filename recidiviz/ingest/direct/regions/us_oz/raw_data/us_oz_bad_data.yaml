@@ -15,3 +15,5 @@ columns:
     description: what rank it has
   - name: show
     description: name of show
+  - name: personID
+    description: ID of user who's ranking this belongs to
