@@ -230,7 +230,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,
         opportunity_type="usTnCustodyLevelDowngrade",
-        experiment_id="US_TN_SUPERVISION_LEVEL_DOWNGRADE_WORKFLOWS",
+        experiment_id="US_TN_CUSTODY_LEVEL_DOWNGRADE_WORKFLOWS",
         opportunity_record_view_name="us_tn_custody_level_downgrade_record_materialized",
         task_completion_event=TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
         source_filename="us_tn_custody_level_downgrade_record.json",
