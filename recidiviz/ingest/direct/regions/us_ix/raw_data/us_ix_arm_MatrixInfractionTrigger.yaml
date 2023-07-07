@@ -1,14 +1,14 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: arm_MatrixInfractionTrigger
-file_description: TODO(#18936)
+file_description: Matrix infraction trigger file
 data_classification: source
 primary_key_cols:
   - ResponseMatrixId
 columns:
   - name: ResponseMatrixId
-    description: TODO(#18936)
+    description: ID for the response matrix
   - name: InfractionLevelId
-    description: TODO(#18936)
+    description: ID for the infraction level
   - name: Locking
     description: Locking number for record
   - name: InsertDate
