@@ -1,15 +1,15 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: arm_ResponseMatrix
-file_description: TODO(#18936)
+file_description: Response matrix
 data_classification: source
 primary_key_cols:
   - ResponseMatrixId
   - ResponseLevelId
 columns:
   - name: ResponseMatrixId
-    description: TODO(#18936)
+    description: ID for the response matrix
   - name: ResponseLevelId
-    description: TODO(#18936)
+    description: ID for the response level
   - name: Locking
     description: Locking number for record
   - name: InsertUserId
@@ -27,6 +27,6 @@ columns:
   - name: Inactive
     description: Flag for whether record is inactive
   - name: EventTypeId
-    description: TODO(#18936)
+    description: ID for the event type
   - name: ClassCode
-    description: TODO(#18936)
+    description: Code corresponding to the class type
