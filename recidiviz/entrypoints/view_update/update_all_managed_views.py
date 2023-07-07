@@ -22,6 +22,7 @@ import sys
 from typing import List, Tuple
 
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
+from recidiviz.utils.metadata import project_id
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -43,4 +44,4 @@ if __name__ == "__main__":
 
     known_args, _ = parse_arguments(sys.argv)
 
-    execute_update_all_managed_views(known_args.project_id, known_args.sandbox_prefix)
+    execute_update_all_managed_views(project_id(), known_args.sandbox_prefix)
