@@ -284,7 +284,6 @@ output:
                   - OPMD # Central Placement Decision
                   - PC # Parole Consideration
                   - LODG # Lodged out of Institution
-                #StateIncarcerationPeriodReleaseReason.COURT_ORDER:
                 StateIncarcerationPeriodReleaseReason.VACATED:
                   - VARE # Sentences Vacated & Remanded to Court (only 1 instance)
                   - DISM # Conviction/Sentence Dismissed
@@ -307,6 +306,7 @@ output:
                   - ESCJ # (only 2 instances)
                   - KCMP # (only 1 instance)
                   - ADMM # (only 1 instance)
+                  - DOCO
                   - CUST
                   - ADMN
                   - SPAC
