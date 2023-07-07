@@ -106,7 +106,6 @@ def has_at_least_x_negative_tests_in_time_interval(
     date_interval: int = 12,
     date_part: str = "MONTH",
 ) -> str:
-
     """
     Args:
         number_of_negative_tests: Number of negative tests needed within time interval
@@ -273,4 +272,47 @@ def time_difference_from_client_record_case_notes(
         # We drop cases where earliest_date comes after latest_date
             AND {latest_date} > {earliest_date}
         )
+    """
+
+
+def compartment_level_1_super_sessions_without_me_sccp() -> str:
+    """
+    Compartment level 1 super sessions after partitioning with ME SCCP sesssions.
+    """
+
+    return f"""cl1_super_sessions_wsccp AS (
+        SELECT 
+            state_code, 
+            person_id,
+            start_date, 
+            end_date,
+            compartment_level_1,
+            NULL AS compartment_level_2,
+        FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized`
+
+        UNION ALL
+
+        SELECT 
+            state_code, 
+            person_id,
+            start_date, 
+            end_date,
+            compartment_level_1,
+            compartment_level_2,
+            FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
+        WHERE state_code = 'US_ME'
+            AND compartment_level_2 = 'COMMUNITY_CONFINEMENT'
+            AND compartment_level_1 = 'SUPERVISION'
+    ),
+
+    {create_sub_sessions_with_attributes('cl1_super_sessions_wsccp')},
+
+    partitioning_compartment_l1_ss_with_sccp AS (
+        SELECT 
+            *,
+            DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date_exclusive
+        FROM sub_sessions_with_attributes
+        # For repeated subsessions, keep only the one with a value compartment_level_2
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date ORDER BY compartment_level_2 DESC) = 1
+    )
     """
