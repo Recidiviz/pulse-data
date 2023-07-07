@@ -65,7 +65,31 @@ months away from their release date)
 """
 
 _QUERY_TEMPLATE = f"""
-WITH term_with_caseload AS (
+WITH me_quarterly_ratio_with_future_projection AS (
+-- Append one additional row with spans in the future. We can't calculate the quarterly
+--  ratio for future cases, so we'll just assume they'll look just like the most recent one. 
+    SELECT *
+    FROM (
+        SELECT 
+            state_code, 
+            end_quarter AS start_quarter,
+            CAST(NULL AS DATE) AS end_quarter, 
+            officer_to_client_ratio
+        FROM `{{project_id}}.{{analyst_dataset}}.supervision_clients_to_officers_ratio_quarterly_materialized`
+        WHERE state_code = 'US_ME'
+        ORDER BY start_quarter DESC
+        LIMIT 1
+        )
+
+    UNION ALL 
+
+    SELECT *
+    FROM `{{project_id}}.{{analyst_dataset}}.supervision_clients_to_officers_ratio_quarterly_materialized`
+    WHERE state_code = 'US_ME'
+),
+
+
+term_with_caseload AS (
 -- Combine case load with term data
     SELECT 
         cl.state_code,
@@ -79,7 +103,7 @@ WITH term_with_caseload AS (
         status,
         term_id,
     FROM `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` tc
-    INNER JOIN `{{project_id}}.{{analyst_dataset}}.supervision_clients_to_officers_ratio_quarterly_materialized` cl
+    INNER JOIN me_quarterly_ratio_with_future_projection cl
         ON cl.state_code = tc.state_code
         AND {nonnull_start_date_clause('tc.start_date')} < COALESCE(cl.end_quarter, 
                                                                     CURRENT_DATE('US/Eastern'))
@@ -95,6 +119,7 @@ term_crit_date AS (
         -- Post-reform: 24 months if caseload is more than 90, 30 months otherwise
             DATE_SUB(release_date, INTERVAL IF(case_load > 90, 24, 30) MONTH))
         AS critical_date,
+        IF(case_load > 90, 24, 30) AS months_remaining_based_on_caseload
     FROM term_with_caseload
 ),
 
@@ -119,9 +144,11 @@ critical_date_spans AS (
 ),
 
 save_real_eligible_date AS (
-    -- Save real_eligible_date so we could send it in JSON later
+    -- Save real_eligible_date and months_remaining_based_on_caseload  so we could 
+    --  pass it through the JSON blob later
     SELECT
-        DISTINCT person_id, state_code, critical_date, real_eligible_date
+        DISTINCT person_id, state_code, critical_date, real_eligible_date, 
+            months_remaining_based_on_caseload
     FROM critical_date_spans
 ),
 
@@ -146,7 +173,8 @@ SELECT
         NULL,
         end_date) AS end_date,
     critical_date_has_passed AS meets_criteria,
-    TO_JSON(STRUCT(xps.real_eligible_date AS eligible_date)) AS reason,
+    TO_JSON(STRUCT(xps.real_eligible_date AS eligible_date,
+                   xps.months_remaining_based_on_caseload AS months_remaining_based_on_caseload)) AS reason,
 FROM critical_date_has_passed_spans cd
 LEFT JOIN save_real_eligible_date xps
     USING (person_id, state_code, critical_date)
