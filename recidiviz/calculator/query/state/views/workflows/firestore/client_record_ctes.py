@@ -26,6 +26,9 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
     us_id_latest_phone_number,
 )
+from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
+    compartment_level_1_super_sessions_without_me_sccp,
+)
 
 _CLIENT_RECORD_SUPERVISION_CTE = f"""
     supervision_cases AS (
@@ -105,15 +108,18 @@ _CLIENT_RECORD_SUPERVISION_LEVEL_CTE = f"""
     """
 
 
-_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = """
+_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
     supervision_super_sessions AS (
+        
+        WITH {compartment_level_1_super_sessions_without_me_sccp()}
+        
         # This CTE has 1 row per person with an active supervision period and the start_date corresponds to 
         # the earliest start date for dual supervision periods.
         SELECT
             person_id,
             start_date
-        FROM `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized`
-        WHERE state_code IN ({workflows_supervision_states})
+        FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`
+        WHERE state_code IN ({{workflows_supervision_states}})
         AND end_date IS NULL
         # TODO(#20872) - Remove 'US_ME' filter once super_sessions fixed
         AND state_code != 'US_ME'
@@ -127,9 +133,8 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = """
         SELECT 
             person_id, 
             start_date
-        FROM `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
+        FROM partitioning_compartment_l1_ss_with_sccp
         WHERE state_code = 'US_ME'
-        AND compartment_level_1 = 'SUPERVISION'
         AND end_date IS NULL
     ),
     """
