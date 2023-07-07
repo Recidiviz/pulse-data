@@ -153,7 +153,7 @@ def execute_update_normalized_state() -> TaskGroup:
         return [
             "python",
             "-m",
-            "recidiviz.entrypoints.update_normalized_state_dataset",
+            "recidiviz.entrypoints.normalization.update_normalized_state_dataset",
             *additional_args,
         ]
 
