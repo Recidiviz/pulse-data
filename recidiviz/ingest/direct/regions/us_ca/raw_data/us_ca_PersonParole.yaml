@@ -102,6 +102,8 @@ columns:
       The unit the parolee is paroled in. See ParoleRegion.
   - name: ParoleAgentName
     is_pii: True
+    description: >-
+      The name of the parole agent.
   - name: BadgeNumber
     description: >-
       The badge number of the parole agent.
