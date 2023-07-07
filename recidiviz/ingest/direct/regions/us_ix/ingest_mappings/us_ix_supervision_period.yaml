@@ -66,6 +66,11 @@ output:
             $conditional:
               - $if:
                   $equal:
+                    - RequestedSupervisionAssignmentLevel
+                    - $literal("Expanded CRC")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT)
+              - $else_if:
+                  $equal:
                     - PhysicalLocationTypeDesc
                     - $literal("Absconded")
                 $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
