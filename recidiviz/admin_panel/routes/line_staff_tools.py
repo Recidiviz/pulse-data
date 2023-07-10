@@ -40,6 +40,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import is_date_str
 from recidiviz.common.results import MultiRequestResult
+from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.reporting import data_retrieval, email_delivery
 from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
 from recidiviz.reporting.email_reporting_handler import (
@@ -70,7 +71,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     @bp.route("/api/line_staff_tools/fetch_email_state_codes", methods=["POST"])
     @requires_gae_auth
     def _fetch_email_state_codes() -> Tuple[Response, HTTPStatus]:
-        # hard coding Idaho and Pennsylvania for now
         state_code_info = fetch_state_codes(EMAIL_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
@@ -84,7 +84,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     def _fetch_report_types() -> Tuple[Response, HTTPStatus]:
         return jsonify([t.value for t in ReportType]), HTTPStatus.OK
 
-    # Generate monthly report emails
+    # Generate report emails
     @bp.route(
         "/api/line_staff_tools/<state_code_str>/generate_emails", methods=["POST"]
     )
@@ -95,15 +95,22 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         try:
             data = assert_type(request.json, dict)
             state_code = StateCode(state_code_str)
-            if state_code not in EMAIL_STATE_CODES:
-                raise ValueError("State code is invalid for PO monthly reports")
-            # TODO(#7790): Support more email types.
             report_type = ReportType(data.get("reportType"))
             if report_type not in [
+                ReportType.OutliersSupervisionOfficerSupervisor,
                 ReportType.POMonthlyReport,
                 ReportType.OverdueDischargeAlert,
             ]:
                 raise ValueError(f"{report_type.value} is not a valid ReportType")
+
+            if report_type in [ReportType.OutliersSupervisionOfficerSupervisor]:
+                if state_code not in OUTLIERS_CONFIGS_BY_STATE:
+                    raise ValueError(
+                        f"{ReportType.OutliersSupervisionOfficerSupervisor} report is not configured for this state"
+                    )
+            elif state_code not in EMAIL_STATE_CODES:
+                raise ValueError("State code is invalid for email reports")
+
             test_address = data.get("testAddress")
             region_code = data.get("regionCode")
             message_body_override = data.get("messageBodyOverride")

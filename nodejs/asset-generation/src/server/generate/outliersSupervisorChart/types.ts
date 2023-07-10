@@ -32,7 +32,7 @@ export const outliersSupervisorChartInputSchema = chartInputSchemaBase.extend({
         name: z.string(),
         rate: z.number(),
         targetStatus: targetStatusSchema,
-        prevRate: z.number(),
+        prevRate: z.number().nullable(),
       })
     ),
   }),

@@ -16,7 +16,7 @@
 # =============================================================================
 """Outliers-related types"""
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import attr
 import cattrs
@@ -24,6 +24,7 @@ import cattrs
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.common.str_field_utils import person_name_case
 
 
 class MetricOutcome(Enum):
@@ -48,6 +49,28 @@ class TargetStatus(Enum):
 class OutliersAggregationType(Enum):
     SUPERVISION_DISTRICT = "SUPERVISION_DISTRICT"
     SUPERVISION_OFFICER_SUPERVISOR = "SUPERVISION_OFFICER_SUPERVISOR"
+
+
+def _optional_name_converter(name: Optional[str]) -> Optional[str]:
+    return None if name is None else person_name_case(name)
+
+
+@attr.s
+class PersonName:
+    """Components of a person's name represented as structured data."""
+
+    given_names: str = attr.ib(converter=person_name_case)
+    surname: str = attr.ib(converter=person_name_case)
+    middle_names: Optional[str] = attr.ib(
+        default=None, converter=_optional_name_converter
+    )
+    name_suffix: Optional[str] = attr.ib(
+        default=None, converter=_optional_name_converter
+    )
+
+    @property
+    def formatted_first_last(self) -> str:
+        return f"{self.given_names} {self.surname}"
 
 
 @attr.s(eq=False)
@@ -113,7 +136,7 @@ class OutliersConfig:
 @attr.s
 class OfficerMetricEntity:
     # The name of the unit of analysis, i.e. full name of a SupervisionOfficer object
-    name: str = attr.ib()
+    name: PersonName = attr.ib()
     # The current rate for this unit of analysis
     rate: float = attr.ib()
     # Categorizes how the rate for this OfficerMetricEntity compares to the target value
@@ -192,7 +215,7 @@ class OutliersAggregatedMetricInfo:
 @attr.s
 class OutliersAggregatedMetricEntity:
     # The name of the entity, e.g. district name or officer supervisor name
-    name: str = attr.ib()
+    name: Union[str, PersonName] = attr.ib()
     # The metric information for all metrics for this entity
     metrics: List[OutliersAggregatedMetricInfo] = attr.ib()
 
@@ -200,7 +223,7 @@ class OutliersAggregatedMetricEntity:
 @attr.s
 class OutliersUpperManagementReportData:
     # The name of the recipient, e.g. a SupervisionDistrictManager or SupervisionDirector
-    recipient_name: str = attr.ib()
+    recipient_name: PersonName = attr.ib()
     # The recipient's email address
     recipient_email: str = attr.ib()
     # The entities relevant for recipient

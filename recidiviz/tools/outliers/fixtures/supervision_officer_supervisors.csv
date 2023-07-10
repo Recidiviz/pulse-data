@@ -1,4 +1,4 @@
 state_code,external_id,staff_id,full_name,email,supervisor_external_id,supervision_district,supervision_unit
-US_XX,101,61000000000101,Supervisor 1,supervisor1@recidiviz.org,1001,1,A
-US_XX,102,61000000000102,Supervisor 2,supervisor2@recidiviz.org,1002,2,B
-US_XX,103,61000000000103,Supervisor 3,supervisor3@recidiviz.org,1002,2,
+US_XX,101,61000000000101,"{""given_names"": ""SUPERVISOR"", ""surname"": ""1""}",supervisor1@recidiviz.org,1001,1,A
+US_XX,102,61000000000102,"{""given_names"": ""SUPERVISOR"", ""surname"": ""2""}",supervisor2@recidiviz.org,1002,2,B
+US_XX,103,61000000000103,"{""given_names"": ""SUPERVISOR"", ""surname"": ""3""}",supervisor3@recidiviz.org,1002,2,

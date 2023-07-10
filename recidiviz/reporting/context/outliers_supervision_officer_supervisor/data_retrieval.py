@@ -27,8 +27,12 @@ from recidiviz.reporting.context.po_monthly_report.constants import Batch
 def retrieve_data_for_outliers_supervision_officer_supervisor(
     batch: Batch,
 ) -> Dict[str, OfficerSupervisorReportData]:
-    """Retrieves the data for Outliers' supervision officer supervisor reports by unit"""
+    """Retrieves the data for Outliers' supervision officer supervisor reports.
+    Excludes any reports where there are no metrics that have outliers to highlight."""
     batch_date = utils.get_date_from_batch_id(batch)
-    return OutliersQuerier().get_officer_level_report_data_for_all_officer_supervisors(
-        batch.state_code, end_date=batch_date
+    all_report_data = (
+        OutliersQuerier().get_officer_level_report_data_for_all_officer_supervisors(
+            batch.state_code, end_date=batch_date
+        )
     )
+    return {key: report for key, report in all_report_data.items() if report.metrics}

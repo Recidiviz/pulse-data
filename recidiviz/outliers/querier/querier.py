@@ -39,6 +39,7 @@ from recidiviz.outliers.types import (
     OutliersConfig,
     OutliersMetricConfig,
     OutliersUpperManagementReportData,
+    PersonName,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -324,7 +325,7 @@ class OutliersQuerier:
 
             entities.append(
                 OfficerMetricEntity(
-                    name=officer_metric_record.full_name,
+                    name=PersonName(**officer_metric_record.full_name),
                     rate=rate,
                     target_status=target_status,
                     prev_rate=prev_rate,
@@ -354,7 +355,7 @@ class OutliersQuerier:
 
             prev_period_entities.append(
                 OfficerMetricEntity(
-                    name=prev_officer_metric_record.full_name,
+                    name=PersonName(**prev_officer_metric_record.full_name),
                     rate=rate,
                     target_status=target_status,
                     prev_rate=None,
@@ -492,7 +493,7 @@ class OutliersQuerier:
                     )
 
                     entity = OutliersAggregatedMetricEntity(
-                        name=full_name,
+                        name=PersonName(**full_name),
                         metrics=metrics,
                     )
 
@@ -509,7 +510,7 @@ class OutliersQuerier:
 
             data = [
                 OutliersUpperManagementReportData(
-                    recipient_name=district_manager_name,
+                    recipient_name=PersonName(**district_manager_name),
                     recipient_email=district_manager_email,
                     entities=district_id_to_entities[district_id]
                     if district_id_to_entities[district_id]
@@ -594,7 +595,7 @@ class OutliersQuerier:
 
             data = [
                 OutliersUpperManagementReportData(
-                    recipient_name=full_name,
+                    recipient_name=PersonName(**full_name),
                     recipient_email=email,
                     entities=entities,
                     entity_label="district",
@@ -654,7 +655,7 @@ class OutliersQuerier:
     def _get_aggregated_metric_info(
         metric: OutliersMetricConfig,
         current_period_entities: List[OfficerMetricEntity],
-        prev_period_entitieis: List[OfficerMetricEntity],
+        prev_period_entities: List[OfficerMetricEntity],
     ) -> OutliersAggregatedMetricInfo:
         """
         For the given metric, return the aggregated officer-level metric information.
@@ -674,14 +675,14 @@ class OutliersQuerier:
             if entity.target_status == TargetStatus.FAR:
                 num_officers_far += 1
 
-        prev_num_officers = len(prev_period_entitieis)
+        prev_num_officers = len(prev_period_entities)
         prev_num_officers_far = len(
             list(
                 filter(
                     lambda officer_entity: (
                         officer_entity.target_status == TargetStatus.FAR
                     ),
-                    copy(prev_period_entitieis),
+                    copy(prev_period_entities),
                 )
             )
         )

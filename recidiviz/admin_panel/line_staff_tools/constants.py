@@ -22,7 +22,7 @@ from recidiviz.admin_panel.line_staff_tools.raw_data import (
 )
 from recidiviz.common.constants.states import StateCode
 
-EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA, StateCode.US_MO]
+EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA, StateCode.US_MO, StateCode.US_IX]
 
 RAW_FILES_CONFIG = {
     StateCode.US_TN: {

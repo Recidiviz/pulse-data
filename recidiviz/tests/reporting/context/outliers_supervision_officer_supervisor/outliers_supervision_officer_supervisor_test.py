@@ -182,7 +182,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                             },
                             "highlightedOfficers": [
                                 {
-                                    "name": "Tatiana Alvarez-Thomas",
+                                    "name": "Jeanette Schneider-Cox",
                                     "rate": 0.19904024430145054,
                                     "targetStatus": "FAR",
                                     "prevRate": 0.15804024430145053,
@@ -191,7 +191,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                                     "supervisionDistrict": "1",
                                 },
                                 {
-                                    "name": "Mario McCarthy",
+                                    "name": "Mario Mccarthy",
                                     "rate": 0.10228673915480327,
                                     "targetStatus": "FAR",
                                     "prevRate": 0.08228673915480327,
@@ -246,7 +246,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                         "url": "/mock/image/url",
                         "alt_text": (
                             "Swarm plot of all technical incarceration rates in the "
-                            "state where Tatiana Alvarez-Thomas, Mario McCarthy, and "
+                            "state where Jeanette Schneider-Cox, Mario Mccarthy, and "
                             "Ryan Luna are far from the state average for the current "
                             "reporting period."
                         ),
@@ -262,7 +262,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
         ].highlighted_officers[:1]
         actual = self._get_prepared_data(test_report)["adverse_metrics"][0]
         self.assertRegex(
-            actual["chart"]["alt_text"], "where Tatiana Alvarez-Thomas is far"
+            actual["chart"]["alt_text"], "where Jeanette Schneider-Cox is far"
         )
 
         test_report.metrics = [
@@ -279,7 +279,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
         self.assertEqual(actual["far_direction"], "below")
         self.assertRegex(
             actual["chart"]["alt_text"],
-            "where Tatiana Alvarez-Thomas and Samuel Dunn have zero earned discharge requests",
+            "where Jeanette Schneider-Cox and Samuel Dunn have zero earned discharge requests",
         )
 
         test_report.metrics[0].highlighted_officers = test_report.metrics[
@@ -332,7 +332,9 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             actual["highlights"].multiple_metrics,
             [
                 MultipleMetricHighlight(
-                    name=highlighted_officers_fixture_adverse[0].name,
+                    name=highlighted_officers_fixture_adverse[
+                        0
+                    ].name.formatted_first_last,
                     details=[
                         MetricHighlightDetail(
                             condition="is far from the state average on",
@@ -345,7 +347,9 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                     ],
                 ),
                 MultipleMetricHighlight(
-                    name=highlighted_officers_fixture_adverse[1].name,
+                    name=highlighted_officers_fixture_adverse[
+                        1
+                    ].name.formatted_first_last,
                     details=[
                         MetricHighlightDetail(
                             condition="is far from the state average on",

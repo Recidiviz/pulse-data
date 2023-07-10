@@ -20,7 +20,10 @@ import supertest from "supertest";
 import tk from "timekeeper";
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from "vitest";
 
-import { fittingSupervisorData } from "../../../components/OutliersSupervisorChart/fixtures";
+import {
+  fittingSupervisorData,
+  noPrevRateSupervisorData,
+} from "../../../components/OutliersSupervisorChart/fixtures";
 import { routes } from "../routes";
 import { writeFile } from "../writeFile";
 
@@ -65,4 +68,16 @@ test("valid input", async () => {
       "url": "/asset/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvdXRsaWVycy1zdXBlcnZpc29yLWNoYXJ0L1VTX1hYLzIwMjMtMDUtMDMvdGVzdC1vZmZpY2VyLW1ldHJpYy5wbmciLCJpYXQiOjE2ODMwNzIwMDB9.TXxCL8WAHpAqw9Ksn2h-exb4l_hlanJsSICfrxNqQJI",
     }
   `);
+});
+
+test("prevRate can be missing", async () => {
+  await supertest(testApp)
+    .post("/outliers-supervisor-chart")
+    .send({
+      stateCode: "US_XX",
+      width: 570,
+      id: "test-officer-metric",
+      data: noPrevRateSupervisorData,
+    })
+    .expect(200);
 });

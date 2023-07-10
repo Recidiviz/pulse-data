@@ -30,7 +30,11 @@ from recidiviz.outliers.querier.querier import (
     OutlierMetricInfo,
     TargetStatus,
 )
-from recidiviz.outliers.types import OutliersMetricConfig, TargetStatusStrategy
+from recidiviz.outliers.types import (
+    OutliersMetricConfig,
+    PersonName,
+    TargetStatusStrategy,
+)
 
 metric_fixtures = {
     INCARCERATION_STARTS: OutliersMetricConfig.build_from_metric(
@@ -144,10 +148,19 @@ other_officers_fixture_favorable_zero = {
     ],
 }
 
+
+class FakeNames:
+    JSC = PersonName("JEANETTE", "SCHNEIDER-COX")
+    MM = PersonName("MARIO", "MCCARTHY")
+    RL = PersonName("RYAN", "LUNA")
+    TF = PersonName("TONY", "FARMER")
+    SD = PersonName("SAMUEL", "DUNN")
+
+
 # there is no particular order to these, can be mixed and matched as needed
 highlighted_officers_fixture_adverse = [
     OfficerMetricEntity(
-        "Tatiana Alvarez-Thomas",
+        FakeNames.JSC,
         0.19904024430145054,
         TargetStatus.FAR,
         0.15804024430145053,
@@ -155,7 +168,7 @@ highlighted_officers_fixture_adverse = [
         "1",
     ),
     OfficerMetricEntity(
-        "Mario McCarthy",
+        FakeNames.MM,
         0.10228673915480327,
         TargetStatus.FAR,
         0.08228673915480327,
@@ -163,13 +176,13 @@ highlighted_officers_fixture_adverse = [
         "1",
     ),
     OfficerMetricEntity(
-        "Ryan Luna", 0.129823, TargetStatus.FAR, 0.121354, "abc123", "1"
+        FakeNames.RL, 0.129823, TargetStatus.FAR, 0.121354, "abc123", "1"
     ),
 ]
 
 highlighted_officers_fixture_favorable = [
     OfficerMetricEntity(
-        "Tony Farmer",
+        FakeNames.TF,
         0.01854,
         TargetStatus.FAR,
         0,
@@ -177,7 +190,7 @@ highlighted_officers_fixture_favorable = [
         "1",
     ),
     OfficerMetricEntity(
-        "Samuel Dunn",
+        FakeNames.SD,
         0,
         TargetStatus.FAR,
         0,
@@ -188,7 +201,7 @@ highlighted_officers_fixture_favorable = [
 
 highlighted_officers_fixture_favorable_zero = [
     OfficerMetricEntity(
-        "Tatiana Alvarez-Thomas",
+        FakeNames.JSC,
         0,
         TargetStatus.FAR,
         0.01854,
@@ -196,7 +209,7 @@ highlighted_officers_fixture_favorable_zero = [
         "1",
     ),
     OfficerMetricEntity(
-        "Samuel Dunn",
+        FakeNames.SD,
         0,
         TargetStatus.FAR,
         0,
