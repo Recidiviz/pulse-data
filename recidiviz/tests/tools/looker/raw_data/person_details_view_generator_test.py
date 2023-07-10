@@ -22,7 +22,12 @@ import tempfile
 import unittest
 
 from freezegun import freeze_time
+from mock import Mock, patch
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+    FakeDirectIngestRegionRawFileConfig,
+)
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     generate_lookml_views,
 )
@@ -32,7 +37,21 @@ class LookMLViewTest(unittest.TestCase):
     """Tests LookML view generation functions"""
 
     @freeze_time("2000-06-30")
-    def test_generate_lookml_views(self) -> None:
+    @patch(
+        "recidiviz.tools.looker.raw_data.person_details_view_generator.get_existing_direct_ingest_states"
+    )
+    @patch(
+        "recidiviz.tools.looker.raw_data.person_details_view_generator.DirectIngestRegionRawFileConfig"
+    )
+    def test_generate_lookml_views(
+        self, mock_region_config: Mock, mock_get_states: Mock
+    ) -> None:
+        # Mock US_XX so we only generate views corresponding to US_XX raw data files
+        mock_region_config.return_value = FakeDirectIngestRegionRawFileConfig(
+            region_code="US_XX"
+        )
+        mock_get_states.return_value = [StateCode.US_XX]
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             generate_lookml_views(tmp_dir)
             fixtures_dir = os.path.join(os.path.dirname(__file__), "fixtures")

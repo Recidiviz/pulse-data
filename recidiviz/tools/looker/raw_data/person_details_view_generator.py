@@ -19,7 +19,16 @@ Used inside person_details_lookml_writer
 """
 
 import os
+from typing import Dict, List
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
     DimensionGroupLookMLViewField,
@@ -36,6 +45,7 @@ from recidiviz.looker.parameterized_value import ParameterizedValue
 
 RAW_DATA_OPTION = "raw_data"
 RAW_DATA_UP_TO_DATE_VIEWS_OPTION = "raw_data_up_to_date_views"
+SHARED_FIELDS_NAME = "state_raw_data_shared_fields"
 
 
 def generate_shared_fields_view() -> LookMLView:
@@ -129,7 +139,7 @@ def generate_shared_fields_view() -> LookMLView:
     )
 
     view = LookMLView(
-        view_name="state_raw_data_shared_fields",
+        view_name=SHARED_FIELDS_NAME,
         extension_required=True,
         fields=[
             view_type_param,
@@ -141,6 +151,32 @@ def generate_shared_fields_view() -> LookMLView:
     return view
 
 
+def generate_raw_file_view(config: DirectIngestRawFileConfig) -> LookMLView:
+    """
+    Return a single LookMLView object representing the provided raw file config.
+    """
+    view = LookMLView(
+        view_name=config.file_tag,
+        included_paths=[f"../{SHARED_FIELDS_NAME}.view"],
+        extended_views=[SHARED_FIELDS_NAME],
+    )
+    return view
+
+
+def generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
+    """
+    Return a dictionary mapping all of the StateCodes for states with raw data
+    to a list of LookMLViews corresponding to every raw data file in that State
+    """
+    views: Dict[StateCode, List[LookMLView]] = {}
+    for state_code in get_existing_direct_ingest_states():
+        views[state_code] = []
+        region_config = DirectIngestRegionRawFileConfig(region_code=state_code.value)
+        for raw_file_config in region_config.raw_file_configs.values():
+            views[state_code].append(generate_raw_file_view(raw_file_config))
+    return views
+
+
 def generate_lookml_views(looker_dir: str) -> None:
     """Produce LookML View files for a given state, writing to looker_dir/views/raw_data/
 
@@ -150,3 +186,8 @@ def generate_lookml_views(looker_dir: str) -> None:
 
     shared_fields_view = generate_shared_fields_view()
     shared_fields_view.write(view_dir, source_script_path=__file__)
+
+    for state_code, raw_file_views in generate_state_raw_data_views().items():
+        state_dir = os.path.join(view_dir, state_code.value.lower())
+        for view in raw_file_views:
+            view.write(state_dir, source_script_path=__file__)
