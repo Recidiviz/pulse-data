@@ -65,7 +65,7 @@ WITH inc_period_with_eligible_facilities AS (
     FROM `{{project_id}}.normalized_state.state_incarceration_period` 
     WHERE state_code = 'US_ME'
         AND facility IN ({_ELIGIBLE_FACILITIES})
-        AND admission_date != release_date
+        AND {nonnull_start_date_clause('admission_date')} != {nonnull_end_date_clause('release_date')}
 ),
 
 {create_sub_sessions_with_attributes('inc_period_with_eligible_facilities')},
@@ -92,7 +92,6 @@ SELECT
     critical_date_has_passed AS meets_criteria,
     TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
 FROM critical_date_has_passed_spans cd
-WHERE {nonnull_start_date_clause('start_date')} != {nonnull_end_date_clause('end_date')}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
