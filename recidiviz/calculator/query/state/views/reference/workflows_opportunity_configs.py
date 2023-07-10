@@ -74,6 +74,17 @@ class WorkflowsOpportunityConfig:
 
 WORKFLOWS_OPPORTUNITY_CONFIGS = [
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_CA,
+        opportunity_type="usCaSupervisionLevelDowngrade",
+        experiment_id="US_CA_SUPERVISION_LEVEL_DOWNGRADE",
+        opportunity_record_view_name="us_ca_supervision_level_downgrade_form_record_materialized",
+        task_completion_event=TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
+        source_filename="us_ca_supervision_level_downgrade_form_record.json",
+        export_collection_name="US_CA-supervisionLevelDowngrade",
+        opportunity_type_path_str="supervisionLevelDowngrade",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_IX,
         opportunity_type="earnedDischarge",
         experiment_id="US_IX_LSU_ED_DISCHARGE_WORKFLOWS",
