@@ -16,10 +16,12 @@
 # =============================================================================
 """Creates a LookMLSourceTable object and associated functions"""
 import abc
+from typing import Union
 
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.looker.parameterized_value import ParameterizedValue
 
 
 @attr.define
@@ -32,7 +34,9 @@ class LookMLViewSourceTable:
         pass
 
     @classmethod
-    def sql_table_address(cls, address: BigQueryAddress) -> "LookMLViewSourceTable":
+    def sql_table_address(
+        cls, address: Union[BigQueryAddress, ParameterizedValue]
+    ) -> "LookMLViewSourceTable":
         return SqlTableAddress(address)
 
     @classmethod
@@ -47,10 +51,13 @@ class SqlTableAddress(LookMLViewSourceTable):
     (see https://cloud.google.com/looker/docs/reference/param-view-sql-table-name)
     """
 
-    address: BigQueryAddress
+    address: Union[BigQueryAddress, ParameterizedValue]
 
     def build(self) -> str:
-        sql_table_name = f"{self.address.dataset_id}.{self.address.table_id}"
+        if isinstance(self.address, ParameterizedValue):
+            sql_table_name = self.address.build_liquid_template()
+        else:
+            sql_table_name = self.address.to_str()
         return f"  sql_table_name: {sql_table_name} ;;"
 
 

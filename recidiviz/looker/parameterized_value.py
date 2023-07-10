@@ -35,28 +35,27 @@ class ParameterizedValue:
 
     All lines after the first are indented by a number of spaces equal to
     twice the provided indentation level.
+
+    If add_spacing is false, the Liquid template instead looks like:
+    {% if parameter_name._parameter_value == 'key1' %}value1{% elsif parameter_name._parameter_value == 'key2' %}...
+    for use cases where inserting the whitespace would not be correct.
     """
 
-    parameter_name: str
-    parameter_options: List[str]
+    parameter_name: str = attr.field(validator=attr.validators.min_len(1))
+    parameter_options: List[str] = attr.field(validator=attr.validators.min_len(1))
     value_builder: Callable[[str], str]
-    indentation_level: int
-
-    def __attrs_post_init__(self) -> None:
-        if not self.parameter_name:
-            raise ValueError("Parameter name must not be empty.")
-
-        if not self.parameter_options:
-            raise ValueError("Parameter options must not be empty.")
-
-        if self.indentation_level < 0:
-            raise ValueError("Indentation level must be non-negative.")
+    indentation_level: int = attr.field(default=0, validator=attr.validators.ge(0))
+    add_spacing: bool = True
 
     def build_liquid_template(self) -> str:
         """
         Return the Liquid template corresponding to this parameterized value
         """
-        indentation = "\n" + "  " * self.indentation_level
+        if self.add_spacing:
+            indentation = "\n" + "  " * self.indentation_level
+        else:
+            indentation = ""
+
         liquid_template = ""
         for i, option in enumerate(self.parameter_options):
             boolean_clause = f"{self.parameter_name}._parameter_value == '{option}'"
@@ -64,6 +63,11 @@ class ParameterizedValue:
                 liquid_template += f"{{% if {boolean_clause} %}}"
             else:
                 liquid_template += f"{indentation}{{% elsif {boolean_clause} %}}"
-            liquid_template += f" {self.value_builder(option)}"
+
+            if self.add_spacing:
+                liquid_template += " "
+            liquid_template += self.value_builder(option)
+
         liquid_template += f"{indentation}{{% endif %}}"
+
         return liquid_template

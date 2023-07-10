@@ -48,11 +48,18 @@ class ParameterizedValueTest(unittest.TestCase):
     {% endif %}"""
         self.assertEqual(class_output, expected_output)
 
+    def test_parameterized_value_output_no_added_spacing(self) -> None:
+        class_output = ParameterizedValue(
+            parameter_name="name",
+            parameter_options=["key1", "key2"],
+            value_builder=lambda s: s + "_value",
+            add_spacing=False,
+        ).build_liquid_template()
+        expected_output = """{% if name._parameter_value == 'key1' %}key1_value{% elsif name._parameter_value == 'key2' %}key2_value{% endif %}"""
+        self.assertEqual(class_output, expected_output)
+
     def test_parameterized_value_no_options_throw(self) -> None:
-        with self.assertRaises(
-            ValueError,
-            msg="Parameter options must not be empty.",
-        ):
+        with self.assertRaises(ValueError):
             _ = ParameterizedValue(
                 parameter_name="name",
                 parameter_options=[],
@@ -61,10 +68,7 @@ class ParameterizedValueTest(unittest.TestCase):
             )
 
     def test_parameterized_value_no_name_throw(self) -> None:
-        with self.assertRaises(
-            ValueError,
-            msg="Parameter name must not be empty.",
-        ):
+        with self.assertRaises(ValueError):
             _ = ParameterizedValue(
                 parameter_name="",
                 parameter_options=["key1"],
@@ -73,10 +77,7 @@ class ParameterizedValueTest(unittest.TestCase):
             )
 
     def test_parameterized_value_negative_indentation_throw(self) -> None:
-        with self.assertRaises(
-            ValueError,
-            msg="Indentation level must be non-negative.",
-        ):
+        with self.assertRaises(ValueError):
             _ = ParameterizedValue(
                 parameter_name="name",
                 parameter_options=["key1"],
