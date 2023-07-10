@@ -88,6 +88,8 @@ eligible_and_almost_eligible AS (
     -- ELIGIBLE
     {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
 
+    UNION ALL
+
     -- ALMOST ELIGIBLE (missing the right custody_level)
     {one_criteria_away_from_eligibility('US_ME_CUSTODY_LEVEL_IS_COMMUNITY')}
 ),
