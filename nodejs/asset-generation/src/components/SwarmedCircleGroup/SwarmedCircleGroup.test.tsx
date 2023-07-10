@@ -18,7 +18,7 @@
 import { ScaleLinear, scaleLinear } from "d3-scale";
 import { beforeEach, expect, test } from "vitest";
 
-import { convertToImage } from "../../server/generate/convertToImage";
+import { convertSvgToPng } from "../../server/generate/convertSvgToPng";
 import { renderToStaticSvg } from "../utils";
 import { calculateSwarm } from "./calculateSwarm";
 import {
@@ -69,7 +69,7 @@ test("auto spread, zero-modal distribution", async () => {
   });
 
   expect(
-    await convertToImage(
+    await convertSvgToPng(
       renderToStaticSvg(getTestComponent(swarmSpread, swarmPoints))
     )
   ).toMatchImageSnapshot({
@@ -93,7 +93,7 @@ test("auto spread, nonzero-modal distribution", async () => {
   });
 
   expect(
-    await convertToImage(
+    await convertSvgToPng(
       renderToStaticSvg(getTestComponent(swarmSpread, swarmPoints))
     )
   ).toMatchImageSnapshot({
@@ -118,7 +118,7 @@ test("minimum spread", async () => {
   });
 
   expect(
-    await convertToImage(
+    await convertSvgToPng(
       renderToStaticSvg(getTestComponent(swarmSpread, swarmPoints))
     )
   ).toMatchImageSnapshot({
@@ -143,7 +143,7 @@ test("fixed spread", async () => {
   });
 
   expect(
-    await convertToImage(
+    await convertSvgToPng(
       renderToStaticSvg(getTestComponent(swarmSpread, swarmPoints))
     )
   ).toMatchImageSnapshot({

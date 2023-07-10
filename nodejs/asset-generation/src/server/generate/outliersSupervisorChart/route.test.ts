@@ -64,7 +64,6 @@ test("valid input", async () => {
 
   expect(response.body).toMatchInlineSnapshot(`
     {
-      "height": 213,
       "url": "/asset/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvdXRsaWVycy1zdXBlcnZpc29yLWNoYXJ0L1VTX1hYLzIwMjMtMDUtMDMvdGVzdC1vZmZpY2VyLW1ldHJpYy5wbmciLCJpYXQiOjE2ODMwNzIwMDB9.TXxCL8WAHpAqw9Ksn2h-exb4l_hlanJsSICfrxNqQJI",
     }
   `);

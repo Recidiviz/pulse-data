@@ -17,7 +17,7 @@
 
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import { convertToImage } from "../../server/generate/convertToImage";
+import { convertSvgToPng } from "../../server/generate/convertSvgToPng";
 import { renderToStaticSvg } from "../utils";
 import {
   fittingSupervisorDataTransformed,
@@ -25,8 +25,6 @@ import {
   overflowingSupervisorDataTransformed,
 } from "./fixtures";
 import { OutliersSupervisorChart } from "./OutliersSupervisorChart";
-
-const syncHeight = vi.fn();
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -50,25 +48,12 @@ describe.each([
   },
 ])("data with $label", ({ data, expectedHeight }) => {
   function TestComponent() {
-    return (
-      <OutliersSupervisorChart
-        data={data}
-        width={570}
-        syncHeight={syncHeight}
-      />
-    );
+    return <OutliersSupervisorChart data={data} width={570} />;
   }
-
-  test("syncs height to parent", () => {
-    renderToStaticSvg(TestComponent);
-
-    expect(syncHeight).toHaveBeenCalledOnce();
-    expect(syncHeight).toHaveBeenCalledWith(expectedHeight);
-  });
 
   test("render to image", async () => {
     expect(
-      await convertToImage(renderToStaticSvg(TestComponent))
+      await convertSvgToPng(renderToStaticSvg(TestComponent))
     ).toMatchImageSnapshot({
       // Set a higher failure threshold to account for differences between machines
       failureThreshold: 0.02,

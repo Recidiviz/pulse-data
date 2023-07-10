@@ -17,11 +17,11 @@
 
 import { spacing } from "@recidiviz/design-system";
 
-export const HIGHLIGHT_DOT_RADIUS = 6;
+export const HIGHLIGHT_DOT_RADIUS = 7;
 export const SWARM_DOT_RADIUS = 3;
 export const TICK_WIDTH = 2;
 
-export const X_AXIS_HEIGHT = 22;
+export const X_AXIS_HEIGHT = 16;
 export const ROW_HEIGHT = 42;
 
 export const MARGIN = {
@@ -32,5 +32,6 @@ export const MARGIN = {
 };
 
 export const CONTENT_AREA_TOP_OFFSET = MARGIN.top + X_AXIS_HEIGHT;
+export const CONTENT_AREA_BOTTOM_OFFSET = MARGIN.bottom + X_AXIS_HEIGHT;
 
 export const LABEL_X_BASE = HIGHLIGHT_DOT_RADIUS + spacing.sm;

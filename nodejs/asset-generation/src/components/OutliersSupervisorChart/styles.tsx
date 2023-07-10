@@ -18,24 +18,39 @@ import { palette, typography } from "@recidiviz/design-system";
 import { Text } from "@visx/text";
 import styled from "styled-components";
 
-import { TICK_WIDTH } from "./constants";
+import { HIGHLIGHT_DOT_RADIUS, TICK_WIDTH } from "./constants";
 
-export const AxisLabel = styled(Text).attrs({ verticalAnchor: "start" })`
-  ${typography.Sans16}
+export const AxisLabel = styled(Text)`
+  ${typography.Sans12}
   fill: ${palette.slate60};
 `;
 
 export const SwarmLabel = styled(Text).attrs({ verticalAnchor: "middle" })`
-  ${typography.Sans18}
+  ${typography.Sans16}
 `;
 
-export const TickLine = styled.line`
-  stroke: ${palette.slate20};
-  stroke-width: ${TICK_WIDTH}px;
+export const AxisSpine = styled.line`
+  stroke: ${palette.slate30};
+  stroke-width: 1px;
 `;
 
-export const GoalLine = styled.line`
+export const TargetLine = styled.line`
   stroke: ${palette.slate60};
   stroke-width: ${TICK_WIDTH}px;
   stroke-dasharray: 4 4;
+`;
+
+const HIGHLIGHT_MARK_STROKE = { width: 2, color: palette.white };
+
+export const RateHighlightChangeBar = styled.rect`
+  height: ${HIGHLIGHT_DOT_RADIUS * 2}px;
+  /* this color is not in the design system, it's a non-transparent variant of slate */
+  fill: #becbd1;
+  stroke: ${HIGHLIGHT_MARK_STROKE.color};
+  stroke-width: ${HIGHLIGHT_MARK_STROKE.width}px;
+`;
+
+export const RateHighlightMark = styled.circle`
+  stroke: ${HIGHLIGHT_MARK_STROKE.color};
+  stroke-width: ${HIGHLIGHT_MARK_STROKE.width}px;
 `;

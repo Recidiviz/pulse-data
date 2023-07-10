@@ -22,7 +22,7 @@ import { renderToStaticSvg } from "../../../components/utils";
 import { RETRIEVE_PATH } from "../../constants";
 import { HttpError } from "../../errors";
 import { getAssetToken } from "../../token";
-import { convertToImage } from "../convertToImage";
+import { convertSvgToPng } from "../convertSvgToPng";
 import { AssetResponse, ValidatedInput } from "../types";
 import { writeFile } from "../writeFile";
 import { OutliersSupervisorChartInputTransformed } from "./types";
@@ -30,32 +30,17 @@ import { OutliersSupervisorChartInputTransformed } from "./types";
 export const outliersSupervisorChartRoute = async (
   req: Request,
   res: Response<
-    AssetResponse & { height: number },
+    AssetResponse,
     ValidatedInput<OutliersSupervisorChartInputTransformed>
   >
 ) => {
   const { width, stateCode, id, data } = res.locals.data;
 
-  let height: number | undefined;
-
-  const syncHeight = (calculatedHeight: number) => {
-    height = calculatedHeight;
-  };
-
   const svg = renderToStaticSvg(() => (
-    <OutliersSupervisorChart {...{ width, data, syncHeight }} />
+    <OutliersSupervisorChart {...{ width, data }} />
   ));
 
-  // this is not expected in practice,
-  // but we do want to ensure that we've received the dynamic height value
-  if (height === undefined) {
-    // eslint-disable-next-line no-console
-    console.error("Did not receive required chart height from component.");
-    res.sendStatus(HttpError.INTERNAL_SERVER_ERROR);
-    return;
-  }
-
-  const img = await convertToImage(svg);
+  const img = await convertSvgToPng(svg);
   const today = new Date().toISOString().split("T")[0];
   const fileUrl = `outliers-supervisor-chart/${stateCode}/${today}/${id}.png`;
   try {
@@ -63,7 +48,6 @@ export const outliersSupervisorChartRoute = async (
     const token = await getAssetToken(fileUrl);
     res.json({
       url: `${RETRIEVE_PATH}/${token}`,
-      height,
     });
   } catch (e) {
     // eslint-disable-next-line no-console

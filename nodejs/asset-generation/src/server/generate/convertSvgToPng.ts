@@ -15,14 +15,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { expect, test } from "vitest";
+import sharp from "sharp";
 
-import { convertToImage } from "./convertToImage";
+/**
+ * @param source assumed to be a string of SVG markup.
+ * SVG dimensions will be doubled to support high-resolution screens.
+ * @returns a Buffer containing PNG data
+ */
+export async function convertSvgToPng(source: string) {
+  const baseImage = sharp(Buffer.from(source));
 
-test("converts svg to png", async () => {
-  const imageData = await convertToImage(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="10" height="20" x="5" y="5"></rect></svg>`
-  );
-
-  expect(imageData).toMatchImageSnapshot();
-});
+  const baseWidth = (await baseImage.metadata()).width;
+  const outputWidth = baseWidth ? baseWidth * 2 : baseWidth;
+  return baseImage.resize({ width: outputWidth }).png().toBuffer();
+}

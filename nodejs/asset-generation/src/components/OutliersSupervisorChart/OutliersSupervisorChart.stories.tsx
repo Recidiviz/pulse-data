@@ -25,9 +25,6 @@ import { OutliersSupervisorChart } from "./OutliersSupervisorChart";
 
 const meta: Meta<typeof OutliersSupervisorChart> = {
   component: OutliersSupervisorChart,
-  argTypes: {
-    syncHeight: { action: "syncHeight" },
-  },
 };
 
 export default meta;
