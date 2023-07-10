@@ -47,6 +47,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "custodyLevel": data.get("custody_level"),
             "admissionDate": data.get("admission_date"),
             "releaseDate": data.get("release_date"),
+            "portionServedNeeded": data.get("portion_served_needed"),
         }
 
         if "all_eligible_opportunities" in data:
