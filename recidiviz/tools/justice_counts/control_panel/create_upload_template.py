@@ -33,10 +33,9 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
-def generate_bulk_upload_template(system: schema.System) -> None:
+def generate_bulk_upload_template(system: schema.System, file_path: str) -> None:
     """Generates a Bulk Upload template for a particular agency."""
-    system_enum = schema.System(system)
-    metricfiles = SYSTEM_TO_METRICFILES[system_enum]
+    metricfiles = SYSTEM_TO_METRICFILES[system]
     filename_to_rows = {}
     for metricfile in metricfiles:  # pylint: disable=too-many-nested-blocks
         rows = []
@@ -94,7 +93,7 @@ def generate_bulk_upload_template(system: schema.System) -> None:
         filename_to_rows[metricfile.canonical_filename] = new_rows
 
     with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
-        f"{system_enum.name}.xlsx"
+        file_path
     ) as writer:
         for filename, rows in filename_to_rows.items():
             df = pd.DataFrame.from_dict(rows)
@@ -115,4 +114,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("system")
     args = parser.parse_args()
-    generate_bulk_upload_template(system=args.system)
+    system_enum = schema.System(args.system)
+    generate_bulk_upload_template(system=system_enum, file_path=system_enum.name)
