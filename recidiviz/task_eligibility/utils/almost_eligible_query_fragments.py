@@ -44,6 +44,7 @@ def one_criteria_away_from_eligibility(
     criteria_name: str,
     criteria_condition: Optional[str] = None,
     field_name_in_reasons_blob: Optional[str] = None,
+    cte_table: str = "json_to_array_cte",
 ) -> str:
     """Helper method that returns a query where individuals
     with only one ineligible criteria (criteria_name) are
@@ -65,6 +66,7 @@ def one_criteria_away_from_eligibility(
 
     criteria_value_query_fragment = ""
     criteria_value_where_clause = ""
+    criteria_value_except_clause = ""
 
     # If a criteria_condition was specified, we create the string that will pull
     #   the value for us as a column (criteria_value_query_fragment) and we filter
@@ -83,20 +85,20 @@ def one_criteria_away_from_eligibility(
         WHERE criteria_value {criteria_condition}
         """
 
-    return f"""
-SELECT 
-    external_id,
-    state_code,
-    reasons,
-    ineligible_criteria
-FROM (SELECT
-        * EXCEPT(array_reasons, is_eligible),
-        {criteria_value_query_fragment}
-    FROM json_to_array_cte
-    WHERE 
-        -- keep if only ineligible criteria is criteria_name
-        '{criteria_name}' IN UNNEST(ineligible_criteria) 
-        AND ARRAY_LENGTH(ineligible_criteria) = 1
+        criteria_value_except_clause = """
+        EXCEPT(criteria_value)
+        """
+
+    return f"""SELECT
+        * {criteria_value_except_clause}
+    FROM (SELECT
+            * EXCEPT(array_reasons),
+            {criteria_value_query_fragment}
+        FROM {cte_table}
+        WHERE 
+            -- keep if only ineligible criteria is criteria_name
+            '{criteria_name}' IN UNNEST(ineligible_criteria) 
+            AND ARRAY_LENGTH(ineligible_criteria) = 1
 )
 {criteria_value_where_clause}
 """
@@ -107,13 +109,14 @@ def x_time_away_from_eligibility(
     time_interval: int,
     date_part: str,
     eligible_date: str = "eligible_date",
+    cte_table: str = "json_to_array_cte",
 ) -> str:
     """Helper method that returns a query where individuals who are a time_interval
     (e.g. 4 months) away from eligibility are surfaced
 
     This method requires json_to_array_cte CTE to be defined previously in
-    the query (see function with the same name above). It also requires it to
-    contain the columns ineligible_criteria, array_reasons, and is_eligible
+    the query (see function with the same name above). It also requires the
+    columns ineligible_criteria, array_reasons, and is_eligible
 
     Args:
         criteria_name (str): Name of criteria; has_usually the following form
@@ -125,21 +128,34 @@ def x_time_away_from_eligibility(
             date. Defaults to "eligible_date".
     """
 
-    return f"""SELECT * EXCEPT({eligible_date}, is_eligible)
-FROM   (SELECT
-            * EXCEPT(array_reasons),
-            -- only keep {eligible_date} for the relevant criteria
-            CAST(
-                ARRAY(
-                    SELECT JSON_VALUE(x.reason.{eligible_date})
-                    FROM UNNEST(array_reasons) AS x
-                    WHERE STRING(x.criteria_name) = '{criteria_name}'
-                )[OFFSET(0)]
-            AS DATE)  AS {eligible_date},
-            FROM json_to_array_cte
-        WHERE 
-        -- keep if only ineligible criteria is time remaining on sentence
-        '{criteria_name}' IN UNNEST(ineligible_criteria) 
-        AND ARRAY_LENGTH(ineligible_criteria) = 1
-        )
-WHERE DATE_DIFF({eligible_date}, CURRENT_DATE('US/Pacific'), {date_part}) < {time_interval}"""
+    return f"""SELECT * EXCEPT({eligible_date})
+    FROM   (SELECT
+                * EXCEPT(array_reasons),
+                -- only keep {eligible_date} for the relevant criteria
+                CAST(
+                    ARRAY(
+                        SELECT JSON_VALUE(x.reason.{eligible_date})
+                        FROM UNNEST(array_reasons) AS x
+                        WHERE STRING(x.criteria_name) = '{criteria_name}'
+                    )[OFFSET(0)]
+                AS DATE)  AS {eligible_date},
+                FROM {cte_table}
+            WHERE 
+            -- keep if only ineligible criteria is time remaining on sentence
+            '{criteria_name}' IN UNNEST(ineligible_criteria) 
+            AND ARRAY_LENGTH(ineligible_criteria) = 1
+            )
+    WHERE DATE_DIFF({eligible_date}, CURRENT_DATE('US/Pacific'), {date_part}) < {time_interval}"""
+
+
+def clients_eligible(from_cte: str) -> str:
+    """Returns a SELECT statement that outputs all the currently eligible population.
+
+    Args:
+        from_cte (str): View/CTE to use after the FROM clause. Usually the one
+            containing all the current eligibility spans of the relevant population
+
+    """
+    return f"""SELECT *
+    FROM {from_cte}
+    WHERE is_eligible"""

@@ -14,17 +14,51 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helper SQL fragments for ME
+"""Helper SQL fragments that import raw tables. This is currently used for ME only, but 
+it can be expanded to other states. 
 """
 
 from typing import Optional
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+
+PROGRAM_ENROLLMENT_NOTE_TX_REGEX = "|".join(
+    [
+        "COMPLET[A-Z]*",
+        "CERTIFICAT[A-Z]",
+        "PARTICIPATED",
+        "ATTENDED",
+        "EDUC[A-Z]*",
+        "CAT ",
+        "CRIMINAL ADDICTIVE THINKING",
+        "ANGER MANAGEMENT",
+        "NEW FREEDOM",
+        "T4C",
+        "THINKING FOR A CHANGE",
+        "SAFE",
+        "STOPPING ABUSE FOR EVERYONE",
+        "CBI-IPV",
+        "SUD ",
+        "HISET",
+        "PROBLEM SEXUAL BEHAVIOR",
+    ]
+)
 
 
 def cis_319_after_csswa(table: str = "sub_sessions_with_attributes") -> str:
-    """Helper method to drop repeated subsessions and incorrect
-    final spans. Meant to be used after create_sub_sessions_with_attributes (csswa).
+    """
+    CIS_319 table after create_sub_sessions_with_attributes.
+
+    Helper method to drop repeated subsessions:
+     - Prioritize dropping status = 'Completed'
+     - Keep older end_dates/critical_dates
     """
 
     return f"""
@@ -185,4 +219,127 @@ def cis_425_program_enrollment_notes(
     {additional_joins}
     WHERE pr.NAME_TX IS NOT NULL {where_clause}
     QUALIFY ROW_NUMBER() OVER(PARTITION BY mp.ENROLL_ID ORDER BY Effct_Datetime DESC) = 1
+    """
+
+
+def cis_112_custody_level_criteria(
+    criteria_name: str,
+    description: str,
+    custody_levels: str = """ "Community", "Minimum" """,
+) -> StateSpecificTaskCriteriaBigQueryViewBuilder:
+    """
+    Creates a state-specific criteria builder that surfaces as eligible those clients
+        who match the custody_levels.
+
+    Args:
+        criteria_name (str): Criteria name. This should match the criteria file name.
+        description (str): Criteria description.
+        custody_levels (str, optional): Custody levels who are eligible for said criteria.
+            Defaults to "Community", "Minimum".
+
+    Returns:
+        StateSpecificTaskCriteriaBigQueryViewBuilder: State specific criteria builder.
+    """
+
+    _QUERY_TEMPLATE = f"""
+    WITH custody_levels AS (
+        -- Grab custody levels, transform datetime to date, 
+        -- merge to recidiviz ids, only keep distinct values
+        SELECT
+            state_code,
+            person_id,
+            CLIENT_SYS_DESC AS custody_level,
+            SAFE_CAST(LEFT(CUSTODY_DATE, 10) AS DATE) AS start_date,
+            SAFE_CAST(CUSTODY_DATE AS DATETIME) AS start_datetime,
+        #TODO(#16722): pull custody level from ingested data once it is hydrated in our schema
+        FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_112_CUSTODY_LEVEL_latest`
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id`
+            ON CIS_100_CLIENT_ID = external_id
+            AND id_type = 'US_ME_DOC'
+        INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_1017_CLIENT_SYS_latest` cl_sys
+            ON CIS_1017_CLIENT_SYS_CD = CLIENT_SYS_CD
+    ),
+    custody_level_spans AS (
+        SELECT
+            state_code,
+            person_id,
+            custody_level,
+            start_date,
+            -- If two custody_level_spans have the same start_date, we'll make the highest
+            -- priority of all have the span that matters
+            LEAD(start_date) OVER (PARTITION BY state_code, person_id ORDER BY start_date, start_datetime, custody_level_priority) AS end_date
+        FROM (
+            SELECT
+                * EXCEPT(custody_level_priority),
+                -- Any custody level not in the LEFT JOIN below will have a priority of 999 (highest priority).
+                --    This way we, if a client is assigned to two or more custody levels, 
+                --    we will keep give priority to the ones not in ["Unclassified", {custody_levels}].
+                COALESCE(custody_level_priority, 999) AS custody_level_priority,
+            FROM custody_levels
+            LEFT JOIN (
+                -- Set the custody level priority from lowest to highest, where "Unclassified" is
+                -- lowest so that it is dropped if there is any other overlapping value. All other
+                -- levels not listed here will be inferred as the highest priority.
+                SELECT *
+                FROM UNNEST(
+                    ["Unclassified", {custody_levels}]
+                ) AS custody_level
+                WITH OFFSET custody_level_priority
+            ) priority
+                USING (custody_level)
+            )
+    )
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        custody_level IN ({custody_levels}) AS meets_criteria,
+        TO_JSON(STRUCT(custody_level AS custody_level)) AS reason
+    FROM custody_level_spans
+    WHERE start_date != {nonnull_end_date_clause('end_date')}
+    """
+
+    return StateSpecificTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        state_code=StateCode.US_ME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    )
+
+
+def cis_201_case_plan_case_notes() -> str:
+    """
+    Returns:
+        str: Query that surfaces case plan goals for incarcerated individuals in ME.
+    """
+
+    _FINAL_SELECT = """
+    SELECT  
+        Cis_200_Cis_100_Client_Id AS external_id,
+        "Case Plan Goals" AS criteria,
+        CONCAT(Domain_Goal_Desc,' - ', Goal_Status_Desc) AS note_title,
+        IF(E_Goal_Type_Desc = 'Other',
+            CONCAT(E_Goal_Type_Desc, " - " ,Other),
+            E_Goal_Type_Desc)
+        AS note_body,
+        DATE(SAFE.PARSE_DATETIME("%m/%d/%Y %I:%M:%S %p", Open_Date)) AS event_date,
+    FROM
+    """
+
+    return f"""
+    {_FINAL_SELECT} (SELECT 
+                *
+            FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_201_GOALS_latest` gl
+            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2012_GOAL_STATUS_TYPE_latest` gs
+                ON gl.Cis_2012_Goal_Status_Cd = gs.Goal_Status_Cd
+            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2010_GOAL_TYPE_latest` gt
+                ON gl.Cis_2010_Goal_Type_Cd = gt.Goal_Type_Cd
+            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2011_DOMAIN_GOAL_TYPE_latest` dg
+                ON gl.Cis_2011_Dmn_Goal_Cd = dg.Domain_Goal_Cd
+            WHERE gs.Goal_Status_Cd IN ('1','2')) 
     """

@@ -28,12 +28,20 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    join_current_task_eligibility_spans_with_external_id,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
+    clients_eligible,
+    json_to_array_cte,
+    one_criteria_away_from_eligibility,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -48,7 +56,13 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_DESCRIPTION = """
     for individuals that may be eligible 
     """
 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
- WITH case_numbers AS(
+ WITH current_task_eligibility_spans_with_peid AS (
+  {join_current_task_eligibility_spans_with_external_id(state_code= "'US_IX'", 
+    tes_task_query_view = 'complete_transfer_to_limited_supervision_form_materialized',
+    id_type = "'US_IX_DOC'",
+    additional_columns = "tes.start_date, tes.end_date,")}
+),
+ case_numbers AS(
       SELECT DISTINCT 
         charge.state_code,
         charge.person_id,
@@ -299,7 +313,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
     ),
     form AS (
       SELECT
-          pei.external_id,
+          tes.external_id,
           tes.is_eligible,
           tes.state_code,
           tes.start_date AS eligible_start_date,
@@ -334,16 +348,12 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           ad.alcohol_drug_total AS metadata_lsir_alcohol_drug_score,
           -- Almost eligible if there is only 1 ineligible_criteria present
          IF(ARRAY_LENGTH(tes.ineligible_criteria) = 1, tes.ineligible_criteria, []) AS ineligible_criteria,
-      FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_limited_supervision_form_materialized` tes
+      FROM current_task_eligibility_spans_with_peid tes
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
         ON tes.state_code = ses.state_code
         AND tes.person_id = ses.person_id 
         AND tes.start_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
         AND tes.state_code = 'US_IX'
-      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON tes.state_code = pei.state_code 
-        AND tes.person_id = pei.person_id
-        AND pei.id_type = "US_IX_DOC"
       LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` proj
         ON proj.state_code = ses.state_code
         AND proj.person_id = ses.person_id
@@ -390,26 +400,21 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         AND tes.person_id = n.person_id
       WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
         AND tes.state_code = 'US_IX'
-     )
-     SELECT *
-     FROM form
-     WHERE is_eligible
+     ),
+    {json_to_array_cte('form')}
+
+    -- ELIGIBLE
+    {clients_eligible(from_cte = 'form')}
      
      UNION ALL
      
-     SELECT *
-     FROM form
-     WHERE 
-        -- keep if only ineligible criteria is criteria_name
-        'US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS' IN UNNEST(ineligible_criteria)
+    -- ALMOST ELIGIBLE (only missing income verification)
+    {one_criteria_away_from_eligibility('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS')}
     
     UNION ALL
-     
-     SELECT *
-     FROM form
-     WHERE 
-        -- keep if only ineligible criteria is criteria_name
-        'ON_SUPERVISION_AT_LEAST_ONE_YEAR' IN UNNEST(ineligible_criteria)
+
+    -- ALMOST ELIGIBLE (only missing a year in supervision criteria)
+    {one_criteria_away_from_eligibility('ON_SUPERVISION_AT_LEAST_ONE_YEAR')}
 """
 
 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

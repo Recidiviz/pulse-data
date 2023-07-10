@@ -17,9 +17,11 @@
 """Queries information needed to fill out the SLD form in CA
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    join_current_task_eligibility_spans_with_external_id,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
@@ -35,23 +37,13 @@ US_CA_SUPERVISION_LEVEL_DOWNGRADE_DESCRIPTION = """
     Queries information needed to fill out the SLD form in CA
     """
 
-
 US_CA_SUPERVISION_LEVEL_DOWNGRADE_QUERY_TEMPLATE = f"""
 WITH current_parole_pop_cte AS (
     -- Keep only people in Parole
-    SELECT pei.external_id,
-        tes.state_code,
-        tes.reasons,
-        tes.ineligible_criteria,
-        tes.is_eligible,
-    FROM `{{project_id}}.{{task_eligibility_dataset}}.supervision_level_downgrade_materialized` tes
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        USING(person_id)
-    WHERE 
-      CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND 
-                                         {nonnull_end_date_exclusive_clause('tes.end_date')}
-      AND tes.state_code = 'US_CA'
-)
+    {join_current_task_eligibility_spans_with_external_id(
+        state_code= "'US_CA'", 
+        tes_task_query_view = 'supervision_level_downgrade_materialized',
+        id_type = "'US_CA_DOC'")})
 
 SELECT 
     external_id,
