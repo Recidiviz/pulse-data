@@ -30,7 +30,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_NAME = (
-    "US_CA_SUPERVISION_LEVEL_DOWNGRADE_FORM_RECORD"
+    "us_ca_supervision_level_downgrade_form_record"
 )
 
 US_CA_SUPERVISION_LEVEL_DOWNGRADE_DESCRIPTION = """
