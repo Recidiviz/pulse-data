@@ -1446,9 +1446,9 @@ def get_api_blueprint(
                     updated_report_jsons=updated_report_jsons,
                     new_report_jsons=new_report_jsons,
                     unchanged_report_jsons=unchanged_report_jsons,
+                    spreadsheet=spreadsheet,
                 )
             )
-
         current_session.commit()
         return jsonify(
             SpreadsheetInterface.get_spreadsheets_json(

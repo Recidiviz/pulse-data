@@ -226,6 +226,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 updated_report_jsons=[],
                 new_report_jsons=[],
                 unchanged_report_jsons=[],
+                spreadsheet=spreadsheet,
             )
             metric_key_to_json = {m["key"]: m for m in json["metrics"]}
             for definition in metric_definitions:
