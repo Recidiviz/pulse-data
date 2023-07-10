@@ -25,7 +25,7 @@ import { officersDataZeroMode } from "../SwarmedCircleGroup/fixtures";
 export const fittingSupervisorData: OutliersSupervisorChartInput["data"] = {
   highlightedOfficers: [
     {
-      name: "Tatiana Alvarez-Thomas",
+      name: "Jeanette Schneider-Cox",
       rate: 0.19904024430145054,
       targetStatus: targetStatusSchema.enum.FAR,
       prevRate: 0.15804024430145053,
@@ -49,6 +49,14 @@ export const fittingSupervisorData: OutliersSupervisorChartInput["data"] = {
 
 export const fittingSupervisorDataTransformed =
   outliersSupervisorChartInputSchema.shape.data.parse(fittingSupervisorData);
+
+export const noPrevRateSupervisorData = structuredClone(fittingSupervisorData);
+noPrevRateSupervisorData.highlightedOfficers =
+  noPrevRateSupervisorData.highlightedOfficers.slice(0, 1);
+noPrevRateSupervisorData.highlightedOfficers[0].prevRate = null;
+
+export const noPrevRateSupervisorDataTransformed =
+  outliersSupervisorChartInputSchema.shape.data.parse(noPrevRateSupervisorData);
 
 export const overflowingSupervisorData = structuredClone(fittingSupervisorData);
 // needs enough entries to overflow the height of the swarm

@@ -21,6 +21,7 @@ import { convertToImage } from "../../server/generate/convertToImage";
 import { renderToStaticSvg } from "../utils";
 import {
   fittingSupervisorDataTransformed,
+  noPrevRateSupervisorDataTransformed,
   overflowingSupervisorDataTransformed,
 } from "./fixtures";
 import { OutliersSupervisorChart } from "./OutliersSupervisorChart";
@@ -41,6 +42,11 @@ describe.each([
     label: "highlights overflowing swarm height",
     data: overflowingSupervisorDataTransformed,
     expectedHeight: 279,
+  },
+  {
+    label: "highlights with missing prevRate",
+    data: noPrevRateSupervisorDataTransformed,
+    expectedHeight: 213,
   },
 ])("data with $label", ({ data, expectedHeight }) => {
   function TestComponent() {

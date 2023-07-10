@@ -17,9 +17,8 @@
 """Report context for the Outliers Supervision Officer Supervisor email.
 
 This module can be run as a script for local development. It is intended to be run within
-the admin_panel container in docker-compose. It will print the template HTML to stdout,
-where it can be redirected to the destination of your choosing  (e.g. a file that you open
- in a browser).
+the admin_panel container in docker-compose. It will generate one or more HTML files that you can open 
+in the browser or tool of your choice for inspection.
 
 You can populate the template with the fixture data that is written into this file: 
 
@@ -27,23 +26,18 @@ docker exec pulse-data-admin_panel_backend-1 pipenv run \
     python -m recidiviz.reporting.context.outliers_supervision_officer_supervisor.context \
     fixture
 
-Or you can point it at your local database, if you have populated it with 
-recidiviz.tools.outliers.load_local_db. 
-
-For staging data (which is assumed to be up to date):
+Or you can point it at your local database, if you have populated it with staging data using
+recidiviz.tools.outliers.load_local_db. This option assumes your data is current as of this month.
 
 docker exec pulse-data-admin_panel_backend-1 pipenv run \
     python -m recidiviz.reporting.context.outliers_supervision_officer_supervisor.context \
-    db --state_code US_PA --source GCS
+    db --state_code US_PA
 
-For fixture data (which has a hardcoded report date):
-
-docker exec pulse-data-admin_panel_backend-1 pipenv run \
-    python -m recidiviz.reporting.context.outliers_supervision_officer_supervisor.context \
-    db --state_code US_PA --source FIXTURE
 """
 import argparse
 import datetime
+import logging
+import os
 import sys
 from collections import defaultdict
 from itertools import groupby
@@ -215,7 +209,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
             )
 
         highlighted_names = join_with_conjunction(
-            [o.name for o in metric_info.highlighted_officers]
+            [o.name.formatted_first_last for o in metric_info.highlighted_officers]
         )
         return f"Swarm plot of all {metric_info.metric.body_display_name}s in the state where {highlighted_names} {highlight_condition} for the current reporting period."
 
@@ -262,7 +256,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
         )
         for metric in self._report_data.metrics:
             for officer in metric.highlighted_officers:
-                metrics_by_officer[officer.name].append(metric)
+                metrics_by_officer[officer.name.formatted_first_last].append(metric)
 
         # filter and sort by number of metrics. officers only qualify for this highlight
         # if they are named on two or more metrics
@@ -327,13 +321,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="cmd")
 
+    # untracked directory for convenience
+    default_dest = "recidiviz/local/reporting/outliers_supervision_officer_supervisor/"
+
     fixture_parser = subparsers.add_parser("fixture")
+    fixture_parser.add_argument("--dest", default=default_dest)
 
     db_parser = subparsers.add_parser("db")
     db_parser.add_argument(
         "--state_code", dest="state_code", type=StateCode, required=True
     )
-    db_parser.add_argument("--source", default="GCS", choices=["GCS", "FIXTURE"])
+    db_parser.add_argument("--dest", default=default_dest)
 
     known_args, _ = parser.parse_known_args(sys.argv[1:])
 
@@ -341,39 +339,6 @@ if __name__ == "__main__":
         test_report_date = datetime.datetime.now()
         test_state_code = StateCode.US_OZ
 
-        test_report = OfficerSupervisorReportData(
-            [
-                create_fixture(
-                    metric_fixtures[INCARCERATION_STARTS],
-                    target_fixture_adverse,
-                    other_officers_fixture_adverse,
-                    highlighted_officers_fixture_adverse,
-                ),
-                create_fixture(
-                    metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
-                    target_fixture_adverse,
-                    other_officers_fixture_adverse,
-                    highlighted_officers_fixture_adverse[:1],
-                ),
-                create_fixture(
-                    metric_fixtures[TASK_COMPLETIONS_FULL_TERM_DISCHARGE],
-                    target_fixture_favorable,
-                    other_officers_fixture_favorable,
-                    highlighted_officers_fixture_favorable,
-                ),
-                create_fixture(
-                    metric_fixtures[TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION],
-                    target_fixture_favorable_zero,
-                    other_officers_fixture_favorable_zero,
-                    highlighted_officers_fixture_favorable_zero,
-                    TargetStatusStrategy.ZERO_RATE,
-                ),
-            ],
-            [
-                metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
-            ],
-            "test-outliers-supervisor@recidiviz.org",
-        )
         test_config = OutliersConfig(
             metrics=[
                 metric_fixtures[INCARCERATION_STARTS],
@@ -385,12 +350,7 @@ if __name__ == "__main__":
             supervision_officer_label="officer",
         )
     elif known_args.cmd == "db":
-        # Fixture data is for may 2023
-        test_report_date = (
-            datetime.datetime.now()
-            if known_args.source == "GCS"
-            else datetime.datetime(2023, 5, 1)
-        )
+        test_report_date = datetime.datetime.now()
         test_state_code = known_args.state_code
 
         test_config = OUTLIERS_CONFIGS_BY_STATE[test_state_code]
@@ -411,21 +371,74 @@ if __name__ == "__main__":
         report_type=ReportType.OutliersSupervisionOfficerSupervisor,
     )
 
+    def make_email(report: OfficerSupervisorReportData) -> None:
+        recipient = Recipient(
+            email_address=report.recipient_email_address,
+            state_code=batch.state_code,
+            data={
+                "report": report,
+                "config": test_config,
+            },
+        )
+        context = OutliersSupervisionOfficerSupervisorContext(batch, recipient)
+        try:
+            with local_project_id_override(GCP_PROJECT_STAGING):
+                report_data = context.get_prepared_data()
+
+            filepath_relative = os.path.join(
+                known_args.dest, f"{recipient.email_address}.html"
+            )
+            dest = os.path.join(os.getcwd(), filepath_relative)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+
+            contents = context.html_template.render(**report_data)
+            with open(dest, "w", encoding="utf8") as f:
+                f.write(contents)
+                print(f"HTML generated at {filepath_relative}")
+
+        except Exception:
+            logging.error("ERROR: %s", report.recipient_email_address, exc_info=True)
+
     if known_args.cmd == "db":
         all_reports = retrieve_data_for_outliers_supervision_officer_supervisor(batch)
-        # basically just picking one at random, do something smarter if you need to
-        test_report = next(iter(all_reports.values()))
+        for current_report in all_reports.values():
+            make_email(current_report)
 
-    recipient = Recipient(
-        email_address=test_report.recipient_email_address,
-        state_code=batch.state_code,
-        data={
-            "report": test_report,
-            "config": test_config,
-        },
-    )
-    context = OutliersSupervisionOfficerSupervisorContext(batch, recipient)
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        report_data = context.get_prepared_data()
-
-    print(context.html_template.render(**report_data))
+    elif known_args.cmd == "fixture":
+        make_email(
+            OfficerSupervisorReportData(
+                [
+                    create_fixture(
+                        metric_fixtures[INCARCERATION_STARTS],
+                        target_fixture_adverse,
+                        other_officers_fixture_adverse,
+                        highlighted_officers_fixture_adverse,
+                    ),
+                    create_fixture(
+                        metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+                        target_fixture_adverse,
+                        other_officers_fixture_adverse,
+                        highlighted_officers_fixture_adverse[:1],
+                    ),
+                    create_fixture(
+                        metric_fixtures[TASK_COMPLETIONS_FULL_TERM_DISCHARGE],
+                        target_fixture_favorable,
+                        other_officers_fixture_favorable,
+                        highlighted_officers_fixture_favorable,
+                    ),
+                    create_fixture(
+                        metric_fixtures[
+                            TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION
+                        ],
+                        target_fixture_favorable_zero,
+                        other_officers_fixture_favorable_zero,
+                        highlighted_officers_fixture_favorable_zero,
+                        TargetStatusStrategy.ZERO_RATE,
+                    ),
+                ],
+                [
+                    metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
+                ],
+                "test-outliers-supervisor@recidiviz.org",
+            )
+        )

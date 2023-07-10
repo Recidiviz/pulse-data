@@ -17,13 +17,17 @@
 """Functions for generating an Outliers Supervisor Chart asset."""
 
 
+import logging
+
 import attr
 import cattrs
+from requests import HTTPError
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.outliers.querier.querier import OutlierMetricInfo, TargetStatus
+from recidiviz.outliers.types import PersonName
 from recidiviz.reporting.asset_generation.constants import GENERATE_API_BASE
 from recidiviz.reporting.asset_generation.session import session
 from recidiviz.reporting.asset_generation.types import AssetResponseBase, PayloadBase
@@ -40,6 +44,10 @@ class OutliersSupervisorChartResponse(AssetResponseBase):
     height: int = attr.ib()
 
 
+_converter = cattrs.Converter()
+_converter.register_unstructure_hook(PersonName, lambda pn: pn.formatted_first_last)
+
+
 def _convert_keys(key: str) -> str:
     """transforms from snake to camel while passing through TargetStatus enum values"""
     if key in list(TargetStatus):
@@ -51,7 +59,7 @@ def prepare_data(data: OutlierMetricInfo) -> dict:
     return convert_nested_dictionary_keys(
         {
             k: v
-            for k, v in data.to_dict().items()
+            for k, v in _converter.unstructure(data).items()
             # only include keys that are required for the payload
             if k in ["target", "other_officers", "highlighted_officers"]
         },
@@ -74,5 +82,10 @@ def request_asset(
         json=payload.to_dict(),
         timeout=60,
     )
-    resp.raise_for_status()
+    try:
+        resp.raise_for_status()
+    except HTTPError:
+        logging.error(resp.text, exc_info=True)
+        raise
+
     return cattrs.structure(resp.json(), OutliersSupervisorChartResponse)

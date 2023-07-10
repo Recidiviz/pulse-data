@@ -5,24 +5,24 @@
     {{components.heading("Highlights", size='md')}}
 </tr>
 {{components.y_padding(16)}}
-{% for highlight in highlights.multiple_metrics %}
-<tr>
-    <td class="em_dm_txt_white_80"
-        style="{{brand_styles.fonts.sans_serif}} color: #4C6E80; font-weight: 500; font-size: 18px;">
-        <strong style="color: #032322;">{{highlight.name}}</strong>
-        {% for detail in highlight.details %}
-        {% if not loop.first %}
-        and
-        {% else %}
-        {% endif %}
-        {{detail.condition}} {{detail.metrics}}{% if not loop.last %},{% else %}.{% endif %}
-        {% endfor %}
-
-    </td>
-</tr>
-{{components.y_padding(8)}}
-{% endfor %}
 {% if highlights.multiple_metrics %}
+    {% for highlight in highlights.multiple_metrics %}
+    <tr>
+        <td class="em_dm_txt_white_80"
+            style="{{brand_styles.fonts.sans_serif}} color: #4C6E80; font-weight: 500; font-size: 18px;">
+            <strong style="color: #032322;">{{highlight.name}}</strong>
+            {% for detail in highlight.details %}
+            {% if not loop.first %}
+            and
+            {% else %}
+            {% endif %}
+            {{detail.condition}} {{detail.metrics}}{% if not loop.last %},{% else %}.{% endif %}
+            {% endfor %}
+
+        </td>
+    </tr>
+    {{components.y_padding(8)}}
+    {% endfor %}
 {% endif %}
 {% if highlights.no_outliers %}
 <tr>

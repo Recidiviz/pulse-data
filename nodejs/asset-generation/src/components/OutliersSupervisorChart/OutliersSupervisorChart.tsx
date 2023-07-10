@@ -44,7 +44,10 @@ const formatTarget = format(".1%");
 function getValueExtent(data: ChartProps["data"]) {
   const allValues = [
     ...data.otherOfficers.map((o) => o.value),
-    ...data.highlightedOfficers.map((o) => [o.rate, o.prevRate]),
+    ...data.highlightedOfficers.map((o) => o.rate),
+    ...data.highlightedOfficers
+      .map((o) => o.prevRate)
+      .filter((r): r is number => r !== null),
   ]
     .flat()
     .sort();
@@ -73,13 +76,17 @@ function detectOverflow(
 function getLabelProps(
   labelText: string,
   cx: number,
-  prevX: number,
+  prevX: number | null,
   width: number
 ) {
+  // the previous value can be missing, which means it should have no effect on label position.
+  // we can accomplish this by just setting it equal to cx, a known condition that has the exact same result
+  const prevXNormalized = prevX ?? cx;
+
   let textAnchor: TextProps["textAnchor"] = "start";
   let x = LABEL_X_BASE;
-  if (prevX > cx) {
-    x += prevX - cx;
+  if (prevXNormalized > cx) {
+    x += prevXNormalized - cx;
   }
 
   const rightOverflow = detectOverflow(labelText, 18, cx + x, width);
@@ -87,8 +94,8 @@ function getLabelProps(
   if (rightOverflow) {
     x = LABEL_X_BASE * -1;
     textAnchor = "end";
-    if (prevX < cx) {
-      x -= cx - prevX;
+    if (prevXNormalized < cx) {
+      x -= cx - prevXNormalized;
     }
   }
 
@@ -207,7 +214,7 @@ export function OutliersSupervisorChart({
           .sort((a, b) => descending(a.rate, b.rate))
           .map((e, i) => {
             const cx = xScale(e.rate);
-            const prevX = xScale(e.prevRate);
+            const prevX = e.prevRate !== null ? xScale(e.prevRate) : null;
             const labelText = e.name;
 
             return (
@@ -215,17 +222,19 @@ export function OutliersSupervisorChart({
                 key={labelText}
                 transform={`translate(${cx} ${ROW_HEIGHT * i})`}
               >
-                <rect
-                  height={HIGHLIGHT_DOT_RADIUS * 2}
-                  // this rect spans the distance from the outer edges of two circles
-                  // centered at cx & prevX
-                  width={HIGHLIGHT_DOT_RADIUS * 2 + Math.abs(cx - prevX)}
-                  fill={palette.slate20}
-                  rx={HIGHLIGHT_DOT_RADIUS}
-                  y={-HIGHLIGHT_DOT_RADIUS}
-                  // the left edge position depends on which way the bar extends from cx
-                  x={(cx < prevX ? 0 : prevX - cx) - HIGHLIGHT_DOT_RADIUS}
-                />
+                {prevX !== null && (
+                  <rect
+                    height={HIGHLIGHT_DOT_RADIUS * 2}
+                    // this rect spans the distance from the outer edges of two circles
+                    // centered at cx & prevX
+                    width={HIGHLIGHT_DOT_RADIUS * 2 + Math.abs(cx - prevX)}
+                    fill={palette.slate20}
+                    rx={HIGHLIGHT_DOT_RADIUS}
+                    y={-HIGHLIGHT_DOT_RADIUS}
+                    // the left edge position depends on which way the bar extends from cx
+                    x={(cx < prevX ? 0 : prevX - cx) - HIGHLIGHT_DOT_RADIUS}
+                  />
+                )}
                 <circle
                   r={HIGHLIGHT_DOT_RADIUS}
                   fill={OUTLIERS_GOAL_COLORS[e.targetStatus]}

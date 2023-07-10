@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for the OutliersQuerier class"""
 import csv
+import json
 import os
 from datetime import date
 from typing import Dict, List, Optional
@@ -39,6 +40,7 @@ from recidiviz.outliers.types import (
     OutliersConfig,
     OutliersMetricConfig,
     OutliersUpperManagementReportData,
+    PersonName,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -69,6 +71,8 @@ def load_model_fixture(
     with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
         reader = csv.DictReader(fixture_file)
         for row in reader:
+            if "full_name" in row:
+                row["full_name"] = json.loads(row["full_name"])
             results.append(row)
 
     return results
@@ -105,7 +109,9 @@ class TestOutliersQuerier(TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx")
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            self.database_key, create_tables=True
+        )
 
         with SessionFactory.using_database(self.database_key) as session:
             for unit in load_model_fixture(SupervisionUnit):
@@ -171,7 +177,7 @@ class TestOutliersQuerier(TestCase):
                         },
                         highlighted_officers=[
                             OfficerMetricEntity(
-                                name="Officer 1",
+                                name=PersonName("Officer", "1"),
                                 rate=0.26688907422852376,
                                 target_status=TargetStatus.FAR,
                                 prev_rate=0.31938677738741617,
@@ -180,7 +186,7 @@ class TestOutliersQuerier(TestCase):
                                 supervision_district="1",
                             ),
                             OfficerMetricEntity(
-                                name="Officer 8",
+                                name=PersonName("Officer", "8"),
                                 rate=0.3333333333333333,
                                 target_status=TargetStatus.FAR,
                                 prev_rate=None,
@@ -215,7 +221,7 @@ class TestOutliersQuerier(TestCase):
                         },
                         highlighted_officers=[
                             OfficerMetricEntity(
-                                name="Officer 4",
+                                name=PersonName("Officer", "4"),
                                 rate=0.0,
                                 target_status=TargetStatus.FAR,
                                 prev_rate=0.0,
@@ -264,7 +270,12 @@ class TestOutliersQuerier(TestCase):
                         },
                         "highlighted_officers": [
                             {
-                                "name": "Officer 1",
+                                "name": {
+                                    "given_names": "Officer",
+                                    "surname": "1",
+                                    "middle_names": None,
+                                    "name_suffix": None,
+                                },
                                 "rate": 0.26688907422852376,
                                 "target_status": "FAR",
                                 "prev_rate": 0.31938677738741617,
@@ -273,7 +284,12 @@ class TestOutliersQuerier(TestCase):
                                 "supervision_district": "1",
                             },
                             {
-                                "name": "Officer 8",
+                                "name": {
+                                    "given_names": "Officer",
+                                    "surname": "8",
+                                    "middle_names": None,
+                                    "name_suffix": None,
+                                },
                                 "rate": 0.3333333333333333,
                                 "target_status": "FAR",
                                 "prev_rate": None,
@@ -322,7 +338,12 @@ class TestOutliersQuerier(TestCase):
                         },
                         "highlighted_officers": [
                             {
-                                "name": "Officer 4",
+                                "name": {
+                                    "given_names": "Officer",
+                                    "surname": "4",
+                                    "middle_names": None,
+                                    "name_suffix": None,
+                                },
                                 "rate": 0.0,
                                 "target_status": "FAR",
                                 "prev_rate": 0.0,
@@ -391,11 +412,11 @@ class TestOutliersQuerier(TestCase):
 
         expected = [
             OutliersUpperManagementReportData(
-                recipient_name="Manager 1",
+                recipient_name=PersonName("Manager", "1"),
                 recipient_email="manager1@recidiviz.org",
                 entities=[
                     OutliersAggregatedMetricEntity(
-                        name="Supervisor 1",
+                        name=PersonName("Supervisor", "1"),
                         metrics=[
                             OutliersAggregatedMetricInfo(
                                 metric=TEST_METRIC_1,
@@ -419,11 +440,11 @@ class TestOutliersQuerier(TestCase):
                 entity_label="officer",
             ),
             OutliersUpperManagementReportData(
-                recipient_name="Manager 2",
+                recipient_name=PersonName("Manager", "2"),
                 recipient_email="manager2@recidiviz.org",
                 entities=[
                     OutliersAggregatedMetricEntity(
-                        name="Supervisor 2",
+                        name=PersonName("Supervisor", "2"),
                         metrics=[
                             OutliersAggregatedMetricInfo(
                                 metric=TEST_METRIC_1,
@@ -438,7 +459,7 @@ class TestOutliersQuerier(TestCase):
                         ],
                     ),
                     OutliersAggregatedMetricEntity(
-                        name="Supervisor 3",
+                        name=PersonName("Supervisor", "3"),
                         metrics=[
                             OutliersAggregatedMetricInfo(
                                 metric=TEST_METRIC_1,
@@ -461,11 +482,21 @@ class TestOutliersQuerier(TestCase):
 
         expected_json = [
             {
-                "recipient_name": "Manager 1",
+                "recipient_name": {
+                    "given_names": "Manager",
+                    "surname": "1",
+                    "middle_names": None,
+                    "name_suffix": None,
+                },
                 "recipient_email": "manager1@recidiviz.org",
                 "entities": [
                     {
-                        "name": "Supervisor 1",
+                        "name": {
+                            "given_names": "Supervisor",
+                            "surname": "1",
+                            "middle_names": None,
+                            "name_suffix": None,
+                        },
                         "metrics": [
                             {
                                 "metric": {
@@ -489,11 +520,21 @@ class TestOutliersQuerier(TestCase):
                 "entity_label": "officer",
             },
             {
-                "recipient_name": "Manager 2",
+                "recipient_name": {
+                    "given_names": "Manager",
+                    "surname": "2",
+                    "middle_names": None,
+                    "name_suffix": None,
+                },
                 "recipient_email": "manager2@recidiviz.org",
                 "entities": [
                     {
-                        "name": "Supervisor 2",
+                        "name": {
+                            "given_names": "Supervisor",
+                            "surname": "2",
+                            "middle_names": None,
+                            "name_suffix": None,
+                        },
                         "metrics": [
                             {
                                 "metric": {
@@ -514,7 +555,12 @@ class TestOutliersQuerier(TestCase):
                         ],
                     },
                     {
-                        "name": "Supervisor 3",
+                        "name": {
+                            "given_names": "Supervisor",
+                            "surname": "3",
+                            "middle_names": None,
+                            "name_suffix": None,
+                        },
                         "metrics": [
                             {
                                 "metric": {
@@ -554,7 +600,7 @@ class TestOutliersQuerier(TestCase):
 
         expected = [
             OutliersUpperManagementReportData(
-                recipient_name="Indiana Jones",
+                recipient_name=PersonName("Indiana", "Jones"),
                 recipient_email="jones@recidiviz.org",
                 entities=[
                     OutliersAggregatedMetricEntity(
