@@ -17,12 +17,14 @@
 """Interface for working with the Spreadsheet model."""
 import datetime
 import itertools
+import json
 import logging
 import os
 from io import StringIO
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
+from google.cloud import storage
 from sqlalchemy.orm import Session
 from werkzeug.datastructures import FileStorage
 
@@ -52,9 +54,11 @@ from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     CHILD_AGENCY_NAME_TO_UPLOAD_NAME,
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+    ERRORS_WARNINGS_JSON_BUCKET,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
+from recidiviz.utils.environment import in_ci, in_test
 
 
 class SpreadsheetInterface:
@@ -338,6 +342,7 @@ class SpreadsheetInterface:
         updated_report_jsons: List[Dict[str, Any]],
         new_report_jsons: List[Dict[str, Any]],
         unchanged_report_jsons: List[Dict[str, Any]],
+        spreadsheet: schema.Spreadsheet,
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
@@ -424,13 +429,27 @@ class SpreadsheetInterface:
         # to convert the rows into datapoints.
         non_metric_errors = [e.to_json() for e in metric_key_to_errors.get(None, [])]
 
-        return {
+        ingested_spreadsheet_json = {
             "metrics": metrics,
             "non_metric_errors": non_metric_errors,
             "updated_reports": updated_report_jsons,
             "new_reports": new_report_jsons,
             "unchanged_reports": unchanged_report_jsons,
         }
+
+        if in_ci() or in_test():
+            return ingested_spreadsheet_json
+
+        # Upload json to GCP bucket
+        # Source: https://cloud.google.com/storage/docs/uploading-objects-from-memory
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET)
+        destination_blob_name = spreadsheet.standardized_name.replace("xlsx", "json")
+        blob = bucket.blob(destination_blob_name)
+        blob.upload_from_string(json.dumps(ingested_spreadsheet_json, default=str))
+        logging.info("%s stored in GCP", destination_blob_name)
+
+        return ingested_spreadsheet_json
 
     @staticmethod
     def ingest_workbook_from_gcs(
