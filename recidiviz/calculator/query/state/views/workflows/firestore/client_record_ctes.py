@@ -342,7 +342,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     4 AS milestone_priority
                 FROM time_with_employer
         )
-        WHERE state_code in ('US_IX', 'US_MI')
+        WHERE state_code in ({{workflows_milestones_states}})
         AND milestone_text IS NOT NULL
         GROUP BY state_code, person_id
     ),

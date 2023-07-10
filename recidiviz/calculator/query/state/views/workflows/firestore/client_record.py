@@ -78,6 +78,8 @@ WORKFLOWS_SUPERVISION_STATES = [
 
 WORKFLOWS_SUPERVISION_STATES.append("US_CA")
 
+WORKFLOWS_MILESTONES_STATES = ["US_IX", "US_MI", "US_CA"]
+
 
 def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
     cte_body = "\n        UNION ALL\n".join(
@@ -149,6 +151,9 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     workflows_supervision_states=list_to_query_string(
         WORKFLOWS_SUPERVISION_STATES, quoted=True
+    ),
+    workflows_milestones_states=list_to_query_string(
+        WORKFLOWS_MILESTONES_STATES, quoted=True
     ),
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
