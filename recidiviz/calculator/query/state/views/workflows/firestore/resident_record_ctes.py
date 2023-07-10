@@ -214,6 +214,18 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
     ),
 """
 
+_RESIDENT_PORTION_NEEDED_CTE = """
+    portion_needed AS (
+      SELECT state_code, person_id,
+      TO_JSON_STRING(JSON_EXTRACT(reason, '$.x_portion_served'))
+      AS portion_served_needed
+      FROM `task_eligibility_criteria_us_me.served_x_portion_of_sentence_materialized`
+      AS served_x
+      WHERE CURRENT_DATE("US/Eastern")
+      BETWEEN served_x.start_date AND IFNULL(DATE_SUB(served_x.end_date, INTERVAL 1 DAY), "9999-12-31")
+    ),
+"""
+
 _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
     join_residents AS (
         SELECT DISTINCT
@@ -252,8 +264,10 @@ _RESIDENTS_CTE = """
             admission_date,
             release_date,
             opportunities_aggregated.all_eligible_opportunities,
+            portion_served_needed,
         FROM join_residents
         LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
+        LEFT JOIN portion_needed USING (state_code, person_id)
         WHERE officer_id IS NOT NULL
     )
 """
@@ -267,6 +281,7 @@ def full_resident_record() -> str:
     {_RESIDENT_RECORD_CUSTODY_LEVEL_CTE}
     {_RESIDENT_RECORD_HOUSING_UNIT_CTE}
     {_RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE}
+    {_RESIDENT_PORTION_NEEDED_CTE}
     {_RESIDENT_RECORD_JOIN_RESIDENTS_CTE}
     {_RESIDENTS_CTE}
     """
