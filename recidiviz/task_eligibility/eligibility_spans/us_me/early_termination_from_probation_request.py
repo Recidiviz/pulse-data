@@ -46,7 +46,7 @@ for an Early Termination from Probation
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ME,
-    task_name="EARLY_TERMINATION_FROM_PROBATION",
+    task_name="EARLY_TERMINATION_FROM_PROBATION_REQUEST",
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
     criteria_spans_view_builders=[

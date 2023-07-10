@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 # =============================================================================
 """
 Shows the spans of time during which someone in ME is eligible
-for a transfer to SCCP (Supervised Community Confinement Program)
+for a work release.
 """
 
 from recidiviz.common.constants.states import StateCode
@@ -27,11 +27,11 @@ from recidiviz.task_eligibility.completion_events.general import (
     release_to_community_confinement_supervision,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
-    minimum_or_community_custody,
+    custody_level_is_minimum_or_community,
     no_class_a_or_b_violation_for_90_days,
     no_detainers_warrants_or_other,
-    served_x_portion_of_sentence,
-    x_months_remaining_on_sentence,
+    served_30_days_at_eligible_facility_for_furlough_or_work_release,
+    three_years_remaining_on_sentence,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -40,21 +40,22 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time during which someone in ME is eligible
-for a transfer to SCCP (Supervised Community Confinement Program).
+for a work release.
 """
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ME,
-    task_name="TRANSFER_TO_SCCP",
+    task_name="WORK_RELEASE_FORM",
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        minimum_or_community_custody.VIEW_BUILDER,
-        served_x_portion_of_sentence.VIEW_BUILDER,
-        x_months_remaining_on_sentence.VIEW_BUILDER,
+        custody_level_is_minimum_or_community.VIEW_BUILDER,
+        three_years_remaining_on_sentence.VIEW_BUILDER,
         no_detainers_warrants_or_other.VIEW_BUILDER,
+        served_30_days_at_eligible_facility_for_furlough_or_work_release.VIEW_BUILDER,
         no_class_a_or_b_violation_for_90_days.VIEW_BUILDER,
     ],
+    # TODO(#22045): add furlough event builder once created
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
 )
 

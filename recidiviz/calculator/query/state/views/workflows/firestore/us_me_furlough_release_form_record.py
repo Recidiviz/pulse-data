@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Queries information needed to fill out transfer to SCCP form in ME
+"""Queries information needed to fill out the furlough release forms
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -34,7 +34,6 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
     json_to_array_cte,
     one_criteria_away_from_eligibility,
-    x_time_away_from_eligibility,
 )
 from recidiviz.task_eligibility.utils.raw_table_import import (
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
@@ -45,27 +44,18 @@ from recidiviz.task_eligibility.utils.raw_table_import import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_NAME = "us_me_complete_transfer_to_sccp_form_record"
+US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_NAME = "us_me_furlough_release_form_record"
 
-US_ME_TRANSFER_TO_SCCP_RECORD_DESCRIPTION = """
-    Query for relevant information to fill out the transfer to SCCP forms in ME
+US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_DESCRIPTION = """
+    Queries information needed to fill out the furlough release forms
     """
 
-_SCCP_NOTE_TX_REGEX = "|".join(
-    ["SCCP", "COMMUNITY CONFINEMENT", "HOME CONFINEMENT", "SCC"]
-)
-
-_DROP_REPEATED_SCCP_NOTES = """(SELECT *
-             FROM case_notes_cte
-             QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id, note_title, note_body 
-                                     ORDER BY IF(criteria = "SCCP notes", 0, 1), 
-                                            criteria DESC) = 1)"""
-
-US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE = f"""
+US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_QUERY_TEMPLATE = f"""
 
 WITH current_incarceration_pop_cte AS (
-{join_current_task_eligibility_spans_with_external_id(state_code= "'US_ME'", 
-    tes_task_query_view = 'transfer_to_sccp_form_materialized',
+{join_current_task_eligibility_spans_with_external_id(
+    state_code= "'US_ME'", 
+    tes_task_query_view = 'furlough_release_form_materialized',
     id_type = "'US_ME_DOC'")}
 ),
 
@@ -74,16 +64,6 @@ case_notes_cte AS (
 
     -- Program enrollment
     {cis_425_program_enrollment_notes()}
-
-    UNION ALL
-  
-    -- SCCP-related notes
-    {cis_204_notes_cte("Notes: SCCP")}
-    # While fuzzy matching is set up
-    WHERE 
-        REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{_SCCP_NOTE_TX_REGEX}') 
-        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{_SCCP_NOTE_TX_REGEX}')
-    GROUP BY 1,2,3,4,5   
 
     UNION ALL
 
@@ -98,27 +78,6 @@ case_notes_cte AS (
 
     UNION ALL 
 
-    -- SCCP Application Investigations
-    SELECT 
-        Cis_100_Client_Id AS external_id,
-        "SCCP Application Investigation" AS criteria,
-        IF(Complete_Date IS NULL,
-            'Resolution not available yet',
-            CONCAT("Resolution date: ", 
-                    DATE(SAFE_CAST(Complete_Date AS DATETIME))))
-        AS note_title,
-        Notes_Tx AS note_body,
-        -- TODO(#17587) remove LEFT once the YAML file is updated
-        DATE(SAFE_CAST(Request_Date AS DATETIME)) AS event_date,
-    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_130_INVESTIGATION_latest` i
-    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_1301_INVESTIGATION_latest` ic
-        ON i.Cis_1301_Type_Cd = ic.Investigation_Cd
-    -- Keep only SCCP related investigations
-    WHERE Investigation_Cd = '11' 
-        AND Cis_100_Client_Id IS NOT NULL 
-
-    UNION ALL 
-
     -- Case Plan Goals
     {cis_201_case_plan_case_notes()}
 ), 
@@ -126,40 +85,33 @@ case_notes_cte AS (
 {json_to_array_cte('current_incarceration_pop_cte')}, 
 
 eligible_and_almost_eligible AS (
-
     -- ELIGIBLE
     {clients_eligible(from_cte = 'current_incarceration_pop_cte')}
 
+    UNION ALL
+
+    -- ALMOST ELIGIBLE (haven't served 1/2 of sentence): folks without this condition
+    --          may request a furlough, but not for family purposes
+    {one_criteria_away_from_eligibility('US_ME_SERVED_HALF_OF_SENTENCE')}
+
     UNION ALL 
 
-    -- ALMOST ELIGIBLE (<6mo remaining before 30/24mo)
-    {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'US_ME_X_MONTHS_REMAINING_ON_SENTENCE')}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (<6mo remaining before 1/2 or 2/3 of sentence served)
-    {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'US_ME_SERVED_X_PORTION_OF_SENTENCE')}
-
-    UNION ALL
-
-    -- ALMOST ELIGIBLE (one discipline away)
-    {one_criteria_away_from_eligibility('US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS')}
+    -- ALMOST ELIGIBLE (missing the right custody_level)
+    {one_criteria_away_from_eligibility('US_ME_CUSTODY_LEVEL_IS_COMMUNITY')}
 ),
 
 array_case_notes_cte AS (
-{array_agg_case_notes_by_external_id(left_join_cte=_DROP_REPEATED_SCCP_NOTES)}
+  {array_agg_case_notes_by_external_id()}
 )
 
 {opportunity_query_final_select_with_case_notes()}
 """
 
-US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_NAME,
-    view_query_template=US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE,
-    description=US_ME_TRANSFER_TO_SCCP_RECORD_DESCRIPTION,
+    view_id=US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_NAME,
+    view_query_template=US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_QUERY_TEMPLATE,
+    description=US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ME
@@ -172,4 +124,4 @@ US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER.build_and_print()
+        US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER.build_and_print()

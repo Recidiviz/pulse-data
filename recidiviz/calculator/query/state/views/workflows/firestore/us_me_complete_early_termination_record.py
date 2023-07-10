@@ -17,14 +17,16 @@
 """Queries information needed to display Early Termination eligibility in ME
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    nonnull_end_date_clause,
-    nonnull_end_date_exclusive_clause,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    array_agg_case_notes_by_external_id,
+    join_current_task_eligibility_spans_with_external_id,
+    opportunity_query_final_select_with_case_notes,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -33,6 +35,7 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
+    clients_eligible,
     json_to_array_cte,
     one_criteria_away_from_eligibility,
 )
@@ -124,19 +127,10 @@ US_ME_COMPLETE_EARLY_TERMINATION_RECORD_DESCRIPTION = """
 US_ME_COMPLETE_EARLY_TERMINATION_RECORD_QUERY_TEMPLATE = f"""
 
 WITH current_supervision_pop_cte AS (
-    -- Keep individuals on probation today
-    SELECT peid.external_id,
-        tes.state_code,
-        tes.reasons,
-        tes.ineligible_criteria,
-        tes.is_eligible,
-    FROM `{{project_id}}.{{task_eligibility_dataset}}.early_termination_from_probation_materialized` tes
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
-        USING(person_id)
-    WHERE 
-      CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND 
-                                         {nonnull_end_date_exclusive_clause('tes.end_date')}
-      AND tes.state_code = 'US_ME'
+    -- Keep only the most current span per probation client
+{join_current_task_eligibility_spans_with_external_id(state_code= "'US_ME'", 
+    tes_task_query_view = 'early_termination_from_probation_request_materialized',
+    id_type = "'US_ME_DOC'")}
 ),
 
 case_notes_cte AS (
@@ -252,9 +246,7 @@ case_notes_cte AS (
 eligible_and_almost_eligible AS (
 
     -- ELIGIBLE
-    SELECT * EXCEPT(is_eligible)
-    FROM current_supervision_pop_cte
-    WHERE is_eligible
+    {clients_eligible(from_cte = 'current_supervision_pop_cte')}
 
     UNION ALL
     
@@ -272,27 +264,10 @@ eligible_and_almost_eligible AS (
 ),
 
 array_case_notes_cte AS (
-  SELECT 
-      external_id,
-      -- Group all notes into an array within a JSON
-      TO_JSON(ARRAY_AGG( STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
-  FROM eligible_and_almost_eligible
-  -- left join after removing repeated notes
-  LEFT JOIN case_notes_cte
-    USING(external_id)
-  WHERE criteria IS NOT NULL
-  GROUP BY 1
+  {array_agg_case_notes_by_external_id()}
 )
 
-SELECT 
-    external_id,
-    state_code,
-    reasons,
-    ineligible_criteria,
-    case_notes,
-FROM eligible_and_almost_eligible
-LEFT JOIN array_case_notes_cte
-  USING(external_id)
+{opportunity_query_final_select_with_case_notes()}
 """
 
 US_ME_COMPLETE_EARLY_TERMINATION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
