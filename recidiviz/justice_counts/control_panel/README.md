@@ -55,14 +55,20 @@ See the [[scripts] section of our Pipfile](https://github.com/Recidiviz/pulse-da
 
 ## Running locally
 
-1. Build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 7, which will take precendence over the frontend that is bundled in the docker image.)
+1. Build the Recidiviz Base Docker image using the command below:
+
+```bash
+pipenv run docker-build-base
+```
+
+2. Build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 7, which will take precedence over the frontend that is bundled in the docker image.)
 
 ```bash
 pipenv run docker-build-jc-publisher \
   --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz \
 ```
 
-NOTE: If you get a 401 Unauthorized permissions error, run `gcloud auth configure-docker` and then retry.
+NOTE: If you get a 401 Unauthorized permissions error, run `gcloud auth configure-docker us-docker.pkg.dev` and then retry.
 
 2. Now run the Justice Counts Docker image using `docker-compose`:
 
@@ -76,7 +82,7 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
 
-3. (Optional) In another tab, while `docker-compose` is running, load fake data into your local database:
+3. In another tab, while `docker-compose` is running, load fake data into your local database:
 
 ```bash
 pipenv run fixtures-jc
