@@ -39,11 +39,6 @@ class OutliersSupervisorChartPayload(PayloadBase):
     data: dict = attr.ib()
 
 
-@attr.s
-class OutliersSupervisorChartResponse(AssetResponseBase):
-    height: int = attr.ib()
-
-
 _converter = cattrs.Converter()
 _converter.register_unstructure_hook(PersonName, lambda pn: pn.formatted_first_last)
 
@@ -69,7 +64,7 @@ def prepare_data(data: OutlierMetricInfo) -> dict:
 
 def request_asset(
     state_code: StateCode, asset_id: str, width: int, data: dict
-) -> OutliersSupervisorChartResponse:
+) -> AssetResponseBase:
     payload = OutliersSupervisorChartPayload(
         stateCode=state_code.value,
         id=asset_id,
@@ -88,4 +83,4 @@ def request_asset(
         logging.error(resp.text, exc_info=True)
         raise
 
-    return cattrs.structure(resp.json(), OutliersSupervisorChartResponse)
+    return cattrs.structure(resp.json(), AssetResponseBase)

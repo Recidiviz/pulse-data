@@ -15,8 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import sharp from "sharp";
+import { expect, test } from "vitest";
 
-export async function convertToImage(source: string) {
-  return sharp(Buffer.from(source)).png().toBuffer();
-}
+import { convertSvgToPng } from "./convertSvgToPng";
+
+test("converts svg to png", async () => {
+  const imageData = await convertSvgToPng(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="10" height="20" x="5" y="5"></rect></svg>`
+  );
+
+  expect(imageData).toMatchImageSnapshot();
+});

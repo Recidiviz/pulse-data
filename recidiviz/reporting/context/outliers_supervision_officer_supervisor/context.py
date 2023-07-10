@@ -75,10 +75,10 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.reporting.asset_generation.constants import RETRIEVE_API_BASE
 from recidiviz.reporting.asset_generation.outliers_supervisor_chart import (
-    OutliersSupervisorChartResponse,
     prepare_data,
     request_asset,
 )
+from recidiviz.reporting.asset_generation.types import AssetResponseBase
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval import (
     retrieve_data_for_outliers_supervision_officer_supervisor,
 )
@@ -188,9 +188,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
             },
         }
 
-    def _request_chart(
-        self, metric_info: OutlierMetricInfo
-    ) -> OutliersSupervisorChartResponse:
+    def _request_chart(self, metric_info: OutlierMetricInfo) -> AssetResponseBase:
         return request_asset(
             self.batch.state_code,
             f"{self.recipient.email_address}-{metric_info.metric.name}",

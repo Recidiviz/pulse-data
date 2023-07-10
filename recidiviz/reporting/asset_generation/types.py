@@ -23,6 +23,10 @@ import cattrs
 
 @attr.s
 class PayloadBase:
+    """Includes common fields for asset generation payloads.
+    It is expected, though not required, that instances will add their own
+    data property, which will necessarily be specific to the asset type."""
+
     stateCode: str = attr.ib()
     id: str = attr.ib()
     width: int = attr.ib()
@@ -33,4 +37,7 @@ class PayloadBase:
 
 @attr.s
 class AssetResponseBase:
+    """The standard response for a generated asset, which simply provides
+    the path by which the asset can be retrieved from the asset server."""
+
     url: str = attr.ib()
