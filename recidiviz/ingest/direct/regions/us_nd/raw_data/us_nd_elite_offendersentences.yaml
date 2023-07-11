@@ -29,7 +29,7 @@ columns:
       The number of charges associated with this sentence.
   - name: GOOD_TIME
     description: |-
-      Y/N indicator of whether a person can accrue good time toward this sentence.
+      The amount of good time accrued towards this sentence.
   - name: SENTENCE_CALC_TYPE
     description: |-
       The type of calculation that is being performed for this sentence duration.
@@ -43,32 +43,22 @@ columns:
     is_datetime: True
     description: |-
       When this sentence becomes effective.
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: EIGHTYFIVE_PERCENT_DATE
     is_datetime: True
     description: |-
       The 85% date associated with this sentence, based on its start date and the length of the sentence.
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: PROBABLE_RELEASE_DATE
     is_datetime: True
     description: |-
       When the person is likely to be released from incarceration due to this sentence.
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: SENTENCE_EXPIRY_DATE
     is_datetime: True
     description: |-
       When serving of this sentence expires.
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: START_DATE
     is_datetime: True
     description: |-
       When serving of this sentence first began.
-    datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: CREATE_DATETIME
     is_datetime: True
     description: |-

@@ -23,7 +23,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import environment
 
 
 class UsNdController(BaseDirectIngestController):
@@ -51,20 +50,10 @@ class UsNdController(BaseDirectIngestController):
             "elite_offenders",
             "elite_alias",
             "elite_offenderbookingstable",
-        ]
-
-        # gate legacy incarceration sentence views to production
-        if environment.in_gcp_production():
-            tags.extend(
-                [
-                    "elite_offendersentenceaggs",
-                    "elite_offendersentences",
-                    "elite_offendersentenceterms",
-                    "elite_state_charges",
-                ]
-            )
-
-        tags += [
+            "elite_offendersentenceaggs",
+            "elite_offendersentences",
+            "elite_offendersentenceterms",
+            "elite_state_charges",
             "elite_externalmovements_incarceration_periods",
             "elite_offense_in_custody_and_pos_report_data",
             # Docstars - supervision-focused
@@ -78,12 +67,7 @@ class UsNdController(BaseDirectIngestController):
             "docstars_staff",
             "docstars_staff_location_periods",
             "docstars_staff_role_periods",
-            "docstars_staff_supervisor_periods",
+            "docstars_staff_supervisor_periods"
+            # TODO(#1918): Integrate bed assignment / location history
         ]
-
-        # gate new combined incarceration sentence view to staging
-        if not environment.in_gcp_production():
-            tags.extend(["elite_incarceration_sentences"])
-
-        # TODO(#1918): Integrate bed assignment / location history
         return tags

@@ -20,8 +20,6 @@ unused_columns:
   - CREATE_DATETIME
   - MODIFY_DATETIME
   - EARLIEST_SENT_START_DATE
-launch_env:
-  $env: is_production
 output:
   StatePerson:
     external_ids:
