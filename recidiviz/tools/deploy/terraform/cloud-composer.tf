@@ -32,8 +32,10 @@ data "google_secret_manager_secret_version" "airflow_sendgrid_api_key" {
 }
 
 resource "google_composer_environment" "default_v2" {
-  name   = "orchestration-v2"
-  region = var.region
+  provider = google-beta
+  name     = "orchestration-v2"
+  region   = var.region
+
   config {
 
     software_config {
@@ -94,6 +96,11 @@ resource "google_composer_environment" "default_v2" {
         storage_gb = 10
         min_count  = 15
         max_count  = 30
+      }
+      triggerer {
+        count     = 1
+        cpu       = 0.5
+        memory_gb = 0.5
       }
     }
 
