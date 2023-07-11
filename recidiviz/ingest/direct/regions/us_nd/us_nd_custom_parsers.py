@@ -123,17 +123,15 @@ def classification_type_raw_text_from_raw_text(raw_charge_text: str) -> Optional
         return classification_str[0]
     if classification_str in ("IM", "IF"):
         return classification_str[1]
-    return ""
+    return None
 
 
 def classification_subtype_from_raw_text(raw_charge_text: str) -> Optional[str]:
-    if raw_charge_text:
-        classification_str = raw_charge_text.upper()
-        if (
-            classification_str.startswith("F") or classification_str.startswith("M")
-        ) and len(classification_str) > 1:
-            return classification_str[1:]
-        return None
+    classification_str = raw_charge_text.upper()
+    if (
+        classification_str.startswith("F") or classification_str.startswith("M")
+    ) and len(classification_str) > 1:
+        return classification_str[1:]
     return None
 
 
