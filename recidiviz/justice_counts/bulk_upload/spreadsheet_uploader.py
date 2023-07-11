@@ -550,6 +550,7 @@ class SpreadsheetUploader:
                 month = (
                     custom_starting_month or 1
                 )  # if no custom starting month specified, assume calendar year
+                assumed_frequency = ReportingFrequency.ANNUAL
             elif reporting_frequency == ReportingFrequency.MONTHLY:
                 month = get_column_value(
                     row=row,
@@ -559,6 +560,7 @@ class SpreadsheetUploader:
                     metric_key_to_errors=metric_key_to_errors,
                     metric_key=metric_key,
                 )
+                assumed_frequency = ReportingFrequency.MONTHLY
             elif (
                 reporting_frequency == ReportingFrequency.ANNUAL
                 and row.get("month") is not None
@@ -573,13 +575,15 @@ class SpreadsheetUploader:
                     metric_key_to_errors=metric_key_to_errors,
                     metric_key=metric_key,
                 )
+                assumed_frequency = ReportingFrequency.MONTHLY
             elif reporting_frequency == ReportingFrequency.ANNUAL:
                 month = (
                     custom_starting_month or 1
                 )  # if no custom starting month specified, assume calendar year
+                assumed_frequency = ReportingFrequency.ANNUAL
 
             date_range_start, date_range_end = ReportInterface.get_date_range(
-                year=year, month=month, frequency=reporting_frequency.value
+                year=year, month=month, frequency=assumed_frequency.value
             )
             time_range_to_year_month[(date_range_start, date_range_end)] = (year, month)
             rows_by_time_range[(date_range_start, date_range_end)].append(row)
