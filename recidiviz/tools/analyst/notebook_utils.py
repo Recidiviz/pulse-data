@@ -51,17 +51,22 @@ from IPython import get_ipython
 from IPython.display import display
 from tqdm.notebook import tqdm
 
-
 # adds pulse-data repo to path
 # note that file structure must be:
 # parent folder:
 #  - pulse-data repo
 #  - recidiviz-research repo
-module_path = os.path.abspath(os.path.join("../../pulse-data"))
-sys.path.append(module_path)
+
+# get path of this file
+current_file_path = os.path.dirname(__file__)
+# get path of pulse-data from this path, three parent folders up
+recidiviz_data_path = os.path.abspath(os.path.join(current_file_path, "../../../"))
+# add pulse-data to path
+sys.path.append(recidiviz_data_path)
 
 # imports from pulse-data
 from recidiviz.tools.analyst.plots import RECIDIVIZ_COLORS, add_legend  # isort:skip
+
 
 # IPython magics - only run if in notebook environment
 def is_notebook() -> bool:
