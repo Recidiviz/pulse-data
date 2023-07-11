@@ -18,6 +18,8 @@ unused_columns:
   - TERM_SEQ
   - CREATE_DATETIME # No apparent use for these at the moment
   - MODIFY_DATETIME # No apparent use for these at the moment
+launch_env:
+  $env: is_production
 output:
   StatePerson:
     external_ids:
