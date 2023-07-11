@@ -107,7 +107,7 @@ PROD_IMAGE_FRONTEND_TAG="${PROD_IMAGE_BASE}:${FRONTEND_TAG}"
 PROD_IMAGE_BACKEND_TAG="${PROD_IMAGE_BASE}:${BACKEND_TAG}"
 
 echo "Moving Docker image ${STAGING_IMAGE_URL} to ${PROJECT_ID} and tagging with latest, ${PROD_IMAGE_FRONTEND_TAG}, and ${PROD_IMAGE_BACKEND_TAG}..."
-run_cmd_no_exiting gcloud -q container images add-tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}" "${PROD_IMAGE_FRONTEND_TAG}" "${PROD_IMAGE_BACKEND_TAG}"
+run_cmd gcloud -q container images add-tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}" "${PROD_IMAGE_FRONTEND_TAG}" "${PROD_IMAGE_BACKEND_TAG}"
 
 echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"
