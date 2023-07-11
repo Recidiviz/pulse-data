@@ -55,11 +55,6 @@ class UsNdMatchingDelegate(StateSpecificEntityMatchingDelegate):
                 # We will be able to remove StateAgent from this list when we stop
                 # generating supervision officer StateAgent objects with no external_id.
                 schema.StateAgent,
-                # TODO(#14801): As part of a rewrite of the ND incarceration sentence
-                # ingest view, we should no longer be producing incarceration sentences
-                # without a hydrated external_id, so we should be able to remove
-                # StateIncarcerationSentence from this list.
-                schema.StateIncarcerationSentence,
                 # We will be able to remove StateSupervisionViolationResponse from this
                 # list when we stop generating StateSupervisionViolationResponse objects
                 # with no external_id.

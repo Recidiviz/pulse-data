@@ -36,6 +36,8 @@ variables:
         $function: us_nd_custom_parsers.decimal_str_as_int_str
         $args:
           dec_str: OFFENDER_BOOK_ID
+launch_env:
+  $env: is_production
 output:
   StatePerson:
     external_ids:

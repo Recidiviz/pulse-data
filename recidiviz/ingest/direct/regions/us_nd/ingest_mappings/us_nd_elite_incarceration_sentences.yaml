@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDER_BOOK_ID
+  - SENTENCE_SEQ
+  - CHARGE_SEQ
+  - COUNTY_CODE
+  - OFFENCE_TYPE
+  - OFFENCE_CODE
+  - OFFENSE_DATE
+  - severity_ranking
+  - description
+  - INITIAL_COUNTS
+  - COMMENT_TEXT
+  - CHARGE_STATUS
+  - JUDGE_NAME
+  - ISSUING_AGY_LOC_ID
+  - EFFECTIVE_DATE
+  - PROBABLE_RELEASE_DATE
+  - SENTENCE_EXPIRY_DATE
+  - SENTENCE_CALC_TYPE
+  - PAROLE_DATE
+  - CALC_POS_REL_DATE
+  - OVR_POS_REL_DATE
+  - YEARS
+  - MONTHS
+  - DAYS
+  - START_DATE
+unused_columns:
+  - CALC_POS_REL_DATE
+  - OVR_POS_REL_DATE
+launch_env:
+  $env: is_staging
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDER_BOOK_ID
+          id_type: $literal("US_ND_ELITE_BOOKING")
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDER_BOOK_ID
+                - SENTENCE_SEQ
+          status: $literal_enum(StateSentenceStatus.PRESENT_WITHOUT_INFO)
+          incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
+          # The earliest value of elite_offendersentenceterms.START_DATE associated with
+          # a given sentence is used as the date imposed. A sentence can be comprised
+          # of multiple terms, and the date that the earliest one started should logically
+          # not be long after the date the sentence was handed down.
+          date_imposed: START_DATE
+          # In practice, elite_offendersentences.EFFECTIVE_DATE is almost always identical
+          # to elite_offendersentenceterms.START_DATE, and the date_imposed field above.
+          # This is theoretically the effective date of the sentence, not a specific term
+          # associated with it.
+          effective_date: EFFECTIVE_DATE
+          projected_min_release_date: PROBABLE_RELEASE_DATE
+          projected_max_release_date: SENTENCE_EXPIRY_DATE
+          parole_eligibility_date: PAROLE_DATE
+          # NOTE: PAROLE_DATE is the date a person was granted parole, not the date they
+          # became eligible. It is currently the most accurate proxy we have for PED.
+          county_code:
+            $custom:
+              $function: us_nd_custom_parsers.normalize_county_code
+              $args:
+                county_code: COUNTY_CODE
+          max_length_days:
+            $custom:
+              $function: us_nd_custom_parsers.max_length_days_from_ymd
+              $args:
+                years: YEARS
+                months: MONTHS
+                days: DAYS
+          is_life:
+            $equal:
+              - SENTENCE_CALC_TYPE
+              - $literal("LIFE")
+          charges:
+            - StateCharge:
+                external_id:
+                  $concat:
+                    $values:
+                      - OFFENDER_BOOK_ID
+                      - CHARGE_SEQ
+                status: $literal_enum(StateChargeStatus.CONVICTED)
+                offense_date: OFFENSE_DATE
+                county_code:
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_county_code
+                    $args:
+                      county_code: COUNTY_CODE
+                statute: OFFENCE_CODE
+                # OFFENCE_CODE is sometimes an actual offense code and sometimes a statute.
+                # All have descriptions in ref file regardless of their format.
+                description: description
+                classification_type:
+                  $conditional:
+                    - $if:
+                        $not_null: OFFENCE_TYPE
+                      $then:
+                        $enum_mapping:
+                          $raw_text:
+                            $custom:
+                              $function: us_nd_custom_parsers.classification_type_raw_text_from_raw_text
+                              $args:
+                                raw_charge_text: OFFENCE_TYPE
+                          $custom_parser: us_nd_custom_enum_parsers.parse_classification_type_from_raw_text
+                    - $else: $literal_enum(StateChargeClassificationType.INTERNAL_UNKNOWN)
+                classification_subtype:
+                  $custom:
+                    $function: us_nd_custom_parsers.classification_subtype_from_raw_text
+                    $args:
+                      raw_charge_text: OFFENCE_TYPE
+                offense_type: severity_ranking
+                is_violent:
+                  $equal:
+                    - severity_ranking
+                    - $literal("VIOLENT")
+                counts: INITIAL_COUNTS
+                charge_notes: COMMENT_TEXT
+                is_controlling:
+                  $in:
+                    $value: CHARGE_STATUS
+                    $options:
+                      - $literal("C")
+                      - $literal("CT")
+                judge_full_name:
+                  $person_name:
+                    $full_name: JUDGE_NAME
+                judicial_district_code:
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_judicial_district_code
+                    $args:
+                      judicial_district_code_text: ISSUING_AGY_LOC_ID
