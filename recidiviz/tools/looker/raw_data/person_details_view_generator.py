@@ -21,7 +21,12 @@ Used inside person_details_lookml_writer
 import os
 from typing import Dict, List
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -29,6 +34,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
     DimensionGroupLookMLViewField,
@@ -41,6 +47,7 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLFieldType,
     LookMLTimeframesOption,
 )
+from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.looker.parameterized_value import ParameterizedValue
 
 RAW_DATA_OPTION = "raw_data"
@@ -151,15 +158,48 @@ def generate_shared_fields_view() -> LookMLView:
     return view
 
 
-def generate_raw_file_view(config: DirectIngestRawFileConfig) -> LookMLView:
+def generate_raw_file_view(
+    state_code: StateCode, config: DirectIngestRawFileConfig
+) -> LookMLView:
     """
     Return a single LookMLView object representing the provided raw file config.
     """
+    ingest_instance = DirectIngestInstance.PRIMARY
+
+    def get_table_id(option: str) -> str:
+        """
+        Returns the table dataset id according to the raw data or up to date views data
+        """
+        if option == RAW_DATA_OPTION:
+            dataset_id = raw_tables_dataset_for_region(state_code, ingest_instance)
+            return BigQueryAddress(
+                dataset_id=dataset_id, table_id=config.file_tag
+            ).to_str()
+        if option == RAW_DATA_UP_TO_DATE_VIEWS_OPTION:
+            dataset_id = raw_latest_views_dataset_for_region(
+                state_code, ingest_instance
+            )
+            return BigQueryAddress(
+                dataset_id=dataset_id, table_id=config.file_tag + "_latest"
+            ).to_str()
+        raise ValueError(f"Unexpected raw data table type: {option}")
+
+    parameterized_table_value = ParameterizedValue(
+        parameter_name="view_type",
+        parameter_options=[RAW_DATA_OPTION, RAW_DATA_UP_TO_DATE_VIEWS_OPTION],
+        value_builder=get_table_id,
+        indentation_level=2,
+    )
+
+    source_table = LookMLViewSourceTable.sql_table_address(parameterized_table_value)
+
     view = LookMLView(
         view_name=config.file_tag,
+        table=source_table,
         included_paths=[f"../{SHARED_FIELDS_NAME}.view"],
         extended_views=[SHARED_FIELDS_NAME],
     )
+
     return view
 
 
@@ -173,7 +213,9 @@ def generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
         views[state_code] = []
         region_config = DirectIngestRegionRawFileConfig(region_code=state_code.value)
         for raw_file_config in region_config.raw_file_configs.values():
-            views[state_code].append(generate_raw_file_view(raw_file_config))
+            views[state_code].append(
+                generate_raw_file_view(state_code, raw_file_config)
+            )
     return views
 
 

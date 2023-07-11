@@ -48,16 +48,6 @@ class ParameterizedValueTest(unittest.TestCase):
     {% endif %}"""
         self.assertEqual(class_output, expected_output)
 
-    def test_parameterized_value_output_no_added_spacing(self) -> None:
-        class_output = ParameterizedValue(
-            parameter_name="name",
-            parameter_options=["key1", "key2"],
-            value_builder=lambda s: s + "_value",
-            add_spacing=False,
-        ).build_liquid_template()
-        expected_output = """{% if name._parameter_value == 'key1' %}key1_value{% elsif name._parameter_value == 'key2' %}key2_value{% endif %}"""
-        self.assertEqual(class_output, expected_output)
-
     def test_parameterized_value_no_options_throw(self) -> None:
         with self.assertRaises(ValueError):
             _ = ParameterizedValue(

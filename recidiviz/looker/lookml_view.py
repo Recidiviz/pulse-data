@@ -74,7 +74,7 @@ class LookMLView:
             extends_str = ",\n".join(
                 [f"    {view_name}" for view_name in self.extended_views]
             )
-            extends_clause = f"extends: [\n{extends_str}\n]"
+            extends_clause = f"  extends: [\n{extends_str}\n  ]\n"
 
         return StrictStringFormatter().format(
             VIEW_TEMPLATE,
