@@ -18,7 +18,7 @@ source "${BASH_SOURCE_DIR}/../../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
-PROJECT_ID='recidiviz-staging'
+PROJECT_ID=''
 FRONTEND_APP=''
 CLOUD_RUN_SERVICE=''
 FRONTEND_VERSION=''
@@ -76,9 +76,11 @@ if [[ -z ${FRONTEND_APP} ]]; then
 fi
 
 if [[ ${FRONTEND_APP} == 'publisher' ]]; then
+    PROJECT_ID='recidiviz-staging'
     CLOUD_RUN_SERVICE="justice-counts-web"
 elif [[ ${FRONTEND_APP} == 'agency-dashboard' ]]; then
-    CLOUD_RUN_SERVICE="justice-counts-agency-dashboard-web"
+    PROJECT_ID='justice-counts-staging'
+    CLOUD_RUN_SERVICE="agency-dashboard-web"
 else
     echo_error "Invalid frontend application - must be either publisher or agency-dashboard"
     run_cmd exit 1
