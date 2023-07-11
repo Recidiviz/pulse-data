@@ -18,7 +18,10 @@ source "${BASH_SOURCE_DIR}/../../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
-PROJECT_ID=''
+PROJECT_ID='recidiviz-staging'
+# The GCP project where the Cloud Run app lives might be different
+# from the one where the other infra lives
+CLOUD_RUN_PROJECT_ID=''
 FRONTEND_APP=''
 CLOUD_RUN_SERVICE=''
 FRONTEND_VERSION=''
@@ -76,10 +79,10 @@ if [[ -z ${FRONTEND_APP} ]]; then
 fi
 
 if [[ ${FRONTEND_APP} == 'publisher' ]]; then
-    PROJECT_ID='recidiviz-staging'
+    CLOUD_RUN_PROJECT_ID='recidiviz-staging'
     CLOUD_RUN_SERVICE="justice-counts-web"
 elif [[ ${FRONTEND_APP} == 'agency-dashboard' ]]; then
-    PROJECT_ID='justice-counts-staging'
+    CLOUD_RUN_PROJECT_ID='justice-counts-staging'
     CLOUD_RUN_SERVICE="agency-dashboard-web"
 else
     echo_error "Invalid frontend application - must be either publisher or agency-dashboard"
@@ -99,12 +102,16 @@ FRONTEND_TAG_PREFIX=${FRONTEND_APP}
 SUBDIRECTORY=justice-counts/${FRONTEND_APP}
 REMOTE_IMAGE_BASE=us.gcr.io/${PROJECT_ID}/${SUBDIRECTORY}
 
-# Pass the most recent commit sha of the Justice Counts repo to the Cloud Build Trigger,
-# and then use this commit sha for the rest of the script. This prevents us from 
-# getting into a weird state where a new commit is checked in during the deploy.
+# Step 1: Determine most recent commit sha of Justice Counts repo
+
+# We pass this commit sha to the Cloud Build Trigger and then use it for the rest of the script. 
+# This prevents us from  getting into a weird state where a new commit is checked in during the deploy.
 # note: can't use run_cmd here because of the way cd works in shell scripts
 cd ../justice-counts || exit
 JUSTICE_COUNTS_COMMIT_HASH=$(git fetch && git rev-parse origin/main) || exit_on_fail
+
+# Step 2: Determine next version tags for both pulse-data and justice-counts (e.g. publisher.v1.55.0)
+
 get_next_version "${FRONTEND_TAG_PREFIX}" || exit_on_fail
 echo "Next frontend version is ${FRONTEND_VERSION}"
 
@@ -112,12 +119,16 @@ cd ../pulse-data || exit
 get_next_version "${BACKEND_TAG_PREFIX}" || exit_on_fail
 echo "Next backend version is ${BACKEND_VERSION}"
 
+# Step 3: Build Docker image
+
 echo "Building Docker image off of main in pulse-data and ${JUSTICE_COUNTS_COMMIT_HASH} in justice-counts..."
 run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
     --backend-branch "main" \
     --frontend-branch-or-sha "${JUSTICE_COUNTS_COMMIT_HASH}" \
     --frontend-app "${FRONTEND_APP}" \
     --subdirectory "${SUBDIRECTORY}"
+
+# Step 4: Tag Docker image with 'latest'
 
 # Look up the pulse-data commit sha used in the Docker build
 RECIDIVIZ_DATA_COMMIT_HASH=$(gcloud container images list-tags "${REMOTE_IMAGE_BASE}" --format=json | jq -r '.[0].tags[0]')
@@ -129,6 +140,8 @@ echo "Adding \"latest\" tag to the Docker image..."
 LATEST_DOCKER_TAG=${REMOTE_IMAGE_BASE}:latest
 run_cmd gcloud -q container images add-tag "${COMMIT_SHA_DOCKER_TAG}" "${LATEST_DOCKER_TAG}"
 
+# Step 5: Run migrations
+
 echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"
 run_cmd git checkout "${RECIDIVIZ_DATA_COMMIT_HASH}"
@@ -138,11 +151,13 @@ echo "Running migrations to head on ${PROJECT_ID}..."
 python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JUSTICE_COUNTS \
     --project-id "${PROJECT_ID}" \
-    --skip-db-name-check \
+    --skip-db-name-check
+
+# Step 6: Deploy image with 'latest' tag to Cloud Run and update traffic
 
 echo "Deploying new Cloud Run revision with image ${LATEST_DOCKER_TAG}..."
 run_cmd gcloud -q run deploy "${CLOUD_RUN_SERVICE}" \
-    --project "${PROJECT_ID}" \
+    --project "${CLOUD_RUN_PROJECT_ID}" \
     --image "${LATEST_DOCKER_TAG}" \
     --region "us-central1" \
 
@@ -151,8 +166,11 @@ run_cmd gcloud -q run deploy "${CLOUD_RUN_SERVICE}" \
 # won't start sending traffic until traffic is manually updated via `update-traffic`.
 echo "Directing 100% of traffic to new revision..."
 run_cmd gcloud -q run services update-traffic "${CLOUD_RUN_SERVICE}" \
+    --project "${CLOUD_RUN_PROJECT_ID}" \
     --to-latest \
     --region "us-central1"
+
+# Step 7: Tag both the Docker image and the corresponding commits in pulse-data and justice-counts
 
 BACKEND_TAG=jc.${FRONTEND_APP}.${BACKEND_VERSION} 
 FRONTEND_TAG=${FRONTEND_APP}.${FRONTEND_VERSION}
@@ -179,4 +197,10 @@ run_cmd gcloud -q container images add-tag "${LATEST_DOCKER_TAG}" "${REMOTE_IMAG
 
 # TODO(#16325): Create release candidate branches to facilitate cherry-picks.
 
-echo "Deploy of ${FRONTEND_APP} to ${PROJECT_ID} succeeded."
+# Step 8: Check out main in both justice-counts repo (where we are now) and pulse-data repo,
+# so we avoid being in a 'detached head' state
+run_cmd git checkout main
+cd ../pulse-data || exit
+run_cmd git checkout main
+
+echo "Deploy of ${FRONTEND_APP} to ${CLOUD_RUN_PROJECT_ID} succeeded."
