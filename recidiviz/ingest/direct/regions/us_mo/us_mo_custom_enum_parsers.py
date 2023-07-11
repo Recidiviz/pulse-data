@@ -34,6 +34,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
+from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
@@ -824,6 +825,19 @@ def parse_supervising_officer_type(raw_text: str) -> Optional[StateAgentType]:
     ):
         return StateAgentType.SUPERVISION_OFFICER
     return StateAgentType.INTERNAL_UNKNOWN
+
+
+def parse_staff_role_type(raw_text: str) -> Optional[StateStaffRoleType]:
+    """Maps |raw_text|, a MO specific job title, to its corresponding StateStaffRoleType."""
+    if not raw_text:
+        return None
+    if (
+        ("PROBATION" in raw_text and "PAROLE" in raw_text)
+        or "P&P" in raw_text
+        or "P & P" in raw_text
+    ):
+        return StateStaffRoleType.SUPERVISION_OFFICER
+    return StateStaffRoleType.INTERNAL_UNKNOWN
 
 
 DOMESTIC_VIOLENCE_CASE_TYPES = [
