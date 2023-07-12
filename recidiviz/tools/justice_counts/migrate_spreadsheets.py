@@ -62,9 +62,9 @@ def migrate_spreadsheets(environment: str, dry_run: bool) -> None:
         else "recidiviz-123-justice-counts-control-panel-ingest"
     )
     new_bucket_name = (
-        "justice-counts-staging-publisher-ingest"
+        "justice-counts-staging-publisher-uploads"
         if environment == "STAGING"
-        else "justice-counts-production-publisher-ingest"
+        else "justice-counts-production-publisher-uploads"
     )
     gcs_file_system = GcsfsFactory.build()
     logging.info("Moving files from %s to %s", old_bucket_name, new_bucket_name)
@@ -84,7 +84,11 @@ def migrate_spreadsheets(environment: str, dry_run: bool) -> None:
                 destination_path = GcsfsFilePath.from_absolute_path(
                     f"{new_bucket_name}/{blob.file_name}"
                 )
-                gcs_file_system.copy(source_path, destination_path)
+
+                if gcs_file_system.exists(destination_path) is False:
+                    # If file does not exist in the new project,
+                    # copy the file to the new project.
+                    gcs_file_system.copy(source_path, destination_path)
             if dry_run is True:
                 logging.info(
                     "Dry Run: filename is %s",

@@ -20,7 +20,7 @@ import os
 import re
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Callable, DefaultDict, Dict, List, Optional
+from typing import Callable, DefaultDict, Dict, List, Optional, Set
 
 from flask import Blueprint, Response, jsonify, make_response, request, send_file
 from flask_sqlalchemy_session import current_session
@@ -72,7 +72,7 @@ ALLOWED_EXTENSIONS = ["xlsx", "xls", "csv"]
 def get_api_blueprint(
     auth_decorator: Callable,
     csrf: CSRFProtect,
-    service_account_email: str,
+    service_account_emails: Set[str],
     secret_key: Optional[str] = None,
     auth0_client: Optional[Auth0Client] = None,
 ) -> Blueprint:
@@ -1126,9 +1126,6 @@ def get_api_blueprint(
     ### Bulk Upload ###
 
     # This endpoint is triggered by a pub/sub subscription on an agency's GCS bucket.
-    # To trigger it manually, run (substituting PROJECT_ID and FILENAME):
-    # `gcloud pubsub topics publish justice-counts-sftp-topic
-    #  --attribute=objectId=$FILENAME`
     @csrf.exempt  # type: ignore[arg-type]
     @api_blueprint.route("/ingest-spreadsheet", methods=["POST"])
     def ingest_workbook_from_gcs() -> response.Response:
@@ -1149,7 +1146,9 @@ def get_api_blueprint(
             # the JWT signature, the `aud` claim, and the `exp` claim.
             claim = id_token.verify_oauth2_token(token, requests.Request())
             if (
-                claim["email"] != service_account_email
+                # TODO(#22175) Only accept pubsub requests from justice-counts-staging and
+                # justice-counts-production.
+                claim["email"] not in service_account_emails
                 or claim["email_verified"] is not True
             ):
                 logging.exception(
