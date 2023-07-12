@@ -1952,7 +1952,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             path = one(self.fs.uploaded_paths)
             self.assertEqual(
                 GcsfsFilePath(
-                    bucket_name="justice-counts-justice-counts-control-panel-ingest",
+                    bucket_name="justice-counts-production-publisher-uploads",
                     blob_name=standardized_name,
                 ),
                 path,
@@ -2024,7 +2024,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             path = one(self.fs.uploaded_paths)
             self.assertEqual(
                 GcsfsFilePath(
-                    bucket_name="justice-counts-justice-counts-control-panel-ingest",
+                    bucket_name="justice-counts-production-publisher-uploads",
                     blob_name=standardized_name,
                 ),
                 path,
@@ -2090,7 +2090,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             path = one(self.fs.uploaded_paths)
             self.assertEqual(
                 GcsfsFilePath(
-                    bucket_name="justice-counts-justice-counts-control-panel-ingest",
+                    bucket_name="justice-counts-production-publisher-uploads",
                     blob_name=standardized_name,
                 ),
                 path,
@@ -2360,7 +2360,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             db_spreadsheet = self.session.query(Spreadsheet).one_or_none()
             self.assertEqual(db_spreadsheet, None)
             path = GcsfsFilePath(
-                bucket_name="justice-counts-justice-counts-control-panel-ingest",
+                bucket_name="justice-counts-production-publisher-uploads",
                 blob_name=f"{str(agency.id)}:{System.LAW_ENFORCEMENT.value}:{self.now_time.timestamp()}.xlsx",
             )
             self.assertEqual(

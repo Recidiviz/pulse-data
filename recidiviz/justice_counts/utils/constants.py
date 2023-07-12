@@ -42,11 +42,7 @@ class DatapointGetRequestEntryPoint(enum.Enum):
 
 
 # Used to infer agency_id from bucket name during Automatic Upload
-AUTOMATIC_UPLOAD_BUCKET_REGEX = re.compile(
-    r"(?P<project>recidiviz-(?:.*))-justice-counts-ingest-agency-"
-    r"(?P<agency_id>[0-9]+)"
-)
-
+AUTOMATIC_UPLOAD_BUCKET_REGEX = re.compile(r".*-ingest-agency-(?P<agency_id>[0-9]+)")
 
 # Bucket to store Bulk Upload Errors/Warnings JSON
 ERRORS_WARNINGS_JSON_BUCKET = "justice-counts-staging-bulk-upload-errors-warnings-json"
