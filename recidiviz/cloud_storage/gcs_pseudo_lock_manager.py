@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ import json
 import logging
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from typing import Dict, Iterator, List, Optional, Union
+from typing import Dict, Iterator, Optional, Union
 
 import attr
 import pytz
@@ -28,24 +28,13 @@ import pytz
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 
 LOCK_TIME_KEY = "lock_time"
 PAYLOAD_KEY = "contents"
 EXPIRATION_IN_SECONDS_KEY = "expiration_in_seconds"
 
-
-POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = "EXPORT_PROCESS_RUNNING"
-
 MAX_UNLOCK_ATTEMPTS = 3
-
-
-def postgres_to_bq_lock_name_for_schema(
-    schema: SchemaType, ingest_instance: DirectIngestInstance
-) -> str:
-    return f"{POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME}_{schema.value.upper()}_{ingest_instance.value.upper()}"
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -149,8 +138,8 @@ class GCSPseudoLockManager:
         self.fs = GcsfsFactory.build()
         self.bucket_name = f"{project_id}-gcslock"
 
-    def no_active_locks_with_prefix(self, prefix: str) -> bool:
-        """Checks to see if any locks exist with prefix"""
+    def no_active_locks_with_prefix(self, prefix: str, filter_term: str) -> bool:
+        """Checks to see if any locks exist with prefix that contain the given filter_term"""
         locks_with_prefix = self.fs.ls_with_blob_prefix(
             bucket_name=self.bucket_name, blob_prefix=prefix
         )
@@ -158,28 +147,10 @@ class GCSPseudoLockManager:
         lock_bodies = [
             self._lock_body_for_path(path)
             for path in locks_with_prefix
-            if isinstance(path, GcsfsFilePath)
+            if isinstance(path, GcsfsFilePath) and filter_term in path.blob_name
         ]
 
         return all(lock.is_expired() for lock in lock_bodies if lock is not None)
-
-    def active_lock_names_with_prefix(self, prefix: str) -> List[str]:
-        """Returns lock paths that exist with a prefix and are not expired."""
-        locks_with_prefix = self.fs.ls_with_blob_prefix(
-            bucket_name=self.bucket_name, blob_prefix=prefix
-        )
-
-        lock_bodies = {
-            path: self._lock_body_for_path(path)
-            for path in locks_with_prefix
-            if isinstance(path, GcsfsFilePath)
-        }
-
-        return [
-            path.blob_name
-            for path, lock in lock_bodies.items()
-            if lock is not None and not lock.is_expired()
-        ]
 
     def lock(
         self,

@@ -35,6 +35,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class TestGCSPseudoLockContents(unittest.TestCase):
@@ -347,64 +348,79 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         """Ensures lock manager can see if locks with a prefix exist."""
         prefix = "SOME_LOCK_PREFIX"
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(prefix + "some_suffix")
-        self.assertFalse(lock_manager.no_active_locks_with_prefix(prefix))
+        lock_manager.lock(prefix + "PRIMARY" + "some_suffix")
+        self.assertFalse(
+            lock_manager.no_active_locks_with_prefix(
+                prefix, DirectIngestInstance.PRIMARY.value
+            )
+        )
+
+    def test_locks_with_prefix_do_not_exist_secondary(self) -> None:
+        """Ensures lock manager can see if locks with a prefix exist."""
+        prefix = "SOME_LOCK_PREFIX"
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+        lock_manager.lock(prefix + "SECONDARY" + "some_suffix")
+        self.assertTrue(
+            lock_manager.no_active_locks_with_prefix(
+                prefix, DirectIngestInstance.PRIMARY.value
+            )
+        )
 
     def test_locks_with_prefix_do_not_exist(self) -> None:
         """Ensures lock manager can see regions are not running"""
         prefix = "SOME_LOCK_PREFIX"
-        lock_name = prefix + "some_suffix"
+        lock_name = prefix + "PRIMARY" + "some_suffix"
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
         lock_manager.lock(lock_name)
         lock_manager.unlock(lock_name)
-        self.assertTrue(lock_manager.no_active_locks_with_prefix(prefix))
+        self.assertTrue(
+            lock_manager.no_active_locks_with_prefix(
+                prefix, DirectIngestInstance.PRIMARY.value
+            )
+        )
 
     def test_locks_with_prefix_ignore_expired(self) -> None:
         """Ensures lock manager can see if locks with a prefix exist."""
         prefix = "SOME_LOCK_PREFIX"
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
 
-        self._upload_fake_expired_lock(lock_manager, prefix + "some_suffix")
+        self._upload_fake_expired_lock(lock_manager, prefix + "PRIMARY" + "some_suffix")
 
-        self.assertTrue(lock_manager.no_active_locks_with_prefix(prefix))
+        self.assertTrue(
+            lock_manager.no_active_locks_with_prefix(
+                prefix, DirectIngestInstance.PRIMARY.value
+            )
+        )
 
     def test_locks_with_prefix_mixed(self) -> None:
         """Ensures lock manager can see if locks with a prefix exist."""
         prefix = "SOME_LOCK_PREFIX"
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
 
-        self._upload_fake_expired_lock(lock_manager, prefix + "some_suffix")
-        lock_manager.lock(prefix + "some_suffix2")
+        self._upload_fake_expired_lock(lock_manager, prefix + "PRIMARY" + "some_suffix")
+        lock_manager.lock(prefix + "PRIMARY" + "some_suffix2")
 
-        self.assertFalse(lock_manager.no_active_locks_with_prefix(prefix))
-
-    def test_active_lock_names_with_prefix(self) -> None:
-        """Ensures the lock manager returns the lock names with a given prefix"""
-        prefix = "SOME_LOCK_PREFIX"
-        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(prefix + "some_suffix")
-        self.assertListEqual(
-            ["SOME_LOCK_PREFIXsome_suffix"],
-            lock_manager.active_lock_names_with_prefix(prefix),
+        self.assertFalse(
+            lock_manager.no_active_locks_with_prefix(
+                prefix, DirectIngestInstance.PRIMARY.value
+            )
         )
 
-    def test_active_lock_names_with_prefix_do_not_exist(self) -> None:
-        """Ensures the lock manager returns no lock names if they're unlocked"""
-        prefix = "SOME_LOCK_PREFIX"
-        lock_name = prefix + "some_suffix"
-        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(lock_name)
-        lock_manager.unlock(lock_name)
-        self.assertListEqual([], lock_manager.active_lock_names_with_prefix(prefix))
-
-    def test_active_lock_names_with_prefix_ignore_expired(self) -> None:
-        """Ensures the lock manager returns no lock names if they're expired"""
+    def test_locks_with_prefix_mixed_secondary(self) -> None:
+        """Ensures lock manager can see if locks with a prefix exist."""
         prefix = "SOME_LOCK_PREFIX"
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
 
-        self._upload_fake_expired_lock(lock_manager, prefix + "some_suffix")
+        self._upload_fake_expired_lock(
+            lock_manager, prefix + "SECONDARY" + "some_suffix"
+        )
+        lock_manager.lock(prefix + "SECONDARY" + "some_suffix2")
 
-        self.assertListEqual([], lock_manager.active_lock_names_with_prefix(prefix))
+        self.assertFalse(
+            lock_manager.no_active_locks_with_prefix(
+                prefix, DirectIngestInstance.SECONDARY.value
+            )
+        )
 
     def test_get_lock_contents(self) -> None:
         """Tests that the get_lock_contents gets the correct contents from the lock"""

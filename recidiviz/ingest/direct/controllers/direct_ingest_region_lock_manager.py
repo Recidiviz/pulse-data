@@ -21,12 +21,12 @@ data to Postgres for a given region.
 from contextlib import contextmanager
 from typing import Iterator, List
 
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockManager,
-    postgres_to_bq_lock_name_for_schema,
-)
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
+    postgres_to_bq_lock_name_for_schema,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import DirectIngestSchemaType
 

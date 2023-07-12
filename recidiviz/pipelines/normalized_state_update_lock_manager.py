@@ -21,9 +21,11 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
     GCSPseudoLockManager,
-    postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
+    postgres_to_bq_lock_name_for_schema,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 
 NORMALIZED_STATE_UPDATE_LOCK_NAME = "NORMALIZED_STATE_UPDATE_PROCESS"
@@ -79,7 +81,8 @@ class NormalizedStateUpdateLockManager:
         no_blocking_locks = self.lock_manager.no_active_locks_with_prefix(
             postgres_to_bq_lock_name_for_schema(
                 SchemaType.STATE, DirectIngestInstance.PRIMARY
-            )
+            ),
+            DirectIngestInstance.PRIMARY.value,
         )
         return no_blocking_locks
 
