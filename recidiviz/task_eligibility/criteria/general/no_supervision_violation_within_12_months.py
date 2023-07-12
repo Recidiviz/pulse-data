@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which there
-is no violations within 6 months on supervision."""
+is no violations within 12 months on supervision."""
 
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
@@ -31,19 +31,19 @@ from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_WITHIN_6_MONTHS"
+_CRITERIA_NAME = "NO_SUPERVISION_VIOLATION_WITHIN_12_MONTHS"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which there
-is no violations within 6 months on supervision."""
+is no violations within 12 months on supervision."""
 
 _QUERY_TEMPLATE = f"""
 WITH supervision_violations AS (
     /*
-    This CTE identifies relevant violations and sets a 6 month 
+    This CTE identifies relevant violations and sets a 12 month 
     window where meets_criteria is FALSE.
     */
     {violations_within_time_interval_cte(
-        date_interval = 6, 
+        date_interval = 12, 
         where_clause = VIOLATIONS_FOUND_WHERE_CLAUSE)}
     ),
 {create_sub_sessions_with_attributes('supervision_violations')}
