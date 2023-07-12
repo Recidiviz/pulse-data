@@ -98,14 +98,26 @@ def flex_dataflow_operator_for_pipeline(
 
 
 def update_all_managed_views_operator() -> TaskGroup:
-    return build_kubernetes_pod_task_group(
-        group_id="update_all_managed_views",
-        container_name="update_all_managed_views",
-        arguments=[
+    def get_kubernetes_arguments(
+        _dag_run: DagRun, task_instance: TaskInstance
+    ) -> List[str]:
+        additional_args = []
+
+        sandbox_prefix = get_sandbox_prefix(task_instance)
+        if sandbox_prefix:
+            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
+
+        return [
             "python",
             "-m",
             "recidiviz.entrypoints.view_update.update_all_managed_views",
-        ],
+            *additional_args,
+        ]
+
+    return build_kubernetes_pod_task_group(
+        group_id="update_all_managed_views",
+        container_name="update_all_managed_views",
+        arguments=get_kubernetes_arguments,
     )
 
 
