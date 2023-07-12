@@ -17,6 +17,9 @@ source "${BASH_SOURCE_DIR}/../../script_base.sh"
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
 PROJECT_ID='recidiviz-123'
+# The GCP project where the Cloud Run app lives might be different
+# from the one where the other infra lives
+CLOUD_RUN_PROJECT_ID=''
 BACKEND_VERSION=''
 FRONTEND_VERSION=''
 FRONTEND_APP=''
@@ -70,9 +73,11 @@ fi
 
 
 if [[ ${FRONTEND_APP} == 'publisher' ]]; then
+    CLOUD_RUN_PROJECT_ID='recidiviz-123'
     CLOUD_RUN_SERVICE="justice-counts-web"
 elif [[ ${FRONTEND_APP} == 'agency-dashboard' ]]; then
-    CLOUD_RUN_SERVICE="justice-counts-agency-dashboard-web"
+    CLOUD_RUN_PROJECT_ID='justice-counts-production'
+    CLOUD_RUN_SERVICE="agency-dashboard-web"
 else
     echo_error "Invalid frontend application - must be either publisher or agency-dashboard"
     run_cmd exit 1
@@ -125,7 +130,7 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 # because we currently never use the --no-traffic arg when deploying to prod.
 echo "Deploying new Cloud Run revision with image ${PROD_IMAGE_URL}..."
 run_cmd gcloud -q run deploy "${CLOUD_RUN_SERVICE}" \
-    --project "${PROJECT_ID}" \
+    --project "${CLOUD_RUN_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
     --region "us-central1" 
 
