@@ -21,13 +21,15 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
     GCSPseudoLockManager,
-    postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
     STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
+    postgres_to_bq_lock_name_for_schema,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.normalized_state_update_lock_manager import (
     NORMALIZED_STATE_UPDATE_LOCK_NAME,
@@ -105,21 +107,15 @@ class CloudSqlToBQLockManager:
             blocking_ingest_lock_prefix = (
                 STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
             )
-            active_locks_with_prefix = self.lock_manager.active_lock_names_with_prefix(
-                blocking_ingest_lock_prefix
+            return self.lock_manager.no_active_locks_with_prefix(
+                blocking_ingest_lock_prefix, ingest_instance.value
             )
-            blocking_ingest_locks_for_instance = [
-                active_lock
-                for active_lock in active_locks_with_prefix
-                if ingest_instance.value in active_lock
-            ]
-            return not blocking_ingest_locks_for_instance
 
         if schema_type == SchemaType.OPERATIONS:
             # The operations export yields for all types of ingest
             blocking_ingest_lock_prefix = GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
             return self.lock_manager.no_active_locks_with_prefix(
-                blocking_ingest_lock_prefix
+                blocking_ingest_lock_prefix, ingest_instance.value
             )
 
         raise ValueError(f"Unexpected schema type [{schema_type}]")

@@ -221,7 +221,50 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 self.lock_manager.can_proceed(schema_type, DirectIngestInstance.PRIMARY)
             )
 
-    def test_acquire_state_cannot_proceed_secondary(self) -> None:
+    def test_acquire_primary_can_proceed_while_secondary_ingest_locks_active(
+        self,
+    ) -> None:
+        with self.state_ingest_lock_manager_secondary.using_region_lock(
+            expiration_in_seconds=10
+        ):
+            for schema_type in SchemaType:
+                self.lock_manager.acquire_lock(
+                    lock_id="lock1",
+                    schema_type=schema_type,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                )
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.STATE, DirectIngestInstance.PRIMARY
+                )
+            )
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.OPERATIONS, DirectIngestInstance.PRIMARY
+                )
+            )
+            # State ingest does not block PATHWAYS export
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.PATHWAYS, DirectIngestInstance.PRIMARY
+                )
+            )
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.CASE_TRIAGE, DirectIngestInstance.PRIMARY
+                )
+            )
+
+        # Acquiring the same state export lock again does not crash
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+    def test_acquire_secondary_can_proceed_while_primary_ingest_locks_active(
+        self,
+    ) -> None:
         with self.state_ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
             for schema_type in SchemaType:
                 self.lock_manager.acquire_lock(
@@ -235,7 +278,7 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                     SchemaType.STATE, DirectIngestInstance.SECONDARY
                 )
             )
-            self.assertFalse(
+            self.assertTrue(
                 self.lock_manager.can_proceed(
                     SchemaType.OPERATIONS, DirectIngestInstance.SECONDARY
                 )
