@@ -279,23 +279,76 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_update_task)}]."
             )
 
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
     @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_update_all_managed_views_endpoint(
-        self, mock_build_kubernetes_pod_task_group: MagicMock
+        self,
+        mock_build_kubernetes_pod_task_group: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
     ) -> None:
         from recidiviz.airflow.dags.calculation_dag import (
             update_all_managed_views_operator,
         )
+
+        mock_get_sandbox_prefix.return_value = None
 
         update_all_managed_views_operator()
 
         mock_build_kubernetes_pod_task_group.assert_called_once_with(
             group_id="update_all_managed_views",
             container_name="update_all_managed_views",
-            arguments=[
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
+        self.assertEqual(
+            arguments(MagicMock(), MagicMock()),
+            [
                 "python",
                 "-m",
                 "recidiviz.entrypoints.view_update.update_all_managed_views",
+            ],
+        )
+
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
+    def test_update_all_managed_views_endpoint_sandbox_prefix(
+        self,
+        mock_build_kubernetes_pod_task_group: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
+    ) -> None:
+        from recidiviz.airflow.dags.calculation_dag import (
+            update_all_managed_views_operator,
+        )
+
+        mock_get_sandbox_prefix.return_value = "test_prefix"
+
+        update_all_managed_views_operator()
+
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="update_all_managed_views",
+            container_name="update_all_managed_views",
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
+        self.assertEqual(
+            arguments(MagicMock(), MagicMock()),
+            [
+                "python",
+                "-m",
+                "recidiviz.entrypoints.view_update.update_all_managed_views",
+                "--sandbox_prefix=test_prefix",
             ],
         )
 
