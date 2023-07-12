@@ -1,8 +1,22 @@
 # Configuration for which validations to run for region US_CA.
 
 region_code: US_CA
-# TODO(#14025): Enable validations for US_CA.
-dev_mode: True
-exclusions: []
+dev_mode: False
+exclusions:
+  - validation_name: dataflow_metrics_supervising_officer_external_id_all_null
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#22105) -- We haven't hydrated supervising officer yet in supervision periods
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#20922) -- We haven't hydrated sentences yet
+  - validation_name: dataflow_metrics_admission_reason_all_internal_unknown
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#22106) -- We haven't hydrated admission reason in supervision periods yet
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: TODO(#20922) -- We haven't hydrated sentences yet
 max_allowed_error_overrides: []
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 50
+    override_reason: Very few cases (as of 7/10/2023 there were ~12 cases) and looked like it was likely entity deletion

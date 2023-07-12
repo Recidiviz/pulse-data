@@ -116,3 +116,7 @@ output:
                         - PAROLE
           start_date: start_date
           termination_date: end_date
+          # TODO(#22105): Turn on dataflow_metrics_supervising_officer_external_id_all_null
+          #               validation when supervising_officer is hydrated
+          # TODO(#22106): Turn on dataflow_metrics_admission_reason_all_internal_unknown
+          #               validation when admission reason is hydrated

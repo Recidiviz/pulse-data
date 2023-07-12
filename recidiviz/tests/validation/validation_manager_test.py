@@ -750,6 +750,7 @@ class TestFetchValidations(TestCase):
                 "US_MI",
                 "US_ME",
                 "US_IX",
+                "US_CA",
             ],
         )
 
