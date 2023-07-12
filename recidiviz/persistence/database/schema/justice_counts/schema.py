@@ -307,7 +307,7 @@ class Source(JusticeCountsBase):
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
-            UniqueConstraint(name),
+            UniqueConstraint(name, type, name="unique_agency"),
             ForeignKeyConstraint(
                 [super_agency_id], ["source.id"], name="super_agency_id_constraint"
             ),
