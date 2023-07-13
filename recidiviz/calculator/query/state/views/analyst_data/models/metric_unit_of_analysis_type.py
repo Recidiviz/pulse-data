@@ -16,14 +16,10 @@
 # =============================================================================
 """Constants related to a MetricUnitOfAnalysisType."""
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import attr
 
-from recidiviz.calculator.query.state.dataset_config import (
-    REFERENCE_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
 from recidiviz.common import attr_validators
 
 # This object contains a mapping from original column names in Recidiviz's
@@ -65,9 +61,6 @@ class MetricUnitOfAnalysis:
 
     # List of columns that provide information about the unit of analysis which does not change over time
     static_attribute_columns: List[str]
-
-    # Dictionary of additional bigquery dataset args for assembly of a bigquery view builder
-    dataset_kwargs: Dict[str, str]
 
     @property
     def level_name_short(self) -> str:
@@ -126,67 +119,57 @@ class MetricUnitOfAnalysis:
 METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
     MetricUnitOfAnalysisType.FACILITY: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.FACILITY,
-        client_assignment_query="SELECT * FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
+        client_assignment_query="SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
         primary_key_columns=["state_code", "facility"],
         static_attribute_columns=["facility_name"],
-        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.STATE_CODE: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.STATE_CODE,
         client_assignment_query="SELECT * "
-        "FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`",
+        "FROM `{project_id}.sessions.compartment_sessions_materialized`",
         primary_key_columns=["state_code"],
         static_attribute_columns=[],
-        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
         client_assignment_query="SELECT * "
-        "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
+        "FROM `{project_id}.sessions.location_sessions_materialized`",
         primary_key_columns=["state_code", "district"],
         static_attribute_columns=["district_name"],
-        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_OFFICE: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
         client_assignment_query="SELECT * "
-        "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
+        "FROM `{project_id}.sessions.location_sessions_materialized`",
         primary_key_columns=["state_code", "district", "office"],
         static_attribute_columns=["district_name", "office_name"],
-        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_UNIT: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
         client_assignment_query="SELECT * "
-        "FROM `{project_id}.{sessions_dataset}.supervision_unit_supervisor_sessions_materialized`",
+        "FROM `{project_id}.sessions.supervision_unit_supervisor_sessions_materialized`",
         primary_key_columns=["state_code", "unit_supervisor"],
         static_attribute_columns=["unit_supervisor_name"],
-        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricUnitOfAnalysisType.SUPERVISION_OFFICER: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
         client_assignment_query="""
 SELECT a.*, b.full_name_clean AS officer_name
 FROM 
-    `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` a
+    `{project_id}.sessions.supervision_officer_sessions_materialized` a
 LEFT JOIN 
-    `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` b
+    `{project_id}.reference_views.agent_external_id_to_full_name` b
 ON 
     a.state_code = b.state_code
     AND a.supervising_officer_external_id = b.external_id
 """,
         primary_key_columns=["state_code", "officer_id"],
         static_attribute_columns=["officer_name"],
-        dataset_kwargs={
-            "reference_views_dataset": REFERENCE_VIEWS_DATASET,
-            "sessions_dataset": SESSIONS_DATASET,
-        },
     ),
     MetricUnitOfAnalysisType.PERSON_ID: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.PERSON_ID,
-        client_assignment_query="SELECT * FROM `{project_id}.{sessions_dataset}.system_sessions_materialized`",
+        client_assignment_query="SELECT * FROM `{project_id}.sessions.system_sessions_materialized`",
         primary_key_columns=["state_code", "person_id"],
         static_attribute_columns=[],
-        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
 }

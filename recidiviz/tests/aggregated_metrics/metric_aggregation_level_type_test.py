@@ -58,10 +58,9 @@ class MetricUnitOfAnalysisTest(unittest.TestCase):
     def test_get_index_columns_query_string(self) -> None:
         my_metric_aggregation_level = MetricUnitOfAnalysis(
             level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-            client_assignment_query="SELECT * FROM `{project_id}.{my_dataset}.my_table`",
+            client_assignment_query="SELECT * FROM `{project_id}.my_dataset.my_table`",
             primary_key_columns=["region_code", "my_officer_id"],
             static_attribute_columns=["my_officer_attribute"],
-            dataset_kwargs={"my_dataset": "custom_dataset"},
         )
         query_string = my_metric_aggregation_level.get_index_columns_query_string(
             prefix="my_prefix"

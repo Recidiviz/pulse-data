@@ -25,7 +25,6 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_intersection_spans,
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulation,
 )
@@ -50,9 +49,6 @@ def generate_metric_assignment_sessions_view_builder(
     view_description = f"""Subquery that extracts appropriate rows from compartment_sessions
 for use in the {level_name}_metrics table.
 """
-    dataset_kwargs = aggregation_level.dataset_kwargs
-    # In case sessions dataset is not already included in kwargs, add (required for population type query)
-    dataset_kwargs["sessions_dataset"] = SESSIONS_DATASET
 
     query_template = f"""
 WITH
@@ -64,7 +60,7 @@ sample AS (
         -- TODO(#14675): remove the DATE_ADD when session end_dates are exclusive
         DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date_exclusive,
     FROM
-        `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
+        `{{project_id}}.sessions.compartment_sessions_materialized`
     WHERE
         {population.get_conditions_query_string()}
 )
@@ -144,9 +140,4 @@ FROM {level_name}_assignments
         description=view_description,
         clustering_fields=aggregation_level.primary_key_columns,
         should_materialize=True,
-        # We set these values so that mypy knows they are not in the dataset_kwargs
-        materialized_address_override=None,
-        should_deploy_predicate=None,
-        projects_to_deploy=None,
-        **dataset_kwargs,
     )
