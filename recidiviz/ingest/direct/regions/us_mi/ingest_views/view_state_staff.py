@@ -26,21 +26,22 @@ VIEW_QUERY_TEMPLATE = """
 WITH compas AS (
 SELECT * FROM (
   SELECT
-    RecIds,
+    COALESCE(RecIds, s.RecId) as RecIds,
     FirstName,
     MiddleInitial,
     LastName,
     LOWER(Email) AS lower_Email,
-    ROW_NUMBER() OVER (PARTITION BY LOWER(Email) ORDER BY IF(DateUpdated IS NOT NULL, DateUpdated, DateCreated) DESC) AS row_num
+    ROW_NUMBER() OVER (PARTITION BY LOWER(Email), COALESCE(RecIds, s.RecId) ORDER BY IF(DateUpdated IS NOT NULL, DateUpdated, DateCreated) DESC) AS row_num
   FROM (
     -- Group all RecIds together by email
     SELECT DISTINCT
       STRING_AGG(DISTINCT RecId, ',') as RecIds,
       LOWER(Email) AS lower_Email
     FROM {ADH_SHUSER} s
+    WHERE Email is not NULL
     GROUP BY LOWER(Email)
   ) compas_ids
-  JOIN {ADH_SHUSER} s
+  RIGHT JOIN {ADH_SHUSER} s
   ON compas_ids.lower_Email = LOWER(s.Email)
   -- Pick the most recent row
 ) compas_row
@@ -64,20 +65,21 @@ omni_base AS (
 omni AS (
 SELECT * FROM (
 SELECT 
-  employee_ids,
+  COALESCE(employee_ids, employee_id) as employee_ids,
   first_name,
   middle_name,
   last_name,
   LOWER(omni_base.email_address) as email_address_lower,
-  ROW_NUMBER() OVER (PARTITION BY LOWER(omni_base.email_address) ORDER BY last_update_date DESC) AS row_num
+  ROW_NUMBER() OVER (PARTITION BY LOWER(omni_base.email_address), COALESCE(employee_ids, employee_id) ORDER BY last_update_date DESC) AS row_num
 FROM (
   SELECT DISTINCT
     STRING_AGG(DISTINCT employee_id, ',') AS employee_ids,
     email_address
   FROM omni_base
+  WHERE email_address is not NULL
   GROUP BY email_address
   ) omni_email
-JOIN omni_base 
+RIGHT JOIN omni_base 
 ON omni_base.email_address = LOWER(omni_email.email_address)
 ) omni_row
 WHERE row_num = 1
