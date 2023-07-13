@@ -660,7 +660,7 @@ class OutliersQuerier:
         """
         For the given metric, return the aggregated officer-level metric information.
         """
-        officer_rates: Dict[TargetStatus, List[float]] = {
+        officer_rates: Dict[TargetStatus, List[OfficerMetricEntity]] = {
             TargetStatus.MET: [],
             TargetStatus.NEAR: [],
             TargetStatus.FAR: [],
@@ -670,7 +670,7 @@ class OutliersQuerier:
         num_officers_far = 0
 
         for entity in current_period_entities:
-            officer_rates[entity.target_status].append(entity.rate)
+            officer_rates[entity.target_status].append(entity)
 
             if entity.target_status == TargetStatus.FAR:
                 num_officers_far += 1
