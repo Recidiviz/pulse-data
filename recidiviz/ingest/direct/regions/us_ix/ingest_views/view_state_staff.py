@@ -44,10 +44,7 @@ unioned as (
         LastName,
         Suffix,
         Email
-    FROM {ref_Employee}
-    -- only pull active employees in the organizational unit we care about
-    WHERE Inactive = '0'
-    and OrganizationalUnitId is not null)
+    FROM {ref_Employee})
 
     UNION ALL
 
@@ -83,9 +80,7 @@ unioned as (
                 END AS LastName,
             empl_stat
         FROM {employee}
-    ) subquery
-    -- only pull active employees
-    WHERE empl_stat = 'A')
+    ) subquery)
 ),
 -- It possible for a single StaffId to be associated with different name information 
 -- (since we're pulling from two different sources and StaffId is not the PK)
@@ -117,8 +112,6 @@ SELECT
     UPPER(n.Email) as Email
 FROM unioned u
 LEFT JOIN names n USING(StaffId)
--- only pull real employees
-WHERE UPPER(StaffId) <> 'DONOTUSE'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
