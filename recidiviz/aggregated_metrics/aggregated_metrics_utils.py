@@ -18,6 +18,7 @@
 
 from typing import Sequence
 
+from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
@@ -50,6 +51,13 @@ def get_unioned_time_granularity_clause(
 SELECT
     *
 FROM
+    week_metrics
+
+UNION ALL
+
+SELECT
+    *
+FROM
     month_metrics
 
 UNION ALL
@@ -68,6 +76,8 @@ ON
     month_metrics.start_date >= time_periods.population_start_date
     AND month_metrics.end_date <= time_periods.population_end_date
 WHERE
-    time_periods.period != "MONTH"
+    time_periods.period IN (
+        "{MetricTimePeriod.QUARTER.value}", "{MetricTimePeriod.YEAR.value}"
+    )
 GROUP BY
     {index_cols}, population_start_date, population_end_date, time_periods.period"""

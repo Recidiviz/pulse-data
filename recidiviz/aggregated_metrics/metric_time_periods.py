@@ -24,20 +24,24 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 class MetricTimePeriod(enum.Enum):
+    DAY = "DAY"
+    WEEK = "WEEK"
     MONTH = "MONTH"
     QUARTER = "QUARTER"
     YEAR = "YEAR"
 
 
 _VIEW_NAME = "metric_time_periods"
-_METRICS_YEARS_TRACKED = "7"
+_METRICS_YEARS_TRACKED = 7
+_METRIC_YEARS_TRACKED_WEEK_OVERRIDE = 2
+_METRIC_WEEK_START_DAY = "MONDAY"
 
 _VIEW_DESCRIPTION = (
     "End-date exclusive time ranges at month, quarter, and year intervals over the "
     f"past {_METRICS_YEARS_TRACKED} years."
 )
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
 WITH date_array AS (
     SELECT
         month,
@@ -45,39 +49,73 @@ WITH date_array AS (
         UNNEST(GENERATE_DATE_ARRAY(
             DATE_SUB(
                 DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY), MONTH),
-                INTERVAL {metrics_years_tracked} YEAR
+                INTERVAL {_METRICS_YEARS_TRACKED} YEAR
             ),
             DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY), MONTH),
             INTERVAL 1 MONTH
         )) AS month
 )
 
--- Define month, quarter, and year end-date-exclusive periods
+-- get week start dates where the week starts on {_METRIC_WEEK_START_DAY}
+, week_array AS (
+    SELECT
+        week,
+    FROM
+        UNNEST(GENERATE_DATE_ARRAY(
+            -- 2 years before yesterday, week starting {_METRIC_WEEK_START_DAY}
+            -- we limit how far back we go for query materialization time reasons
+            DATE_TRUNC(
+                DATE_SUB(
+                    DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY),
+                    INTERVAL {_METRIC_YEARS_TRACKED_WEEK_OVERRIDE} YEAR
+                ), WEEK({_METRIC_WEEK_START_DAY})
+            ),
+            -- most recent complete week starting {_METRIC_WEEK_START_DAY}
+            DATE_TRUNC(
+                DATE_SUB(
+                    DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY),
+                    INTERVAL 1 WEEK
+                ), WEEK({_METRIC_WEEK_START_DAY})
+            ), INTERVAL 1 WEEK
+        )) AS week
+)
+
+-- Define week, month, quarter, and year end-date-exclusive periods
 SELECT
     *
 FROM (
+
 SELECT
-    "MONTH" AS period,
+    "{MetricTimePeriod.WEEK.value}" AS period,
+    week AS population_start_date,
+    DATE_ADD(week, INTERVAL 1 WEEK) AS population_end_date,
+FROM
+    week_array
+
+UNION ALL
+
+SELECT
+    "{MetricTimePeriod.MONTH.value}" AS period,
     month AS population_start_date,
     DATE_ADD(month, INTERVAL 1 MONTH) AS population_end_date,
 FROM
-    date_array 
+    date_array
 
 UNION ALL
 
 -- we repeat the quarter period monthly to allow greater flexibility downstream
 SELECT
-    "QUARTER" AS period,
+    "{MetricTimePeriod.QUARTER.value}" AS period,
     month AS population_start_date,
     DATE_ADD(month, INTERVAL 1 QUARTER) AS population_end_date,
 FROM
-    date_array 
+    date_array
 
 UNION ALL
 
 -- we repeat the year period monthly to allow greater flexibility downstream
 SELECT
-    "YEAR" AS period,
+    "{MetricTimePeriod.YEAR.value}" AS period,
     month AS population_start_date,
     DATE_ADD(month, INTERVAL 1 YEAR) AS population_end_date,
 FROM
@@ -94,7 +132,6 @@ METRIC_TIME_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=_VIEW_NAME,
     view_query_template=_QUERY_TEMPLATE,
     description=_VIEW_DESCRIPTION,
-    metrics_years_tracked=_METRICS_YEARS_TRACKED,
     should_materialize=True,
 )
 
