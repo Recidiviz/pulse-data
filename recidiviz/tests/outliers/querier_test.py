@@ -409,14 +409,23 @@ class TestOutliersQuerier(TestCase):
             state_code=StateCode.US_XX,
             end_date=TEST_END_DATE,
         )
-
         expected = [
             OutliersUpperManagementReportData(
-                recipient_name=PersonName("Manager", "1"),
+                recipient_name=PersonName(
+                    given_names="Manager",
+                    surname="1",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
                 recipient_email="manager1@recidiviz.org",
                 entities=[
                     OutliersAggregatedMetricEntity(
-                        name=PersonName("Supervisor", "1"),
+                        name=PersonName(
+                            given_names="Supervisor",
+                            surname="1",
+                            middle_names=None,
+                            name_suffix=None,
+                        ),
                         metrics=[
                             OutliersAggregatedMetricInfo(
                                 metric=TEST_METRIC_1,
@@ -424,13 +433,80 @@ class TestOutliersQuerier(TestCase):
                                 prev_officers_far_pct=0.25,
                                 officer_rates={
                                     TargetStatus.MET: [
-                                        0.12645777715329493,
-                                        0.03996003996003996,
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="2",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.12645777715329493,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.12858428700012858,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=TargetStatus.MET,
+                                        ),
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="5",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.03996003996003996,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.07616146230007616,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=TargetStatus.MET,
+                                        ),
                                     ],
-                                    TargetStatus.NEAR: [0.17053206002728513],
+                                    TargetStatus.NEAR: [
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="7",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.17053206002728513,
+                                            target_status=TargetStatus.NEAR,
+                                            prev_rate=0.135013501350135,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=TargetStatus.MET,
+                                        )
+                                    ],
                                     TargetStatus.FAR: [
-                                        0.26688907422852376,
-                                        0.3333333333333333,
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="1",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.26688907422852376,
+                                            target_status=TargetStatus.FAR,
+                                            prev_rate=0.31938677738741617,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=TargetStatus.FAR,
+                                        ),
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="8",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.3333333333333333,
+                                            target_status=TargetStatus.FAR,
+                                            prev_rate=None,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=None,
+                                        ),
                                     ],
                                 },
                             )
@@ -440,26 +516,85 @@ class TestOutliersQuerier(TestCase):
                 entity_label="officer",
             ),
             OutliersUpperManagementReportData(
-                recipient_name=PersonName("Manager", "2"),
+                recipient_name=PersonName(
+                    given_names="Manager",
+                    surname="2",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
                 recipient_email="manager2@recidiviz.org",
                 entities=[
                     OutliersAggregatedMetricEntity(
-                        name=PersonName("Supervisor", "2"),
+                        name=PersonName(
+                            given_names="Supervisor",
+                            surname="2",
+                            middle_names=None,
+                            name_suffix=None,
+                        ),
                         metrics=[
                             OutliersAggregatedMetricInfo(
                                 metric=TEST_METRIC_1,
                                 officers_far_pct=0.0,
                                 prev_officers_far_pct=0.0,
                                 officer_rates={
-                                    TargetStatus.MET: [0.0, 0.111000111000111],
-                                    TargetStatus.NEAR: [0.18409086725207563],
+                                    TargetStatus.MET: [
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="4",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.0,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.0,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=None,
+                                        ),
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="6",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.111000111000111,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.12001200120012002,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=TargetStatus.MET,
+                                        ),
+                                    ],
+                                    TargetStatus.NEAR: [
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="3",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.18409086725207563,
+                                            target_status=TargetStatus.NEAR,
+                                            prev_rate=0.18505667360629194,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=TargetStatus.NEAR,
+                                        )
+                                    ],
                                     TargetStatus.FAR: [],
                                 },
                             )
                         ],
                     ),
                     OutliersAggregatedMetricEntity(
-                        name=PersonName("Supervisor", "3"),
+                        name=PersonName(
+                            given_names="Supervisor",
+                            surname="3",
+                            middle_names=None,
+                            name_suffix=None,
+                        ),
                         metrics=[
                             OutliersAggregatedMetricInfo(
                                 metric=TEST_METRIC_1,
@@ -509,9 +644,82 @@ class TestOutliersQuerier(TestCase):
                                 "officers_far_pct": 0.4,
                                 "prev_officers_far_pct": 0.25,
                                 "officer_rates": {
-                                    "MET": [0.12645777715329493, 0.03996003996003996],
-                                    "NEAR": [0.17053206002728513],
-                                    "FAR": [0.26688907422852376, 0.3333333333333333],
+                                    "MET": [
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "2",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.12645777715329493,
+                                            "target_status": "MET",
+                                            "prev_rate": 0.12858428700012858,
+                                            "supervisor_external_id": "101",
+                                            "supervision_district": "1",
+                                            "prev_target_status": "MET",
+                                        },
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "5",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.03996003996003996,
+                                            "target_status": "MET",
+                                            "prev_rate": 0.07616146230007616,
+                                            "supervisor_external_id": "101",
+                                            "supervision_district": "1",
+                                            "prev_target_status": "MET",
+                                        },
+                                    ],
+                                    "NEAR": [
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "7",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.17053206002728513,
+                                            "target_status": "NEAR",
+                                            "prev_rate": 0.135013501350135,
+                                            "supervisor_external_id": "101",
+                                            "supervision_district": "1",
+                                            "prev_target_status": "MET",
+                                        }
+                                    ],
+                                    "FAR": [
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "1",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.26688907422852376,
+                                            "target_status": "FAR",
+                                            "prev_rate": 0.31938677738741617,
+                                            "supervisor_external_id": "101",
+                                            "supervision_district": "1",
+                                            "prev_target_status": "FAR",
+                                        },
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "8",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.3333333333333333,
+                                            "target_status": "FAR",
+                                            "prev_rate": None,
+                                            "supervisor_external_id": "101",
+                                            "supervision_district": "1",
+                                            "prev_target_status": None,
+                                        },
+                                    ],
                                 },
                             }
                         ],
@@ -547,8 +755,52 @@ class TestOutliersQuerier(TestCase):
                                 "officers_far_pct": 0.0,
                                 "prev_officers_far_pct": 0.0,
                                 "officer_rates": {
-                                    "MET": [0.0, 0.111000111000111],
-                                    "NEAR": [0.18409086725207563],
+                                    "MET": [
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "4",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.0,
+                                            "target_status": "MET",
+                                            "prev_rate": 0.0,
+                                            "supervisor_external_id": "102",
+                                            "supervision_district": "2",
+                                            "prev_target_status": None,
+                                        },
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "6",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.111000111000111,
+                                            "target_status": "MET",
+                                            "prev_rate": 0.12001200120012002,
+                                            "supervisor_external_id": "102",
+                                            "supervision_district": "2",
+                                            "prev_target_status": "MET",
+                                        },
+                                    ],
+                                    "NEAR": [
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "3",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.18409086725207563,
+                                            "target_status": "NEAR",
+                                            "prev_rate": 0.18505667360629194,
+                                            "supervisor_external_id": "102",
+                                            "supervision_district": "2",
+                                            "prev_target_status": "NEAR",
+                                        }
+                                    ],
                                     "FAR": [],
                                 },
                             }
@@ -600,7 +852,12 @@ class TestOutliersQuerier(TestCase):
 
         expected = [
             OutliersUpperManagementReportData(
-                recipient_name=PersonName("Indiana", "Jones"),
+                recipient_name=PersonName(
+                    given_names="Indiana",
+                    surname="Jones",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
                 recipient_email="jones@recidiviz.org",
                 entities=[
                     OutliersAggregatedMetricEntity(
@@ -612,13 +869,80 @@ class TestOutliersQuerier(TestCase):
                                 prev_officers_far_pct=0.25,
                                 officer_rates={
                                     TargetStatus.MET: [
-                                        0.12645777715329493,
-                                        0.03996003996003996,
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="2",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.12645777715329493,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.12858428700012858,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=TargetStatus.MET,
+                                        ),
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="5",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.03996003996003996,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.07616146230007616,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=TargetStatus.MET,
+                                        ),
                                     ],
-                                    TargetStatus.NEAR: [0.17053206002728513],
+                                    TargetStatus.NEAR: [
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="7",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.17053206002728513,
+                                            target_status=TargetStatus.NEAR,
+                                            prev_rate=0.135013501350135,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=TargetStatus.MET,
+                                        )
+                                    ],
                                     TargetStatus.FAR: [
-                                        0.26688907422852376,
-                                        0.3333333333333333,
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="1",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.26688907422852376,
+                                            target_status=TargetStatus.FAR,
+                                            prev_rate=0.31938677738741617,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=TargetStatus.FAR,
+                                        ),
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="8",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.3333333333333333,
+                                            target_status=TargetStatus.FAR,
+                                            prev_rate=None,
+                                            supervisor_external_id="101",
+                                            supervision_district="1",
+                                            prev_target_status=None,
+                                        ),
                                     ],
                                 },
                             )
@@ -632,8 +956,52 @@ class TestOutliersQuerier(TestCase):
                                 officers_far_pct=0.0,
                                 prev_officers_far_pct=0.0,
                                 officer_rates={
-                                    TargetStatus.MET: [0.0, 0.111000111000111],
-                                    TargetStatus.NEAR: [0.18409086725207563],
+                                    TargetStatus.MET: [
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="4",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.0,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.0,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=None,
+                                        ),
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="6",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.111000111000111,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.12001200120012002,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=TargetStatus.MET,
+                                        ),
+                                    ],
+                                    TargetStatus.NEAR: [
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="3",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.18409086725207563,
+                                            target_status=TargetStatus.NEAR,
+                                            prev_rate=0.18505667360629194,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=TargetStatus.NEAR,
+                                        )
+                                    ],
                                     TargetStatus.FAR: [],
                                 },
                             )
@@ -641,7 +1009,7 @@ class TestOutliersQuerier(TestCase):
                     ),
                 ],
                 entity_label="district",
-            ),
+            )
         ]
 
         self.assertEqual(expected, actual)

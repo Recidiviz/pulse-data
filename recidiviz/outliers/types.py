@@ -208,8 +208,8 @@ class OutliersAggregatedMetricInfo:
     officers_far_pct: float = attr.ib()
     # The percentage of officers with "FAR" target status for this metric in the previous period
     prev_officers_far_pct: float = attr.ib()
-    # Maps target status to list of officer rates with the respective status for all officers in the current period
-    officer_rates: Dict[TargetStatus, List[float]] = attr.ib()
+    # Maps target status to list of officers with the respective status for all officers in the current period
+    officer_rates: Dict[TargetStatus, List[OfficerMetricEntity]] = attr.ib()
 
 
 @attr.s
