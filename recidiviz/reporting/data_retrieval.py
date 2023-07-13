@@ -110,12 +110,13 @@ def start(
     if test_address:
         logging.info("Overriding batch emails with test address: %s", test_address)
         recipients = [
-            recipient.create_derived_recipient(
-                {
-                    "email_address": utils.format_test_address(
-                        test_address, recipient.email_address
-                    ),
-                }
+            Recipient(
+                email_address=utils.format_test_address(
+                    test_address, recipient.email_address
+                ),
+                state_code=recipient.state_code,
+                district=recipient.district,
+                data=recipient.data,
             )
             for recipient in recipients
         ]
@@ -126,8 +127,11 @@ def start(
             batch.batch_id,
         )
         recipients = [
-            recipient.create_derived_recipient(
-                {"message_body_override": message_body_override}
+            Recipient(
+                email_address=recipient.email_address,
+                state_code=recipient.state_code,
+                district=recipient.district,
+                data={**recipient.data, "message_body_override": message_body_override},
             )
             for recipient in recipients
         ]
