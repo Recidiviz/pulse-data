@@ -33,6 +33,16 @@ class UserAccountInterface:
     """Contains methods for setting and getting User info."""
 
     @staticmethod
+    def get_role_from_email(email: str) -> UserAccountRole:
+        if "@recidiviz.org" in email:
+            return UserAccountRole.JUSTICE_COUNTS_ADMIN
+
+        if "@csg.org" in email:
+            return UserAccountRole.READ_ONLY
+
+        return UserAccountRole.AGENCY_ADMIN
+
+    @staticmethod
     def create_or_update_user(
         session: Session,
         auth0_user_id: str,
@@ -94,7 +104,12 @@ class UserAccountInterface:
                     user_account=user,
                     agency=agency,
                     invitation_status=invitation_status,
-                    role=role,
+                    # If an existing user account association does not
+                    # exist for that user and agency, infer the users
+                    # role by the email.
+                    role=role
+                    if role is not None
+                    else UserAccountInterface.get_role_from_email(user.email),
                 )
             )
 
@@ -108,8 +123,9 @@ class UserAccountInterface:
             assoc.agency.id: assoc for assoc in user.agency_assocs
         }
         for agency_id in agency_ids:
-            existing_assoc = existing_agency_assocs_by_id.get(agency_id)
-            session.delete(existing_assoc)
+            existing_assoc = existing_agency_assocs_by_id.get(int(agency_id))
+            if existing_assoc is not None:
+                session.delete(existing_assoc)
 
     @staticmethod
     def get_users(session: Session) -> List[UserAccount]:

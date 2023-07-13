@@ -73,6 +73,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 session=session,
                 auth0_user_id="auth0|user2",
                 name="Test User 2",
+                email="test@email.com",
             )
             agency = AgencyInterface.get_agency_by_name(
                 session=session, name="Agency Gamma"

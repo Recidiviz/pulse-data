@@ -16,7 +16,6 @@
 # =============================================================================
 """Defines routes for the Justice Counts API endpoints in the admin panel."""
 
-import itertools
 from http import HTTPStatus
 from typing import List, Tuple
 
@@ -53,16 +52,6 @@ def _get_auth0_client() -> Auth0Client:
             client_secret_secret_name="justice_counts_auth0_api_client_secret",
         )
     return _auth0_client
-
-
-def get_role_from_email(email: str) -> schema.UserAccountRole:
-    if "@recidiviz.org" in email:
-        return schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
-
-    if "@csg.org" in email:
-        return schema.UserAccountRole.READ_ONLY
-
-    return schema.UserAccountRole.AGENCY_ADMIN
 
 
 def add_justice_counts_tools_routes(bp: Blueprint) -> None:
@@ -359,9 +348,9 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
 
     @bp.route("/api/justice_counts_tools/users", methods=["PATCH"])
     @requires_gae_auth
-    def update_user_accounts() -> Tuple[Response, HTTPStatus]:
+    def add_user_account_associations() -> Tuple[Response, HTTPStatus]:
         """
-        Updates the AgencyUserAccountAssociations of an individual user.
+        Adds or Updates AgencyUserAccountAssociations for a user.
         """
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
@@ -389,23 +378,60 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             if user is None:
                 raise ValueError("No user can be found with the provided email.")
 
-            role = get_role_from_email(email=email)
-
-            # Remove all existing associations
-            for assoc in user.agency_assocs:
-                session.delete(assoc)
-
-            session.commit()
-
-            # Add user back to agencies
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
                 user=user,
                 agencies=new_agencies,
-                role=role,
             )
 
-            user_json = user.to_json(agencies=new_agencies)
+            session.commit()
+
+            user_json = user.to_json(
+                agencies=[assoc.agency for assoc in user.agency_assocs]
+            )
+
+            return (
+                jsonify({"user": user_json}),
+                HTTPStatus.OK,
+            )
+
+    @bp.route("/api/justice_counts_tools/users", methods=["DELETE"])
+    @requires_gae_auth
+    def delete_user_account_associations() -> Tuple[Response, HTTPStatus]:
+        """
+        Deletes AgencyUserAccountAssociations for a user.
+        """
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            email = assert_type(request_json.get("email"), str)
+            agency_ids = assert_type(request_json.get("agency_ids"), list)
+
+            agencies = AgencyInterface.get_agencies_by_id(
+                session=session, agency_ids=agency_ids or []
+            )
+
+            child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
+                session=session, agency_ids=agency_ids
+            )
+
+            AgencyUserAccountAssociationInterface.remove_user_from_agencies(
+                session=session,
+                email=email,
+                agency_ids=[a.id for a in agencies + child_agencies],
+            )
+
+            session.commit()
+
+            user = UserAccountInterface.get_user_by_email(session=session, email=email)
+
+            if user is None:
+                raise ValueError("No user can be found with the provided email.")
+
+            user_json = user.to_json(
+                agencies=[assoc.agency for assoc in user.agency_assocs]
+            )
 
             return (
                 jsonify({"user": user_json}),
@@ -414,9 +440,11 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
 
     @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["PATCH"])
     @requires_gae_auth
-    def update_agency_users(agency_id: int) -> Tuple[Response, HTTPStatus]:
+    def add_or_update_agency_associations(
+        agency_id: int,
+    ) -> Tuple[Response, HTTPStatus]:
         """
-        Updates the AgencyUserAccountAssociations of an individual agency.
+        Adds or Updates AgencyUserAccountAssociations for an agency.
         """
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
@@ -431,47 +459,77 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             users = UserAccountInterface.get_users_by_email(
                 session=session, emails=set(emails)
             )
-            user_account_ids = [u.id for u in users]
 
             agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=agency_id
             )
 
-            child_agencies = AgencyInterface.get_child_agencies_for_agency(
-                session=session, agency=agency
-            )
-
-            child_agency_assocs = itertools.chain.from_iterable(
-                [child_agency.user_account_assocs for child_agency in child_agencies]
-            )
-            # Remove all existing associations
-            assocs_to_remove = agency.user_account_assocs + [
-                assoc
-                for assoc in child_agency_assocs
-                if assoc.user_account_id in set(user_account_ids)
-            ]
-            for assoc in assocs_to_remove:
-                session.delete(assoc)
-
-            session.commit()
-
-            # Add users back to agencies
-            updated_agencies = [agency] + child_agencies
-            for user in users:
-                role = (
-                    role if role is not None else get_role_from_email(email=user.email)
+            child_agencies = (
+                AgencyInterface.get_child_agencies_for_agency(
+                    session=session, agency=agency
                 )
-                # The only use case for sending a role is in the `AgencyDetails` page
-                # where admins can update the role of an individual user.
-                # In that case `emails` will only have one email, so the
-                # role provided will be the new role of the user being updated.
+                if role is None
+                else []  # We only want to update the child agencies if we are adding
+                # users to an agency via the `AgencyProvisioning` page. In that case,
+                # `role` will be None. `role` is not None when the request is coming
+                # from the `AgencyDetails` page. In that case, emails will be a list
+                # containing only one email.
+            )
 
+            updated_agencies = [agency] + child_agencies
+
+            for user in users:
                 UserAccountInterface.add_or_update_user_agency_association(
                     session=session,
                     user=user,
-                    role=role,
+                    role=schema.UserAccountRole[role] if role is not None else None,
                     agencies=updated_agencies,
                 )
+
+            session.commit()
+
+            return (
+                jsonify(
+                    {
+                        "agencies": [
+                            agency.to_json()
+                            for agency in AgencyInterface.get_agencies(session=session)
+                        ],
+                        "systems": [enum.value for enum in schema.System],
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+
+    @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["DELETE"])
+    @requires_gae_auth
+    def delete_agency_associations(agency_id: int) -> Tuple[Response, HTTPStatus]:
+        """
+        Deletes AgencyUserAccountAssociations for an agency.
+        """
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            emails = request_json.get("emails")
+            if emails is None:
+                raise ValueError("emails are required")
+
+            child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
+                session=session, agency_ids=[agency_id]
+            )
+
+            child_agency_ids = [int(a.id) for a in child_agencies]
+
+            for email in list(emails):
+                agency_ids = child_agency_ids + [int(agency_id)]
+                AgencyUserAccountAssociationInterface.remove_user_from_agencies(
+                    session=session,
+                    email=email,
+                    agency_ids=agency_ids,
+                )
+
+            session.commit()
 
             return (
                 jsonify(

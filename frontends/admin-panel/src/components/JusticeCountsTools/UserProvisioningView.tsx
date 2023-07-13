@@ -32,6 +32,7 @@ import { useState } from "react";
 import { getAgencies, getUsers } from "../../AdminPanelAPI";
 import {
   createUser,
+  deleteUsersAccounts,
   updateUser,
   updateUsersAccounts,
 } from "../../AdminPanelAPI/JusticeCountsTools";
@@ -78,9 +79,28 @@ const UserProvisioningView = (): JSX.Element => {
     }
   };
 
-  const onAgencyChange = async (updatedUser: User, agencyIds: number[]) => {
+  const onAgencyChange = async (
+    updatedUser: User,
+    newAgencyIds: number[],
+    currentAgencyIds: number[]
+  ) => {
     try {
-      const response = await updateUsersAccounts(updatedUser, agencyIds);
+      const response = await Promise.resolve(
+        newAgencyIds.length > currentAgencyIds.length
+          ? updateUsersAccounts(
+              /** user */ updatedUser,
+              /** agency_ids */ newAgencyIds.filter(
+                (x) => !currentAgencyIds.includes(x)
+              )
+            )
+          : deleteUsersAccounts(
+              /** user */ updatedUser,
+              /** agency_ids */ currentAgencyIds.filter(
+                (x) => !newAgencyIds.includes(x)
+              )
+            )
+      );
+
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occurred: ${error}`);
@@ -200,15 +220,18 @@ const UserProvisioningView = (): JSX.Element => {
       key: "agency",
       render: (agencies: Agency[], user: User) => {
         const currentAgencies = agencies;
+        const currentAgencyIds = currentAgencies.map((agency) => agency.id);
         return (
           <Select
             mode="multiple"
             allowClear
-            defaultValue={currentAgencies.map((agency) => agency.id)}
+            defaultValue={currentAgencyIds}
             showSearch
             optionFilterProp="children"
             disabled={showSpinner}
-            onChange={(agencyIds: number[]) => onAgencyChange(user, agencyIds)}
+            onChange={(newAgencyIds: number[]) =>
+              onAgencyChange(user, newAgencyIds, currentAgencyIds)
+            }
             style={{ minWidth: 250 }}
           >
             {/* #TODO(#12091): Replace with debounced search bar */}
