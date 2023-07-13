@@ -63,6 +63,27 @@ PSEUDONYMIZED_ID = """
         16
     )"""
 
+client_record_fields = [
+    "person_external_id",
+    "state_code",
+    "person_name",
+    "officer_id",
+    "supervision_type",
+    "supervision_level",
+    "supervision_level_start",
+    "address",
+    "phone_number",
+    "email_address",
+    "supervision_start_date",
+    "expiration_date",
+    "current_balance",
+    "last_payment_amount",
+    "last_payment_date",
+    "special_conditions",
+    "board_conditions",
+    "district",
+    "current_employers",
+]
 
 WORKFLOWS_CONFIGS_WITH_CLIENTS = [
     config
@@ -112,9 +133,13 @@ CLIENT_RECORD_QUERY_TEMPLATE = f"""
         {US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
         {get_eligibility_ctes(WORKFLOWS_CONFIGS_WITH_CLIENTS)},
         {full_client_record()}
-    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM tn_clients
+    SELECT *,
+         {{new_fields}},
+        {PSEUDONYMIZED_ID} AS pseudonymized_id FROM tn_clients
     UNION ALL
-    SELECT *, {PSEUDONYMIZED_ID} AS pseudonymized_id FROM clients
+    SELECT *,
+        {{new_fields}}, 
+        {PSEUDONYMIZED_ID} AS pseudonymized_id FROM clients
 """
 
 
@@ -154,6 +179,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         WORKFLOWS_MILESTONES_STATES, quoted=True
     ),
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    new_fields=list_to_query_string([f"{x} as {x}_new" for x in client_record_fields]),
 )
 
 if __name__ == "__main__":
