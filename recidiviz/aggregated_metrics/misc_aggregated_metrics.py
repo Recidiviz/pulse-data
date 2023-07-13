@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Creates view builders calculating miscellaneous metrics for specific aggregation levels and populations"""
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.models.aggregated_metric import MiscAggregatedMetric
@@ -59,7 +59,7 @@ _MIN_OFFICER_CASELOAD_SIZE = 10
 def _query_template_and_format_args(
     aggregation_level: MetricUnitOfAnalysis,
     population: MetricPopulation,
-) -> Tuple[str, Dict[str, str]]:
+) -> str:
     """Returns the appropriate query template (and associated dataset keyword args for
     that template) for the provided population and aggregation level.
     """
@@ -113,17 +113,15 @@ def _query_template_and_format_args(
             )
         ) AS {AVG_CRITICAL_CASELOAD_SIZE.name},
     FROM
-        `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized` a
+        `{{project_id}}.aggregated_metrics.metric_time_periods_materialized` a
     INNER JOIN
-        `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_caseload_count_spans_materialized` b
+        `{{project_id}}.aggregated_metrics.supervision_officer_caseload_count_spans_materialized` b
     ON
         b.start_date < a.population_end_date
         AND {nonnull_end_date_clause("b.end_date")} > a.population_start_date
     GROUP BY {group_by_range_str}
 """
-            return cte, {
-                "aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID,
-            }
+            return cte
         if aggregation_level.level_type in [
             MetricUnitOfAnalysisType.SUPERVISION_UNIT,
             MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
@@ -146,7 +144,7 @@ def _query_template_and_format_args(
             IFNULL(b.supervision_office, b.supervision_office_inferred) AS office,
             b.supervisor_staff_id AS unit_supervisor,
         FROM
-            `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized` a
+            `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` a
         INNER JOIN
             `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` b
         ON
@@ -158,7 +156,7 @@ def _query_template_and_format_args(
         {aggregation_level.get_primary_key_columns_query_string()},
         period, start_date, end_date       
 """
-            return cte, {"aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID}
+            return cte
 
     raise ValueError(
         f"Unexpected population_type [{population.population_type}] and "
@@ -182,7 +180,7 @@ def generate_misc_aggregated_metrics_view_builder(
     ) not in _MISC_METRICS_SUPPORTED_POPULATIONS_AGGREGATION_LEVELS:
         return None
 
-    cte, dataset_kwargs = _query_template_and_format_args(aggregation_level, population)
+    cte = _query_template_and_format_args(aggregation_level, population)
     metrics_str = ",\n    ".join([metric.name for metric in metrics])
     query_template = f"""
 WITH misc_metrics_cte AS (
@@ -213,9 +211,4 @@ FROM
         description=view_description,
         should_materialize=False,
         clustering_fields=aggregation_level.primary_key_columns,
-        # We set these values so that mypy knows they are not in the dataset_kwargs
-        materialized_address_override=None,
-        should_deploy_predicate=None,
-        projects_to_deploy=None,
-        **dataset_kwargs,
     )
