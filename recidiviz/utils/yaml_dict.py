@@ -16,12 +16,8 @@
 # =============================================================================
 """Functionality for working with objects parsed from YAML."""
 import copy
-import json
-import os
 from typing import Any, Dict, List, Optional, TextIO, Type, TypeVar, Union
-from urllib.parse import urlparse
 
-import jsonschema
 import yaml
 
 # During setup of the environment, the setup.py from the yaml project is
@@ -80,37 +76,6 @@ class YAMLDict:
                 f"{type(value)}"
             )
         return value
-
-    def validate(self, json_schema_path: str) -> None:
-        """Validates that the YAML dict matches the JSON schema at the provided path. If
-        validation fails, raises jsonschema.exceptions.ValidationError."""
-        with open(json_schema_path, encoding="utf-8") as f:
-            schema = json.load(f)
-
-        json_schema_dir = os.path.dirname(os.path.abspath(json_schema_path))
-
-        def handle_file(uri: str) -> Dict:
-            # Find relative path of URI to base schema URI
-            rel_path = os.path.relpath(
-                urlparse(uri).path, os.path.dirname(urlparse(schema["$id"]).path)
-            )
-
-            # Build local path to file referenced by the URI
-            reference_path = os.path.normpath(os.path.join(json_schema_dir, rel_path))
-            with open(reference_path, encoding="utf-8") as reference_file:
-                return json.load(reference_file)
-
-        # Create a reference resolver that will look in the local filesystem for the
-        # schema file, rather than the web.
-        local_ref_resolver = jsonschema.RefResolver(
-            base_uri=f"file://{json_schema_dir}/",
-            referrer=schema,
-            handlers={"https": handle_file},
-        )
-
-        jsonschema.validate(
-            instance=self.get(), schema=schema, resolver=local_ref_resolver
-        )
 
     def pop_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
         """Returns the object at the given key |field| without popping it from the

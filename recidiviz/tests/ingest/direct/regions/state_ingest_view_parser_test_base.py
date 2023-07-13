@@ -58,6 +58,7 @@ from recidiviz.utils.environment import (
     in_ci,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
+from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
 YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
     r"^# yaml-language-server: \$schema=(?P<schema_path>.*schema.json)$"
@@ -197,10 +198,11 @@ class StateIngestViewParserTestBase:
         for manifest_path in self._ingest_view_manifest_paths():
             manifest_dict = YAMLDict.from_path(manifest_path)
             version = manifest_dict.peek(MANIFEST_LANGUAGE_VERSION_KEY, str)
-            manifest_dict.validate(
+            validate_yaml_matches_schema(
+                yaml_dict=manifest_dict,
                 json_schema_path=os.path.join(
                     os.path.dirname(yaml_schema.__file__), version, "schema.json"
-                )
+                ),
             )
 
     def test_all_ingest_view_manifests_parse(self) -> None:
