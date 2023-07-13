@@ -32,6 +32,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { createAgency, getAgencies } from "../../AdminPanelAPI";
 import {
+  deleteAgencyUsers,
   getUsers,
   updateAgency,
   updateAgencyUsers,
@@ -198,13 +199,25 @@ const AgencyProvisioningView = (): JSX.Element => {
 
   const onUpdateTeamMember = async (
     newTeamMemberEmails: string[],
+    currentTeamMemberEmails: string[],
     currentAgency: Agency
   ) => {
     try {
-      const response = await updateAgencyUsers(
-        /** agencyId */ currentAgency.id.toString(),
-        /** emails */ newTeamMemberEmails,
-        /** role */ null
+      const response = await Promise.resolve(
+        newTeamMemberEmails.length > currentTeamMemberEmails.length
+          ? updateAgencyUsers(
+              /** agencyId */ currentAgency.id.toString(),
+              /** emails */ newTeamMemberEmails.filter(
+                (x) => !currentTeamMemberEmails.includes(x)
+              ),
+              /** role */ null
+            )
+          : deleteAgencyUsers(
+              /** agencyId */ currentAgency.id.toString(),
+              /** emails */ currentTeamMemberEmails.filter(
+                (x) => !newTeamMemberEmails.includes(x)
+              )
+            )
       );
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
@@ -313,7 +326,11 @@ const AgencyProvisioningView = (): JSX.Element => {
                 .indexOf(input.toLowerCase()) >= 0
             }
             onChange={(newTeamMemberEmails: string[]) => {
-              onUpdateTeamMember(newTeamMemberEmails, agency);
+              onUpdateTeamMember(
+                newTeamMemberEmails,
+                currentTeamMemberEmails,
+                agency
+              );
             }}
             style={{ minWidth: 250 }}
           >

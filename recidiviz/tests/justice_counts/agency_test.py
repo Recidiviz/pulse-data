@@ -93,7 +93,9 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
     def test_create_agency(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = UserAccountInterface.create_or_update_user(
-                session=session, auth0_user_id="test_auth0_user"
+                session=session,
+                auth0_user_id="test_auth0_user",
+                email="test@email.com",
             )
             gamma_agency = AgencyInterface.create_agency(
                 session=session,
@@ -154,7 +156,9 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
     def test_get_child_agencies(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = UserAccountInterface.create_or_update_user(
-                session=session, auth0_user_id="test_auth0_user"
+                session=session,
+                auth0_user_id="test_auth0_user",
+                email="test@email.com",
             )
             super_agency = AgencyInterface.create_agency(
                 session=session,
