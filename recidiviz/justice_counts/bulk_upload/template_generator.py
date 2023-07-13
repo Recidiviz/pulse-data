@@ -20,6 +20,7 @@
 """
 
 
+import datetime
 from typing import Any, Dict
 
 import pandas as pd
@@ -34,6 +35,10 @@ def generate_bulk_upload_template(system: schema.System, file_path: str) -> None
     """Generates a Bulk Upload template for a particular agency."""
     metricfiles = SYSTEM_TO_METRICFILES[system]
     filename_to_rows = {}
+
+    this_year = datetime.date.today().year
+    last_year = this_year - 1
+
     for metricfile in metricfiles:  # pylint: disable=too-many-nested-blocks
         rows = []
         if (
@@ -44,11 +49,12 @@ def generate_bulk_upload_template(system: schema.System, file_path: str) -> None
                 for s in [s.name for s in schema.System.supervision_subsystems()] + [
                     "ALL"
                 ]:
-                    for year in [2021, 2022]:
+
+                    for year in [last_year, this_year]:
                         row = {"year": str(year), "system": s, "value": ""}
                         rows.append(row)
             else:
-                for year in [2021, 2022]:
+                for year in [last_year, this_year]:
                     row = {"year": str(year), "value": ""}
                     rows.append(row)
         else:
@@ -56,7 +62,8 @@ def generate_bulk_upload_template(system: schema.System, file_path: str) -> None
                 for s in [s.name for s in schema.System.supervision_subsystems()] + [
                     "ALL"
                 ]:
-                    for year in [2021, 2022]:
+
+                    for year in [last_year, this_year]:
                         for month in range(1, 13):
                             row = {
                                 "year": str(year),
@@ -66,7 +73,8 @@ def generate_bulk_upload_template(system: schema.System, file_path: str) -> None
                             }
                             rows.append(row)
             else:
-                for year in [2021, 2022]:
+
+                for year in [last_year, this_year]:
                     for month in range(1, 13):
                         row = {"year": str(year), "month": str(month), "value": ""}
                         rows.append(row)
