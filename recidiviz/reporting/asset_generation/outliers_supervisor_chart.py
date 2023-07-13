@@ -17,20 +17,14 @@
 """Functions for generating an Outliers Supervisor Chart asset."""
 
 
-import logging
-
 import attr
 import cattrs
-from requests import HTTPError
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
-from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.outliers.querier.querier import OutlierMetricInfo, TargetStatus
 from recidiviz.outliers.types import PersonName
-from recidiviz.reporting.asset_generation.constants import GENERATE_API_BASE
-from recidiviz.reporting.asset_generation.session import session
-from recidiviz.reporting.asset_generation.types import AssetResponseBase, PayloadBase
+from recidiviz.reporting.asset_generation.types import PayloadBase
 
 
 @attr.s
@@ -60,27 +54,3 @@ def prepare_data(data: OutlierMetricInfo) -> dict:
         },
         _convert_keys,
     )
-
-
-def request_asset(
-    state_code: StateCode, asset_id: str, width: int, data: dict
-) -> AssetResponseBase:
-    payload = OutliersSupervisorChartPayload(
-        stateCode=state_code.value,
-        id=asset_id,
-        width=width,
-        data=data,
-    )
-
-    resp = session.post(
-        f"{GENERATE_API_BASE}/outliers-supervisor-chart",
-        json=payload.to_dict(),
-        timeout=60,
-    )
-    try:
-        resp.raise_for_status()
-    except HTTPError:
-        logging.error(resp.text, exc_info=True)
-        raise
-
-    return cattrs.structure(resp.json(), AssetResponseBase)

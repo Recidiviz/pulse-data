@@ -73,11 +73,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.reporting.asset_generation.constants import RETRIEVE_API_BASE
-from recidiviz.reporting.asset_generation.outliers_supervisor_chart import (
-    prepare_data,
-    request_asset,
-)
+from recidiviz.reporting.asset_generation.client import AssetGenerationClient
 from recidiviz.reporting.asset_generation.types import AssetResponseBase
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval import (
     retrieve_data_for_outliers_supervision_officer_supervisor,
@@ -111,6 +107,8 @@ from recidiviz.reporting.recipient import Recipient
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+assets = AssetGenerationClient()
+
 
 class OutliersSupervisionOfficerSupervisorContext(ReportContext):
     """Report context for the Outliers Supervision Officer Supervisor email."""
@@ -139,7 +137,6 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
                 "previous": self._previous_metric_period,
             },
             "chart_width": self._chart_width,
-            "asset_url_base": RETRIEVE_API_BASE,
             "show_metric_section_headings": self._show_metric_section_headings,
             "favorable_metrics": [
                 self._prepare_metric(m)
@@ -189,11 +186,11 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
         }
 
     def _request_chart(self, metric_info: OutlierMetricInfo) -> AssetResponseBase:
-        return request_asset(
+        return assets.generate_outliers_supervisor_chart(
             self.batch.state_code,
             f"{self.recipient.email_address}-{metric_info.metric.name}",
             self._chart_width,
-            prepare_data(metric_info),
+            metric_info,
         )
 
     def _chart_alt_text(self, metric_info: OutlierMetricInfo) -> str:

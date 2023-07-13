@@ -16,11 +16,10 @@
 # =============================================================================
 """Tests for email content preparation logic in the OutliersSupervisionOfficerSupervisor report"""
 from datetime import datetime
-from typing import Callable, Iterable, Optional
 from unittest import TestCase
+from unittest.mock import patch
 
 import freezegun
-import responses
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
@@ -30,6 +29,7 @@ from recidiviz.outliers.constants import (
 )
 from recidiviz.outliers.querier.querier import OfficerSupervisorReportData
 from recidiviz.outliers.types import OutliersConfig, TargetStatusStrategy
+from recidiviz.reporting.asset_generation.types import AssetResponseBase
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context import (
     OutliersSupervisionOfficerSupervisorContext,
 )
@@ -73,12 +73,8 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
     def _get_prepared_data(
         self,
         report: OfficerSupervisorReportData,
-        # responses unfortunately does not expose this type alias but it's pretty generic
-        request_match: Optional[Iterable[Callable]] = None,
     ) -> dict:
-        if request_match is None:
-            request_match = []
-
+        """Convenience method for mocking external resources and preparing report data"""
         recipient = Recipient(
             email_address=report.recipient_email_address,
             state_code=self.batch.state_code,
@@ -88,15 +84,22 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             },
         )
         context = OutliersSupervisionOfficerSupervisorContext(self.batch, recipient)
-        with responses.RequestsMock() as rsps:
-            if report.metrics:
-                rsps.post(
-                    "http://asset-generation-test/generate/outliers-supervisor-chart",
-                    match=request_match,
-                    status=200,
-                    json={"url": "/mock/image/url", "height": 200},
-                )
+        with patch(
+            "recidiviz.reporting.context.outliers_supervision_officer_supervisor.context.AssetGenerationClient.generate_outliers_supervisor_chart"
+        ) as mock_generate:
+            mock_generate.return_value = AssetResponseBase(
+                url="http://asset-generation-test/mock/image/url"
+            )
+
             prepared_data = context.get_prepared_data()
+
+            for metric in report.metrics:
+                mock_generate.assert_any_call(
+                    StateCode.US_XX,
+                    f"{self.test_email}-{metric.metric.name}",
+                    571,
+                    metric,
+                )
 
         return prepared_data
 
@@ -151,72 +154,11 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             metrics_without_outliers=[],
             recipient_email_address=self.test_email,
         )
-        actual = self._get_prepared_data(
-            test_report,
-            request_match=[
-                responses.matchers.json_params_matcher(
-                    {
-                        "stateCode": "US_XX",
-                        "width": 571,
-                        "id": "test-outliers-supervisor@recidiviz.org-incarceration_starts_technical_violation",
-                        "data": {
-                            "target": 0.05428241659992843,
-                            "otherOfficers": {
-                                "MET": [
-                                    0.013664782299427202,
-                                    0,
-                                    0,
-                                    0.01986070301447383,
-                                    0.023395936157938592,
-                                ],
-                                "NEAR": [
-                                    0.05557247259439707,
-                                    0.06803989188181564,
-                                    0.0880180859080633,
-                                ],
-                                "FAR": [
-                                    0.24142872891632675,
-                                    0.2114256751864456,
-                                    0.10346978115432588,
-                                ],
-                            },
-                            "highlightedOfficers": [
-                                {
-                                    "name": "Jeanette Schneider-Cox",
-                                    "rate": 0.19904024430145054,
-                                    "targetStatus": "FAR",
-                                    "prevRate": 0.15804024430145053,
-                                    "supervisorExternalId": "abc123",
-                                    "prevTargetStatus": None,
-                                    "supervisionDistrict": "1",
-                                },
-                                {
-                                    "name": "Mario Mccarthy",
-                                    "rate": 0.10228673915480327,
-                                    "targetStatus": "FAR",
-                                    "prevRate": 0.08228673915480327,
-                                    "supervisorExternalId": "abc123",
-                                    "prevTargetStatus": None,
-                                    "supervisionDistrict": "1",
-                                },
-                                {
-                                    "name": "Ryan Luna",
-                                    "rate": 0.129823,
-                                    "targetStatus": "FAR",
-                                    "prevRate": 0.121354,
-                                    "supervisorExternalId": "abc123",
-                                    "prevTargetStatus": None,
-                                    "supervisionDistrict": "1",
-                                },
-                            ],
-                        },
-                    }
-                )
-            ],
-        )
+        actual = self._get_prepared_data(test_report)
 
         self.assertEqual(
-            actual["adverse_metrics"][0]["chart"]["url"], "/mock/image/url"
+            actual["adverse_metrics"][0]["chart"]["url"],
+            "http://asset-generation-test/mock/image/url",
         )
 
     def test_metric_context(self) -> None:
@@ -243,7 +185,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                     "far_direction": "above",
                     "event_name": "technical incarcerations",
                     "chart": {
-                        "url": "/mock/image/url",
+                        "url": "http://asset-generation-test/mock/image/url",
                         "alt_text": (
                             "Swarm plot of all technical incarceration rates in the "
                             "state where Jeanette Schneider-Cox, Mario Mccarthy, and "

@@ -14,21 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Session object for making authorized requests to the asset generation service."""
-from google.auth.transport.requests import Request
-from google.oauth2.id_token import fetch_id_token
-from requests import Session
-
-from recidiviz.reporting.asset_generation.constants import ASSET_GENERATION_SERVICE_URI
-from recidiviz.utils.environment import in_gcp
-
-# dev environment bypasses auth
-session = Session()
-
-if in_gcp():
-    _id_token = fetch_id_token(request=Request(), audience=ASSET_GENERATION_SERVICE_URI)
-    session.headers.update(
-        {
-            "Authorization": f"Bearer {_id_token}",
-        }
-    )
