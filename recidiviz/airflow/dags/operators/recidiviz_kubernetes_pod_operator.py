@@ -53,7 +53,7 @@ def build_kubernetes_pod_task_group(
 
     with TaskGroup(group_id) as task_group:
 
-        @task
+        @task(trigger_rule=trigger_rule)
         def set_kubernetes_arguments(
             dag_run: Optional[DagRun] = None,
             task_instance: Optional[TaskInstance] = None,
@@ -103,6 +103,5 @@ def build_kubernetes_pod_task_group(
             container_resources=k8s.V1ResourceRequirements(
                 requests={"cpu": "2000m", "memory": "1Gi"}
             ),
-            trigger_rule=trigger_rule,
         )
     return task_group

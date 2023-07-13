@@ -24,7 +24,6 @@ from typing import Dict, Iterable, List, Optional, Type
 
 from airflow.decorators import dag
 from airflow.models import BaseOperator, DagRun, TaskInstance
-from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -118,10 +117,11 @@ def update_all_managed_views_operator() -> TaskGroup:
         group_id="update_all_managed_views",
         container_name="update_all_managed_views",
         arguments=get_kubernetes_arguments,
+        trigger_rule=TriggerRule.ALL_DONE,
     )
 
 
-def refresh_bq_dataset_operator(schema_type: str) -> KubernetesPodOperator:
+def refresh_bq_dataset_operator(schema_type: str) -> TaskGroup:
     def get_kubernetes_arguments(
         dag_run: DagRun, task_instance: TaskInstance
     ) -> List[str]:

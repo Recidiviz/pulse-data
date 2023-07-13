@@ -27,6 +27,7 @@ from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
+from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz import pipelines
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
@@ -298,6 +299,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             group_id="update_all_managed_views",
             container_name="update_all_managed_views",
             arguments=mock.ANY,
+            trigger_rule=TriggerRule.ALL_DONE,
         )
 
         arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
@@ -334,6 +336,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             group_id="update_all_managed_views",
             container_name="update_all_managed_views",
             arguments=mock.ANY,
+            trigger_rule=TriggerRule.ALL_DONE,
         )
 
         arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
