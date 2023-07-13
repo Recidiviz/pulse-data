@@ -21,11 +21,11 @@ from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
     get_unioned_time_granularity_clause,
 )
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulation,
 )
@@ -45,12 +45,62 @@ def generate_assignment_event_aggregated_metrics_view_builder(
     """
     view_id = f"{population.population_name_short}_{aggregation_level.level_name_short}_assignment_event_aggregated_metrics"
     view_description = f"""
-    Metrics for the {population.population_name_short} population calculated using 
-    `person_events` over some window following assignment, for all assignments 
+    Metrics for the {population.population_name_short} population calculated using
+    `person_events` over some window following assignment, for all assignments
     during an analysis period, disaggregated by {aggregation_level.level_name_short}.
 
     All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
     """
+
+    # helper function to get weekly and monthly aggregated CTEs
+    def get_time_specific_ctes(unit_of_analysis: MetricTimePeriod) -> str:
+        """
+        Returns CTEs for weekly and monthly aggregated metrics.
+        """
+        if unit_of_analysis not in (MetricTimePeriod.WEEK, MetricTimePeriod.MONTH):
+            raise ValueError(f"Unsupported unit_of_analysis: {unit_of_analysis.value}")
+
+        return f"""
+    SELECT
+        {aggregation_level.get_index_columns_query_string()},
+        population_start_date AS start_date,
+        population_end_date AS end_date,
+        period,
+        {metric_aggregation_fragment_outer}
+    FROM (
+        SELECT
+            {aggregation_level.get_index_columns_query_string("assign")},
+            population_start_date,
+            population_end_date,
+            period,
+            assign.person_id,
+            assign.assignment_date,
+            {metric_aggregation_fragment_inner}
+        FROM
+            time_periods pop
+        LEFT JOIN
+            assignments assign
+        ON
+            assign.assignment_date BETWEEN population_start_date AND DATE_SUB(population_end_date, INTERVAL 1 DAY)
+        LEFT JOIN
+            `{{project_id}}.analyst_data.person_events_materialized` events
+        ON
+            assign.person_id = events.person_id
+            AND events.event_date >= assign.assignment_date
+        WHERE
+            period = "{unit_of_analysis.value}"
+        GROUP BY
+            {aggregation_level.get_index_columns_query_string("assign")},
+            population_start_date,
+            population_end_date,
+            period,
+            assign.person_id,
+            assign.assignment_date
+    )
+    GROUP BY
+        {aggregation_level.get_index_columns_query_string()},
+        population_start_date, population_end_date, period"""
+
     metric_aggregation_fragment_inner = ",\n".join(
         [
             metric.generate_aggregation_query_fragment(
@@ -67,56 +117,19 @@ def generate_assignment_event_aggregated_metrics_view_builder(
 
     query_template = f"""
 WITH time_periods AS (
-    SELECT * FROM `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized`
+    SELECT * FROM `{{project_id}}.aggregated_metrics.metric_time_periods_materialized`
 )
 ,
 assignments AS (
     SELECT *
     FROM
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population.population_name_short}_{aggregation_level.level_name_short}_metrics_assignment_sessions_materialized`
+        `{{project_id}}.aggregated_metrics.{population.population_name_short}_{aggregation_level.level_name_short}_metrics_assignment_sessions_materialized`
 )
 
-, month_metrics AS (
-    SELECT
-        {aggregation_level.get_index_columns_query_string()},
-        population_start_date AS start_date,
-        population_end_date AS end_date,
-        period,
-        {metric_aggregation_fragment_outer}
-    FROM (
-        SELECT
-            {aggregation_level.get_index_columns_query_string("assign")},
-            population_start_date,
-            population_end_date,
-            period,
-            assign.person_id,
-            assign.assignment_date,
-            {metric_aggregation_fragment_inner}
-        FROM 
-            time_periods pop
-        LEFT JOIN
-            assignments assign
-        ON 
-            assign.assignment_date BETWEEN population_start_date AND DATE_SUB(population_end_date, INTERVAL 1 DAY)
-        LEFT JOIN
-            `{{project_id}}.{{analyst_dataset}}.person_events_materialized` events
-        ON
-            assign.person_id = events.person_id
-            AND events.event_date >= assign.assignment_date
-        WHERE
-            period = "MONTH"
-        GROUP BY
-            {aggregation_level.get_index_columns_query_string("assign")},
-            population_start_date,
-            population_end_date,
-            period,
-            assign.person_id,
-            assign.assignment_date
-    )
-    GROUP BY 
-        {aggregation_level.get_index_columns_query_string()}, 
-        population_start_date, population_end_date, period
-)""" + get_unioned_time_granularity_clause(
+, week_metrics AS ({get_time_specific_ctes(MetricTimePeriod.WEEK)})
+
+, month_metrics AS ({get_time_specific_ctes(MetricTimePeriod.MONTH)})
+""" + get_unioned_time_granularity_clause(
         aggregation_level=aggregation_level,
         metrics=metrics,
     )
@@ -126,8 +139,6 @@ assignments AS (
         view_id=view_id,
         view_query_template=query_template,
         description=view_description,
-        aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
         should_materialize=False,
         clustering_fields=aggregation_level.primary_key_columns,
     )

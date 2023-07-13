@@ -21,6 +21,7 @@ from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
     get_unioned_time_granularity_clause,
 )
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
 )
@@ -31,7 +32,6 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulation,
 )
@@ -51,11 +51,40 @@ def generate_period_span_aggregated_metrics_view_builder(
     """
     view_id = f"{population.population_name_short}_{aggregation_level.level_name_short}_period_span_aggregated_metrics"
     view_description = f"""
-    Metrics for the {population.population_name_short} population calculated using 
+    Metrics for the {population.population_name_short} population calculated using
     `person_spans` across an entire analysis period, disaggregated by {aggregation_level.level_name_short}.
 
     All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
     """
+
+    # helper function to get weekly and monthly aggregated CTEs
+    def get_time_specific_ctes(unit_of_analysis: MetricTimePeriod) -> str:
+        """
+        Returns CTEs for weekly and monthly aggregated metrics.
+        """
+        if unit_of_analysis not in (MetricTimePeriod.WEEK, MetricTimePeriod.MONTH):
+            raise ValueError(f"Unsupported unit_of_analysis: {unit_of_analysis.value}")
+
+        return f"""
+    SELECT
+        {aggregation_level.get_index_columns_query_string()},
+        population_start_date AS start_date,
+        population_end_date AS end_date,
+        period,
+        {metric_aggregation_fragment}
+    FROM
+        eligible_spans ses
+    INNER JOIN
+        time_periods pop
+    ON
+        ses.start_date < pop.population_end_date
+        AND pop.population_start_date < {nonnull_current_date_clause("ses.end_date")}
+    WHERE
+        period = "{unit_of_analysis.value}"
+    GROUP BY
+        {aggregation_level.get_index_columns_query_string()},
+        population_start_date, population_end_date, period"""
+
     metric_aggregation_fragment = ",\n".join(
         [
             metric.generate_aggregation_query_fragment(
@@ -70,13 +99,13 @@ def generate_period_span_aggregated_metrics_view_builder(
     )
     query_template = f"""
 WITH time_periods AS (
-    SELECT * FROM `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized`
+    SELECT * FROM `{{project_id}}.aggregated_metrics.metric_time_periods_materialized`
 )
 ,
 assignments AS (
     SELECT *
     FROM
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population.population_name_short}_{aggregation_level.level_name_short}_metrics_assignment_sessions_materialized`
+        `{{project_id}}.aggregated_metrics.{population.population_name_short}_{aggregation_level.level_name_short}_metrics_assignment_sessions_materialized`
 )
 ,
 eligible_spans AS (
@@ -91,7 +120,7 @@ eligible_spans AS (
         span,
         span_attributes,
     FROM
-        `{{project_id}}.{{analyst_dataset}}.person_spans_materialized` AS spans
+        `{{project_id}}.analyst_data.person_spans_materialized` AS spans
     INNER JOIN
         assignments assign
     ON
@@ -106,26 +135,10 @@ eligible_spans AS (
         AND assign.assignment_date != {nonnull_end_date_clause("assign.end_date")}
 )
 
-, month_metrics AS (
-    SELECT
-        {aggregation_level.get_index_columns_query_string()},
-        population_start_date AS start_date,
-        population_end_date AS end_date,
-        period,
-        {metric_aggregation_fragment}
-    FROM 
-        eligible_spans ses
-    INNER JOIN 
-        time_periods pop
-    ON 
-        ses.start_date < pop.population_end_date
-        AND pop.population_start_date < {nonnull_current_date_clause("ses.end_date")}
-    WHERE
-        period = "MONTH"
-    GROUP BY 
-        {aggregation_level.get_index_columns_query_string()}, 
-        population_start_date, population_end_date, period
-)""" + get_unioned_time_granularity_clause(
+, week_metrics AS ({get_time_specific_ctes(MetricTimePeriod.WEEK)})
+
+, month_metrics AS ({get_time_specific_ctes(MetricTimePeriod.MONTH)})
+""" + get_unioned_time_granularity_clause(
         aggregation_level=aggregation_level,
         metrics=metrics,
     )
@@ -135,8 +148,6 @@ eligible_spans AS (
         view_id=view_id,
         view_query_template=query_template,
         description=view_description,
-        aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
         should_materialize=False,
         clustering_fields=aggregation_level.primary_key_columns,
     )

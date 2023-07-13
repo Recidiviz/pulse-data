@@ -388,7 +388,7 @@ class DailyAvgTimeSinceSpanStartMetric(
                         GREATEST({period_start_date_col}, {span_start_date_col}),
                         DAY
                     ) * IF({self.get_metric_conditions_string()}, 1, 0)
-                )  
+                )
             ) AS {self.name}
         """
 
@@ -499,7 +499,7 @@ class AssignmentSpanMaxDaysMetric(
             MAX(
                 IF(
                     {self.get_metric_conditions_string()}
-                    AND {span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), 
+                    AND {span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
                     DATE_DIFF(
                         LEAST(
                             DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
@@ -540,8 +540,8 @@ class AssignmentSpanValueAtStartMetric(
             AVG(
                 IF(
                     {self.get_metric_conditions_string()}
-                    AND {assignment_date_col} BETWEEN {span_start_date_col} AND {nonnull_current_date_exclusive_clause(span_end_date_col)}, 
-                    CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64), 
+                    AND {assignment_date_col} BETWEEN {span_start_date_col} AND {nonnull_current_date_exclusive_clause(span_end_date_col)},
+                    CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64),
                     NULL
                 )
             ) AS {self.name}
