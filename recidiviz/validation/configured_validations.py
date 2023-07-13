@@ -60,8 +60,6 @@ from recidiviz.validation.views.case_triage.most_recent_face_to_face_contact_dat
 from recidiviz.validation.views.justice_counts.incarceration_population_by_state_by_date_justice_counts_comparison import (
     INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
 )
-
-# pylint: disable=line-too-long
 from recidiviz.validation.views.state.active_in_population_after_death_date import (
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
 )
@@ -306,6 +304,9 @@ from recidiviz.validation.views.state.workflows.current_impact_funnel_status_no_
 from recidiviz.validation.views.state.workflows.person_record_missing_opportunities import (
     OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.static_reference_tables.experiment_assignments_unit_of_analysis_validation import (
+    EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.configured_validations import (
     get_all_task_eligibility_validations,
 )
@@ -539,6 +540,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
