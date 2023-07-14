@@ -38,6 +38,9 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_criteria_state_specific_dataset,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -94,6 +97,9 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_me_task_eligibility_criteria_dataset=task_eligibility_criteria_state_specific_dataset(
+        StateCode.US_ME
     ),
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY

@@ -217,10 +217,10 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
 _RESIDENT_PORTION_NEEDED_CTE = """
     portion_needed AS (
       SELECT state_code, person_id,
-      TO_JSON_STRING(JSON_EXTRACT(reason, '$.x_portion_served'))
-      AS portion_served_needed
-      FROM `task_eligibility_criteria_us_me.served_x_portion_of_sentence_materialized`
-      AS served_x
+      REPLACE(TO_JSON_STRING(JSON_EXTRACT(reason, '$.x_portion_served')), '"', "")
+          AS portion_served_needed
+      FROM `{project_id}.{us_me_task_eligibility_criteria_dataset}.served_x_portion_of_sentence_materialized`
+          AS served_x
       WHERE CURRENT_DATE("US/Eastern")
       BETWEEN served_x.start_date AND IFNULL(DATE_SUB(served_x.end_date, INTERVAL 1 DAY), "9999-12-31")
     ),
