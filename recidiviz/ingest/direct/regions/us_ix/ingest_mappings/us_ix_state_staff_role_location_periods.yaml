@@ -4,6 +4,8 @@
 manifest_language: 1.0.0
 input_columns:
   - EmployeeId
+  - FirstName
+  - LastName
   - EmployeeTypeName
   - LocationId
   - start_date
@@ -54,3 +56,22 @@ output:
               $values:
                 - $literal("ATLAS")
                 - LocationId
+    caseload_type_periods:
+      - $conditional:
+          - $if:
+              $custom:
+                $function: us_ix_custom_parsers.parse_is_combined_caseload
+                $args:
+                  first_name: FirstName
+                  last_name: LastName
+            $then:
+              StateStaffCaseloadTypePeriod:
+                state_staff_specialized_caseload_type: $literal_enum(StateStaffSpecializedCaseloadType.OTHER)
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("ATLAS")
+                      - EmployeeId
+                      - period_id
+                start_date: start_date
+                end_date: end_date
