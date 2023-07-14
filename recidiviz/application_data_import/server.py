@@ -66,7 +66,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.utils import metadata
+from recidiviz.utils import metadata, structured_logging
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.pubsub_helper import (
@@ -80,6 +80,8 @@ app = Flask(__name__)
 
 
 if in_gcp():
+    structured_logging.setup()
+
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
         "application-data-import"
     )

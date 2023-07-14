@@ -25,6 +25,7 @@ import attr
 import requests
 
 from recidiviz.utils import environment
+from recidiviz.utils.environment import CloudRunEnvironment
 
 BASE_METADATA_URL = "http://metadata/computeMetadata/v1/"
 HEADERS = {"Metadata-Flavor": "Google"}
@@ -184,12 +185,13 @@ class CloudRunMetadata:
     service_account_email: str
 
     @classmethod
-    def build_from_metadata_server(cls, service_name: str):
+    def build_from_metadata_server(cls, service_name: Optional[str] = None):
         """Builds the CloudRunMetadata from the googleapis
         https://cloud.google.com/run/docs/reference/rest/v1/namespaces.services/get
         """
         _project_id = project_id()
         _region = region()
+        service_name = service_name or CloudRunEnvironment.get_service_name()
         service_metadata = requests.get(
             f"https://{_region}-run.googleapis.com/apis/serving.knative.dev/v1/namespaces/{_project_id}/services/{service_name}",
             headers={"Authorization": f"Bearer {service_token()}"},

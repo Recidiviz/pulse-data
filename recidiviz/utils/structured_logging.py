@@ -18,15 +18,19 @@
 
 import logging
 import sys
+from functools import cached_property
 from types import TracebackType
 from typing import Any, Dict, Optional, Tuple, Type, Union
 
 from flask import request
 from google.cloud.logging import Client, handlers
+from google.cloud.logging.resource import Resource
 from opencensus.common.runtime_context import RuntimeContext
 from opencensus.trace import execution_context
 
 from recidiviz.utils import environment, metadata, monitoring
+from recidiviz.utils.environment import CloudRunEnvironment
+from recidiviz.utils.metadata import CloudRunMetadata
 
 # TODO(#3043): Once census-instrumentation/opencensus-python#442 is fixed we can
 # use OpenCensus threading intregration which will copy this for us. Until then
@@ -163,6 +167,24 @@ class StructuredCloudLoggingHandler(handlers.CloudLoggingHandler):
     Customized CloudLoggingHandler to add trace context to log messages
     """
 
+    @cached_property
+    def logging_resource(self) -> Resource:
+        if environment.in_cloud_run():
+            cloud_run_metadata = CloudRunMetadata.build_from_metadata_server()
+
+            return Resource(
+                type="cloud_run_revision",
+                labels={
+                    "location": cloud_run_metadata.region,
+                    "project_id": cloud_run_metadata.project_id,
+                    "configuration_name": CloudRunEnvironment.get_configuration_name(),
+                    "revision_name": CloudRunEnvironment.get_revision_name(),
+                    "service_name": CloudRunEnvironment.get_service_name(),
+                },
+            )
+
+        return Resource(type="global", labels={})
+
     def emit(self, record: logging.LogRecord) -> None:
         """Overrides the emit method for CloudLoggingHandler to include the trace id"""
         trace_id = None
@@ -180,10 +202,13 @@ class StructuredCloudLoggingHandler(handlers.CloudLoggingHandler):
         self.transport.send(
             record,
             super().format(record),
-            resource=self.resource,
+            resource=self.logging_resource,
             labels=self.labels,
             trace=trace_id,
         )
+
+
+STRUCTURED_LOGGERS = (StructuredAppEngineHandler, StructuredCloudLoggingHandler)
 
 
 def setup() -> None:
@@ -196,23 +221,31 @@ def setup() -> None:
     # ids are propagated and allows us to send structured messages.
     if environment.in_gcp():
         client = Client()
-        structured_handler = StructuredAppEngineHandler(client)
+        if environment.in_cloud_run():
+            structured_handler_cls = StructuredCloudLoggingHandler
+        else:
+            structured_handler_cls = StructuredAppEngineHandler
+
+        structured_handler = structured_handler_cls(client)
+
         handlers.setup_logging(structured_handler, log_level=logging.INFO)
 
-        before_request_handler = StructuredAppEngineHandler(
-            client, name=BEFORE_REQUEST_LOG
-        )
+        before_request_handler = structured_handler_cls(client, name=BEFORE_REQUEST_LOG)
         logging.getLogger(BEFORE_REQUEST_LOG).addHandler(before_request_handler)
 
         # Streams unstructured logs to stdout - these logs will still show up
-        # under the appengine.googleapis.com/stdout Stackdriver logs bucket,
+        # under the stdout Stackdriver logs bucket,
         # even if other logs are stalled on the global interpreter lock or some
         # other issue.
         stdout_handler = logging.StreamHandler(sys.stdout)
         handlers.setup_logging(stdout_handler, log_level=logging.INFO)
         for handler in logger.handlers:
             if not isinstance(
-                handler, (StructuredAppEngineHandler, logging.StreamHandler)
+                handler,
+                (
+                    logging.StreamHandler,
+                    *STRUCTURED_LOGGERS,
+                ),
             ):
                 logger.removeHandler(handler)
     else:
@@ -221,7 +254,7 @@ def setup() -> None:
     for handler in logger.handlers:
         # If we aren't writing directly to Stackdriver, prefix the log with important
         # context that would be in the labels.
-        if not isinstance(handler, StructuredAppEngineHandler):
+        if not isinstance(handler, STRUCTURED_LOGGERS):
             handler.setFormatter(
                 logging.Formatter(
                     "[pid: %(process)d] (%(region)s) %(module)s/%(funcName)s : %(message)s"

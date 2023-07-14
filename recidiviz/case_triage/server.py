@@ -18,13 +18,11 @@
 import logging
 import os
 
-import google.cloud.logging
 import sentry_sdk
 from flask import Flask, Response, redirect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
-from google.cloud.logging import handlers
 from sentry_sdk.integrations.flask import FlaskIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -49,13 +47,13 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tools.utils.fixture_helpers import create_dbs, reset_fixtures
+from recidiviz.utils import structured_logging
 from recidiviz.utils.environment import (
     get_gcp_environment,
     in_development,
     in_gcp,
     in_offline_mode,
 )
-from recidiviz.utils.structured_logging import StructuredCloudLoggingHandler
 
 # Sentry setup
 if in_gcp():
@@ -101,9 +99,7 @@ if not in_development():
 
 # Logging setup
 if in_gcp():
-    logging_client = google.cloud.logging.Client()
-    structured_handler = StructuredCloudLoggingHandler(logging_client)
-    handlers.setup_logging(structured_handler, log_level=logging.INFO)
+    structured_logging.setup()
 else:
     # Python logs at the warning level by default
     logging.basicConfig(level=logging.INFO)

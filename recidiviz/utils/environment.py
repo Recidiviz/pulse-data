@@ -65,6 +65,42 @@ def in_gcp() -> bool:
     return get_gcp_environment() in GCP_ENVIRONMENTS
 
 
+def in_cloud_run() -> bool:
+    try:
+        CloudRunEnvironment.get_service_name()
+        return True
+    except NotInCloudRunError:
+        return False
+
+
+class NotInCloudRunError(KeyError):
+    pass
+
+
+class CloudRunEnvironment:
+    """These environment variables are set on Cloud Run containers
+    https://cloud.google.com/run/docs/container-contract#services-env-vars"""
+
+    @staticmethod
+    def get_cloud_run_environment_variable(environment_key: str) -> str:
+        try:
+            return os.environ[environment_key]
+        except KeyError as e:
+            raise NotInCloudRunError() from e
+
+    @staticmethod
+    def get_configuration_name() -> str:
+        return CloudRunEnvironment.get_cloud_run_environment_variable("K_CONFIGURATION")
+
+    @staticmethod
+    def get_revision_name() -> str:
+        return CloudRunEnvironment.get_cloud_run_environment_variable("K_REVISION")
+
+    @staticmethod
+    def get_service_name() -> str:
+        return CloudRunEnvironment.get_cloud_run_environment_variable("K_SERVICE")
+
+
 def get_gcp_environment() -> Optional[str]:
     """Get the environment we are running in
 
