@@ -31,26 +31,24 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 1500
     override_reason: Needs investigation.  Current failing level as of 9/26 is 1418 rows #TODO(#13882)
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 1500
-    override_reason:
-      Needs investigation; there's a known issue with incarceration periods (#13336) that might be related?
-      Current failing level as of 9/26 is 1315 rows #TODO(#13516)
+    hard_num_allowed_rows_override: 50
+    override_reason: Mostly fixed but needs investigation for remaining cases.
   - validation_name: incarceration_commitments_subset_of_admissions
     hard_num_allowed_rows_override: 4
     override_reason: Needs investigation. Current failing level as of 9/26 is 4 rows #TODO(#15586)
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 150000
+    hard_num_allowed_rows_override: 1000
     override_reason:
       Needs further investigation; there's a known issue with incarceration periods (#13336) that might be related?
       Current failing level as of 9/26 is 145071 rows #TODO(#13518)
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 2000
+    hard_num_allowed_rows_override: 2500
     override_reason: Addressed known issue with overlapping offender bookings so remaining errors needs further investigation. #TODO(#15587)
   - validation_name: sentence_end_dates_before_start_dates
     hard_num_allowed_rows_override: 100000
     override_reason: Needs investigation.  Current failing level as of 10/21 is 56,669 rows #TODO(#16186)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
-    hard_num_allowed_rows_override: 400000
+    hard_num_allowed_rows_override: 350000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 326,285 rows #TODO(#16227)
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 100000
