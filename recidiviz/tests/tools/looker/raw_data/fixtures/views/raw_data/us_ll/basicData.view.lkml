@@ -35,4 +35,9 @@ view: basicData {
     type: string
     sql: ${TABLE}.COL3 ;;
   }
+
+  measure: count {
+    type: count
+    drill_fields: [file_id, COL1]
+  }
 }

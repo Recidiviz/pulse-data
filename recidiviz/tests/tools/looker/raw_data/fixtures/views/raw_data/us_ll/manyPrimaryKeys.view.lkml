@@ -40,4 +40,9 @@ literally and trailing/leading whitespace is removed."
     type: string
     sql: ${TABLE}.undocumented_column ;;
   }
+
+  measure: count {
+    type: count
+    drill_fields: [file_id, col_name_1a, col_name_1b]
+  }
 }

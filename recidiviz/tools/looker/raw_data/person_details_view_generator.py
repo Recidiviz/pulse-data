@@ -44,6 +44,7 @@ from recidiviz.looker.lookml_view_field import (
     LookMLFieldDatatype,
     LookMLFieldParameter,
     LookMLViewField,
+    MeasureLookMLViewField,
     ParameterLookMLViewField,
 )
 from recidiviz.looker.lookml_view_field_parameter import (
@@ -307,14 +308,23 @@ def _generate_raw_file_view(
     primary_key_string = ", ".join([f"${{{col}}}" for col in all_primary_keys])
     primary_key_sql = f"CONCAT({primary_key_string})"
 
-    dimensions = _get_dimensions_for_raw_file_view(config, primary_key_sql)
-
     view = LookMLView(
         view_name=config.file_tag,
         table=source_table,
         included_paths=[f"../{SHARED_FIELDS_NAME}.view"],
         extended_views=[SHARED_FIELDS_NAME],
-        fields=dimensions,
+        fields=[
+            *_get_dimensions_for_raw_file_view(config, primary_key_sql),
+            MeasureLookMLViewField(
+                field_name="count",
+                parameters=[
+                    LookMLFieldParameter.type(LookMLFieldType.COUNT),
+                    LookMLFieldParameter.drill_fields(
+                        [FILE_ID_COL_NAME, *config.primary_key_cols]
+                    ),
+                ],
+            ),
+        ],
     )
 
     return view

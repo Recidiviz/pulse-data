@@ -33,6 +33,7 @@ class LookMLFieldCategory(Enum):
 
 
 class LookMLFieldType(Enum):
+    COUNT = "count"
     DATE = "date"
     DURATION = "duration"
     NUMBER = "number"
@@ -110,6 +111,10 @@ class LookMLFieldParameter:
     @classmethod
     def default_value(cls, value: str) -> "LookMLFieldParameter":
         return FieldParameterDefaultValue(value)
+
+    @classmethod
+    def drill_fields(cls, fields: List[str]) -> "LookMLFieldParameter":
+        return FieldParameterDrillFields(fields)
 
     @classmethod
     def datatype(cls, datatype: LookMLFieldDatatype) -> "LookMLFieldParameter":
@@ -396,6 +401,7 @@ class FieldParameterType(LookMLFieldParameter):
             )
         if field_category == LookMLFieldCategory.MEASURE:
             return self.field_type in (
+                LookMLFieldType.COUNT,
                 LookMLFieldType.DATE,
                 LookMLFieldType.NUMBER,
                 LookMLFieldType.STRING,
@@ -455,3 +461,26 @@ class FieldParameterPrimaryKey(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category == LookMLFieldCategory.DIMENSION
+
+
+@attr.define
+class FieldParameterDrillFields(LookMLFieldParameter):
+    """Generates a `drill_fields` field parameter,
+    https://cloud.google.com/looker/docs/reference/param-view-drill-fields
+    """
+
+    fields: List[str]
+
+    @property
+    def key(self) -> str:
+        return "drill_fields"
+
+    @property
+    def value_text(self) -> str:
+        return "[" + ", ".join(self.fields) + "]"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category in (
+            LookMLFieldCategory.DIMENSION,
+            LookMLFieldCategory.MEASURE,
+        )

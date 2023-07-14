@@ -214,3 +214,16 @@ class LookMLViewTest(unittest.TestCase):
     primary_key: yes
   }"""
         self.assertEqual(view_field, expected_view_field)
+
+    def test_view_field_drill_fields(self) -> None:
+        view_field = DimensionLookMLViewField(
+            field_name="my_dim",
+            parameters=[
+                LookMLFieldParameter.drill_fields(["field1", "field2", "field3"])
+            ],
+        ).build()
+        expected_view_field = """
+  dimension: my_dim {
+    drill_fields: [field1, field2, field3]
+  }"""
+        self.assertEqual(view_field, expected_view_field)
