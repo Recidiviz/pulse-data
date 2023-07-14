@@ -170,3 +170,44 @@ def get_minimum_time_served_criteria_query(
         criteria_spans_query_template=criteria_query,
         sessions_dataset=SESSIONS_DATASET,
     )
+
+
+def get_supervision_level_is_not_criteria_query(
+    criteria_name: str,
+    description: str,
+    supervision_level: str,
+    start_date_name_in_reason_blob: str,
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+    Args:
+        criteria_name (str): Criteria query name
+        description (str): Criteria query description
+        supervision_level (str): Supervision level in supervision_level_sessions
+        start_date_name_in_json (str): Name we will use to pass the start_date value in
+            the reason blob
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: Returns a state agnostic criteria
+        view builder indicating spans of time when a person is not in supervision_level
+        |supervision_level| as tracked by our `sessions` dataset
+    """
+
+    criteria_query = f"""
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        FALSE as meets_criteria,
+        TO_JSON(STRUCT(start_date AS {start_date_name_in_reason_blob}, supervision_level AS supervision_level)) AS reason,
+    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized`
+    WHERE supervision_level = "{supervision_level}"
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
+    )

@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Shows the spans of time during which someone in CA is eligible
-for a SLD (Supervised Level Downgrade)
+"""Shows the spans of time during which someone in CA is eligible
+for a 12 month violation free kudos. This span only lasts for two 
+months after the event happened and is only available to clients on 
+PAROLE and not IN_CUSTODY.
 """
 
 from recidiviz.common.constants.states import StateCode
@@ -27,12 +28,7 @@ from recidiviz.task_eligibility.completion_events.general import (
     supervision_level_downgrade,
 )
 from recidiviz.task_eligibility.criteria.general import (
-    no_supervision_violation_within_6_months,
-    supervision_level_is_high_for_6_months,
-)
-from recidiviz.task_eligibility.criteria.state_specific.us_ca import (
-    assessment_level_3_or_lower,
-    housing_type_is_not_transient,
+    no_supervision_violation_within_12_to_14_months,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -41,20 +37,19 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _DESCRIPTION = """Shows the spans of time during which someone in CA is eligible
-for a SLD (Supervised Level Downgrade)
+for a 12 month violation free kudos. This span only lasts for two months after the 
+event happened and is only available to clients on PAROLE and not IN_CUSTODY.
 """
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_CA,
-    task_name="supervision_level_downgrade",
+    task_name="kudos_violation_free_12_to_14_months",
     description=_DESCRIPTION,
     candidate_population_view_builder=parole_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        assessment_level_3_or_lower.VIEW_BUILDER,
-        supervision_level_is_high_for_6_months.VIEW_BUILDER,
-        housing_type_is_not_transient.VIEW_BUILDER,
-        no_supervision_violation_within_6_months.VIEW_BUILDER,
+        no_supervision_violation_within_12_to_14_months.VIEW_BUILDER,
     ],
+    # TODO(#22285) - Change to the right completion_event_builder
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
 )
 
