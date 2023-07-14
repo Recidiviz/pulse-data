@@ -2,6 +2,15 @@
 
 This directory contains configurations for creating a [Dev Container](https://code.visualstudio.com/docs/devcontainers/containers) for pulse-data. Dev containers are an optional way to set up a VSCode environment, where development occurs inside a container (still on the user's machine) that is configured in a standardized way.
 
+## Pre-reqs
+1. If you do not already have gcloud configured on your computer, log in to gcloud by running the following two commands:
+
+```bash
+gcloud auth login # Gets credentials to interact with services via the CLI
+gcloud auth application-default login # Gets credentials which will be automatically read by our client libraries
+```
+1. Verify that the directory `~/.config/gcloud` exists. It should have been created when you authenticated to Gcloud
+
 ## How to use
 
 Dependencies:
@@ -19,12 +28,6 @@ To use:
 After the first time you build the container, you'll also need to do the following:
 
 1. Select the PipEnv python interpreter by choosing "Python: Select Interpreter" from the command palette and selecting the one that says PipEnv next to it
-1. If you do not already have gcloud configured on your computer, log in to gcloud by running the following two commands:
-
-```bash
-gcloud auth login # Gets credentials to interact with services via the CLI
-gcloud auth application-default login # Gets credentials which will be automatically read by our client libraries
-```
 
 Limitations:
 
