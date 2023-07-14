@@ -50,14 +50,15 @@ class TestStates(unittest.TestCase):
     def test_hasStates_in_test(self) -> None:
         self.mock_in_test.return_value = True
 
-        # There are 56 states because we are in tests, so we add US_WW, US_XX, and US_YY
-        # as valid values.
-        self.assertEqual(56, len(states.StateCode))
+        # There are 57 states because we are in tests, so we add US_LL,
+        # US_WW, US_XX, and US_YY as valid values.
+        self.assertEqual(57, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
-        self.assertEqual("US_WY", list(states.StateCode)[-6].value)
-        self.assertEqual("US_OZ", list(states.StateCode)[-5].value)
+        self.assertEqual("US_WY", list(states.StateCode)[-7].value)
+        self.assertEqual("US_OZ", list(states.StateCode)[-6].value)
         # TODO(#10703): Remove this state_code after merging US_IX into US_ID
-        self.assertEqual("US_IX", list(states.StateCode)[-4].value)
+        self.assertEqual("US_IX", list(states.StateCode)[-5].value)
+        self.assertEqual("US_LL", list(states.StateCode)[-4].value)
         self.assertEqual("US_WW", list(states.StateCode)[-3].value)
         self.assertEqual("US_XX", list(states.StateCode)[-2].value)
         self.assertEqual("US_YY", list(states.StateCode)[-1].value)
