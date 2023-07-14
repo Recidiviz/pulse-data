@@ -116,7 +116,6 @@ def verify_raw_data_primary_keys(
         desc="Verifying raw data primary keys",
     )
 
-    job_futures = {}
     # Even though the BQ jobs run asynchronously, even starting them takes a bit so we
     # use a threadpool to start them in parallel.
     with futures.ThreadPoolExecutor(
@@ -128,12 +127,8 @@ def verify_raw_data_primary_keys(
 
         def query_raw_table(
             raw_file_tag: str, raw_file_config: DirectIngestRawFileConfig
-        ) -> Optional[bigquery.QueryJob]:
+        ) -> bigquery.QueryJob:
             with on_exit(progress.update):
-                if not raw_file_config.primary_key_cols:
-                    # Don't run the query if there are no primary keys
-                    return None
-
                 job = bq_client.run_query_async(
                     query_str=f"""
                     SELECT file_id, {raw_file_config.primary_key_str}, COUNT(*) as num
@@ -156,24 +151,20 @@ def verify_raw_data_primary_keys(
                 query_raw_table, raw_file_tag, raw_file_config
             ): raw_file_tag
             for raw_file_tag, raw_file_config in region_raw_file_config.raw_file_configs.items()
+            # Don't run the query if there are no primary keys
+            if raw_file_config.primary_key_cols
         }
 
-    bad_key_file_tags = set()
-    for f in futures.as_completed(job_futures):
-        raw_file_tag = job_futures[f]
-        query_job = f.result()
+        bad_key_file_tags = set()
+        for f in futures.as_completed(job_futures):
+            raw_file_tag = job_futures[f]
+            query_job = f.result()
 
-        if query_job is None:
-            raw_config = region_raw_file_config.raw_file_configs[raw_file_tag]
-            if not raw_config.has_valid_primary_key_configuration:
+            results = query_job.result()
+            if results.total_rows:
                 bad_key_file_tags.add(raw_file_tag)
-            continue
-
-        results = query_job.result()
-        if results.total_rows:
-            bad_key_file_tags.add(raw_file_tag)
-    progress.close()
-    return bad_key_file_tags
+        progress.close()
+        return bad_key_file_tags
 
 
 def verify_ingest_view_determinism(

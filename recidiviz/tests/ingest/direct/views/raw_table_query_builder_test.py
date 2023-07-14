@@ -335,7 +335,9 @@ FROM filtered_rows
     def test_no_documented_columns_query(
         self,
     ) -> None:
-        raw_file_config = attr.evolve(self.raw_file_config, columns=[])
+        raw_file_config = attr.evolve(
+            self.raw_file_config, columns=[], primary_key_cols=[]
+        )
 
         with self.assertRaisesRegex(
             ValueError,
