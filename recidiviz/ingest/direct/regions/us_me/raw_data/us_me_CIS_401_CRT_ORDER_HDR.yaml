@@ -268,10 +268,10 @@ columns:
   - name: Days_Earned_Num
   - name: Days_Lost_Num
   - name: Days_Served_Det_Num
-    description: Number of days served in county before being transferred to MEDOC.
   - name: Days_Served_Num
   - name: Detention_Conduct_Days_Num
   - name: Detention_Days_Num
+    description: Number of days served in county before being transferred to MEDOC.
   - name: Dhs_Cust_Age_Num
   - name: Domestic_Violence_Ind
   - name: Early_Cust_Rel_Date
