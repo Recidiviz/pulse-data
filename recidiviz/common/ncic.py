@@ -93,8 +93,29 @@ def get_all_codes() -> List[NcicCode]:
 
 
 def get(ncic_code: str) -> Optional[NcicCode]:
+    """
+    If the NCIC code attached to this charge is known, it appears
+    in the ncic.csv reference table, and this function returns its associated entry.
+
+    If the NCIC code attached to this charge does not exist in the reference table,
+    this function checks if the first two digits of the NCIC code followed by "99"
+    appear as a code in this table, which would be the generic category of the same
+    offense. This is to minimize the prevalence of NULL values in offense fields.
+    """
     ncic = _get_NCIC()
-    return ncic.get(ncic_code, None)
+
+    # pad NCIC code with zeroes if it is less than 4 digits long
+    ncic_code = ncic_code.rjust(4, "0")
+
+    if ncic_code in ncic:
+        return ncic.get(ncic_code, None)
+
+    # if code not found, attempt to return the generic code associated with the category
+    modified_code = ncic_code[:2] + "99"
+    if modified_code in ncic:
+        return ncic.get(modified_code, None)
+
+    return None
 
 
 def get_category_code(ncic_code: str) -> Optional[str]:
