@@ -9,4 +9,19 @@ view: tagFullyEmptyFile {
   sql_table_name: {% if view_type._parameter_value == 'raw_data' %} us_xx_raw_data.tagFullyEmptyFile
     {% elsif view_type._parameter_value == 'raw_data_up_to_date_views' %} us_xx_raw_data_up_to_date_views.tagFullyEmptyFile_latest
     {% endif %} ;;
+
+  dimension: primary_key {
+    primary_key: yes
+    hidden: yes
+    type: string
+    sql: CONCAT(${file_id}, ${mockKey}) ;;
+  }
+
+  dimension: mockKey {
+    label: "mockKey"
+    type: string
+    sql: ${TABLE}.mockKey ;;
+    description: "mockKey description"
+    group_label: "Primary Key"
+  }
 }

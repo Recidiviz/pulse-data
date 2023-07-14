@@ -34,6 +34,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
@@ -41,6 +42,7 @@ from recidiviz.looker.lookml_view_field import (
     DimensionLookMLViewField,
     LookMLFieldDatatype,
     LookMLFieldParameter,
+    LookMLViewField,
     ParameterLookMLViewField,
 )
 from recidiviz.looker.lookml_view_field_parameter import (
@@ -85,7 +87,7 @@ def generate_shared_fields_view() -> LookMLView:
         indentation_level=3,
     )
     file_id_dimension = DimensionLookMLViewField(
-        field_name="file_id",
+        field_name=FILE_ID_COL_NAME,
         parameters=[
             LookMLFieldParameter.description(
                 "Ingest file ID, NULL for raw up to date views"
@@ -164,6 +166,7 @@ def generate_raw_file_view(
     """
     Return a single LookMLView object representing the provided raw file config.
     """
+    # Include SQL table address
     ingest_instance = DirectIngestInstance.PRIMARY
 
     def get_table_id(option: str) -> str:
@@ -190,14 +193,56 @@ def generate_raw_file_view(
         value_builder=get_table_id,
         indentation_level=2,
     )
-
     source_table = LookMLViewSourceTable.sql_table_address(parameterized_table_value)
+
+    # Add a primary key dimension concatenating all the primary key columns with file id,
+    # or all the columns if there aren't any primary key columns
+    cols_to_concat = config.primary_key_cols or config.columns
+    all_primary_keys = [FILE_ID_COL_NAME] + cols_to_concat
+    primary_key_string = ", ".join([f"${{{col}}}" for col in all_primary_keys])
+    primary_key_sql = f"CONCAT({primary_key_string})"
+
+    dimensions: List[LookMLViewField] = []
+
+    dimensions.append(
+        DimensionLookMLViewField(
+            field_name="primary_key",
+            parameters=[
+                LookMLFieldParameter.primary_key(True),
+                LookMLFieldParameter.hidden(True),
+                LookMLFieldParameter.type(LookMLFieldType.STRING),
+                LookMLFieldParameter.sql(primary_key_sql),
+            ],
+        )
+    )
+
+    # Add one dimension per column
+    for column in config.columns:
+        col_params = [
+            LookMLFieldParameter.label(column.name),
+            LookMLFieldParameter.type(LookMLFieldType.STRING),
+            LookMLFieldParameter.sql(f"${{TABLE}}.{column.name}"),
+        ]
+
+        if column.description:
+            col_params.append(LookMLFieldParameter.description(column.description))
+
+        if column.name in config.primary_key_cols:
+            col_params.append(LookMLFieldParameter.group_label("Primary Key"))
+
+        dimensions.append(
+            DimensionLookMLViewField(
+                field_name=column.name,
+                parameters=col_params,
+            )
+        )
 
     view = LookMLView(
         view_name=config.file_tag,
         table=source_table,
         included_paths=[f"../{SHARED_FIELDS_NAME}.view"],
         extended_views=[SHARED_FIELDS_NAME],
+        fields=dimensions,
     )
 
     return view
@@ -213,9 +258,10 @@ def generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
         views[state_code] = []
         region_config = DirectIngestRegionRawFileConfig(region_code=state_code.value)
         for raw_file_config in region_config.raw_file_configs.values():
-            views[state_code].append(
-                generate_raw_file_view(state_code, raw_file_config)
-            )
+            if raw_file_config.columns:
+                views[state_code].append(
+                    generate_raw_file_view(state_code, raw_file_config)
+                )
     return views
 
 
