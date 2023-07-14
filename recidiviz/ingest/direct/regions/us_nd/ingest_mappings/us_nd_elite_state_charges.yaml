@@ -33,6 +33,8 @@ variables:
               $args:
                 dec_str: OFFENDER_BOOK_ID
           - CHARGE_SEQ
+launch_env:
+  $env: is_production
 output:
   StatePerson:
     external_ids:
