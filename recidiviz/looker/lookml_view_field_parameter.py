@@ -124,6 +124,10 @@ class LookMLFieldParameter:
         return FieldParameterPrecision(precision)
 
     @classmethod
+    def primary_key(cls, is_primary_key: bool) -> "LookMLFieldParameter":
+        return FieldParameterPrimaryKey(is_primary_key)
+
+    @classmethod
     def sql(cls, sql: Union[str, ParameterizedValue]) -> "LookMLFieldParameter":
         return FieldParameterSql(sql)
 
@@ -431,3 +435,23 @@ class FieldParameterTimeframes(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category == LookMLFieldCategory.DIMENSION_GROUP
+
+
+@attr.define
+class FieldParameterPrimaryKey(LookMLFieldParameter):
+    """Generates a `primary_key` field parameter,
+    https://cloud.google.com/looker/docs/reference/param-field-primary-key
+    """
+
+    is_primary_key: bool
+
+    @property
+    def key(self) -> str:
+        return "primary_key"
+
+    @property
+    def value_text(self) -> str:
+        return "yes" if self.is_primary_key else "no"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category == LookMLFieldCategory.DIMENSION
