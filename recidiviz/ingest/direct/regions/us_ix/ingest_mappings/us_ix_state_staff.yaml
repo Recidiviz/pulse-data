@@ -15,9 +15,13 @@ unused_columns: []
 output:
   StateStaff:
     external_ids:
-      - StateStaffExternalId:
-          external_id: StaffId
-          id_type: $literal("US_IX_STAFF_ID")
+      - $conditional:
+          - $if:
+              $not_null: StaffId
+            $then:
+              StateStaffExternalId:
+                external_id: StaffId
+                id_type: $literal("US_IX_STAFF_ID")
       - $conditional:
           - $if:
               $equal:
