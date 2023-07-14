@@ -371,8 +371,6 @@ def create_calculation_dag() -> None:
 
     initialize_calculation_dag_group() >> bq_refresh
 
-    update_normalized_state = execute_update_normalized_state()
-
     trigger_update_all_views = update_all_managed_views_operator()
 
     (
@@ -386,6 +384,8 @@ def create_calculation_dag() -> None:
 
     with TaskGroup(group_id="normalization") as normalization_task_group:
         create_state_code_branching(normalization_pipeline_branches_by_state_code())
+
+    update_normalized_state = execute_update_normalized_state()
 
     # Normalization pipelines should run after the BQ refresh is complete, but
     # complete before normalized_state dataset is refreshed.
