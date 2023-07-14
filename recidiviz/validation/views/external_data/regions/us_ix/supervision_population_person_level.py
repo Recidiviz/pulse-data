@@ -35,9 +35,12 @@ WITH legacy_data AS (
     'US_IX_DOC' AS external_id_type,
     date_of_supervision,
     district,
-    supervising_officer,
+    COALESCE(ref.EmployeeId, supervising_officer) as supervising_officer,
+    supervising_officer as supervising_officer_staff_id,
     supervision_level
-  FROM `{project_id}.{us_ix_validation_oneoff_dataset}.supervision_population_person_level_raw`
+  FROM `{project_id}.{us_ix_validation_oneoff_dataset}.supervision_population_person_level_raw` v
+  LEFT JOIN `{project_id}.{us_ix_raw_data_up_to_date_dataset}.ref_Employee_latest` ref 
+    on UPPER(v.supervising_officer) = UPPER(COALESCE(ref.StaffId, split(ref.Email, "@")[offset(0)]))
 ), daily_summary AS (
   SELECT
     'US_IX' AS region_code,
@@ -56,6 +59,7 @@ WITH legacy_data AS (
       ELSE body_loc_desc
     END AS district,
     CAST(NULL AS string) AS supervising_officer,
+    CAST(NULL AS STRING) AS supervising_officer_staff_id,
     CAST(NULL AS string) AS supervision_level
   FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.current_day_daily_summary_latest`
   WHERE
