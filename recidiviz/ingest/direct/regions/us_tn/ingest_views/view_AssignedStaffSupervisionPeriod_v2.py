@@ -238,11 +238,48 @@ all_supervision_periods AS (
         AND COALESCE(combined_officer_and_level.Site,'') = COALESCE(officer_period_end.Site,'')
     WHERE IFNULL(SupervisionLevel, '') != 'ZDS' -- Exclude periods where the person was marked as discharged (ZDS)
     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
-)
+), 
+override_backdated_discharges AS (
+    -- TN is known to backdate some Discharges and Expiration dates where someone will be surfaced as eligible for discharge and we can see from the LastUpdateDate 
+    -- column in raw data when the person's status was actually changed, but the date input for their discharge is the same as their expiration date. This
+    -- causes issues for impact tracking because it means that someone may be surfaced at some point as eligible, but when TN goes in to update the data, 
+    -- we will ingest the newly backdated date as the end date of a period. This CTE addresses that concern by comparing the LastUpdateDate to the EndDate
+    -- input in raw data. If the LastUpdateDate is more than 7 days PAST when the assignment claims someone's period expired or they were 
+    -- discharged, we override the input EndDate with the LastUpdateDate. We chose 7 days because it gives people about a week to actually input information in after a person was discharged.  
+    SELECT 
+        asp.OffenderID,
+        asp.SupervisionType,
+        asp.SupervisionOfficerID,
+        asp.AssignmentType,
+        asp.Site,
+        asp.SupervisionOfficerFirstName,
+        asp.SupervisionOfficerLastName,
+        asp.SupervisionOfficerSuffix,
+        asp.SupervisionLevel, 
+        asp.StartDate,
+        CASE WHEN TerminationReason IN ('DIS', 'EXP') AND DATE_DIFF(CAST(ast.LastUpdateDate AS DATETIME), asp.EndDate, DAY) > 7 AND asp.EndDate > '2000-01-01' THEN CAST(ast.LastUpdateDate AS DATETIME) ELSE asp.EndDate END AS EndDate,
+        asp.AdmissionReason, 
+        asp.TerminationReason,
+    FROM all_supervision_periods asp
+    LEFT JOIN {AssignedStaff} ast ON ast.StaffID = asp.SupervisionOfficerID AND asp.OffenderID = ast.OffenderID AND asp.EndDate=CAST(ast.EndDate AS DATETIME) AND AssignmentEndReason IN ('DIS','EXP')
+    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
+) 
 SELECT
-    *,
+    OffenderID,
+    SupervisionType,
+    SupervisionOfficerID,
+    AssignmentType,
+    Site,
+    SupervisionOfficerFirstName,
+    SupervisionOfficerLastName,
+    SupervisionOfficerSuffix,
+    SupervisionLevel, 
+    StartDate,
+    CAST(EndDate as DATE) as EndDate,
+    AdmissionReason, 
+    TerminationReason,
     ROW_NUMBER() OVER person_window AS SupervisionPeriodSequenceNumber
-    FROM all_supervision_periods 
+    FROM override_backdated_discharges 
     WINDOW person_window AS (PARTITION BY OffenderID ORDER BY StartDate ASC, EndDate ASC, SupervisionType, AssignmentType, SupervisionLevel, SupervisionOfficerID, AdmissionReason, TerminationReason)
 """
 
