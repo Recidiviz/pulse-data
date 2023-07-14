@@ -46,4 +46,9 @@ view: customDatetimeSql {
     sql: ${TABLE}.COL2 ;;
     description: "Datetime description here"
   }
+
+  measure: count {
+    type: count
+    drill_fields: [file_id, COL1]
+  }
 }

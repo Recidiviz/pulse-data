@@ -45,4 +45,9 @@ view: datetimeNoParsers {
     type: string
     sql: ${TABLE}.COL2 ;;
   }
+
+  measure: count {
+    type: count
+    drill_fields: [file_id, COL1]
+  }
 }
