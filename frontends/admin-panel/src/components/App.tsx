@@ -32,7 +32,9 @@ import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
 import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
+import * as OnCall from "../navigation/OnCall";
 import "../style/App.css";
+import OnCallLogsReview from "./OnCall/LogsReview";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./Datasets/DatasetView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
@@ -151,6 +153,7 @@ const items: MenuProps["items"] = [
       JusticeCountsTools.SUPER_AGENCY_DETAILS_ROUTE
     ),
   ]),
+  getItem("On-Call", OnCall.ON_CALL_BASE_ROUTE),
 ];
 
 const formatPageName = (page: string) => {
@@ -293,6 +296,10 @@ const App = (): JSX.Element => {
           <Route
             path={JusticeCountsTools.USER_PROVISIONING_ROUTE}
             component={UserProvisioningView}
+          />
+          <Route
+            path={OnCall.ON_CALL_BASE_ROUTE}
+            component={OnCallLogsReview}
           />
           <Redirect from="/" to={IngestOperations.INGEST_ACTIONS_ROUTE} />
         </Switch>
