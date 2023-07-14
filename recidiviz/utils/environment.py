@@ -45,6 +45,8 @@ GCP_ENVIRONMENTS = {env.value for env in GCPEnvironment}
 GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 
 RECIDIVIZ_ENV = "RECIDIVIZ_ENV"
+GOOGLE_CLOUD_PROJECT = "GOOGLE_CLOUD_PROJECT"
+
 
 # TODO(#21450) Rename to in_app_engine_env
 def in_gcp() -> bool:
@@ -76,6 +78,15 @@ def get_gcp_environment() -> Optional[str]:
         The gae instance we are running in, or None if it is not set
     """
     return os.getenv(RECIDIVIZ_ENV)
+
+
+def setup_environment(project: str) -> None:
+    """Configures the environment for runtimes that do not have access to the metadata server
+    This allows our in_gcp() / project_id() calls to function as expected
+    """
+    environment = get_environment_for_project(project)
+    os.environ[GOOGLE_CLOUD_PROJECT] = project
+    os.environ[RECIDIVIZ_ENV] = environment.value
 
 
 def get_project_for_environment(environment: GCPEnvironment) -> str:

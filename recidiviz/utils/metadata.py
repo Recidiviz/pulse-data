@@ -132,7 +132,7 @@ def project_id() -> str:
     application is running locally and falls back to the GOOGLE_CLOUD_PROJECT
     environment variable.
     """
-    return _get_metadata(_PROJECT_ID_URL) or os.getenv("GOOGLE_CLOUD_PROJECT")
+    return _get_metadata(_PROJECT_ID_URL) or os.getenv(environment.GOOGLE_CLOUD_PROJECT)
 
 
 def instance_id() -> Optional[str]:
