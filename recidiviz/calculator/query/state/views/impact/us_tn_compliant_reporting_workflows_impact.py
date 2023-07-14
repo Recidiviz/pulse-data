@@ -49,6 +49,7 @@ joined_query AS (
     -- join aggregated metrics with variant assignments
     SELECT
         state_code,
+        district AS supervision_district,
         district,
         district_name,
         variant_id,
@@ -82,6 +83,7 @@ US_TN_COMPLIANT_REPORTING_WORKFLOWS_IMPACT_VIEW_BUILDER = (
         view_query_template=_QUERY_TEMPLATE,
         columns=[
             "state_code",
+            "supervision_district",
             "district",
             "district_name",
             "variant_id",
