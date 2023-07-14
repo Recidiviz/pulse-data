@@ -30,6 +30,7 @@ from recidiviz.ingest.direct.dataset_config import (
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -51,13 +52,14 @@ from recidiviz.looker.lookml_view_field_parameter import (
 )
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.looker.parameterized_value import ParameterizedValue
+from recidiviz.utils.string import StrictStringFormatter
 
 RAW_DATA_OPTION = "raw_data"
 RAW_DATA_UP_TO_DATE_VIEWS_OPTION = "raw_data_up_to_date_views"
 SHARED_FIELDS_NAME = "state_raw_data_shared_fields"
 
 
-def generate_shared_fields_view() -> LookMLView:
+def _generate_shared_fields_view() -> LookMLView:
     """Produce state_raw_data_shared_fields.view.lkml,
     which contains configuration/dimensions shared among all raw data views
 
@@ -160,7 +162,110 @@ def generate_shared_fields_view() -> LookMLView:
     return view
 
 
-def generate_raw_file_view(
+def _get_dimensions_for_raw_file_view(
+    config: DirectIngestRawFileConfig, primary_key_sql: str
+) -> List[LookMLViewField]:
+    """
+    Returns a list of dimensions/dimension groups representing the columns
+    from the provided raw file config, including:
+    - One primary key dimension depending on the provided string
+    - One dimension per column of the table
+    - One additional dimension group for each datetime column, using the provided
+      SQL parsers to parse the provided string into a time
+    """
+
+    dimensions: List[LookMLViewField] = []
+
+    dimensions.append(
+        DimensionLookMLViewField(
+            field_name="primary_key",
+            parameters=[
+                LookMLFieldParameter.primary_key(True),
+                LookMLFieldParameter.hidden(True),
+                LookMLFieldParameter.type(LookMLFieldType.STRING),
+                LookMLFieldParameter.sql(primary_key_sql),
+            ],
+        )
+    )
+
+    # Add one dimension per column
+    for column in config.columns:
+        # Add an additional dimension group for datetime columns
+        if column.is_datetime:
+            dimensions.append(_get_datetime_dimension_group(column))
+
+        col_params = [
+            LookMLFieldParameter.label(_label_name_for_column(column)),
+            LookMLFieldParameter.type(LookMLFieldType.STRING),
+            LookMLFieldParameter.sql("${TABLE}." + column.name),
+        ]
+
+        if column.description:
+            col_params.append(LookMLFieldParameter.description(column.description))
+
+        if column.name in config.primary_key_cols:
+            col_params.append(LookMLFieldParameter.group_label("Primary Key"))
+
+        dimensions.append(
+            DimensionLookMLViewField(
+                field_name=_label_name_for_column(column),
+                parameters=col_params,
+            )
+        )
+
+    return dimensions
+
+
+def _label_name_for_column(column: RawTableColumnInfo) -> str:
+    """
+    Return the label to use for this column
+    """
+    return column.name if not column.is_datetime else f"{column.name}__raw"
+
+
+def _get_datetime_dimension_group(col: RawTableColumnInfo) -> LookMLViewField:
+    """
+    Given a RawTableColumnInfo with type datetime, create a dimension group
+    with information parsed from the column
+    """
+    # Parse the original column
+    # If there are no parsers, set to NULL
+    sql_text = "NULL"
+    if col.datetime_sql_parsers:
+        formatter = StrictStringFormatter()
+        parsers = [
+            formatter.format(parser, col_name="${TABLE}." + col.name)
+            for parser in col.datetime_sql_parsers
+        ]
+
+        # If there are multiple parsers, use COALESCE to fall back in order
+        sql_text = "COALESCE(" + ", ".join(parsers) + ")"
+
+    return DimensionGroupLookMLViewField(
+        field_name=col.name,
+        parameters=[
+            LookMLFieldParameter.description(
+                f"[DATE PARSED FROM {_label_name_for_column(col)}]{col.description or ''}"
+            ),
+            LookMLFieldParameter.type(LookMLFieldType.TIME),
+            LookMLFieldParameter.timeframes(
+                [
+                    LookMLTimeframesOption.RAW,
+                    LookMLTimeframesOption.TIME,
+                    LookMLTimeframesOption.DATE,
+                    LookMLTimeframesOption.WEEK,
+                    LookMLTimeframesOption.MONTH,
+                    LookMLTimeframesOption.QUARTER,
+                    LookMLTimeframesOption.YEAR,
+                ]
+            ),
+            LookMLFieldParameter.datatype(LookMLFieldDatatype.DATETIME),
+            LookMLFieldParameter.sql(sql_text),
+        ],
+    )
+
+
+def _generate_raw_file_view(
     state_code: StateCode, config: DirectIngestRawFileConfig
 ) -> LookMLView:
     """
@@ -197,45 +302,12 @@ def generate_raw_file_view(
 
     # Add a primary key dimension concatenating all the primary key columns with file id,
     # or all the columns if there aren't any primary key columns
-    cols_to_concat = config.primary_key_cols or config.columns
+    cols_to_concat = config.primary_key_cols or [col.name for col in config.columns]
     all_primary_keys = [FILE_ID_COL_NAME] + cols_to_concat
     primary_key_string = ", ".join([f"${{{col}}}" for col in all_primary_keys])
     primary_key_sql = f"CONCAT({primary_key_string})"
 
-    dimensions: List[LookMLViewField] = []
-
-    dimensions.append(
-        DimensionLookMLViewField(
-            field_name="primary_key",
-            parameters=[
-                LookMLFieldParameter.primary_key(True),
-                LookMLFieldParameter.hidden(True),
-                LookMLFieldParameter.type(LookMLFieldType.STRING),
-                LookMLFieldParameter.sql(primary_key_sql),
-            ],
-        )
-    )
-
-    # Add one dimension per column
-    for column in config.columns:
-        col_params = [
-            LookMLFieldParameter.label(column.name),
-            LookMLFieldParameter.type(LookMLFieldType.STRING),
-            LookMLFieldParameter.sql(f"${{TABLE}}.{column.name}"),
-        ]
-
-        if column.description:
-            col_params.append(LookMLFieldParameter.description(column.description))
-
-        if column.name in config.primary_key_cols:
-            col_params.append(LookMLFieldParameter.group_label("Primary Key"))
-
-        dimensions.append(
-            DimensionLookMLViewField(
-                field_name=column.name,
-                parameters=col_params,
-            )
-        )
+    dimensions = _get_dimensions_for_raw_file_view(config, primary_key_sql)
 
     view = LookMLView(
         view_name=config.file_tag,
@@ -248,7 +320,7 @@ def generate_raw_file_view(
     return view
 
 
-def generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
+def _generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
     """
     Return a dictionary mapping all of the StateCodes for states with raw data
     to a list of LookMLViews corresponding to every raw data file in that State
@@ -260,7 +332,7 @@ def generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
         for raw_file_config in region_config.raw_file_configs.values():
             if raw_file_config.columns:
                 views[state_code].append(
-                    generate_raw_file_view(state_code, raw_file_config)
+                    _generate_raw_file_view(state_code, raw_file_config)
                 )
     return views
 
@@ -272,10 +344,10 @@ def generate_lookml_views(looker_dir: str) -> None:
 
     view_dir = os.path.join(looker_dir, "views", "raw_data")
 
-    shared_fields_view = generate_shared_fields_view()
+    shared_fields_view = _generate_shared_fields_view()
     shared_fields_view.write(view_dir, source_script_path=__file__)
 
-    for state_code, raw_file_views in generate_state_raw_data_views().items():
+    for state_code, raw_file_views in _generate_state_raw_data_views().items():
         state_dir = os.path.join(view_dir, state_code.value.lower())
         for view in raw_file_views:
             view.write(state_dir, source_script_path=__file__)

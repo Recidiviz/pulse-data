@@ -201,6 +201,7 @@ class _RealStateCode(_SharedStateCode):
 
 TEST_STATE_CODE = "US_XX"
 TEST_STATE_CODE_DOCS = "US_WW"
+TEST_STATE_CODE_LOOKER = "US_LL"
 TEST_STATE_CODE_2 = "US_YY"
 
 """
@@ -254,6 +255,23 @@ TEST_STATE_INFO = {
             "fips": "88",
             "name": "Test State",
             "abbr": "WW",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": False,
+            "is_continental": True,
+            "statehood_year": 9999,
+            "capital": "Test",
+            "capital_tz": "America/Test",
+            "ap_abbr": "Test",
+            "time_zones": ["America/Test", "America/Test"],
+            "name_metaphone": "TEST",
+        }
+    ),
+    TEST_STATE_CODE_LOOKER: us.states.State(
+        **{
+            "fips": "81",
+            "name": "Test State",
+            "abbr": "LL",
             "is_territory": False,
             "is_obsolete": False,
             "is_contiguous": False,
@@ -335,6 +353,7 @@ class _FakeStateCode(_SharedStateCode):
     US_IX = "US_IX"  # US_ID
 
     # Test codes
+    US_LL = TEST_STATE_CODE_LOOKER
     US_WW = TEST_STATE_CODE_DOCS
     US_XX = TEST_STATE_CODE
     US_YY = TEST_STATE_CODE_2
@@ -429,6 +448,7 @@ if typing.TYPE_CHECKING:
         US_IX = "US_IX"  # US_ID
 
         # Test codes
+        US_LL = TEST_STATE_CODE_LOOKER
         US_WW = TEST_STATE_CODE_DOCS
         US_XX = TEST_STATE_CODE
         US_YY = TEST_STATE_CODE_2

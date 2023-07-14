@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: datetimeNoParsers
+file_description: |-
+  Testing datetime field with no datetime sql parsers defined
+data_classification: source
+primary_key_cols:
+  - COL1
+columns:
+  - name: COL1
+  - name: COL2
+    is_datetime: True
+custom_line_terminator: "\n"

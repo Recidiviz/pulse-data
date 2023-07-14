@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: columnsMissing
+file_description: |-
+  First raw file.
+data_classification: validation
+primary_key_cols: []
+columns: []
+separator: "$"
+custom_line_terminator: "\n"
