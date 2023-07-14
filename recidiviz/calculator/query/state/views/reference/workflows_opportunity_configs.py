@@ -151,6 +151,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         person_record_type=PersonRecordType.RESIDENT,
     ),
     WorkflowsOpportunityConfig(
+        state_code=StateCode.US_ME,
+        opportunity_type="usMeWorkRelease",
+        experiment_id="US_ME_WORK_RELEASE_WORKFLOWS",
+        opportunity_record_view_name="us_me_work_release_form_record_materialized",
+        task_completion_event=TaskCompletionEventType.GRANTED_WORK_RELEASE,
+        source_filename="us_me_work_release_form_record.json",
+        export_collection_name="US_ME-workReleaseReferrals",
+        opportunity_type_path_str="WorkRelease",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
         state_code=StateCode.US_MI,
         opportunity_type="usMiClassificationReview",
         experiment_id="US_MI_SUPERVISION_LEVEL_DOWNGRADE_WORKFLOWS",
