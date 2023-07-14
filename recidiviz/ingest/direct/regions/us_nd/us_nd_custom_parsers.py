@@ -145,6 +145,17 @@ def extract_is_violent_from_ncic_code(ncic_code: str) -> Optional[bool]:
     return ncic.get_is_violent(ncic_code)
 
 
+def extract_is_drug_from_ncic_code(ncic_code: str) -> Optional[bool]:
+    return ncic.get_is_drug(ncic_code)
+
+
+def normalize_ncic_code(ncic_code: str) -> Optional[str]:
+    code = ncic.get(ncic_code)
+    if code:
+        return code.ncic_code
+    return None
+
+
 _JUDICIAL_DISTRICT_CODE_MAPPINGS = {
     # ND Jurisdictions
     "SE": "SOUTHEAST",

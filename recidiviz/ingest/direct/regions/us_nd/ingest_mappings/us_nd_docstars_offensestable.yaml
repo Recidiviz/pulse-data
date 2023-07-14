@@ -58,7 +58,11 @@ output:
                     $function: us_nd_custom_parsers.classification_subtype_from_raw_text
                     $args:
                       raw_charge_text: LEVEL
-                ncic_code: ncic_code
+                ncic_code:
+                  $custom:
+                    $function: us_nd_custom_parsers.normalize_ncic_code
+                    $args:
+                      ncic_code: ncic_code
                 description:
                   $custom:
                     $function: us_nd_custom_parsers.extract_description_from_ncic_code
@@ -67,6 +71,11 @@ output:
                 is_violent:
                   $custom:
                     $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
+                    $args:
+                      ncic_code: ncic_code
+                is_drug:
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_is_drug_from_ncic_code
                     $args:
                       ncic_code: ncic_code
                 county_code:
