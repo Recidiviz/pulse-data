@@ -26,7 +26,20 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
-    WITH all_periods as (
+    WITH 
+    ref_Employee_latest as (
+        SELECT *
+        FROM (
+            SELECT 
+                EmployeeId,
+                FirstName,
+                LastName,
+                ROW_NUMBER() OVER(PARTITION BY EmployeeId ORDER BY update_datetime DESC) as rn
+            FROM {{ref_Employee@ALL}}
+        ) all_rows
+        WHERE rn = 1
+    ),
+    all_periods as (
         SELECT
             EmployeeId,
             EmployeeTypeName,
@@ -58,12 +71,15 @@ VIEW_QUERY_TEMPLATE = f"""
     )
     SELECT
         EmployeeId,
+        FirstName,
+        LastName,
         UPPER(EmployeeTypeName) as EmployeeTypeName,
         LocationId,
         start_date,
         end_date,
         row_number() OVER(partition by EmployeeId order by start_date, end_date nulls last) as period_id
     FROM final_periods
+    LEFT JOIN ref_Employee_latest ref USING(EmployeeId)
     -- For now, narrow down to just supervision officers since that's our only current use case for StateStaff
     WHERE 
         InActive <> '1'

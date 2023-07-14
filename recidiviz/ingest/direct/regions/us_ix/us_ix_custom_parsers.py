@@ -72,6 +72,54 @@ def parse_is_life_from_date(proj_completion_date: str) -> bool:
     return proj_completion_date[:4] == "9999"
 
 
+def parse_is_combined_caseload(first_name: str, last_name: str) -> bool:
+    """
+    takes in first name and last name and returns true if it's a name used to denote a combined caseload
+    """
+    if first_name.lower() in [
+        "court",
+        "bench",
+        "re",
+        "cmbnd",
+        "combined",
+        "caseload",
+        "drug",
+        "limited",
+        "dosage",
+        "level1",
+        "level",
+        "prob",
+        "commission",
+    ]:
+        return True
+    if last_name.lower() in [
+        "d1",
+        "done",
+        "dthree",
+        "dtwo",
+        "dtwomoscow",
+        "d2",
+        "d3",
+        "d4",
+        "dseven",
+        "d7",
+        "dfour",
+        "colimsup",
+        "dfive",
+        "dfiveburley",
+        "dfivejerome",
+        "d5",
+        "dseven",
+        "misd",
+        "dsix",
+        "parole",
+        "misdemeanor",
+    ]:
+        return True
+
+    return False
+
+
 def max_and_min_lengths_days(
     years_str: str,
     months_str: str,
