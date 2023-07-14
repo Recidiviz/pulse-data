@@ -227,9 +227,26 @@ class DirectIngestRawFileConfig:
     def __attrs_post_init__(self) -> None:
         self._validate_primary_keys()
 
+        column_names = [column.name for column in self.columns]
+        if len(column_names) != len(set(column_names)):
+            raise ValueError(f"Found duplicate columns in raw_file [{self.file_tag}]")
+
+        missing_columns = set(self.primary_key_cols) - {
+            column.name for column in self.columns
+        }
+        if missing_columns:
+            raise ValueError(
+                f"Column(s) marked as primary keys not listed in"
+                f" columns list for file [{self.file_tag}]: {missing_columns}"
+            )
+
     def _validate_primary_keys(self) -> None:
-        """Validate that primary key configuration is correct."""
-        if not self.has_valid_primary_key_configuration:
+        """Confirm that the primary key configuration is valid for this config. If this
+        check passes, it does NOT mean that the table is sufficently documented for use
+        in an ingest view. To determine if this is a valid ingest view dependency, see
+        is_undocumented().
+        """
+        if self.no_valid_primary_keys and self.primary_key_cols:
             raise ValueError(
                 f"Incorrect primary key setup found for file_tag={self.file_tag}: "
                 f"`no_valid_primary_keys`={self.no_valid_primary_keys} and `primary_key_cols` is not empty: "
@@ -289,15 +306,6 @@ class DirectIngestRawFileConfig:
         return bool([column.name for column in self.columns if column.is_enum])
 
     @property
-    def has_valid_primary_key_configuration(self) -> bool:
-        """Confirm that the primary key configuration is allowed for any config
-        committed to our codebase. If this returns true, it does NOT mean that the
-        table is sufficently documented for use in an ingest view. To determine if this
-        is a valid ingest view dependency, see is_undocumented().
-        """
-        return not self.no_valid_primary_keys or len(self.primary_key_cols) == 0
-
-    @property
     def is_undocumented(self) -> bool:
         """Returns true if the raw file config provides enough information for this
         table to be used in ingest views or *latest views.
@@ -340,7 +348,6 @@ class DirectIngestRawFileConfig:
         default_no_valid_primary_keys: bool,
         default_infer_columns_from_config: Optional[bool],
         file_config_dict: YAMLDict,
-        yaml_filename: str,
     ) -> "DirectIngestRawFileConfig":
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
         primary_key_cols = file_config_dict.pop("primary_key_cols", list)
@@ -385,19 +392,6 @@ class DirectIngestRawFileConfig:
                     f"[{column_name}] in [{file_tag}]: {repr(column.get())}"
                 )
 
-        column_names = [column.name for column in column_infos]
-        if len(column_names) != len(set(column_names)):
-            raise ValueError(f"Found duplicate columns in raw_file [{file_tag}]")
-
-        missing_columns = set(primary_key_cols) - {
-            column.name for column in column_infos
-        }
-        if missing_columns:
-            raise ValueError(
-                f"Column(s) marked as primary keys not listed in"
-                f" columns list for file [{yaml_filename}]: {missing_columns}"
-            )
-
         supplemental_order_by_clause = file_config_dict.pop_optional(
             "supplemental_order_by_clause", str
         )
@@ -433,9 +427,7 @@ class DirectIngestRawFileConfig:
             data_classification=RawDataClassification(data_class),
             primary_key_cols=primary_key_cols,
             columns=column_infos,
-            supplemental_order_by_clause=supplemental_order_by_clause
-            if supplemental_order_by_clause is not None
-            else "",
+            supplemental_order_by_clause=supplemental_order_by_clause or "",
             encoding=encoding if encoding is not None else default_encoding,
             separator=separator if separator is not None else default_separator,
             custom_line_terminator=custom_line_terminator
@@ -583,7 +575,6 @@ class DirectIngestRegionRawFileConfig:
                 default_config.default_no_valid_primary_keys,
                 default_config.default_infer_columns_from_config,
                 yaml_contents,
-                filename,
             )
 
         return raw_data_configs

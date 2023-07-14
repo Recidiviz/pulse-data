@@ -195,7 +195,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
     def test_build_primary_keys_nonempty_no_throw(self) -> None:
         raw_file_config = attr.evolve(
             self.raw_file_config,
-            primary_key_cols=["primary_key"],
+            primary_key_cols=["col1"],
             no_valid_primary_keys=False,
         )
 
@@ -253,6 +253,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             self.raw_file_config,
             always_historical_export=True,
             columns=[],
+            primary_key_cols=[],
         )
         with self.assertRaisesRegex(
             ValueError,
