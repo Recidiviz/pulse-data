@@ -39,6 +39,7 @@ from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprin
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
+from recidiviz.utils import structured_logging
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     get_gcp_environment,
@@ -80,6 +81,8 @@ def create_app(config: Optional[Config] = None) -> Flask:
         set_development_project_id_override(GCP_PROJECT_STAGING)
 
     if in_gcp():
+        structured_logging.setup()
+
         # pylint: disable=abstract-class-instantiated
         sentry_sdk.init(
             # not a secret!
