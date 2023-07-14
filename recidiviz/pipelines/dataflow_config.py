@@ -87,6 +87,12 @@ ALWAYS_UNBOUNDED_DATE_METRICS: List[RecidivizMetricType] = [
 MAX_DAYS_IN_DATAFLOW_METRICS_TABLE: int = 2
 
 # Where the metrics from outdated Dataflow jobs are stored
+# DO NOT CHANGE THE CONTENTS OF THIS STRING WITHOUT CONSULTING WITH OTHERS FIRST.
+# The datasets with this name have a particular BigQuery billing method assigned,
+# physical billing instead of logical, owing to the fact that these datasets
+# compress extremely well. It saves significant money for those datasets to be
+# billed physically, but renaming this string would essentially lead to the
+# datasets being rebuilt elsewhere and the default logical billing would return.
 DATAFLOW_METRICS_COLD_STORAGE_DATASET: str = "dataflow_metrics_cold_storage"
 
 
