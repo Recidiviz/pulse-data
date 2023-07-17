@@ -120,6 +120,10 @@ _CLIENT_RECORD_SUPERVISION_LEVEL_CTE = f"""
             UNNEST(session_attributes) as session_attributes
         WHERE sl.state_code IN ({{workflows_supervision_states}})
         AND sl.end_date IS NULL
+        # This row partitions by person_id and supervision start_date to account for when we see multiple 
+        # supervision_level_raw_text values in dataflow_sessions for the most_recent_active supervision level in 
+        # supervision level sessions, and prioritizes the DIVERSION value 
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY dataflow.person_id, dataflow.start_date ORDER BY session_attributes.correctional_level = 'DIVERSION' DESC)=1
     ),
     """
 
