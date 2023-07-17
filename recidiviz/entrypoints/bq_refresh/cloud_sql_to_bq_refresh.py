@@ -18,8 +18,6 @@
 to be called only within the Airflow DAG's KubernetesPodOperator."""
 import argparse
 import logging
-import sys
-from typing import List, Tuple
 
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
@@ -28,7 +26,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control i
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments() -> argparse.Namespace:
     """Parses arguments for the Cloud SQL to BQ refresh process."""
     parser = argparse.ArgumentParser()
 
@@ -52,17 +50,15 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         type=str,
     )
 
-    return parser.parse_known_args(argv)
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
 
-    known_args, _ = parse_arguments(sys.argv)
+    args = parse_arguments()
 
     execute_cloud_sql_to_bq_refresh(
-        known_args.schema_type,
-        known_args.ingest_instance,
-        known_args.sandbox_prefix,
+        args.schema_type, args.ingest_instance, args.sandbox_prefix
     )

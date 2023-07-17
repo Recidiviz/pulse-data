@@ -18,15 +18,13 @@
 within the Airflow DAG's KubernetesPodOperator."""
 import argparse
 import logging
-import sys
-from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.validation.validation_manager import execute_validation_request
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments() -> argparse.Namespace:
     """Parse arguments for the validation script."""
     parser = argparse.ArgumentParser()
 
@@ -50,12 +48,12 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         type=str,
     )
 
-    return parser.parse_known_args(argv)
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    args, unknown_args = parse_arguments(sys.argv[1:])
+    args = parse_arguments()
 
     execute_validation_request(
         state_code=args.state_code,

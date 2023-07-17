@@ -18,14 +18,12 @@
 KubernetesPodOperator."""
 import argparse
 import logging
-import sys
-from typing import List, Tuple
 
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
 from recidiviz.utils.metadata import project_id
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments() -> argparse.Namespace:
     """Parses arguments for the managed views update process."""
     parser = argparse.ArgumentParser()
 
@@ -35,13 +33,13 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         type=str,
     )
 
-    return parser.parse_known_args(argv)
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
 
-    known_args, _ = parse_arguments(sys.argv)
+    args = parse_arguments()
 
-    execute_update_all_managed_views(project_id(), known_args.sandbox_prefix)
+    execute_update_all_managed_views(project_id(), args.sandbox_prefix)
