@@ -300,7 +300,7 @@ def compartment_level_1_super_sessions_without_me_sccp() -> str:
             state_code, 
             person_id,
             start_date, 
-            end_date,
+            end_date_exclusive AS end_date,
             compartment_level_1,
             compartment_level_2,
             FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`

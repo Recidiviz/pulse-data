@@ -88,7 +88,6 @@ WITH me_quarterly_ratio_with_future_projection AS (
     WHERE state_code = 'US_ME'
 ),
 
-
 term_with_caseload AS (
 -- Combine case load with term data
     SELECT 
@@ -109,33 +108,34 @@ term_with_caseload AS (
                                                                     CURRENT_DATE('US/Eastern'))
         AND cl.start_quarter < {nonnull_end_date_clause('tc.end_date')}
 ),
+
 term_crit_date AS (
 -- Calculate the critical date as a function of the statewide case load
     SELECT 
         * EXCEPT(case_load, release_date),
-        IF(start_date < '2021-10-18',
-        -- Pre-reform: 18 months if caseload is more than 90, 24 months otherwise        
-            DATE_SUB(release_date, INTERVAL IF(case_load > 90, 18, 24) MONTH),
-        -- Post-reform: 24 months if caseload is more than 90, 30 months otherwise
-            DATE_SUB(release_date, INTERVAL IF(case_load > 90, 24, 30) MONTH))
-        AS critical_date,
-        IF(case_load > 90, 24, 30) AS months_remaining_based_on_caseload
-    FROM term_with_caseload
+        -- Folks can start their paperwork 3 months before their eligibility date,
+        -- so we save the actual eligibility date, but let the critical_date be 
+        -- the eligibility date - 3 months
+        DATE_SUB(release_date, 
+                    INTERVAL months_remaining_based_on_caseload MONTH) AS real_eligible_date,
+        DATE_SUB(release_date, 
+                    INTERVAL (months_remaining_based_on_caseload+3) MONTH) AS critical_date,
+    FROM (
+            SELECT 
+                *,
+                IF(start_date < '2021-10-18', 
+                -- Pre-reform: 18 months if caseload is more than 90, 24 months otherwise  
+                    IF(case_load > 90, 18, 24), 
+                -- Post-reform: 24 months if caseload is more than 90, 30 months otherwise
+                    IF(case_load > 90, 24, 30)) AS months_remaining_based_on_caseload
+            FROM term_with_caseload
+    )
+    WHERE start_date != {nonnull_end_date_clause('end_date')}
+    
 ),
 
-term_crit_date_plus_real AS(
-    -- Folks can start their paperwork 3 months before their eligibility date,
-    -- so we save the actual eligibility date, but let the critical_date be 
-    -- the eligibility date - 3 months
-    SELECT
-        * EXCEPT (critical_date),
-        critical_date AS real_eligible_date,
-        DATE_SUB(critical_date, INTERVAL 3 MONTH) AS critical_date,
-    FROM term_crit_date
-    WHERE start_date != {nonnull_end_date_clause('end_date')}
-),
 -- Create sub-sessions w/attributes
-{create_sub_sessions_with_attributes('term_crit_date_plus_real')},
+{create_sub_sessions_with_attributes('term_crit_date')},
 
 critical_date_spans AS (
     -- Drop additional repeated subsessions: if concurrent keep the longest one, drop
@@ -143,41 +143,23 @@ critical_date_spans AS (
     {cis_319_after_csswa()}
 ),
 
-save_real_eligible_date AS (
-    -- Save real_eligible_date and months_remaining_based_on_caseload  so we could 
-    --  pass it through the JSON blob later
-    SELECT
-        DISTINCT person_id, state_code, critical_date, real_eligible_date, 
-            months_remaining_based_on_caseload
-    FROM critical_date_spans
-),
-
 -- Critical date has passed
-{critical_date_has_passed_spans_cte()}
+{critical_date_has_passed_spans_cte(attributes = ['real_eligible_date', 
+                                                  'months_remaining_based_on_caseload'])}
 SELECT
-    cd.state_code,
-    cd.person_id,
-    CASE
-        WHEN (start_date IS NULL) AND (critical_date_has_passed) THEN cd.critical_date
-                                -- When there was no intake date in us_me_sentence_term,
-                                -- start_date of our subsession is NULL for the
-                                -- period for which the criteria is met. But
-                                -- we know the end date and we can calculate the
-                                -- start_date (eligible_date)
-        ELSE start_date
-    END start_date,
-        -- if the most recent subsession is True, then end_date should be NULL
-    IF((ROW_NUMBER() OVER (PARTITION BY cd.person_id, cd.state_code
+    state_code,
+    person_id,
+    start_date,
+    -- if in the most recent subsession meets_criteria = True, then end_date should be NULL
+    IF((ROW_NUMBER() OVER (PARTITION BY person_id, state_code
                            ORDER BY start_date DESC) =  1)
             AND (critical_date_has_passed),
         NULL,
         end_date) AS end_date,
     critical_date_has_passed AS meets_criteria,
-    TO_JSON(STRUCT(xps.real_eligible_date AS eligible_date,
-                   xps.months_remaining_based_on_caseload AS months_remaining_based_on_caseload)) AS reason,
-FROM critical_date_has_passed_spans cd
-LEFT JOIN save_real_eligible_date xps
-    USING (person_id, state_code, critical_date)
+    TO_JSON(STRUCT(real_eligible_date AS eligible_date,
+                   months_remaining_based_on_caseload AS months_remaining_based_on_caseload)) AS reason,
+FROM critical_date_has_passed_spans
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
