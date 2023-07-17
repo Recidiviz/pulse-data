@@ -341,6 +341,67 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     "MONTHS_WITH_CURRENT_EMPLOYER" as milestone_type,
                     4 AS milestone_priority
                 FROM time_with_employer
+
+            UNION ALL
+                SELECT
+                    state_code,
+                    person_id,
+                    "Six months without a violation" as milestone_text,
+                    "NO_VIOLATION_WITHIN_6_MONTHS" as milestone_type,
+                    1 AS milestone_priority
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_6_to_8_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+
+            UNION ALL
+                SELECT
+                    state_code,
+                    person_id,
+                    "Twelve months without a violation" as milestone_text,
+                    "NO_VIOLATION_WITHIN_12_MONTHS" as milestone_type,
+                    1 AS milestone_priority
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_12_to_14_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+
+            UNION ALL
+                SELECT
+                    state_code,
+                    person_id,
+                    "Found sustainable housing" as milestone_text,
+                    "HOUSING_TYPE_IS_NOT_TRANSIENT" as milestone_type,
+                    2 AS milestone_priority
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_0_to_2_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+
+            UNION ALL
+                SELECT
+                    state_code,
+                    person_id,
+                    "Six months of sustainable housing" as milestone_text,
+                    "SUSTAINABLE_HOUSING_6_MONTHS" as milestone_type,
+                    2 AS milestone_priority
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_6_to_8_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+
+            UNION ALL
+                SELECT
+                    state_code,
+                    person_id,
+                    "Twelve months of sustainable housing" as milestone_text,
+                    "SUSTAINABLE_HOUSING_12_MONTHS" as milestone_type,
+                    2 AS milestone_priority
+                FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_12_to_14_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+
         )
         WHERE state_code in ({{workflows_milestones_states}})
         AND milestone_text IS NOT NULL
