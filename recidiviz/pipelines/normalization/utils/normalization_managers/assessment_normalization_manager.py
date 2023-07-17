@@ -271,5 +271,4 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
         # TODO(#20552): delete this method once StateStaff is fully ingested for all states
         return state_code not in {
             StateCode.US_MI,
-            StateCode.US_TN,
         }
