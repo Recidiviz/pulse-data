@@ -49,8 +49,8 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_DESCRIPTION = """
 
 US_MO_CDV_MINOR_NUM_MONTHS_TO_DISPLAY = "6"
 US_MO_CDV_MAJOR_NUM_MONTHS_TO_DISPLAY = "12"
-US_MO_CLASSES_RECENT_NUM_MONTHS_TO_DISPLAY = "12"
 US_MO_UPCOMING_HEARING_NUM_DAYS = 7
+US_MO_NUM_CLASSES_TO_DISPLAY = 10
 
 US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     WITH base_query AS (
@@ -249,25 +249,29 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             CLASS_TITLE as class_title,
             CLASS_EXIT_REASON_DESC as class_exit_reason,
         FROM classes c
+        -- EXIT_TYPE_CD and CLASS_EXIT_REASON_DESC together describe the reason someone stopped taking a class.
+        -- Each description (CLASS_EXIT_REASON_DESC) is under the umbrella of a more general EXIT_TYPE_CD category:
+        -- "UNS": Unsuccessful, "SFL": Successful, and "NOF": (Unsuccessful) No-fault exit
+        -- Here we omit Unsuccessful classes so as only to surface classes that were either completed or were not
+        -- completed, but through no fault of the person taking them.
+        WHERE COALESCE(EXIT_TYPE_CD, '') != 'UNS'
     )
     ,
     classes_by_person_recent AS (
         SELECT
             external_id,
-            ARRAY_AGG(STRUCT(start_date, end_date, class_title, class_exit_reason) ORDER BY start_date DESC) AS classes
+            ARRAY_AGG(
+                STRUCT(
+                    start_date, 
+                    end_date, 
+                    class_title, 
+                    class_exit_reason
+                ) 
+                ORDER BY start_date DESC
+                LIMIT {US_MO_NUM_CLASSES_TO_DISPLAY}
+            ) AS classes
         FROM classes_with_date
-        WHERE
-            start_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {US_MO_CLASSES_RECENT_NUM_MONTHS_TO_DISPLAY} MONTH)
-        GROUP BY 1
-    )
-    ,
-    classes_by_person_other AS (
-        SELECT
-            external_id,
-            ARRAY_AGG(STRUCT(start_date, end_date, class_title, class_exit_reason) ORDER BY start_date DESC) AS classes
-        FROM classes_with_date
-        WHERE
-            start_date < DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {US_MO_CLASSES_RECENT_NUM_MONTHS_TO_DISPLAY} MONTH)
+        WHERE start_date IS NOT NULL
         GROUP BY 1
     )
     ,
@@ -364,7 +368,6 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             IFNULL(ARRAY_LENGTH(cdv_minors_recent.cdvs), 0) AS metadata_num_minor_cdvs_before_last_hearing,
             mental_health_latest.mental_health_assessment_score AS metadata_mental_health_assessment_score,
             TO_JSON(IFNULL(classes_by_person_recent.classes, [])) AS metadata_classes_recent,
-            TO_JSON(IFNULL(classes_by_person_other.classes, [])) AS metadata_classes_other,
             aic_scores_latest.aic_score as metadata_aic_score,
             TO_JSON(IFNULL(unwaived_enemies_by_person.unwaived_enemies, [])) AS metadata_unwaived_enemies,
         FROM eligible_and_almost_eligible base
@@ -385,8 +388,6 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
         LEFT JOIN mental_health_latest
         USING (person_id)
         LEFT JOIN classes_by_person_recent
-        USING (external_id)
-        LEFT JOIN classes_by_person_other
         USING (external_id)
         LEFT JOIN aic_scores_latest
         USING (external_id)
