@@ -37,6 +37,9 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_spans_state_specific_dataset,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -153,6 +156,9 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     dataflow_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    us_ca_task_eligibility_spans_dataset=task_eligibility_spans_state_specific_dataset(
+        StateCode.US_CA
+    ),
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
