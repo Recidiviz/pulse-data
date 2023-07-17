@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Configures gunicorn"""
-import multiprocessing
 
 # https://docs.gunicorn.org/en/stable/design.html#choosing-a-worker-type
 # http://docs.gunicorn.org/en/stable/design.html#how-many-workers
@@ -24,8 +23,8 @@ import multiprocessing
 #    is low enough that the risks out weight the benefits
 # 2) We want to use Sentry to profile the API and profiling breaks with greenlets
 #    (https://greenlet.readthedocs.io/en/latest/tracing.html)
-# Using the recommended (2 x $num_cores) + 1 number of workers
-workers = 2 * multiprocessing.cpu_count() + 1
+# Using 2 workers to minimize number of different connection pools and reduce memory usage
+workers = 2
 timeout = 3600  # 60 min timeout
 loglevel = "debug"
 accesslog = "gunicorn-access.log"
