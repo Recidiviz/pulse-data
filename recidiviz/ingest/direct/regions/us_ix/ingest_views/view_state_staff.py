@@ -80,7 +80,9 @@ unioned as (
                 END AS LastName,
             empl_stat
         FROM {employee}
-    ) subquery)
+    ) subquery
+    -- only pull active employees
+    WHERE empl_stat = 'A')
 ),
 -- It possible for a single StaffId to be associated with different name information 
 -- (since we're pulling from two different sources and StaffId is not the PK)
