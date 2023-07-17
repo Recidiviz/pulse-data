@@ -31,6 +31,25 @@ from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import 
 )
 
 _CLIENT_RECORD_SUPERVISION_CTE = f"""
+    ca_person_parole_imputed_badges AS (
+        SELECT
+            OffenderId, 
+            COALESCE(pp.BadgeNumber, ap.BadgeNumber) as BadgeNumber
+        FROM `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest` pp
+        LEFT JOIN (
+            SELECT
+                ParoleRegion,
+                ParoleDistrict,
+                ParoleUnit,
+                -- Change delimiter, trim middle initial
+                REGEXP_REPLACE(REPLACE(ParoleAgentName,'|', ','), ' [A-Z]$', '') as ParoleAgentName,
+                MIN(BadgeNumber) as BadgeNumber
+            FROM `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.AgentParole_latest`
+            WHERE BadgeNumber is not null
+            GROUP BY ParoleRegion, ParoleDistrict, ParoleUnit, ParoleAgentName
+        ) ap USING(ParoleRegion, ParoleDistrict, ParoleUnit, ParoleAgentName)
+    ),
+
     supervision_cases AS (
         SELECT
           sessions.person_id,
@@ -70,10 +89,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         ) active_officer
             ON sessions.state_code = active_officer.state_code
             AND sessions.person_id = active_officer.person_id
-        LEFT JOIN (
-            SELECT * FROM `{{project_id}}.{{us_ca_raw_data_dataset}}.PersonParole`
-              WHERE update_datetime = '2023-05-10T00:00:00'
-        ) ca_pp
+        LEFT JOIN ca_person_parole_imputed_badges ca_pp
             ON pei.person_external_id = ca_pp.OffenderId
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
