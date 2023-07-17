@@ -52,7 +52,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#20471) - Really low error rate so just bumping threshold for now
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 28000
+    hard_num_allowed_rows_override: 28500
     override_reason:
       TODO(#20472) - Half of the issue is coming from ingested charges that aren't attached to an ingested sentence (20472 is the ticket to fix).
       The other half of the issue is from ingested early discharges that are attached to dummy sentences since we don't have sentence info.
