@@ -498,6 +498,5 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         return state_code not in {
             StateCode.US_IX,
             StateCode.US_MI,
-            StateCode.US_TN,
             StateCode.US_MO,
         }
