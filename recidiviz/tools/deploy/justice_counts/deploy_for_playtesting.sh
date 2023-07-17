@@ -19,6 +19,9 @@ BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 source "${BASH_SOURCE_DIR}/../../script_base.sh"
 
 PROJECT_ID='recidiviz-staging'
+# The GCP project where the Cloud Run app lives might be different
+# from the one where the other infra lives
+CLOUD_RUN_PROJECT_ID=''
 BACKEND_BRANCH=''
 FRONTEND_BRANCH=''
 FRONTEND_APP=''
@@ -71,9 +74,11 @@ if [[ -z ${URL_TAG} ]]; then
 fi
 
 if [[ ${FRONTEND_APP} == 'publisher' ]]; then
+    CLOUD_RUN_PROJECT_ID='recidiviz-staging'
     CLOUD_RUN_SERVICE="justice-counts-web"
 elif [[ ${FRONTEND_APP} == 'agency-dashboard' ]]; then
-    CLOUD_RUN_SERVICE="justice-counts-agency-dashboard-web"
+    CLOUD_RUN_PROJECT_ID='justice-counts-staging'
+    CLOUD_RUN_SERVICE="agency-dashboard-web"
 else
     echo_error "Invalid frontend application - must be either publisher or agency-dashboard"
     run_cmd exit 1
@@ -98,7 +103,7 @@ REMOTE_IMAGE_URL=${REMOTE_IMAGE_BASE}:${RECIDIVIZ_DATA_COMMIT_HASH}
 
 echo "Deploying new Cloud Run revision with image ${REMOTE_IMAGE_URL} to playtesting URL..."
 run_cmd gcloud -q run deploy "${CLOUD_RUN_SERVICE}" \
-    --project "${PROJECT_ID}" \
+    --project "${CLOUD_RUN_PROJECT_ID}" \
     --image "${REMOTE_IMAGE_URL}" \
     --region "us-central1" \
     --tag "${URL_TAG}" \
