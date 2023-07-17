@@ -50,8 +50,11 @@ resource "google_bigquery_dataset" "oncall_logs_dataset" {
   labels     = {}
 
   access {
-    role          = "OWNER"
-    user_by_email = google_logging_project_sink.oncall-logs-sink.writer_identity
+    role = "OWNER"
+    user_by_email = trimprefix(
+      google_logging_project_sink.oncall-logs-sink.writer_identity,
+      "serviceAccount:"
+    )
   }
 
   access {
