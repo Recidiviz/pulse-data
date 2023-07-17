@@ -16,8 +16,9 @@
 #  =============================================================================
 """Delegate class to ETL client records for Workflows into Firestore."""
 import json
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
+from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.str_field_utils import person_name_case, snake_to_camel
 from recidiviz.workflows.etl.state_specific_etl_transformations import (
     state_specific_client_address_transformation,
@@ -36,87 +37,37 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
 
     def transform_row(self, row: str) -> Tuple[str, dict]:
         data = json.loads(row)
+        new_document: dict[str, Any] = {}
 
-        # First fill the non-nullable fields
-        new_document = {
-            "pseudonymizedId": data["pseudonymized_id"],
-            "personExternalId": data["person_external_id"],
-            "stateCode": data["state_code"],
-            "personName": {
-                snake_to_camel(k): person_name_case(v)
-                for k, v in json.loads(data["person_name"]).items()
-            },
-            "officerId": data["officer_id"],
-            "supervisionType": state_specific_supervision_type_transformation(
-                data["state_code"], data["supervision_type"]
-            ),
-        }
+        # TODO(#22265): remove "_new" logic
+        state_code = data.get("state_code") or data.get("state_code_new")
+        is_new_tn_client = "person_external_id" not in data
 
-        # add nullable fields
-        if "supervision_level" in data:
-            new_document["supervisionLevel"] = data["supervision_level"]
+        for key, value in data.items():
+            if key.endswith("_new"):
+                if not is_new_tn_client:
+                    # we're completely ignoring the _new fields for everyone except TN clients that
+                    # weren't previously appearing because they weren't in the standards sheet
+                    continue
+                key = key.removesuffix("_new")
 
-        # Note that date fields such as these are preserved as ISO strings (i.e., "YYYY-MM-DD")
-        # rather than datetimes to avoid time-zone discrepancies
-        if "supervision_level_start" in data:
-            new_document["supervisionLevelStart"] = data["supervision_level_start"]
-
-        if "address" in data:
-            new_document["address"] = state_specific_client_address_transformation(
-                data["state_code"], data["address"]
+            new_document[key] = (
+                {
+                    snake_to_camel(k): person_name_case(v)
+                    for k, v in json.loads(value).items()
+                }
+                if key == "person_name"
+                else state_specific_supervision_type_transformation(state_code, value)
+                if key == "supervision_type"
+                else state_specific_client_address_transformation(state_code, value)
+                if key == "address"
+                else value
             )
 
-        if "phone_number" in data:
-            new_document["phoneNumber"] = data["phone_number"]
+        # Convert all keys to camelcase
+        new_document = convert_nested_dictionary_keys(new_document, snake_to_camel)
 
-        if "supervision_start_date" in data:
-            new_document["supervisionStartDate"] = data["supervision_start_date"]
-
-        if "expiration_date" in data:
-            new_document["expirationDate"] = data["expiration_date"]
-
-        if "current_balance" in data:
-            new_document["currentBalance"] = data["current_balance"]
-
-        if "last_payment_amount" in data:
-            new_document["lastPaymentAmount"] = data["last_payment_amount"]
-
-        if "last_payment_date" in data:
-            new_document["lastPaymentDate"] = data["last_payment_date"]
-
-        if "special_conditions" in data:
-            new_document["specialConditions"] = data["special_conditions"]
-
-        if "board_conditions" in data and data["board_conditions"]:
-            new_document["boardConditions"] = [
-                {
-                    "condition": condition["condition"],
-                    "conditionDescription": condition["condition_description"],
-                }
-                for condition in data["board_conditions"]
-            ]
-        if "district" in data:
-            new_document["district"] = data["district"]
-
-        if "all_eligible_opportunities" in data:
-            new_document["allEligibleOpportunities"] = data[
-                "all_eligible_opportunities"
-            ]
-
-        if "milestones" in data:
-            new_document["milestones"] = data["milestones"]
-
-        if "email_address" in data:
-            new_document["emailAddress"] = data["email_address"]
-
-        if "current_employers" in data:
-            new_document["currentEmployers"] = [
-                {
-                    "name": employer.get("name"),
-                    "address": employer.get("address"),
-                    "startDate": employer.get("start_date"),
-                }
-                for employer in data["current_employers"]
-            ]
-
-        return data["person_external_id"], new_document
+        return (
+            data.get("person_external_id") or data.get("person_external_id_new"),
+            new_document,
+        )
