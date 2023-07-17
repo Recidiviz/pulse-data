@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Justice Counts Control Panel backend API."""
+import json
 import logging
 import os
 import re
@@ -26,6 +27,7 @@ from flask import Blueprint, Response, jsonify, make_response, request, send_fil
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from google.auth.transport import requests
+from google.cloud import storage
 from google.oauth2 import id_token
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
@@ -53,7 +55,10 @@ from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_BUCKET_REGEX
+from recidiviz.justice_counts.utils.constants import (
+    AUTOMATIC_UPLOAD_BUCKET_REGEX,
+    ERRORS_WARNINGS_JSON_BUCKET,
+)
 from recidiviz.justice_counts.utils.datapoint_utils import filter_deprecated_datapoints
 from recidiviz.justice_counts.utils.email import send_confirmation_email
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -1456,6 +1461,39 @@ def get_api_blueprint(
                 user=user,
             ).pop()
         )
+
+    @api_blueprint.route("/<spreadsheet_id>/bulk-upload-json", methods=["GET"])
+    @auth_decorator
+    def get_bulk_upload_json(spreadsheet_id: str) -> Response:
+        """For a given uploaded spreadsheet, get the saved json
+        that is stored in GCP bucket. The json contains both errors/warnings
+        data as well as review data.
+        """
+        try:
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+            spreadsheet = SpreadsheetInterface.get_spreadsheet_by_id(
+                session=current_session, spreadsheet_id=int(spreadsheet_id)
+            )
+            agency_id = spreadsheet.agency_id
+            raise_if_user_is_not_in_agency(user=user, agency_id=int(agency_id))
+
+            json_location = spreadsheet.standardized_name.replace("xlsx", "json")
+
+            # Download Errors/Warnings json from GCP
+            # Source: https://cloud.google.com/python/docs/reference/storage/latest/google.cloud.storage.blob.Blob#google_cloud_storage_blob_Blob_download_as_bytes
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET)
+            blob = bucket.blob(json_location)
+            content_bytes = blob.download_as_bytes()
+            contents = json.loads(content_bytes)
+
+            return jsonify(contents)
+        except Exception as e:
+            raise _get_error(error=e) from e
 
     @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["PATCH"])
     @auth_decorator
