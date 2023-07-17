@@ -150,12 +150,12 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "district": "DISTRICT X",
                     "supervisionType": "ISC",
                     "specialConditions": "NULL",
+                    "boardConditions": [],
                     "emailAddress": "harry@fake.net",
                     "currentEmployers": [
                         {
                             "name": "The Camera Store",
                             "address": "496 Fakers Ave",
-                            "startDate": None,
                         }
                     ],
                 },
@@ -270,6 +270,116 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "supervisionLevelStart": "2020-03-10",
                     "supervisionStartDate": "2021-03-04",
                     "allEligibleOpportunities": ["earnedDischarge"],
+                },
+                row,
+            )
+
+            # US_TN row with only _new fields
+            delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+            fixture = fp.readline()
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertEqual(doc_id, "205")
+            self.assertEqual(
+                {
+                    "personExternalId": "205",
+                    "pseudonymizedId": "p205",
+                    "personName": {
+                        "givenNames": "Sixth",
+                        "middleNames": "Persons",
+                        "nameSuffix": "",
+                        "surname": "Realname",
+                    },
+                    "address": "456 Fake st., Faketown, TN 12345",
+                    "currentBalance": 45.1,
+                    "expirationDate": "2022-02-28",
+                    "lastPaymentAmount": 10.25,
+                    "lastPaymentDate": "2021-12-20",
+                    "officerId": "100",
+                    "phoneNumber": "8889997777",
+                    "specialConditions": "SPECIAL",
+                    "stateCode": "US_TN",
+                    "supervisionLevel": "MEDIUM",
+                    "supervisionLevelStart": "2020-03-10",
+                    "supervisionType": "Probation",
+                    "boardConditions": [
+                        {
+                            "condition": "CT",
+                            "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY",
+                        },
+                        {
+                            "condition": "CW",
+                            "conditionDescription": "COMMUNITY SERVICE REFERRAL",
+                        },
+                    ],
+                    "supervisionStartDate": "2021-03-04",
+                    "district": "DISTRICT 0",
+                    "allEligibleOpportunities": ["supervisionLevelDowngrade"],
+                    "milestones": [
+                        {
+                            "type": "MONTHS_WITHOUT_VIOLATION",
+                            "text": "12 months without a violation",
+                        },
+                        {
+                            "type": "MONTHS_ON_+SUPERVISION",
+                            "text": "23 months on supervision",
+                        },
+                    ],
+                    "emailAddress": "sixth@realname.net",
+                },
+                row,
+            )
+
+            # US_TN row with regular and _new fields should resolve to the regular ones
+            delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+            fixture = fp.readline()
+            doc_id, row = delegate.transform_row(fixture)
+            self.assertEqual(doc_id, "206")
+            self.assertEqual(
+                {
+                    "personExternalId": "206",
+                    "pseudonymizedId": "p206",
+                    "personName": {
+                        "givenNames": "Seventh",
+                        "middleNames": "Persons",
+                        "nameSuffix": "",
+                        "surname": "Realname",
+                    },
+                    "address": "456 Fake st., Faketown, TN 12345",
+                    "currentBalance": 45.1,
+                    "expirationDate": "2022-02-28",
+                    "lastPaymentAmount": 10.25,
+                    "lastPaymentDate": "2021-12-20",
+                    "officerId": "100",  # this field is different in the _new version
+                    "phoneNumber": "8889997777",
+                    "specialConditions": "SPECIAL",
+                    "stateCode": "US_TN",
+                    "supervisionLevel": "MEDIUM",
+                    "supervisionLevelStart": "2020-03-10",
+                    "supervisionType": "Probation",
+                    "boardConditions": [
+                        {
+                            "condition": "CT",
+                            "conditionDescription": "COMPLETE THERAPEUTIC COMMUNITY",
+                        },
+                        {
+                            "condition": "CW",
+                            "conditionDescription": "COMMUNITY SERVICE REFERRAL",
+                        },
+                    ],
+                    "supervisionStartDate": "2021-03-04",  # this field is different in the _new version
+                    "district": "DISTRICT 0",
+                    "allEligibleOpportunities": ["supervisionLevelDowngrade"],
+                    "milestones": [
+                        {
+                            "type": "MONTHS_WITHOUT_VIOLATION",
+                            "text": "12 months without a violation",
+                        },
+                        {
+                            "type": "MONTHS_ON_+SUPERVISION",
+                            "text": "23 months on supervision",
+                        },
+                    ],
+                    "emailAddress": "seventh@realname.net",
                 },
                 row,
             )
