@@ -447,21 +447,46 @@ class SpreadsheetInterface:
             "updated_reports": updated_report_jsons,
             "new_reports": new_report_jsons,
             "unchanged_reports": unchanged_report_jsons,
+            "file_name": spreadsheet.original_name,
         }
 
         if in_ci() or in_test():
             return ingested_spreadsheet_json
 
+        transformed_ingested_spreadsheet_json = SpreadsheetInterface._transform_date(
+            ingested_spreadsheet_json
+        )
         # Upload json to GCP bucket
         # Source: https://cloud.google.com/storage/docs/uploading-objects-from-memory
         storage_client = storage.Client()
         bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET)
         destination_blob_name = spreadsheet.standardized_name.replace("xlsx", "json")
         blob = bucket.blob(destination_blob_name)
-        blob.upload_from_string(json.dumps(ingested_spreadsheet_json, default=str))
+        blob.upload_from_string(
+            json.dumps(transformed_ingested_spreadsheet_json, default=str)
+        )
         logging.info("%s stored in GCP", destination_blob_name)
 
         return ingested_spreadsheet_json
+
+    @staticmethod
+    def _transform_date(contents: Dict) -> Dict:
+        """This helper function takes in a string that represents the json that was produced by a bulk
+        upload spreadsheet and stored in a gcp bucket. The dates within this string
+        are originally in the following format: 'YYYY-MM-DD'. However, the frontend
+        expects the dates in the following format: 'dayOfWeek day month year'. This function
+        transforms all start and end dates to the expected format.
+
+        For example, we this function transforms '2021-01-01' to 'Fri 01 Jan 2021'
+        """
+        for metric in contents["metrics"]:
+            for datapoint in metric["datapoints"]:
+                transformed_start_date = datapoint["start_date"].strftime("%a %d %b %Y")
+                transformed_end_date = datapoint["end_date"].strftime("%a %d %b %Y")
+                datapoint["start_date"] = transformed_start_date
+                datapoint["end_date"] = transformed_end_date
+
+        return contents
 
     @staticmethod
     def ingest_workbook_from_gcs(
