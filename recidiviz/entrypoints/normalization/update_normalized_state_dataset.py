@@ -18,8 +18,6 @@
 to be called only within the Airflow DAG's KubernetesPodOperator."""
 import argparse
 import logging
-import sys
-from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.calculation_data_storage_manager import (
@@ -27,7 +25,7 @@ from recidiviz.pipelines.calculation_data_storage_manager import (
 )
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments() -> argparse.Namespace:
     """Parses arguments for the Cloud SQL to BQ refresh process."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -42,16 +40,16 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         type=str,
     )
 
-    return parser.parse_known_args(argv)
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
 
-    known_args, _ = parse_arguments(sys.argv)
+    args = parse_arguments()
 
     execute_update_normalized_state_dataset(
-        [known_args.state_code_filter] if known_args.state_code_filter else None,
-        known_args.sandbox_prefix,
+        [args.state_code_filter] if args.state_code_filter else None,
+        args.sandbox_prefix,
     )

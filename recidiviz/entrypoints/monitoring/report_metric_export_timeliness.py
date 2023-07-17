@@ -23,23 +23,21 @@ python -m recidiviz.entrypoints.monitoring.report_metric_export_timeliness \
 """
 import argparse
 import logging
-import sys
-from typing import List, Tuple
 
 from recidiviz.monitoring.export_timeliness import report_export_timeliness_metrics
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments() -> argparse.Namespace:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 
-    return parser.parse_known_args(argv)
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG)
 
-    known_args, _ = parse_arguments(sys.argv)
+    args = parse_arguments()
 
     report_export_timeliness_metrics()
