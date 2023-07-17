@@ -151,7 +151,16 @@ output:
                 start_date_str: sent_start_date
           charges:
             - StateCharge:
-                external_id: offense_track_num
+                external_id:
+                  $conditional:
+                    - $if:
+                        $not_null: offense_track_num
+                      $then: offense_track_num
+                    - $else:
+                        $concat:
+                          $values:
+                            - curr_inmate_num
+                            - type_number
                 statute: offense_code
                 description: Offense
                 classification_type:
