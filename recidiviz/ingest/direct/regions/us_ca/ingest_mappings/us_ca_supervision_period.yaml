@@ -94,6 +94,7 @@ output:
                       - Community Custody Release
                       - In-Custody MISD
                       - EX and SX
+                      - CS P36 Specialized Caseload
           supervision_type:
             $conditional:
               - $if:
