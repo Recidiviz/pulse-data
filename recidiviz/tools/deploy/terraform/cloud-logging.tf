@@ -16,8 +16,9 @@
 // =============================================================================
 
 # On-Call Error Logs
-resource "google_bigquery_dataset" "oncall_logs_dataset" {
-  dataset_id = "on_call_logs"
+
+locals {
+  on_call_dataset_id = "on_call_logs"
 }
 
 resource "google_logging_project_sink" "oncall-logs-sink" {
@@ -25,7 +26,7 @@ resource "google_logging_project_sink" "oncall-logs-sink" {
   description = "Sink to send app logs to BigQuery"
 
   # Can export to pubsub, cloud storage, bigquery, log bucket, or another project
-  destination = format("bigquery.googleapis.com/%s", google_bigquery_dataset.oncall_logs_dataset.id)
+  destination = format("bigquery.googleapis.com/projects/%s/datasets/%s", var.project_id, local.on_call_dataset_id)
 
   # Include HTTP request logs and app stdout logs
   filter = <<EOT
@@ -40,5 +41,31 @@ resource "google_logging_project_sink" "oncall-logs-sink" {
 
   bigquery_options {
     use_partitioned_tables = true
+  }
+}
+
+resource "google_bigquery_dataset" "oncall_logs_dataset" {
+  depends_on = [google_logging_project_sink.oncall-logs-sink]
+  dataset_id = local.on_call_dataset_id
+  labels     = {}
+
+  access {
+    role          = "OWNER"
+    user_by_email = google_logging_project_sink.oncall-logs-sink.writer_identity
+  }
+
+  access {
+    role          = "OWNER"
+    special_group = "projectOwners"
+  }
+
+  access {
+    role          = "READER"
+    special_group = "projectReaders"
+  }
+
+  access {
+    role          = "WRITER"
+    special_group = "projectWriters"
   }
 }
