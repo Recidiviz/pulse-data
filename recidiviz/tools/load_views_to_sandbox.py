@@ -84,6 +84,7 @@ from google.api_core import exceptions
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
@@ -94,7 +95,6 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.big_query.view_update_manager import (
-    build_views_to_update,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.calculator.query.state.dataset_config import (

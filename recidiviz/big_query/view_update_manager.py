@@ -33,8 +33,12 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClient,
     BigQueryClientImpl,
 )
+from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.big_query.big_query_view_sub_dag_collector import (
+    BigQueryViewSubDagCollector,
+)
 from recidiviz.big_query.success_persister import AllViewsUpdateSuccessPersister
 from recidiviz.big_query.view_update_config import (
     get_deployed_view_dag_update_perf_config,
@@ -86,10 +90,36 @@ NUM_SLOW_VIEWS_TO_LOG = 25
 
 @gcp_only
 def execute_update_all_managed_views(
-    project_id: str, sandbox_prefix: Optional[str]
+    project_id: str,
+    sandbox_prefix: Optional[str],
+    dataset_ids_to_load: Optional[List[str]] = None,
 ) -> None:
+    """
+    Updates all views in the view registry. If dataset_ids_to_load is provided, only views in those datasets and
+    their ancestors will be updated. If sandbox_prefix is provided, all views will be deployed to a sandbox dataset.
+    """
     start = datetime.datetime.now()
-    view_builders = deployed_view_builders(project_id)
+
+    all_view_builders_in_dag: List[BigQueryViewBuilder] = deployed_view_builders(
+        project_id
+    )
+
+    if dataset_ids_to_load:
+        logging.info(
+            "Limiting view deploy to views in datasets %s and any view ancestors.",
+            dataset_ids_to_load,
+        )
+
+        view_builders = BigQueryViewSubDagCollector(
+            view_builders_in_full_dag=all_view_builders_in_dag,
+            view_addresses_in_sub_dag=None,
+            dataset_ids_in_sub_dag=set(dataset_ids_to_load),
+            include_ancestors=True,
+            include_descendants=False,
+            datasets_to_exclude=set(),
+        ).collect_view_builders()
+    else:
+        view_builders = all_view_builders_in_dag
 
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
@@ -249,37 +279,6 @@ def copy_dataset_schemas_to_sandbox(
         for copy_future in futures.as_completed(copy_futures):
             destination_address = copy_future.result()
             logging.info("Completed copy of schema to [%s]", destination_address)
-
-
-def build_views_to_update(
-    view_source_table_datasets: Set[str],
-    candidate_view_builders: Sequence[BigQueryViewBuilder],
-    address_overrides: Optional[BigQueryAddressOverrides],
-) -> Dict[BigQueryView, BigQueryViewBuilder]:
-    """
-    Returns a map associating view builders to the views that should be updated,
-    built from builders in the |candidate_view_builders| list.
-    """
-
-    logging.info("Building [%s] views...", len(candidate_view_builders))
-    views_to_builders = {}
-    for view_builder in candidate_view_builders:
-        if view_builder.dataset_id in view_source_table_datasets:
-            raise ValueError(
-                f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
-            )
-
-        try:
-            view = view_builder.build(
-                address_overrides=address_overrides,
-            )
-        except Exception as e:
-            raise ValueError(
-                f"Unable to build view at address [{view_builder.address}]"
-            ) from e
-
-        views_to_builders[view] = view_builder
-    return views_to_builders
 
 
 def _create_all_datasets_if_necessary(
