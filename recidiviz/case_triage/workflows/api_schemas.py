@@ -101,6 +101,11 @@ class WorkflowsEnqueueSmsRequestSchema(CamelOrSnakeCaseSchema):
     """
     The schema expected by the /workflows/external_request/<state>/enqueue_sms_request
     Camel-cased keys are expected since the request is coming from the dashboards app
+
+    message: The string text message that will be sent through twilio
+    recipient_phone_number: The 10-digit phone number for the recipient
+    recipient_external_id: The pseudonymized ID for the recipient
+    sender_id: The email address of the user who is sending the message
     """
 
     message = fields.Str(required=True)
