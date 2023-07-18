@@ -34,7 +34,8 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
     ca_person_parole_imputed_badges AS (
         SELECT
             OffenderId, 
-            COALESCE(pp.BadgeNumber, ap.BadgeNumber) as BadgeNumber
+            COALESCE(pp.BadgeNumber, ap.BadgeNumber) as BadgeNumber,
+            EarnedDischargeDate, ControllingDischargeDate
         FROM `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest` pp
         LEFT JOIN (
             SELECT
@@ -62,7 +63,14 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           #   so must move all clients to the merged id.
           COALESCE(ca_pp.BadgeNumber, ids.external_id_mapped, sessions.supervising_officer_external_id_end) AS officer_id,
           sessions.supervision_district_name_end AS district,
-          projected_end.projected_completion_date_max AS expiration_date
+          IFNULL(
+            projected_end.projected_completion_date_max,
+            PARSE_DATE("%F", SUBSTR(COALESCE(
+                LEAST(ca_pp.EarnedDischargeDate, ca_pp.ControllingDischargeDate),
+                ca_pp.EarnedDischargeDate,
+                ca_pp.ControllingDischargeDate
+            ), 0,10))
+          ) AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
         LEFT JOIN {{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map ids
             ON sessions.supervising_officer_external_id_end = ids.external_id_to_map AND sessions.state_code = ids.state_code 
@@ -91,6 +99,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
             AND sessions.person_id = active_officer.person_id
         LEFT JOIN ca_person_parole_imputed_badges ca_pp
             ON pei.person_external_id = ca_pp.OffenderId
+            AND sessions.state_code = "US_CA"
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
