@@ -48,7 +48,7 @@ SELECT
     CONCAT(
         level_1_supervision_location_external_id,
         "|",
-        level_2_supervision_location_external_id
+        COALESCE(level_2_supervision_location_external_id, 'NOT_APPLICABLE')
     ) AS location_id,
     "supervision" AS location_type,
     COUNT(*) AS total_rows
