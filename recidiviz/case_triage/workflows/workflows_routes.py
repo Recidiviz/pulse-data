@@ -46,6 +46,7 @@ from recidiviz.case_triage.workflows.interface import (
 )
 from recidiviz.case_triage.workflows.utils import (
     allowed_twilio_dev_recipient,
+    get_sms_request_firestore_path,
     jsonify_response,
 )
 from recidiviz.case_triage.workflows.workflows_authorization import (
@@ -342,12 +343,7 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         mid = str(uuid.uuid4())
         firestore_client = FirestoreClientImpl()
-        client_firestore_id = f"{state.lower()}_{recipient_external_id}"
-        month_code = datetime.date.today().strftime("%m_%Y")
-
-        firestore_path = (
-            f"clientUpdatesV2/{client_firestore_id}/milestonesMessages/{month_code}"
-        )
+        firestore_path = get_sms_request_firestore_path(state, recipient_external_id)
 
         try:
             cloud_task_manager = SingleCloudTaskQueueManager(
@@ -365,6 +361,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                     "mid": mid,
                     "message": message,
                     "recipient": f"+1{recipient_phone_number}",
+                    "recipient_external_id": recipient_external_id,
                 },
                 headers=headers_copy,
             )
@@ -415,6 +412,7 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         message = data["message"]
         recipient = data["recipient"]
+        recipient_external_id = data["recipient_external_id"]
         state_code = state.upper()
 
         if state_code != "US_CA":
@@ -440,6 +438,9 @@ def create_workflows_api_blueprint() -> Blueprint:
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
 
+        firestore_client = FirestoreClientImpl()
+        firestore_path = get_sms_request_firestore_path(state, recipient_external_id)
+
         try:
             client = TwilioClient(sid, auth_token)
 
@@ -448,7 +449,18 @@ def create_workflows_api_blueprint() -> Blueprint:
             )
         except Exception as e:
             logging.error("Sending message to Twilio failed. Error: %s", e)
-            # TODO(#21438): Write error back to firestore
+            firestore_client.set_document(
+                firestore_path,
+                {
+                    "status": ExternalSystemRequestStatus.FAILURE.value,
+                    "updated": {
+                        "date": datetime.datetime.now(datetime.timezone.utc),
+                        "by": "RECIDIVIZ",
+                    },
+                    "errors": [str(e)],
+                },
+                merge=True,
+            )
 
             return jsonify_response(
                 "Error enqueuing message", HTTPStatus.INTERNAL_SERVER_ERROR

@@ -131,5 +131,6 @@ class WorkflowsSendSmsRequestSchema(CamelOrSnakeCaseSchema):
     """
 
     message = fields.Str(required=True)
+    recipient_external_id = fields.Str(required=True)
     recipient = fields.Str(required=True, validate=validate_e164_phone_number)
     mid = fields.Str(required=True)
