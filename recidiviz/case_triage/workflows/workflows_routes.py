@@ -373,8 +373,11 @@ def create_workflows_api_blueprint() -> Blueprint:
             firestore_client.set_document(
                 firestore_path,
                 {
-                    "messageDetails.status": ExternalSystemRequestStatus.FAILURE.value,
-                    "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                    "status": ExternalSystemRequestStatus.FAILURE.value,
+                    "updated": {
+                        "date": datetime.datetime.now(datetime.timezone.utc),
+                        "by": sender_id,
+                    },
                 },
                 merge=True,
             )
@@ -390,8 +393,11 @@ def create_workflows_api_blueprint() -> Blueprint:
         firestore_client.set_document(
             firestore_path,
             {
-                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                "messageDetails.status": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                "updated": {
+                    "date": datetime.datetime.now(datetime.timezone.utc),
+                    "by": sender_id,
+                },
+                "status": ExternalSystemRequestStatus.IN_PROGRESS.value,
                 "messageDetails.mid": mid,
                 "messageDetails.sentBy": sender_id,
             },

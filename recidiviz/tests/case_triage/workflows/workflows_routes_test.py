@@ -39,6 +39,7 @@ from recidiviz.utils.types import assert_type
 
 PERSON_EXTERNAL_ID = "123"
 STAFF_ID = "456"
+STAFF_EMAIL = "fake email address"
 CONTACT_NOTE_DATE_TIME = datetime.datetime.now()
 
 
@@ -486,6 +487,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
     )
+    @freeze_time("2023-01-01 01:23:45")
     def test_enqueue_sms_request_success(
         self,
         mock_task_manager: MagicMock,
@@ -497,7 +499,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "recipientExternalId": PERSON_EXTERNAL_ID,
-            "senderId": STAFF_ID,
+            "senderId": STAFF_EMAIL,
             "message": "Hello, is it me you're looking for?",
             "recipientPhoneNumber": "5153338822",
         }
@@ -519,7 +521,19 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
             expected_task_body,
         )
-        mock_firestore.return_value.set_document.assert_called_once()
+        mock_firestore.return_value.set_document.assert_called_once_with(
+            "clientUpdatesV2/us_ca_123/milestonesMessages/01_2023",
+            {
+                "updated": {
+                    "date": datetime.datetime.now(datetime.timezone.utc),
+                    "by": STAFF_EMAIL,
+                },
+                "status": "IN_PROGRESS",
+                "messageDetails.mid": "MY UUID",
+                "messageDetails.sentBy": STAFF_EMAIL,
+            },
+            merge=True,
+        )
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
     def test_enqueue_sms_request_failure_unauthorized_state(
@@ -529,7 +543,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "recipientExternalId": PERSON_EXTERNAL_ID,
-            "senderId": STAFF_ID,
+            "senderId": STAFF_EMAIL,
             "message": "I can see it in your eyes",
             "recipientPhoneNumber": "5153338822",
         }
@@ -547,6 +561,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
     )
+    @freeze_time("2023-01-01 01:23:45")
     def test_enqueue_sms_request_create_task_failure(
         self,
         mock_task_manager: MagicMock,
@@ -557,7 +572,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "recipientExternalId": PERSON_EXTERNAL_ID,
-            "senderId": STAFF_ID,
+            "senderId": STAFF_EMAIL,
             "message": "I can see it in your smile",
             "recipientPhoneNumber": "5153338822",
         }
@@ -570,7 +585,17 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         mock_task_manager.return_value.create_task.assert_called_once()
-        mock_firestore.return_value.set_document.assert_called_once()
+        mock_firestore.return_value.set_document.assert_called_once_with(
+            "clientUpdatesV2/us_ca_123/milestonesMessages/01_2023",
+            {
+                "status": "FAILURE",
+                "updated": {
+                    "date": datetime.datetime.now(datetime.timezone.utc),
+                    "by": STAFF_EMAIL,
+                },
+            },
+            merge=True,
+        )
         self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
 
     @patch(
@@ -585,7 +610,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "recipientExternalId": PERSON_EXTERNAL_ID,
-            "senderId": STAFF_ID,
+            "senderId": STAFF_EMAIL,
             "message": "You're all I've ever wanted and my arms are open wide",
             "recipientPhoneNumber": "5153338822",
         }
