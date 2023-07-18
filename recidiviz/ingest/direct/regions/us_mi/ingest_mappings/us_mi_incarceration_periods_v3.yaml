@@ -361,6 +361,7 @@ output:
                               $include_nulls: True
                               $separator: "##"
                           $mappings:
+                            # TODO(#22252): Remap these values so we can deprecate PERMANENT_SOLITARY_CONFINEMENT
                             StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
                               - "11672##7856" # 7856: TS - Temporary Segregation
                               - "11672##7842" # 7842: PC - Protective Custody (Protective Segregation)
@@ -376,6 +377,7 @@ output:
                   $enum_mapping:
                     $raw_text: cell_type_id
                     $mappings:
+                      # TODO(#22252): Remap these values so we can deprecate PERMANENT_SOLITARY_CONFINEMENT
                       StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT:
                         - "7823" # 7827: AS - Administrative Segregation
                       StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT:
