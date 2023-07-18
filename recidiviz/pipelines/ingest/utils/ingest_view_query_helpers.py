@@ -39,6 +39,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.pipelines.ingest.pipeline_parameters import MaterializationMethod
 from recidiviz.utils import environment
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -59,6 +60,14 @@ FROM (
 )
 ORDER BY 1;"""
 
+INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE = f"""
+SELECT
+    MAX(update_datetime) AS {UPPER_BOUND_DATETIME_COL_NAME},
+    CAST(NULL AS DATETIME) AS {LOWER_BOUND_DATETIME_COL_NAME}
+FROM (
+        {{raw_data_tables}}
+);"""
+
 INDIVIDUAL_TABLE_QUERY_TEMPLATE = """SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
         FROM `{project_id}.{state_code}_raw_data.{file_tag}`"""
 
@@ -67,6 +76,7 @@ def generate_date_bound_tuples_query(
     project_id: str,
     state_code: str,
     raw_data_tables: List[str],
+    materialization_method: MaterializationMethod = MaterializationMethod.ORIGINAL,
 ) -> str:
     """Returns a SQL query that will return a list of upper and lower bound date tuples
     which can each be used to generate an individual ingest view query."""
@@ -81,7 +91,9 @@ def generate_date_bound_tuples_query(
     ]
     raw_data_tables_sql = "\nUNION ALL\n        ".join(raw_data_table_sql_statements)
     raw_date_pairs_query = StrictStringFormatter().format(
-        INGEST_VIEW_DATE_BOUND_TUPLES_QUERY_TEMPLATE,
+        INGEST_VIEW_DATE_BOUND_TUPLES_QUERY_TEMPLATE
+        if materialization_method == MaterializationMethod.ORIGINAL
+        else INGEST_VIEW_LATEST_DATE_QUERY_TEMPLATE,
         raw_data_tables=raw_data_tables_sql,
     )
     return raw_date_pairs_query

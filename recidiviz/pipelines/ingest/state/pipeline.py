@@ -35,7 +35,10 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.base_pipeline import BasePipeline
-from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
+from recidiviz.pipelines.ingest.pipeline_parameters import (
+    IngestPipelineParameters,
+    MaterializationMethod,
+)
 from recidiviz.pipelines.ingest.utils.ingest_view_query_helpers import (
     generate_date_bound_tuples_query,
     get_ingest_view_date_diff_query,
@@ -59,9 +62,11 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         return "INGEST"
 
     # TODO(#20928) Replace with actual pipeline logic.
-    # TODO(#22141) Adjust implementation to handle memory allotment errors from bigger states.
     def run_pipeline(self, p: Pipeline) -> None:
         ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
+        materialization_method = MaterializationMethod(
+            self.pipeline_parameters.materialization_method
+        )
         region = direct_ingest_regions.get_direct_ingest_region(
             region_code=self.pipeline_parameters.state_code
         )
@@ -93,7 +98,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                         project_id=self.pipeline_parameters.project,
                         state_code=self.pipeline_parameters.state_code,
                         raw_data_tables=raw_data_tables,
-                    ),
+                        materialization_method=materialization_method,
+                    )
                 )
                 | f"Generate date diff queries for {ingest_view} based on date pairs."
                 >> beam.Map(

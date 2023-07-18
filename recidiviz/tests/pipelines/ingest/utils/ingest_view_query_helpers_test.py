@@ -17,6 +17,7 @@
 """Unit tests for date_pairs.py."""
 import unittest
 
+from recidiviz.pipelines.ingest.pipeline_parameters import MaterializationMethod
 from recidiviz.pipelines.ingest.utils import ingest_view_query_helpers
 
 
@@ -49,4 +50,24 @@ UNION ALL
     GROUP BY update_date
 )
 ORDER BY 1;"""
+        self.assertEqual(result, expected)
+
+    def test_generate_date_bound_tuples_query_latest_method(self) -> None:
+        result = ingest_view_query_helpers.generate_date_bound_tuples_query(
+            project_id="test-project",
+            state_code="US_XX",
+            raw_data_tables=["table1", "table2"],
+            materialization_method=MaterializationMethod.LATEST,
+        )
+        expected = """
+SELECT
+    MAX(update_datetime) AS __upper_bound_datetime_inclusive,
+    CAST(NULL AS DATETIME) AS __lower_bound_datetime_exclusive
+FROM (
+        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
+        FROM `test-project.us_xx_raw_data.table1`
+UNION ALL
+        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
+        FROM `test-project.us_xx_raw_data.table2`
+);"""
         self.assertEqual(result, expected)
