@@ -84,7 +84,7 @@ relevant_codes AS (
   WHERE CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) >= latest_system_session_start_date
      AND (
            ContactNoteType LIKE '%PSE%'
-           OR ContactNoteType IN ('VRPT','VWAR','COHC','AARP')
+           OR ContactNoteType IN ('VRPT','VWAR','COHC','ARRP')
            OR ContactNoteType LIKE "%ABS%"
            OR ContactNoteType = 'DRUP'
            OR ContactNoteType LIKE "%FSW%"

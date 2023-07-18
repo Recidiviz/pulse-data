@@ -205,7 +205,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         *,
         description LIKE '%DOMESTIC%' AS is_violent_domestic,
         REGEXP_CONTAINS(description, 'DUI|INFLUENCE|DWI') AS is_dui,
-        description LIKE '%13%' AND description LIKE '%VICT%' AS is_victim_under_18,
+        (description LIKE '%13%' AND description LIKE '%VICT%') OR description LIKE "%CHILD%" AS is_victim_under_18,
         REGEXP_CONTAINS(description, 'HOMICIDE|MURD') AS is_homicide,
     FROM sentences_cte
     )
