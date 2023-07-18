@@ -21,10 +21,12 @@ import inspect
 import json
 import logging
 import os.path
+import re
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
 
 import attr
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
+from attr import Attribute
 
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
@@ -115,6 +117,18 @@ class PipelineParameters:
         default="template_metadata", validator=attr_validators.is_str
     )
 
+    service_account_email: Optional[str] = attr.ib(default=None)
+
+    @service_account_email.validator
+    def _service_account_email_validator(
+        self, _attribute: Attribute, service_account_email: Optional[str]
+    ) -> None:
+        regex = r"[a-z0-9-]+@[a-z0-9-]+\.iam\.gserviceaccount\.com"
+        if service_account_email and re.match(regex, service_account_email) is None:
+            raise ValueError(
+                f"service_account_email must be a valid service account email address, but was {service_account_email}"
+            )
+
     # These will only be set when the pipeline options are derived
     # from command-line args (when flex pipeline is actually being
     # run in Dataflow).
@@ -179,6 +193,13 @@ class PipelineParameters:
             type=str,
             help="The Google Cloud region to run the job on (e.g. us-west1).",
             default="us-west1",
+        )
+
+        parser.add_argument(
+            "--service_account_email",
+            type=str,
+            help="The service account under which to use BigQuery capacity for.",
+            required=False,
         )
 
         if sandbox_pipeline:
@@ -281,6 +302,7 @@ class PipelineParameters:
                     "network": "default",
                     "subnetwork": f"https://www.googleapis.com/compute/v1/projects/{project_id}/regions/{self.region}/subnetworks/default",
                     "ipConfiguration": "WORKER_IP_PRIVATE",
+                    "serviceAccountEmail": self.service_account_email or "",
                 },
             }
         }

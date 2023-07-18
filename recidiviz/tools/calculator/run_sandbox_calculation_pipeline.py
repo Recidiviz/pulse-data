@@ -73,7 +73,9 @@ Examples:
         --job_name my-mi-ingest-test \
         --sandbox_output_dataset username_ingest_data \
         --sandbox_ingest_view_results_output_dataset username_ingest_view_data \
-        --state_code US_MI
+        --state_code US_MI \
+        --materialization_method latest \
+        --service_account_email some-account@some-project.iam.gserviceaccount.com
 
 You must also include any arguments required by the given pipeline.
 """
@@ -190,7 +192,7 @@ def run_sandbox_calculation_pipeline() -> None:
         if attr.endswith("output") and isinstance(getattr(params, attr), str):
             prompt_for_confirmation(
                 "Have you already created a sandbox dataflow dataset called "
-                f"`{getattr(params, attr)}` using `create_or_update_dataflow_sandbox`?"
+                f"`{getattr(params, attr)}` using `create_or_update_dataflow_sandbox`?",
             )
 
     if not known_args.skip_build:

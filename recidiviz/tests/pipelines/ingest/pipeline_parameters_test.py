@@ -42,12 +42,14 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "reference_view_input": "reference_views",
             "ingest_view_results_output": "test_ingest_view_output",
             "ingest_instance": "PRIMARY",
+            "materialization_method": "original",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertIsNone(pipeline_parameters.service_account_email)
 
     def test_creation_all_fields_no_output(self) -> None:
         pipeline_parameters = IngestPipelineParameters(
@@ -66,6 +68,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "reference_view_input": "reference_views",
             "ingest_view_results_output": "us_oz_dataflow_ingest_view_results_primary",
             "ingest_instance": "PRIMARY",
+            "materialization_method": "original",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -91,6 +94,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "raw_data_table_input": "us_oz_raw_data_secondary",
             "ingest_view_results_output": "us_oz_dataflow_ingest_view_results_secondary",
             "ingest_instance": "SECONDARY",
+            "materialization_method": "original",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -109,4 +113,32 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 region="us-west1",
                 job_name="test_job",
                 output="test_output",
+            )
+
+    def test_creation_valid_service_account_email(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            service_account_email="some-test-account@recidiviz-staging.iam.gserviceaccount.com",
+        )
+        self.assertEqual(
+            pipeline_parameters.service_account_email,
+            "some-test-account@recidiviz-staging.iam.gserviceaccount.com",
+        )
+
+    def test_creation_invalid_service_account_email(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"service_account_email must be a valid service account email address.*",
+        ):
+            _ = IngestPipelineParameters(
+                project="recidiviz-456",
+                state_code="US_OZ",
+                pipeline="test_pipeline_name",
+                region="us-west1",
+                job_name="test_job",
+                service_account_email="some-test-account@somerandomwebsite.com",
             )

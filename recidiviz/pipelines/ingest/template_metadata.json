@@ -47,6 +47,13 @@
         "helpText": "If specified, the pipeline will query this BigQuery reference view dataset instead of the default.",
         "regexes": ["[1-9a-z_]+"],
         "isOptional": true
+      },
+      {
+        "name": "materialization_method",
+        "label": "What method to use to materialize ingest view results.",
+        "helpText": "If specified (latest or max_date), the pipeline will query BQ ingest views differently instead of the default.",
+        "regexes": ["latest|original"],
+        "isOptional": true
       }
     ]
   }
