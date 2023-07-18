@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for PowerCalc methods"""
+"""Tests for formula-based power calculation methods"""
 
 import unittest
 
@@ -23,8 +23,8 @@ from recidiviz.tools.analyst.power_calculations.formula_power_calculations impor
 )
 
 
-class TestPowerCalc(unittest.TestCase):
-    """Tests for the PowerCalc class"""
+class TestFormulaPowerCalc(unittest.TestCase):
+    """Tests for the formula-based power calc methods"""
 
     def test_checks(self) -> None:
         """Verify that checks() defines all necessary params"""
