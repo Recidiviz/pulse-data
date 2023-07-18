@@ -490,9 +490,9 @@ def spans_within_x_and_y_months_of_end_date(
         SELECT
             state_code,
             person_id,
-            LEAD(end_date) OVER(PARTITION BY state_code, person_id 
+            LEAD(start_date) OVER(PARTITION BY state_code, person_id 
                                   ORDER BY {nonnull_end_date_clause('end_date')})
-                AS lead_end_date,
+                AS lead_start_date,
             DATE_ADD({nonnull_end_date_clause('end_date')}, INTERVAL {x_months} MONTH) AS end_date_plus_x_months,
             DATE_ADD({nonnull_end_date_clause('end_date')}, INTERVAL {y_months} MONTH) AS end_date_plus_y_months,
         FROM `{{{project_id}}}.{{{dataset}}}.{table_view}`
@@ -504,8 +504,8 @@ SELECT
     person_id,
     end_date_plus_x_months AS start_date,
     LEAST(end_date_plus_y_months,
-          {nonnull_end_date_clause('lead_end_date')}) AS end_date,
+          {nonnull_end_date_clause('lead_start_date')}) AS end_date,
     TRUE AS meets_criteria,
     TO_JSON(STRUCT(end_date_plus_x_months AS {end_date_plus_x_months_name_in_reason_blob})) AS reason
 FROM cte
-WHERE {nonnull_end_date_clause('lead_end_date')} > end_date_plus_x_months"""
+WHERE {nonnull_end_date_clause('lead_start_date')} > end_date_plus_x_months"""
