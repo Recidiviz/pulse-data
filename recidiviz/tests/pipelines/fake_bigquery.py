@@ -33,7 +33,7 @@ from typing import (
 
 import apache_beam
 from apache_beam.io.gcp.internal.clients import bigquery as beam_bigquery
-from apache_beam.pvalue import PCollection
+from apache_beam.pvalue import PBegin, PCollection
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
 
@@ -188,9 +188,20 @@ class FakeReadFromBigQuery(apache_beam.PTransform):
         super().__init__()
         self._table_values = table_values
 
-    def expand(self, input_or_inputs: PCollection) -> Any:
+    def expand(self, input_or_inputs: PBegin) -> Any:
         return input_or_inputs | "Loading table values" >> apache_beam.Create(
             self._table_values
+        )
+
+
+class FakeReadAllFromBigQuery(apache_beam.PTransform):
+    def __init__(self, table_values: List[Dict[str, Any]]) -> None:
+        super().__init__()
+        self._table_values = table_values
+
+    def expand(self, input_or_inputs: PCollection) -> Any:
+        return input_or_inputs | "Mapping to values" >> apache_beam.FlatMap(
+            lambda _: self._table_values
         )
 
 

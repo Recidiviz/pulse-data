@@ -26,12 +26,16 @@ from typing import Dict, List, Optional
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    LOWER_BOUND_DATETIME_COL_NAME,
+    MATERIALIZATION_TIME_COL_NAME,
+    UPPER_BOUND_DATETIME_COL_NAME,
     InstanceIngestViewContents,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
@@ -52,6 +56,20 @@ from recidiviz.utils.string import StrictStringFormatter
 
 SELECT_SUBQUERY = "SELECT * FROM `{project_id}.{dataset_id}.{table_name}`;"
 TABLE_NAME_DATE_FORMAT = "%Y_%m_%d_%H_%M_%S"
+
+DATAFLOW_INGEST_VIEW_DATE_DIFF_QUERY_TEMPLATE = f"""
+WITH {{temp_upper_bound_table}} AS (
+    {{upper_bound_query}}
+),{{lower_bound_query}}
+date_diff AS (
+    SELECT * FROM {{temp_upper_bound_table}}{{lower_bound_table_results}}
+)
+SELECT *,
+    CURRENT_DATETIME('UTC') AS {MATERIALIZATION_TIME_COL_NAME},
+    {{upper_bound_datetime_inclusive}} AS {UPPER_BOUND_DATETIME_COL_NAME},
+    {{lower_bound_datetime_exclusive}} AS {LOWER_BOUND_DATETIME_COL_NAME}
+FROM date_diff;
+"""
 
 
 class IngestViewMaterializer:
@@ -84,7 +102,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         view_collector: DirectIngestViewQueryBuilderCollector,
         launched_ingest_views: List[str],
     ):
-
         self.region = region
         self.metadata_manager = metadata_manager
         self.ingest_view_contents = ingest_view_contents
@@ -203,7 +220,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         )
 
         if ingest_view_materialization_args.lower_bound_datetime_exclusive:
-
             upper_bound_prev_query = StrictStringFormatter().format(
                 SELECT_SUBQUERY,
                 project_id=self.big_query_client.project_id,
@@ -424,6 +440,99 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
         return query
 
+    @classmethod
+    def dataflow_query_for_args(
+        cls,
+        view_builder: DirectIngestViewQueryBuilder,
+        raw_data_source_instance: DirectIngestInstance,
+        ingest_view_materialization_args: IngestViewMaterializationArgs,
+    ) -> str:
+        """Returns a version of the materialization query for the provided args that can
+        be run in Dataflow.
+
+        Generates a single query that is date bounded such that it represents the data
+        that has changed for this view between the specified date bounds in the provided
+        materialization args.
+
+        If there is no lower bound, this produces a query for a historical query up to
+        the upper bound date. Otherwise, it diffs two historical queries to produce a
+        delta query, using the SQL 'EXCEPT DISTINCT' function.
+
+        A note that this query for Dataflow cannot use materialized tables or temporary
+        tables."""
+        request_id = cls._generate_request_id()
+        upper_bound_datetime_inclusive = (
+            ingest_view_materialization_args.upper_bound_datetime_inclusive
+        )
+        temporary_upper_bound_table = cls._get_upper_bound_intermediate_table_name(
+            ingest_view_materialization_args, request_id=request_id
+        )
+        upper_bound_ingest_query = cls._generate_ingest_view_query_for_date(
+            ingest_view=view_builder,
+            raw_data_source_instance=raw_data_source_instance,
+            destination_table_type=DestinationTableType.NONE,
+            destination_dataset_id=None,
+            destination_table_id=None,
+            raw_table_subquery_name_prefix=None,
+            update_timestamp=upper_bound_datetime_inclusive,
+            use_order_by=False,
+            using_dataflow=True,
+        ).rstrip(";")
+        upper_bound_datetime_inclusive_clause = datetime_clause(
+            upper_bound_datetime_inclusive, include_milliseconds=True
+        )
+
+        lower_bound_datetime_exclusive = (
+            ingest_view_materialization_args.lower_bound_datetime_exclusive
+        )
+        temporary_lower_bound_table = (
+            cls._get_lower_bound_intermediate_table_name(
+                ingest_view_materialization_args, request_id=request_id
+            )
+            if lower_bound_datetime_exclusive
+            else None
+        )
+        lower_bound_ingest_query = (
+            cls._generate_ingest_view_query_for_date(
+                ingest_view=view_builder,
+                raw_data_source_instance=raw_data_source_instance,
+                destination_table_type=DestinationTableType.NONE,
+                destination_dataset_id=None,
+                destination_table_id=None,
+                raw_table_subquery_name_prefix=None,
+                update_timestamp=lower_bound_datetime_exclusive,
+                use_order_by=False,
+                using_dataflow=True,
+            ).rstrip(";")
+            if lower_bound_datetime_exclusive
+            else None
+        )
+        lower_bound_query = (
+            f"\n{temporary_lower_bound_table} AS (\n{lower_bound_ingest_query}\n),"
+            if lower_bound_datetime_exclusive
+            else ""
+        )
+        lower_bound_table_results = (
+            f"\nEXCEPT DISTINCT SELECT * FROM {temporary_lower_bound_table}"
+            if temporary_lower_bound_table
+            else ""
+        )
+        lower_bound_datetime_exclusive_clause = (
+            datetime_clause(lower_bound_datetime_exclusive, include_milliseconds=True)
+            if lower_bound_datetime_exclusive
+            else "CAST(NULL AS DATETIME)"
+        )
+
+        return StrictStringFormatter().format(
+            DATAFLOW_INGEST_VIEW_DATE_DIFF_QUERY_TEMPLATE,
+            upper_bound_query=upper_bound_ingest_query,
+            lower_bound_query=lower_bound_query,
+            temp_upper_bound_table=temporary_upper_bound_table,
+            lower_bound_table_results=lower_bound_table_results,
+            upper_bound_datetime_inclusive=upper_bound_datetime_inclusive_clause,
+            lower_bound_datetime_exclusive=lower_bound_datetime_exclusive_clause,
+        )
+
     @staticmethod
     def _generate_ingest_view_query_for_date(
         *,
@@ -432,8 +541,10 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         update_timestamp: datetime.datetime,
         destination_table_type: DestinationTableType,
         destination_dataset_id: Optional[str],
-        destination_table_id: str,
+        destination_table_id: Optional[str],
         raw_table_subquery_name_prefix: Optional[str] = None,
+        use_order_by: bool = True,
+        using_dataflow: bool = False,
     ) -> str:
         """Generates a single query for the provided |ingest view| that is date bounded by |update_timestamp|."""
         query = ingest_view.build_query(
@@ -444,7 +555,9 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 destination_table_id=destination_table_id,
                 raw_table_subquery_name_prefix=raw_table_subquery_name_prefix,
                 raw_data_datetime_upper_bound=update_timestamp,
-            )
+                use_order_by=use_order_by,
+            ),
+            using_dataflow=using_dataflow,
         )
         return query
 
@@ -465,7 +578,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
 
 if __name__ == "__main__":
-
     # Update these variables and run to print a materialization query you can run in the BigQuery UI
     region_code_: str = "us_tn"
     ingest_view_name_: str = "DisciplinaryIncarcerationIncident"

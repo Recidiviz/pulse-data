@@ -267,7 +267,22 @@ def main() -> int:
                 }
             )
         if "ingest" in pipeline.__name__:
-            valid_prefixes = valid_prefixes.union({"recidiviz.ingest"})
+            valid_prefixes = valid_prefixes.union(
+                {
+                    "recidiviz.ingest",
+                    "recidiviz.persistence",
+                    "recidiviz.big_query",
+                    "recidiviz.metrics.metric_big_query_view",
+                    "recidiviz.justice_counts",
+                    "recidiviz.task_eligibility",
+                    "recidiviz.case_triage",
+                    "recidiviz.outliers",
+                    "recidiviz.view_registry",
+                    "recidiviz.aggregated_metrics",
+                    "recidiviz.datasets",
+                    "recidiviz.validation",
+                }
+            )
         success &= check_dependencies_for_entrypoint(
             pipeline.__file__,
             valid_module_prefixes=make_module_matcher(valid_prefixes),

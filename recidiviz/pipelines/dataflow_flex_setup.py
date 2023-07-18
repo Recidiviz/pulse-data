@@ -41,8 +41,14 @@ REQUIRED_PACKAGES = [
     "google-cloud-monitoring",
     "google-cloud-secret-manager",
     "google-cloud-storage",
+    "google-cloud-logging==1.15.3",
+    "google-cloud-bigquery-datatransfer",
+    # Must stay up-to-date with latest google-cloud-tasks version in the Pipfile
+    "google-cloud-tasks==1.5.2",
     "html5lib",
     "lxml",
+    "iteration-utilities",
+    "jsonschema",
     "more-itertools",
     "oauth2client",
     "opencensus",
@@ -52,6 +58,9 @@ REQUIRED_PACKAGES = [
     "protobuf==3.20.3",
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
     "python-Levenshtein",
+    "pyjwt",
+    "psycopg2-binary",
+    "pytablewriter",
     "SQLAlchemy==1.4.49",
     "thefuzz",
     "us",
@@ -65,10 +74,23 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={
         "recidiviz.common": ["data_sets/*.csv"],
+        "recidiviz.calculator.query.state.views": ["**/*.yaml"],
+        "recidiviz.calculator.query.state.views.workflows": ["**/*.yaml"],
+        "recidiviz.ingest.direct.regions": [
+            "us_*/ingest_mappings/*.yaml",
+            "us_*/*.yaml",
+            "us_*/raw_data/*.yaml",
+        ],
+        "recidiviz.ingest.direct.ingest_mappings.yaml_schema": [
+            "schema.json",
+            "1.0.0/*/*.json",
+        ],
         "recidiviz.pipelines": [
             "supplemental/template_metadata.json",
             "metrics/template_metadata.json",
             "normalization/template_metadata.json",
         ],
+        "recidiviz.tools": ["deploy/terraform/config/*.yaml"],
+        "recidiviz.validation.views.metadata.config": ["*.yaml"],
     },
 )
