@@ -188,7 +188,7 @@ LBAKRDTA_TAK015 = f"""
         BL$CAV,
         BL$ICA,
         BL$IC,
-        BL$ICO,
+        '"' CONCAT REPLACE(BL$ICO, '"', '""') CONCAT '"' AS BL$ICO,
         BL$OD,
         BL$PON,
         BL$NH,
