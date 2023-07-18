@@ -182,13 +182,33 @@ state_incarceration_period_custody_level_maximum = "MAXIMUM"
 state_incarceration_period_custody_level_solitary_confinement = "SOLITARY_CONFINEMENT"
 
 
+state_incarceration_period_housing_unit_category_solitary_confinement = (
+    "SOLITARY_CONFINEMENT"
+)
+state_incarceration_period_housing_unit_category_general = "GENERAL"
+
 state_incarceration_period_housing_unit_type_temporary_solitary_confinement = (
     "TEMPORARY_SOLITARY_CONFINEMENT"
 )
-state_incarceration_period_housing_unit_type_permanent_solitary_confinement = (
+state_incarceration_period_housing_unit_type_disciplinary_solitary_confinement = (
+    "DISCIPLINARY_SOLITARY_CONFINEMENT"
+)
+state_incarceration_period_housing_unit_type_administrative_solitary_confinement = (
+    "ADMINISTRATIVE_SOLITARY_CONFINEMENT"
+)
+state_incarceration_period_housing_unit_type_protective_custody = "PROTECTIVE_CUSTODY"
+state_incarceration_period_housing_unit_type_other_solitary_confinement = (
+    "OTHER_SOLITARY_CONFINEMENT"
+)
+state_incarceration_period_housing_unit_type_mental_health_solitary_confinement = (
+    "MENTAL_HEALTH_SOLITARY_CONFINEMENT"
+)
+state_incarceration_period_housing_unit_type_hospital = "HOSPITAL"
+state_incarceration_period_housing_unit_type_general = "GENERAL"
+## TODO(#22252): Remove this once we have deprecated PERMANENT_SOLITARY_CONFINEMENT
+state_incarceration_period_housing_unit_type_permanent_solitary = (
     "PERMANENT_SOLITARY_CONFINEMENT"
 )
-state_incarceration_period_housing_unit_type_general = "GENERAL"
 
 state_incarceration_period_release_reason_commuted = "COMMUTED"
 state_incarceration_period_release_reason_compassionate = "COMPASSIONATE"

@@ -130,6 +130,7 @@ def parse_housing_unit_type(raw_text: str) -> StateIncarcerationPeriodHousingUni
         segregation_type
         in ("ASE", "MSG", "PCB")
     ):
+        # TODO(#22252): Remap these values so we can deprecate PERMANENT_SOLITARY_CONFINEMENT
         return StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT
     if (
         # The following codes are considered temporary stays:

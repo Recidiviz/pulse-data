@@ -317,10 +317,24 @@ state_incarceration_period_custody_level = Enum(
     name="state_incarceration_period_custody_level",
 )
 
+state_incarceration_period_housing_unit_category = Enum(
+    state_enum_strings.state_incarceration_period_housing_unit_category_solitary_confinement,
+    state_enum_strings.state_incarceration_period_housing_unit_category_general,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_incarceration_period_housing_unit_category",
+)
+
 state_incarceration_period_housing_unit_type = Enum(
     state_enum_strings.state_incarceration_period_housing_unit_type_temporary_solitary_confinement,
-    state_enum_strings.state_incarceration_period_housing_unit_type_permanent_solitary_confinement,
+    state_enum_strings.state_incarceration_period_housing_unit_type_disciplinary_solitary_confinement,
+    state_enum_strings.state_incarceration_period_housing_unit_type_administrative_solitary_confinement,
+    state_enum_strings.state_incarceration_period_housing_unit_type_protective_custody,
+    state_enum_strings.state_incarceration_period_housing_unit_type_other_solitary_confinement,
+    state_enum_strings.state_incarceration_period_housing_unit_type_mental_health_solitary_confinement,
+    state_enum_strings.state_incarceration_period_housing_unit_type_hospital,
     state_enum_strings.state_incarceration_period_housing_unit_type_general,
+    state_enum_strings.state_incarceration_period_housing_unit_type_permanent_solitary,
     state_enum_strings.internal_unknown,
     state_enum_strings.external_unknown,
     name="state_incarceration_period_housing_unit_type",
@@ -1694,6 +1708,10 @@ class StateIncarcerationPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     housing_unit = Column(
         String(255),
         comment="The housing unit within the facility in which the person currently resides.",
+    )
+    housing_unit_category = Column(
+        state_incarceration_period_housing_unit_category,
+        comment="A supertype corresponding to the housing_unit_type.",
     )
     housing_unit_type = Column(
         state_incarceration_period_housing_unit_type,

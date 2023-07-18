@@ -422,16 +422,63 @@ _STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_VALUE_DESCRIPTIONS: Dict[
 
 
 @unique
+class StateIncarcerationPeriodHousingUnitCategory(StateEntityEnum):
+    """Housing unit categories for incarceration periods"""
+
+    SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_housing_unit_category_solitary_confinement
+    )
+    GENERAL = (
+        state_enum_strings.state_incarceration_period_housing_unit_category_general
+    )
+    INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
+    EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
+
+    @classmethod
+    def get_enum_description(cls) -> str:
+        return "The level of supervision and security employed for a person held in custody."
+
+    @classmethod
+    def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
+        return _STATE_INCARCERATION_PERIOD_HOUSING_UNIT_CATEGORY_VALUE_DESCRIPTIONS
+
+
+_STATE_INCARCERATION_PERIOD_HOUSING_UNIT_CATEGORY_VALUE_DESCRIPTIONS: Dict[
+    StateEntityEnum, str
+] = {
+    StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT: "This person has been permanently assigned to a solitary confinement unit for an indeterminate amount of time.",
+    StateIncarcerationPeriodHousingUnitCategory.GENERAL: "This person is in a non-specialty housing unit. Incarceration periods will generally be assigned this value by default.",
+}
+
+
+@unique
 class StateIncarcerationPeriodHousingUnitType(StateEntityEnum):
     """Housing unit types for incarceration periods"""
 
     TEMPORARY_SOLITARY_CONFINEMENT = (
         state_enum_strings.state_incarceration_period_housing_unit_type_temporary_solitary_confinement
     )
-    PERMANENT_SOLITARY_CONFINEMENT = (
-        state_enum_strings.state_incarceration_period_housing_unit_type_permanent_solitary_confinement
+    DISCIPLINARY_SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_housing_unit_type_disciplinary_solitary_confinement
     )
+    ADMINISTRATIVE_SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_housing_unit_type_administrative_solitary_confinement
+    )
+    PROTECTIVE_CUSTODY = (
+        state_enum_strings.state_incarceration_period_housing_unit_type_protective_custody
+    )
+    OTHER_SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_housing_unit_type_other_solitary_confinement
+    )
+    MENTAL_HEALTH_SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_housing_unit_type_mental_health_solitary_confinement
+    )
+    HOSPITAL = state_enum_strings.state_incarceration_period_housing_unit_type_hospital
     GENERAL = state_enum_strings.state_incarceration_period_housing_unit_type_general
+    ## TODO(#22252): Remove this once we have deprecated PERMANENT_SOLITARY_CONFINEMENT
+    PERMANENT_SOLITARY_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_housing_unit_type_permanent_solitary
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -447,12 +494,16 @@ class StateIncarcerationPeriodHousingUnitType(StateEntityEnum):
 _STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_VALUE_DESCRIPTIONS: Dict[
     StateEntityEnum, str
 ] = {
-    StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT: "This person is in a solitary confinement "
-    "unit for a temporary stay and likely has another bed saved for them elsewhere in the facility. ",
-    StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT: "This person has been permanently "
-    "assigned to a solitary confinement unit for an indeterminate amount of time.",
-    StateIncarcerationPeriodHousingUnitType.GENERAL: "This person is in a non-specialty housing unit. Incarceration "
-    "periods will generally be assigned this value by default.",
+    StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT: "This is the placement of a person in restrictive housing that can occur for a wide range of institutional needs and likely has another bed saved for them elsewhere in the facility. For example, it can be an interim status for people pending their transfer to another institution or awaiting a judicial proceeding, to facilitate a criminal investigation, or when limited bed space in an institution necessitates the use of an otherwise empty segregation cell.",
+    StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT: "This person is placed in restrictive housing as a form of punishment.",
+    StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT: "This person is placed in restrictive housing for managerial purposes, including as a response to a person who demonstrates a chronic inability to adjust to the general population, or when authorities believe an inmate's presence in the general population may cause a serious disruption to the orderly operation of the institution.",
+    StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY: "This person is placed in restrictive housing to separate vulnerable people from the general population due to personal physical safety concerns.",
+    StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT: "This person is placed in a restrictive housing unit that is not temporary but does not fit into the other categories.",
+    StateIncarcerationPeriodHousingUnitType.MENTAL_HEALTH_SOLITARY_CONFINEMENT: "This person is placed in restrictive housing because of their mental health status.",
+    StateIncarcerationPeriodHousingUnitType.HOSPITAL: "This person is placed in a hospital unit for medical attention.",
+    StateIncarcerationPeriodHousingUnitType.GENERAL: "This person is in a non-specialty housing unit. Incarceration periods will generally be assigned this value by default.",
+    ## TODO(#22252): Remove this once we have deprecated PERMANENT_SOLITARY_CONFINEMENT
+    StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT: "This person has been permanently assigned to a solitary confinement unit for an indeterminate amount of time.",
 }
 
 
