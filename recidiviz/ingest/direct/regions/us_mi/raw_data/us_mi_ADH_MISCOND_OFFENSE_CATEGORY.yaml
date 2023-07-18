@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_MISCOND_OFFENSE_CATEGORY
+file_description: |-
+  OMNI reference table for misconduct offense categories
+data_classification: source
+primary_key_cols:
+  - miscond_offense_category_id
+columns:
+  - name: miscond_offense_category_id
+    description: OMNI-database generated ID for misconduct offense category
+  - name: misconduct_category_id
+    description: OMNI-database generated  ID for misconduct category that this offense category falls under
+  - name: effective_date
+    description: effective date of misconduct offense category
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: expiration_date
+    description: expiration date of misconduct offense category
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_user
+    description: User who last updated the record
+    is_pii: True
+  - name: last_update_date
+    description: last update date of record
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
