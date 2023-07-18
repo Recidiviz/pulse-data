@@ -440,7 +440,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = f"""
         SELECT DISTINCT exemptions.AccountSAK
               FROM exemptions 
               WHERE ReasonCode IN ('SSDB','JORD','CORD','SISS') 
-              AND EndDate IS NULL              
+              AND EndDate IS NULL OR EndDate > CURRENT_DATE('US/Eastern')         
         ),
     current_exemptions AS (
         SELECT AccountSAK, 
@@ -620,7 +620,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = f"""
                 -- First, create all the flags needed to group people into eligibility (eligible, almost, not) and discretion (c2 - offense discretion, c3 - zero tolerance discretion)
                 -- If offense is eligible then look at whether or not discretion is required
                 CASE 
-                    -- If sentence info is missing, that is captured elsewhere
+                    -- If sentence info is missing, we stll want to surface past offense
+                    WHEN has_active_sentence = 0 THEN 2
                     WHEN COALESCE(eligible_offense, 1) = 1 
                     THEN (
                         CASE WHEN COALESCE(eligible_offense_discretion, 1) = 0 THEN 1

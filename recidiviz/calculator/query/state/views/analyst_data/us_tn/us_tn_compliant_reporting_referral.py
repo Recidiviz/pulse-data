@@ -45,7 +45,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
             vic.VictimName,
         FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized` pp
         LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.JOVictim_latest` vic
-            ON pp.external_id = CONCAT(vic.OffenderID, '-', vic.ConvictionCounty,'-', vic.CaseYear, '-', vic.CaseNumber, '-', vic.CountNumber)
+            ON pp.external_id = CONCAT(vic.OffenderID, '-', vic.ConvictionCounty,'-', vic.CaseYear, '-', vic.CaseNumber, '-', vic.CountNumber,  '-', 'SENTENCE')
         WHERE pp.status_raw_text !='IN'
         ),
         aggregated_restitution AS (
