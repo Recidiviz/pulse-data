@@ -21,10 +21,10 @@ up only a part of a full DAG of BigQuery views.
 from typing import List, Optional, Sequence, Set
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 

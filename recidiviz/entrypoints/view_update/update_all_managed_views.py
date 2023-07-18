@@ -21,6 +21,7 @@ import logging
 
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
 from recidiviz.utils.metadata import project_id
+from recidiviz.utils.params import str_to_list
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -33,6 +34,15 @@ def parse_arguments() -> argparse.Namespace:
         type=str,
     )
 
+    parser.add_argument(
+        "--dataset_ids_to_load",
+        dest="dataset_ids_to_load",
+        help="A list of dataset_ids to load separated by commas. If provided, only "
+        "loads datasets in this list plus ancestors.",
+        type=str_to_list,
+        required=False,
+    )
+
     return parser.parse_args()
 
 
@@ -42,4 +52,6 @@ if __name__ == "__main__":
 
     args = parse_arguments()
 
-    execute_update_all_managed_views(project_id(), args.sandbox_prefix)
+    execute_update_all_managed_views(
+        project_id(), args.sandbox_prefix, args.dataset_ids_to_load
+    )

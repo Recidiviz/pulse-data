@@ -86,6 +86,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args(argv)
 
 
+# TODO(#16451): Remove dataset_ids_to_load since it won't be needed after migrating logic to DAG. Rebrand file to deploy_test_empty_views.py
 def deploy_views(
     project_id: str,
     test_schema: bool,
