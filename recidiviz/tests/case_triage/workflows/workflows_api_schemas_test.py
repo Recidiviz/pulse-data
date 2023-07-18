@@ -188,6 +188,7 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
             "recipient": VALID_NUMBER,
             "mid": MID,
             "message": "Some pig!",
+            "recipient_external_id": "123",
         }
     )
 
@@ -211,6 +212,14 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
             "recipient": "15556667777",
             "mid": MID,
             "message": "That'll do, pig. That'll do.",
+        }
+    )
+
+    test_missing_recipient_external_id = invalid_schema_test(
+        {
+            "recipient": VALID_NUMBER,
+            "mid": MID,
+            "message": "1112223333",
         }
     )
 
