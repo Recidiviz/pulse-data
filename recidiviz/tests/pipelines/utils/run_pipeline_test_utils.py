@@ -28,6 +28,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
+from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
     ComprehensiveNormalizationPipeline,
@@ -54,6 +55,7 @@ def run_test_pipeline(
         [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
     ],
     unifying_id_field_filter_set: Optional[Set[int]] = None,
+    read_all_from_bq_constructor: Optional[Callable[[], FakeReadFromBigQuery]] = None,
     **additional_pipeline_args: Any,
 ) -> None:
     """Runs a test version of the pipeline in the provided module with BQ I/O mocked out."""
@@ -85,45 +87,53 @@ def run_test_pipeline(
         **additional_pipeline_args,
     )
 
+    if issubclass(pipeline_cls, StateIngestPipeline):
+        read_from_bq_class = (
+            "recidiviz.pipelines.ingest.state.pipeline.ReadFromBigQuery"
+        )
+    else:
+        read_from_bq_class = (
+            "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery"
+        )
+
+    if issubclass(pipeline_cls, MetricPipeline):
+        write_to_bq_class = (
+            "recidiviz.pipelines.metrics.base_metric_pipeline.WriteToBigQuery"
+        )
+    elif issubclass(pipeline_cls, ComprehensiveNormalizationPipeline):
+        write_to_bq_class = (
+            "recidiviz.pipelines.normalization.comprehensive.pipeline.WriteToBigQuery"
+        )
+    elif issubclass(pipeline_cls, SupplementalDatasetPipeline):
+        class_name = pipeline_cls.pipeline_name().lower().replace("_supplemental", "")
+        write_to_bq_class = (
+            f"recidiviz.pipelines.supplemental.{class_name}.pipeline.WriteToBigQuery"
+        )
+    elif issubclass(pipeline_cls, StateIngestPipeline):
+        write_to_bq_class = "recidiviz.pipelines.ingest.state.pipeline.WriteToBigQuery"
+    else:
+        raise ValueError(f"Pipeline class not recognized: {pipeline_cls}")
+
     with patch(
-        "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery",
+        read_from_bq_class,
         read_from_bq_constructor,
     ):
         with patch(
-            "recidiviz.pipelines.utils.beam_utils"
-            ".bigquery_io_utils.ReadFromBigQuery",
-            read_from_bq_constructor,
+            "apache_beam.io.ReadAllFromBigQuery",
+            read_all_from_bq_constructor
+            if read_all_from_bq_constructor
+            else read_from_bq_constructor,
         ):
-            with patch(
-                "recidiviz.pipelines.metrics.base_metric_pipeline.WriteToBigQuery",
-                write_to_bq_constructor,
-            ):
+            with patch(write_to_bq_class, write_to_bq_constructor):
                 with patch(
-                    "recidiviz.pipelines.normalization.comprehensive.pipeline"
-                    ".WriteToBigQuery",
-                    write_to_bq_constructor,
+                    "recidiviz.pipelines.base_pipeline.beam.Pipeline",
+                    pipeline_constructor,
                 ):
                     with patch(
-                        "recidiviz.pipelines.supplemental"
-                        ".us_id_case_note_extracted_entities.pipeline"
-                        ".WriteToBigQuery",
-                        write_to_bq_constructor,
+                        "recidiviz.pipelines.metrics.base_metric_pipeline.job_id",
+                        get_job_id,
                     ):
-                        with patch(
-                            "recidiviz.pipelines.supplemental"
-                            ".us_ix_case_note_extracted_entities.pipeline"
-                            ".WriteToBigQuery",
-                            write_to_bq_constructor,
-                        ):
-                            with patch(
-                                "recidiviz.pipelines.base_pipeline.beam.Pipeline",
-                                pipeline_constructor,
-                            ):
-                                with patch(
-                                    "recidiviz.pipelines.metrics.base_metric_pipeline.job_id",
-                                    get_job_id,
-                                ):
-                                    pipeline_cls.build_from_args(pipeline_args).run()
+                        pipeline_cls.build_from_args(pipeline_args).run()
 
 
 def default_data_dict_for_root_schema_classes(
@@ -241,6 +251,8 @@ def default_arg_list_for_pipeline(
         pass
     elif issubclass(pipeline, SupplementalDatasetPipeline):
         pass
+    elif issubclass(pipeline, StateIngestPipeline):
+        pipeline_args.extend(["--ingest_view_results_output", dataset_id])
     else:
         raise ValueError(f"Unexpected Pipeline type: {type(pipeline)}.")
 

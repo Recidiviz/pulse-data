@@ -46,17 +46,17 @@ from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
 
-_UPPER_BOUND_DATETIME_COL_NAME = "__upper_bound_datetime_inclusive"
-_LOWER_BOUND_DATETIME_COL_NAME = "__lower_bound_datetime_exclusive"
-_MATERIALIZATION_TIME_COL_NAME = "__materialization_time"
+UPPER_BOUND_DATETIME_COL_NAME = "__upper_bound_datetime_inclusive"
+LOWER_BOUND_DATETIME_COL_NAME = "__lower_bound_datetime_exclusive"
+MATERIALIZATION_TIME_COL_NAME = "__materialization_time"
 _PROCESSED_TIME_COL_NAME = "__processed_time"
 _BATCH_NUMBER_COL_NAME = "__extract_and_merge_batch"
 
 _ALL_METADATA_COLS_STR = ",\n  ".join(
     [
-        _UPPER_BOUND_DATETIME_COL_NAME,
-        _LOWER_BOUND_DATETIME_COL_NAME,
-        _MATERIALIZATION_TIME_COL_NAME,
+        UPPER_BOUND_DATETIME_COL_NAME,
+        LOWER_BOUND_DATETIME_COL_NAME,
+        MATERIALIZATION_TIME_COL_NAME,
         _PROCESSED_TIME_COL_NAME,
         _BATCH_NUMBER_COL_NAME,
     ]
@@ -67,7 +67,7 @@ _INGEST_VIEW_RESULTS_BATCH_QUERY_TEMPLATE = f"""SELECT * EXCEPT(
 )
 FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
 WHERE
-  {_UPPER_BOUND_DATETIME_COL_NAME} = {{upper_bound_datetime_inclusive}}
+  {UPPER_BOUND_DATETIME_COL_NAME} = {{upper_bound_datetime_inclusive}}
   AND {_BATCH_NUMBER_COL_NAME} = {{batch_number}}
   AND {_PROCESSED_TIME_COL_NAME} IS NULL;"""
 
@@ -76,7 +76,7 @@ _MARK_PROCESSED_QUERY_TEMPLATE = f"""
 UPDATE `{{project_id}}.{{results_dataset}}.{{results_table}}`
 SET {_PROCESSED_TIME_COL_NAME} = {{processed_time}}
 WHERE
-  {_UPPER_BOUND_DATETIME_COL_NAME} = {{upper_bound_datetime_inclusive}}
+  {UPPER_BOUND_DATETIME_COL_NAME} = {{upper_bound_datetime_inclusive}}
   AND {_BATCH_NUMBER_COL_NAME} = {{batch_number}}
   AND {_PROCESSED_TIME_COL_NAME} IS NULL;
 """
@@ -85,9 +85,9 @@ WHERE
 _ADD_METADATA_COLS_TO_RESULTS_QUERY_TEMPLATE = f"""
 SELECT 
     *, 
-    {{upper_bound_datetime_inclusive}} AS {_UPPER_BOUND_DATETIME_COL_NAME},
-    {{lower_bound_datetime_exclusive}} AS {_LOWER_BOUND_DATETIME_COL_NAME},
-    CURRENT_DATETIME('UTC') AS {_MATERIALIZATION_TIME_COL_NAME},
+    {{upper_bound_datetime_inclusive}} AS {UPPER_BOUND_DATETIME_COL_NAME},
+    {{lower_bound_datetime_exclusive}} AS {LOWER_BOUND_DATETIME_COL_NAME},
+    CURRENT_DATETIME('UTC') AS {MATERIALIZATION_TIME_COL_NAME},
     CAST(NULL AS DATETIME) AS {_PROCESSED_TIME_COL_NAME},
     CAST(
       FLOOR(
@@ -106,10 +106,10 @@ SELECT *
 FROM (
   SELECT
     '{{ingest_view_name}}' AS ingest_view_name,
-    {_UPPER_BOUND_DATETIME_COL_NAME},
+    {UPPER_BOUND_DATETIME_COL_NAME},
     {_BATCH_NUMBER_COL_NAME},
     ROW_NUMBER() OVER (
-      ORDER BY {_UPPER_BOUND_DATETIME_COL_NAME}, {_BATCH_NUMBER_COL_NAME}
+      ORDER BY {UPPER_BOUND_DATETIME_COL_NAME}, {_BATCH_NUMBER_COL_NAME}
     ) AS priority
   FROM
     `{{project_id}}.{{results_dataset}}.{{results_table}}`
@@ -123,11 +123,11 @@ SUMMARY_FOR_VIEW_TEMPLATE = f"""
 SELECT
   COUNTIF({_PROCESSED_TIME_COL_NAME} IS NULL) AS num_unprocessed_rows,
   MIN(
-    IF({_PROCESSED_TIME_COL_NAME} IS NULL, {_UPPER_BOUND_DATETIME_COL_NAME}, NULL)
+    IF({_PROCESSED_TIME_COL_NAME} IS NULL, {UPPER_BOUND_DATETIME_COL_NAME}, NULL)
   ) AS unprocessed_rows_min_datetime,
   COUNTIF({_PROCESSED_TIME_COL_NAME} IS NOT NULL) AS num_processed_rows,
   MAX(
-    IF({_PROCESSED_TIME_COL_NAME} IS NOT NULL, {_UPPER_BOUND_DATETIME_COL_NAME}, NULL)
+    IF({_PROCESSED_TIME_COL_NAME} IS NOT NULL, {UPPER_BOUND_DATETIME_COL_NAME}, NULL)
   ) AS processed_rows_max_datetime
 FROM
   `{{project_id}}.{{results_dataset}}.{{results_table}}`
@@ -136,7 +136,7 @@ FROM
 MAX_DATE_OF_DATA_PROCESSED_FOR_SCHEMA_TEMPLATE = f"""
 SELECT
     "{{ingest_view_name}}" AS ingest_view_name,
-    MAX({_UPPER_BOUND_DATETIME_COL_NAME}) as max_processed_upper_bound_date
+    MAX({UPPER_BOUND_DATETIME_COL_NAME}) as max_processed_upper_bound_date
 FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
 WHERE {_PROCESSED_TIME_COL_NAME} IS NOT NULL AND {_PROCESSED_TIME_COL_NAME} < DATETIME("{{datetime_utc}}")
 """
@@ -144,7 +144,7 @@ WHERE {_PROCESSED_TIME_COL_NAME} IS NOT NULL AND {_PROCESSED_TIME_COL_NAME} < DA
 MIN_DATE_OF_UNPROCESSED_DATA_FOR_SCHEMA_TEMPLATE = f"""
 SELECT
     "{{ingest_view_name}}" AS ingest_view_name,
-    MIN({_UPPER_BOUND_DATETIME_COL_NAME}) as min_unprocessed_upper_bound_date
+    MIN({UPPER_BOUND_DATETIME_COL_NAME}) as min_unprocessed_upper_bound_date
 FROM `{{project_id}}.{{results_dataset}}.{{results_table}}`
 WHERE {_PROCESSED_TIME_COL_NAME} IS NULL
 """
@@ -307,17 +307,17 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
 
     _ADDITIONAL_METADATA_SCHEMA_FIELDS = [
         bigquery.SchemaField(
-            _UPPER_BOUND_DATETIME_COL_NAME,
+            UPPER_BOUND_DATETIME_COL_NAME,
             field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
             mode="REQUIRED",
         ),
         bigquery.SchemaField(
-            _LOWER_BOUND_DATETIME_COL_NAME,
+            LOWER_BOUND_DATETIME_COL_NAME,
             field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
             mode="NULLABLE",
         ),
         bigquery.SchemaField(
-            _MATERIALIZATION_TIME_COL_NAME,
+            MATERIALIZATION_TIME_COL_NAME,
             field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
             mode="REQUIRED",
         ),
@@ -472,7 +472,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             table_address.dataset_id,
             table_address.table_id,
             schema_fields=final_table_schema,
-            date_partition_field=_UPPER_BOUND_DATETIME_COL_NAME,
+            date_partition_field=UPPER_BOUND_DATETIME_COL_NAME,
         )
 
     def get_unprocessed_rows_for_batch(
@@ -553,7 +553,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             result[ingest_view_name] = ResultsBatchInfo(
                 ingest_view_name=ingest_view_name,
                 upper_bound_datetime_inclusive=assert_type(
-                    row[_UPPER_BOUND_DATETIME_COL_NAME], datetime.datetime
+                    row[UPPER_BOUND_DATETIME_COL_NAME], datetime.datetime
                 ),
                 batch_number=assert_type(row[_BATCH_NUMBER_COL_NAME], int),
             )

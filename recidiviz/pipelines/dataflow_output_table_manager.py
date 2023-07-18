@@ -63,6 +63,9 @@ from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_ingest_pipeline_enabled_states,
     get_normalization_pipeline_enabled_states,
 )
+from recidiviz.pipelines.ingest.utils.ingest_view_query_helpers import (
+    ADDITIONAL_SCHEMA_COLUMNS,
+)
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
 )
@@ -329,18 +332,18 @@ def update_state_specific_ingest_view_result_schema(
         for f in futures.as_completed(futures_to_ingest_view_name):
             ingest_view_name = futures_to_ingest_view_name[f]
             res = f.result()
-
+            final_schema = res.schema + ADDITIONAL_SCHEMA_COLUMNS
             if bq_client.table_exists(ingest_view_dataset_ref, ingest_view_name):
                 bq_client.update_schema(
                     dataset_id=ingest_view_dataset_ref.dataset_id,
                     table_id=ingest_view_name,
-                    desired_schema_fields=res.schema,
+                    desired_schema_fields=final_schema,
                 )
             else:
                 bq_client.create_table_with_schema(
                     dataset_id=ingest_view_dataset_ref.dataset_id,
                     table_id=ingest_view_name,
-                    schema_fields=res.schema,
+                    schema_fields=final_schema,
                 )
 
 

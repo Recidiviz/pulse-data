@@ -52,7 +52,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
     def test_ingest_view_to_manifest(self) -> None:
         result = self.ingest_view_manifest_collector.ingest_view_to_manifest
         self.assertListEqual(
-            ["tagBasicData", "tagMoreBasicData"], list(sorted(result.keys()))
+            ["basic", "tagBasicData", "tagMoreBasicData"], list(sorted(result.keys()))
         )
 
     def test_parse_ingest_view_name(self) -> None:
