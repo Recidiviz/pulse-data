@@ -25,7 +25,7 @@ When run in dry-run mode (the default), will only log copies, but will not execu
 Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.ingest.operations.copy_raw_state_files_between_projects \
-    --region us_tn --source-project-id recidiviz-123 \
+    --region us_tn --source-project-id recidiviz-123  --source_raw_data_instance PRIMARY \
     --destination-project-id recidiviz-staging --destination-raw-data-instance SECONDARY \
     --start-date-bound 2022-03-24 --dry-run True
 """
@@ -58,6 +58,14 @@ def main() -> None:
         "--source-project-id",
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
         help="Used to select which GCP project against which to run this script.",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--source-raw-data-instance",
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
+        help="Used to identify which instance the raw data should be copied from.",
         required=True,
     )
 
@@ -97,11 +105,12 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    source_region_storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_state(
-        region_code=args.region,
-        # limit the source raw data instance to only PRIMARY.
-        ingest_instance=DirectIngestInstance.PRIMARY,
-        project_id=args.source_project_id,
+    source_region_storage_dir_path = (
+        gcsfs_direct_ingest_storage_directory_path_for_state(
+            region_code=args.region,
+            ingest_instance=args.source_raw_data_instance,
+            project_id=args.source_project_id,
+        )
     )
     destination_region_storage_dir_path = (
         gcsfs_direct_ingest_storage_directory_path_for_state(
