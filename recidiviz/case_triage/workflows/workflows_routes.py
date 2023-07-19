@@ -86,6 +86,8 @@ WORKFLOWS_ALLOWED_ORIGINS = [
     cloud_run_metadata.url,
 ]
 
+OPT_OUT_MESSAGE = "To stop receiving these texts, reply: STOP."
+
 
 def create_workflows_api_blueprint() -> Blueprint:
     """Creates the API blueprint for Workflows"""
@@ -446,6 +448,12 @@ def create_workflows_api_blueprint() -> Blueprint:
 
             client.messages.create(
                 body=message, messaging_service_sid=messaging_service_sid, to=recipient
+            )
+
+            client.messages.create(
+                body=OPT_OUT_MESSAGE,
+                messaging_service_sid=messaging_service_sid,
+                to=recipient,
             )
         except Exception as e:
             logging.error("Sending message to Twilio failed. Error: %s", e)
