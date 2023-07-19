@@ -214,6 +214,8 @@ def retrieve_data(
         results_by_supervisor_str = json.dumps(results_by_supervisor_json)
         _create_report_json_archive(batch, results_by_supervisor_str)
 
+        date = utils.get_date_from_batch_id(batch)
+
         return [
             Recipient(
                 email_address=supervisor_info.recipient_email_address,
@@ -221,6 +223,8 @@ def retrieve_data(
                 data={
                     "report": supervisor_info,
                     "config": outliers_config,
+                    "review_month": date.month,
+                    "review_year": date.year,
                 },
             )
             for supervisor_info in results_by_supervisor.values()
