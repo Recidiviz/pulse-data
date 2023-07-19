@@ -25,7 +25,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH charges AS (
     SELECT 
-        TRIM(REPLACE(OFFENDER_BOOK_ID, ',',''), '.00') AS OFFENDER_BOOK_ID,
+        REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
         CHARGE_SEQ,
         OFFENSE_DATE,
         COUNTY_CODE,
@@ -46,7 +46,7 @@ WITH charges AS (
 ),
 sentences AS (
     SELECT 
-        TRIM(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00') AS OFFENDER_BOOK_ID,
+        REPLACE(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
         sentences.SENTENCE_SEQ,
         sentences.CHARGE_SEQ,
         sentences.EFFECTIVE_DATE,
@@ -58,11 +58,11 @@ sentences AS (
         aggs.OVR_POS_REL_DATE,
     FROM {elite_offendersentences} sentences
     LEFT JOIN {elite_offendersentenceaggs} aggs
-    ON (TRIM(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00') = aggs.OFFENDER_BOOK_ID)
+    ON (REPLACE(REPLACE(sentences.OFFENDER_BOOK_ID,',',''), '.00', '') = aggs.OFFENDER_BOOK_ID)
 ),
 terms AS (
     SELECT
-        TRIM(REPLACE(OFFENDER_BOOK_ID, ',',''), '.00') AS OFFENDER_BOOK_ID,
+        REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
         SENTENCE_SEQ,
         YEARS,
         MONTHS,
