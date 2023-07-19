@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for classes in raw_file_configs.py."""
 import unittest
+from typing import Dict
 
 import attr
 
@@ -27,6 +28,12 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     RawDataClassification,
     RawTableColumnFieldType,
     RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
+    ColumnEqualityJoinBooleanClause,
+    JoinColumn,
+    RawDataJoinCardinality,
+    RawTableRelationshipInfo,
 )
 from recidiviz.tests.ingest.direct import fake_regions
 
@@ -149,6 +156,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
+            table_relationships=[],
         )
 
     def test_basic_sparse_config(self) -> None:
@@ -445,6 +453,89 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 primary_key_cols=["Col1", "Col2"],
             )
 
+    def test_duplicate_table_relationships(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found duplicate table relationships \[myFile1.col1 = myFile2.col2\] and "
+            r"\[myFile2.col2\ = myFile1.col1] defined in \[/path/to/myFile1.yaml\]",
+        ):
+            _ = attr.evolve(
+                self.sparse_config,
+                file_tag="myFile1",
+                file_path="/path/to/myFile1.yaml",
+                columns=[
+                    RawTableColumnInfo(
+                        name="col1",
+                        field_type=RawTableColumnFieldType.STRING,
+                        is_pii=False,
+                        description="col1 description",
+                    ),
+                    RawTableColumnInfo(
+                        name="col2",
+                        field_type=RawTableColumnFieldType.DATETIME,
+                        is_pii=False,
+                        description="col2 description",
+                    ),
+                ],
+                table_relationships=[
+                    RawTableRelationshipInfo(
+                        file_tag="myFile1",
+                        foreign_table="myFile2",
+                        cardinality=RawDataJoinCardinality.ONE_TO_MANY,
+                        join_clauses=[
+                            ColumnEqualityJoinBooleanClause(
+                                column_1=JoinColumn(file_tag="myFile1", column="col1"),
+                                column_2=JoinColumn(file_tag="myFile2", column="col2"),
+                            )
+                        ],
+                    ),
+                    RawTableRelationshipInfo(
+                        file_tag="myFile1",
+                        foreign_table="myFile2",
+                        cardinality=RawDataJoinCardinality.ONE_TO_MANY,
+                        join_clauses=[
+                            ColumnEqualityJoinBooleanClause(
+                                column_1=JoinColumn(file_tag="myFile2", column="col2"),
+                                column_2=JoinColumn(file_tag="myFile1", column="col1"),
+                            )
+                        ],
+                    ),
+                ],
+            )
+
+    def test_table_relationship_does_not_match_file_tag(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found table_relationship defined for \[myFile1\] with file_tag that does "
+            r"not match config file_tag: myFile2.",
+        ):
+            _ = attr.evolve(
+                self.sparse_config,
+                file_tag="myFile1",
+                file_path="/path/to/myFile1.yaml",
+                columns=[
+                    RawTableColumnInfo(
+                        name="col1",
+                        field_type=RawTableColumnFieldType.STRING,
+                        is_pii=False,
+                        description="col1 description",
+                    )
+                ],
+                table_relationships=[
+                    RawTableRelationshipInfo(
+                        file_tag="myFile2",
+                        foreign_table="myFile1",
+                        cardinality=RawDataJoinCardinality.ONE_TO_MANY,
+                        join_clauses=[
+                            ColumnEqualityJoinBooleanClause(
+                                column_1=JoinColumn(file_tag="myFile1", column="col1"),
+                                column_2=JoinColumn(file_tag="myFile2", column="col2"),
+                            )
+                        ],
+                    ),
+                ],
+            )
+
 
 class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
     """Tests for DirectIngestRegionRawFileConfig"""
@@ -453,6 +544,24 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         self.us_xx_region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
             region_module=fake_regions,
+        )
+        self.sparse_config = DirectIngestRawFileConfig(
+            file_tag="myFile",
+            file_path="/path/to/myFile.yaml",
+            file_description="This is a raw data file",
+            data_classification=RawDataClassification.SOURCE,
+            columns=[],
+            custom_line_terminator=None,
+            primary_key_cols=[],
+            supplemental_order_by_clause="",
+            encoding="UTF-8",
+            separator=",",
+            ignore_quotes=False,
+            always_historical_export=True,
+            no_valid_primary_keys=False,
+            import_chunk_size_rows=10,
+            infer_columns_from_config=False,
+            table_relationships=[],
         )
 
     def test_missing_configs_for_region(self) -> None:
@@ -543,6 +652,58 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             ),
         ]
         self.assertEqual(expected_columns_config_1, config_1.columns)
+        expected_config_1_config_2_relationship = RawTableRelationshipInfo(
+            file_tag="file_tag_first",
+            foreign_table="file_tag_second",
+            join_clauses=[
+                ColumnEqualityJoinBooleanClause(
+                    column_1=JoinColumn(
+                        file_tag="file_tag_first", column="col_name_1a"
+                    ),
+                    column_2=JoinColumn(
+                        file_tag="file_tag_second", column="col_name_2a"
+                    ),
+                )
+            ],
+            cardinality=RawDataJoinCardinality.ONE_TO_MANY,
+        )
+        expected_config_1_config_3_relationship = RawTableRelationshipInfo(
+            file_tag="file_tag_first",
+            foreign_table="tagBasicData",
+            join_clauses=[
+                ColumnEqualityJoinBooleanClause(
+                    column_1=JoinColumn(
+                        file_tag="file_tag_first", column="col_name_1a"
+                    ),
+                    column_2=JoinColumn(file_tag="tagBasicData", column="COL1"),
+                )
+            ],
+            cardinality=RawDataJoinCardinality.MANY_TO_MANY,
+        )
+        # Tests that a self-join relationship is valid
+        expected_config_1_config_1_relationship = RawTableRelationshipInfo(
+            file_tag="file_tag_first",
+            foreign_table="file_tag_first",
+            join_clauses=[
+                ColumnEqualityJoinBooleanClause(
+                    column_1=JoinColumn(
+                        file_tag="file_tag_first", column="col_name_1a"
+                    ),
+                    column_2=JoinColumn(
+                        file_tag="file_tag_first", column="col_name_1b"
+                    ),
+                )
+            ],
+            cardinality=RawDataJoinCardinality.MANY_TO_MANY,
+        )
+        self.assertEqual(
+            [
+                expected_config_1_config_2_relationship,
+                expected_config_1_config_1_relationship,
+                expected_config_1_config_3_relationship,
+            ],
+            config_1.table_relationships,
+        )
 
         config_2 = region_config.raw_file_configs["file_tag_second"]
         expected_file_description_config_2 = (
@@ -566,6 +727,12 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 )
             ],
             config_2.columns,
+        )
+        self.assertEqual(
+            # This relationship gets added even though it isn't defined reciprocally in
+            # the YAML for file_tag_second
+            [expected_config_1_config_2_relationship],
+            config_2.table_relationships,
         )
 
         config_3 = region_config.raw_file_configs["tagBasicData"]
@@ -600,6 +767,9 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 ),
             ],
             config_3.columns,
+        )
+        self.assertEqual(
+            [expected_config_1_config_3_relationship], config_3.table_relationships
         )
 
         config_4 = region_config.raw_file_configs["tagPipeSeparatedNonUTF8"]
@@ -690,3 +860,144 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             default_config.default_no_valid_primary_keys,
         )
         self.assertTrue(file_config.no_valid_primary_keys)
+
+    def test_table_relationship_column_does_not_exist(self) -> None:
+        config_1 = attr.evolve(
+            self.sparse_config,
+            file_tag="myFile1",
+            columns=[
+                RawTableColumnInfo(
+                    name="col1",
+                    field_type=RawTableColumnFieldType.STRING,
+                    is_pii=False,
+                    description="col1 description",
+                ),
+                RawTableColumnInfo(
+                    name="col2",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="col2 description",
+                ),
+            ],
+            table_relationships=[
+                RawTableRelationshipInfo(
+                    file_tag="myFile1",
+                    foreign_table="myFile2",
+                    cardinality=RawDataJoinCardinality.ONE_TO_MANY,
+                    join_clauses=[
+                        ColumnEqualityJoinBooleanClause(
+                            column_1=JoinColumn(file_tag="myFile1", column="col1"),
+                            # The column col2 does not exist in myFile2, but we can't
+                            # know that until we build the DirectIngestRegionRawFileConfig
+                            column_2=JoinColumn(file_tag="myFile2", column="col2"),
+                        )
+                    ],
+                )
+            ],
+        )
+        config_2 = attr.evolve(
+            self.sparse_config,
+            file_tag="myFile2",
+            columns=[
+                RawTableColumnInfo(
+                    name="col1",
+                    field_type=RawTableColumnFieldType.STRING,
+                    is_pii=False,
+                    description="col1 description",
+                )
+            ],
+        )
+
+        @attr.s
+        class InMemoryDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
+            def _read_configs_from_disk(self) -> Dict[str, DirectIngestRawFileConfig]:
+                return {
+                    config_1.file_tag: config_1,
+                    config_2.file_tag: config_2,
+                }
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found column \[myFile2.col2\] referenced in join clause "
+            r"\[myFile1.col1 = myFile2.col2\] which is not defined in the config for "
+            r"\[myFile2\]",
+        ):
+            InMemoryDirectIngestRegionRawFileConfig(region_code="us_xx")
+
+    def test_different_relationships_between_same_tables_multiple_files(self) -> None:
+        config_1 = attr.evolve(
+            self.sparse_config,
+            file_tag="myFile1",
+            file_path="/path/to/myFile1.yaml",
+            columns=[
+                RawTableColumnInfo(
+                    name="col1",
+                    field_type=RawTableColumnFieldType.STRING,
+                    is_pii=False,
+                    description="col1 description",
+                ),
+                RawTableColumnInfo(
+                    name="col2",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="col2 description",
+                ),
+            ],
+            table_relationships=[
+                RawTableRelationshipInfo(
+                    file_tag="myFile1",
+                    foreign_table="myFile2",
+                    cardinality=RawDataJoinCardinality.ONE_TO_MANY,
+                    join_clauses=[
+                        ColumnEqualityJoinBooleanClause(
+                            column_1=JoinColumn(file_tag="myFile1", column="col1"),
+                            column_2=JoinColumn(file_tag="myFile2", column="col1"),
+                        )
+                    ],
+                )
+            ],
+        )
+        config_2 = attr.evolve(
+            self.sparse_config,
+            file_tag="myFile2",
+            file_path="/path/to/myFile2.yaml",
+            columns=[
+                RawTableColumnInfo(
+                    name="col1",
+                    field_type=RawTableColumnFieldType.STRING,
+                    is_pii=False,
+                    description="col1 description",
+                )
+            ],
+            table_relationships=[
+                RawTableRelationshipInfo(
+                    file_tag="myFile2",
+                    foreign_table="myFile1",
+                    cardinality=RawDataJoinCardinality.ONE_TO_MANY,
+                    join_clauses=[
+                        ColumnEqualityJoinBooleanClause(
+                            column_1=JoinColumn(file_tag="myFile1", column="col2"),
+                            column_2=JoinColumn(file_tag="myFile2", column="col1"),
+                        )
+                    ],
+                )
+            ],
+        )
+
+        @attr.s
+        class InMemoryDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
+            def _read_configs_from_disk(self) -> Dict[str, DirectIngestRawFileConfig]:
+                return {
+                    config_1.file_tag: config_1,
+                    config_2.file_tag: config_2,
+                }
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found table_relationship defined in \[/path/to/myFile2.yaml\] between "
+            r"tables \('myFile1', 'myFile2'\). There is already a relationship between "
+            r"these tables defined in \[/path/to/myFile1.yaml\].",
+        ):
+            InMemoryDirectIngestRegionRawFileConfig(
+                region_code="us_xx",
+            )

@@ -77,6 +77,32 @@
       },
       "uniqueItems": true
     },
+    "table_relationships": {
+      "description": "A list of other raw data tables to which this table may be joined, along with valid join logic.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["foreign_table", "join_logic"],
+        "properties": {
+          "foreign_table": {
+            "description": "The name of the related table in this state's raw data",
+            "type": "string"
+          },
+          "cardinality": {
+            "description": "Cardinality of the join. If unspecified, many-to-many is assumed.",
+            "type": "string"
+          },
+          "join_logic": {
+            "description": "A list of boolean clauses required for the join. These clauses will be joined together with AND to produce the full join logic.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "([^=]+)=([^=]+)"
+            }
+          }
+        }
+      }
+    },
     "supplemental_order_by_clause": {
       "description": "An additional string clause that will be added to the ORDER BY list that determines which is the most up-to-date row to pick among all rows that have the same primary key. NOTE: Right now this clause does not have access to the date-normalized version of the columns in datetime_cols,  so must handle its own date parsing logic - if this becomes too cumbersome, we can restructure the query to do  date normalization in a subquery before ordering.",
       "type": "string"

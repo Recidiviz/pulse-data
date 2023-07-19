@@ -81,6 +81,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
                     infer_columns_from_config=False,
                     ignore_quotes=True,
                     import_chunk_size_rows=200,
+                    table_relationships=[],
                 )
             },
         )

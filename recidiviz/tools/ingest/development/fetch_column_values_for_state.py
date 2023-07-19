@@ -141,6 +141,7 @@ def _update_enum_known_values(
         no_valid_primary_keys=original_config.no_valid_primary_keys,
         import_chunk_size_rows=original_config.import_chunk_size_rows,
         infer_columns_from_config=original_config.infer_columns_from_config,
+        table_relationships=original_config.table_relationships,
     )
 
 

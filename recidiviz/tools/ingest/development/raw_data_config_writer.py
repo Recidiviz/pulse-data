@@ -23,6 +23,9 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
+    RawDataJoinCardinality,
+)
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 
 
@@ -141,6 +144,25 @@ class RawDataConfigWriter:
                 raw_file_config.custom_line_terminator
             ).strip("'")
             config += f'custom_line_terminator: "{custom_line_terminator_for_yaml}"\n'
+
+        if raw_file_config.table_relationships:
+            table_relationships_lines = ["table_relationships:"]
+            for relationship in raw_file_config.table_relationships:
+                relationship_lines = [
+                    f"  - foreign_table: {relationship.foreign_table}",
+                ]
+                if relationship.cardinality != RawDataJoinCardinality.MANY_TO_MANY:
+                    relationship_lines.append(
+                        f"    cardinality: {relationship.cardinality.value}"
+                    )
+
+                join_list_str = "\n".join(
+                    f"      - {c.to_sql()}" for c in relationship.join_clauses
+                )
+                relationship_lines.append(f"    join_logic:\n{join_list_str}")
+
+                table_relationships_lines.append("\n".join(relationship_lines))
+            config += "\n".join(table_relationships_lines) + "\n"
 
         prior_config = None
         if os.path.exists(output_path):

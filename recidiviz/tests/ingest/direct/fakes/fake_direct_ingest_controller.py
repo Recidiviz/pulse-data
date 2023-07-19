@@ -108,7 +108,7 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
 
 @attr.s
 class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
-    def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
+    def _read_configs_from_disk(self) -> Dict[str, DirectIngestRawFileConfig]:
         return {
             "tagFullyEmptyFile": DirectIngestRawFileConfig(
                 file_tag="tagFullyEmptyFile",
@@ -133,6 +133,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 no_valid_primary_keys=False,
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
+                table_relationships=[],
             ),
             "tagHeadersNoContents": DirectIngestRawFileConfig(
                 file_tag="tagHeadersNoContents",
@@ -157,6 +158,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 no_valid_primary_keys=False,
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
+                table_relationships=[],
             ),
             "tagBasicData": DirectIngestRawFileConfig(
                 file_tag="tagBasicData",
@@ -181,6 +183,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 no_valid_primary_keys=False,
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
+                table_relationships=[],
             ),
             "tagMoreBasicData": DirectIngestRawFileConfig(
                 file_tag="tagMoreBasicData",
@@ -205,6 +208,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 no_valid_primary_keys=False,
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
+                table_relationships=[],
             ),
             "tagWeDoNotIngest": DirectIngestRawFileConfig(
                 file_tag="tagWeDoNotIngest",
@@ -222,6 +226,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 no_valid_primary_keys=False,
                 import_chunk_size_rows=10,
                 infer_columns_from_config=False,
+                table_relationships=[],
             ),
         }
 

@@ -43,7 +43,14 @@ class RawDataConfigWriterTest(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as tmpdirname:
-            for file_tag, config in region_config.raw_file_configs.items():
+            # pylint: disable=protected-access
+            # We read the configs directly from disk so they will not be normalized
+            # in the region constructor (i.e. have reciprocal table relationships set
+            # on the config for the other table in the relationship).
+            for file_tag, config in region_config._read_configs_from_disk().items():
+                with open(config.file_path, "r", encoding="utf-8") as f:
+                    expected_contents = f.read()
+
                 test_output_path = os.path.join(tmpdirname, f"{file_tag}.yaml")
                 config_writer = RawDataConfigWriter()
                 config_writer.output_to_file(
@@ -62,9 +69,6 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     for line in lines:
                         if PLACEHOLDER_TO_DO_STRING not in line:
                             f.write(line)
-
-                with open(config.file_path, "r", encoding="utf-8") as f:
-                    expected_contents = f.read()
 
                 with open(test_output_path, "r", encoding="utf-8") as f:
                     written_contents = f.read()
