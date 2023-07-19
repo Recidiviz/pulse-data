@@ -32,6 +32,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import (
+    IMPACT_DASHBOARD_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
@@ -81,7 +84,6 @@ app = Flask(__name__)
 
 if in_gcp():
     structured_logging.setup()
-
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server(
         "application-data-import"
     )
@@ -122,24 +124,30 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
         )
 
     view_builder = None
-    for builder in PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS:
-        if f"{builder.view_id}.csv" == filename:
-            view_builder = builder
-    if not view_builder:
+    view_id = ""
+    for pathways_view_builder in PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS:
+        if f"{pathways_view_builder.view_id}.csv" == filename:
+            view_builder = pathways_view_builder.delegate
+            view_id = pathways_view_builder.view_id
+    for impact_view_builder in IMPACT_DASHBOARD_VIEW_BUILDERS:
+        if f"{impact_view_builder.view_id}.csv" == filename:
+            view_builder = impact_view_builder
+            # remove district column since it's not in the database table schema and will cause an error when importing
+            view_builder.columns.remove("district")
+            view_id = impact_view_builder.view_id
+    if not view_builder and not view_id:
         return (
-            f"Invalid filename {filename}, must match a Pathways event-level view",
+            f"Invalid filename {filename}, must match a Pathways event-level view or impact dashboard view",
             HTTPStatus.BAD_REQUEST,
         )
-    if not isinstance(view_builder.delegate, SelectedColumnsBigQueryViewBuilder):
+    if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
         return (
-            f"Unexpected view builder delegate found when importing {filename}",
+            f"Unexpected view builder type found when importing {filename}",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
     try:
-        db_entity = get_database_entity_by_table_name(
-            pathways_schema, view_builder.view_id
-        )
+        db_entity = get_database_entity_by_table_name(pathways_schema, view_id)
 
     except ValueError as e:
         return str(e), HTTPStatus.BAD_REQUEST
@@ -153,12 +161,12 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
 
     database_key = PathwaysDatabaseManager.database_key_for_state(state_code)
     import_gcs_csv_to_cloud_sql(
-        database_key,
-        db_entity,
-        csv_path,
-        view_builder.delegate.columns,
+        database_key=database_key,
+        model=db_entity,
+        gcs_uri=csv_path,
+        columns=view_builder.columns,
     )
-    logging.info("View (%s) successfully imported", view_builder.view_id)
+    logging.info("View (%s) successfully imported", view_id)
 
     gcsfs = GcsfsFactory.build()
     object_metadata = gcsfs.get_metadata(csv_path) or {}
