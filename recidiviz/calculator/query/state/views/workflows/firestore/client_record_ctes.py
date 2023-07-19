@@ -375,7 +375,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 SELECT
                     state_code,
                     person_id,
-                    "Six months without a violation" as milestone_text,
+                    "6+ months violation-free" as milestone_text,
                     "NO_VIOLATION_WITHIN_6_MONTHS" as milestone_type,
                     1 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_6_to_8_months_materialized`
@@ -387,7 +387,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 SELECT
                     state_code,
                     person_id,
-                    "Twelve months without a violation" as milestone_text,
+                    "1+ year violation-free" as milestone_text,
                     "NO_VIOLATION_WITHIN_12_MONTHS" as milestone_type,
                     1 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_violation_free_12_to_14_months_materialized`
@@ -399,7 +399,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 SELECT
                     state_code,
                     person_id,
-                    "Found sustainable housing" as milestone_text,
+                    "Found housing" as milestone_text,
                     "HOUSING_TYPE_IS_NOT_TRANSIENT" as milestone_type,
                     2 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_0_to_2_months_materialized`
@@ -411,7 +411,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 SELECT
                     state_code,
                     person_id,
-                    "Six months of sustainable housing" as milestone_text,
+                    "Sustainable housing for 6+ months" as milestone_text,
                     "SUSTAINABLE_HOUSING_6_MONTHS" as milestone_type,
                     2 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_6_to_8_months_materialized`
@@ -423,7 +423,7 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                 SELECT
                     state_code,
                     person_id,
-                    "Twelve months of sustainable housing" as milestone_text,
+                    "Sustainable housing for 1+ year" as milestone_text,
                     "SUSTAINABLE_HOUSING_12_MONTHS" as milestone_type,
                     2 AS milestone_priority
                 FROM `{{project_id}}.{{us_ca_task_eligibility_spans_dataset}}.kudos_sustainable_housing_12_to_14_months_materialized`
