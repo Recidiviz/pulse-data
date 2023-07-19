@@ -20,7 +20,7 @@ import os
 from http import HTTPStatus
 from typing import Callable, Dict, Optional
 from unittest import TestCase, mock
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import responses
 from flask import Flask
@@ -33,6 +33,7 @@ from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization_recidiviz_only,
 )
 from recidiviz.case_triage.workflows.workflows_routes import (
+    OPT_OUT_MESSAGE,
     create_workflows_api_blueprint,
 )
 from recidiviz.utils.types import assert_type
@@ -650,7 +651,20 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         assert_type(response.get_json(), dict)
         self.assertEqual(HTTPStatus.OK, response.status_code)
         mock_firestore.return_value.set_document.assert_not_called()
-        mock_twilio_messages.assert_called()
+        mock_twilio_messages.assert_has_calls(
+            [
+                call(
+                    body="Message!",
+                    messaging_service_sid=mock_get_secret(),
+                    to="+12223334444",
+                ),
+                call(
+                    body=OPT_OUT_MESSAGE,
+                    messaging_service_sid=mock_get_secret(),
+                    to="+12223334444",
+                ),
+            ]
+        )
         mock_get_secret.assert_called()
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
