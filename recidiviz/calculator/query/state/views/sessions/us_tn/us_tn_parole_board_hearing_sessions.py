@@ -42,7 +42,7 @@ WITH hearing_tbl AS (
         pei.person_id,
         DATE(HearingDate) AS hearing_date,
         DATE(ParoleDecisionDate) AS decision_date,
-        HearingOfficer AS recommendation_officer_external_id,
+        HearingOfficerStaffID AS recommendation_officer_external_id,
 
         -- recommended decision
         CASE
@@ -76,14 +76,14 @@ WITH hearing_tbl AS (
             ) THEN "CONTINUED"
             WHEN ParoleDecision IS NULL THEN "EXTERNAL_UNKNOWN"
             ELSE "INTERNAL_UNKNOWN" END AS decision,
-            
+
         ParoleDecision AS decision_raw,
-        
+
         ARRAY_AGG(
             DISTINCT decision_reasons_unnested IGNORE NULLS
             ORDER BY decision_reasons_unnested
         ) AS decision_reasons_raw,
-    
+
     FROM
         `{project_id}.{us_tn_raw_dataset}.Hearing_latest` hearings,
     UNNEST(
@@ -96,14 +96,14 @@ WITH hearing_tbl AS (
     WHERE
         pei.state_code = "US_TN"
         -- filter to relevant hearing types
-        -- ignore revocation/recission hearings (including time setting) as well as 
+        -- ignore revocation/recission hearings (including time setting) as well as
         -- "custodial hearings"
         -- see https://www.tn.gov/bop/parole-hearings-division/types-of-parole-hearings-lnklst-pg.html
         AND HearingType IN (
             "IP", -- INITIAL PAROLE
             "PV" -- PAROLE REVIEW
         )
-        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
+        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
         -- drop same-day hearings
         QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, hearing_date ORDER BY decision DESC) = 1
 )
@@ -119,14 +119,14 @@ SELECT
 
     -- hearing number within CL1SS
     ROW_NUMBER() OVER w AS hearing_number,
-    
+
     -- session start and 'end' dates
     IFNULL(LAG(hearing_date) OVER w, start_date) AS start_date,
     hearing_date,
     decision_date,
-    
+
     -- decision information
-    a.recommendation_officer_external_id, 
+    recommendation_officer_external_id,
     recommended_decision,
     recommended_decision_raw,
     decision,
@@ -139,7 +139,7 @@ SELECT
 
     -- days from prior hearing to current hearing
     DATE_DIFF(hearing_date,
-        LAG(hearing_date) OVER w, DAY) 
+        LAG(hearing_date) OVER w, DAY)
     AS days_since_prior_hearing,
 
 FROM
