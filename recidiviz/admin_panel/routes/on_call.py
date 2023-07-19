@@ -39,4 +39,8 @@ def add_on_call_routes(blueprint: Blueprint) -> None:
             except ValueError:
                 pass
 
-        return jsonify(OnCallLogsSearch().query(view))
+        return jsonify(
+            OnCallLogsSearch().query(
+                view, show_resolved=request.json.get("show_resolved")
+            )
+        )

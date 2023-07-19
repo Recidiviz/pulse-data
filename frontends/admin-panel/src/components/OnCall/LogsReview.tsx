@@ -18,6 +18,7 @@ import * as React from "react";
 import {
   Button,
   Card,
+  Checkbox,
   Collapse,
   Divider,
   Form,
@@ -153,7 +154,7 @@ const TraceTableColumns = [
 ];
 
 const getTraceQuery = (trace: RequestTrace): string => {
-  return `resource.type = "gae_app" trace = "${trace.trace}"`;
+  return `trace = "${trace.trace}"`;
 };
 
 const TraceLink = ({ trace }: { trace: RequestTrace }) => {
@@ -261,6 +262,10 @@ const Component: React.FC = () => {
                 { label: "Cloud Run", value: "cloud_run" },
               ]}
             />
+          </Form.Item>
+
+          <Form.Item name="show_resolved" valuePropName="checked">
+            <Checkbox>Show Resolved Issues</Checkbox>
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">
