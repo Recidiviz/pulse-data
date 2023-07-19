@@ -21,21 +21,23 @@ US_CA_SUPERVISION_STAFF_TEMPLATE = """
     WITH
     -- Assign officers with caseloads to the district where they have the most clients
     caseload_districts AS (
-        SELECT BadgeNumber, ParoleDistrict as district
-            FROM `{project_id}.{us_ca_raw_tables_dataset}.PersonParole`
+        SELECT officer_id as BadgeNumber, ParoleUnit as district
+            FROM `{project_id}.{us_ca_raw_data_up_to_date_dataset}.PersonParole_latest`
+            -- TODO(#22427) Once PersonParole has badge numbers, delete this join on client record
+            INNER JOIN `{project_id}.{workflows_dataset}.client_record_materialized`
+                ON OffenderId=person_external_id
             WHERE
-                update_datetime = '2023-05-10T00:00:00'
-                AND ParoleDistrict IS NOT NULL
-            GROUP BY BadgeNumber, ParoleDistrict
-            QUALIFY ROW_NUMBER() OVER (PARTITION BY BadgeNumber ORDER BY COUNT(*) desc) = 1
+                ParoleUnit IS NOT NULL
+            GROUP BY officer_id, ParoleUnit
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY officer_id ORDER BY COUNT(*) desc) = 1
     ),
     -- Assign officers without caseloads only if they're associated with a singular district
     no_caseload_districts AS (
-        SELECT BadgeNumber, ANY_VALUE(ParoleDistrict) AS district
+        SELECT BadgeNumber, ANY_VALUE(ParoleUnit) AS district
             FROM `{project_id}.{us_ca_raw_data_up_to_date_dataset}.AgentParole_latest`
-            WHERE ParoleDistrict IS NOT NULL
-            GROUP BY BadgeNumber, ParoleDistrict
-            HAVING count(DISTINCT ParoleDistrict)=1
+            WHERE ParoleUnit IS NOT NULL
+            GROUP BY BadgeNumber, ParoleUnit
+            HAVING count(DISTINCT ParoleUnit)=1
     )
     SELECT
         state_staff.state_code,
