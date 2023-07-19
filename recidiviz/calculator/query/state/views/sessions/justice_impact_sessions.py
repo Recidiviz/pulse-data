@@ -66,13 +66,10 @@ WITH weights AS (
             WHEN compartment_level_1 IN (
                 "DEATH", "ERRONEOUS_RELEASE", "INTERNAL_UNKNOWN", "LIBERTY", "SUSPENSION"
             ) THEN 0
-            -- TODO(#22252): Delete this reference to `housing_unit_type` once 
-            -- `housing_unit_category` replaces it as the super-type for housing placement
             WHEN housing_unit_type IN (
                 "TEMPORARY_SOLITARY_CONFINEMENT",
                 "PERMANENT_SOLITARY_CONFINEMENT"
-            ) OR housing_unit_category IN ("SOLITARY_CONFINEMENT")
-            THEN {SOLITARY_CONFINEMENT_WEIGHT}
+            ) THEN {SOLITARY_CONFINEMENT_WEIGHT}
             WHEN compartment_level_1 IN (
                 "INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY"
             ) THEN
