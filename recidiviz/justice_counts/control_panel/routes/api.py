@@ -1718,6 +1718,119 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/v2/agencies/<agency_slug>/published_data", methods=["GET"])
+    def get_agency_published_data_v2(agency_slug: str) -> Response:
+        # TODO(#22143): Deprecate get_agency_published_data (above) and replace with this
+        # This endpoint should behave the same as the one above, except:
+        # - It takes as input an agency slug, rather than id
+        # - It has some performance improvements
+        try:
+            # agency slug will be like "washington-department-of-corrections"
+            agency_name = agency_slug.replace("-", " ")
+            agency = AgencyInterface.get_agency_by_name(
+                session=current_session, name=agency_name, with_settings=True
+            )
+            if not agency:
+                raise JusticeCountsServerError(
+                    code="agency_not_found",
+                    description=f"No agency exists with the slug {agency_slug}",
+                )
+
+            agency_id = agency.id
+            reports = ReportInterface.get_reports_for_agency_dashboard(
+                session=current_session,
+                agency_id=agency_id,
+            )
+            report_ids = [report.id for report in reports]
+            report_id_to_frequency = {
+                report.id: ReportInterface.get_reporting_frequency(report)
+                for report in reports
+            }
+            datapoints = DatapointInterface.get_datapoints_for_agency_dashboard(
+                session=current_session,
+                report_ids=report_ids,
+                agency_id=agency_id,
+            )
+
+            # Group aggregate datapoints by metric key.
+            metric_key_to_aggregate_datapoints_json: DefaultDict[
+                str, List[DatapointJson]
+            ] = defaultdict(list)
+
+            # Group breakdown datapoints by metric key, disaggregation, and dimension.
+            # e.g. map[LAW_ENFORCEMENT_ARRESTS][GENDER][MALE] = <datapoint containing number of male arrests>
+            metric_key_to_dimension_id_to_dimension_member_to_datapoints_json: DefaultDict[
+                str, DefaultDict[str, DefaultDict[str, List[DatapointJson]]]
+            ] = defaultdict(
+                lambda: defaultdict(lambda: defaultdict(list))
+            )
+
+            agency_datapoints = []
+            for datapoint in datapoints:
+                if datapoint.dimension_identifier_to_member is None:
+                    dimension_id, dimension_member = None, None
+                else:
+                    (
+                        dimension_id,
+                        dimension_member,
+                    ) = DatapointInterface.get_dimension_id_and_member(
+                        dimension_identifier_to_member=datapoint.dimension_identifier_to_member
+                    )
+
+                if datapoint.is_report_datapoint:
+                    datapoint_json = DatapointInterface.to_json_response(
+                        datapoint=datapoint,
+                        is_published=True,
+                        frequency=report_id_to_frequency[datapoint.report_id],
+                    )
+
+                    if dimension_id is not None and dimension_member is not None:
+                        metric_key_to_dimension_id_to_dimension_member_to_datapoints_json[
+                            datapoint.metric_definition_key
+                        ][
+                            dimension_id
+                        ][
+                            dimension_member
+                        ].append(
+                            datapoint_json
+                        )
+                    else:
+                        metric_key_to_aggregate_datapoints_json[
+                            datapoint.metric_definition_key
+                        ].append(datapoint_json)
+
+                else:
+                    agency_datapoints.append(datapoint)
+
+            metrics = DatapointInterface.get_metric_settings_by_agency(
+                session=current_session,
+                agency=agency,
+                agency_datapoints=agency_datapoints,
+            )
+
+            metrics_json = [
+                metric.to_json(
+                    entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
+                    aggregate_datapoints_json=metric_key_to_aggregate_datapoints_json.get(
+                        metric.key
+                    ),
+                    dimension_id_to_dimension_member_to_datapoints_json=metric_key_to_dimension_id_to_dimension_member_to_datapoints_json.get(
+                        metric.key
+                    ),
+                )
+                for metric in metrics
+            ]
+
+            return jsonify(
+                {
+                    "agency": agency.to_public_json(),
+                    "metrics": metrics_json,
+                }
+            )
+
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/agencies", methods=["GET"])
     def get_agencies_metadata() -> Response:
         """Gets a list of all agencies and their metadata (agency ID, agency name and number of metrics published)
