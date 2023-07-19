@@ -24,7 +24,9 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     ASSIGNMENTS,
     DAYS_AT_LIBERTY_365,
+    LSIR_ASSESSMENTS,
     LSIR_ASSESSMENTS_365,
+    LSIR_ASSESSMENTS_AVG_SCORE,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     MetricPopulationType,
@@ -100,6 +102,44 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
                 MetricPopulationType.JUSTICE_INVOLVED: [
                     ASSIGNMENTS,
                     LSIR_ASSESSMENTS_365,
+                ]
+            },
+            levels_by_population_dict={
+                MetricPopulationType.JUSTICE_INVOLVED: [
+                    MetricUnitOfAnalysisType.STATE_CODE,
+                ]
+            },
+        )
+
+    def test_no_event_count_metric_with_event_value_metric(self) -> None:
+        """
+        Test verifies that an error is thrown when a configured EventValueMetric
+        has no associated EventCountMetric configured for the same population type.
+        """
+        with self.assertRaises(ValueError):
+            collect_aggregated_metrics_view_builders(
+                metrics_by_population_dict={
+                    MetricPopulationType.JUSTICE_INVOLVED: [
+                        LSIR_ASSESSMENTS_AVG_SCORE,
+                    ]
+                },
+                levels_by_population_dict={
+                    MetricPopulationType.JUSTICE_INVOLVED: [
+                        MetricUnitOfAnalysisType.STATE_CODE,
+                    ]
+                },
+            )
+
+    def test_event_count_metric_with_event_value_metric(self) -> None:
+        """
+        Test verifies that no error is thrown when a configured EventValueMetric
+        has an associated EventCountMetric configured for the same population type.
+        """
+        collect_aggregated_metrics_view_builders(
+            metrics_by_population_dict={
+                MetricPopulationType.JUSTICE_INVOLVED: [
+                    LSIR_ASSESSMENTS_AVG_SCORE,
+                    LSIR_ASSESSMENTS,
                 ]
             },
             levels_by_population_dict={
