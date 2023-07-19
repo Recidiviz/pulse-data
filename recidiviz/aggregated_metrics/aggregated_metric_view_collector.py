@@ -36,6 +36,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
+    EventValueMetric,
     MiscAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
@@ -369,6 +370,20 @@ def collect_aggregated_metrics_view_builders(
         population = METRIC_POPULATIONS_BY_TYPE[population_type]
         if not all_metrics:
             continue
+
+        # Check that all EventValueMetrics have the configured EventCountMetric included for the same population
+        event_value_metric_list = [
+            m for m in all_metrics if isinstance(m, EventValueMetric)
+        ]
+        for metric in event_value_metric_list:
+            if metric.event_count_metric not in all_metrics:
+                raise ValueError(
+                    f"`{metric.event_count_metric.name}` EventCountMetric "
+                    f"not found in configured `metrics_by_population_dict` for "
+                    f"{population_type.name} population, although this is a required "
+                    f"dependency for `{metric.name}` EventValueMetric."
+                )
+
         for level_type in levels_by_population_dict[population_type]:
             level = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[level_type]
 
