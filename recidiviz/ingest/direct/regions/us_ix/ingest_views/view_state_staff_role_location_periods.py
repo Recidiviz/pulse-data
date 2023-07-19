@@ -39,29 +39,16 @@ VIEW_QUERY_TEMPLATE = f"""
         ) all_rows
         WHERE rn = 1
     ),
-    all_periods as (
+    preliminary_periods as (
         SELECT
             EmployeeId,
             EmployeeTypeName,
             LocationId,
             emp.InActive,
             update_datetime as start_date,
-            LEAD(update_datetime) over(PARTITION BY EmployeeId ORDER BY update_datetime) as end_date,
-            MAX(update_datetime) OVER(PARTITION BY EmployeeId) as last_appearance_date,
-            MAX(update_datetime) OVER(PARTITION BY TRUE) as last_file_update_datetime
+            LEAD(update_datetime) over(PARTITION BY EmployeeId ORDER BY update_datetime) as end_date
         FROM {{ref_Employee@ALL}} emp
         LEFT JOIN {{ref_EmployeeType}} ref USING(EmployeeTypeId)
-    ),
-    preliminary_periods as (
-        SELECT
-            EmployeeId,
-            EmployeeTypeName,
-            LocationId,
-            InActive,
-            start_date,
-            end_date
-        FROM all_periods
-        WHERE (start_date < last_appearance_date or start_date = last_file_update_datetime)
     ),
     final_periods as (
         {aggregate_adjacent_spans_postgres(
