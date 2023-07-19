@@ -46,6 +46,23 @@ Steps:
 
 - [ ] 1. Pause the ingest queues
 - [ ] 2. If you answered Yes to Q3, pause the BQ refresh
+
+_Staging config lock:_
+  
+  Download file: 
+  `gsutil cp gs://recidiviz-staging-configs/cloud_sql_to_bq_config.yaml .`
+  
+  Upload file:
+  `gsutil cp cloud_sql_to_bq_config.yaml gs://recidiviz-staging-configs/cloud_sql_to_bq_config.yaml`
+
+_Production config lock:_
+
+  Download file: 
+  `gsutil cp gs://recidiviz-123-configs/cloud_sql_to_bq_config.yaml .`
+
+  Upload file:
+  `gsutil cp cloud_sql_to_bq_config.yaml gs://recidiviz-123-configs/cloud_sql_to_bq_config.yaml`
+  
 - [ ] 3. Land the PR with the changes you want to make
 - [ ] 4. Delete the ingest view results for the view(s) you want to rerun
 
@@ -74,7 +91,6 @@ _Insert all commands you will run to clear out state tables for relevant entitie
 - [ ] 7. Unpause the ingest queues and trigger the task scheduler
 - [ ] 8. Wait for the partial rerun to complete
 - [ ] 9. If you answered Yes to Q3, unpause the BQ refresh
-
 **If you will have to do any non-standard database operations before starting this rerun, please write the plan you intend to do below.**
 
 _Plan here - fill this out before starting the rerun_
