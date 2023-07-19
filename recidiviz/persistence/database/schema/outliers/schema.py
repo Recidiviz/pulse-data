@@ -93,6 +93,8 @@ class SupervisionOfficer(PersonBase, OutliersBase):
     supervision_district = Column(String, nullable=True)
     # Id of the supervision unit the officer is assigned to
     supervision_unit = Column(String, nullable=True)
+    # specialized caseload type, if applicable
+    specialized_caseload_type = Column(String, nullable=True)
 
 
 class SupervisionOfficerSupervisor(PersonBase, OutliersBase):
