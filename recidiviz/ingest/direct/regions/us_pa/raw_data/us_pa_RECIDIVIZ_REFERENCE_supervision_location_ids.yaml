@@ -7,7 +7,7 @@ file_description: |-
   the following query:
 
   ```
-  WITH
+    WITH
   LU_PBPP_Organization_corrected AS (
       SELECT Org_cd, DO_Orgcode, Org_Name, DistrictOfficeCode,  Region_Code, Region, SO_Identifier, Office
       FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
@@ -75,6 +75,46 @@ file_description: |-
          Region_Code AS level_3_supervision_location_external_id,
          Region AS level_3_supervision_location_name,
      FROM  base_locations
+
+     UNION ALL
+
+    ## Add supervision districts as distinct organizations with location_external_ids
+     SELECT 
+        DISTINCT LPAD(district_id, 2, '0') AS Org_cd,
+        CONCAT(district_name, ' DO') AS Org_Name,
+        '' AS level_1_supervision_location_external_id,
+        '' AS level_1_supervision_location_name,
+        LPAD(district_id, 2, '0') AS level_2_supervision_location_external_id,
+        CONCAT(district_name, ' DO') AS level_2_supervision_location_name,
+        CASE 
+          WHEN region = 'CENTRAL' THEN 'CR'
+          WHEN region = 'EASTERN' THEN 'ER'
+          WHEN region = 'WESTERN' THEN 'WR'
+        END AS region_code,
+        region AS level_3_supervision_location_name
+        FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_field_supervisor_list_latest`
+
+      UNION ALL 
+
+      ## Add supervision regions as distinct organizations with location_external_ids
+      SELECT 
+        DISTINCT CASE 
+          WHEN region = 'CENTRAL' THEN 'CR'
+          WHEN region = 'EASTERN' THEN 'ER'
+          WHEN region = 'WESTERN' THEN 'WR'
+        END AS Org_cd,
+        CONCAT(region, ' REGION') AS Org_Name,
+        '' AS level_1_supervision_location_external_id,
+        '' AS level_1_supervision_location_name,
+        '' AS level_2_supervision_location_external_id,
+        '' AS level_2_supervision_location_name,
+        CASE 
+          WHEN region = 'CENTRAL' THEN 'CR'
+          WHEN region = 'EASTERN' THEN 'ER'
+          WHEN region = 'WESTERN' THEN 'WR'
+        END AS region_code,
+        region AS level_3_supervision_location_name
+        FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_field_supervisor_list_latest`
   )
   SELECT * FROM pa_location_names
   ORDER BY level_1_supervision_location_external_id, Org_cd;
@@ -85,19 +125,30 @@ primary_key_cols:
 columns:
   - name: Org_cd
     description: |-
-      The organization code associated with a supervision unit (the smallest level of supervision location
-      grouping we currently know about in PA).
+      The organization code associated with a supervision site. This could be a supervision
+      unit, a supervision district, or a region.
+      A supervision unit is the smallest level of supervision location grouping we currently know about in PA.
+      A supervision district is a set of supervision units with shared leadership (District Director and Deputy District Director).
+      A supervision region is a set of supervision districts with shared leadership (Regional Director).
   - name: Org_Name
     is_pii: True
-    description: The human-readable name of the supervision unit.
+    description: The human-readable name of the supervision site.
   - name: level_1_supervision_location_external_id
-    description: The ID of the supervision suboffice (sometimes comprised of multiple units).
+    description: |-
+      The ID of the supervision suboffice (sometimes comprised of multiple units).
+      Will be an empty string when the supervision site is a supervision district or region.
   - name: level_1_supervision_location_name
-    description: The human-readable name of the supervision suboffice.
+    description: |-
+      The human-readable name of the supervision suboffice.
+      Will be an empty string when the supervision site is a supervision district or region.
   - name: level_2_supervision_location_external_id
-    description: The ID of the supervision district.
+    description: |-
+      The ID of the supervision district.
+      Will be an empty string when the supervision site is a region.
   - name: level_2_supervision_location_name
-    description: The human-readable name of the supervision district.
+    description: |-
+      The human-readable name of the supervision district.
+      Will be an empty string when the supervision site is a region.
   - name: level_3_supervision_location_external_id
     description: The ID of the supervision region.
   - name: level_3_supervision_location_name

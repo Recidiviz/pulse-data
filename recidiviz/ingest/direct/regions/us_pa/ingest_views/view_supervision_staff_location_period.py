@@ -34,7 +34,7 @@ FROM {RECIDIVIZ_REFERENCE_agent_districts}
 UNION ALL
 
 SELECT 
-    district_id,
+    LPAD(district_id, 2, '0') AS district_id,
     ext_id, 
     DATE('1900-01-01') AS start_date, 
     NULL as end_date
