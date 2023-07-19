@@ -192,7 +192,7 @@ class DimensionGroupLookMLViewField(LookMLViewField):
     def __attrs_post_init__(self) -> None:
         super().__attrs_post_init__()
 
-        # Enforce that type is always time or date
+        # Enforce that type is always time or duration
         has_type_time = any(
             isinstance(param, FieldParameterType)
             and param.field_type is LookMLFieldType.TIME

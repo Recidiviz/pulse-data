@@ -67,7 +67,6 @@ def write_lookml_files(looker_dir: str) -> None:
     # Remove existing LookML files in case the configs list has changed
     remove_lookml_files_from(looker_dir)
 
-    # TODO(#21937): Generate views here
     # TODO(#21938): Generate explores here
     # TODO(#21939): Generate dashboards here
     generate_lookml_views(looker_dir)

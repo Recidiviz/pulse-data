@@ -435,9 +435,8 @@ class FieldParameterTimeframes(LookMLFieldParameter):
     @property
     def value_text(self) -> str:
         str_options = [t.value for t in self.timeframe_options]
-        if len(self.timeframe_options) == 1:
-            return f"[{str_options[0]}]"
-        return "[\n      " + ",\n      ".join(str_options) + "\n    ]"
+        multiline_options_str = ",\n      ".join(str_options)
+        return f"[\n      {multiline_options_str}\n    ]"
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category == LookMLFieldCategory.DIMENSION_GROUP
