@@ -22,10 +22,12 @@ python -m recidiviz.tools.looker.raw_data.person_details_lookml_writer --looker_
 """
 
 import argparse
+import os
 
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     generate_lookml_views,
 )
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -43,7 +45,28 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main(looker_dir: str) -> None:
+def remove_lookml_files_from(directory: str) -> None:
+    """
+    Removes all LookML view files from the given directory
+    """
+    for path, _, filenames in os.walk(directory):
+        for file in filenames:
+            if file.endswith(".lkml"):
+                os.remove(os.path.join(path, file))
+
+
+def write_lookml_files(looker_dir: str) -> None:
+    """
+    Write state raw data LookML views, explores and dashboards to the given directory,
+    which should be a path to the local copy of the looker repo
+    """
+    if os.path.basename(looker_dir).lower() != "looker" and not prompt_for_confirmation(
+        f"Warning: .lkml files will be deleted/overwritten in {looker_dir}\nProceed?"
+    ):
+        return
+    # Remove existing LookML files in case the configs list has changed
+    remove_lookml_files_from(looker_dir)
+
     # TODO(#21937): Generate views here
     # TODO(#21938): Generate explores here
     # TODO(#21939): Generate dashboards here
@@ -52,4 +75,4 @@ def main(looker_dir: str) -> None:
 
 if __name__ == "__main__":
     args = parse_arguments()
-    main(args.looker_dir)
+    write_lookml_files(args.looker_dir)
