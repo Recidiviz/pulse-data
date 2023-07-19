@@ -27,7 +27,7 @@ columns:
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: PardonCommutationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a pardon or commutation is imposed by the governor.
   - name: GovernorName
@@ -73,7 +73,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastModifiedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.
   - name: LastUpdateUserID

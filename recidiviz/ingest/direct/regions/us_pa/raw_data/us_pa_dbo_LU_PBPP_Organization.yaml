@@ -59,7 +59,7 @@ columns:
     description: |-
       Who this record was last modified by.
   - name: DateModified
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this record was last modified.
   - name: SO_Identifier

@@ -13,7 +13,7 @@ columns:
     is_pii: True
   - name: Date
     description: The date on which the person moved to this location (MM/DD/YYYY).
-    is_datetime: True
+    field_type: datetime
   - name: Location
     description: The location to which the person moved.
 always_historical_export: True

@@ -45,7 +45,7 @@ columns:
   - name: InsertDate
     description: |-
       Timestamp for record insertion.
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: |-
       ID of the user who most recently updated this record.
@@ -53,11 +53,11 @@ columns:
   - name: UpdateDate
     description: |-
       Timestamp for most recent record modification.
-    is_datetime: True
+    field_type: datetime
   - name: NoteDate
     description: |-
       Timestamp for when this note was written.
-    is_datetime: True
+    field_type: datetime
   - name: OffenderNoteStatusId
     description: |-
       ID for the status of this note, joins to `ind_OffenderNoteStatus.OffenderNoteStatusId`.

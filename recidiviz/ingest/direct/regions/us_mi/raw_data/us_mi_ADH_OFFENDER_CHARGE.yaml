@@ -35,12 +35,12 @@ columns:
   - name: court_file_no
   - name: offense_date
     description: The date of the offense
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: conviction_date
     description: The date of the conviction
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: conviction_type_id
@@ -145,7 +145,7 @@ columns:
   - name: criminal_tracking_number
   - name: date_of_arrest
     description: Date of arrest
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: guilty_but_mentally_ill_flag
@@ -224,12 +224,12 @@ columns:
     is_pii: True
   - name: closing_date
     description: date charge was closed
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes
   - name: last_update_user
     is_pii: True
   - name: last_update_date
-    is_datetime: True
+    field_type: datetime
   - name: last_update_node

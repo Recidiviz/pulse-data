@@ -16,11 +16,11 @@ columns:
   - name: StartDate
     description: |-
       Start date of the probation term.
-    is_datetime: True
+    field_type: datetime
   - name: EndDate
     description: |-
       End date of the probation term.
-    is_datetime: True
+    field_type: datetime
   - name: DurationYear
     description: |-
       Probation term duration (years). Can be combined with DurationMonth and 

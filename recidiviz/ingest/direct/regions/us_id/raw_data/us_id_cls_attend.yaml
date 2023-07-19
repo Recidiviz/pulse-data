@@ -7,7 +7,7 @@ primary_key_cols:
   - cls_attnd_id
 columns:
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Timestamp of when this record was last updated
   - name: updt_usr_id
@@ -21,7 +21,7 @@ columns:
       ID of enrollment for this person/class record.
   - name: attend_excuse_cd
   - name: attnd_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of attendance
   - name: attnd_tm

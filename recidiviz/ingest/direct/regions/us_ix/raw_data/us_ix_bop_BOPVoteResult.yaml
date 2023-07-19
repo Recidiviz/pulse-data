@@ -88,7 +88,7 @@ columns:
   - name: InsertDate
     description: |-
       Date of insert
-    is_datetime: True
+    field_type: datetime
   - name: InsertUserId
     description: |-
       Insert user ID
@@ -96,7 +96,7 @@ columns:
   - name: UpdateDate
     description: |-
       Date of update
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: |-
       User ID of employee who updated

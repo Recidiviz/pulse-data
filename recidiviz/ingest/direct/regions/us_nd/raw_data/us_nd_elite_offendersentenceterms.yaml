@@ -15,11 +15,11 @@ columns:
     description: |-
       External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
   - name: START_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this sentence term started.
   - name: END_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this sentence term finished or will finish.
   - name: YEARS
@@ -32,11 +32,11 @@ columns:
     description: |-
       Days component of the maximum sentence length.
   - name: CREATE_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
   - name: SENTENCE_SEQ

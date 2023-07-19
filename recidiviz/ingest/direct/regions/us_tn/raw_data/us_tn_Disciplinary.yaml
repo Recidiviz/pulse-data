@@ -15,7 +15,7 @@ columns:
     description: |-
       The unique identifier for an incident.
   - name: IncidentDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an incident involving an offender occurs.
   - name: DisciplinaryClass
@@ -44,11 +44,11 @@ columns:
     description: |-
       Indicator for an offense statute that tells whether the particular offense was violent.
   - name: RefuseToSignDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date an inmate refused to sign a document which requires his signature.
   - name: DispositionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which the original disciplinary was completed.
   - name: Disposition
@@ -98,7 +98,7 @@ columns:
     description: |-
       This indicates if the deciding person is a staff or an inmate.
   - name: PostedDateTime
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system. The time that information is entered to the TOMIS system. [Combination of of TOMIS columns DTE_POST and TME_POST]
   - name: PostedByStaffID
@@ -110,6 +110,6 @@ columns:
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

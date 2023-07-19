@@ -23,7 +23,7 @@ columns:
       The last name of a person.
   - name: DOB
     is_pii: True
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a person was born.
   - name: Sex
@@ -60,30 +60,30 @@ columns:
     description: |-
       The maximum number of days for a person's sentence.
   - name: Admit_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date of the admission of the person
   - name: Admit_Reason
     description: |-
       This is the description of the specific reason for the admission of the person
   - name: RED_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a person  is eligible for release to parole for a sentence.
   - name: EXP_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a sentence expires.  This date includes all credits earned by a person.
   - name: SID_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#7424) - Fill in defintion from TDOC
   - name: Hearing_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person.
   - name: Future_Act_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which some future action will be taken.
   - name: Site_Type
@@ -93,19 +93,19 @@ columns:
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: Last_RNA_in_Prison_Jail
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#7424) - Update once received from TN.
   - name: Last_RNA_in_Field
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#7424) - Update once received from TN.
   - name: Last_RNA_in_CC
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#7424) - Update once received from TN.
   - name: PSI_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#7424) - Update once received from TN.
   - name: Death_Row_Indicator
@@ -118,6 +118,6 @@ columns:
     description: |-
       TODO(#7424) - Update once received from TN.
   - name: Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that reports that the associated person is incarcerated.

@@ -16,7 +16,7 @@ columns:
     description: |-
       Incarceration number for this hearing
   - name: par_hrg_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of parole hearing
   - name: par_agenda_typ

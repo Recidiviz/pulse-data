@@ -44,7 +44,7 @@ columns:
       This is the suffix of a person's name; such as Jr., Sr., II, III, 7, Esq., etc.
   - name: BirthDate
     is_pii: True
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a person was born. ccyymmdd
   - name: SocialSecurityNumber
@@ -94,7 +94,7 @@ columns:
     description: |-
       The County OffenderID stored on the Judgment Order.
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: VictimRelation
@@ -104,7 +104,7 @@ columns:
     description: |-
       The age of a victim.
   - name: ArrestedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a person  is arrested for a particular crime.
   - name: LastUpdateUserID

@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawTableColumnFieldType,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -74,25 +75,25 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
                     name="Primary_Key_Col",
                     description="primary key description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="External_Id_Col",
                     description="description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="External_Id_Col_2",
                     description="description 2",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="External_Id_Col_3",
                     description="description 3",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 ),
             ],
             supplemental_order_by_clause="ORDER BY Primary_Key_Col",

@@ -27,7 +27,7 @@ columns:
       updated the individual recieves a new commitment. There may be gaps -- when this
       updated, it is incremented up to whatever ORTGID is at the time.
   - name: In_Date
-    is_datetime: True
+    field_type: datetime
     description: >-
       When someone re-entered DOC supervision. This may only be a techincality -- IE
       it's possible that due to certain circumstances, the person never actually sets
@@ -90,11 +90,11 @@ columns:
       Identifies the date someone actually re-enters a facility. If this is null, it
       means there were circumstances that meant this person never actually had to enter
       prison -- for example, they may have gone directly to parole.
-    is_datetime: True
+    field_type: datetime
   - name: out_date
     description: >-
       out_date will be filled with the date a person was paroled or discharged.
-    is_datetime: True
+    field_type: datetime
   - name: Out_Move
     description: >-
       The type of transition that results in someones release from incarceration.
@@ -177,7 +177,7 @@ columns:
       - value: Safekeeper Released to Parole
       - value: TO DIS
   - name: ParoleEndDate
-    is_datetime: True
+    field_type: datetime
     description: >-
       The date this parole period ended. Right now, it's sometimes null and there is an
       open question with OOR as to what is happening when these are null.

@@ -34,10 +34,10 @@ columns:
     description: |-
       ID that uniquely identifies the assessment, if any
   - name: LOSStartDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of the level of supervision
   - name: LOSEndDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of the level of supervision

@@ -45,14 +45,14 @@ columns:
   - name: Created_On_Date
   - name: Dead_Line_Date
     description: The date the assessment should be completed by.
-    is_datetime: True
+    field_type: datetime
   - name: Education_Ind
   - name: Ext_Int_Assess_Rb
   - name: Intake_Tx
     is_pii: True
   - name: Interview_Date
     description: The date the assessment was completed. Start_Date and Interview_Date are almost always the same.
-    is_datetime: True
+    field_type: datetime
   - name: Logical_Delete_Ind
   - name: Modified_By_Tx
     is_pii: True
@@ -69,4 +69,4 @@ columns:
     is_pii: True
   - name: Start_Date
     description: The date the assessment was started. An assessment can be completed on a different day than when it was started.
-    is_datetime: True
+    field_type: datetime

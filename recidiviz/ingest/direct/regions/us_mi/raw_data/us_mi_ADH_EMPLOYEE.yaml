@@ -78,12 +78,12 @@ columns:
     description: Title of the employee's position
   - name: hire_date
     description: Date employee was hired
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: termination_date
     description: Date employment was terminated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: service_hours
@@ -1176,14 +1176,14 @@ columns:
     description: gun serial number
   - name: gun_permit_exp_date
     description: gun permit expiration date
-    is_datetime: True
+    field_type: datetime
   - name: gun_permit_number
     description: gun permit number
   - name: last_update_user
     is_pii: True
     description: user who last updated this record
   - name: last_update_date
-    is_datetime: True
+    field_type: datetime
     description: date record last updated
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"

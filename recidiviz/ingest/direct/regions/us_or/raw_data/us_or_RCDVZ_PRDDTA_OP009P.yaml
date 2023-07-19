@@ -22,7 +22,7 @@ columns:
     description: |-
       Location where admitted, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE. Not used.
   - name: ADMISSION_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of current incarceration admission.
     datetime_sql_parsers:
@@ -46,7 +46,7 @@ columns:
     description: |-
       Not used.
   - name: RELEASE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of status release.
     datetime_sql_parsers:

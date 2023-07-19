@@ -25,11 +25,11 @@ columns:
     description: |-
       Code of the program/activity being undertaken.
   - name: START_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the person first started this program/activity.
   - name: END_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the person finished this program/activity.
   - name: OFFENDER_END_REASON
@@ -39,18 +39,18 @@ columns:
     description: |-
       Free text notes about the finishing of this program/activity entered by an admin.
   - name: REFERRAL_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the person was referred to this program/activity.
   - name: PROGRAM_ID
     description: |-
       ID of the program/activity being undertaken.
   - name: CREATE_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
   - name: OFFENDER_PROGRAM_STATUS
@@ -63,7 +63,7 @@ columns:
     description: |-
       Free text notes about why the person was referred to this program/activity entered by an admin.
   - name: REJECT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the person was rejected from being admitted to this program/activity, if rejected.
   - name: REJECT_REASON_CODE

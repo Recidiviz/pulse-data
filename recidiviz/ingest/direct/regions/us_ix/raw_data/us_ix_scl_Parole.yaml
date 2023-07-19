@@ -12,7 +12,7 @@ columns:
   - name: ReleaseDate
     description: |-
       Parole release date.
-    is_datetime: True
+    field_type: datetime
   - name: AdminDischargeDate
     description: |-
       TODO(#15329): Fill in column description

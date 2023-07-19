@@ -24,6 +24,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawTableColumnFieldType,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -105,13 +106,13 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
                 ),
                 RawTableColumnInfo(
                     name="col2",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col2 description",
                 ),
@@ -225,13 +226,13 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
                 ),
                 RawTableColumnInfo(
                     name="col2",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
                 ),

@@ -13,7 +13,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: IssueDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Disposition Date
   - name: SiteID
@@ -93,30 +93,30 @@ columns:
       - value: S
         description: SERVED
   - name: WarrantStatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date of the warrant status.
   - name: DelinquentDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an inmate is delinquent on his parole.
   - name: NCICAgencyID
     description: |-
       A unique identifier for a NCIC agency.
   - name: WarrantServedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a Revocation Warrant is served.
   - name: WarrantPendingDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the Revocation Warrant is pending.
   - name: WarrantDisposeDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the Revocation Warrant has been disposed.
   - name: InitalExtraditionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date warrant extradition initiated.
   - name: Comments

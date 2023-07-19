@@ -59,7 +59,7 @@ columns:
     description: |-
       Day when the person most recently transferred agents.
   - name: RelMaxDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the period of supervision expires.
   - name: WangClientName

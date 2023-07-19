@@ -21,7 +21,7 @@ columns:
     description: |-
       ID of the case manager assigned to the client
   - name: CaseManagerStartDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of the case manager-client relationship as deteremined by the court or
       Board of Parole. There may be a delay in processing or assignment from this date
@@ -34,6 +34,6 @@ columns:
       First day the case manager is actually assigned to client (comes after
       CaseManagerStartDt).
   - name: CaseManagerEndDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of the case manager-client relationship

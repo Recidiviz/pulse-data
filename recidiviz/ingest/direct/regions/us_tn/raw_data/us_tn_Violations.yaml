@@ -14,7 +14,7 @@ columns:
     description: |-
       TODO(#11323): fill out description once received.
   - name: ContactNoteDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#11323): fill out description once received.
   - name: ContactNoteTime

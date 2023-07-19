@@ -8,5 +8,5 @@ primary_key_cols:
 columns:
   - name: COL1
   - name: COL2
-    is_datetime: True
+    field_type: datetime
 custom_line_terminator: "\n"

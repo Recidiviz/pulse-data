@@ -39,11 +39,11 @@ columns:
     description: |-
       Statute Subsection
   - name: off_stat_eff_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the statue become effective
   - name: off_stat_term_dtd
-    is_datetime: True
+    field_type: datetime
   - name: off_actv_flg
   - name: off_sxo_flg
     description: |-

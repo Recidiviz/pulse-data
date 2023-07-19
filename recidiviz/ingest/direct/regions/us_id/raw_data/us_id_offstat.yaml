@@ -31,21 +31,21 @@ columns:
       - value: I
         description: incarceration
   - name: stat_intake_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the status was assigned to the person
   - name: stat_strt_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the status began being valid for the person
   - name: stat_rls_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the status ended for this person
   - name: stat_elig_end_dtd
-    is_datetime: True
+    field_type: datetime
   - name: stat_strt_ped_dtd
-    is_datetime: True
+    field_type: datetime
   - name: stat_strt_typ
     description: |-
       Code for the status that was valid for this time span
@@ -99,7 +99,7 @@ columns:
       - value: TM
         description: Termer
   - name: proj_rls_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       Projected end date of the current status
   - name: proj_rls_typ
@@ -112,7 +112,7 @@ columns:
   - name: rel_fel_misd
   - name: rel_alert_notf
   - name: rel_par_revoc_dtd
-    is_datetime: True
+    field_type: datetime
   - name: govn_min_sent
   - name: govn_max_sent
   - name: law_cd

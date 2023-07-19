@@ -13,7 +13,7 @@ columns:
     description: OMNI-database generated id for a fee profile note record
   - name: fee_note_date
     description: Date of fee note
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_user
@@ -21,7 +21,7 @@ columns:
     is_pii: True
   - name: last_update_date
     description: Date record last updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

@@ -11,7 +11,7 @@ columns:
       An ID to reference a specific individual in who is in custody or under supervision of CDCR.
   - name: IncidentNumber
   - name: ORIGINALVIOLATIONDATE
-    is_datetime: True
+    field_type: datetime
   - name: RVRSANCTIONQUANTITY
     description: |-
       The sanction quantity. For example "3" for a credit loss of 3 months.

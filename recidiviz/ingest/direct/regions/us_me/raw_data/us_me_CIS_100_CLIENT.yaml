@@ -11,7 +11,7 @@ columns:
     description: |-
       The date on which this person was born.
     is_pii: True
-    is_datetime: True
+    field_type: datetime
   - name: Cis_1002_Citizenship_Cd
   - name: Cis_1004_Eye_Colour_Cd
   - name: Cis_1005_Hair_Colour_Cd

@@ -16,4 +16,4 @@ columns:
   - name: DOB
     description: The person's date of birth in MM/DD/YYYY format.
     is_pii: True
-    is_datetime: True
+    field_type: datetime

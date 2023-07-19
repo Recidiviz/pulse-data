@@ -43,15 +43,15 @@ columns:
     description: |-
       ID of the intervention class, if applicable
   - name: EligibilityDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of intervention eligibility
   - name: InterventionStartDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of the intervention
   - name: InterventionEndDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of the intervention
   - name: InterventionClosureTypeId

@@ -10,7 +10,7 @@ columns:
   - name: LEVEL_ID
     description: Primary key for this table.
   - name: CUSTODY_DATE
-    is_datetime: True
+    field_type: datetime
     description: The effective date for this custody level period.
   - name: NOTES_TX
     is_pii: True

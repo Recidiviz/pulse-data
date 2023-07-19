@@ -10,7 +10,7 @@ columns:
     description: ID of show
   - name: date
     description: date show first watched
-    is_datetime: True
+    field_type: datetime
   - name: rank
     description: what rank it has
   - name: show

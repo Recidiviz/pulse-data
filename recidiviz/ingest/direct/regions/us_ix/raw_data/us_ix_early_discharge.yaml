@@ -30,15 +30,15 @@ columns:
     description: |-
       Body that has the authority to decide on early discharge (either PROBATION or PAROLE)
   - name: supervisor_review_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the supervisor reviewed this request
   - name: jurisdiction_authize_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the deciding jurisdiction authorized this request
   - name: decision_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date decision info was added to the system.
   - name: jurisdiction_decision_code_id
@@ -49,7 +49,7 @@ columns:
       username of the person who input the decision information
     is_pii: True
   - name: decision_updt_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date that decision information was updated
   - name: submit_updt_user_id
@@ -57,7 +57,7 @@ columns:
       Username of the person who updated this request
     is_pii: True
   - name: submit_updt_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the submission was last updated
   - name: early_discharge_form_typ_id
@@ -65,11 +65,11 @@ columns:
       Code that tells you the form type which includes information on who requested the early discharge
       (PO or supervisee)
   - name: restitution_last_pymnt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Last date that restitution payment was made
   - name: fine_last_pymnt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Last date that fine payments were made
   - name: restitution_init_bal
@@ -89,14 +89,14 @@ columns:
       Bool indicating if an NCIC check was successfully run (external service which checks if there are any
       new charges for this person)
   - name: ncic_chk_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the NCIC check was performed
   - name: sup_aprv_sbmt_id
     description: |-
       Username  of the supervisor / designee who approved the request
   - name: sup_aprv_sbmt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date that the supervisor / designee approved the request
   - name: juris_auth_sbmt_id
@@ -104,7 +104,7 @@ columns:
       Username of the person who submitted the request to the jurisdiction authority
     is_pii: True
   - name: juris_auth_sbmt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the request was sent to the jurisdiction authority
   - name: created_by_id
@@ -112,11 +112,11 @@ columns:
       Username of the person who filled out the form (usually a person’s PO)
     is_pii: True
   - name: created_by_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the request was first submitted
   - name: decision_official_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date that an official decision was made
   - name: decision_state
@@ -129,6 +129,6 @@ columns:
     description: |-
       Test ID of the person’s current LSIR assessment
   - name: subst_tst_start_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date after which the person has had no positive substance tests

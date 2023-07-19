@@ -50,15 +50,15 @@ columns:
     description: |-
       The county the person was sentenced in
   - name: sent_eff_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that the first sentences within this mittimus took effect.
   - name: sentence_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that all sentences within this mittimus were sentenced.
   - name: sent_exp_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that the final sentence within this mittimus expires.
   - name: plea

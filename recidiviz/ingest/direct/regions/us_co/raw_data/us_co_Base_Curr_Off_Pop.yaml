@@ -40,7 +40,7 @@ columns:
     description: |-
       This is a person's date of birth.
     is_pii: True
-    is_datetime: True
+    field_type: datetime
   - name: AGE
   - name: SEX
   - name: CIT_SHIP_CD

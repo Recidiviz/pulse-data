@@ -37,7 +37,7 @@ columns:
       System login name of the officer.
     is_pii: True
   - name: RecDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:

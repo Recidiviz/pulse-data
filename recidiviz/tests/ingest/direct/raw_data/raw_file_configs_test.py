@@ -25,6 +25,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawTableColumnFieldType,
     RawTableColumnInfo,
 )
 from recidiviz.tests.ingest.direct import fake_regions
@@ -36,7 +37,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
     def test_simple(self) -> None:
         column_info = RawTableColumnInfo(
             name="COL1",
-            is_datetime=False,
+            field_type=RawTableColumnFieldType.STRING,
             is_pii=False,
             description=None,
             known_values=None,
@@ -46,11 +47,24 @@ class TestRawTableColumnInfo(unittest.TestCase):
         self.assertFalse(column_info.is_datetime)
         self.assertEqual(None, column_info.datetime_sql_parsers)
 
+    def test_known_values_non_string(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected field type to be string if known values are present for COL1",
+        ):
+            _ = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.DATETIME,
+                is_pii=False,
+                description=None,
+                known_values=[ColumnEnumValueInfo(value="test", description=None)],
+            )
+
     def test_datetime_sql_parsers(self) -> None:
         # Valid config, should not crash
         datetime_column_info = RawTableColumnInfo(
             name="COL2",
-            is_datetime=True,
+            field_type=RawTableColumnFieldType.DATETIME,
             is_pii=False,
             description=None,
             known_values=None,
@@ -75,7 +89,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL2",
-                is_datetime=False,
+                field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
                 known_values=None,
@@ -90,7 +104,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL2",
-                is_datetime=True,
+                field_type=RawTableColumnFieldType.DATETIME,
                 is_pii=False,
                 description=None,
                 known_values=None,
@@ -105,7 +119,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         ):
             _ = RawTableColumnInfo(
                 name="COL2",
-                is_datetime=True,
+                field_type=RawTableColumnFieldType.DATETIME,
                 is_pii=False,
                 description=None,
                 known_values=None,
@@ -162,25 +176,25 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     name="Col1",
                     description="description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="Col2",
                     is_pii=False,
                     description="",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 ),
                 RawTableColumnInfo(
                     name="Col3",
                     description="description 3",
                     is_pii=False,
-                    is_datetime=True,
+                    field_type=RawTableColumnFieldType.DATETIME,
                 ),
                 RawTableColumnInfo(
                     name="Col4",
                     description="",
                     is_pii=False,
-                    is_datetime=True,
+                    field_type=RawTableColumnFieldType.DATETIME,
                 ),
             ],
             primary_key_cols=["Col1"],
@@ -211,7 +225,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     name="Col5",
                     description="description 5",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     known_values=[
                         ColumnEnumValueInfo(value="A", description="A description"),
                         ColumnEnumValueInfo(value="B", description=None),
@@ -251,7 +265,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                         name="Col1",
                         description="description",
                         is_pii=False,
-                        is_datetime=False,
+                        field_type=RawTableColumnFieldType.STRING,
                     )
                 ],
                 primary_key_cols=["Col1"],
@@ -266,7 +280,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     name="Col1",
                     description="description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 )
             ],
             primary_key_cols=[],
@@ -295,7 +309,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     name="Col1",
                     description="description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 )
             ],
             no_valid_primary_keys=True,
@@ -316,7 +330,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     name="Col1",
                     description="description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 )
             ],
             no_valid_primary_keys=True,
@@ -338,7 +352,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     name="Col1",
                     description="description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 )
             ],
             primary_key_cols=[],
@@ -360,7 +374,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     name="Col1",
                     description="description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 )
             ],
             primary_key_cols=["Col1"],
@@ -380,7 +394,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     name="Col1",
                     description="description",
                     is_pii=False,
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                 )
             ],
             no_valid_primary_keys=True,
@@ -401,7 +415,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                         name="Col1",
                         description="description",
                         is_pii=False,
-                        is_datetime=False,
+                        field_type=RawTableColumnFieldType.STRING,
                     )
                 ],
                 primary_key_cols=["Col1", "Col2"],
@@ -419,13 +433,13 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                         name="Col1",
                         description="description",
                         is_pii=False,
-                        is_datetime=False,
+                        field_type=RawTableColumnFieldType.STRING,
                     ),
                     RawTableColumnInfo(
                         name="Col1",
                         description="some other description",
                         is_pii=False,
-                        is_datetime=False,
+                        field_type=RawTableColumnFieldType.STRING,
                     ),
                 ],
                 primary_key_cols=["Col1", "Col2"],
@@ -507,7 +521,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
         expected_columns_config_1 = [
             RawTableColumnInfo(
                 name="col_name_1a",
-                is_datetime=False,
+                field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description="First column.",
                 known_values=[
@@ -517,13 +531,13 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             ),
             RawTableColumnInfo(
                 name="col_name_1b",
-                is_datetime=False,
+                field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=expected_column2_description,
             ),
             RawTableColumnInfo(
                 name="undocumented_column",
-                is_datetime=False,
+                field_type=RawTableColumnFieldType.STRING,
                 is_pii=False,
                 description=None,
             ),
@@ -546,7 +560,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             [
                 RawTableColumnInfo(
                     name="col_name_2a",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="column description",
                 )
@@ -565,21 +579,21 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             [
                 RawTableColumnInfo(
                     name="COL1",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="column 1 description",
                     known_values=None,
                 ),
                 RawTableColumnInfo(
                     name="COL2",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="column 2 description",
                     known_values=None,
                 ),
                 RawTableColumnInfo(
                     name="COL3",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="column 3 description",
                     known_values=None,

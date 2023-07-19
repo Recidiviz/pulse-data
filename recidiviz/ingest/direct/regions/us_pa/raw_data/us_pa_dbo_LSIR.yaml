@@ -23,6 +23,6 @@ columns:
     description: |-
       LSIR score recorded at the end of the assessment.
   - name: InterviewDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the LSIR assessment interview took place.

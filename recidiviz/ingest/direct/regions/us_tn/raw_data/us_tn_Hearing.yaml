@@ -15,7 +15,7 @@ columns:
   - name: HearingDate
     description: |-
       The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person.
-    is_datetime: True
+    field_type: datetime
   - name: HearingType
     description: |-
       An abbreviation to describe the type of hearing.
@@ -81,11 +81,11 @@ columns:
   - name: CertificateReleaseDate
     description: |-
       A person's parole date which the Board of Parole agrees to release.
-    is_datetime: True
+    field_type: datetime
   - name: AlternateReleaseDate
     description: |-
       A date which the board of paroles agrees to release a person.
-    is_datetime: True
+    field_type: datetime
   - name: RecommendedDecision
     description: |-
       An abbreviated recommendation that describes a suggested parole hearing decision.
@@ -1418,7 +1418,7 @@ columns:
   - name: ParoleDecisionDate
     description: |-
       The date on which three parole board members agree on a parole decision.
-    is_datetime: True
+    field_type: datetime
   - name: ParoleCondition1
     description: |-
       An abbreviation representing an condition for parole.
@@ -2764,26 +2764,26 @@ columns:
   - name: FutureActionDate
     description: |-
       The date on which some future action will be taken.
-    is_datetime: True
+    field_type: datetime
   - name: BoardOfParoleDate
     description: |-
       The date the Board of Parole assigns to a sentence to replace the normal starting date of the sentence.
-    is_datetime: True
+    field_type: datetime
   - name: RecommendedBoardOfParoleDate
     description: |-
       The date the recommended date the Board of Parole assigns to a sentence to replace the normal starting date of the sentence.
-    is_datetime: True
+    field_type: datetime
   - name: RecommendedAlternateReleaseDate
     description: |-
       A date which the hearing recomends to release an offender.
-    is_datetime: True
+    field_type: datetime
   - name: RecommenedFutureActionType
     description: |-
       The code of the recommended  parole action  to take place in the future.
   - name: RecommendedFutureActionDate
     description: |-
       The recomnmended date on which some future action will be taken.
-    is_datetime: True
+    field_type: datetime
   - name: Pre1998HearingFlag
     description: |-
       This flag indicates the hearing is a pre 1998 hearing. If null, hearing is not a pre-1998 hearing.

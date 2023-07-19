@@ -25,11 +25,11 @@ columns:
   - name: RelationshipQualifierTypeId
   - name: RelationshipTypeId
   - name: StartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The starting date of the period of residence
   - name: EndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The ending date of the period of residence
   - name: ReportedDate

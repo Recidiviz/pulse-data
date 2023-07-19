@@ -7,7 +7,7 @@ primary_key_cols:
   - cls_sctn_id
 columns:
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Timestamp of when this record was last updated
   - name: updt_usr_id
@@ -27,11 +27,11 @@ columns:
     description: |-
       Title of this course section
   - name: strt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this section began
   - name: end_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this section ended
   - name: cls_loc_desc

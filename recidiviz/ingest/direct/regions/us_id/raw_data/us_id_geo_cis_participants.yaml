@@ -15,11 +15,11 @@ columns:
     description: |-
       Name of person participating in program
   - name: start_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of start of program participation
   - name: end_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of termination of program participation
   - name: lsi_start

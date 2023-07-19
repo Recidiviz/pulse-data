@@ -90,15 +90,15 @@ columns:
       - value: M
         description: MISDEMEANOR
   - name: OffenseDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date the offense was committed as indicated on the judgment order or from another source.
   - name: PleaDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the person's plea is entered.
   - name: SentenceImposedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a person's sentence is to begin as specified by the judge on the judgment order. This date less any pretrial credits provides the sentence effective date.
   - name: SentenceLaw

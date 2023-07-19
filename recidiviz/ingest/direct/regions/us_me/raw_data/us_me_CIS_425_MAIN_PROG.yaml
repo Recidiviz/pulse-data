@@ -13,10 +13,10 @@ columns:
     description: The MDOC ID associated with this enrollment.
   - name: TERM_END_DATE
     description: The date the client's term ends.
-    is_datetime: True
+    field_type: datetime
   - name: LSI_DATE
     description: The date the LSI assessment was taken.
-    is_datetime: True
+    field_type: datetime
   - name: LSI_SCORE_NUM
     description: The LSI score from the assessment.
   - name: NOTES_TX

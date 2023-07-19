@@ -27,7 +27,7 @@ columns:
   - name: latestClassifDate
     description: |-
       The date that the Classification Score was most recently calculated.
-    is_datetime: True
+    field_type: datetime
   - name: CSRALevel
     description: |-
       California Static Risk Assessment (CSRA) The California Static Risk Assessment (CSRA) (new 12/09) is a validated risk assessment tool that utilizes a set of risk factors which are most predictive of recidivism. The tool produces a risk number value that will predict the likelihood that an offender will incur a felony arrest within a three-year period after release to parole. Risk factors utilized include, but are not limited to, age, gender, criminal misdemeanor and felony convictions, and sentence/supervision violations.
@@ -36,7 +36,7 @@ columns:
   - name: DateCompleted
     description: |-
       The date that the CSRA Level was calculated.
-    is_datetime: True
+    field_type: datetime
   - name: MentalHealthTreatment
     description: |-
       Mental Health Assessment: A psychiatric or psychological evaluation is prepared for each inmate whose behavior or background information causes staff to believe a serious mental problem may exist.
@@ -44,34 +44,34 @@ columns:
   - name: MENTALHEALTHEFFECTIVEDATE
     description: |-
       The date that the mental health assessment was conducted.
-    is_datetime: True
+    field_type: datetime
   - name: FSORA_Score
     description: |-
       Female Sex Offender Risk Assessment (FSORA): The Department utilizes the Female Sex Offender Risk Assessment (FSORA) (05/23/2017) for adult female sex offenders.  Any adult female sex offender who is assessed with a “Moderate Risk” or higher to commit a new sex offense shall be designated as a High Risk Sex Offender (HRSO) for the purposes of residence restrictions and supervision while on parole.
   - name: FSORA_DateComputed
     description: Date FSORA was conducted.
-    is_datetime: True
+    field_type: datetime
   - name: Static99_Score
     description: |-
       Static-99R:  The Department utilizes the Static-99R (Revised 11/2/16) risk assessment for adult male sex offenders. Any adult male sex offender who is assessed with an above average risk or higher to commit a new sex offense shall be designated as a High Risk Sex Offender (HRSO) for the purposes of residence restrictions and supervision while on parole.
   - name: Static99_DateComputed
     description: |-
       The date that the Static-99R score was computed
-    is_datetime: True
+    field_type: datetime
   - name: DevelopDisableEvaluation
     description: |-
       Development Disability Program (DDP): policy established by the Clark v. California court-ordered Clark Remedial Plan (CRP); which identifies, classifies, houses, and protects inmates with developmental disabilities.  Additionally, the DDP ensures  that  developmentally  disabled  inmates  are  not  subject  to  discrimination  by providing equal access to housing, programs, services, and activities.  All Reception Centers (RCs) are required to screen inmates/parolees for Developmental Disabilities and potential placement in DDP.
   - name: DEVELOPDISABLEDEFFECTIVEDATE
     description: |-
       Date that the Development Disability Classification was effective on
-    is_datetime: True
+    field_type: datetime
   - name: LearningDisability
     description: |-
       Part of the Development Disability Program (DDP)
   - name: DPPVSIGNEDDATE
     description: |-
       Disability Placement Program (DPP): Pursuant to the Armstrong v. Schwarzenegger Injunction, CDCR is mandated to ensure that inmates and parolees with disabilities are able to participate in parole proceedings to the same extent as non-disabled inmates and parolees.
-    is_datetime: True
+    field_type: datetime
   - name: MobilityDisability
     description: |-
       Part of the Disability Placement Program (DPP)
@@ -90,7 +90,7 @@ columns:
   - name: PhysicalDPPVSignedDate
     description: |-
       Date that the Disability Placement Program (DPP) classification is effective
-    is_datetime: True
+    field_type: datetime
   - name: COMPAS_Assessment
     description: |-
       COMPAS Assessment score. Correctional Offender Management Profiling for Alternative Sanctions (COMPAS) is a case management and decision support tool developed and owned by Northpointe (now Equivant) used by U.S. courts to assess the likelihood of a defendant becoming a recidivist.
@@ -175,4 +175,4 @@ columns:
   - name: CompasCompletedDate
     description: |-
       Date that the COMPAS Assessment was last completed
-    is_datetime: True
+    field_type: datetime

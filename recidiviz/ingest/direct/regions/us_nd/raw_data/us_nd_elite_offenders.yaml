@@ -17,7 +17,7 @@ columns:
     description: |-
       First/given name of the person.
   - name: BIRTH_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of birth of the person.
   - name: SEX_CODE
@@ -30,14 +30,14 @@ columns:
     description: |-
       Race or ethnicity of the person.
   - name: CREATE_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
   - name: ModifyDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Row modify date.

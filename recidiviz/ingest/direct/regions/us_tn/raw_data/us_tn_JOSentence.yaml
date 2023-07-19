@@ -27,11 +27,11 @@ columns:
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: ExecutionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of a person's stay of execution.
   - name: FirstConfinementCompletedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that the first portion of a person's split confinement is completed as posted on the judgment order.
   - name: CalculatedPretrialCredits
@@ -189,7 +189,7 @@ columns:
     description: |-
       The amount a person  is to pay for sex person tax according to the judgment order.
   - name: MandatoryMinimumStartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that specifies when a mandatory minimum sentence calculation starts.
   - name: AbuseRegisterFlag
@@ -201,7 +201,7 @@ columns:
       - value: Y
         description: "YES - Is TCA 68-11-10 Abuse Registry"
   - name: StayExecutionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of a person's stay of execution.
   - name: CommunityCorrectionYears

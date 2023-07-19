@@ -12,7 +12,7 @@ columns:
     description: |-
       ID of the institution, e.g. state prison or county jail, where the conduct event took place.
   - name: misconduct_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the conduct event took place.
   - name: form_141
@@ -43,7 +43,7 @@ columns:
     description: |-
       Institution description, redundant of institution.
   - name: report_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the conduct event's outcome report became official.
   - name: place_hvl_desc
@@ -57,7 +57,7 @@ columns:
     description: |-
       Additional information on the place within the facility where the event took place.
   - name: misconduct_time
-    is_datetime: True
+    field_type: datetime
     description: |-
       Time when the conduct event took place.
   - name: others_involved
@@ -90,7 +90,7 @@ columns:
       - value: Y
         description: Restricted Confinement
   - name: confinement_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date confinement began.
   - name: confinement_time
@@ -121,18 +121,18 @@ columns:
     description: |-
       Name of agent who reviewed the outcome report.
   - name: date_reviewed
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the outcome report was reviewed prior to becoming official.
   - name: inmate_notice_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date that the incarcerated person was given notice of the report.
   - name: inmate_notice_time
     description: |-
       Time that the incarcerated person was given notice of the report.
   - name: hearing_after_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the outcome hearing took place.
   - name: hearing_after_time

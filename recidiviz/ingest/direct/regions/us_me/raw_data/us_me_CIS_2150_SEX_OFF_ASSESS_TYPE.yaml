@@ -17,7 +17,7 @@ columns:
   - name: Created_On_Date
     description: |-
       The date that this assessment record was created.
-    is_datetime: True
+    field_type: datetime
   - name: Juvenile_Ind
     description: |-
       Indicates that this assessment was given to a juvenile, not an adult
@@ -29,7 +29,7 @@ columns:
   - name: Modified_On_Date
     description: |-
       The date that this assessment record was created.
-    is_datetime: True
+    field_type: datetime
   - name: Sex_Off_Assess_Type_Desc
     description: |-
       The name of the assessment, closely matching the known values for Sex_Off_Assess_Type_Cd.

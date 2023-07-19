@@ -14,7 +14,7 @@ columns:
   - name: AssignmentDateTime
     description: |-
       The date on which an assignment is made. This is the time an offender is assigned to a new cell.  [Combines two TOMIS columns for date assigned and time assigned]
-    is_datetime: True
+    field_type: datetime
   - name: AssignedSiteID
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
@@ -63,7 +63,7 @@ columns:
   - name: EndDate
     description: |-
       The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
-    is_datetime: True
+    field_type: datetime
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
@@ -71,4 +71,4 @@ columns:
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
-    is_datetime: True
+    field_type: datetime

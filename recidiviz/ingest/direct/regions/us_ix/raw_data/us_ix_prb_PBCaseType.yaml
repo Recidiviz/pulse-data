@@ -20,13 +20,13 @@ columns:
     is_pii: True
   - name: InsertDate
     description: Insert date
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: Employee ID of user who updated
     is_pii: True
   - name: UpdateDate
     description: Update date
-    is_datetime: True
+    field_type: datetime
   - name: IsCustom
     description: Is custom boolean
   - name: SystemRow

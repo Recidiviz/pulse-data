@@ -120,15 +120,15 @@ columns:
     description: |-
       Parole status code.
   - name: parole_status_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Parole status date.
   - name: sent_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date this sentence was imposed.
   - name: sent_start_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the person started serving the sentence.
   - name: sent_status_code
@@ -210,11 +210,11 @@ columns:
       - value: WT
         description: WRIT/ATA
   - name: sent_status_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date sentence status was determined.
   - name: sent_stop_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the sentence was completed / terminated.
   - name: sentcing_cnty
@@ -251,7 +251,7 @@ columns:
     description: |-
       Megan's Law Indicator.
   - name: sig_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this record was first entered.
   - name: sig_time

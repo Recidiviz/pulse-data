@@ -19,7 +19,7 @@ columns:
       External ID that follows a person through all encounters with the PADOC (ideally). In practice, there are mistakes
       and this is retroactively edited with some low frequency.
   - name: Hist_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when this record was moved to the Hist version of the table.
   - name: AsmtVer_Num
@@ -34,7 +34,7 @@ columns:
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served.
   - name: Test_Dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the assessment was administered.
   - name: Fac_Cd
@@ -48,7 +48,7 @@ columns:
     description: |-
       PADOC employee number of the staff member who last modified this record.
   - name: LstMod_Dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this record was last modified.
   - name: RSTRvsd_Flg

@@ -14,7 +14,7 @@ columns:
     description: |-
       External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
   - name: G_REPORT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the grievance report was officially filed.
   - name: G_GRIEV_TYPE
@@ -30,18 +30,18 @@ columns:
     description: |-
       Free text notes input by an admin at the time the report was filed.
   - name: G_MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the grievance record was most recently modified.
   - name: T_TXN_SEQ
     description: |-
       The ordered index of the response among the full set of responses associated with this grievance.
   - name: T_START_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this response to the grievance occurred or began (if durational).
   - name: T_END_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this response to the grievance ended (if durational).
   - name: T_GRIEV_TYPE
@@ -66,7 +66,7 @@ columns:
     description: |-
       Whether this response is official.
   - name: T_MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the response record was most recently modified.
   - name: T_ASSIGNED_STAFF_ID

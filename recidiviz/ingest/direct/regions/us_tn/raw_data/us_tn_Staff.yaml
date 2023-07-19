@@ -94,7 +94,7 @@ columns:
       - value: ZZ
         description: "TODO(#7424): Update with definition."
   - name: UserClassDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element describes the date when the USER CLASS was added or modified. It will be based on the system date at the time of the TED update.
   - name: SecurityStatus
@@ -110,7 +110,7 @@ columns:
       - value: R
         description: REVOKED
   - name: SecurityStatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element describes the date when the security statwas added or modified. It will be based on the system date at the time of the update.
   - name: SiteID
@@ -162,7 +162,7 @@ columns:
       Social Security Number of an individual.
   - name: BirthDate
     is_pii: True
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a person was born.
   - name: Status
@@ -174,7 +174,7 @@ columns:
       - value: I
         description: INACTIVE
   - name: StatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a status of a particular issue changes.
   - name: StaffTitle
@@ -770,11 +770,11 @@ columns:
       - value: YIAO
         description: YOUTH INTERNAL AFFAIRS
   - name: CertificationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a staff member is certified to teach/supervise.
   - name: PersonalQuestionnaireDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element describes the date when the personal questionnaire was taken. It will be based on the system date at the time of the entry.
   - name: FailedQuestionNumber

@@ -52,7 +52,7 @@ columns:
   - name: SentenceDate
     description: |-
       Date of the sentence.
-    is_datetime: True
+    field_type: datetime
   - name: ReceiveDate
     description: |-
       TODO(#15329): Fill in column description

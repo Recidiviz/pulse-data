@@ -12,7 +12,7 @@ columns:
     is_pii: True
   - name: specimen_date
     description: Date test specimen was taken
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: sample_taken_flag
@@ -81,7 +81,7 @@ columns:
         description: Other
   - name: test_schedule_print_date
     description: Always null.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: lab_sample_ref_code
@@ -192,7 +192,7 @@ columns:
         description: Kroll Laboratory
   - name: lab_test_date
     description: The date the sample was tested in the lab.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: misconduct_incident_id
@@ -213,7 +213,7 @@ columns:
     is_pii: True
   - name: test_result_create_date
     description: The date the test result was entered.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: positive_response_id
@@ -243,7 +243,7 @@ columns:
         description: STOP Sanction Imposed
   - name: positive_response_date
     description: Date the action in response to a positive response was taken.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: specimen_location_id
@@ -253,7 +253,7 @@ columns:
     is_pii: True
   - name: last_update_date
     description: Date record was last updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
@@ -271,7 +271,7 @@ columns:
     description: Presumably a flag demarcating that the record was sent to the lab. Always 0.
   - name: record_sent_to_lab_date
     description: Presumably the date the test was sent to the lab for analysis. Always null.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: default_drug_panel_id
@@ -287,7 +287,7 @@ columns:
     description: Presumably a flag demarcating that the record was printed. Always 0.
   - name: print_date
     description: Presumably the date the test was printed. Always null.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: printed_by_user

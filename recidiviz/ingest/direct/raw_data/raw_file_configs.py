@@ -49,6 +49,24 @@ class RawDataClassification(Enum):
     VALIDATION = "validation"
 
 
+class RawTableColumnFieldType(Enum):
+    """Field type for a single raw data column"""
+
+    # Contains string values (this is the default)
+    STRING = "string"
+
+    # Contains values representing dates or datetimes
+    DATETIME = "datetime"
+
+    # Contains external ids representing a justice-impacted individual
+    # i.e. values that might hydrate state_person_external_id
+    PERSON_EXTERNAL_ID = "person_external_id"
+
+    # Contains external ids representing an agent / staff member
+    # i.e. values that might hydrate state_staff_external_id
+    STAFF_EXTERNAL_ID = "staff_external_id"
+
+
 @attr.s
 class ColumnEnumValueInfo:
     # The literal enum value
@@ -63,8 +81,8 @@ class RawTableColumnInfo:
 
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
-    # True if a column is a date/time
-    is_datetime: bool = attr.ib(validator=attr_validators.is_bool)
+    # Designates the type of data that this column contains
+    field_type: RawTableColumnFieldType = attr.ib()
     # True if a column contains Personal Identifiable Information (PII)
     is_pii: bool = attr.ib(validator=attr_validators.is_bool)
     # Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a
@@ -84,6 +102,12 @@ class RawTableColumnInfo:
     )
 
     def __attrs_post_init__(self) -> None:
+        # Known values should not be present unless this is a string field
+        if self.known_values and self.field_type != RawTableColumnFieldType.STRING:
+            raise ValueError(
+                f"Expected field type to be string if known values are present for {self.name}"
+            )
+
         self._validate_datetime_sql_parsers()
 
     def _validate_datetime_sql_parsers(self) -> None:
@@ -127,6 +151,13 @@ class RawTableColumnInfo:
                 f"Expected nonnull column known_values for column: [{self.name}]"
             )
         return self.known_values
+
+    @property
+    def is_datetime(self) -> bool:
+        """
+        Returns true if this column is a date/time
+        """
+        return self.field_type == RawTableColumnFieldType.DATETIME
 
 
 @attr.s
@@ -377,7 +408,9 @@ class DirectIngestRawFileConfig:
             column_infos.append(
                 RawTableColumnInfo(
                     name=column_name,
-                    is_datetime=column.pop_optional("is_datetime", bool) or False,
+                    field_type=RawTableColumnFieldType(field_type_str)
+                    if (field_type_str := column.pop_optional("field_type", str))
+                    else RawTableColumnFieldType.STRING,
                     is_pii=column.pop_optional("is_pii", bool) or False,
                     description=column.pop_optional("description", str),
                     known_values=known_value_infos,

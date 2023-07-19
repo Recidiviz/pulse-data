@@ -23,12 +23,12 @@ columns:
     description: The location ID of the booking (referenced by LOCATION table).
   - name: begin_date
     description: When this booking / jurisdiction period began within MDOC.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: end_date
     description: When this booking / jurisdiction period ends within MDOC.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: previous_offender_id

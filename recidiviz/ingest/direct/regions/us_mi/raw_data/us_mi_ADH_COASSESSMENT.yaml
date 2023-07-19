@@ -22,7 +22,7 @@ columns:
   - name: FkShRfCodeLocation
   - name: DateOfScreening
     description: Date of the screening
-    is_datetime: True
+    field_type: datetime
   - name: Age
   - name: AgeCalc
   - name: LockedReason
@@ -47,14 +47,14 @@ columns:
   - name: IsDeleted
     description: flag for whether the assessment record was deleted
   - name: DateCreated
-    is_datetime: True
+    field_type: datetime
   - name: DateUpdated
-    is_datetime: True
+    field_type: datetime
   - name: DateComputed
     description: Date assessment score was computed
-    is_datetime: True
+    field_type: datetime
   - name: DateDeleted
-    is_datetime: True
+    field_type: datetime
   - name: TypologyScoreClass
   - name: TypologyVerbose
   - name: TypologyScore
@@ -64,22 +64,22 @@ columns:
   - name: IsQa
   - name: IsHasValidationWarnings
   - name: DateOfScreeningAsString
-    is_datetime: True
+    field_type: datetime
   - name: DateCreatedAsString
-    is_datetime: True
+    field_type: datetime
   - name: DateUpdatedAsString
-    is_datetime: True
+    field_type: datetime
   - name: FkPtMasterRecId
   - name: FkShUserComputedBy
     is_pii: True
   - name: DateComputedAsString
-    is_datetime: True
+    field_type: datetime
   - name: FkShUserSubmittedBy
     is_pii: True
   - name: DateSubmitted
-    is_datetime: True
+    field_type: datetime
   - name: DateSubmittedAsString
-    is_datetime: True
+    field_type: datetime
   - name: FkCoSyRecSupervisionLevelROriginal
   - name: IsSupervisionLevelROverriden
   - name: DateToBeLocked

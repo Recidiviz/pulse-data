@@ -17,7 +17,7 @@ columns:
     description: OMNI-generated ID for the offender schedule record that this case note is attached to (links with ADH_OFFENDER_SCHEDULE)
   - name: event_date
     description: Date of event that this case note is attached to
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: schedule_type_id
@@ -26,7 +26,7 @@ columns:
     description: Reference code for reason for this type of "schedule" (aka event/task) that this case note is attached to (links with ADH_REFERENCE_CODE)
   - name: recorded_date
     description: Date case note recorded
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: notes
@@ -57,12 +57,12 @@ columns:
     is_pii: True
   - name: last_update_date
     description: Date record last updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
     description: TODO(#19675)
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: web_publish_flag

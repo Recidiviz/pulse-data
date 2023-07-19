@@ -23,7 +23,7 @@ columns:
       TODO(#17148): Fill in with answer from OR
     is_pii: True
   - name: MODIFY_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:

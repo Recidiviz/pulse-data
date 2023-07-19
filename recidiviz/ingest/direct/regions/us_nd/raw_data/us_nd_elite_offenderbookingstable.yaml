@@ -40,18 +40,18 @@ columns:
     description: |-
       Type of booking. Always institution commitment (INST), which is implied.
   - name: BOOKING_BEGIN_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the booking began, i.e. when the series of interactions first began. Self-reported as unreliable.
   - name: BOOKING_END_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the booking ended, i.e. when the series of interactions was finally closed. Self-reported as unreliable.
   - name: CREATE_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.

@@ -153,7 +153,7 @@ columns:
     description: |-
       Time when the person was first committed to incarceration.
   - name: commit_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the person was first committed to incarceration.
   - name: commit_cnty
@@ -276,7 +276,7 @@ columns:
     description: |-
       ID of the staff member who entered data at initial classification.
   - name: ic_data_entry_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of initial data entry at initial classification.
   - name: ic_lst_name
@@ -289,11 +289,11 @@ columns:
     description: |-
       Title of staff member entering data at initial classification.
   - name: ic_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of initial classification.
   - name: ic_reclass_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date scheduled for reclassification.
   - name: ic_recls_in_n_mths
@@ -504,11 +504,11 @@ columns:
     description: |-
       Title of staff member entering data at reclassification.
   - name: recls_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of reclassification.
   - name: re_recls_dte
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date scheduled for next reclassification.
   - name: re_recls_in_n_mths
@@ -590,7 +590,7 @@ columns:
     description: |-
       Whether there is an emotional condition at time of reclassification.
   - name: re_s_rating_date
-    is_datetime: True
+    field_type: datetime
   - name: re_da_no_abuse
     description: |-
       Drug/alcohol no abuse indicator.
@@ -713,7 +713,7 @@ columns:
     description: |-
       Whether the person is currentl incarcerated.
   - name: sig_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when this record was first entered.
   - name: sig_time

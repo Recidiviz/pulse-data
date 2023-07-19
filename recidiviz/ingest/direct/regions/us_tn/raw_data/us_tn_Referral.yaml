@@ -13,7 +13,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrderDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date an order is made.
   - name: ReferralSequenceNumber
@@ -34,11 +34,11 @@ columns:
       - value: SDR
         description: SPECIFIC DATA REPORT
   - name: DueDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the record is due.
   - name: CourtDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date and time of a scheduled court appearance for a person. This date is posted during the PSI assignment process.
   - name: ReferralName
@@ -186,7 +186,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: CompletedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a task is completed.
   - name: PostedByStaffID
@@ -194,7 +194,7 @@ columns:
     description: |-
       The staff id of the individual who initially posted information for an offender.
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateStaffID

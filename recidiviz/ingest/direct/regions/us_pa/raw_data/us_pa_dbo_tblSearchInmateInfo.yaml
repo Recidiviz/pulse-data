@@ -47,15 +47,15 @@ columns:
     description: |-
       Event number.
   - name: event_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Event date.
   - name: delete_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the person was released from incarceration.
   - name: reception_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the person was first booked into PADOC custody.
   - name: photo_reason
@@ -142,11 +142,11 @@ columns:
     description: |-
       Religious status.
   - name: sent_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the sentence became effective.
   - name: min_expir_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Minimum sentence expiration date.
   - name: min_cort_sent_yrs
@@ -193,7 +193,7 @@ columns:
     description: |-
       Sentence status code.
   - name: regular_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the record is to be marked inactive ("deleted").
   - name: race
@@ -252,7 +252,7 @@ columns:
     description: |-
       Social Security Number.
   - name: rcptpn_regular_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the record is to be marked inactive ("deleted").
   - name: Dtn_SW
@@ -277,11 +277,11 @@ columns:
     description: |-
       Code of the current location of the person.
   - name: RecmpMax_Dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Recomputed maximum date.
   - name: Reclass_Dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Reclassification date.
   - name: IC_Userid
@@ -289,7 +289,7 @@ columns:
     description: |-
       ID of the PADOC staff member who administered the initial classification.
   - name: IC_Dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Initial classification date.
   - name: Move_Add

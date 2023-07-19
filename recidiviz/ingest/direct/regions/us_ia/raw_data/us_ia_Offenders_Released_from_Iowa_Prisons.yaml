@@ -17,7 +17,7 @@ columns:
     description: |-
       Unique ID for the offender
   - name: Release_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the offender was released from prison
   - name: Fiscal_Year_Released
@@ -65,7 +65,7 @@ columns:
     description: |-
       The county in which the offender committed the offense
   - name: Admission_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of when the Offender first came to our institution
   - name: Months_Served

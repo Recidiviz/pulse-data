@@ -80,7 +80,7 @@ columns:
   - name: SupvLevelChangeDate
     description: >-
       Date at which SupervisionLevel changed.
-    is_datetime: True
+    field_type: datetime
   - name: ParoleAgentName
     is_pii: True
     description: >-

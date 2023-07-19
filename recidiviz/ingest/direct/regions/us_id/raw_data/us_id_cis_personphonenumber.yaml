@@ -20,14 +20,14 @@ columns:
     description: |-
       The user who inserted the record
   - name: insdate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the record was inserted
   - name: upduser
     description: |-
       User who last updated the record
   - name: upddate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the record was last updated
   - name: id

@@ -32,7 +32,7 @@ columns:
   - name: ForwardDate
     description: |-
       Forward Date
-    is_datetime: True
+    field_type: datetime
   - name: InProgress
     description: |-
       In progress boolean
@@ -45,7 +45,7 @@ columns:
   - name: RescissionReconsiderationDate
     description: |-
       Rescission Reconsideration Date
-    is_datetime: True
+    field_type: datetime
   - name: Notes
     description: |-
       Text for notes
@@ -60,7 +60,7 @@ columns:
   - name: InsertDate
     description: |-
       Instert date
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: |-
       Employee ID of user who updated
@@ -68,7 +68,7 @@ columns:
   - name: UpdateDate
     description: |-
       Updated Date
-    is_datetime: True
+    field_type: datetime
   - name: CurrentVotingRound
     description: |-
       Current voting round

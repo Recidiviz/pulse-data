@@ -22,11 +22,11 @@ columns:
     description: |-
       Type of supervision
   - name: SupervisionStatusStartDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of the supervision status
   - name: SupervisionStatusEndDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of the supervision status
   - name: SupervisionStatusReasonForChangeId

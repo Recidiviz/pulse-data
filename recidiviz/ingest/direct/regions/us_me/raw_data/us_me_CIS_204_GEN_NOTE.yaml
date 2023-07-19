@@ -32,7 +32,7 @@ columns:
   - name: Modified_On_Date
   - name: Note_Date
     description: This is the date the note was entered.
-    is_datetime: True
+    field_type: datetime
   - name: Note_Id
     description: This is the primary key for the table.
   - name: Note_Tx

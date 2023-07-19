@@ -15,14 +15,14 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrderDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date an order is made.
   - name: ReferralSequenceNumber
     description: |-
       This is the referral sequence number.
   - name: EventDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of either the arrest or conviction of a person  for a particular offense.  This date is used as the key for the criminal history of an individual.
   - name: SequenceNumber

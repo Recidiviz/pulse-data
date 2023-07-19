@@ -27,7 +27,7 @@ columns:
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served.
   - name: Test_Dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the assessment was administered.
   - name: Fac_Cd
@@ -41,7 +41,7 @@ columns:
     description: |-
       PADOC employee number of the staff member who last modified this record.
   - name: LstMod_Dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this record was last modified.
   - name: AsmtVer_Num

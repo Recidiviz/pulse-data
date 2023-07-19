@@ -20,22 +20,22 @@ columns:
     is_pii: True
   - name: InsertDate
     description: Date record was inserted
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: EmployeeId for the user that last updated the record
     is_pii: True
   - name: UpdateDate
     description: Date record was updated
-    is_datetime: True
+    field_type: datetime
   - name: AssignedDate
     description: Date questionnaire was assigned
-    is_datetime: True
+    field_type: datetime
   - name: AssignedByEmployeeId
     description: EmployeeId for staff member that assigned the questionnaire
     is_pii: True
   - name: CompletedDate
     description: Date questionnaire completed
-    is_datetime: True
+    field_type: datetime
   - name: CompletedByEmployeeId
     description: EmployeeId for staff member that completed the questionnaire
     is_pii: True

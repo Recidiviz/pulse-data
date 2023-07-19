@@ -98,7 +98,7 @@ def import_csv_to_raw_yaml(absolute_file_path: str) -> None:
             (column_data_type, definition) = table[column_name]
             new_file += f"  - name: {column_name}\n"
             if "date" in column_data_type:
-                new_file += "    is_datetime: True\n"
+                new_file += "    field_type: datetime\n"
             new_file += f"    description: |-\n      {definition}\n"
         persist_file_contents(new_file, yaml_file_path)
 

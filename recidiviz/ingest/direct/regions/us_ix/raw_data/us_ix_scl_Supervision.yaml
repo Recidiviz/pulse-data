@@ -27,7 +27,7 @@ columns:
   - name: ImposedDate
     description: |-
       The date the supervision term was imposed.
-    is_datetime: True
+    field_type: datetime
   - name: CourtAuthority
     description: |-
       ID for the court holding authority over the supervision assignment.
@@ -38,7 +38,7 @@ columns:
   - name: StartDate
     description: |-
       The start date of the supervision term.
-    is_datetime: True
+    field_type: datetime
   - name: SupervisionMEDDate
     description: |-
       TODO(#15329): Fill in column description

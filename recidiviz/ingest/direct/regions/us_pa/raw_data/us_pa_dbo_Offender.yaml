@@ -17,7 +17,7 @@ columns:
     description: |-
       Pennsylvania state identifier - always null.
   - name: OffReceptionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the person was first received into PADOC custody.
   - name: OffEducationGrade
@@ -101,7 +101,7 @@ columns:
     description: |-
       Gang affilitation of the person.
   - name: LastModifiedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when this record was last modified.
   - name: LastModifiedBy

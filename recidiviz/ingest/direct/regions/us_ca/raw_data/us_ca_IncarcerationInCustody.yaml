@@ -15,7 +15,7 @@ columns:
   - name: in_date
     description: |-
       TODO(#15297)
-    is_datetime: True
+    field_type: datetime
   - name: In_Move
     description: |-
       TODO(#15297)
@@ -26,7 +26,7 @@ columns:
   - name: out_date
     description: |-
       OUT_DATE will be filled with the date a person was paroled or discharged.
-    is_datetime: True
+    field_type: datetime
   - name: Out_Move
     description: |-
       TODO(#15297)
@@ -36,7 +36,7 @@ columns:
   - name: ParoleEndDate
     description: |-
       TODO(#15297)
-    is_datetime: True
+    field_type: datetime
   - name: ParoleEndMove
     description: |-
       TODO(#15297)

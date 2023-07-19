@@ -14,7 +14,7 @@ columns:
   - name: BEDASSIGNMENTDATE
     description: |-
       Date the offender was assigned to this bed.
-    is_datetime: True
+    field_type: datetime
   - name: BEDASSIGNMENTTIME
     description: |-
       Time the offender was assigned to this bed.

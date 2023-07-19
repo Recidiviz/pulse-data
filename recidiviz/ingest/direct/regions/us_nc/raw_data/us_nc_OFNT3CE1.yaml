@@ -53,11 +53,11 @@ columns:
     description: |-
       Offense qualifier code
   - name: CMOFFDTE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date offense committed - begin
   - name: CMOFFDT2
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date offense committed - end
   - name: CMSTATUT
@@ -145,11 +145,11 @@ columns:
     description: |-
       Time computation exception code
   - name: CMIMPSDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Sentence conviction date
   - name: CMSENTDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Sentence effective (begin) date
   - name: DELAUTH
@@ -159,32 +159,32 @@ columns:
     description: |-
       Inmate sentence status code
   - name: CMCMSTDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Inmate component status date
   - name: CMPPCMST
     description: |-
       P&P case status
   - name: CMPPSTDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       P&P component status date
   - name: DTOFUPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last update
   - name: TMOFUPDT
     description: |-
       Time of last update
   - name: DTINUPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Original data entry date
   - name: CMOLDAUDIT
     description: |-
       Original sentence audit code
   - name: DTOFUPDT2
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last update two
   - name: TMOFUPDT2

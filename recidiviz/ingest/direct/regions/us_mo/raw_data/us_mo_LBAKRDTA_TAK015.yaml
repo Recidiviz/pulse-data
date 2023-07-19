@@ -46,7 +46,7 @@ columns:
       - value: "C-5"
         description: Maximum
   - name: BL_IC
-    is_datetime: True
+    field_type: datetime
     description: |-
       Classification Analysis Date
   - name: BL_ICO

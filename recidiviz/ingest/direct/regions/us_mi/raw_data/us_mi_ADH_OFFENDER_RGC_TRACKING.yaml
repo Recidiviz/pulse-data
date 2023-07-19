@@ -17,22 +17,22 @@ columns:
     description: Reference code for the RGC status (links with ADH_REFERENCE_CODE)
   - name: rgc_status_date
     description: Date RGC status was last updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: referral_date
     description: referral date # TODO(#17944) Not sure what this is the referral date for
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: start_date
     description: start date # TODO(#17944) Not sure what this is the start date for
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: create_date
     description: create date # TODO(#17944) Not sure what this is the create date for
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: created_by_empl_id
@@ -47,7 +47,7 @@ columns:
     description: Reference code for the termination reason (links with ADH_REFERENCE_CODE)
   - name: termination_date
     description: termination date # TODO(#17944) Not sure what this is the termination date for
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: authorized_by_empl
@@ -61,7 +61,7 @@ columns:
     is_pii: True
   - name: last_update_date
     description: last update date of the record
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

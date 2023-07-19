@@ -27,7 +27,7 @@ columns:
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of a person.
   - name: SentenceChangedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a sentence of a person  last changed.
   - name: SentenceStatus
@@ -43,43 +43,43 @@ columns:
       - value: PB
         description: PROBATION
   - name: SentenceStatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a change of a person's sentence status occurs.
   - name: SentenceEffectiveDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a sentence begins being served (Sentence Effective Date).  The SED date is computed by subtracting the pre-trial jail credits from the sentence imposed date.
   - name: FullExpirationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The full-term expiration date of a person's sentence. Street-Time can extend the FXP-Date.
   - name: ExpirationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a sentence expires.  This date includes all credits earned by a person.
   - name: SafetyValveDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a person  is eligible for release on parole based on the safety valve percentage.
   - name: ReleaseEligibilityDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a person  is eligible for release to parole for a sentence.
   - name: EarliestPossibleReleaseDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the earliest possible release date that a person  may be paroled or released from custody.  Parole or release eligibility dates cannot be reduced by credits to be earlier than this date. This date is not in effect when safety-value law is in eff
   - name: MandatoryParoleDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The mandatory parole date of a person  for Indeterminate and Determinate sentences.
   - name: RegularParoleDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The regular parole date for sentences of a person  on Indeterminate and Determinate sentences.
   - name: ProbationaryParoleDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The probationary parole date given for people on Indeterminate and Determinate sentences.
   - name: TotalPPSCCredits
@@ -167,7 +167,7 @@ columns:
       - value: Y
         description: "YES - Inactive on account of a court order"
   - name: ConfinementExpirationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the sentence calculations determine that the first portion of a person's split confinement will expire.  When the split confinement is legal, this date will be the same as the first-cnfmnt-fxp-date.
   - name: ConvertedPPSCCredits
@@ -186,7 +186,7 @@ columns:
     description: |-
       The total net loss of good conduct credits a person  has earned
   - name: ConfinementFullExpirationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the sentence calculations determine that the first portion of a person's split confinement will expire.  For an illegal split confinement, the first-cnfmnt-fxp-date will be greater than first-cnfmnt-exp-date.
   - name: SlagleFlag

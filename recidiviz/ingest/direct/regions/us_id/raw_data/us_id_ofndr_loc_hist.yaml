@@ -15,24 +15,24 @@ columns:
     description: |-
       ID of the user who last updated this record
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this record was last updated
   - name: body_loc_cd
     description: |-
       Facility code indicating where the person is located
   - name: assgn_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this assignment was effective
   - name: assgn_tm
-    is_datetime: True
+    field_type: datetime
     description: |-
       Time of the day this assignment was effective
   - name: assgn_rsn_cd
     description: |-
       Reason for transfer
   - name: end_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date this assignment ended

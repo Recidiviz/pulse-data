@@ -15,7 +15,7 @@ columns:
     description: |-
       ID that identifies each WROWI violation review
   - name: ReportDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of the WROWI violation review
   - name: SupervisionStatus

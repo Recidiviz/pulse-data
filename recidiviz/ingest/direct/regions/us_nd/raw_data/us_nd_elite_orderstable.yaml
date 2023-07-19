@@ -14,7 +14,7 @@ columns:
     description: |-
       External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
   - name: CONVICTION_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date that the conviction occurred at the end of this court order.
     datetime_sql_parsers:
@@ -23,7 +23,7 @@ columns:
     description: |-
       Code of the county where the court order is taking place.
   - name: COURT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the court order began.
     datetime_sql_parsers:
@@ -32,7 +32,7 @@ columns:
     description: |-
       ID of the courthouse where the order is being presided over.
   - name: EFFECTIVE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the result of the court order became effective.
     datetime_sql_parsers:
@@ -48,7 +48,7 @@ columns:
       - value: ACC
       - value: STEP
   - name: SENTENCE_START_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the sentence that resulted from this court order began, if applicable.
     datetime_sql_parsers:
@@ -57,13 +57,13 @@ columns:
     description: |-
       ID of the agency with jurisdiction over this court order.
   - name: CREATE_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y  %I:%M:%S%p', {col_name})"
   - name: MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
     datetime_sql_parsers:

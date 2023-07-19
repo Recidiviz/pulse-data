@@ -48,7 +48,7 @@ columns:
       Zip code portion of the address of the person.
     is_pii: True
   - name: DOB
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of birth of the person.
     datetime_sql_parsers:
@@ -122,7 +122,7 @@ columns:
     description: |-
       Whether this person is a registered sex offender.
   - name: GOODTIMEDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       The good time date upon which this person can be released from supervision.
     datetime_sql_parsers:
@@ -161,7 +161,7 @@ columns:
     description: |-
       Whether this person receives any public assistance/welfare.
   - name: INACTIVEDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this person's recordkeeping in Docstars became inactive.
     datetime_sql_parsers:
@@ -194,7 +194,7 @@ columns:
     description: |-
       Whether this person is currently in a CCC facility.
   - name: RecDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:
@@ -209,19 +209,19 @@ columns:
     description: |-
       Who originally created this Docstars record.
   - name: RECORDCRDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: LAST_HOME_VISIT
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the last home visit by the supervising officer occurred for this person.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: LAST_FACE_TO_FACE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the last face-to-face visit by the supervising officer occurred for this person.
     datetime_sql_parsers:
@@ -238,7 +238,7 @@ columns:
     description: |-
       County of residence for this person, auto-generated from other address fields within Docstars.
   - name: EARLY_TERMINATION_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this person's supervision was early terminated.
     datetime_sql_parsers:

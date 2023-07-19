@@ -21,7 +21,7 @@ columns:
   - name: FkShCase
   - name: DateOfScreening
     description: Date of screening
-    is_datetime: True
+    field_type: datetime
   - name: FkShUserCreatedBy
     is_pii: True
   - name: FkShUserUpdatedBy
@@ -29,12 +29,12 @@ columns:
   - name: FkShUserDeletedBy
     is_pii: True
   - name: DateCreated
-    is_datetime: True
+    field_type: datetime
   - name: DateUpdated
     description: Date screening record was updated
-    is_datetime: True
+    field_type: datetime
   - name: DateDeleted
-    is_datetime: True
+    field_type: datetime
   - name: IsDeleted
     description: flag for whether this screening record was invalidated
   - name: IsCompleted
@@ -46,7 +46,7 @@ columns:
     description: ID for agency that created this screening record (links with FkShAgencyCreatedBy in ADH_SHOFFENDER)
   - name: DateComputed
     description: Date screening score computed
-    is_datetime: True
+    field_type: datetime
   - name: IsLocked
   - name: Comments
     is_pii: True

@@ -26,7 +26,7 @@ columns:
   - name: DOB
     description: Client's date of birth.
     is_pii: True
-    is_datetime: True
+    field_type: datetime
   - name: Gender
     description: Client's gender, as reported in external data.
   - name: Client_Status
@@ -47,4 +47,4 @@ columns:
     description: Race of client.
   - name: Active_Date
     description: Date of supervision.
-    is_datetime: True
+    field_type: datetime

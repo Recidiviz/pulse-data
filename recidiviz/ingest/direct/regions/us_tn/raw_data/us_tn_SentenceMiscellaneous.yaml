@@ -27,15 +27,15 @@ columns:
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
   - name: BOPDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the Board of Parole assigns to a sentence to replace the normal starting date of the sentence.
   - name: CustodialParoleDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the Board of Parole assigns to a sentence to indicate the sentence has been paroled yet the person is still in custody.
   - name: AlternateSentenceImposeDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that replaces the original sentence imposed date taken the judgment order.  Used for sentences consective to a misde- meanor or an ISC sentence where the expiration date is not known.
   - name: CustodialParoleDateFlag
@@ -61,7 +61,7 @@ columns:
     description: |-
       The code that indicates a converted person should lose his parole dates for a sentence regardless of the information related to the offender.
   - name: LastModificationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.
   - name: LastUpatedUserID

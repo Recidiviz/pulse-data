@@ -230,7 +230,7 @@ columns:
     description: |-
       Reason for supervision level override
   - name: OverrideApprovalDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Override approval date
   - name: AssessingStaffId
@@ -238,7 +238,7 @@ columns:
     description: |-
       ID that uniquely identifies the staff member conducting the assessment
   - name: AssessedDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of the assessment
   - name: AssessmentReasonId

@@ -14,7 +14,7 @@ columns:
     description: |-
       ID of the user who last updated this record
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Timestamp when this record was last updated
   - name: cls_enroll_id
@@ -65,18 +65,18 @@ columns:
     description: |-
       ID of the user who enrolled this client in the class
   - name: enroll_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date enrollment began
   - name: end_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date enrollment ended
   - name: rfrd_by_usr_id
     description: |-
       ID of user who referred this client to the course
   - name: rfrd_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date client was referred to this course
   - name: cmt

@@ -20,10 +20,10 @@ columns:
       1. CDCNO starts with I is interstate.
     is_pii: True
   - name: IDVERIFYDATE
-    is_datetime: True
+    field_type: datetime
   - name: IDExpirationDate
     description: >-
       The expiration date of the CDCNO. We expect cases where expiration dates
       here are wrong (non-expired when they should be expired) and actually only
       reflecting the last time this CDCNO was updated.
-    is_datetime: True
+    field_type: datetime

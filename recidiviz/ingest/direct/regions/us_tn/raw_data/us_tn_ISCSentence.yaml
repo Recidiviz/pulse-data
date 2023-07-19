@@ -40,7 +40,7 @@ columns:
     description: |-
       The decode value of a conviction offense.
   - name: OffenseDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date the offense was committed as indicated on the judgment order or from another source.
   - name: ISCSentencyType
@@ -62,7 +62,7 @@ columns:
     description: |-
       Text field used for description of the sentence a person  received for a particular offense.
   - name: SentenceImposedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a person's sentence is to begin as specified by the judge on the judgment order.  This date less any pretrial credits provides the sentence effective date.
   - name: DispositionCase
@@ -82,15 +82,15 @@ columns:
     description: |-
       The name for a judge. This element is only 30 characters instead of 50 characters used for JUDGE-NAME.
   - name: ReleaseEligibilityDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a person  is eligible for release to parole for a sentence.
   - name: ExpirationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a sentence expires.  This date includes all credits earned by a person.
   - name: ActualReleaseDAte
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a person  is actually released from an institution or supervision.
   - name: ISCCreditDays

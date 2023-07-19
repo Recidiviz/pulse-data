@@ -42,7 +42,7 @@ columns:
     description: |-
       Age of the person at the time of the assessment.
   - name: AssessmentTime
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the assessment was administered.
   - name: AssessmentGender
@@ -236,7 +236,7 @@ columns:
       Further context on the answer to question 50.
   - name: ObjectID
   - name: LastModifiedDateTime
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the record was last modified.
 separator: ‡

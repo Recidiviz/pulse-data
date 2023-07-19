@@ -21,7 +21,7 @@ columns:
   - name: PROGRAMAPPLICATIONDATE
     description: |-
       The date that an application was submitted to the program.
-    is_datetime: True
+    field_type: datetime
   - name: ReferralSource
     description: |-
       TODO(#15297)
@@ -31,15 +31,15 @@ columns:
   - name: PgmApplicationStatusDate
     description: |-
       The date when the field "programApplicationStatus: was last updated
-    is_datetime: True
+    field_type: datetime
   - name: WorkAssignStatusDate
     description: |-
       TODO(#15297)
-    is_datetime: True
+    field_type: datetime
   - name: WorkAssignStatusReason
     description: |-
       TODO(#15297)
   - name: PROGRAMASSIGNEDDATE
     description: |-
       The date that a person was officially assigned to the program. They are only still currently assigned to this program if ProgramApplicationStatus is "Assigned"
-    is_datetime: True
+    field_type: datetime

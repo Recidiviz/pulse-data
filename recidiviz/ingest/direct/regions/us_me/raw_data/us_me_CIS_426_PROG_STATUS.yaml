@@ -18,7 +18,7 @@ columns:
     is_pii: True
   - name: Created_On_Date
   - name: Effct_Datetime
-    is_datetime: true
+    field_type: datetime
     description: |-
       The datetime when the status change took effect.
   - name: Locking_Tsp

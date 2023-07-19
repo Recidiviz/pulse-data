@@ -59,7 +59,7 @@ columns:
     known_values: []
   - name: BirthDate
     is_pii: True
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a person was born.
   - name: SocialSecurityNumber
@@ -74,6 +74,6 @@ columns:
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

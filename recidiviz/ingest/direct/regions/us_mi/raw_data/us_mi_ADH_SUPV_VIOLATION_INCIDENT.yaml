@@ -11,7 +11,7 @@ columns:
     description: OMNI-database generated id for a supervision violation
   - name: violation_date
     description: Date of violation
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: violation_location_id
@@ -31,7 +31,7 @@ columns:
     description: ID for incident summary notes (links with AHD_SUPV_VIOLATION_INCIDENT_NOTES which we don't have but probably don't need)
   - name: charge_waived_date
     description: Date charge waived
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: waived_flag
@@ -41,7 +41,7 @@ columns:
     is_pii: True
   - name: last_update_date
     description: Date record last updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

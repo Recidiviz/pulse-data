@@ -21,7 +21,7 @@ columns:
     description: |-
       Incarceration number for this person
   - name: move_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date and time of the move
   - name: move_typ

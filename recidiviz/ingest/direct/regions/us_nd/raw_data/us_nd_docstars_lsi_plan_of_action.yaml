@@ -24,11 +24,11 @@ columns:
   - name: START_DATE
     description: |-
       Date this plan started
-    is_datetime: True
+    field_type: datetime
   - name: END_DATE
     description: |-
       Date this plan ended, if it has ended
-    is_datetime: True
+    field_type: datetime
   - name: NOTES
     description: |-
       Free text notes about the person and this plan

@@ -8,7 +8,7 @@ primary_key_cols:
   - SENT_NEXT_NUMBER
 columns:
   - name: LAST_UPDATED_WHEN
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -40,7 +40,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: PROBATION_REVOKE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -71,7 +71,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: SUMMIT_DATE_RSTR
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -84,7 +84,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: TRNLV_DATE_RSTR
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -127,7 +127,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: ORS_WORK_RELE_DT
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:

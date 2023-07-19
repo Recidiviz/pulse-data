@@ -27,14 +27,14 @@ columns:
   - name: InsertDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: |-
       TODO(#15329): Fill in column description
   - name: UpdateDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: IsCustom
     description: |-
       TODO(#15329): Fill in column description

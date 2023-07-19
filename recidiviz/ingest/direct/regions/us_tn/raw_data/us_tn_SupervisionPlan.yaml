@@ -13,7 +13,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: PlanStartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The effective date of a plan of supervision for an offender.
   - name: PlanType
@@ -29,15 +29,15 @@ columns:
       - value: PROB
         description: PROBATION
   - name: PlanEndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The END date of a plan of supervision for an offender.
   - name: StandardStartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The effective begin date for the standards associated with a plan of supervision.
   - name: StandardEndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The effective end date for the standards associated with a plan of supervision.
   - name: SupervisionLevel
@@ -518,7 +518,7 @@ columns:
     description: |-
       The staff id of the individual who initially posted information for an offender.
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateStaffID

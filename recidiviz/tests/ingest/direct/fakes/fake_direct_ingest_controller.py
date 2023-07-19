@@ -59,6 +59,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawTableColumnFieldType,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
@@ -119,7 +120,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                     RawTableColumnInfo(
                         name="mockKey",
                         description="mockKey description",
-                        is_datetime=False,
+                        field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
                     )
                 ],
@@ -143,7 +144,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                     RawTableColumnInfo(
                         name="mockKey",
                         description="mockKey description",
-                        is_datetime=False,
+                        field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
                     )
                 ],
@@ -167,7 +168,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                     RawTableColumnInfo(
                         name="mockKey",
                         description="mockKey description",
-                        is_datetime=False,
+                        field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
                     )
                 ],
@@ -191,7 +192,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                     RawTableColumnInfo(
                         name="mockKey",
                         description="mockKey description",
-                        is_datetime=False,
+                        field_type=RawTableColumnFieldType.STRING,
                         is_pii=False,
                     )
                 ],

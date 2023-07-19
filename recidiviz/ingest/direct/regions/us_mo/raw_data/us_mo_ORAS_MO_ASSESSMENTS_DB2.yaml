@@ -58,20 +58,20 @@ columns:
   - name: CREATED_AT
     description: |-
       Assessment Date (Date entered into UCCI system).
-    is_datetime: True
+    field_type: datetime
   - name: UPDATED_AT
     description: |-
       Update date
-    is_datetime: True
+    field_type: datetime
   - name: BACKDATED
     description: |-
       Date backdated for
-    is_datetime: True
+    field_type: datetime
   - name: DELETED_AT
     description: |-
       Delete date
-    is_datetime: True
+    field_type: datetime
   - name: ASSESSMENT_DATE
     description: |-
       Date of assessment
-    is_datetime: True
+    field_type: datetime

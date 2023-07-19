@@ -65,15 +65,15 @@ columns:
   - name: SenAmisc
     is_pii: True
   - name: SenAddDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date that a sentence was most recently added to this group.
   - name: SenLastModDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date that a sentence was most recently modified within this group.
   - name: SentEffectiveDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the first sentence in the group became effective.
   - name: WANGDataFlag
@@ -113,12 +113,12 @@ columns:
     description: |-
       Whether or not this is an RRRI case.
   - name: senRRRIDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       RRRI minimum date.
   - name: senRebuttCaseInd
   - name: senTrueMinDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       "True" minimum date of release from this sentence, with all factors included.
 separator: ‡

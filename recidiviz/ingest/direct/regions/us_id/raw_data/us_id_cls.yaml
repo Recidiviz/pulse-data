@@ -25,7 +25,7 @@ columns:
     description: |-
       Whether or not this class has prerequisites
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Update timestamp for this record
   - name: updt_usr_id

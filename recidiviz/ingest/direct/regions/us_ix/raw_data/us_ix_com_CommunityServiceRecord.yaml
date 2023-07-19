@@ -12,10 +12,10 @@ columns:
     is_pii: True
   - name: StartDate
     description: Start date
-    is_datetime: True
+    field_type: datetime
   - name: EndDate
     description: End date
-    is_datetime: True
+    field_type: datetime
   - name: TimeServedSeconds
     description: Time served in seconds
   - name: WorkSite
@@ -33,10 +33,10 @@ columns:
     is_pii: True
   - name: InsertDate
     description: Insert date
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: User ID of employee who updated
     is_pii: True
   - name: UpdateDate
     description: Update date
-    is_datetime: True
+    field_type: datetime

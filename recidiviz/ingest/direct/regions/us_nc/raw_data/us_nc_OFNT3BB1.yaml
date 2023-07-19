@@ -32,22 +32,22 @@ columns:
     description: |-
       Committed name suffix
   - name: CMADMDTE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Offender admission/intake date
   - name: CMINTDTE
-    is_datetime: True
+    field_type: datetime
     description: |-
       P&P case intake date
   - name: CMSTAFLG
     description: |-
       Inmate commitment status flag
   - name: CMSTADTE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Commitment status date
   - name: GMSEFFDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Earliest sentence effective date
   - name: CMNEWPD
@@ -72,18 +72,18 @@ columns:
     description: |-
       P&P commitment status flag
   - name: CMPPCMDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       P&P commitment status date
   - name: CMPROLEN
     description: |-
       Total length of supervision
   - name: CIOLDPED
-    is_datetime: True
+    field_type: datetime
     description: |-
       Parole eligibility date prior to 1995 conversion
   - name: DTOFUPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last update
   - name: TMOFUPDT

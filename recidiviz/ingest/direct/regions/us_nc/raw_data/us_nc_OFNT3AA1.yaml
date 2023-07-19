@@ -12,7 +12,7 @@ columns:
       Offender NC DOC ID number
   - name: CMCLBRTH
     is_pii: True
-    is_datetime: True
+    field_type: datetime
     description: |-
       Offender birth date
   - name: CMCLSEX
@@ -79,7 +79,7 @@ columns:
     description: |-
       Next photo year
   - name: DTOFUPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last update
   - name: TMOFUPDT

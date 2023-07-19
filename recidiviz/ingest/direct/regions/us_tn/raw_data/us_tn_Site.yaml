@@ -55,7 +55,7 @@ columns:
       - value: I
         description: INACTIVE
   - name: StatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a a person  is assigned to a particular institution.
   - name: AddressLine1

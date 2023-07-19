@@ -38,12 +38,12 @@ columns:
   - name: FkShUserManager
   - name: DateCreated
     description: Date the record was created
-    is_datetime: True
+    field_type: datetime
   - name: DateUpdated
     description: Date the record was last updated
-    is_datetime: True
+    field_type: datetime
   - name: DateDeleted
-    is_datetime: True
+    field_type: datetime
   - name: IsActive
   - name: IsSuperAdmin
   - name: IsDeleted
@@ -51,10 +51,10 @@ columns:
   - name: IsLocked
   - name: InvalidLoginCount
   - name: DateLastLogin
-    is_datetime: True
+    field_type: datetime
   - name: FkShRfCodeLocation
   - name: DatePasswordLastSet
-    is_datetime: True
+    field_type: datetime
   - name: IsPasswordExpirationIgnored
   - name: FkShRfCodeLocationLastSearch
   - name: FkShAgencyLastSearch

@@ -15,13 +15,13 @@ columns:
     description: Locking number
   - name: InsertDate
     description: Date of insert
-    is_datetime: True
+    field_type: datetime
   - name: InsertUserId
     description: Insert user ID
     is_pii: True
   - name: UpdateDate
     description: Date of update
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: Update user ID
     is_pii: True

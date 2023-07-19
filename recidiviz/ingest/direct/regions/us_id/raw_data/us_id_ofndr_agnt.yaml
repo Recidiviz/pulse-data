@@ -35,11 +35,11 @@ columns:
     description: |-
       ID of the agency the PO works out of
   - name: agnt_strt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the agent started supervising this person
   - name: end_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the agent ended supervising this person. We should only consider
       records in this table where this field is NULL in order to de-duplicate on

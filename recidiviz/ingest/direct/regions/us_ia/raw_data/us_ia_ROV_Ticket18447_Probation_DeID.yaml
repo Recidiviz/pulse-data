@@ -20,7 +20,7 @@ columns:
     description: |-
       ID that identifies each probation violation review
   - name: ReportDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of the probation violation report
   - name: WorkUnitRegionId

@@ -80,7 +80,7 @@ columns:
       - value: 30
         description: Critical Incident Case Review
   - name: create_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the update was created
   - name: create_tm
@@ -96,7 +96,7 @@ columns:
     description: |-
       The user who last updated the note
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date when the note was last updated
 separator: ‡

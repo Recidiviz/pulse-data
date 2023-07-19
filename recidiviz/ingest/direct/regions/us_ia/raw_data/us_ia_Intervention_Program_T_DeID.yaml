@@ -43,11 +43,11 @@ columns:
     description: |-
       Staff ID who submitted the referral
   - name: EligibilityDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of intervention eligibility
   - name: OrientationDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of the intervention orientation, if applicable
   - name: InterventionProgramStartDt

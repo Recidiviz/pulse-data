@@ -170,11 +170,11 @@ columns:
       - value: XPR
         description: INTAKE SEX OFFNDR PROB.
   - name: StandardStartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a supervision standard begins.
   - name: StandardEndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a supervision standard ends
   - name: PostedByStaffID
@@ -182,7 +182,7 @@ columns:
     description: |-
       The staff id of the individual who initially posted information for an offender.
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateStaffID

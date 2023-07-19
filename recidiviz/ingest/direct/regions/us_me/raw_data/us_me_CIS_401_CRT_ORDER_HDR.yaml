@@ -229,24 +229,24 @@ columns:
       Additional information about the community override code
   - name: Comm_Override_Rel_Date
     description: The overridden release date for a community supervision status. Updates to this date are also reflected in the CIS_319_TERM table.
-    is_datetime: True
+    field_type: datetime
   - name: Comm_Override_Rel_Ind
   - name: Comm_Rel_Date
     description: The original release date for a community supervision status.
-    is_datetime: True
+    field_type: datetime
   - name: Comments_Tx
     description: Free text field with comments about sentences. Days in county jail are usually described here.
     is_pii: True
   - name: Count_Num
   - name: Court_Finding_Date
     description: The date that the finding of the court was made, e.g. when conviction or acquittal occurred.
-    is_datetime: True
+    field_type: datetime
   - name: Court_Order_Date
   - name: Court_Order_Id
     description: Primary key field
   - name: Court_Order_Sent_Date
     description: The date the court sentence was created.
-    is_datetime: True
+    field_type: datetime
   - name: Created_By_Tx
     is_pii: True
   - name: Created_On_Date
@@ -257,13 +257,13 @@ columns:
   - name: Csw_Total_Hours_Num
   - name: Curr_Cust_Rel_Date
     description: The most current custody release date, with adjusted good time factored in.
-    is_datetime: True
+    field_type: datetime
   - name: Cust_Override_Notes_Tx
     description: |-
       Additional information about the custody override code
   - name: Cust_Override_Rel_Date
     description: The overridden release date for a release from custody. Updates to this date are also reflected in the CIS_319_TERM table.
-    is_datetime: True
+    field_type: datetime
   - name: Cust_Override_Rel_Ind
   - name: Days_Earned_Num
   - name: Days_Lost_Num
@@ -276,10 +276,10 @@ columns:
   - name: Domestic_Violence_Ind
   - name: Early_Cust_Rel_Date
     description: The earliest possible custody release date.
-    is_datetime: True
+    field_type: datetime
   - name: Est_Sent_Start_Date
     description: The estimated start date for the sentence.
-    is_datetime: True
+    field_type: datetime
   - name: Fine_Amount_Num
   - name: Fine_Comments_Tx
     is_pii: True
@@ -298,7 +298,7 @@ columns:
     description: Whether the sentence was a life sentence.
   - name: Max_Cust_Rel_Date
     description: The max date for release from custody.
-    is_datetime: True
+    field_type: datetime
   - name: Modified_By_Tx
     is_pii: True
   - name: Modified_On_Date
@@ -314,7 +314,7 @@ columns:
     description: The number of months in the probation sentence.
   - name: Prob_Start_Date
     description: The date that a sentence to probation starts, if applicable.
-    is_datetime: True
+    field_type: datetime
   - name: Prob_Yrs_Num
     description: The number of years in the probation sentence.
   - name: Probation_Term_Ind

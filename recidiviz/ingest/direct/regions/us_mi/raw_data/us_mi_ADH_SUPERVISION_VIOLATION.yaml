@@ -84,7 +84,7 @@ columns:
     description: Violation score
   - name: violation_assessment_date
     description: Violation assessment date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: violation_assessment_result_id
@@ -99,20 +99,20 @@ columns:
   - name: available_flag
     description: TODO(#16348)
   - name: available_date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
     description: TODO(#16348)
   - name: due_process_max_date
     description: TODO(#16348)
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: waived_preliminary_flag
     description: TODO(#16348)
   - name: prelim_hearing_date
     description: Date of preliminary hearing
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: prelim_hearing_location_id
@@ -135,7 +135,7 @@ columns:
         description: TRRP
   - name: formal_hearing_date
     description: Date of formal hearing
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: formal_hearing_location_id
@@ -178,7 +178,7 @@ columns:
         description: Reinstated Without Hearing
   - name: arraignment_date
     description: Arraignment date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: arraignment_location_id
@@ -190,7 +190,7 @@ columns:
     description: Flag for whether this supervision violation record is active
   - name: date_violation_charges_served
     description: Date violation charges served
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: court_room_number
@@ -214,7 +214,7 @@ columns:
         description: Multiple Order Violation
   - name: violation_invest_begin_date
     description: Begin date of violation investigation
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: notes
@@ -304,7 +304,7 @@ columns:
         description: Continue - PMX (NLGT)
   - name: formal_hearing_arraign_date
     description: Formal hearing arraingment date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: formal_hearing_status_id
@@ -323,7 +323,7 @@ columns:
     is_pii: True
   - name: last_update_date
     description: date record last updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
