@@ -21,3 +21,11 @@ columns:
       literally and trailing/leading whitespace is removed.
   - name: undocumented_column
 encoding: ISO-456-7
+table_relationships:
+  - foreign_table: file_tag_second
+    cardinality: ONE_TO_MANY
+    join_logic:
+      - file_tag_first.col_name_1a = file_tag_second.col_name_2a
+  - foreign_table: file_tag_first
+    join_logic:
+      - file_tag_first.col_name_1a = file_tag_first.col_name_1b

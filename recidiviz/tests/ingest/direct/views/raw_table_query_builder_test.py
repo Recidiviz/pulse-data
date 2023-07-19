@@ -88,6 +88,7 @@ class RawTableQueryBuilderTest(unittest.TestCase):
             no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
+            table_relationships=[],
         )
         self.query_builder = RawTableQueryBuilder(
             project_id="recidiviz-456",

@@ -16,3 +16,7 @@ columns:
     description: |-
       column 3 description
 custom_line_terminator: "\n"
+table_relationships:
+  - foreign_table: file_tag_first
+    join_logic:
+      - file_tag_first.col_name_1a = tagBasicData.COL1

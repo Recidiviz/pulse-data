@@ -26,6 +26,9 @@ import attr
 from recidiviz.cloud_storage.gcsfs_csv_reader import COMMON_RAW_FILE_ENCODINGS
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
+    RawTableRelationshipInfo,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
 
 _DEFAULT_BQ_UPLOAD_CHUNK_SIZE = 250000
@@ -255,6 +258,10 @@ class DirectIngestRawFileConfig:
     # If true, that means that there are no valid primary key columns for this table.
     no_valid_primary_keys: bool = attr.ib()
 
+    table_relationships: List[RawTableRelationshipInfo] = attr.ib(
+        validator=attr_validators.is_list
+    )
+
     def __attrs_post_init__(self) -> None:
         self._validate_primary_keys()
 
@@ -270,6 +277,24 @@ class DirectIngestRawFileConfig:
                 f"Column(s) marked as primary keys not listed in"
                 f" columns list for file [{self.file_tag}]: {missing_columns}"
             )
+
+        for i, relationship in enumerate(self.table_relationships):
+            if relationship.file_tag != self.file_tag:
+                raise ValueError(
+                    f"Found table_relationship defined for [{self.file_tag}] with "
+                    f"file_tag that does not match config file_tag: "
+                    f"{relationship.file_tag}."
+                )
+
+            # Check for duplicate relationships defined on a single raw file
+            for j, relationship_2 in enumerate(self.table_relationships):
+                if i != j and relationship == relationship_2:
+                    raise ValueError(
+                        f"Found duplicate table relationships "
+                        f"[{relationship.join_sql()}] and "
+                        f"[{relationship_2.join_sql()}] defined in "
+                        f"[{self.file_path}]"
+                    )
 
     def _validate_primary_keys(self) -> None:
         """Confirm that the primary key configuration is valid for this config. If this
@@ -446,6 +471,19 @@ class DirectIngestRawFileConfig:
         infer_columns_from_config = file_config_dict.pop_optional(
             "infer_columns_from_config", bool
         )
+        table_relationships_yamls = file_config_dict.pop_dicts_optional(
+            "table_relationships"
+        )
+        table_relationships = (
+            [
+                RawTableRelationshipInfo.build_from_table_relationship_yaml(
+                    file_tag, table_relationship
+                )
+                for table_relationship in table_relationships_yamls
+            ]
+            if table_relationships_yamls
+            else []
+        )
 
         if len(file_config_dict) > 0:
             raise ValueError(
@@ -485,6 +523,7 @@ class DirectIngestRawFileConfig:
                 if default_infer_columns_from_config is not None
                 else False
             ),
+            table_relationships=table_relationships,
         )
 
 
@@ -552,7 +591,7 @@ class DirectIngestRegionRawFileConfig:
 
     @raw_file_configs.default
     def _raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
-        return self._get_raw_data_file_configs()
+        return self._generate_raw_data_file_configs()
 
     def get_raw_data_file_config_paths(self) -> List[str]:
         if not os.path.isdir(self.yaml_config_file_dir):
@@ -574,8 +613,12 @@ class DirectIngestRegionRawFileConfig:
             paths.append(yaml_file_path)
         return paths
 
-    def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
-        """Returns list of file tags we expect to see on raw files for this region."""
+    def _read_configs_from_disk(self) -> Dict[str, DirectIngestRawFileConfig]:
+        """Returns a dictionary of file tag to config for each raw data file tag we
+        expect to see in this region.
+
+        Does not do any validation or table relationships cleanup.
+        """
         raw_data_yaml_paths = self.get_raw_data_file_config_paths()
         default_config = self.default_config()
         raw_data_configs = {}
@@ -609,8 +652,67 @@ class DirectIngestRegionRawFileConfig:
                 default_config.default_infer_columns_from_config,
                 yaml_contents,
             )
-
         return raw_data_configs
+
+    def _generate_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
+        """Returns a dictionary of file tag to config for each raw data file tag we
+        expect to see in this region.
+        """
+        raw_file_configs = self._read_configs_from_disk()
+
+        # For any pair of tables, all relationships between those two tables must be
+        # defined in only one of the YAMLs for those two tables. This dictionary tracks
+        # the expected YAML where relationships between this (sorted) pair is defined.
+        table_relationship_locations: Dict[Tuple[str, ...], str] = {}
+
+        for file_tag, config in raw_file_configs.items():
+            for table_relationship in config.table_relationships:
+                # Check for references to columns that do not exist
+                for join_clause in table_relationship.join_clauses:
+                    for column in join_clause.get_referenced_columns():
+                        column_config = raw_file_configs[column.file_tag]
+                        if column.column not in [c.name for c in column_config.columns]:
+                            raise ValueError(
+                                f"Found column [{column}] referenced in join clause "
+                                f"[{join_clause.to_sql()}] which is not defined in "
+                                f"the config for [{column.file_tag}]"
+                            )
+
+                tables_key = table_relationship.get_referenced_tables()
+                if tables_key not in table_relationship_locations:
+                    table_relationship_locations[tables_key] = file_tag
+
+                if table_relationship_locations[tables_key] != file_tag:
+                    other_config = raw_file_configs[
+                        table_relationship_locations[tables_key]
+                    ]
+                    raise ValueError(
+                        f"Found table_relationship defined in [{config.file_path}] "
+                        f"between tables {tables_key}. There is already a relationship "
+                        f"between these tables defined in [{other_config.file_path}]. "
+                        f"For any given pair of tables, all relationships between "
+                        f"those two tables must be defined in only one YAML file."
+                    )
+
+        # Now that we are validated, we can hydrate reciprocal table relationships
+        for file_tag, config in raw_file_configs.items():
+            for table_relationship in config.table_relationships:
+                src_file_tag = table_relationship_locations[
+                    table_relationship.get_referenced_tables()
+                ]
+                if (
+                    table_relationship.file_tag == table_relationship.foreign_table
+                    or src_file_tag != file_tag
+                ):
+                    # If this is a self-join or this isn't the original config this
+                    # relationship was defined in, we don't copy over to the other
+                    # config.
+                    continue
+                other_file_tag = table_relationship.foreign_table
+                other_config = raw_file_configs[other_file_tag]
+                other_config.table_relationships.append(table_relationship.invert())
+
+        return raw_file_configs
 
     raw_file_tags: Set[str] = attr.ib()
 

@@ -105,6 +105,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             import_chunk_size_rows=2500,
             infer_columns_from_config=False,
             custom_line_terminator="\n",
+            table_relationships=[],
         )
         region_raw_table_config = DirectIngestRegionRawFileConfig(
             region_code=self.region_code,
