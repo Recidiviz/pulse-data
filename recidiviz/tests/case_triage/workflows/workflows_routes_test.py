@@ -503,6 +503,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "Hello, is it me you're looking for?",
             "recipientPhoneNumber": "5153338822",
+            "mid": "abc-123",
         }
 
         with self.test_app.test_request_context():
@@ -516,6 +517,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "recipient": f"+1{request_body['recipientPhoneNumber']}",
             "mid": "MY UUID",
             "message": request_body["message"],
+            "client_firestore_id": "us_ca_123",
+            "month_code": "01_2023",
             "recipient_external_id": PERSON_EXTERNAL_ID,
         }
         mock_task_manager.return_value.create_task.assert_called_once()
@@ -548,6 +551,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "I can see it in your eyes",
             "recipientPhoneNumber": "5153338822",
+            "mid": "abc-123",
         }
 
         with self.test_app.test_request_context():
@@ -577,6 +581,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "I can see it in your smile",
             "recipientPhoneNumber": "5153338822",
+            "mid": "abc-123",
         }
 
         with self.test_app.test_request_context():
@@ -615,6 +620,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "You're all I've ever wanted and my arms are open wide",
             "recipientPhoneNumber": "5153338822",
+            "mid": "abc-123",
         }
 
         with self.test_app.test_request_context():
@@ -626,14 +632,15 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
 
-    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @freeze_time("2023-01-01 01:23:45")
     @patch("twilio.rest.api.v2010.account.message.MessageList.create")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_send_sms_request_valid(
         self,
         mock_get_secret: MagicMock,
-        mock_twilio_messages: MagicMock,
         mock_firestore: MagicMock,
+        mock_twilio_messages: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
 
@@ -645,18 +652,20 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "mid": "ABC",
+                "client_firestore_id": "us_ca_123",
+                "month_code": "01_2023",
             },
         )
 
         assert_type(response.get_json(), dict)
         self.assertEqual(HTTPStatus.OK, response.status_code)
-        mock_firestore.return_value.set_document.assert_not_called()
         mock_twilio_messages.assert_has_calls(
             [
                 call(
                     body="Message!",
                     messaging_service_sid=mock_get_secret(),
                     to="+12223334444",
+                    status_callback="http://localhost:5000/workflows/webhook/twilio_status?mid=ABC",
                 ),
                 call(
                     body=OPT_OUT_MESSAGE,
@@ -666,10 +675,12 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             ]
         )
         mock_get_secret.assert_called()
+        mock_firestore.return_value.set_document.assert_called()
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch("twilio.rest.api.v2010.account.message.MessageList.create")
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    @freeze_time("2023-01-01 01:23:45")
     def test_send_sms_request_valid_from_recidiviz_user(
         self,
         mock_get_secret: MagicMock,
@@ -686,11 +697,13 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "mid": "ABC",
+                "client_firestore_id": "us_ca_123",
+                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
         self.assertEqual(HTTPStatus.OK, response.status_code)
-        mock_firestore.return_value.set_document.assert_not_called()
+        mock_firestore.return_value.set_document.assert_called()
         mock_twilio_messages.assert_called()
         mock_get_secret.assert_called()
 
@@ -705,6 +718,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "mid": "ABC",
+                "client_firestore_id": "us_ca_123",
+                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
@@ -721,6 +736,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "mid": "ABC",
+                "client_firestore_id": "us_ca_123",
+                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
@@ -748,6 +765,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "mid": "ABC",
+                "client_firestore_id": "us_ca_123",
+                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
@@ -788,10 +807,36 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "mid": "ABC",
+                "client_firestore_id": "us_ca_123",
+                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
         self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
+    )
+    def test_twilio_status_accepted(self, mock_validate: MagicMock) -> None:
+        mock_validate.return_value = True
+        account_sid = "XYZ"
+        mid = "ABC-123"
+
+        response = self.test_client.post(
+            f"/workflows/webhook/twilio_status?mid={mid}",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            json={
+                "error_code": "null",
+                "error_message": "null",
+                "sid": "ABC",
+                "status": "accepted",
+                "account_sid": account_sid,
+            },
+        )
+        self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
 
 
 def make_cors_test(

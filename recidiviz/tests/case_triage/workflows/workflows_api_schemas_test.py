@@ -16,6 +16,7 @@
 #  =============================================================================
 """Implements tests for the Workflows API schemas."""
 from recidiviz.case_triage.workflows.api_schemas import (
+    TwilioSmsStatusResponseSchema,
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
@@ -182,12 +183,16 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
 
     VALID_NUMBER = "+12223334444"
     MID = "AAA-BBBB-XX-DD"
+    CLIENT_FIRESTORE_ID = "ABC-123"
+    MONTH_CODE = "01_2023"
 
     test_valid_data = valid_schema_test(
         {
             "recipient": VALID_NUMBER,
             "mid": MID,
             "message": "Some pig!",
+            "client_firestore_id": CLIENT_FIRESTORE_ID,
+            "month_code": MONTH_CODE,
             "recipient_external_id": "123",
         }
     )
@@ -196,6 +201,8 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
         {
             "recipient": VALID_NUMBER,
             "message": "Baa Ram Ewe",
+            "client_firestore_id": CLIENT_FIRESTORE_ID,
+            "month_code": MONTH_CODE,
         }
     )
 
@@ -204,14 +211,36 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
             "recipient": "(555) 666-7777",
             "mid": MID,
             "message": "That'll do, pig. That'll do.",
+            "client_firestore_id": CLIENT_FIRESTORE_ID,
+            "month_code": MONTH_CODE,
         }
     )
 
-    test_another_invalid_phone_number = invalid_schema_test(
+    test_invalid_phone_number = invalid_schema_test(
         {
             "recipient": "15556667777",
             "mid": MID,
             "message": "That'll do, pig. That'll do.",
+            "client_firestore_id": CLIENT_FIRESTORE_ID,
+            "month_code": MONTH_CODE,
+        }
+    )
+
+    test_invalid_missing_client_firestore_id = invalid_schema_test(
+        {
+            "recipient": VALID_NUMBER,
+            "mid": MID,
+            "message": "That'll do, pig. That'll do.",
+            "month_code": MONTH_CODE,
+        }
+    )
+
+    test_invalid_missing_monthy_code = invalid_schema_test(
+        {
+            "recipient": VALID_NUMBER,
+            "mid": MID,
+            "message": "That'll do, pig. That'll do.",
+            "client_firestore_id": CLIENT_FIRESTORE_ID,
         }
     )
 
@@ -236,6 +265,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
     INVALID_NUMBER_AREA_CODE_STARTS_WITH_0 = "0223334444"
     INVALID_NUMBER_FORMATTED = "(222) 333-4444"
     INVALID_NUMBER_E164 = "+12223334444"
+    VALID_MID = "ABC-123"
 
     test_valid_data = valid_schema_test(
         {
@@ -243,6 +273,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "I must not fear",
             "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
+            "mid": VALID_MID,
         }
     )
 
@@ -304,5 +335,79 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
             "message": "Only I will remain",
             "sender_id": "rev.mum.mohiam",
+        }
+    )
+
+    test_invalid_missing_mid = invalid_schema_test(
+        {
+            "recipient_phone_number": VALID_NUMBER,
+            "message": "Fear is the mind-killer",
+            "recipient_external_id": "paul.atreides",
+            "sender_id": "rev.mum.mohiam",
+        }
+    )
+
+
+class WorkflowsTwilioSmsStatusResponseSchemaTest(SchemaTestCase):
+    """Tests for TwilioSmsStatusResponseSchema"""
+
+    camel_case = True
+    schema = TwilioSmsStatusResponseSchema
+
+    SID = "12345"
+    ACCOUNT_SID = "ABC-123"
+
+    test_valid_data = valid_schema_test(
+        {
+            "error_code": None,
+            "error_message": None,
+            "sid": SID,
+            "status": "200",
+            "account_sid": ACCOUNT_SID,
+        }
+    )
+
+    test_invalid_missing_error_code = invalid_schema_test(
+        {
+            "error_message": None,
+            "sid": SID,
+            "status": "200",
+            "account_sid": ACCOUNT_SID,
+        }
+    )
+
+    test_invalid_missing_error_message = invalid_schema_test(
+        {
+            "error_code": None,
+            "sid": SID,
+            "status": "200",
+            "account_sid": ACCOUNT_SID,
+        }
+    )
+
+    test_invalid_missing_sid = invalid_schema_test(
+        {
+            "error_code": None,
+            "error_message": None,
+            "status": "200",
+            "account_sid": ACCOUNT_SID,
+        }
+    )
+
+    test_invalid_missing_status = invalid_schema_test(
+        {
+            "error_code": None,
+            "error_message": None,
+            "sid": SID,
+            "account_sid": ACCOUNT_SID,
+        }
+    )
+
+    test_invalid_missing_account_sid = invalid_schema_test(
+        {
+            "error_code": None,
+            "error_message": None,
+            "sid": SID,
+            "status": "200",
         }
     )
