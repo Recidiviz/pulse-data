@@ -20,7 +20,7 @@ view: state_raw_data_shared_fields {
   }
 
   dimension: file_id {
-    description: "Ingest file ID, NULL for raw up to date views"
+    description: "The ID of the file this row was extracted from"
     type: number
     sql: {% if view_type._parameter_value == 'raw_data' %} ${TABLE}.file_id
       {% elsif view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
@@ -28,7 +28,7 @@ view: state_raw_data_shared_fields {
   }
 
   dimension: is_deleted {
-    description: "Whether table is deleted, NULL for raw up to date views"
+    description: "Whether this row is inferred deleted via omission from more recent files"
     type: yesno
     sql: {% if view_type._parameter_value == 'raw_data' %} ${TABLE}.is_deleted
       {% elsif view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
@@ -36,7 +36,7 @@ view: state_raw_data_shared_fields {
   }
 
   dimension_group: update_datetime {
-    description: "Time of most recent update, NULL for raw up to date views"
+    description: "The timestamp of the file this row was extracted from"
     type: time
     timeframes: [
       raw,

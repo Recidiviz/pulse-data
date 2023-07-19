@@ -153,6 +153,23 @@ class LookMLViewTest(unittest.TestCase):
   }"""
         self.assertEqual(view_field, expected_view_field)
 
+    def test_view_field_dimension_group_timeframes_one_option(self) -> None:
+        view_field = DimensionGroupLookMLViewField(
+            field_name="my_dimension_group",
+            parameters=[
+                LookMLFieldParameter.type(LookMLFieldType.TIME),
+                LookMLFieldParameter.timeframes([LookMLTimeframesOption.DATE]),
+            ],
+        ).build()
+        expected_view_field = """
+  dimension_group: my_dimension_group {
+    type: time
+    timeframes: [
+      date
+    ]
+  }"""
+        self.assertEqual(view_field, expected_view_field)
+
     def test_view_field_dimension_group_timeframes(self) -> None:
         view_field = DimensionGroupLookMLViewField(
             field_name="my_dimension_group",

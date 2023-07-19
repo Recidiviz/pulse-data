@@ -49,7 +49,9 @@ class ParameterizedValueTest(unittest.TestCase):
         self.assertEqual(class_output, expected_output)
 
     def test_parameterized_value_no_options_throw(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError, r"Length of 'parameter_options' must be => 1: 0"
+        ):
             _ = ParameterizedValue(
                 parameter_name="name",
                 parameter_options=[],
@@ -58,7 +60,9 @@ class ParameterizedValueTest(unittest.TestCase):
             )
 
     def test_parameterized_value_no_name_throw(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError, r"Length of 'parameter_name' must be => 1: 0"
+        ):
             _ = ParameterizedValue(
                 parameter_name="",
                 parameter_options=["key1"],
@@ -67,7 +71,9 @@ class ParameterizedValueTest(unittest.TestCase):
             )
 
     def test_parameterized_value_negative_indentation_throw(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(
+            ValueError, r"'indentation_level' must be >= 0: -137"
+        ):
             _ = ParameterizedValue(
                 parameter_name="name",
                 parameter_options=["key1"],

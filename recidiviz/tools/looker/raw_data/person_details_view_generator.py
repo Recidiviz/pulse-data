@@ -19,6 +19,7 @@ Used inside person_details_lookml_writer
 """
 
 import os
+from collections import defaultdict
 from typing import Dict, List
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -35,7 +36,14 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
-from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    FILE_ID_COL_DESCRIPTION,
+    FILE_ID_COL_NAME,
+    IS_DELETED_COL_DESCRIPTION,
+    IS_DELETED_COL_NAME,
+    UPDATE_DATETIME_COL_DESCRIPTION,
+    UPDATE_DATETIME_COL_NAME,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
@@ -83,56 +91,58 @@ def _generate_shared_fields_view() -> LookMLView:
     )
 
     # Dimensions
+    file_id_sql_options = {
+        RAW_DATA_OPTION: "${TABLE}." + FILE_ID_COL_NAME,
+        RAW_DATA_UP_TO_DATE_VIEWS_OPTION: "NULL",
+    }
     file_id_sql = ParameterizedValue(
         parameter_name="view_type",
-        parameter_options=[RAW_DATA_OPTION, RAW_DATA_UP_TO_DATE_VIEWS_OPTION],
-        value_builder=lambda s: "${TABLE}.file_id" if s == RAW_DATA_OPTION else "NULL",
+        parameter_options=list(file_id_sql_options.keys()),
+        value_builder=lambda s: file_id_sql_options[s],
         indentation_level=3,
     )
     file_id_dimension = DimensionLookMLViewField(
         field_name=FILE_ID_COL_NAME,
         parameters=[
-            LookMLFieldParameter.description(
-                "Ingest file ID, NULL for raw up to date views"
-            ),
+            LookMLFieldParameter.description(FILE_ID_COL_DESCRIPTION),
             LookMLFieldParameter.type(LookMLFieldType.NUMBER),
             LookMLFieldParameter.sql(file_id_sql),
         ],
     )
 
+    is_deleted_sql_options = {
+        RAW_DATA_OPTION: "${TABLE}." + IS_DELETED_COL_NAME,
+        RAW_DATA_UP_TO_DATE_VIEWS_OPTION: "NULL",
+    }
     is_deleted_sql = ParameterizedValue(
         parameter_name="view_type",
-        parameter_options=[RAW_DATA_OPTION, RAW_DATA_UP_TO_DATE_VIEWS_OPTION],
-        value_builder=lambda s: "${TABLE}.is_deleted"
-        if s == RAW_DATA_OPTION
-        else "NULL",
+        parameter_options=list(is_deleted_sql_options.keys()),
+        value_builder=lambda s: is_deleted_sql_options[s],
         indentation_level=3,
     )
     is_deleted_dimension = DimensionLookMLViewField(
-        field_name="is_deleted",
+        field_name=IS_DELETED_COL_NAME,
         parameters=[
-            LookMLFieldParameter.description(
-                "Whether table is deleted, NULL for raw up to date views"
-            ),
+            LookMLFieldParameter.description(IS_DELETED_COL_DESCRIPTION),
             LookMLFieldParameter.type(LookMLFieldType.YESNO),
             LookMLFieldParameter.sql(is_deleted_sql),
         ],
     )
 
+    update_datetime_options = {
+        RAW_DATA_OPTION: "${TABLE}." + UPDATE_DATETIME_COL_NAME,
+        RAW_DATA_UP_TO_DATE_VIEWS_OPTION: "NULL",
+    }
     update_datetime_sql = ParameterizedValue(
         parameter_name="view_type",
-        parameter_options=[RAW_DATA_OPTION, RAW_DATA_UP_TO_DATE_VIEWS_OPTION],
-        value_builder=lambda s: "${TABLE}.update_datetime"
-        if s == RAW_DATA_OPTION
-        else "NULL",
+        parameter_options=list(is_deleted_sql_options.keys()),
+        value_builder=lambda s: update_datetime_options[s],
         indentation_level=3,
     )
     update_datetime_dimension_group = DimensionGroupLookMLViewField(
-        field_name="update_datetime",
+        field_name=UPDATE_DATETIME_COL_NAME,
         parameters=[
-            LookMLFieldParameter.description(
-                "Time of most recent update, NULL for raw up to date views"
-            ),
+            LookMLFieldParameter.description(UPDATE_DATETIME_COL_DESCRIPTION),
             LookMLFieldParameter.type(LookMLFieldType.TIME),
             LookMLFieldParameter.timeframes(
                 [
@@ -335,9 +345,8 @@ def _generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
     Return a dictionary mapping all of the StateCodes for states with raw data
     to a list of LookMLViews corresponding to every raw data file in that State
     """
-    views: Dict[StateCode, List[LookMLView]] = {}
+    views: Dict[StateCode, List[LookMLView]] = defaultdict(list)
     for state_code in get_existing_direct_ingest_states():
-        views[state_code] = []
         region_config = DirectIngestRegionRawFileConfig(region_code=state_code.value)
         for raw_file_config in region_config.raw_file_configs.values():
             if raw_file_config.columns:
