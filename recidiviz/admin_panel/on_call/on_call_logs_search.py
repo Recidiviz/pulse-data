@@ -37,35 +37,37 @@ WITH requests_by_status_code AS (
       ORDER BY timestamp DESC
     ) AS traces
 
-  FROM `{project_id}.{on_call_logs_dataset}.appengine_googleapis_com_nginx_request`
+  FROM `{project_id}.{on_call_logs_dataset}.{requests_table}`
   WHERE timestamp >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
   GROUP BY 1, 2, 3
+), logs_view AS (
+    SELECT 
+      url,
+      method,
+      status,
+      request_count, 
+      latest_response,
+      ANY_VALUE(requests_by_status_code.traces) AS traces,
+      (
+        SELECT MAX(success_requests.latest_response)
+        FROM requests_by_status_code success_requests
+        WHERE success_requests.url = requests_by_status_code.url
+        AND success_requests.method = requests_by_status_code.method
+        AND success_requests.latest_response > requests_by_status_code.latest_response
+        AND success_requests.status = 200
+      ) AS since_succeeded_timestamp,
+      ARRAY_AGG(DISTINCT trace_errors.jsonPayload.message IGNORE NULLS) AS error_logs
+    FROM requests_by_status_code
+    JOIN UNNEST(requests_by_status_code.traces) AS trace
+    LEFT OUTER JOIN `{project_id}.{on_call_logs_dataset}.{traces_table}` trace_errors
+      ON trace_errors.trace = trace.trace
+      AND trace_errors.severity = "ERROR"
+    WHERE requests_by_status_code.status NOT IN  (200, 302, 304, 400, 404, 405)
+    AND {view_filter}
+    GROUP BY 1, 2, 3, 4, 5
+    ORDER BY requests_by_status_code.latest_response DESC
 )
-SELECT 
-  url,
-  method,
-  status,
-  request_count, 
-  latest_response,
-  ANY_VALUE(requests_by_status_code.traces) AS traces,
-  (
-    SELECT MAX(success_requests.latest_response)
-    FROM requests_by_status_code success_requests
-    WHERE success_requests.url = requests_by_status_code.url
-    AND success_requests.method = requests_by_status_code.method
-    AND success_requests.latest_response > requests_by_status_code.latest_response
-    AND success_requests.status = 200
-  ) AS since_succeeded_timestamp,
-  ARRAY_AGG(DISTINCT trace_errors.jsonPayload.message IGNORE NULLS) AS error_logs
-FROM requests_by_status_code
-JOIN UNNEST(requests_by_status_code.traces) AS trace
-LEFT OUTER JOIN `{project_id}.{on_call_logs_dataset}.app` trace_errors
-  ON trace_errors.trace = trace.trace
-  AND trace_errors.severity = "ERROR"
-WHERE requests_by_status_code.status NOT IN  (200, 304)
-AND {view_filter}
-GROUP BY 1, 2, 3, 4, 5
-ORDER BY requests_by_status_code.latest_response DESC;
+SELECT * FROM logs_view WHERE {show_resolved_filter}
 """
 
 
@@ -79,17 +81,24 @@ ON_CALL_LOGS_DATASET = "on_call_logs"
 
 
 class OnCallLogsSearch:
+    """Functionality for searching on-call logs"""
+
     def __init__(self) -> None:
         self.client: BigQueryClient = BigQueryClientImpl()
 
-    def query(self, view: LogsView) -> list[dict]:
+    def query(self, view: LogsView, show_resolved: bool = False) -> list[dict]:
         view_filter = 'STARTS_WITH(requests_by_status_code.url, "/direct/")'
 
         if view == LogsView.APP_ENGINE:
             view_filter = f"NOT {view_filter}"
 
         if view == LogsView.CLOUD_RUN:
+            requests_table = "run_googleapis_com_requests"
+            traces_table = "python"
             view_filter = 'requests_by_status_code.resource = "cloud_run_revision"'
+        else:
+            requests_table = "appengine_googleapis_com_nginx_request"
+            traces_table = "app"
 
         query_builder = BigQueryQueryBuilder(address_overrides=None)
         query = query_builder.build_query(
@@ -97,6 +106,11 @@ class OnCallLogsSearch:
             query_template=PROCESSED_LOGS_QUERY_TEMPLATE,
             query_format_kwargs={
                 "on_call_logs_dataset": ON_CALL_LOGS_DATASET,
+                "requests_table": requests_table,
+                "traces_table": traces_table,
+                "show_resolved_filter": "true"
+                if show_resolved
+                else "since_succeeded_timestamp is null",
                 "view_filter": view_filter,
             },
         )
