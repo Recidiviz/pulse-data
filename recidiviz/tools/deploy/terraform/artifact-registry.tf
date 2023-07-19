@@ -22,26 +22,31 @@ resource "google_project_service" "artifact_registry_api" {
   disable_on_destroy         = true
 }
 
-resource "google_artifact_registry_repository" "case_triage_pathways" {
+locals {
+  config = yamldecode(file("config/artifact_registry_repositories.yaml"))
+}
+
+resource "google_artifact_registry_repository" "repositories" {
   provider      = google-beta
-  location      = "us"
-  repository_id = "case-triage-pathways"
-  description   = "Repository for docker images for Case Triage / Pathways. Contractors may have access to images in this repository."
-  format        = "DOCKER"
+  for_each      = tomap(local.config.repositories)
+  location      = each.value.location
+  repository_id = each.value.repository_id
+  description   = each.value.description
+  format        = each.value.format
 
   depends_on = [
     google_project_service.artifact_registry_api
   ]
 }
 
-resource "google_artifact_registry_repository" "asset_generation" {
-  provider      = google-beta
-  location      = "us"
-  repository_id = "asset-generation"
-  description   = "Repository for docker images for the Asset Generation service"
-  format        = "DOCKER"
 
-  depends_on = [
-    google_project_service.artifact_registry_api
-  ]
+moved {
+  from = google_artifact_registry_repository.asset_generation
+  to   = google_artifact_registry_repository.repositories["asset_generation"]
+}
+
+
+moved {
+  from = google_artifact_registry_repository.case_triage_pathways
+  to   = google_artifact_registry_repository.repositories["case_triage_pathways"]
 }
