@@ -167,7 +167,7 @@ columns:
       - value: XPR
         description: INTAKE SEX OFFNDR PROB.
   - name: StandardStartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a supervision standard begins.
   - name: StandardType

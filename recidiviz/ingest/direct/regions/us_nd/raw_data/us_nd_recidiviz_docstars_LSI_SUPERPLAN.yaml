@@ -12,11 +12,11 @@ columns:
   - name: INACTIVEDATE
     description: |-
       Date the LSI supervision plan became inactive
-    is_datetime: True
+    field_type: datetime
   - name: RECDATE
     description: |-
       Date the LSI supervision plan was started
-    is_datetime: True
+    field_type: datetime
   - name: CREATED_BY
     description: |-
       External id for officer that created supervision plan

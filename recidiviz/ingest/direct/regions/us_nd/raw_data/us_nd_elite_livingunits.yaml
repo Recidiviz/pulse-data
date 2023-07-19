@@ -29,7 +29,7 @@ columns:
     description: |-
       Sub-code describing the jurisdiction controlling the living unit/location.
   - name: DEACTIVATE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this living unit/location was deactivated, if no longer active.
   - name: ACTIVE_FLAG

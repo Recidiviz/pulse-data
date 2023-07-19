@@ -15,7 +15,7 @@ columns:
     description: |-
       IDOC username of the last person to update this row
   - name: upddate
-    is_datetime: True
+    field_type: datetime
     description: |-
       IDOC update date for this row
   - name: version
@@ -23,14 +23,14 @@ columns:
     description: |-
       ID of this address row (same as cis_personaddress.id)
   - name: startdate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date for this address
   - name: estimatedstartdate
     description: |-
       Whether the provided start date was estimated
   - name: enddate
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date for this address
   - name: estimatedenddate
@@ -50,7 +50,7 @@ columns:
     description: |-
       IDOC username of the person who verified this address
   - name: verifydate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date this address was verified
   - name: codeverifymethodid

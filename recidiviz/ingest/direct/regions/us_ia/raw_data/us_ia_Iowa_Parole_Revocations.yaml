@@ -17,7 +17,7 @@ columns:
     description: |-
       Unique number assigned to each offender
   - name: Record_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of when offender was first placed on parole
   - name: Fiscal_Year_Revoked

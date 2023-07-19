@@ -119,7 +119,7 @@ columns:
       The name of the supervision officer associated with this contact.
     is_pii: True
   - name: CONTACT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this contact occurred.
   - name: RecDate

@@ -22,7 +22,7 @@ columns:
       ID for the person’s most recent move. Can use this ID to join with the `movement` table and get a person
       identifier.
   - name: case_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date this employee was assigned to the person
   - name: empl_cd

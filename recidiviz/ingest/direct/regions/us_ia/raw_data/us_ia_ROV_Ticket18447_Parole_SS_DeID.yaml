@@ -20,11 +20,11 @@ columns:
     description: |-
       ID that identifies each parole violation review
   - name: ReviewDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of the parole violation review
   - name: ReportDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of the parole violation report
   - name: CompletedByStaffId

@@ -100,7 +100,7 @@ ORDER BY
     return RawTableColumnInfo(
         name=column.name,
         description=column.description,
-        is_datetime=column.is_datetime,
+        field_type=column.field_type,
         is_pii=False,
         known_values=new_known_values_list,
     )

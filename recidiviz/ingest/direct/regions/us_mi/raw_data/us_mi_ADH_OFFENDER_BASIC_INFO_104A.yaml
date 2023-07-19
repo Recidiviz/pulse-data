@@ -140,7 +140,7 @@ columns:
   - name: notice_high_risk_id
   - name: effective_date
     # description: TODO(#15325)
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: to_location_id
@@ -164,7 +164,7 @@ columns:
   - name: escape_awol_within_yrs
   - name: escape_history_comments
   - name: homosex_designated_date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: num_prior_prison_terms
@@ -177,7 +177,7 @@ columns:
   - name: last_update_user
     is_pii: True
   - name: last_update_date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
@@ -228,12 +228,12 @@ columns:
     is_pii: True
   - name: compass_screen_date
     description: Date of COMPAS screener
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: static_risk_screen_date
     description: Date of STATIC risk screener
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: additional_offense_flag

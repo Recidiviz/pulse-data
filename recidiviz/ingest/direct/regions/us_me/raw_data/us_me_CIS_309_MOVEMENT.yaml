@@ -91,6 +91,6 @@ columns:
   - name: Modified_On_Date
   - name: Movement_Date
     description: The date the movement occurred.
-    is_datetime: True
+    field_type: datetime
   - name: Movement_Id
     description: Primary key field

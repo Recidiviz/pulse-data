@@ -17,12 +17,12 @@ columns:
     description: The order of assignments for a specific boooking
   - name: assignment_date
     description: The date an employee is assigned to a specific individual under a specific booking.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closure_date
     description: The date an employee's assignment to a specific individual under a specific booking ends
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: assignment_type_id

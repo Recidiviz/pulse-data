@@ -9,10 +9,10 @@ columns:
   - name: EMPLOYMENT_HISTORY_ID
     description: Primary key.
   - name: START_DATE
-    is_datetime: True
+    field_type: datetime
     description: Start date for this employment status period.
   - name: END_DATE
-    is_datetime: True
+    field_type: datetime
     description: End date for this employment status period.
   - name: INCOME_NUM
   - name: EMPLOYER_TX

@@ -17,7 +17,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: InvoiceDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: FeeItemID
@@ -27,7 +27,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: VoidedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: GPVoidedInvStatus
@@ -41,7 +41,7 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: LastUpdateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: LastUpdateUserID

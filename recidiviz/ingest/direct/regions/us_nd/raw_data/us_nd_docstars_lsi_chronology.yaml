@@ -97,17 +97,17 @@ columns:
     description: |-
       Supervision level determined by the LSIR assessment.
   - name: AssessmentDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the LSIR assessment occurred.
   - name: LastUpdate
     description: |-
       When this record was most recently updated.
   - name: INACTIVEDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this assessment became inactive.
   - name: RecDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.

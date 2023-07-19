@@ -16,7 +16,7 @@ columns:
     description: |-
       A unique identifier assigned to a person  contact person.
   - name: EffectiveFromDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a credit law or sentence law becomes effective. The date a draw limit becomes effective. The date on which a program becomes effective.  The date on which the pay rate becomes effective.
   - name: Relation
@@ -130,11 +130,11 @@ columns:
       - value: S
         description: SUSPENDED
   - name: StartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an inmate begins a job, class or program.
   - name: EndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
   - name: VisitorStatusReason1

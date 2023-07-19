@@ -46,10 +46,10 @@ columns:
     description: |-
       TODO(#11323): fill out description once received.
   - name: StartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#11323): fill out description once received.
   - name: EndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#11323): fill out description once received.

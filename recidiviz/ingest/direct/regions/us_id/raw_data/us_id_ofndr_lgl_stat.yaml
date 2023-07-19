@@ -71,17 +71,17 @@ columns:
       - value: Z
         description: NONE/NO PRIOR STATUS
   - name: stat_beg_dt
-    is_datetime: True
+    field_type: datetime
     description: Date when this status started
   - name: stat_beg_tm
     description: Time when this status started. Can be combined with stat_beg_dt to give complete datetime.
   - name: stat_end_dt
-    is_datetime: True
+    field_type: datetime
     description: Date when this status ended
   - name: lgl_stat_chg_cd
   - name: prev_lgl_stat_cd
   - name: updt_usr_id
     description: ID of user who updated record
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: Date when this record was updated

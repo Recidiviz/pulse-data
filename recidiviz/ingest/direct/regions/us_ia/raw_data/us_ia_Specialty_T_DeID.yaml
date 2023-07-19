@@ -28,11 +28,11 @@ columns:
     description: |-
       Specialty case type
   - name: SpecialtyStartDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of the specialty case type
   - name: SpecialtyEndDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of the specialty case type
   - name: SpecialtyReasonForChangeId

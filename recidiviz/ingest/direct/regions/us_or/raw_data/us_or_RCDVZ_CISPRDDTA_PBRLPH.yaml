@@ -19,7 +19,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: TRANSPORT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -122,77 +122,77 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: CCDUE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: DATE_COMPLETED
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: TENT_PARO_DISC_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ACTIVE_SUPERVISION_REVIEW_DT
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PPS_EXPIRATION_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MATRIX_EXPIRATION_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: BM10_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PHYSICAL_RELEASE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PROJECTED_RELEASE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PAROLE_RELEASE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ENTRY_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -265,21 +265,21 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: PREDSO_NOR_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: SO_ASSESSMT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: SO_REGISTER_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:

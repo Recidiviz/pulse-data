@@ -14,7 +14,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrderDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date an order is made.
   - name: ReferralSequenceNumber
@@ -35,7 +35,7 @@ columns:
     description: |-
       The staff id of the individual who initially posted information for an offender.
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateStaffID

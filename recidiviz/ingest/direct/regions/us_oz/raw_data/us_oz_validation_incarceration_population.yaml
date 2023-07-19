@@ -14,7 +14,7 @@ columns:
     description: |-
       The date that the person should have an active "incarceration_periods"
       covering. There is only validation data for a small set of dates.
-    is_datetime: True
+    field_type: datetime
   - name: data_system
     description: |-
       The data system that contains data about his person. This helps us determine which

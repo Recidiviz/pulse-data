@@ -41,5 +41,5 @@ columns:
   - name: Birthday
     description: >-
       The person's birthday.
-    is_datetime: True
+    field_type: datetime
     is_pii: True

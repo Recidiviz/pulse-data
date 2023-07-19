@@ -12,11 +12,11 @@ columns:
   - name: SegmentStartDate
     description: |-
       Start date for the sentence segment.
-    is_datetime: True
+    field_type: datetime
   - name: SegmentEndDate
     description: |-
       End date for the sentence segment.
-    is_datetime: True
+    field_type: datetime
   - name: SegmentYears
     description: |-
       TODO(#15329): Fill in column description

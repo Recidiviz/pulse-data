@@ -12,13 +12,13 @@ columns:
     is_pii: True
     description: User who entered this record
   - name: insdate
-    is_datetime: True
+    field_type: datetime
     description: Timestamp when this record was entered
   - name: upduser
     is_pii: True
     description: User who most recently updated this record
   - name: upddate
-    is_datetime: True
+    field_type: datetime
     description: Timestamp when this record was last modified
   - name: codedescription
     description: Description of contact type

@@ -25,7 +25,7 @@ columns:
       ID of this probation sentence (within the above mittimus). This ID is only unique within probation sentences
       under this mittimus. sent_no above is unique with all sentences under this mittimus.
   - name: prob_strt_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of probation. This can be backdated by judges to give a person credit for time already served.
       <br><br>        - ex. A person on probation goes into a rider and then back on probation. Instead of their
@@ -42,6 +42,6 @@ columns:
     description: |-
       Number of days on probation
   - name: prob_end_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of this probation, if the person isn’t revoked.

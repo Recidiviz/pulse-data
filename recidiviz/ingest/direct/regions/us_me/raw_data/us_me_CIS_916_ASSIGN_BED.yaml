@@ -25,7 +25,7 @@ columns:
   - name: Created_On_Date
   - name: End_Date
     description: The end date for the bed assignment.
-    is_datetime: True
+    field_type: datetime
   - name: Hold_Ind
   - name: Keep_Sep_Ind
   - name: Modified_By_Tx
@@ -38,5 +38,5 @@ columns:
   - name: Single_Bed_Ind
   - name: Start_Date
     description: The start date for the bed assignment.
-    is_datetime: True
+    field_type: datetime
   - name: Top_Bunk_Ind

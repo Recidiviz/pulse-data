@@ -13,14 +13,14 @@ columns:
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: IncidentDateTime
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an incident involving a person occurs. The time at which an incident occurred. [Combination of DB2 column DTE_INCDT and TME_INCDT]
   - name: Status
     description: |-
       Indicates the status of an investigation into an institution incident.
   - name: StatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a status of a particular issue changes.
   - name: IncidentType
@@ -57,6 +57,6 @@ columns:
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

@@ -45,7 +45,7 @@ columns:
   - name: OffenseDate
     description: |-
       Date of the offense (nullable).
-    is_datetime: True
+    field_type: datetime
   - name: LatestOffenseDate
     description: |-
       TODO(#15329): Fill in column description

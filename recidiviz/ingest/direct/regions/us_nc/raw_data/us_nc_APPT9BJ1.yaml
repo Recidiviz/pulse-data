@@ -12,21 +12,21 @@ columns:
     description: |-
       P&P offender NC DOC number ID
   - name: IMPREQDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Request date for impact
   - name: IMPREQRSN
     description: |-
       Reason for requesting impact
   - name: IMPSTRDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Impact target start date
   - name: IMPDAPOFC
     description: |-
       Requesting DCC office (impact)
   - name: DTOFUPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last update
   - name: TMOFUPDT

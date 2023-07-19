@@ -39,35 +39,35 @@ columns:
   - name: HearingStartDate
     description: |-
       Start date of hearing
-    is_datetime: True
+    field_type: datetime
   - name: ExecutiveStartDate
     description: |-
       executive start date
-    is_datetime: True
+    field_type: datetime
   - name: HearingResumeDate
     description: |-
       Date the hearing resumes
-    is_datetime: True
+    field_type: datetime
   - name: HearingEndDate
     description: |-
       End date of hearing
-    is_datetime: True
+    field_type: datetime
   - name: TentativeParoleDate
     description: |-
       Tentative date for parole
-    is_datetime: True
+    field_type: datetime
   - name: EstimateHearingDate
     description: |-
       Estimated date of hearing
-    is_datetime: True
+    field_type: datetime
   - name: DecisionSubmitDate
     description: |-
       Date decision was submitted
-    is_datetime: True
+    field_type: datetime
   - name: ReinstateDate
     description: |-
       Date reinstated
-    is_datetime: True
+    field_type: datetime
   - name: Minute
     description: |-
       Duration in minutes
@@ -85,7 +85,7 @@ columns:
   - name: InsertDate
     description: |-
       Date of insert
-    is_datetime: True
+    field_type: datetime
   - name: InsertUserId
     description: |-
       Insert ID
@@ -93,7 +93,7 @@ columns:
   - name: UpdateDate
     description: |-
       Update date
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: |-
       User ID of employee who updated
@@ -108,8 +108,8 @@ columns:
   - name: ForfeitureFinalizedDate
     description: |-
       Date of finalized forfeiture
-    is_datetime: True
+    field_type: datetime
   - name: ForfeitureRecordedDate
     description: |-
       Date of recorded forfeiture
-    is_datetime: True
+    field_type: datetime

@@ -16,7 +16,7 @@ columns:
     description: TODO(#19675)
   - name: event_date
     description: TODO(#19675)
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: direction_code_id
@@ -25,7 +25,7 @@ columns:
     description: TODO(#19675)
   - name: scheduled_return_date
     description: TODO(#19675)
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: active_flag
@@ -34,7 +34,7 @@ columns:
     description: TODO(#19675)
   - name: create_date
     description: TODO(#19675)
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: notes
@@ -42,7 +42,7 @@ columns:
     is_pii: True
   - name: item_complete_date
     description: TODO(#19675)
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: person_id
@@ -55,7 +55,7 @@ columns:
     is_pii: True
   - name: last_update_date
     description: TODO(#19675)
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

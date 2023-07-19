@@ -10,7 +10,7 @@ columns:
     description: |-
       Identifier of the person
   - name: prgrm_strt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date for this person
   - name: dsg_asgnmt
@@ -31,6 +31,6 @@ columns:
     description: |-
       The user who last updated this record
   - name: updt_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the record was last updated

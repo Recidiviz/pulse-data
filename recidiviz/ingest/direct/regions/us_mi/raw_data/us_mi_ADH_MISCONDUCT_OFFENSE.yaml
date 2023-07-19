@@ -16,15 +16,15 @@ columns:
     description: list sequence of misconduct offense record
   - name: effective_date
     description: effective date of misconduct offense record
-    is_datetime: True
+    field_type: datetime
   - name: expiration_date
     description: expiration date of misconduct offense record
-    is_datetime: True
+    field_type: datetime
   - name: last_update_user
     description: user that last updated the record
-    is_datetime: True
+    field_type: datetime
   - name: last_update_date
     description: last update date of record
-    is_datetime: True
+    field_type: datetime
   - name: last_update_node
-    is_datetime: True
+    field_type: datetime

@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
+    RawTableColumnFieldType,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.raw_data_table_schema_utils import (
@@ -54,19 +55,19 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
                         RawTableColumnInfo(
                             name="primary_key_col",
                             description="is primary key",
-                            is_datetime=False,
+                            field_type=RawTableColumnFieldType.STRING,
                             is_pii=False,
                         ),
                         RawTableColumnInfo(
                             name="column 1",
                             description="desc",
-                            is_datetime=False,
+                            field_type=RawTableColumnFieldType.STRING,
                             is_pii=False,
                         ),
                         RawTableColumnInfo(
                             name="column 2",
                             description=None,
-                            is_datetime=False,
+                            field_type=RawTableColumnFieldType.STRING,
                             is_pii=False,
                         ),
                     ],

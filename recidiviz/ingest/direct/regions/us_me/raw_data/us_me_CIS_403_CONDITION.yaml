@@ -26,7 +26,7 @@ columns:
   - name: Created_On_Date
   - name: Due_Date
     description: The date the condition must be met by.
-    is_datetime: True
+    field_type: datetime
   - name: Fulfilled_Inactive_Comment_Tx
     description: Free text field where PO writes the reason why the condition was fulfilled or marked as inactive.
   - name: General_Comments_Tx

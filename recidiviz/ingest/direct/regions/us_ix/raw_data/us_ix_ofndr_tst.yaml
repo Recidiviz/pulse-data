@@ -22,7 +22,7 @@ columns:
     description: |-
       ID of the test-type (i.e. was it an LSIR, violation response, etc?)
   - name: tst_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the test was administered
   - name: score_by_name
@@ -32,7 +32,7 @@ columns:
     description: |-
       Username of the person who last updated the row
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Update date for this row
 ignore_quotes: True

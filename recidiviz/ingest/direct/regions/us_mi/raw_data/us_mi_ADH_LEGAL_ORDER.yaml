@@ -49,12 +49,12 @@ columns:
         description: Active
   - name: create_date
     description: Date legal order was created
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: issue_date
     description: Date legal order was issued
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: issue_location_id
@@ -234,12 +234,12 @@ columns:
   - name: notes
   - name: effective_date
     description: effective start date of the legal order
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: expiration_date
     description: expiration date of the legal order
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: attending_court_id
@@ -357,7 +357,7 @@ columns:
   - name: closing_authority_id
   - name: closing_date
     description: closing date of the legal order
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes

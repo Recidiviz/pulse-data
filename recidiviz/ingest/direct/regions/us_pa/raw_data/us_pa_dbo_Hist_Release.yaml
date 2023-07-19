@@ -61,7 +61,7 @@ columns:
       Date when the period of supervision began, i.e. when released from prison, started probation sentence,
       or exchanged through interstate compact.
   - name: HReMaxDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the period of supervision expires.
   - name: HReSidNo
@@ -77,11 +77,11 @@ columns:
     description: |-
       SSN of the person who was under supervision.
   - name: HReTransDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the person was last transferred during this period of supervision.
   - name: HReTprocDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the original transfer record was created by field staff.
   - name: HRePurgeCode
@@ -89,29 +89,29 @@ columns:
       Unclear, almost always null.
   - name: HReDOB
     is_pii: True
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of birth of the person who was under supervision.
   - name: HReEntryCode
     description: |-
       Type of supervision that was served served, as well as the admission reason.
   - name: HReAcceptDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the person was accepted into an officer's caseload.
   - name: HReEprocDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the original release record was created by field staff.
   - name: HReStatcode
     description: |-
       Last supervision status of this period of supervision.
   - name: HReStatDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the last supervision status took effect.
   - name: HReSprocDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the original status record was created by field staff.
   - name: HReGradeSup
@@ -121,7 +121,7 @@ columns:
     description: |-
       When the last supervision level took effect.
   - name: HReGprProcDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the original supervision level record was created by field staff.
   - name: HReOtna
@@ -165,11 +165,11 @@ columns:
     description: |-
       Code for the termination reason of the period of supervision.
   - name: HReDelDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the period of supervision was terminated.
   - name: HReDProcDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the original release record was closed by field staff.
   - name: HReRisk
@@ -206,7 +206,7 @@ columns:
     description: |-
       Who the record was last modified by.
   - name: LastModifiedDatetime
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the record was last modified.
   - name: HRskAct97Positive

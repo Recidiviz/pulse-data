@@ -19,17 +19,17 @@ columns:
     description: |-
       The date the LSI rating was approved, is either NULL or matches the date in Cis_1161_Comm_Lsi_Effct_Date and Cis_1161_Comm_Lsi_Or_Date. 
       This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
-    is_datetime: True
+    field_type: datetime
   - name: Cis_1161_Comm_Lsi_Effct_Date
     description: |-
       The date the LSI rating went into effect, is either NULL or matches the date in Cis_1161_Comm_Lsi_Apprv_Rating_Date and Cis_1161_Comm_Lsi_Or_Date. 
       This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
-    is_datetime: True
+    field_type: datetime
   - name: Cis_1161_Comm_Lsi_Or_Date
     description: |-
       The date the LSI rating went into effect, is either NULL or matches the date in Cis_1161_Comm_Lsi_Apprv_Rating_Date and Cis_1161_Comm_Lsi_Effct_Date. 
       This date matches what is in the `Lsi_Effct_Date` column in the CIS_1161_LSI_RATING table.
-    is_datetime: True
+    field_type: datetime
   - name: Cis_1161_Comm_Lsi_Or_Rating_Cd
     description: |-
       The overridden LSI rating code for this client. This field is manually updated by the supervising officer. See CIS_1161_LSI_RATING for all possible values and descriptions.
@@ -73,12 +73,12 @@ columns:
   - name: Created_On_Date
     description: |-
       The date that this assessment record was created.
-    is_datetime: True
+    field_type: datetime
   - name: Home_Visit_Ind
   - name: Lsi_Date
     description: |-
       The date the LSI assessment was completed.
-    is_datetime: True
+    field_type: datetime
   - name: Lsi_History_Id
     description: |-
       The primary key for the table.
@@ -98,7 +98,7 @@ columns:
   - name: Reassessment_Date
     description: |-
       The date the client needs to be reassessed.
-    is_datetime: True
+    field_type: datetime
   - name: Submit_Score_Ind
   - name: Cis_1161_Comm_Lsi_Apprv_Rating_Cd
     description: |-

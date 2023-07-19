@@ -38,7 +38,7 @@ columns:
       or "SEX OFFENSE" or "HOMICIDE". This can be null.
   - name: AddDt
     description: The date the offense code was added to this PADOC-internal table.
-    is_datetime: True
+    field_type: datetime
   - name: Grade_Category
     description: The charge classification, i.e. FELONY or MISDEMEANOR (or null in rare cases).
   - name: Grade

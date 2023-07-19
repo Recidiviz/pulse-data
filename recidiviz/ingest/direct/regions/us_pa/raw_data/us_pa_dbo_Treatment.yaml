@@ -77,7 +77,7 @@ columns:
     description: |-
       Who the record was last modified by.
   - name: LastModifiedDateTime
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the record was last modified.
   - name: TrtHrsImposed

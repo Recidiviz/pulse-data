@@ -16,4 +16,4 @@ columns:
   - name: CATEGORY
   - name: SORT_ORDER
   - name: RECDATE
-    is_datetime: True
+    field_type: datetime

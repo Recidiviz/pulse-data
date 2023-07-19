@@ -31,7 +31,7 @@ columns:
     description: |-
       The name for a judge. This element is only 30 characters instead of 50 characters used for JUDGE-NAME.
   - name: JOStatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a status of a particular issue changes.
   - name: JOStatus
@@ -53,11 +53,11 @@ columns:
       - value: Y
         description: "YES - Is overriden to legal"
   - name: JOEntryDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a judgment order is signed by the presiding judge.
   - name: LastLetterCreatedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of the last letter for an illegal or incomplete judgment order was created.
   - name: PostConvictionReliefConvictionCounty
@@ -73,22 +73,22 @@ columns:
     description: |-
       A unique sequential number assigned to a post conviction relief sentence ID count number.
   - name: LastAppealFinalizedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of the last appeal of a judgment order was finalized.
   - name: LastAmendmentFiledDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of the last amendment of a judgment order was filed.
   - name: LastPostConvictionReliefDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of the last post conviction relief for a judgment order.
   - name: LastAppealDecision
     description: |-
       The code identifying the decision for the last appeal of a judgment order.
   - name: LastJudgmentOrderChangeDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of the last change to a judgment order.
   - name: LastUpdateUserID

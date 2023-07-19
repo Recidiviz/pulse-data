@@ -11,8 +11,8 @@ columns:
   - name: ofndr_behavior_evaluation_response_id
     description: ID for the reward/sanction associatied with this duration
   - name: jail_start_dt
-    is_datetime: True
+    field_type: datetime
     description: Start date for the duration of the reward/sanction
   - name: jail_end_dt
-    is_datetime: True
+    field_type: datetime
     description: End date for the duration of the reward/sanction

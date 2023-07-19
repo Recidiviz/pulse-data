@@ -32,7 +32,7 @@ columns:
     description: |-
       Contact title code
   - name: cntc_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of contact
   - name: cntc_tm
@@ -75,7 +75,7 @@ columns:
     description: |-
       Username of the person who updated this row
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date that this row was updated
   - name: cntc_cmt

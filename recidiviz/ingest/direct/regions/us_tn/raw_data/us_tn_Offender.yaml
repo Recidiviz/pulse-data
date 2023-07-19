@@ -55,7 +55,7 @@ columns:
     # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: ArchiveDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a person  and his related tables have been archived to tape.
   - name: AbscondedParoleFlag
@@ -83,7 +83,7 @@ columns:
     description: |-
       This identifies a community corrections grantee. All community corrections grantees are a subset of all sites.
   - name: NotInCustodyDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a person  obtains 'NIC' status.
   - name: NotIncustoryReason
@@ -97,7 +97,7 @@ columns:
     description: |-
       The Staff identifier which posted the the row on the table.
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateUserID
@@ -105,6 +105,6 @@ columns:
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

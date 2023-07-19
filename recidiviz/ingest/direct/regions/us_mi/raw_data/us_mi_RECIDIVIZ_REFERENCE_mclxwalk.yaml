@@ -33,7 +33,7 @@ columns:
   - name: last_update_user
     is_pii: True
   - name: last_update_date
-    is_datetime: True
+    field_type: datetime
   - name: last_update_node
   - name: offense_cd
   - name: Select_flag

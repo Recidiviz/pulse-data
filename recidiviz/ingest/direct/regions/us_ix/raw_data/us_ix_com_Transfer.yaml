@@ -17,7 +17,7 @@ columns:
   - name: TransferDate
     description: |-
       Datetime of transfer.
-    is_datetime: True
+    field_type: datetime
   - name: TransferTypeId
     description: |-
       Code for transfer type, joins to com_TransferType.TransferTypeId.
@@ -92,19 +92,19 @@ columns:
   - name: CustodyReleaseDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: SupervisionReleaseDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: HearingDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: ScheduledDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: CancelledReason
     description: |-
       TODO(#15329): Fill in column description
@@ -125,7 +125,7 @@ columns:
   - name: InsertDate
     description: |-
       Timestamp for record creation.
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: |-
       ID of the user who most recently modified this record.
@@ -133,7 +133,7 @@ columns:
   - name: UpdateDate
     description: |-
       Timestamp for record modification.
-    is_datetime: True
+    field_type: datetime
   - name: TransferStatusId
     description: |-
       ID for the transfer status. Can be joined to `com_TransferStatus.TransferStatusId`.
@@ -145,11 +145,11 @@ columns:
   - name: CancellationDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: ApprovedDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: TermId
     description: |-
       ID of the sentence term to which this transfer applies, joins to scl_Term.TermId.

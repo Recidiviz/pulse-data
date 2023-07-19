@@ -30,19 +30,19 @@ columns:
     description: |-
       Name of the judge who imposed this supervision sentence.
   - name: PAROLE_FR
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the sentence imposition began.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: PAROLE_TO
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the sentence expires.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: TERM_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the period of supervision was terminated.
     datetime_sql_parsers:
@@ -144,7 +144,7 @@ columns:
     description: |-
       Living arrangement of the person at the end of the period of supervision.
   - name: REV_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the revocation occurred, if applicable.
     datetime_sql_parsers:
@@ -196,13 +196,13 @@ columns:
     description: |-
       When this record was most recently updated.
   - name: INACTIVEDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record became inactive, if applicable. This field is no longer in use.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', {col_name})"
   - name: RECORDCRDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:
@@ -211,7 +211,7 @@ columns:
     description: |-
       Type of revocation which occurred, if applicable.
   - name: RecDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
     datetime_sql_parsers:

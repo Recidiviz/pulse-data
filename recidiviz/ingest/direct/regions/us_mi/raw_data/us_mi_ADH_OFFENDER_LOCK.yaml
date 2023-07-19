@@ -19,12 +19,12 @@ columns:
     description: The location ID of the lock (referenced by LOCATION table).
   - name: date_in
     description: When the person entered this lock unit.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: date_out
     description: When the person exited this lock unit.
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: permanent_temporary_flag
@@ -39,7 +39,7 @@ columns:
   - name: last_update_user
   - name: last_update_date
     description: date record last updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

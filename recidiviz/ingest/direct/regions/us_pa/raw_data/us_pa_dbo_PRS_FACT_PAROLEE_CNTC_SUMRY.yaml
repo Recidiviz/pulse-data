@@ -50,15 +50,15 @@ columns:
     description: |-
       Last name for the person on supervision
   - name: CREATED_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of when this contact period was created by the agent
   - name: START_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the supervision contact period started by the agent
   - name: END_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the supervision contact period ended by the agent
   - name: DURATION_MINS
@@ -172,7 +172,7 @@ columns:
     description: |-
       Unclear, all entries are N
   - name: DW_CREATED_DATE
-    is_datetime: True
+    field_type: datetime
   - name: DW_CREATED_BY
     description: |-
       Unclear, all entries are DW_CRTD_USER

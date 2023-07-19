@@ -173,7 +173,7 @@ columns:
   - name: Transfer_Date
     description: |-
       The date the transfer happened
-    is_datetime: True
+    field_type: datetime
   - name: Transfer_Id
     description: |-
       The primary key field

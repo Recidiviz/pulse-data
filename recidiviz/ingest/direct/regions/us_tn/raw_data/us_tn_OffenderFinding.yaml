@@ -15,7 +15,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: FindingDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date findings about a person  are posted.
   - name: FindingType
@@ -92,7 +92,7 @@ columns:
     description: |-
       The text associated with a finding about a person made by an individual in the TOMIS system.
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateUserID

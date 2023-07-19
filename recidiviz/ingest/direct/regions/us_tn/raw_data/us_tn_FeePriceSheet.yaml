@@ -23,11 +23,11 @@ columns:
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: StartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: EndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#11524) - Add in descriptions.
   - name: FeeFrequencyID

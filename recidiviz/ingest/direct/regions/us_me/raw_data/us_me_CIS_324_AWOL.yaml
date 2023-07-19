@@ -21,19 +21,19 @@ columns:
     description: The return-to CIS_908_CCS_LOCATION ID
   - name: AWOL_DATE
     description: The date the escape was recorded. All times in this field are midnight, look at AWOL_TIME for the time of escape.
-    is_datetime: True
+    field_type: datetime
   - name: AWOL_TIME
     description: The time of escape. All dates in this field are 1/1/1900, look at AWOL_DATE for the date.
-    is_datetime: True
+    field_type: datetime
   - name: INEFFCT_DATE
     description: The date the escape status became ineffective.
-    is_datetime: True
+    field_type: datetime
   - name: RETURN_DATE
     description: The date of return. All times in this field are midnight, look at RETURN_TIME for the time of return.
-    is_datetime: True
+    field_type: datetime
   - name: RETURN_TIME
     description: The time of return. All dates in this field are 1/1/1900, look at RETURN_DATE for the date.
-    is_datetime: True
+    field_type: datetime
   - name: DAYS_UAL_NUM
   - name: NOTES_TX
     is_pii: True

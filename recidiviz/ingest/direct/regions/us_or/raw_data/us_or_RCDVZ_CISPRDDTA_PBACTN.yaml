@@ -39,7 +39,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: REST_PLAN_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -49,7 +49,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: NEXT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -59,7 +59,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: ADJ_INCEPTION_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -69,7 +69,7 @@ columns:
     description: |-
       A unique identifier for each Adult in Custody (AIC).
   - name: LAST_UPDATED_WHEN
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date last updated.
     datetime_sql_parsers:
@@ -106,35 +106,35 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: TENT_PARO_DISC_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ACTIVE_REV_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PA_EXTENDED_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PPS_RELEASE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PPS_EXPIRATION_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:

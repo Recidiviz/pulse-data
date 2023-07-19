@@ -39,7 +39,7 @@ columns:
       Notes about the modification of this assessment record.
     is_pii: True
   - name: Modified_On_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that this assessment record was last modified.
   - name: System_Ref_Comments_Tx

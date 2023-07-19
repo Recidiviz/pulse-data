@@ -26,6 +26,7 @@ from mock import Mock, patch
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
+    RawTableColumnFieldType,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -46,19 +47,19 @@ class RawTableQueryBuilderTest(unittest.TestCase):
             columns=[
                 RawTableColumnInfo(
                     name="col1",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description="col1 description",
                 ),
                 RawTableColumnInfo(
                     name="col2",
-                    is_datetime=True,
+                    field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col2 description",
                 ),
                 RawTableColumnInfo(
                     name="col3",
-                    is_datetime=True,
+                    field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description="col3 description",
                     datetime_sql_parsers=[
@@ -67,13 +68,13 @@ class RawTableQueryBuilderTest(unittest.TestCase):
                 ),
                 RawTableColumnInfo(
                     name="undocumented_column",
-                    is_datetime=True,
+                    field_type=RawTableColumnFieldType.DATETIME,
                     is_pii=False,
                     description=None,
                 ),
                 RawTableColumnInfo(
                     name="undocumented_column_2",
-                    is_datetime=False,
+                    field_type=RawTableColumnFieldType.STRING,
                     is_pii=False,
                     description=None,
                 ),

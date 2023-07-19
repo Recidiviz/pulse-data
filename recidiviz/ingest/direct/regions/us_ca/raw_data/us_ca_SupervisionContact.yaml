@@ -15,7 +15,7 @@ columns:
       This has the latest CDCNO for each person. See CDCNOParole for more.
   - name: ORTGID
   - name: CONTACTDATE
-    is_datetime: True
+    field_type: datetime
   - name: ContactType
   - name: ContactSource
   - name: EmploymentStatus

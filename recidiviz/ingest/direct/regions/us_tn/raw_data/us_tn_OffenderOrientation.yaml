@@ -12,7 +12,7 @@ columns:
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: OrientationDueDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the orientation should be completed on a person  who has transferred to a new institution.
   - name: OffenderID
@@ -20,11 +20,11 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: OrientationCompletedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a person  signs the orientation form, having completed either initial or new institution.
   - name: SignedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a document is signed.
   - name: LastUpdateUserID

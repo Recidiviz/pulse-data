@@ -28,7 +28,7 @@ columns:
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
       incarceration served.
   - name: mov_sig_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date at which the record was created.
   - name: mov_term_id
@@ -56,7 +56,7 @@ columns:
       Code describing the kind of movement that has taken place. Can be used to help determine whether the person has
       been released from incarceration and why.
   - name: mov_move_date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when this movement took place.
   - name: mov_move_time

@@ -17,7 +17,7 @@ columns:
     description: |-
       Unique number assigned to each offender
   - name: Supervision_Start_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date when the offender started their supervision
   - name: Supervision_Type
@@ -76,6 +76,6 @@ columns:
     description: |-
       Time served by the offender in months
   - name: Report_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the report providing population data was run.

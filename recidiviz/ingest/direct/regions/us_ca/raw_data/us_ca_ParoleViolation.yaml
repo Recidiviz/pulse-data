@@ -28,7 +28,7 @@ columns:
   - name: Violation_Date
     description: >-
       The date the violation occured.
-    is_datetime: True
+    field_type: datetime
   - name: Violated_Conditions
     description: >-
       This is a text field containing structured data which has been concatenated
@@ -38,7 +38,7 @@ columns:
   - name: Response_Date
     description: >-
       TODO(#15297)
-    is_datetime: True
+    field_type: datetime
   - name: Response_Type
     description: >-
       The repsonse to the violation. This is a broader category -- more specific

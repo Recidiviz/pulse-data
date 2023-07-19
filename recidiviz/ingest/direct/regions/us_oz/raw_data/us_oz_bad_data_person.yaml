@@ -17,4 +17,4 @@ columns:
     is_pii: True
   - name: StartDate
     description: The date this person started at Recidiviz.
-    is_datetime: True
+    field_type: datetime

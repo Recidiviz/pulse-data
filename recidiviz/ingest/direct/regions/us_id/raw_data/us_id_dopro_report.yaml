@@ -21,7 +21,7 @@ columns:
       - value: ND
         description: Non-dosage
   - name: cntct_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the contact occurred
   - name: cntct_strt_tm
@@ -112,18 +112,18 @@ columns:
     description: |-
       Whether the service could be categorized as other
   - name: nxt_appt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Next appoitment date, if scheduled
   - name: nxt_appt_tm
     description: |-
       Next appointment time, if scheduled
   - name: not_avail_start_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date when participant will not be available for dosage contacts
   - name: not_avail_end_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date when participant will not be available for dosage contacts
   - name: not_avail_reason
@@ -139,7 +139,7 @@ columns:
     description: |-
       User who last updated record
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date record was updated
   - name: updt_tm

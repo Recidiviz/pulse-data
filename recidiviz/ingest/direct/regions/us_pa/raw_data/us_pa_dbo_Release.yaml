@@ -59,7 +59,7 @@ columns:
     description: |-
       Day when the person's supervision record was created by field staff.
   - name: LastModifiedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the record was last modified.
   - name: LastModifiedBy

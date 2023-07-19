@@ -23,7 +23,7 @@ columns:
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
   - name: CreditEligibleDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a person  is eligible for a type of credits for a sentence.
   - name: CreditLawID
@@ -33,7 +33,7 @@ columns:
     description: |-
       The credit law ID that is waived to by an inmate through the waiving procedure. The new credit law ID will be used for determining the maximum credit days available for an inmate.
   - name: WaiverDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an inmate waived his right to earn credits from one credit law to another.
   - name: StaffID
@@ -41,7 +41,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastModifiedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.
   - name: LastUpdateUserID

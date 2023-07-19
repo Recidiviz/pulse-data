@@ -22,7 +22,7 @@ columns:
     description: >-
       The date the event occured. If OffenderGroup is "Date Changed", this date will be
       in the future.
-    is_datetime: True
+    field_type: datetime
   - name: OffenderGroup
     description: >-
       Not really OffenderGroup -- this reflects the type of change that occured and

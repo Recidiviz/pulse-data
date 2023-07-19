@@ -25,10 +25,10 @@ columns:
     description: |-
       Sentence disposition status
   - name: SentenceDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of the sentence
   - name: SentenceEndDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of the sentence

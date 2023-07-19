@@ -30,7 +30,7 @@ columns:
     description: |-
       A unique sequential number assigned to a particular count of a judgment order. This number is used in identifying a particular sentence of an offender.
   - name: ActionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an action occurs.
   - name: SequenceNumber

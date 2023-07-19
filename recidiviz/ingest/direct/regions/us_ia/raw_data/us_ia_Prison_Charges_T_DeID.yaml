@@ -19,31 +19,31 @@ columns:
     description: |-
       ID that uniquely identifies each charge
   - name: StartDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of the supervision period
   - name: EndDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of the supervision period
   - name: OffenseDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of the offense
   - name: ArrestDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of the arrest
   - name: TDD
-    is_datetime: True
+    field_type: datetime
     description: |-
       Tentative Discharge Date
   - name: TDDDisplay
-    is_datetime: True
+    field_type: datetime
     description: |-
       Displayed Tentative Discharge Date
   - name: SDD
-    is_datetime: True
+    field_type: datetime
     description: |-
       Supervision Discharge Date
   - name: JurisdictionId

@@ -16,7 +16,7 @@ columns:
     description: |-
       Flag to indicate if location is active.
   - name: CREATE_DATE
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"

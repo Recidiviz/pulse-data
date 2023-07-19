@@ -29,7 +29,7 @@ columns:
     description: |-
       The code of the pay period of a person for a job in the free world.
   - name: RateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a rate of pay is established.
   - name: ClassType
@@ -39,7 +39,7 @@ columns:
     description: |-
       This is the code of the status type of Class being set up on the vocational class screen.
   - name: ClassStatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date of the Class Status being set up on the vocational class screen.
   - name: SentenceCredits
@@ -56,6 +56,6 @@ columns:
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

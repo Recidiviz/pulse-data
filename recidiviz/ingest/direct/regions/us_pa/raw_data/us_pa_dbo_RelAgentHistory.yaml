@@ -34,7 +34,7 @@ columns:
     description: |-
       Who this record was last modified by.
   - name: LastModifiedDateTime
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this agent began supervising this particular period of supervision.
   - name: Agent_EmpNum

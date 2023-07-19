@@ -10,7 +10,7 @@ primary_key_cols:
 columns:
   - name: Arrested_Warr_Date
     description: The date the arrest took place.
-    is_datetime: True
+    field_type: datetime
   - name: Cis_100_Client_Id
     description: The client that is associated with this violation entry.
     is_pii: True
@@ -120,13 +120,13 @@ columns:
     is_pii: True
   - name: Finding_Date
     description: The date the violation outcome decision was completed.
-    is_datetime: True
+    field_type: datetime
   - name: Finding_Notes_Tx
     description: Notes recorded about the finding results.
     is_pii: True
   - name: Fta_Date
     description: When the "Failure to Appear" occurred, if applicable.
-    is_datetime: True
+    field_type: datetime
   - name: Fta_Ind
     description: Indicates whether or not there is a "Failure to Appear" related to the violation outcome proceedings.
   - name: Logical_Delete_Ind
@@ -136,14 +136,14 @@ columns:
   - name: Modified_On_Date
   - name: Start_Date
     description: The date the violation was entered.
-    is_datetime: True
+    field_type: datetime
   - name: Stayed_Ind
   - name: Toll_End_Date
     description: The end date the client is in a state of awaiting a violation outcome decision.
-    is_datetime: True
+    field_type: datetime
   - name: Toll_Start_Date
     description: The start date the client is in a state of awaiting a violation outcome decision.
-    is_datetime: True
+    field_type: datetime
   - name: Violation_Descr_Tx
     description: A note describing the violation entered by the supervising officer.
     is_pii: True

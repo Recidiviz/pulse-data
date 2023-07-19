@@ -8,7 +8,7 @@ primary_key_cols:
   - SUBFILE_KEY
 columns:
   - name: TIME_LAST_UPDATED
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -18,7 +18,7 @@ columns:
     description: |-
       Unique identifier for each AIC.
   - name: LAST_UPDATED_WHEN
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -28,7 +28,7 @@ columns:
     description: |-
       Type of offense.
   - name: TERMINATION_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -38,7 +38,7 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: PB_SENTENCE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:
@@ -60,7 +60,7 @@ columns:
     description: |-
       File key, part of composite key.
   - name: DATE_LAST_UPDATED
-    is_datetime: True
+    field_type: datetime
     description: |-
       TODO(#17148): Fill in with answer from OR
     datetime_sql_parsers:

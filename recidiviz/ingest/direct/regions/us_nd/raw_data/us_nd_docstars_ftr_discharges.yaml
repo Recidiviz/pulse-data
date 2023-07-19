@@ -25,7 +25,7 @@ columns:
     description: |-
       Free text notes about the community support available to this person.
   - name: DISCHARGE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the person was discharged from this episode.
   - name: EMPLOYMENT
@@ -53,7 +53,7 @@ columns:
     description: |-
       Whether their discharge has been approved or not.
   - name: STATUS_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the status most recently changed.
   - name: OUTCOME1

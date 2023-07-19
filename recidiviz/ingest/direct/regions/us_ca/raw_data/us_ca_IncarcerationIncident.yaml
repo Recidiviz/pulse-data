@@ -13,7 +13,7 @@ columns:
   - name: INCIDENTBEGINDATE
     description: |-
       TODO(#15297)
-    is_datetime: true
+    field_type: datetime
   - name: incidentRptStatus
     description: |-
       TODO(#15297)
@@ -32,7 +32,7 @@ columns:
   - name: ORIGINALVIOLATIONDATE
     description: |-
       TODO(#15297)
-    is_datetime: true
+    field_type: datetime
   - name: discplViolVerdict
     description: |-
       TODO(#15297)
@@ -42,4 +42,4 @@ columns:
   - name: DISCIPLINARYVIOLATIONDATE
     description: |-
       TODO(#15297)
-    is_datetime: true
+    field_type: datetime

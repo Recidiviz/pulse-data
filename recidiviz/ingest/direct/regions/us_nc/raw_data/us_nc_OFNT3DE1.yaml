@@ -28,7 +28,7 @@ columns:
     description: |-
       Special condition sequence number
   - name: DTOFUPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last update
   - name: TMOFUPDT

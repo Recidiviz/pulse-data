@@ -18,10 +18,10 @@ columns:
     description: |-
       Actual identifier value for this particular identifier type.
   - name: CREATE_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.

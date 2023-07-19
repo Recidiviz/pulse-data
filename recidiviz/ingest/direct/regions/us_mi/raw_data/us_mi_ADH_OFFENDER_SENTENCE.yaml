@@ -54,12 +54,12 @@ columns:
   - name: review_flag_id
   - name: effective_date
     description: effective date of sentence
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: sentenced_date
     description: date of sentencing
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: corrected_date
@@ -104,7 +104,7 @@ columns:
   - name: parole_to_min_max_id
   - name: expiration_date
     description: expiration date of sentence
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_reason_code
@@ -158,14 +158,14 @@ columns:
     is_pii: True
   - name: closing_date
     description: closing date of sentence
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: closing_notes
   - name: notes
   - name: last_update_user
   - name: last_update_date
-    is_datetime: True
+    field_type: datetime
   - name: last_update_node
   - name: lifetime_gps_flag
     description: Flag for whether this sentence mandates lifetime electronic monitoring

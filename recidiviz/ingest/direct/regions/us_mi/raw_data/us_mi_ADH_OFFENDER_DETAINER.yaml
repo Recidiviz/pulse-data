@@ -15,7 +15,7 @@ columns:
     description: sequence number of the detainer for an individual
   - name: detainer_received_date
     description: Date detainer received
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: detainer_type_id
@@ -70,12 +70,12 @@ columns:
     description: The agency from which the detainer originates
   - name: notify_date
     description: Date of notification of the detainer
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: revoked_date
     description: Date detainer revoked
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: ori_number
@@ -112,12 +112,12 @@ columns:
     description: complaint number
   - name: written_verification_date
     description: written verification date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: request_for_clearance_date
     description: request for clearance date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: clearance_method_lein
@@ -128,7 +128,7 @@ columns:
     description: TODO(#17944)
   - name: inactive_date
     description: Date detainer was inactivated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_user
@@ -136,7 +136,7 @@ columns:
     is_pii: True
   - name: last_update_date
     description: date record was last updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
@@ -168,14 +168,14 @@ columns:
   - name: extradition_req_flg
     description: flag for whether extradition is required
   - name: deportation_eligible_date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: deportation_eligible_flg
     description: flag for whether this person would be eligible for deportation
   - name: parole_date
     description: parole date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: deportation_final_order_flg
@@ -189,7 +189,7 @@ columns:
     description: active flag
   - name: expiration_date
     description: expiration date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: county
@@ -200,6 +200,6 @@ columns:
     description: reference code for followup reason (links with ADH_REFERENCE_CODE)
   - name: followup_date
     description: followup date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"

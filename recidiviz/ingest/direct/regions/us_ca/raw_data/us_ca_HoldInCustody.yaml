@@ -12,7 +12,7 @@ columns:
   - name: HoldPlaceDate
     description: |-
       TODO(#15297)
-    is_datetime: True
+    field_type: datetime
   - name: HoldAuthorityType
     description: |-
       TODO(#15297)

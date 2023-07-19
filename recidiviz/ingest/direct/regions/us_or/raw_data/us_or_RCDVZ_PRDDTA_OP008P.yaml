@@ -42,7 +42,7 @@ columns:
     description: |-
       County where custody took place.
   - name: DISCHARGE_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of custody discharge.
     datetime_sql_parsers:

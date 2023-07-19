@@ -35,22 +35,22 @@ columns:
     description: |-
       ID of the sentence that this charge is associated with.
   - name: LAST_UPDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently updated in the source system.
   - name: COUNTS
     description: |-
       Number of counts of this particular offense that the person is being charged with.
   - name: INACTIVEDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this offense became inactive, if applicable.
   - name: OFFENSEDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this offense occurred.
   - name: RecDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
   - name: YEAR

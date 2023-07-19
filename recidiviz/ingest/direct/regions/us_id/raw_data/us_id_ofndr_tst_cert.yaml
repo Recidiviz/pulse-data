@@ -22,7 +22,7 @@ columns:
     description: |-
       Score bucket
   - name: cert_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date the test was certified
   - name: cert_pass_flg
@@ -33,7 +33,7 @@ columns:
     description: |-
       IDOC username of the last person to update this row
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       IDOC update datetime
   - name: cert_xml_doc

@@ -15,7 +15,7 @@ columns:
   - name: ReviewDate
     description: |-
       Date of supervision level change request review.
-    is_datetime: True
+    field_type: datetime
   - name: RequesterId
     description: |-
       ID of requestor of supervision level change.
@@ -44,11 +44,11 @@ columns:
   - name: DecisionDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: NextReviewDate
     description: |-
       TODO(#15329): Fill in column description
-    is_datetime: True
+    field_type: datetime
   - name: ApprovalNotes
     description: |-
       TODO(#15329): Fill in column description
@@ -62,7 +62,7 @@ columns:
   - name: InsertDate
     description: |-
       Timestamp for record creation.
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: |-
       ID of the user who most recently modified this record.
@@ -70,11 +70,11 @@ columns:
   - name: UpdateDate
     description: |-
       Timestamp for record modification.
-    is_datetime: True
+    field_type: datetime
   - name: AssessmentDate
     description: |-
       Timestamp for date of assesment.
-    is_datetime: True
+    field_type: datetime
   - name: CompasRecommendationLevelId
     description: |-
       TODO(#15329): Fill in column description

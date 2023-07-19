@@ -13,7 +13,7 @@ columns:
   - name: offstat
     description: Code describing this person's current status. See `offstat.stat_rls_typ` for descriptions.
   - name: sent_ftrd_dt
-    is_datetime: True
+    field_type: datetime
     description: Calculated full-term release date for this person
   - name: sent_disp_cd
   - name: life_death_flag

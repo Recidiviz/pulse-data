@@ -10,10 +10,10 @@ columns:
     description: Primary key.
   - name: SPECIMEN_NUM_TX
   - name: TEST_DATE
-    is_datetime: True
+    field_type: datetime
     description: Date the drug screen sample was collected.
   - name: POSTED_DATE
-    is_datetime: True
+    field_type: datetime
     description: Date the results were provided.
   - name: BAC_NUM
   - name: NOTES_TX

@@ -15,7 +15,7 @@ columns:
     is_pii: True
   - name: Date
     description: The date that this food took this spot in their favorite food ranking.
-    is_datetime: True
+    field_type: datetime
   - name: Rank
     description: |-
       The rank of this food. For example, if this became their absolute

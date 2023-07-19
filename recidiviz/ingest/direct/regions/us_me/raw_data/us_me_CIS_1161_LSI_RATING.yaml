@@ -15,7 +15,7 @@ columns:
       Notes about the creation of this assessment record.
     is_pii: True
   - name: Created_On_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that this assessment record was created.
   - name: E_Lsi_Rating_Desc
@@ -23,7 +23,7 @@ columns:
       The description of the LSI rating.
   - name: Logical_Delete_Ind
   - name: Lsi_Effct_Date
-    is_datetime: True
+    field_type: datetime
     description: The date the LSI rating became effective. This is always the same date.
   - name: Lsi_Rating_Group_Tx
     description: |-

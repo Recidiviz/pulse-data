@@ -16,7 +16,7 @@ columns:
     description: |-
       Unique number assigned to each offender
   - name: Prison_Start_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date when prison started for the offender
   - name: Prison_Admission_Type
@@ -73,6 +73,6 @@ columns:
     description: |-
       Time served by the offender in months
   - name: Report_Date
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date associated when data report was run.

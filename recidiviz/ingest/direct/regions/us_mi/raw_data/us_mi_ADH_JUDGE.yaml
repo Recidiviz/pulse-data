@@ -45,7 +45,7 @@ columns:
   - name: business_phone_extension
     is_pii: True
   - name: expiration_date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: county_id
@@ -302,7 +302,7 @@ columns:
   - name: last_update_user
     is_pii: True
   - name: last_update_date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

@@ -36,7 +36,10 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
-from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnInfo
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    RawTableColumnFieldType,
+    RawTableColumnInfo,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 
@@ -71,13 +74,17 @@ ORDER BY
             continue
 
         file_name = row["table_name"]
-        is_datetime = row["data_type"].upper() == "DATETIME"
+        field_type = (
+            RawTableColumnFieldType.DATETIME
+            if row["data_type"] == "datetime"
+            else RawTableColumnFieldType.STRING
+        )
 
         if file_name not in columns_by_file:
             columns_by_file[file_name] = []
 
         column_info = RawTableColumnInfo(
-            name=column_name, is_datetime=is_datetime, is_pii=False, description="TKTK"
+            name=column_name, field_type=field_type, is_pii=False, description="TKTK"
         )
         columns_by_file[file_name].append(column_info)
 
@@ -92,7 +99,7 @@ def _generate_skeleton_config_for_file(
     def _generate_column_config_string(column: RawTableColumnInfo) -> str:
         config_string = f"  - name: {column.name}"
         if column.is_datetime:
-            config_string += "\n    is_datetime: True"
+            config_string += "\n    field_type: datetime"
         config_string += f"\n    description: |-\n      {column.description}"
         return config_string
 

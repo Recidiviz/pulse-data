@@ -13,13 +13,13 @@ columns:
     description: Locking number for record
   - name: InsertDate
     description: Record insert date
-    is_datetime: True
+    field_type: datetime
   - name: InsertUserId
     description: User ID of employee who entered record
     is_pii: True
   - name: UpdateDate
     description: Record update date
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: User ID of employee who updated record
     is_pii: True

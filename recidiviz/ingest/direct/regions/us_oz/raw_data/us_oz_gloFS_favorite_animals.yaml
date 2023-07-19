@@ -17,7 +17,7 @@ columns:
   - name: Date
     description: |-
       The date that this animal took this spot in their favorite animal ranking.
-    is_datetime: True
+    field_type: datetime
   - name: Power
     description: |-
       The person's rating of how powerful this animal would be in a fight.

@@ -14,7 +14,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: HearingDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person.
   - name: HearingType
@@ -65,7 +65,7 @@ columns:
       - value: Y
         description: "YES - Staff member is presiding at a meeting"
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: LastUpdateUserID

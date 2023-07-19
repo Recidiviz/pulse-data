@@ -10,7 +10,7 @@ columns:
     description: |-
       ID of the person under IDOC authority
   - name: dob
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of birth
   - name: st

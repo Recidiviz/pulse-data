@@ -137,7 +137,7 @@ columns:
     description: |-
       Why the movement occurred, i.e. an admission or release reason depending on the movement direction.
   - name: MOVEMENT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the movement occurred.
   - name: TO_AGY_LOC_ID
@@ -238,10 +238,10 @@ columns:
       - value: "CONT"
         description: "TODO(#11833): Update with facility name."
   - name: CREATE_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.

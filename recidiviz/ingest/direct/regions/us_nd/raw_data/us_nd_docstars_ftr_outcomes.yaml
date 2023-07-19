@@ -28,7 +28,7 @@ columns:
   - name: ON_TIME
   - name: PAY_STATUS
   - name: SUBMITTED_DATE
-    is_datetime: True
+    field_type: datetime
   - name: SUBMITTED_BY
     is_pii: True
   - name: SUBMITTED_BY_NAME

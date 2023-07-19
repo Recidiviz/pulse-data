@@ -19,11 +19,11 @@ columns:
     description: |-
       In format '{LastName}, {FirstName}'
   - name: popdate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date when this view was executed
   - name: move_dtd
-    is_datetime: True
+    field_type: datetime
     description: |-
       Latest movement date for given person
   - name: Facility
@@ -157,31 +157,31 @@ columns:
       - value: 65 and over
         description: Over 65 years.
   - name: SentEffDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Sentence effective date
   - name: EPRD
-    is_datetime: True
+    field_type: datetime
     description: |-
       Earliest possible release date
   - name: FTRD
-    is_datetime: True
+    field_type: datetime
     description: |-
       Full term release date
   - name: ParEligDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Parole eligibility date
   - name: RlsDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Release date
   - name: NextParHrgDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Next parole hearing date
   - name: TentParDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Tentative parole date
 # Parse this the same way as pre-Atlas ID data

@@ -12,7 +12,7 @@ columns:
     is_pii: true
   - name: acquired
     description: The date the very good dog was acquired, yes, you are very good!
-    is_datetime: true
+    field_type: datetime
   - name: owner_id
     description: Misnomer. Human friend would be a better name. May change this later.
     is_pii: true

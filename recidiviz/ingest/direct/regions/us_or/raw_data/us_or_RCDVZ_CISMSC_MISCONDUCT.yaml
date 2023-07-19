@@ -40,14 +40,14 @@ columns:
   - name: FINALIZED_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: DECISION_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -67,7 +67,7 @@ columns:
   - name: SUBMITTED_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -77,7 +77,7 @@ columns:
   - name: REVIEW_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -87,7 +87,7 @@ columns:
   - name: CREATE_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -98,7 +98,7 @@ columns:
   - name: MODIFY_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"

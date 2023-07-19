@@ -31,7 +31,7 @@ columns:
     description: |-
       Uniquely identifies various DB2 tables.
   - name: ExtensionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of the extension made to the parole eligibility dates of one of a person's sentences for certain disciplinary infrac- tions.
   - name: SentenceRangePercentExtension
@@ -54,7 +54,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastModifiedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.
   - name: LastUpdateUserID

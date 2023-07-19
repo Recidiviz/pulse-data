@@ -21,7 +21,7 @@ columns:
     description: |-
       Full description of the offense
   - name: strt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Unknown
   - name: felny_flg

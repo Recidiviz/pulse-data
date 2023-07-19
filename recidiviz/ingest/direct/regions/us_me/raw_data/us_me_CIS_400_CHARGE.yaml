@@ -64,7 +64,7 @@ columns:
   - name: Offense_Date
     description: |-
       The date that the originating offense took place.
-    is_datetime: True
+    field_type: datetime
   - name: Offense_Note_Tx
     is_pii: True
   - name: Oos_Inv_Compl_Date
@@ -80,5 +80,5 @@ columns:
   - name: Referral_Date
     description: |-
       The date that the offense was referred to the courts system for an official charge.
-    is_datetime: True
+    field_type: datetime
   - name: Summons_Date

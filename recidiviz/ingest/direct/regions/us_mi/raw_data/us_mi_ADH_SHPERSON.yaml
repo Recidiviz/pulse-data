@@ -28,7 +28,7 @@ columns:
   - name: DateOfBirth
     description: Date of birth
     is_pii: True
-    is_datetime: True
+    field_type: datetime
   - name: SSN
     description: SSN
     is_pii: True
@@ -38,11 +38,11 @@ columns:
   - name: IsDeleted
     description: Boolean flag for whether this person record should be treated as deleted/inactive
   - name: DateCreated
-    is_datetime: True
+    field_type: datetime
   - name: DateUpdated
-    is_datetime: True
+    field_type: datetime
   - name: DateDeleted
-    is_datetime: True
+    field_type: datetime
   - name: FkShUserCreatedBy
     is_pii: True
   - name: FkShUserUpdatedBy

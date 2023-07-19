@@ -12,17 +12,17 @@ columns:
   - name: EscapeDate
     description: |-
       Date of the escape.
-    is_datetime: True
+    field_type: datetime
   - name: ReturnDocDate
     description: |-
       Date of the escapee's return to DOC. Can be the same as EscapeDate, usually when
       ArrestDate is null (potentially indicating that no return to DOC occurred).
-    is_datetime: True
+    field_type: datetime
   - name: ArrestDate
     description: |-
       Date of the escapee's arrest. Includes null values (potentially indicating that
       no arrest was made).
-    is_datetime: True
+    field_type: datetime
   - name: EscapeDays
     description: |-
       TODO(#15329): Fill in column description

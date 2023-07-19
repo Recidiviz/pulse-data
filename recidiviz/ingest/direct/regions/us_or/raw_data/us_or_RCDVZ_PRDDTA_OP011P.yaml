@@ -38,7 +38,7 @@ columns:
     description: |-
       Location when out of facility/location.
   - name: MOVE_IN_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date moved in to current facility.
     datetime_sql_parsers:
@@ -57,7 +57,7 @@ columns:
     description: |-
       Previous outcount location.
   - name: MOVE_OUT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date moved from location.
     datetime_sql_parsers:

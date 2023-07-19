@@ -62,7 +62,7 @@ class RawDataConfigWriter:
             column_description_string = "\n      ".join(column.description.splitlines())
             column_string += f"\n    description: |-\n      {column_description_string}"
         if column.is_datetime:
-            column_string += "\n    is_datetime: True"
+            column_string += "\n    field_type: datetime"
         if column.datetime_sql_parsers:
             column_string += "\n    datetime_sql_parsers:"
             for parser in column.datetime_sql_parsers:

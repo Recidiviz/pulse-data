@@ -24,11 +24,11 @@ columns:
     description: |-
       Code associated with the SupervisionLevel
   - name: SupervisionLevelStartDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date of the level of supervision
   - name: SupervisionLevelEndDt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date of the level of supervision
   - name: ManualEntry

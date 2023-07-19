@@ -124,7 +124,7 @@ columns:
     description: |-
       Number which is used for access Computer phone system.
   - name: VictimLetterCreateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a letter is created for notification of vivtims of future release of offender.
   - name: NewLetterFlag

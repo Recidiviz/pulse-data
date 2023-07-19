@@ -83,7 +83,7 @@ columns:
   - name: InsertDate
     description: |-
       Timestamp for record creation.
-    is_datetime: True
+    field_type: datetime
   - name: UpdateUserId
     description: |-
       ID of the user who most recently modified this record.
@@ -91,7 +91,7 @@ columns:
   - name: UpdateDate
     description: |-
       Timestamp for record modification.
-    is_datetime: True
+    field_type: datetime
   - name: DisplayName
     description: |-
       TODO(#15329): Fill in column description

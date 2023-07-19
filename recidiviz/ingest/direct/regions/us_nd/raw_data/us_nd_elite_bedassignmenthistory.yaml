@@ -14,21 +14,21 @@ columns:
     description: |-
       ID of the living unit/location where the person was incarcerated.
   - name: ASSIGNMENT_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the person began their stay at this location.
   - name: ASSIGNMENT_END_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       When the person ended their stay at this location.
   - name: BED_ASSIGN_SEQ
     description: |-
       The ordered index of bed assignments among the full set of assignments within a booking.
   - name: CREATE_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
-    is_datetime: True
+    field_type: datetime
     description: |-
       When this record was most recently modified in the source system.

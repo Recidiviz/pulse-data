@@ -12,7 +12,7 @@ columns:
     description: |-
       Inmate DOC number
   - name: CICREVDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Parole Commission event effective date
   - name: CICREVSQ
@@ -60,11 +60,11 @@ columns:
     description: |-
       Special condition (parole analyst)
   - name: CIPARREL
-    is_datetime: True
+    field_type: datetime
     description: |-
       Release date (parole review)
   - name: DTOFUPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last update
   - name: TMOFUPDT

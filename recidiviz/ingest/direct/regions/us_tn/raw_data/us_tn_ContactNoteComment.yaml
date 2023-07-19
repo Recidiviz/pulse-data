@@ -14,7 +14,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ContactNoteDateTime
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the time a contact note is recorded for a person
   - name: SupervisionType

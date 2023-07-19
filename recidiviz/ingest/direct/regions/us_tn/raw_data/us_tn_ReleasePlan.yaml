@@ -85,7 +85,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: ParolePlanDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a person  submits a parole plan for investigation.
   - name: ParolePlanFlag
@@ -549,7 +549,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: StartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an inmate begins a job, class or program.
   - name: SupervisorName

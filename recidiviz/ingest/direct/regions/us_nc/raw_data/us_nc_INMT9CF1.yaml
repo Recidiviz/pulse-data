@@ -12,7 +12,7 @@ columns:
     description: |-
       Inmate DOC number
   - name: CIDREFDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Disciplinary infraction date
   - name: CIDRTIME
@@ -89,7 +89,7 @@ columns:
     description: |-
       Activate prior suspension
   - name: DTOFUPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last update
   - name: TMOFUPDT
@@ -102,7 +102,7 @@ columns:
     description: |-
       Suspension status
   - name: ACTVSPDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of prior suspended punishment
   - name: ACTVSPTM

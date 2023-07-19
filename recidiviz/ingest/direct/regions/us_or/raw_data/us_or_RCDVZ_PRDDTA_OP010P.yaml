@@ -40,7 +40,7 @@ columns:
     description: |-
       Location from, maps to DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_IN_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Location from date.
     datetime_sql_parsers:
@@ -56,7 +56,7 @@ columns:
     description: |-
       Receiving location, maps to DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_TO_DATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Receiving location date.
     datetime_sql_parsers:

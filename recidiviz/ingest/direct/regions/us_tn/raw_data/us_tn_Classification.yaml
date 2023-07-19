@@ -13,33 +13,33 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: CAFDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that the corresponding custody assessment form score was calculated.
   - name: ClassificationSequenceNumber
     description: |-
       The number used to identify an inmate's classification within his 7MIS ID number.
   - name: ClassificationDueDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which the next classification should be completed for an person.
   - name: HearingDateTime
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person. The time that a hearing is scheduled to take place. (Combines DB2 columns DTE_HEAR and TME_HEAR)
   - name: WaiverSignedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date an inmate signs his classification hearing notice waiver.
   - name: NoticeWaiverReason
     description: |-
       The reason an person waives receiving his hearing notice for a classification hearing.
   - name: PostedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This is the date that data is actually posted to the system.
   - name: ClassificationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a classification or reclassification is done for a person.
   - name: ClassificationType
@@ -58,7 +58,7 @@ columns:
     description: |-
       The reason given by the classification panel for an override of an person's custody assessment form custody level.
   - name: ClassificationDecisionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date of the classification decision made by the approving staff-id on a classification recommendation for a person.
   - name: ClassificationDecision
@@ -90,11 +90,11 @@ columns:
     description: |-
       The decision made by the authority empowered to make a classification appeal decision.
   - name: AppealReceivedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an appeal is filed.
   - name: AppealDecisionDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that the warden or director of classification decides on an appeal of the classification of an inmate.
   - name: AppealReasonComments
@@ -144,6 +144,6 @@ columns:
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS. It is the timestamp of the last time this record was updated.

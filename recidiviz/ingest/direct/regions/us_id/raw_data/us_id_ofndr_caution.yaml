@@ -16,10 +16,10 @@ columns:
     description: Code for the caution note type. Joins to `bci_caution_cd.bci_caution_cd`.
   - name: caution_src_cd
   - name: strt_dt
-    is_datetime: True
+    field_type: datetime
     description: Start date for when this caution applies.
   - name: end_dt
-    is_datetime: True
+    field_type: datetime
     description: End date for when this caution applies.
   - name: sfty_concrn_flg
     description: Flag to indicate if a safety concern notificiation should be generated in CIS.
@@ -27,5 +27,5 @@ columns:
     is_pii: True
     description: ID of the user who last updated this record.
   - name: updt_dt
-    is_datetime: True
+    field_type: datetime
     description: Date this record was last updated.

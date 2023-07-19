@@ -18,11 +18,11 @@ columns:
     description: |-
       Code for the supervision level
   - name: strt_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       Start date for this supervision level
   - name: end_dt
-    is_datetime: True
+    field_type: datetime
     description: |-
       End date for this supervision level
   - name: updt_usr_id

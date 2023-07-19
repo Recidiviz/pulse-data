@@ -44,22 +44,22 @@ columns:
       - value: O
         description: OPEN
   - name: StatusDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a status of a particular issue changes.
   - name: DiversionGrantedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a diversion is granted to a person  by the judge.
   - name: Offense
     description: |-
       The offense codes as defined by the UNIFORM CRIME REPORTING AGENCY.  This code is tied directly to the offense code TCA.
   - name: ExpirationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that a person  sentence expires. RED Date.
   - name: JudicialCloseDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that the judge closed a person's diversion.
   - name: StaffID
@@ -67,7 +67,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
   - name: LastModificationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.
   - name: LastUpdateUserID

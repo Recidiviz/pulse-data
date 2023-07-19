@@ -43,19 +43,19 @@ columns:
     description: |-
       The name of the person to contact to verify an offender's employment status.
   - name: StartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which an inmate begins a job, class or program.
   - name: VerifiedStartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The verified date on which an inmate begins a job, class or program according to the verification letter response.
   - name: EndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
   - name: VerifiedEndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The verified date a program, job, or class assignment ended according to the verification letter response.
   - name: TerminationReason
@@ -88,11 +88,11 @@ columns:
     description: |-
       The status of the verification of information obtained from the offender during the pre-sentence investigation.
   - name: SortStartDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The start date used to sort records.
   - name: SortEndDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The end date used to sort records.
   - name: LastUpdateUserID
@@ -100,6 +100,6 @@ columns:
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

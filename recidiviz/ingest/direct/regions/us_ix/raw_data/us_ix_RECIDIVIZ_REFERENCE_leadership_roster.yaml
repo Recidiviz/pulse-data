@@ -26,7 +26,7 @@ columns:
     description: Atlas-generated LocationId
   - name: start_date
     description: role and location start date
-    is_datetime: True
+    field_type: datetime
   - name: end_date
     description: role and location end date
-    is_datetime: True
+    field_type: datetime

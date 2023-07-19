@@ -31,5 +31,5 @@ columns:
     is_pii: True
     description: PO's employee ID
   - name: date_received
-    is_datetime: True
+    field_type: datetime
     description: Date the record was received by Recidiviz.

@@ -12,7 +12,7 @@ columns:
   - name: RequestDate
     description: |-
       The date on which the investigation was requested.
-    is_datetime: True
+    field_type: datetime
   - name: RequestingAgencyId
     description: |-
       Identifier for the agency requesting the investigation; can be a number, 

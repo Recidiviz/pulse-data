@@ -13,7 +13,7 @@ columns:
   - name: RecID
   - name: SID
   - name: CONTACT_DATE
-    is_datetime: True
+    field_type: datetime
   - name: CONTACT_CODE
   - name: C2
   - name: C3
@@ -39,4 +39,4 @@ columns:
   - name: OTHER_POS
   - name: OTHER_NEG
   - name: RecDate
-    is_datetime: True
+    field_type: datetime

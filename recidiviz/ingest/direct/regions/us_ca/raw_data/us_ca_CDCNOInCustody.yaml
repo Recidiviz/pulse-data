@@ -14,8 +14,8 @@ columns:
       People get separate CDCNOs each time they commit a new crime and re-enter the system. This does not include parole violations.
     is_pii: True
   - name: IDVerifyDate
-    is_datetime: True
+    field_type: datetime
   - name: IDEXPIRATIONDATE
     description: |-
       The expiration date of the CDCNO. We expect cases where expiration dates here are wrong (non-expired when they should be expired) and actually only reflecting the last time this CDCNO was updated.
-    is_datetime: True
+    field_type: datetime

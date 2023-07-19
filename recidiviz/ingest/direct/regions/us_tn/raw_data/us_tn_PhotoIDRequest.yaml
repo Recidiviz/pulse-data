@@ -12,7 +12,7 @@ columns:
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
   - name: RequestDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a request is made.
   - name: RequestLastName
@@ -37,7 +37,7 @@ columns:
       Social Security Number of an individual.
   - name: RequestBirthDate
     is_pii: True
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a person was born.
   - name: RequestRace
@@ -70,7 +70,7 @@ columns:
     description: |-
       This identifies an organizational/location entity. Sites may include institutions, staff agencies, hospitals, etc. This is a database element.
   - name: ResponseEligibleDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date on which a response is received regarding eligibility.
   - name: ResponseEligibleCode
@@ -128,7 +128,7 @@ columns:
       - value: Y
         description: "YES - Application submitted"
   - name: SubmittedApplicationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date an application is submitted.
   - name: NonSubmittedReason
@@ -154,7 +154,7 @@ columns:
       - value: Y
         description: "YES - Is indigent"
   - name: ReceivedDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date an ID is received.
   - name: TDOCHSDriverLicenseNumber
@@ -176,7 +176,7 @@ columns:
     description: |-
       Code used for the Photo ID status in the TDOS Photo ID return file.
   - name: TDOcHSLicenseExpirationDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date on which a TDOS-issued license, ID or permit expires.
   - name: IssueTypeID
@@ -188,11 +188,11 @@ columns:
       - value: L
         description: "TODO(#7424): Update with definition."
   - name: InterimDocumentFiledDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the Interim documentation is filed.
   - name: OfficialDocumentFiledDate
-    is_datetime: True
+    field_type: datetime
     description: |-
       The date the Official documentation is filed.
   - name: LastUpdateStaffID

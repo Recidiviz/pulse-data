@@ -17,12 +17,12 @@ columns:
     description: Reference code for misconduct status (links with ADH_REFERENCE_CODE)
   - name: miscond_violation_date
     description: Misconduct violation date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: miscond_written_date
     description: Date misconduct was written up
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: reporting_employee_id
@@ -42,12 +42,12 @@ columns:
     description: Reference code for status of pending hearing (links with ADH_REFERENCE_CODE)
   - name: pending_hearing_status_date
     description: Date status of pending hearing was updated
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: review_date
     description: Review date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: review_employee_id
@@ -57,7 +57,7 @@ columns:
     description: Reference code of status after review (links with ADH_REFERENCE_CODE)
   - name: post_review_status_date
     description: Date status was updated after review
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: hearing_invest_request_flag
@@ -77,14 +77,14 @@ columns:
     description: flag for whether witnesses were requested
   - name: proposed_hearing_date
     description: proposed hearing date
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: proposed_hearing_location_id
     description: Reference code for the proposed hearing location (links with ADH_LOCATION)
   - name: last_date_for_hearing
     description: last date for hearing
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_user
@@ -92,7 +92,7 @@ columns:
     is_pii: True
   - name: last_update_date
     description: last update date of record
-    is_datetime: True
+    field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node

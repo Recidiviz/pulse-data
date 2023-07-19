@@ -38,7 +38,7 @@ columns:
       Inmate race code
   - name: CICLBRTH
     is_pii: True
-    is_datetime: True
+    field_type: datetime
     description: |-
       Inmate birth date
   - name: CIETHNIC
@@ -54,14 +54,14 @@ columns:
     description: |-
       Custody class code
   - name: NXTCUSREV
-    is_datetime: True
+    field_type: datetime
     description: |-
       Next custody review date
   - name: CIHISEC
     description: |-
       Inmate control status code
   - name: NXTSECREV
-    is_datetime: True
+    field_type: datetime
     description: |-
       Next security review date
   - name: CDSPCCHR
@@ -72,21 +72,21 @@ columns:
     description: |-
       Parole case analyst
   - name: NXTPCREV
-    is_datetime: True
+    field_type: datetime
     description: |-
       Next parole comm. review date
   - name: CDPRMASS
     description: |-
       Inmate primary assignment
   - name: CIRADMDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Inmate admission date
   - name: CIADMLOC
     description: |-
       Admitting diagnostic center
   - name: CILAMVDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last inmate movement
   - name: CILAMVTY
@@ -114,7 +114,7 @@ columns:
     description: |-
       Oldest sentence completion of current incarceration period
   - name: CICONVDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Oldest conviction date
   - name: TOTSENCMP
@@ -151,19 +151,19 @@ columns:
     description: |-
       Last ruling prd component
   - name: GIRPED
-    is_datetime: True
+    field_type: datetime
     description: |-
       Final ruling parole eligibility date
   - name: GIRTRD
-    is_datetime: True
+    field_type: datetime
     description: |-
       Final ruling tentative release date
   - name: GIRPRD
-    is_datetime: True
+    field_type: datetime
     description: |-
       Final ruling projected release date
   - name: GIRMAX
-    is_datetime: True
+    field_type: datetime
     description: |-
       Final ruling max release date
   - name: CIGTLAW
@@ -173,7 +173,7 @@ columns:
     description: |-
       Days served in DOC custody
   - name: CIXCALDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date tentative/projected release dates last computed
   - name: GTONOFF
@@ -183,7 +183,7 @@ columns:
     description: |-
       Good time rate / earned time level code
   - name: CIGTDATE
-    is_datetime: True
+    field_type: datetime
     description: |-
       Last date on/off gain time
   - name: TOTINFRAC
@@ -193,11 +193,11 @@ columns:
     description: |-
       Latest discipline infraction
   - name: LSTINFRDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Last discipline infraction date
   - name: CILPENDT
-    is_datetime: True
+    field_type: datetime
     description: |-
       Date of last arrest on parole
   - name: REVIEWSFL
