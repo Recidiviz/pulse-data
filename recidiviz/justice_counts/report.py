@@ -106,6 +106,26 @@ class ReportInterface:
         )
 
     @staticmethod
+    def get_reports_for_agency_dashboard(
+        session: Session,
+        agency_id: int,
+    ) -> List[schema.Report]:
+        """Returns published reports for specified agency. To improve performance,
+        rather than returning fully instantiated report objects, we return a tuple
+        containing just the properties we need.
+        """
+        return (
+            session.query(
+                schema.Report.id,
+                schema.Report.type,
+                schema.Report.date_range_start,
+                schema.Report.date_range_end,
+            )
+            .filter(schema.Report.status == schema.ReportStatus.PUBLISHED)
+            .filter(schema.Report.source_id == agency_id)
+        ).all()
+
+    @staticmethod
     def get_reports_by_agency_ids(
         session: Session,
         agency_ids: List[int],

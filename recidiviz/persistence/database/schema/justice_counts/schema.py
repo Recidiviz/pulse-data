@@ -738,15 +738,19 @@ class Datapoint(JusticeCountsBase):
             return value
         if self.context_key is None or self.value_type == ValueType.NUMBER:
             try:
-                if value[-2:] == ".0":
-                    value = int(value[0:-2])
-                else:
-                    value = float(value)
+                float_value = float(value)
+
+                if float_value.is_integer():
+                    return int(float_value)
+
+                return float_value
+
             except ValueError as e:
                 if status == ReportStatus.PUBLISHED and use_value is None:
                     raise ValueError(
                         f"Datapoint represents a float value, but is a string. Datapoint ID: {self.id}, value: {value}",
                     ) from e
+
         return value
 
     def get_dimension_id_and_member(

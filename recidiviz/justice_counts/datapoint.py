@@ -115,6 +115,30 @@ class DatapointInterface:
         ).all()
         return filter_deprecated_datapoints(datapoints=datapoints)
 
+    @staticmethod
+    def get_datapoints_for_agency_dashboard(
+        session: Session,
+        agency_id: int,
+        report_ids: List[int],
+    ) -> List[schema.Datapoint]:
+        """Returns datapoints that we need to render the agency dashboard.
+        This includes both:
+            - Datapoints belonging to one of the specified reports
+            (We only want datapoints belonging to published reports)
+            - Agency datapoints
+        To improve performance, rather than returning fully instantiated
+        datapoint objects, we return a tuple of their properties.
+        """
+        return session.query(*schema.Datapoint.__table__.columns).filter(
+            # Published report datapoints
+            (schema.Datapoint.report_id.in_(report_ids))
+            # Agency datapoints
+            | (
+                (schema.Datapoint.source_id == agency_id)
+                & (schema.Datapoint.is_report_datapoint == false())
+            )
+        )
+
     ### Export to the FE ###
 
     @staticmethod
@@ -141,6 +165,11 @@ class DatapointInterface:
             disaggregation_display_name = dimension.human_readable_name()
             dimension_display_name = dimension.dimension_value
 
+        # If the datapoint is a true schema.Datapoint object, we can call
+        # methods like datapoint.get_value(). Otherwise we can't. Sometimes
+        # we prefer to work with tuples for performance reasons.
+        datapoint_is_instantiated = isinstance(datapoint, schema.Datapoint)
+
         return {
             "id": datapoint.id,
             "report_id": datapoint.report_id,
@@ -151,9 +180,11 @@ class DatapointInterface:
             "metric_display_name": metric_display_name,
             "disaggregation_display_name": disaggregation_display_name,
             "dimension_display_name": dimension_display_name,
-            "value": datapoint.get_value(),
+            "value": datapoint.get_value()
+            if datapoint_is_instantiated
+            else DatapointInterface.string_to_number(datapoint.value),
             "old_value": datapoint.get_value(use_value=old_value)
-            if old_value is not None
+            if datapoint_is_instantiated and old_value is not None
             else None,
             "is_published": is_published,
             "frequency": frequency.value,
@@ -207,7 +238,9 @@ class DatapointInterface:
                         (
                             dimension_id,
                             dimension_member,
-                        ) = datapoint.get_dimension_id_and_member()
+                        ) = DatapointInterface.get_dimension_id_and_member(
+                            dimension_identifier_to_member=datapoint.dimension_identifier_to_member
+                        )
                         if dimension_id is not None:
                             dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id][
                                 dimension_member  # type: ignore[index]
@@ -228,7 +261,9 @@ class DatapointInterface:
                     (
                         dimension_id,
                         dimension_member,
-                    ) = datapoint.get_dimension_id_and_member()
+                    ) = DatapointInterface.get_dimension_id_and_member(
+                        dimension_identifier_to_member=datapoint.dimension_identifier_to_member
+                    )
                     if dimension_member is None or dimension_id is None:
                         raise JusticeCountsServerError(
                             code="invalid_datapoint",
@@ -442,12 +477,14 @@ class DatapointInterface:
     def get_metric_settings_by_agency(
         session: Session,
         agency: schema.Agency,
+        agency_datapoints: Optional[List[Any]] = None,
     ) -> List[MetricInterface]:
         """Returns a list of MetricInterfaces representing agency datapoints
         that represent metric settings - not metric data - for the agency provided."""
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=session, agency_id=agency.id
-        )
+        if agency_datapoints is None:
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=session, agency_id=agency.id
+            )
         metric_key_to_datapoints = DatapointInterface.build_metric_key_to_datapoints(
             datapoints=agency_datapoints
         )
@@ -848,3 +885,38 @@ class DatapointInterface:
             )
         }
         return metric_key_to_agency_datapoints
+
+    @staticmethod
+    def string_to_number(value: str) -> Any:
+        """Converts a string representation of a number to an int or float.
+        NOTE: This method is similar to schema.Datapoint.get_value.
+        The main difference is that it does not require an instantiated datapoint
+        object to work.
+        TODO(#22410): Dedupe these methods
+        """
+        if value is None or not value.isnumeric():
+            return value
+
+        float_value = float(value)
+
+        if float_value.is_integer():
+            return int(float_value)
+
+        return float_value
+
+    @staticmethod
+    def get_dimension_id_and_member(
+        dimension_identifier_to_member: Dict[str, Any],
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """NOTE: This method is identical to schema.Datapoint.get_dimension_id_and_member.
+        The only difference is that it does not require an instantiated datapoint
+        object to work.
+        TODO(#22410): Dedupe these methods
+        """
+        if dimension_identifier_to_member is None:
+            return (None, None)
+        if len(dimension_identifier_to_member) > 1:
+            raise ValueError(
+                "Datapoints with more than one dimension are not currently supported."
+            )
+        return list(dimension_identifier_to_member.items())[0]

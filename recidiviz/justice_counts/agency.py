@@ -19,7 +19,7 @@
 import logging
 from typing import List, Optional
 
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -87,12 +87,14 @@ class AgencyInterface:
         return agencies
 
     @staticmethod
-    def get_agency_by_name(session: Session, name: str) -> schema.Agency:
-        return (
-            session.query(schema.Agency)
-            .filter(schema.Agency.name == name)
-            .one_or_none()
-        )
+    def get_agency_by_name(
+        session: Session, name: str, with_settings: bool = False
+    ) -> schema.Agency:
+        # ilike is case insensitive
+        q = session.query(schema.Agency).filter(schema.Agency.name.ilike(name))
+        if with_settings:
+            q = q.options(joinedload(schema.Agency.agency_settings))
+        return q.one_or_none()
 
     @staticmethod
     def get_agencies_by_name(session: Session, names: List[str]) -> List[schema.Agency]:
