@@ -58,5 +58,5 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     timeout = "3600s"
   }
 
-  depends_on = [google_artifact_registry_repository.asset_generation]
+  depends_on = [google_artifact_registry_repository.repositories["asset_generation"]]
 }
