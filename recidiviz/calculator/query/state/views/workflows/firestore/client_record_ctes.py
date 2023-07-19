@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import 
 )
 
 _CLIENT_RECORD_SUPERVISION_CTE = f"""
+    -- TODO(#22427) Once PersonParole has badge numbers, delete this and just use the table directly 
     ca_person_parole_imputed_badges AS (
         SELECT
             OffenderId, 
