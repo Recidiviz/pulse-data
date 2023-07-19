@@ -348,12 +348,13 @@ def _generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
 
 
 def generate_lookml_views(looker_dir: str) -> None:
-    """Produce LookML View files for a given state, writing to looker_dir/views/raw_data/
+    """Produce LookML View files for a given state, writing up-to-date
+    .view.lkml files in looker_dir/views/raw_data/
 
-    looker_dir: Local path to root directory of the Looker repo"""
+    looker_dir: Local path to root directory of the Looker repo
+    """
 
     view_dir = os.path.join(looker_dir, "views", "raw_data")
-
     shared_fields_view = _generate_shared_fields_view()
     shared_fields_view.write(view_dir, source_script_path=__file__)
 
