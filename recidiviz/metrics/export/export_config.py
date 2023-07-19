@@ -390,7 +390,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     # Impact Views
     ExportViewCollectionConfig(
         view_builders_to_export=IMPACT_DASHBOARD_VIEW_BUILDERS,
-        output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+        output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="IMPACT",
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: []
