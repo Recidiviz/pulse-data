@@ -42,6 +42,7 @@ WITH hearing_tbl AS (
         pei.person_id,
         DATE(HearingDate) AS hearing_date,
         DATE(ParoleDecisionDate) AS decision_date,
+        HearingOfficer AS recommendation_officer_external_id,
 
         -- recommended decision
         CASE
@@ -110,7 +111,7 @@ WITH hearing_tbl AS (
 SELECT
     a.state_code,
     a.person_id,
-    
+
     -- CL1SS details
     compartment_level_1_super_session_id,
     start_date AS incarceration_start_date,
@@ -125,6 +126,7 @@ SELECT
     decision_date,
     
     -- decision information
+    a.recommendation_officer_external_id, 
     recommended_decision,
     recommended_decision_raw,
     decision,
