@@ -81,6 +81,8 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             data={
                 "report": report,
                 "config": self.config,
+                "review_month": 6,
+                "review_year": 2023,
             },
         )
         context = OutliersSupervisionOfficerSupervisorContext(self.batch, recipient)

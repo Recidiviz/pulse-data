@@ -239,6 +239,7 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             if report_type not in [
                 ReportType.POMonthlyReport,
                 ReportType.OverdueDischargeAlert,
+                ReportType.OutliersSupervisionOfficerSupervisor,
             ]:
                 raise InvalidReportTypeError(
                     f"Invalid report type: Sending emails with {report_type} is not implemented yet."
