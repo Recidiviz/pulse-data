@@ -33,6 +33,7 @@ from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_ap
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.workflows.api_schemas import (
     ProxySchema,
+    TwilioSmsStatusResponseSchema,
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
@@ -44,6 +45,7 @@ from recidiviz.case_triage.workflows.constants import (
 from recidiviz.case_triage.workflows.interface import (
     WorkflowsUsTnExternalRequestInterface,
 )
+from recidiviz.case_triage.workflows.twilio_validation import WorkflowsTwilioValidator
 from recidiviz.case_triage.workflows.utils import (
     allowed_twilio_dev_recipient,
     get_sms_request_firestore_path,
@@ -93,6 +95,7 @@ def create_workflows_api_blueprint() -> Blueprint:
     """Creates the API blueprint for Workflows"""
     workflows_api = Blueprint("workflows", __name__)
     proxy_endpoint = "workflows.proxy"
+    webhook_endpoint = "workflows.handle_twilio_status"
 
     handle_authorization = build_authorization_handler(
         on_successful_authorization, "dashboard_auth0"
@@ -100,10 +103,17 @@ def create_workflows_api_blueprint() -> Blueprint:
     handle_recidiviz_only_authorization = build_authorization_handler(
         on_successful_authorization_recidiviz_only, "dashboard_auth0"
     )
+    twilio_validator = WorkflowsTwilioValidator()
 
     @workflows_api.before_request
     def validate_request() -> None:
         if request.method == "OPTIONS":
+            return
+        if request.endpoint == webhook_endpoint:
+            signature = request.headers["X-Twilio-Signature"]
+            twilio_validator.validate(
+                url=request.url, params=request.json, signature=signature
+            )
             return
         if request.endpoint == proxy_endpoint:
             handle_recidiviz_only_authorization()
@@ -346,6 +356,8 @@ def create_workflows_api_blueprint() -> Blueprint:
         mid = str(uuid.uuid4())
         firestore_client = FirestoreClientImpl()
         firestore_path = get_sms_request_firestore_path(state, recipient_external_id)
+        client_firestore_id = f"{state.lower()}_{recipient_external_id}"
+        month_code = datetime.date.today().strftime("%m_%Y")
 
         try:
             cloud_task_manager = SingleCloudTaskQueueManager(
@@ -363,6 +375,8 @@ def create_workflows_api_blueprint() -> Blueprint:
                     "mid": mid,
                     "message": message,
                     "recipient": f"+1{recipient_phone_number}",
+                    "client_firestore_id": client_firestore_id,
+                    "month_code": month_code,
                     "recipient_external_id": recipient_external_id,
                 },
                 headers=headers_copy,
@@ -412,6 +426,7 @@ def create_workflows_api_blueprint() -> Blueprint:
         # Validate schema
         data = load_api_schema(WorkflowsSendSmsRequestSchema, cloud_task_body)
 
+        mid = data["mid"]
         message = data["message"]
         recipient = data["recipient"]
         recipient_external_id = data["recipient_external_id"]
@@ -430,11 +445,11 @@ def create_workflows_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
-        sid = get_secret("twilio_sid")
+        account_sid = get_secret("twilio_sid")
         auth_token = get_secret("twilio_auth_token")
         messaging_service_sid = get_secret("twilio_us_ca_messaging_service_sid")
 
-        if not sid or not auth_token or not messaging_service_sid:
+        if not account_sid or not auth_token or not messaging_service_sid:
             return jsonify_response(
                 "Server missing API credentials",
                 HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -444,10 +459,13 @@ def create_workflows_api_blueprint() -> Blueprint:
         firestore_path = get_sms_request_firestore_path(state, recipient_external_id)
 
         try:
-            client = TwilioClient(sid, auth_token)
+            client = TwilioClient(account_sid, auth_token)
 
-            client.messages.create(
-                body=message, messaging_service_sid=messaging_service_sid, to=recipient
+            response_message = client.messages.create(
+                body=message,
+                messaging_service_sid=messaging_service_sid,
+                to=recipient,
+                status_callback=f"{cloud_run_metadata.url}/workflows/webhook/twilio_status?mid={mid}",
             )
 
             client.messages.create(
@@ -455,8 +473,20 @@ def create_workflows_api_blueprint() -> Blueprint:
                 messaging_service_sid=messaging_service_sid,
                 to=recipient,
             )
+
+            firestore_client.set_document(
+                firestore_path,
+                {
+                    "messageDetails.lastUpdated": datetime.datetime.now(
+                        datetime.timezone.utc
+                    ),
+                    "messageDetails.sid": response_message.sid,
+                },
+                merge=True,
+            )
+
         except Exception as e:
-            logging.error("Sending message to Twilio failed. Error: %s", e)
+            logging.error("Error sending sms request to Twilio. Error: %s", e)
             firestore_client.set_document(
                 firestore_path,
                 {
@@ -469,16 +499,28 @@ def create_workflows_api_blueprint() -> Blueprint:
                 },
                 merge=True,
             )
-
             return jsonify_response(
-                "Error enqueuing message", HTTPStatus.INTERNAL_SERVER_ERROR
+                "Error sending sms request to Twilio", HTTPStatus.INTERNAL_SERVER_ERROR
             )
 
-        return jsonify_response("Successfully enqueued sms message", HTTPStatus.OK)
+        return jsonify_response(
+            "Successfully sent sms request to twilio", HTTPStatus.OK
+        )
 
     @workflows_api.get("/ip")
     def ip() -> Response:
         ip_response = requests.get("http://curlmyip.org", timeout=10)
         return jsonify({"ip": ip_response.text})
+
+    @workflows_api.post("/webhook/twilio_status")
+    @requires_api_schema(TwilioSmsStatusResponseSchema)
+    def handle_twilio_status() -> Response:
+        mid = request.args.get("mid")
+        data = load_api_schema(TwilioSmsStatusResponseSchema, g.api_data)
+
+        logging.info("twilio_status response: [%d]", data)
+        logging.info("twilio mid: [%s]", mid)
+
+        return make_response(jsonify(), HTTPStatus.NO_CONTENT)
 
     return workflows_api
