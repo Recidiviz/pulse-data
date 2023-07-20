@@ -74,7 +74,6 @@ def _refresh_token_if_needed(fn: Callable) -> Callable:
     def decorated(
         self: "Auth0Client", *args: List[Any], **kwargs: Dict[str, Any]
     ) -> Callable:
-
         try:
             return fn(self, *args, **kwargs)
         except Auth0Error as e:
@@ -157,7 +156,14 @@ class Auth0Client:
             response = self.client.users.list(
                 page=page,
                 per_page=MAX_RESULTS_PER_PAGE,
-                fields=["user_id", "name", "email", "app_metadata"],
+                fields=[
+                    "user_id",
+                    "name",
+                    "email",
+                    "app_metadata",
+                    "created_at",
+                    "last_login",
+                ],
             )
             users = response["users"]
             all_users.extend(users)
