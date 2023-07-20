@@ -220,7 +220,10 @@ def load_files_from_storage(bucket_name: str, batch_id_path: str) -> Dict[str, s
 
 
 def get_sender_info(report_type: ReportType) -> Tuple[str, str]:
-    if report_type == ReportType.POMonthlyReport:
+    if report_type in [
+        ReportType.POMonthlyReport,
+        ReportType.OutliersSupervisionOfficerSupervisor,
+    ]:
         try:
             from_email_address = utils.get_env_var("FROM_EMAIL_ADDRESS")
             from_email_name = utils.get_env_var("FROM_EMAIL_NAME")
@@ -230,15 +233,9 @@ def get_sender_info(report_type: ReportType) -> Tuple[str, str]:
                 "Exiting."
             )
             raise
-    elif report_type == ReportType.OverdueDischargeAlert:
-        try:
-            from_email_address = utils.get_env_var("ALERTS_FROM_EMAIL_ADDRESS")
-            from_email_name = utils.get_env_var("ALERTS_FROM_EMAIL_NAME")
-        except KeyError:
-            logging.error(
-                "Unable to get a required environment variables `FROM_EMAIL_ADDRESS` or `FROM_EMAIL_NAME`. "
-                "Exiting."
-            )
-            raise
+
+    else:
+        logging.error("Unsupported report type: %s", report_type.value)
+        raise ValueError(f"Unsupported report type: {report_type.value}")
 
     return from_email_name, from_email_address

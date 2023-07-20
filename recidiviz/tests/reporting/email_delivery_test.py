@@ -43,7 +43,7 @@ class EmailDeliveryTest(TestCase):
         self.batch = Batch(
             state_code=self.state_code,
             batch_id=self.batch_id,
-            report_type=ReportType.POMonthlyReport,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
 
         self.sendgrid_client_patcher = patch(

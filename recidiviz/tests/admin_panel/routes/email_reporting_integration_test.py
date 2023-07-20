@@ -17,7 +17,6 @@
 
 """ Integration tests for the email pipelines """
 import json
-import os
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
@@ -178,77 +177,4 @@ class EmailReportingIntegrationTests(TestCase):
                 blob_name="US_ID/20211025000000/metadata.json",
             ),
             self.gcs_file_system.all_paths,
-        )
-
-    @freezegun.freeze_time("2021-10-25 00:00")
-    @patch(
-        "recidiviz.reporting.sendgrid_client_wrapper.SendGridClientWrapper.send_message"
-    )
-    def test_integration_overdue_discharge(self, send_message_mock: MagicMock) -> None:
-        report_type = ReportType.OverdueDischargeAlert
-        expected_batch = Batch(
-            state_code=StateCode.US_ID,
-            batch_id="20211025000000",
-            report_type=report_type,
-        )
-
-        self.write_fixture_to_report_data_bucket(expected_batch)
-
-        response = self.client.post(
-            self.generate_emails_url,
-            json={
-                "state_code": self.state_code.value,
-                "reportType": report_type.value,
-            },
-        )
-        self.assertEqual(response.status_code, 200)
-
-        # The batch report data was archived
-        self.assertIn(
-            GcsfsFilePath(
-                bucket_name="test-project-report-data-archive",
-                blob_name=f"US_ID/{expected_batch.batch_id}.json",
-            ),
-            self.gcs_file_system.all_paths,
-        )
-
-        # An email was rendered for the batch
-        self.assertIn(
-            GcsfsFilePath(
-                bucket_name="test-project-report-html",
-                blob_name=f"US_ID/{expected_batch.batch_id}/html/test@recidiviz.org.html",
-            ),
-            self.gcs_file_system.all_paths,
-        )
-
-        # The metadata file was created
-        self.assertIn(
-            GcsfsFilePath(
-                bucket_name="test-project-report-html",
-                blob_name=f"US_ID/{expected_batch.batch_id}/metadata.json",
-            ),
-            self.gcs_file_system.all_paths,
-        )
-
-        os.environ.setdefault(
-            "ALERTS_FROM_EMAIL_ADDRESS", "alerts-sender@recidiviz.org"
-        )
-        os.environ.setdefault("ALERTS_FROM_EMAIL_NAME", "Recidiviz Alerts Sender")
-
-        self.client.post(
-            self.send_emails_url,
-            json={
-                "batchId": expected_batch.batch_id,
-                "reportType": expected_batch.report_type.value,
-            },
-        )
-
-        send_message_mock.assert_called_once()
-        self.assertEqual(
-            send_message_mock.call_args.kwargs["from_email"],
-            "alerts-sender@recidiviz.org",
-        )
-        self.assertEqual(
-            send_message_mock.call_args.kwargs["from_email_name"],
-            "Recidiviz Alerts Sender",
         )
