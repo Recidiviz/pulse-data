@@ -166,6 +166,7 @@ def execute_update_normalized_state() -> TaskGroup:
             "python",
             "-m",
             "recidiviz.entrypoints.normalization.update_normalized_state_dataset",
+            f"--ingest_instance={get_ingest_instance(dag_run)}",
             *additional_args,
         ]
 

@@ -31,8 +31,8 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager impo
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.normalized_state_update_lock_manager import (
-    NORMALIZED_STATE_UPDATE_LOCK_NAME,
     NormalizedStateUpdateLockManager,
+    normalization_lock_name_for_ingest_instance,
 )
 
 
@@ -47,7 +47,9 @@ class NormalizedStateUpdateLockManagerTest(unittest.TestCase):
             "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build",
             Mock(return_value=self.fake_fs),
         ):
-            self.lock_manager = NormalizedStateUpdateLockManager()
+            self.lock_manager = NormalizedStateUpdateLockManager(
+                DirectIngestInstance.PRIMARY
+            )
             self.lock_bucket = self.lock_manager.lock_manager.bucket_name
             self.cloudsql_lock_manager = CloudSqlToBQLockManager()
 
@@ -59,7 +61,9 @@ class NormalizedStateUpdateLockManagerTest(unittest.TestCase):
         expected_paths = [
             GcsfsFilePath(
                 bucket_name=self.lock_bucket,
-                blob_name=NORMALIZED_STATE_UPDATE_LOCK_NAME,
+                blob_name=normalization_lock_name_for_ingest_instance(
+                    DirectIngestInstance.PRIMARY
+                ),
             )
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)

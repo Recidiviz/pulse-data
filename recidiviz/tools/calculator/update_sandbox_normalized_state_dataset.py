@@ -42,12 +42,14 @@ python -m recidiviz.tools.calculator.update_sandbox_normalized_state_dataset \
     --project_id recidiviz-staging \
     --state_code US_MO \
     --sandbox_dataset_prefix colin_foo
+    --ingest_instance secondary (optional)
 """
 
 import argparse
 import logging
 
 from recidiviz.common.constants import states
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.calculation_data_storage_manager import (
     build_address_overrides_for_update,
     update_normalized_state_dataset,
@@ -57,6 +59,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 def create_parser() -> argparse.ArgumentParser:
+    """Create an argument parser for this script."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -70,9 +73,8 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--state_code",
         dest="state_code",
-        choices=[state.value for state in states.StateCode],
+        choices=list(states.StateCode),
         help="State code to use when filtering dataset to create metrics export",
-        type=str,
         required=False,
     )
 
@@ -84,6 +86,14 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
 
+    parser.add_argument(
+        "--ingest_instance",
+        dest="ingest_instance",
+        choices=list(DirectIngestInstance),
+        help="The instance of the direct ingest pipeline the data being updated came from. Defaults to PRIMARY.",
+        default=DirectIngestInstance.PRIMARY,
+    )
+
     return parser
 
 
@@ -92,9 +102,10 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
 
     with local_project_id_override(args.project_id):
-        state_codes = frozenset({states.StateCode(args.state_code)})
+        state_codes = frozenset({args.state_code})
         update_normalized_state_dataset(
-            state_codes_filter=state_codes,
+            ingest_instance=args.ingest_instance,
+            state_codes_filter=state_codes if args.state_code else None,
             address_overrides=build_address_overrides_for_update(
                 dataset_override_prefix=args.sandbox_dataset_prefix,
                 states_to_override=state_codes,

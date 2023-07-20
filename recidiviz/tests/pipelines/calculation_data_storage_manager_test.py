@@ -35,6 +35,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines import calculation_data_storage_manager, dataflow_config
 from recidiviz.pipelines.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
@@ -170,7 +171,9 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
         # The FS on this lock manager is mocked but it otherwise operates like a normal
         # lock manager.
-        self.mock_lock_manager = NormalizedStateUpdateLockManager()
+        self.mock_lock_manager = NormalizedStateUpdateLockManager(
+            DirectIngestInstance.PRIMARY
+        )
 
         app = Flask(__name__)
         app.register_blueprint(calculation_data_storage_manager_blueprint)
@@ -436,7 +439,9 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             NormalizedStateIncarcerationPeriod
         )
 
-        calculation_data_storage_manager.update_normalized_state_dataset()
+        calculation_data_storage_manager.update_normalized_state_dataset(
+            DirectIngestInstance.PRIMARY
+        )
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [
@@ -537,6 +542,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
         states = frozenset({StateCode.US_XX})
         calculation_data_storage_manager.update_normalized_state_dataset(
+            DirectIngestInstance.PRIMARY,
             state_codes_filter=states,
             address_overrides=build_address_overrides_for_update(
                 dataset_override_prefix=OVERRIDE_PREFIX, states_to_override=states
@@ -630,7 +636,9 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             NormalizedStateIncarcerationPeriod
         )
 
-        calculation_data_storage_manager.update_normalized_state_dataset()
+        calculation_data_storage_manager.update_normalized_state_dataset(
+            DirectIngestInstance.PRIMARY
+        )
 
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [
@@ -692,7 +700,9 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_lock_manager.acquire_lock(lock_id="any_lock_id")
 
         with self.assertRaises(GCSPseudoLockAlreadyExists):
-            calculation_data_storage_manager.update_normalized_state_dataset()
+            calculation_data_storage_manager.update_normalized_state_dataset(
+                DirectIngestInstance.PRIMARY
+            )
 
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager.update_normalized_state_dataset"
@@ -704,9 +714,35 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         execute_update_normalized_state_dataset is called."""
 
         execute_update_normalized_state_dataset(
-            state_codes_filter=None, sandbox_dataset_prefix=None
+            DirectIngestInstance.PRIMARY,
+            state_codes_filter=None,
+            sandbox_dataset_prefix=None,
         )
-        mock_update.assert_called_with(address_overrides=None, state_codes_filter=None)
+        mock_update.assert_called_with(
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            address_overrides=None,
+            state_codes_filter=None,
+        )
+
+    @patch(
+        "recidiviz.pipelines.calculation_data_storage_manager.update_normalized_state_dataset"
+    )
+    def test_execute_update_normalized_state_dataset_endpoint_secondary(
+        self, mock_update: mock.MagicMock
+    ) -> None:
+        """Tests that the _update_normalized_state_dataset function is called when the
+        execute_update_normalized_state_dataset is called."""
+
+        execute_update_normalized_state_dataset(
+            DirectIngestInstance.SECONDARY,
+            state_codes_filter=None,
+            sandbox_dataset_prefix="my_prefix",
+        )
+        mock_update.assert_called_with(
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            address_overrides=mock.ANY,
+            state_codes_filter=mock.ANY,
+        )
 
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager.build_address_overrides_for_update"
@@ -721,11 +757,13 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         execute_update_normalized_state endpoint is hit."""
         expected_state_codes_filter = [StateCode.US_XX]
         execute_update_normalized_state_dataset(
+            DirectIngestInstance.SECONDARY,
             state_codes_filter=expected_state_codes_filter,
             sandbox_dataset_prefix="test_prefix",
         )
         mock_update.assert_called_with(
             address_overrides=mock.ANY,
+            ingest_instance=DirectIngestInstance.SECONDARY,
             state_codes_filter=frozenset(expected_state_codes_filter),
         )
 
@@ -747,6 +785,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             expected_state_codes_filter = [StateCode.US_XX]
             execute_update_normalized_state_dataset(
+                DirectIngestInstance.PRIMARY,
                 state_codes_filter=expected_state_codes_filter,
                 sandbox_dataset_prefix=None,
             )
@@ -766,10 +805,13 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         """
         states_codes_filter = frozenset(get_normalization_pipeline_enabled_states())
         execute_update_normalized_state_dataset(
-            state_codes_filter=None, sandbox_dataset_prefix="test_prefix"
+            DirectIngestInstance.PRIMARY,
+            state_codes_filter=None,
+            sandbox_dataset_prefix="test_prefix",
         )
         mock_update.assert_called_with(
             address_overrides=mock.ANY,
+            ingest_instance=DirectIngestInstance.PRIMARY,
             state_codes_filter=states_codes_filter,
         )
 

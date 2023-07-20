@@ -20,6 +20,7 @@ import argparse
 import logging
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.calculation_data_storage_manager import (
     execute_update_normalized_state_dataset,
 )
@@ -33,6 +34,13 @@ def parse_arguments() -> argparse.Namespace:
         help="the state to update",
         type=StateCode,
         choices=list(StateCode),
+    )
+    parser.add_argument(
+        "--ingest_instance",
+        help="The ingest instance data is from",
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
+        required=True,
     )
     parser.add_argument(
         "--sandbox_prefix",
@@ -50,6 +58,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     execute_update_normalized_state_dataset(
-        [args.state_code_filter] if args.state_code_filter else None,
-        args.sandbox_prefix,
+        ingest_instance=args.ingest_instance,
+        state_codes_filter=[args.state_code_filter] if args.state_code_filter else None,
+        sandbox_dataset_prefix=args.sandbox_prefix,
     )
