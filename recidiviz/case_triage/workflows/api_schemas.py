@@ -112,7 +112,6 @@ class WorkflowsEnqueueSmsRequestSchema(CamelOrSnakeCaseSchema):
     recipient_phone_number = fields.Str(required=True, validate=validate_phone_number)
     recipient_external_id = fields.Str(required=True)
     sender_id = fields.Str(required=True)
-    mid = fields.Str(required=True)
 
 
 class TwilioSmsStatusResponseSchema(CamelOrSnakeCaseSchema):

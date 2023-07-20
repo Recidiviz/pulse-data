@@ -265,7 +265,6 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
     INVALID_NUMBER_AREA_CODE_STARTS_WITH_0 = "0223334444"
     INVALID_NUMBER_FORMATTED = "(222) 333-4444"
     INVALID_NUMBER_E164 = "+12223334444"
-    VALID_MID = "ABC-123"
 
     test_valid_data = valid_schema_test(
         {
@@ -273,7 +272,6 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "I must not fear",
             "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
-            "mid": VALID_MID,
         }
     )
 
@@ -334,15 +332,6 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
         {
             "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
             "message": "Only I will remain",
-            "sender_id": "rev.mum.mohiam",
-        }
-    )
-
-    test_invalid_missing_mid = invalid_schema_test(
-        {
-            "recipient_phone_number": VALID_NUMBER,
-            "message": "Fear is the mind-killer",
-            "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
         }
     )
