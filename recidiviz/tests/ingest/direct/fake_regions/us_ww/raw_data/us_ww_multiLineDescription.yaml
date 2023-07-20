@@ -22,3 +22,8 @@ columns:
       literally and trailing/leading whitespace is removed.
   - name: undocumented_column
 encoding: ISO-456-7
+table_relationships:
+  - foreign_table: tagNotHistorical
+    cardinality: ONE_TO_MANY
+    join_logic:
+      - multiLineDescription.col_name_1a = tagNotHistorical.column_1
