@@ -1324,20 +1324,23 @@ def get_api_blueprint(
         """Download a spreadsheet from GCP and return the file.
         Used by the Uploaded Files page.
         """
-        request_json = assert_type(request.values, dict)
-        user = UserAccountInterface.get_user_by_auth0_user_id(
-            session=current_session,
-            auth0_user_id=get_auth0_user_id(request_dict=request_json),
-        )
-        agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+        try:
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+            agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
 
-        file = SpreadsheetInterface.download_spreadsheet(
-            spreadsheet_id=int(spreadsheet_id),
-            agency_ids=agency_ids,
-            session=current_session,
-        )
+            file = SpreadsheetInterface.download_spreadsheet(
+                spreadsheet_id=int(spreadsheet_id),
+                agency_ids=agency_ids,
+                session=current_session,
+            )
 
-        return send_file(path_or_file=file.local_file_path, as_attachment=True)
+            return send_file(path_or_file=file.local_file_path, as_attachment=True)
+        except Exception as e:
+            raise _get_error(error=e) from e
 
     @api_blueprint.route("/spreadsheets", methods=["POST"])
     @auth_decorator
@@ -1345,122 +1348,127 @@ def get_api_blueprint(
         """Upload a spreadsheet for an agency.
         Used by the Bulk Upload flow.
         """
-        data = assert_type(request.form, dict)
-        agency_id = int(data["agency_id"])
-        system = data["system"]
-        auth0_user_id = get_auth0_user_id(request_dict=data)
-        user = UserAccountInterface.get_user_by_auth0_user_id(
-            session=current_session,
-            auth0_user_id=auth0_user_id,
-        )
-        file = request.files["file"]
-        ingest_on_upload = data.get("ingest_on_upload")
-        if file is None:
-            raise JusticeCountsServerError(
-                "no_file_on_upload", "No file was sent for upload."
-            )
-        if not allowed_file(file.filename):
-            raise JusticeCountsServerError(
-                "file_type_error",
-                "Invalid file type: All files must be of type .xlsx or .csv.",
-            )
-
-        xls, new_file_name = SpreadsheetInterface.convert_file_to_excel(
-            file=file, filename=file.filename  # type: ignore[arg-type]
-        )
-
-        # Upload spreadsheet to GCS
-        spreadsheet = SpreadsheetInterface.upload_spreadsheet(
-            session=current_session,
-            file_storage=file,
-            agency_id=agency_id,
-            auth0_user_id=auth0_user_id,
-            system=system,
-        )
-        if ingest_on_upload == "True":
-            agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=agency_id
-            )
-            metric_key_to_agency_datapoints = (
-                DatapointInterface.get_metric_key_to_agency_datapoints(
-                    session=current_session, agency_id=agency.id
-                )
-            )
-            # get metric definitions for spreadsheet
-            metric_definitions = (
-                SpreadsheetInterface.get_metric_definitions_for_workbook(
-                    agency=agency, system=schema.System[system]
-                )
-            )
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-                updated_reports,
-                existing_report_ids,
-                unchanged_reports,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
+        try:
+            data = assert_type(request.form, dict)
+            agency_id = int(data["agency_id"])
+            system = data["system"]
+            auth0_user_id = get_auth0_user_id(request_dict=data)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
                 session=current_session,
-                spreadsheet=spreadsheet,
                 auth0_user_id=auth0_user_id,
-                xls=xls,
-                agency=agency,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                metric_definitions=metric_definitions,
-                filename=new_file_name,
+            )
+            file = request.files["file"]
+            ingest_on_upload = data.get("ingest_on_upload")
+            if file is None:
+                raise JusticeCountsServerError(
+                    "no_file_on_upload", "No file was sent for upload."
+                )
+            if not allowed_file(file.filename):
+                raise JusticeCountsServerError(
+                    "file_type_error",
+                    "Invalid file type: All files must be of type .xlsx or .csv.",
+                )
+
+            xls, new_file_name = SpreadsheetInterface.convert_file_to_excel(
+                file=file, filename=file.filename  # type: ignore[arg-type]
             )
 
-            current_session.commit()
-
-            child_agencies = AgencyInterface.get_child_agencies_for_agency(
-                session=current_session, agency=agency
-            )
-
-            all_reports = ReportInterface.get_reports_by_agency_ids(
+            # Upload spreadsheet to GCS
+            spreadsheet = SpreadsheetInterface.upload_spreadsheet(
                 session=current_session,
-                agency_ids=[a.id for a in child_agencies] + [agency_id],
-                include_datapoints=False,
+                file_storage=file,
+                agency_id=agency_id,
+                auth0_user_id=auth0_user_id,
+                system=system,
             )
-
-            new_report_jsons = [
-                ReportInterface.to_json_response(
-                    report=report, editor_id_to_json={}, agency_name=report.source.name
+            if ingest_on_upload == "True":
+                agency = AgencyInterface.get_agency_by_id(
+                    session=current_session, agency_id=agency_id
                 )
-                for report in all_reports
-                if report.id not in existing_report_ids
-            ]
-            updated_report_jsons = [
-                ReportInterface.to_json_response(
-                    report=r, editor_id_to_json={}, agency_name=r.source.name
+                metric_key_to_agency_datapoints = (
+                    DatapointInterface.get_metric_key_to_agency_datapoints(
+                        session=current_session, agency_id=agency.id
+                    )
                 )
-                for r in updated_reports
-            ]
-            unchanged_report_jsons = [
-                ReportInterface.to_json_response(
-                    report=r, editor_id_to_json={}, agency_name=r.source.name
+                # get metric definitions for spreadsheet
+                metric_definitions = (
+                    SpreadsheetInterface.get_metric_definitions_for_workbook(
+                        agency=agency, system=schema.System[system]
+                    )
                 )
-                for r in unchanged_reports
-            ]
-
-            return jsonify(
-                SpreadsheetInterface.get_ingest_spreadsheet_json(
-                    metric_key_to_errors=metric_key_to_errors,
-                    metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                    metric_definitions=metric_definitions,
-                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                    updated_report_jsons=updated_report_jsons,
-                    new_report_jsons=new_report_jsons,
-                    unchanged_report_jsons=unchanged_report_jsons,
+                (
+                    metric_key_to_datapoint_jsons,
+                    metric_key_to_errors,
+                    updated_reports,
+                    existing_report_ids,
+                    unchanged_reports,
+                ) = SpreadsheetInterface.ingest_spreadsheet(
+                    session=current_session,
                     spreadsheet=spreadsheet,
+                    auth0_user_id=auth0_user_id,
+                    xls=xls,
+                    agency=agency,
+                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                    metric_definitions=metric_definitions,
+                    filename=new_file_name,
                 )
+
+                current_session.commit()
+
+                child_agencies = AgencyInterface.get_child_agencies_for_agency(
+                    session=current_session, agency=agency
+                )
+
+                all_reports = ReportInterface.get_reports_by_agency_ids(
+                    session=current_session,
+                    agency_ids=[a.id for a in child_agencies] + [agency_id],
+                    include_datapoints=False,
+                )
+
+                new_report_jsons = [
+                    ReportInterface.to_json_response(
+                        report=report,
+                        editor_id_to_json={},
+                        agency_name=report.source.name,
+                    )
+                    for report in all_reports
+                    if report.id not in existing_report_ids
+                ]
+                updated_report_jsons = [
+                    ReportInterface.to_json_response(
+                        report=r, editor_id_to_json={}, agency_name=r.source.name
+                    )
+                    for r in updated_reports
+                ]
+                unchanged_report_jsons = [
+                    ReportInterface.to_json_response(
+                        report=r, editor_id_to_json={}, agency_name=r.source.name
+                    )
+                    for r in unchanged_reports
+                ]
+
+                return jsonify(
+                    SpreadsheetInterface.get_ingest_spreadsheet_json(
+                        metric_key_to_errors=metric_key_to_errors,
+                        metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                        metric_definitions=metric_definitions,
+                        metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                        updated_report_jsons=updated_report_jsons,
+                        new_report_jsons=new_report_jsons,
+                        unchanged_report_jsons=unchanged_report_jsons,
+                        spreadsheet=spreadsheet,
+                    )
+                )
+            current_session.commit()
+            return jsonify(
+                SpreadsheetInterface.get_spreadsheets_json(
+                    spreadsheets=[spreadsheet],
+                    session=current_session,
+                    user=user,
+                ).pop()
             )
-        current_session.commit()
-        return jsonify(
-            SpreadsheetInterface.get_spreadsheets_json(
-                spreadsheets=[spreadsheet],
-                session=current_session,
-                user=user,
-            ).pop()
-        )
+        except Exception as e:
+            raise _get_error(error=e) from e
 
     @api_blueprint.route("/<spreadsheet_id>/bulk-upload-json", methods=["GET"])
     @auth_decorator
