@@ -62,7 +62,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.mock_table = self.mock_dataset_ref.table(self.mock_table_id)
         self.mock_schema = [
-            {"mode": "NULLABLE", "name": "fake_column", "type": "STRING"}
+            bigquery.SchemaField(
+                mode="NULLABLE", field_type="STRING", name="fake_column"
+            )
         ]
 
         self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
@@ -1083,8 +1085,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.update_table.assert_not_called()
 
     def test_update_schema_fails_on_duplicate_column(self) -> None:
-        """Tests that update_schema() throws if we are attempting to delete a column
-        when no_allowed_deletions is False.
+        """Tests that update_schema() throws if we are attempting to add two columns
+        with the same name.
         """
         new_schema_fields = [
             bigquery.SchemaField("field_1", "STRING"),
@@ -1097,6 +1099,33 @@ class BigQueryClientImplTest(unittest.TestCase):
             ValueError,
             r"Found multiple columns with name \[field_1\] in new schema for table "
             r"\[fake-dataset.test_table\].",
+        ):
+            self.bq_client.update_schema(
+                self.mock_dataset_id,
+                self.mock_table_id,
+                new_schema_fields,
+                allow_field_deletions=False,
+            )
+
+        self.mock_client.get_table.assert_not_called()
+
+        # No other work to remove or add fields is done
+        self.mock_client.query.assert_not_called()
+        self.mock_client.update_table.assert_not_called()
+
+    def test_update_schema_fails_on_long_description(self) -> None:
+        """Tests that update_schema() throws if we are attempting to add a column
+        with a description that goes above the max allowed limit.
+        """
+        new_schema_fields = [
+            bigquery.SchemaField("field_1", "STRING", description="a" * 1025),
+        ]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Attempting to set description for field \[field_1\] on table "
+            r"\[fake-dataset.test_table\] that is too long. Max allowed length is 1024 "
+            r"characters.",
         ):
             self.bq_client.update_schema(
                 self.mock_dataset_id,
