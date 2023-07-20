@@ -64,6 +64,9 @@ _clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaul
 BQ_CLIENT_MAX_POOL_CONNECTIONS = 128
 BQ_CLIENT_MAX_POOL_SIZE = 128
 
+# Maximum length for any column description on any column.
+BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH = 1024
+
 
 def client(project_id: str, region: str) -> bigquery.Client:
     if (
@@ -1158,7 +1161,13 @@ class BigQueryClientImpl(BigQueryClient):
         Cloud Storage source into the given BigQuery destination. Returns once the job
         has been started.
         """
-
+        self._validate_schema(
+            BigQueryAddress(
+                dataset_id=destination_dataset_ref.dataset_id,
+                table_id=destination_table_id,
+            ),
+            destination_table_schema,
+        )
         self.create_dataset_if_necessary(destination_dataset_ref)
 
         destination_table_ref = destination_dataset_ref.table(destination_table_id)
@@ -1219,6 +1228,13 @@ class BigQueryClientImpl(BigQueryClient):
         destination_table_id: str,
         schema: List[bigquery.SchemaField],
     ) -> bigquery.job.LoadJob:
+        self._validate_schema(
+            BigQueryAddress(
+                dataset_id=destination_dataset_ref.dataset_id,
+                table_id=destination_table_id,
+            ),
+            schema,
+        )
         self.create_dataset_if_necessary(destination_dataset_ref)
 
         destination_table_ref = destination_dataset_ref.table(destination_table_id)
@@ -1756,6 +1772,14 @@ class BigQueryClientImpl(BigQueryClient):
         clustering_fields: Optional[List[str]] = None,
         date_partition_field: Optional[Optional[str]] = None,
     ) -> bigquery.Table:
+        self._validate_schema(
+            BigQueryAddress(
+                dataset_id=dataset_id,
+                table_id=table_id,
+            ),
+            schema_fields,
+        )
+
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
         if self.table_exists(dataset_ref, table_id):
@@ -1908,6 +1932,30 @@ class BigQueryClientImpl(BigQueryClient):
                 f"Cannot change the mode of field {old_schema_field} to {new_schema_field.mode}."
             )
 
+    def _validate_schema(
+        self, address: BigQueryAddress, schema: List[bigquery.SchemaField]
+    ) -> None:
+        """Checks that the given schema is valid (no duplicate field names, no extra
+        long descriptions).
+        """
+        seen_fields = set()
+        for field in schema:
+            if field.name in seen_fields:
+                raise ValueError(
+                    f"Found multiple columns with name [{field.name}] in new schema "
+                    f"for table [{address.to_str()}]."
+                )
+            if (
+                field.description
+                and len(field.description) > BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH
+            ):
+                raise ValueError(
+                    f"Attempting to set description for field [{field.name}] on table "
+                    f"[{address.to_str()}] that is too long. Max allowed length "
+                    f"is {BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH} characters."
+                )
+            seen_fields.add(field.name)
+
     def update_schema(
         self,
         dataset_id: str,
@@ -1915,15 +1963,10 @@ class BigQueryClientImpl(BigQueryClient):
         desired_schema_fields: List[bigquery.SchemaField],
         allow_field_deletions: bool = True,
     ) -> None:
-        desired_schema_map = {}
-        for field in desired_schema_fields:
-            if field.name in desired_schema_map:
-                raise ValueError(
-                    f"Found multiple columns with name [{field.name}] in new schema "
-                    f"for table [{dataset_id}.{table_id}]."
-                )
-            desired_schema_map[field.name] = field
-
+        self._validate_schema(
+            BigQueryAddress(dataset_id=dataset_id, table_id=table_id),
+            desired_schema_fields,
+        )
         dataset_ref = self.dataset_ref_for_id(dataset_id)
         try:
             table = self.client.get_table(dataset_ref.table(table_id))
@@ -1934,6 +1977,7 @@ class BigQueryClientImpl(BigQueryClient):
             ) from e
 
         existing_schema = table.schema
+        desired_schema_map = {field.name: field for field in desired_schema_fields}
 
         for field in existing_schema:
             if field.name in desired_schema_map:
