@@ -44,7 +44,7 @@ _QUERY_TEMPLATE = f"""
         sent.judicial_district,
         sent.sentence_sub_type,
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
+    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
     JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
       WHERE span.state_code = 'US_TN'

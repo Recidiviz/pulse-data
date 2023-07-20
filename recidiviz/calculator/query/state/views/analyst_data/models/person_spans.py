@@ -152,7 +152,7 @@ WHERE
     MAX(task_deadlines.parole_eligibility_date) AS parole_eligibility_snapshot_date,
 FROM
     `{project_id}.sessions.sentence_spans_materialized` spans,
-    UNNEST(sentences_preprocessed_id_array) as sentences_preprocessed_id,
+    UNNEST(sentences_preprocessed_id_array_actual_completion) as sentences_preprocessed_id,
     UNNEST(sentence_deadline_id_array) as sentence_deadline_id
 LEFT JOIN
     `{project_id}.sessions.sentences_preprocessed_materialized` sentences

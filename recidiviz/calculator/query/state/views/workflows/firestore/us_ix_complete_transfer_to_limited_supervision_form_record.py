@@ -93,7 +93,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         sent.description,
         cn.Docket AS case_number,
       FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`,
-        UNNEST (sentences_preprocessed_id_array) sentences_preprocessed_id
+        UNNEST (sentences_preprocessed_id_array_actual_completion) sentences_preprocessed_id
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
       LEFT JOIN case_numbers cn

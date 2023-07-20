@@ -42,12 +42,27 @@ sentences AS (
         sent.person_id,
         attr.date_imposed AS start_date,
         attr.completion_date AS end_date_exclusive,
-        sent.sentence_imposed_group_id,
-        attr.sentences_preprocessed_id,
+        sent.sentence_imposed_group_id AS sentence_imposed_group_id_actual_completion,
+        attr.sentences_preprocessed_id AS sentences_preprocessed_id_actual_completion,
+        CAST(NULL AS INTEGER) AS sentences_preprocessed_id_projected_completion,
         CAST(NULL AS INTEGER) AS sentence_deadline_id,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentence_imposed_group_summary_materialized` sent,
+    FROM `{{project_id}}.sessions.sentence_imposed_group_summary_materialized` sent,
     UNNEST(offense_attributes) AS attr
     WHERE attr.date_imposed != {nonnull_end_date_clause('attr.completion_date')}
+
+    UNION ALL
+
+    SELECT
+        sent.state_code,
+        sent.person_id,
+        sent.date_imposed AS start_date,
+        sent.projected_completion_date_max AS end_date_exclusive,
+        CAST(NULL AS INTEGER) AS sentence_imposed_group_id_actual_completion,
+        CAST(NULL AS INTEGER) AS sentences_preprocessed_id_actual_completion,
+        sent.sentences_preprocessed_id AS sentences_preprocessed_id_projected_completion,
+        CAST(NULL AS INTEGER) AS sentence_deadline_id,
+    FROM `{{project_id}}.sessions.sentences_preprocessed_materialized` sent
+    WHERE date_imposed != {nonnull_end_date_clause('projected_completion_date_max')}
 
     UNION ALL
 
@@ -56,10 +71,11 @@ sentences AS (
         person_id,
         start_date,
         end_date_exclusive,
-        CAST(NULL AS INTEGER) AS sentence_imposed_group_id,
-        CAST(NULL AS INTEGER) AS sentences_preprocessed_id,
+        CAST(NULL AS INTEGER) AS sentence_imposed_group_id_actual_completion,
+        CAST(NULL AS INTEGER) AS sentences_preprocessed_id_actual_completion,
+        CAST(NULL AS INTEGER) AS sentences_preprocessed_id_projected_completion,
         sentence_deadline_id,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentence_deadline_spans_materialized`
+    FROM `{{project_id}}.sessions.sentence_deadline_spans_materialized`
 ),
 {create_sub_sessions_with_attributes(
     table_name="sentences",
@@ -72,16 +88,19 @@ SELECT
     end_date_exclusive,
     end_date_exclusive AS end_date,
     ARRAY_AGG(
-        DISTINCT sentence_imposed_group_id IGNORE NULLS ORDER BY sentence_imposed_group_id
-    ) AS sentence_imposed_group_id_array,
+        DISTINCT sentence_imposed_group_id_actual_completion IGNORE NULLS ORDER BY sentence_imposed_group_id_actual_completion
+    ) AS sentence_imposed_group_id_array_actual_completion,
     ARRAY_AGG(
-        DISTINCT sentences_preprocessed_id IGNORE NULLS ORDER BY sentences_preprocessed_id
-    ) AS sentences_preprocessed_id_array,
+        DISTINCT sentences_preprocessed_id_actual_completion IGNORE NULLS ORDER BY sentences_preprocessed_id_actual_completion
+    ) AS sentences_preprocessed_id_array_actual_completion,
+    ARRAY_AGG(
+        DISTINCT sentences_preprocessed_id_projected_completion IGNORE NULLS ORDER BY sentences_preprocessed_id_projected_completion
+    ) AS sentences_preprocessed_id_array_projected_completion,
     ARRAY_AGG(
         DISTINCT sentence_deadline_id IGNORE NULLS ORDER BY sentence_deadline_id
     ) AS sentence_deadline_id_array,
 FROM sub_sessions_with_attributes
-GROUP BY 1,2,3,4,5
+GROUP BY 1, 2, 3, 4, 5
 """
 
 SENTENCE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -89,7 +108,6 @@ SENTENCE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SENTENCE_SPANS_VIEW_NAME,
     view_query_template=SENTENCE_SPANS_QUERY_TEMPLATE,
     description=SENTENCE_SPANS_VIEW_DESCRIPTION,
-    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )

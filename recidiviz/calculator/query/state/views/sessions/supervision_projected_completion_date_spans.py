@@ -55,7 +55,7 @@ WITH projected_completion_date_spans AS (
         MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
         1 AS priority,
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
+    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
     WHERE

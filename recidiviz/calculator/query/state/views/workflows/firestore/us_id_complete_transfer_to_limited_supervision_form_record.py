@@ -56,7 +56,7 @@ US_ID_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         sent.projected_completion_date_max,
         sent.description, 
       FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`,
-        UNNEST (sentences_preprocessed_id_array) sentences_preprocessed_id
+        UNNEST (sentences_preprocessed_id_array_actual_completion) sentences_preprocessed_id
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
       WHERE state_code = "US_ID"

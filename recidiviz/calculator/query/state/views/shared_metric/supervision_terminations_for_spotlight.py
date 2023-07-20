@@ -45,7 +45,7 @@ SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_QUERY_TEMPLATE = f"""
         {{age_bucket}},
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_termination_metrics_materialized` sup_term
     -- Join all sentences that were active on the supervision termination date. Unnest
-    -- the sentence_imposed_group_id_array in a sub-query in case there are no
+    -- the sentence_imposed_group_id_array_actual_completion in a sub-query in case there are no
     -- overlapping sentence spans to avoid dropping supervision termination rows
     LEFT JOIN (
       SELECT
@@ -57,7 +57,7 @@ SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_QUERY_TEMPLATE = f"""
         effective_date,
         date_imposed,
       FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` sent_spans,
-      UNNEST (sentence_imposed_group_id_array) sentence_imposed_group_id
+      UNNEST (sentence_imposed_group_id_array_actual_completion) sentence_imposed_group_id
       LEFT JOIN `{{project_id}}.{{sessions_dataset}}.sentence_imposed_group_summary_materialized` sent_imp
       USING (state_code, person_id, sentence_imposed_group_id)
     ) sent

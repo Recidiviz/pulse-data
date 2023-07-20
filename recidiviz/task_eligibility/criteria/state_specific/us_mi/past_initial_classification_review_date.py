@@ -85,7 +85,7 @@ qualifying statutes and sex offenses for determining priority */
     LOGICAL_OR(statute LIKE '750.520B%' OR statute LIKE '750.520C%') AS qualifying_statute,
     LOGICAL_OR(is_sex_offense) AS is_sex_offense,
   FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-  UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
+  UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
   INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
     USING (state_code, person_id, sentences_preprocessed_id)
   WHERE state_code = "US_MI"
