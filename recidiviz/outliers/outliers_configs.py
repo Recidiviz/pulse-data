@@ -70,6 +70,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         supervision_officer_aggregated_metric_filters="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
+        additional_exclusions={"specialized_caseload_type": ["OTHER"]},
     ),
     StateCode.US_PA: OutliersConfig(
         metrics=[

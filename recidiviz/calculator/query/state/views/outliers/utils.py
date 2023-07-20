@@ -29,28 +29,40 @@ def get_all_config_based_query_filters_query_str() -> str:
     """Returns additional clauses for filtering based on the state-configs"""
     enabled_states = get_outliers_enabled_states()
 
-    additional_filters = []
+    state_filters = []
     for state_code in enabled_states:
         state_exclusions = get_state_specific_config_exclusions(StateCode(state_code))
-        additional_filters.extend(state_exclusions)
 
-    return f'AND {" AND ".join(additional_filters)}' if additional_filters else ""
+        state_filter = (
+            f"state_code = '{StateCode(state_code).value}' AND "
+            + " AND ".join(state_exclusions)
+        )
+        state_filters.append(f"NOT({state_filter})")
+
+    return f"({' OR '.join(state_filters)})"
 
 
 def get_state_specific_config_exclusions(state_code: StateCode) -> List[str]:
     """
-    For a given state, use the OutliersConfig object to get exclusions for
+    For a given state, use the OutliersConfig object to get exclusions for.
     """
     exclusions = []
     state_outliers_config = OUTLIERS_CONFIGS_BY_STATE[state_code]
 
     if state_outliers_config.unit_of_analysis_to_exclusion:
         unit_of_analysis_exclusions = [
-            f"NOT(state_code = '{state_code.value}' AND {f'supervision_{unit_of_analysis.value.lower()}'} IN ({list_to_query_string(exclusions, quoted=True)}))"
+            f"{f'supervision_{unit_of_analysis.value.lower()}'} IN ({list_to_query_string(exclusions, quoted=True)})"
             for unit_of_analysis, exclusions in state_outliers_config.unit_of_analysis_to_exclusion.items()
         ]
 
         exclusions.extend(unit_of_analysis_exclusions)
+
+    if state_outliers_config.additional_exclusions:
+        additional_exclusions = [
+            f"{f'{column}'} IN ({list_to_query_string(excluded_values, quoted=True)})"
+            for column, excluded_values in state_outliers_config.additional_exclusions.items()
+        ]
+        exclusions.extend(additional_exclusions)
 
     return exclusions
 

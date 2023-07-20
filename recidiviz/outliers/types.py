@@ -132,6 +132,9 @@ class OutliersConfig:
     # A string representing the filters to apply for the state's supervision officer aggregated metrics
     supervision_officer_aggregated_metric_filters: str = attr.ib(default=None)
 
+    # A string representing additional filters to apply
+    additional_exclusions: Dict[str, List[str]] = attr.ib(default=None)
+
 
 @attr.s
 class OfficerMetricEntity:
