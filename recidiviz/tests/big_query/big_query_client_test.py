@@ -722,7 +722,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             "View description:\ntest_view description",
         )
 
-    def test_materialize_view_to_table_destination_override(self) -> None:
+    def test_materialize_view_to_table_materialized_address_override(self) -> None:
         """Tests that the materialize_view_to_table function properly calls the function
         to create a table from a query, even when the view is configured to materialize
         in a custom location.

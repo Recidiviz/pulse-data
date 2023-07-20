@@ -109,19 +109,15 @@ class ViewExportConfigurationError(Exception):
 def execute_metric_view_data_export(
     export_job_name: str,
     state_code: Optional[StateCode],
-    destination_override: Optional[str],
     sandbox_prefix: Optional[str],
 ) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets."""
     logging.info(
-        "Attempting to export view data to cloud storage for export_job_name [%s], state_code [%s], destination_override [%s], sandbox_prefix [%s]",
+        "Attempting to export view data to cloud storage for export_job_name [%s], state_code [%s], sandbox_prefix [%s]",
         export_job_name,
         state_code,
-        destination_override,
         sandbox_prefix,
     )
-    if sandbox_prefix and not destination_override:
-        raise ValueError("Sandbox prefix requires destination override")
 
     product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
     export_launched = product_configs.is_export_launched_in_env(
@@ -143,13 +139,13 @@ def execute_metric_view_data_export(
         export_view_data_to_cloud_storage(
             export_job_name=export_job_name,
             state_code=state_code.value if state_code else None,
-            destination_override=destination_override,
             address_overrides=address_overrides_for_view_builders(
                 view_dataset_override_prefix=sandbox_prefix,
                 view_builders=relevant_export_collection.view_builders_to_export,
             )
             if sandbox_prefix
             else None,
+            gcs_output_sandbox_subdir=sandbox_prefix,
         )
 
     end = datetime.datetime.now()
@@ -161,7 +157,6 @@ def execute_metric_view_data_export(
     success_persister.record_success_in_bq(
         export_job_name=export_job_name,
         state_code=state_code.value if state_code else None,
-        destination_override=destination_override,
         sandbox_dataset_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
     )
@@ -171,11 +166,12 @@ def execute_metric_view_data_export(
 def get_configs_for_export_name(
     export_name: str,
     state_code: Optional[str] = None,
-    destination_override: Optional[str] = None,
+    gcs_output_sandbox_subdir: Optional[str] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> Sequence[ExportBigQueryViewConfig]:
     """Checks the export index for a matching export and if one exists, returns the
     export name paired with a sequence of export view configs."""
+
     relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
         export_name.upper()
     )
@@ -187,8 +183,8 @@ def get_configs_for_export_name(
 
     return relevant_export_collection.export_configs_for_views_to_export(
         state_code_filter=state_code.upper() if state_code else None,
-        destination_override=destination_override,
         address_overrides=address_overrides,
+        gcs_output_sandbox_subdir=gcs_output_sandbox_subdir,
     )
 
 
@@ -196,7 +192,7 @@ def export_view_data_to_cloud_storage(
     export_job_name: str,
     state_code: Optional[str] = None,
     override_view_exporter: Optional[BigQueryViewExporter] = None,
-    destination_override: Optional[str] = None,
+    gcs_output_sandbox_subdir: Optional[str] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
@@ -209,7 +205,7 @@ def export_view_data_to_cloud_storage(
     export_configs_for_filter = get_configs_for_export_name(
         export_name=export_job_name,
         state_code=state_code,
-        destination_override=destination_override,
+        gcs_output_sandbox_subdir=gcs_output_sandbox_subdir,
         address_overrides=address_overrides,
     )
 

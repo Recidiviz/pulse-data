@@ -48,14 +48,14 @@ class MetricViewDataExportSuccessPersister(SuccessPersister):
         export_job_name: str,
         runtime_sec: int,
         state_code: Optional[str],
-        destination_override: Optional[str],
         sandbox_dataset_prefix: Optional[str],
     ) -> None:
         success_row = {
             SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
             EXPORT_JOB_NAME_COL: export_job_name,
             STATE_CODE_COL: state_code,
-            DESTINATION_OVERRIDE_COL: destination_override,
+            # TODO(#22440): Remove this column entirely - export location implied by existence of sandbox prefix.
+            DESTINATION_OVERRIDE_COL: None,
             SANDBOX_DATASET_PREFIX_COL: sandbox_dataset_prefix,
             METRIC_VIEW_DATA_EXPORT_RUNTIME_SEC_COL: runtime_sec,
         }

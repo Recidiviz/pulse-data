@@ -117,21 +117,21 @@ class ExportViewCollectionConfig:
         self,
         state_code_filter: Optional[str] = None,
         address_overrides: Optional[BigQueryAddressOverrides] = None,
-        destination_override: Optional[str] = None,
+        gcs_output_sandbox_subdir: Optional[str] = None,
     ) -> Sequence[ExportBigQueryViewConfig]:
         """Builds a list of ExportBigQueryViewConfig that define how all views in
         view_builders_to_export should be exported to Google Cloud Storage."""
-
         view_filter_clause = (
             f" WHERE state_code = '{state_code_filter}'" if state_code_filter else None
         )
 
         intermediate_table_name_template = "{export_name}_{dataset_id}_{view_id}_table"
-        output_directory = (
-            GcsfsDirectoryPath.from_absolute_path(destination_override)
-            if destination_override
-            else self.output_directory
-        )
+        output_directory = self.output_directory
+
+        if gcs_output_sandbox_subdir:
+            output_directory = GcsfsDirectoryPath.from_dir_and_subdir(
+                output_directory, f"sandbox/{gcs_output_sandbox_subdir}"
+            )
 
         remap_columns: RemapColumns = {}
 
