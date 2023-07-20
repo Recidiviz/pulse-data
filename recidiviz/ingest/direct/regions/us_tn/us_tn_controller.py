@@ -52,6 +52,7 @@ class UsTnController(BaseDirectIngestController):
             "CAFScoreAssessment",
             "Staff",
             "StaffRolePeriods",
+            "SentencesChargesAndCourtCases_v3",
         ]
 
         # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes
@@ -59,12 +60,4 @@ class UsTnController(BaseDirectIngestController):
         if not environment.in_gcp():
             tags.extend(["SupervisionContacts"])
 
-        return tags + (
-            [
-                "SentencesChargesAndCourtCases_v3",
-            ]
-            if not environment.in_gcp_production()
-            else [
-                "SentencesChargesAndCourtCases_v2",
-            ]
-        )
+        return tags
