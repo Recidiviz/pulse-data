@@ -20,7 +20,6 @@ pipelines."""
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Tuple, Type
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateSupervisionContact
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
@@ -92,11 +91,7 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
                 )
 
             contacting_staff_id = None
-            if (
-                # TODO(#20552): remove can_hydrate_staff_ids check once StateStaff is fully ingested for all states
-                self._can_hydrate_staff_ids(StateCode(supervision_contact.state_code))
-                and supervision_contact.contacting_staff_external_id
-            ):
+            if supervision_contact.contacting_staff_external_id:
                 if not supervision_contact.contacting_staff_external_id_type:
                     raise ValueError(
                         f"Found no contacting_staff_external_id_type for contacting_staff_external_id "
@@ -120,10 +115,3 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
                 supervision_contacts_additional_attributes_map,
             ]
         )
-
-    @staticmethod
-    def _can_hydrate_staff_ids(state_code: StateCode) -> bool:
-        # TODO(#20552): delete this method once StateStaff is fully ingested for all states
-        return state_code not in {
-            StateCode.US_IX,
-        }

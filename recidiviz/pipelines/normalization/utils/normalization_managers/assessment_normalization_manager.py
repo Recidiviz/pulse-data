@@ -22,7 +22,6 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Tuple, Type
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateAssessment
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
@@ -235,11 +234,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 )
 
             conducting_staff_id = None
-            if (
-                # TODO(#20552): remove can_hydrate_staff_ids check once StateStaff is fully ingested for all states
-                self._can_hydrate_staff_ids(StateCode(assessment.state_code))
-                and assessment.conducting_staff_external_id
-            ):
+            if assessment.conducting_staff_external_id:
                 if not assessment.conducting_staff_external_id_type:
                     # if conducting_staff_external_id is set, a conducting_staff_external_id_type must be set
                     raise ValueError(
@@ -265,10 +260,3 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
         return merge_additional_attributes_maps(
             [shared_additional_attributes_map, assessment_additional_attributes_map]
         )
-
-    @staticmethod
-    def _can_hydrate_staff_ids(state_code: StateCode) -> bool:
-        # TODO(#20552): delete this method once StateStaff is fully ingested for all states
-        return state_code not in {
-            StateCode.US_MI,
-        }
