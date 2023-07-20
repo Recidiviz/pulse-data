@@ -63,7 +63,7 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 ingest_instance=DirectIngestInstance.SECONDARY,
             )
             self.normalized_state_update_lock_manager = (
-                NormalizedStateUpdateLockManager()
+                NormalizedStateUpdateLockManager(DirectIngestInstance.PRIMARY)
             )
 
     def tearDown(self) -> None:

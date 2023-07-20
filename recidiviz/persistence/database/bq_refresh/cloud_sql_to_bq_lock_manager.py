@@ -33,6 +33,7 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.normalized_state_update_lock_manager import (
     NORMALIZED_STATE_UPDATE_LOCK_NAME,
+    normalization_lock_name_for_ingest_instance,
 )
 
 
@@ -98,7 +99,9 @@ class CloudSqlToBQLockManager:
 
         if schema_type == SchemaType.STATE:
             no_blocking_normalized_state_locks = not self.lock_manager.is_locked(
-                NORMALIZED_STATE_UPDATE_LOCK_NAME
+                normalization_lock_name_for_ingest_instance(ingest_instance)
+            ) and not self.lock_manager.is_locked(
+                NORMALIZED_STATE_UPDATE_LOCK_NAME  # TODO(#2873): Remove check for old lock name once all locks migrated to new names
             )
 
             if not no_blocking_normalized_state_locks:

@@ -42,6 +42,7 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
     make_most_recent_metric_view_builders,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database import schema_utils
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.dataflow_orchestration_utils import (
@@ -95,13 +96,20 @@ def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
 
 @gcp_only
 def execute_update_normalized_state_dataset(
-    state_codes_filter: Optional[List[StateCode]], sandbox_dataset_prefix: Optional[str]
+    ingest_instance: DirectIngestInstance,
+    state_codes_filter: Optional[List[StateCode]],
+    sandbox_dataset_prefix: Optional[str],
 ) -> None:
     """Calls the _update_normalized_state_dataset function."""
 
     if state_codes_filter and not sandbox_dataset_prefix:
         raise ValueError(
             "Must provide sandbox_dataset_prefix when providing state_codes_filter"
+        )
+
+    if ingest_instance == DirectIngestInstance.SECONDARY and not sandbox_dataset_prefix:
+        raise ValueError(
+            "Must provide sandbox_dataset_prefix when using SECONDARY ingest instance"
         )
 
     if sandbox_dataset_prefix and not state_codes_filter:
@@ -123,8 +131,8 @@ def execute_update_normalized_state_dataset(
         if sandbox_dataset_prefix and state_codes_filter_set
         else None
     )
-
     update_normalized_state_dataset(
+        ingest_instance=ingest_instance,
         state_codes_filter=state_codes_filter_set,
         address_overrides=address_overrides,
     )
@@ -539,6 +547,7 @@ def _load_normalized_state_dataset_into_empty_temp_dataset(
 
 
 def update_normalized_state_dataset(
+    ingest_instance: DirectIngestInstance,
     state_codes_filter: Optional[FrozenSet[StateCode]] = None,
     address_overrides: Optional[BigQueryAddressOverrides] = None,
 ) -> None:
@@ -560,7 +569,7 @@ def update_normalized_state_dataset(
         "Acquiring lock on CloudSQL to BQ state refresh to prevent the "
         "`state` dataset from being updated during this process..."
     )
-    lock_manager = NormalizedStateUpdateLockManager()
+    lock_manager = NormalizedStateUpdateLockManager(ingest_instance)
     lock_manager.acquire_lock(lock_id=lock_id)
 
     if not lock_manager.can_proceed():

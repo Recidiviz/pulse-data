@@ -31,14 +31,21 @@ from recidiviz.persistence.database.schema_type import SchemaType
 NORMALIZED_STATE_UPDATE_LOCK_NAME = "NORMALIZED_STATE_UPDATE_PROCESS"
 
 
+def normalization_lock_name_for_ingest_instance(
+    ingest_instance: DirectIngestInstance,
+) -> str:
+    return f"{NORMALIZED_STATE_UPDATE_LOCK_NAME}_{ingest_instance.value.upper()}"
+
+
 class NormalizedStateUpdateLockManager:
     """Manages acquiring and releasing the lock for updating the normalized_state
     dataset, as well as determining if the update can proceed given other ongoing
     processes.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, ingest_instance: DirectIngestInstance) -> None:
         self.lock_manager = GCSPseudoLockManager()
+        self.ingest_instance = ingest_instance
 
     def acquire_lock(self, lock_id: str) -> None:
         """Acquires the normalized_state update lock, or refreshes the timeout of the
@@ -51,7 +58,14 @@ class NormalizedStateUpdateLockManager:
 
         Throws if a lock with a different lock_id exists for this update.
         """
-        lock_name = NORMALIZED_STATE_UPDATE_LOCK_NAME
+
+        # TODO(#2873): Remove check for old lock name once all locks migrated to new names
+        if self.lock_manager.is_locked(NORMALIZED_STATE_UPDATE_LOCK_NAME):
+            raise GCSPseudoLockAlreadyExists(
+                f"Old lock with the name {NORMALIZED_STATE_UPDATE_LOCK_NAME} already exists"
+            )
+
+        lock_name = normalization_lock_name_for_ingest_instance(self.ingest_instance)
         try:
             self.lock_manager.lock(
                 lock_name,
@@ -73,25 +87,32 @@ class NormalizedStateUpdateLockManager:
 
         if not self.is_locked():
             raise GCSPseudoLockDoesNotExist(
-                f"Must acquire the lock for [{NORMALIZED_STATE_UPDATE_LOCK_NAME}] "
+                f"Must acquire the lock for [{normalization_lock_name_for_ingest_instance(self.ingest_instance)}] "
                 f"before checking if can proceed"
             )
 
-        # TODO(#20503): Add ability to specify ingest instance to check for lock
         no_blocking_locks = self.lock_manager.no_active_locks_with_prefix(
-            postgres_to_bq_lock_name_for_schema(
-                SchemaType.STATE, DirectIngestInstance.PRIMARY
-            ),
-            DirectIngestInstance.PRIMARY.value,
+            postgres_to_bq_lock_name_for_schema(SchemaType.STATE, self.ingest_instance),
+            self.ingest_instance.value,
         )
         return no_blocking_locks
 
     def release_lock(self) -> None:
         """Releases the normalized_state update lock."""
-        self.lock_manager.unlock(NORMALIZED_STATE_UPDATE_LOCK_NAME)
+        # TODO(#2873): Remove gating once all locks migrated to new names
+        try:
+            self.lock_manager.unlock(
+                normalization_lock_name_for_ingest_instance(self.ingest_instance)
+            )
+        except GCSPseudoLockDoesNotExist:
+            self.lock_manager.unlock(NORMALIZED_STATE_UPDATE_LOCK_NAME)
 
     def is_locked(self) -> bool:
-        return self.lock_manager.is_locked(NORMALIZED_STATE_UPDATE_LOCK_NAME)
+        return self.lock_manager.is_locked(
+            normalization_lock_name_for_ingest_instance(self.ingest_instance)
+        ) or self.lock_manager.is_locked(
+            NORMALIZED_STATE_UPDATE_LOCK_NAME  # TODO(#2873): Remove check for old lock name once all locks migrated to new names
+        )
 
     @staticmethod
     def _export_lock_timeout_for_update() -> int:
