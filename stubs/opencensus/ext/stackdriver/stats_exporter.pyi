@@ -16,9 +16,13 @@
 # =============================================================================
 from typing import Optional, Union
 
-class Options: ...
+class Options:
+    def __init__(self, project_id: str, resource: Optional[str]) -> None: ...
+
 class StackdriverStatsExporter: ...
 
+GLOBAL_RESOURCE_TYPE: str
+
 def new_stats_exporter(
-    _options: Optional[Options] = None, _interval: Optional[Union[int, float]] = None
+    options: Optional[Options] = None, _interval: Optional[Union[int, float]] = None
 ) -> StackdriverStatsExporter: ...
