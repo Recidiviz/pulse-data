@@ -23,6 +23,8 @@ from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_reco
     join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -50,7 +52,10 @@ SELECT
     state_code,
     reasons,
     ineligible_criteria,
+    pp.Cdcno as form_information_cdcno
 FROM current_parole_pop_cte
+LEFT JOIN `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest` pp
+    ON external_id=pp.OffenderId
 WHERE is_eligible
 """
 
@@ -62,6 +67,9 @@ US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_CA
+    ),
+    us_ca_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_CA, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
 )
