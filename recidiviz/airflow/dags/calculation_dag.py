@@ -208,16 +208,31 @@ def trigger_metric_view_data_operator(
     export_job_name: str, state_code: Optional[str]
 ) -> TaskGroup:
     state_code_component = f"_{state_code.lower()}" if state_code else ""
-    return build_kubernetes_pod_task_group(
-        group_id=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
-        container_name=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
-        arguments=[
+
+    def get_kubernetes_arguments(
+        _dag_run: DagRun, task_instance: TaskInstance
+    ) -> List[str]:
+        additional_args = []
+
+        sandbox_prefix = get_sandbox_prefix(task_instance)
+        if sandbox_prefix:
+            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
+
+        if state_code:
+            additional_args.append(f"--state_code={state_code}")
+
+        return [
             "python",
             "-m",
             "recidiviz.entrypoints.metric_export.metric_view_export",
             f"--export_job_name={export_job_name}",
+            *additional_args,
         ]
-        + ([f"--state_code={state_code}"] if state_code else []),
+
+    return build_kubernetes_pod_task_group(
+        group_id=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
+        container_name=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
+        arguments=get_kubernetes_arguments,
     )
 
 

@@ -312,3 +312,34 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             view_config_to_export.intermediate_table_name,
             "TEST_EXPORT_base_dataset_test_view_table_US_XY",
         )
+
+    def test_metric_export_sandbox_prefix(self) -> None:
+        """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
+        export includes a sandbox_prefix."""
+        lantern_dashboard_with_state_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
+            output_directory_uri_template="gs://{project_id}-bucket",
+            export_name="TEST_EXPORT",
+        )
+
+        mock_state_code = "US_XX"
+
+        view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
+            state_code_filter=mock_state_code,
+            gcs_output_sandbox_subdir="my_prefix",
+        )
+        view_config_to_export = view_configs_to_export[0]
+        assert view_config_to_export is not None
+
+        self.assertEqual(
+            GcsfsDirectoryPath(
+                bucket_name="fake-recidiviz-project-bucket",
+                relative_path="sandbox/my_prefix/US_XX/",
+            ),
+            view_config_to_export.output_directory,
+        )
+
+        self.assertEqual(
+            view_config_to_export.intermediate_table_name,
+            "TEST_EXPORT_base_dataset_test_view_table_US_XX",
+        )

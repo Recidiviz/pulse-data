@@ -44,11 +44,6 @@ def parse_arguments() -> argparse.Namespace:
         help="The sandbox prefix for which the export needs to write to",
         type=str,
     )
-    parser.add_argument(
-        "--destination_override",
-        help="The destination override for which the export needs to write to",
-        type=str,
-    )
 
     return parser.parse_args()
 
@@ -61,5 +56,4 @@ if __name__ == "__main__":
         state_code=args.state_code,
         export_job_name=args.export_job_name,
         sandbox_prefix=args.sandbox_prefix,
-        destination_override=args.destination_override,
     )

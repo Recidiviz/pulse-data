@@ -495,14 +495,12 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="EXPORT",
             state_code=StateCode.US_WW,
-            destination_override=None,
             sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
         execute_metric_view_data_export(
             export_job_name="export",
             state_code=StateCode.US_WW,
-            destination_override=None,
             sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
@@ -516,19 +514,16 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         export_job_name = "export"
         state_code = StateCode.US_WW
-        destination_override = "gs://recidiviz-456-my-bucket/my_subdir"
         sandbox_prefix = "test_sandbox"
         execute_metric_view_data_export(
             export_job_name=export_job_name,
             state_code=state_code,
-            destination_override=destination_override,
             sandbox_prefix=sandbox_prefix,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
         self.mock_metric_view_data_export_success_persister.record_success_in_bq.assert_called_with(
             export_job_name=export_job_name,
             state_code=state_code.value,
-            destination_override=destination_override,
             sandbox_dataset_prefix=sandbox_prefix,
             runtime_sec=mock.ANY,
         )
@@ -545,7 +540,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="EXPORT",
             state_code=StateCode.US_WW,
-            destination_override=None,
             sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_not_called()
@@ -560,24 +554,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         execute_metric_view_data_export(
             export_job_name="MOCK_EXPORT_NAME",
             state_code=StateCode.US_WW,
-            destination_override=None,
             sandbox_prefix=None,
         )
         mock_export_view_data_to_cloud_storage.assert_called()
-
-    @mock.patch(
-        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
-    )
-    def test_execute_metric_view_data_export_has_sandbox_prefix_missing_destination_override(
-        self, mock_export_view_data_to_cloud_storage: Mock
-    ) -> None:
-        mock_export_view_data_to_cloud_storage.return_value = None
-        with self.assertRaisesRegex(
-            ValueError, r"Sandbox prefix requires destination override"
-        ):
-            execute_metric_view_data_export(
-                export_job_name="EXPORT",
-                state_code=StateCode.US_XX,
-                destination_override=None,
-                sandbox_prefix="test_prefix",
-            )

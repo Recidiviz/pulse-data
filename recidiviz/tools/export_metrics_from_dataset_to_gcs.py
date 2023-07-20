@@ -48,15 +48,7 @@ from recidiviz.view_registry.address_overrides_factory import (
 )
 
 
-def get_protected_buckets() -> List[str]:
-    return [
-        config.output_directory.uri()
-        for config in VIEW_COLLECTION_EXPORT_INDEX.values()
-    ]
-
-
 def export_metrics_from_dataset_to_gcs(
-    destination_bucket: str,
     project_id: str,
     export_name: str,
     state_code: Optional[str],
@@ -70,12 +62,6 @@ def export_metrics_from_dataset_to_gcs(
             view_dataset_override_prefix=sandbox_dataset_prefix,
         )
 
-    if destination_bucket in get_protected_buckets():
-        raise ValueError(
-            f"Must specify a destination_bucket that is not a protected bucket. "
-            f"Protected buckets are: {get_protected_buckets()}"
-        )
-
     product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
     _ = product_configs.get_export_config(
         export_job_name=export_name, state_code=state_code
@@ -84,14 +70,13 @@ def export_metrics_from_dataset_to_gcs(
     export_view_data_to_cloud_storage(
         export_job_name=export_name,
         state_code=state_code,
-        destination_override=destination_bucket,
+        gcs_output_sandbox_subdir=sandbox_dataset_prefix,
         address_overrides=sandbox_address_overrides,
     )
 
     logging.info(
-        "Done exporting metrics from sandbox with prefix [%s] to GCS bucket [%s].",
+        "Done exporting metrics from sandbox with prefix [%s].",
         sandbox_dataset_prefix,
-        destination_bucket,
     )
 
 
@@ -116,14 +101,6 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     )
 
     parser.add_argument(
-        "--destination_bucket",
-        dest="destination_bucket",
-        help="Path of GCS bucket as destination for metrics file export.",
-        type=str,
-        required=True,
-    )
-
-    parser.add_argument(
         "--export_name",
         dest="export_name",
         choices=VIEW_COLLECTION_EXPORT_INDEX.keys(),
@@ -143,19 +120,18 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args(argv)
 
 
+# TODO(#22440): Delete file after migration to using calculation dag for validation in secondary.
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
         logging.info(
-            "Exporting metrics from sandbox with prefix [%s] to GCS bucket [%s].",
+            "Exporting metrics from sandbox with prefix [%s]",
             known_args.sandbox_dataset_prefix,
-            known_args.destination_bucket,
         )
 
         export_metrics_from_dataset_to_gcs(
-            known_args.destination_bucket,
             known_args.project_id,
             known_args.export_name,
             known_args.state_code,

@@ -44,6 +44,7 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
 )
@@ -51,7 +52,6 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
     OptimizedMetricBigQueryViewExporter,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.tools.export_metrics_from_dataset_to_gcs import get_protected_buckets
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -154,6 +154,13 @@ def export_from_table(
         output_directory=output_path,
     )
     view_exporter.export(export_configs=[export_config])
+
+
+def get_protected_buckets() -> List[str]:
+    return [
+        config.output_directory.uri()
+        for config in VIEW_COLLECTION_EXPORT_INDEX.values()
+    ]
 
 
 def generate_optimized_format_metric_files_from_json(

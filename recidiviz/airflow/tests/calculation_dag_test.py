@@ -553,14 +553,19 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_metric_view_data_task)}]."
             )
 
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
     @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_trigger_metric_view_data_operator(
-        self, mock_build_kubernetes_pod_task_group: MagicMock
+        self,
+        mock_build_kubernetes_pod_task_group: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
     ) -> None:
         """Tests the trigger_metric_view_data_operator triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import (
             trigger_metric_view_data_operator,
         )
+
+        mock_get_sandbox_prefix.return_value = None
 
         trigger_metric_view_data_operator(
             export_job_name="INGEST_METADATA", state_code=None
@@ -569,10 +574,103 @@ class TestCalculationPipelineDag(unittest.TestCase):
         mock_build_kubernetes_pod_task_group.assert_called_once_with(
             group_id="export_ingest_metadata_metric_view_data",
             container_name="export_ingest_metadata_metric_view_data",
-            arguments=[
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
+        self.assertEqual(
+            arguments(MagicMock(), MagicMock()),
+            [
                 "python",
                 "-m",
                 "recidiviz.entrypoints.metric_export.metric_view_export",
                 "--export_job_name=INGEST_METADATA",
+            ],
+        )
+
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
+    def test_trigger_metric_view_data_operator_sandbox_prefix(
+        self,
+        mock_build_kubernetes_pod_task_group: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
+    ) -> None:
+        """Tests the trigger_metric_view_data_operator triggers the proper script."""
+        from recidiviz.airflow.dags.calculation_dag import (
+            trigger_metric_view_data_operator,
+        )
+
+        mock_get_sandbox_prefix.return_value = "test_prefix"
+
+        trigger_metric_view_data_operator(
+            export_job_name="INGEST_METADATA", state_code=None
+        )
+
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="export_ingest_metadata_metric_view_data",
+            container_name="export_ingest_metadata_metric_view_data",
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
+        self.assertEqual(
+            arguments(MagicMock(), MagicMock()),
+            [
+                "python",
+                "-m",
+                "recidiviz.entrypoints.metric_export.metric_view_export",
+                "--export_job_name=INGEST_METADATA",
+                "--sandbox_prefix=test_prefix",
+            ],
+        )
+
+    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
+    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
+    def test_trigger_metric_view_data_operator_state_code(
+        self,
+        mock_build_kubernetes_pod_task_group: MagicMock,
+        mock_get_sandbox_prefix: MagicMock,
+    ) -> None:
+        """Tests the trigger_metric_view_data_operator triggers the proper script."""
+        from recidiviz.airflow.dags.calculation_dag import (
+            trigger_metric_view_data_operator,
+        )
+
+        mock_get_sandbox_prefix.return_value = None
+
+        trigger_metric_view_data_operator(
+            export_job_name="INGEST_METADATA", state_code="US_XX"
+        )
+
+        mock_build_kubernetes_pod_task_group.assert_called_once_with(
+            group_id="export_ingest_metadata_us_xx_metric_view_data",
+            container_name="export_ingest_metadata_us_xx_metric_view_data",
+            arguments=mock.ANY,
+        )
+
+        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
+            "arguments"
+        ]
+        if not callable(arguments):
+            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+
+        self.assertEqual(
+            arguments(MagicMock(), MagicMock()),
+            [
+                "python",
+                "-m",
+                "recidiviz.entrypoints.metric_export.metric_view_export",
+                "--export_job_name=INGEST_METADATA",
+                "--state_code=US_XX",
             ],
         )
