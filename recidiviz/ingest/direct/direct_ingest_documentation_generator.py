@@ -145,6 +145,29 @@ class DirectIngestDocumentationGenerator:
             )
             return list_contents
 
+        def _get_table_relationship_info(
+            raw_file_config: DirectIngestRawFileConfig,
+        ) -> str:
+            if not raw_file_config.table_relationships:
+                return ""
+            section_contents = "\n\n### Related Tables\n\n"
+            section_contents += MarkdownTableWriter(
+                headers=["Related table", "Cardinality", "Join logic"],
+                value_matrix=[
+                    [
+                        table_relationship.foreign_table,
+                        table_relationship.cardinality.value.replace("_", " "),
+                        table_relationship.join_sql(),
+                    ]
+                    for table_relationship in raw_file_config.table_relationships
+                ],
+                # Margin values other than 0 have nondeterministic spacing. Do not
+                # change.
+                margin=0,
+            ).dumps()
+
+            return section_contents
+
         documentation = (
             f"## {raw_file_config.file_tag}\n\n{raw_file_config.file_description}\n\n"
         )
@@ -172,6 +195,8 @@ class DirectIngestDocumentationGenerator:
             margin=0,
         )
         documentation += writer.dumps()
+
+        documentation += _get_table_relationship_info(raw_file_config)
 
         return documentation
 

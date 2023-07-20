@@ -7,3 +7,8 @@ columns:
   - name: column_1
     description: |-
       column_1 description
+table_relationships:
+  - foreign_table: multiLineDescription
+    cardinality: ONE_TO_MANY
+    join_logic:
+      - tagPrimaryKeyColsMissing.column_1 = multiLineDescription.col_name_1a

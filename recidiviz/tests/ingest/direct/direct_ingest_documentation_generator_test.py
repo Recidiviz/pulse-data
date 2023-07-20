@@ -109,6 +109,14 @@ First raw file.
 |col_name_1a        |First column.                                                                                                                                                |YES                 |<b>VAL1: </b> value 1, <br/><b>VAL2: </b> value 2, <br/><b>UNKWN: </b> Unknown|False  |
 |col_name_1b        |A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed.|YES                 |N/A                                                                           |False  |
 |undocumented_column|<No documentation>                                                                                                                                           |                    |N/A                                                                           |False  |
+
+
+### Related Tables
+
+|     Related table      |Cardinality|                             Join logic                             |
+|------------------------|-----------|--------------------------------------------------------------------|
+|tagNotHistorical        |ONE TO MANY|multiLineDescription.col_name_1a = tagNotHistorical.column_1        |
+|tagPrimaryKeyColsMissing|MANY TO ONE|tagPrimaryKeyColsMissing.column_1 = multiLineDescription.col_name_1a|
 """
 
         expected_tag_columns_missing = """## tagColumnsMissing
@@ -126,6 +134,13 @@ tagNotHistorical file description
 | Column |Column Description|Part of Primary Key?|Distinct Values|Is PII?|
 |--------|------------------|--------------------|---------------|-------|
 |column_1|<No documentation>|                    |N/A            |False  |
+
+
+### Related Tables
+
+|   Related table    |Cardinality|                         Join logic                         |
+|--------------------|-----------|------------------------------------------------------------|
+|multiLineDescription|MANY TO ONE|multiLineDescription.col_name_1a = tagNotHistorical.column_1|
 """
 
         expected_tag_primary_key_cols_missing = """## tagPrimaryKeyColsMissing
@@ -135,6 +150,13 @@ tagPrimaryKeyColsMissing file description
 | Column | Column Description |Part of Primary Key?|Distinct Values|Is PII?|
 |--------|--------------------|--------------------|---------------|-------|
 |column_1|column_1 description|                    |N/A            |False  |
+
+
+### Related Tables
+
+|   Related table    |Cardinality|                             Join logic                             |
+|--------------------|-----------|--------------------------------------------------------------------|
+|multiLineDescription|ONE TO MANY|tagPrimaryKeyColsMissing.column_1 = multiLineDescription.col_name_1a|
 """
 
         expected_documentation = {
