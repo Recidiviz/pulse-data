@@ -7,6 +7,7 @@ input_columns:
   - CAFDate
   - ClassificationDate
   - CAFScore
+  - OverrideReason
   - ScheduleAScore
   - ScheduleBScore
   - CAFCustodyLevel
@@ -66,3 +67,4 @@ output:
               CAFScore: CAFScore
               CAFSite: CAFSiteID
               ClassificationDate: ClassificationDate
+              OverrideReason: OverrideReason
