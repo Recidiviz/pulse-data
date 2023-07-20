@@ -44,6 +44,7 @@ from google.cloud.bigquery_datatransfer import (
 from google.protobuf import timestamp_pb2
 from more_itertools import one, peekable
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.common.constants.states import StateCode
@@ -1810,96 +1811,49 @@ class BigQueryClientImpl(BigQueryClient):
             if field.name in missing_desired_field_names
         ]
 
-    def _add_missing_fields_to_schema(
+    def _add_or_update_existing_schema_fields(
         self,
-        dataset_id: str,
-        table_id: str,
+        table: bigquery.Table,
         desired_schema_fields: List[bigquery.SchemaField],
     ) -> None:
         """Updates the schema of the table to include the schema_fields if they are not
-        already present in the Table's schema. Does not update the type or mode of any
-        existing schema fields, and does not delete existing schema fields.
+        already present in the Table's schema. Assumes that no field_type or mode values
+        are not being changed for existing fields (BQ will disallow this). Does not
+        delete existing schema fields.
         """
-        dataset_ref = self.dataset_ref_for_id(dataset_id)
-
-        if not self.table_exists(dataset_ref, table_id):
-            raise ValueError(
-                f"Cannot add schema fields to a table that does not exist: {dataset_id}.{table_id}"
-            )
-
-        table = self.get_table(dataset_ref, table_id)
-        existing_table_schema = table.schema
-
-        missing_fields = self._get_excess_schema_fields(
-            table.schema, desired_schema_fields
+        existing_table_schema_sorted = sorted(table.schema, key=lambda c: c.name)
+        updated_table_schema_sorted = sorted(
+            desired_schema_fields, key=lambda c: c.name
         )
 
-        updated_table_schema = existing_table_schema.copy()
-
-        for field in desired_schema_fields:
-            if field in missing_fields:
-                updated_table_schema.append(field)
-            else:
-                # A field with this name should already be in the existing schema. Assert they are of the same
-                # field_type and mode.
-                existing_field_with_name = next(
-                    existing_field
-                    for existing_field in existing_table_schema
-                    if existing_field.name == field.name
-                )
-
-                if not existing_field_with_name:
-                    raise ValueError(
-                        "Set comparison of field names is not working. This should be in the"
-                        " missing_field_names set."
-                    )
-
-                if field.field_type != existing_field_with_name.field_type:
-                    raise ValueError(
-                        f"Trying to change the field type of an existing field in {dataset_id}.{table_id}."
-                        f"Existing field {existing_field_with_name.name} has type "
-                        f"{existing_field_with_name.field_type}. Cannot change this type to {field.field_type}."
-                    )
-
-                if field.mode != existing_field_with_name.mode:
-                    raise ValueError(
-                        f"Cannot change the mode of field {existing_field_with_name} to {field.mode}."
-                    )
-
-        if updated_table_schema == existing_table_schema:
+        if updated_table_schema_sorted == existing_table_schema_sorted:
             logging.info(
-                "Schema for table %s.%s already contains all of the desired fields.",
-                dataset_id,
-                table_id,
+                "Schema for table %s.%s is already equal to the desired schema.",
+                table.dataset_id,
+                table.table_id,
             )
             return
 
         # Update the table schema with the missing fields
         logging.info(
-            "Updating schema of table %s to: %s", table_id, updated_table_schema
+            "Updating schema of table %s to: %s", table.table_id, desired_schema_fields
         )
-        table.schema = updated_table_schema
+        table.schema = desired_schema_fields
         self.client.update_table(table, ["schema"])
 
     def _remove_unused_fields_from_schema(
         self,
         dataset_id: str,
         table_id: str,
+        existing_schema: List[bigquery.SchemaField],
         desired_schema_fields: List[bigquery.SchemaField],
         allow_field_deletions: bool,
     ) -> Optional[bigquery.QueryJob]:
-        """Compares the schema of the given table to the desired schema fields and drops any unused columns."""
-        dataset_ref = self.dataset_ref_for_id(dataset_id)
-
-        if not self.table_exists(dataset_ref, table_id):
-            raise ValueError(
-                f"Cannot remove schema fields from a table that does not exist: {dataset_id}.{table_id}"
-            )
-
-        table = self.get_table(dataset_ref, table_id)
-
+        """Compares the schema of the given table to the desired schema fields and
+        drops any unused columns.
+        """
         deprecated_fields = self._get_excess_schema_fields(
-            desired_schema_fields, table.schema
+            desired_schema_fields, existing_schema
         )
 
         if not deprecated_fields:
@@ -1934,6 +1888,26 @@ class BigQueryClientImpl(BigQueryClient):
             use_query_cache=False,
         )
 
+    def _assert_is_valid_schema_field_update(
+        self,
+        table_address: BigQueryAddress,
+        old_schema_field: bigquery.SchemaField,
+        new_schema_field: bigquery.SchemaField,
+    ) -> None:
+        if old_schema_field.field_type != new_schema_field.field_type:
+            raise ValueError(
+                f"Trying to change the field type of an existing field in "
+                f"{table_address.dataset_id}.{table_address.table_id}. Existing "
+                f"field {old_schema_field.name} has type "
+                f"{old_schema_field.field_type}. Cannot change this type to "
+                f"{new_schema_field.field_type}."
+            )
+
+        if old_schema_field.mode != new_schema_field.mode:
+            raise ValueError(
+                f"Cannot change the mode of field {old_schema_field} to {new_schema_field.mode}."
+            )
+
     def update_schema(
         self,
         dataset_id: str,
@@ -1941,37 +1915,39 @@ class BigQueryClientImpl(BigQueryClient):
         desired_schema_fields: List[bigquery.SchemaField],
         allow_field_deletions: bool = True,
     ) -> None:
+        desired_schema_map = {}
+        for field in desired_schema_fields:
+            if field.name in desired_schema_map:
+                raise ValueError(
+                    f"Found multiple columns with name [{field.name}] in new schema "
+                    f"for table [{dataset_id}.{table_id}]."
+                )
+            desired_schema_map[field.name] = field
+
         dataset_ref = self.dataset_ref_for_id(dataset_id)
-
-        if not self.table_exists(dataset_ref, table_id):
+        try:
+            table = self.client.get_table(dataset_ref.table(table_id))
+        except exceptions.NotFound as e:
             raise ValueError(
-                f"Cannot update schema fields for a table that does not exist: {dataset_id}.{table_id}"
-            )
+                f"Cannot update schema fields for a table that does not exist: "
+                f"{dataset_id}.{table_id}"
+            ) from e
 
-        table = self.get_table(dataset_ref, table_id)
         existing_schema = table.schema
-
-        desired_schema_map = {field.name: field for field in desired_schema_fields}
 
         for field in existing_schema:
             if field.name in desired_schema_map:
-                desired_field = desired_schema_map[field.name]
-                if field.field_type != desired_field.field_type:
-                    raise ValueError(
-                        f"Trying to change the field type of an existing field in {dataset_id}.{table_id}. Existing "
-                        f"field {field.name} has type {field.field_type}. Cannot change this type to "
-                        f"{desired_field.field_type}."
-                    )
-
-                if field.mode != desired_field.mode:
-                    raise ValueError(
-                        f"Cannot change the mode of field {field} to {desired_field.mode}."
-                    )
+                self._assert_is_valid_schema_field_update(
+                    BigQueryAddress(dataset_id=dataset_id, table_id=table_id),
+                    field,
+                    desired_schema_map[field.name],
+                )
 
         # Remove any deprecated fields first as it involves copying the entire view
         removal_job = self._remove_unused_fields_from_schema(
             dataset_id=dataset_id,
             table_id=table_id,
+            existing_schema=existing_schema,
             desired_schema_fields=desired_schema_fields,
             allow_field_deletions=allow_field_deletions,
         )
@@ -1980,9 +1956,12 @@ class BigQueryClientImpl(BigQueryClient):
             # Wait for the removal job to complete before running the job to add fields
             removal_job.result()
 
-        self._add_missing_fields_to_schema(
-            dataset_id=dataset_id,
-            table_id=table_id,
+            # If we removed fields, we need to query for the table again to get the
+            # updated schema.
+            table = self.client.get_table(dataset_ref.table(table_id))
+
+        self._add_or_update_existing_schema_fields(
+            table=table,
             desired_schema_fields=desired_schema_fields,
         )
 
