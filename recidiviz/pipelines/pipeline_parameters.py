@@ -28,6 +28,7 @@ import attr
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from attr import Attribute
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     REFERENCE_VIEWS_DATASET,
@@ -138,6 +139,12 @@ class PipelineParameters:
     # from command-line args (when flex pipeline is actually being
     # run in Dataflow).
     apache_beam_pipeline_options: Optional[PipelineOptions] = attr.ib(default=None)
+
+    @classmethod
+    @abc.abstractmethod
+    def get_dataset_param_names(cls) -> List[str]:
+        """Returns a list of dataset parameter names that will be used in the pipeline."""
+        return ["output", "reference_view_input"]
 
     @property
     @abc.abstractmethod
@@ -276,6 +283,20 @@ class PipelineParameters:
 
         # The Flex template expects all parameter values to be strings, so cast all non-null values to strings.
         return {k: str(v) for k, v in parameters.items() if v is not None}
+
+    def update_datasets_with_sandbox_prefix(
+        self, sandbox_prefix: str
+    ) -> "PipelineParameters":
+        return attr.evolve(
+            self,
+            **{
+                dataset_param_name: BigQueryAddressOverrides.format_sandbox_dataset(
+                    sandbox_prefix,
+                    getattr(self, dataset_param_name),
+                )
+                for dataset_param_name in self.get_dataset_param_names()
+            },
+        )
 
     def template_gcs_path(self, project_id: str) -> str:
         return GcsfsFilePath.from_bucket_and_blob_name(

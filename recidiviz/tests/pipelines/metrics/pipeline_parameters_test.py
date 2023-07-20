@@ -159,3 +159,35 @@ class TestMetricsPipelineParameters(unittest.TestCase):
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "test_job")
+
+    def test_update_with_sandbox_prefix(self) -> None:
+        pipeline_parameters = MetricsPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            metric_types="TEST_METRIC",
+            output="test_output",
+            calculation_month_count=36,
+            reference_view_input="test_view",
+            state_data_input="test_input",
+            normalized_input="normalized_input",
+            person_filter_ids="123 12323 324",
+        ).update_datasets_with_sandbox_prefix("my_prefix")
+
+        expected_parameters = {
+            "state_code": "US_OZ",
+            "pipeline": "test_pipeline_name",
+            "state_data_input": "my_prefix_test_input",
+            "reference_view_input": "my_prefix_test_view",
+            "normalized_input": "my_prefix_normalized_input",
+            "static_reference_input": f"my_prefix_{STATIC_REFERENCE_TABLES_DATASET}",
+            "metric_types": "TEST_METRIC",
+            "person_filter_ids": "123 12323 324",
+            "calculation_month_count": "36",
+            "output": "my_prefix_test_output",
+            "ingest_instance": "PRIMARY",
+        }
+
+        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)

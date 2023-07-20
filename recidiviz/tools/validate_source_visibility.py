@@ -228,6 +228,7 @@ def main() -> int:
         if pipeline.__file__ is None:
             raise ValueError(f"No file associated with {pipeline}.")
         valid_prefixes = {
+            "recidiviz.big_query.address_overrides",
             "recidiviz.calculator",
             "recidiviz.pipelines",
             "recidiviz.cloud_storage",
@@ -238,7 +239,6 @@ def main() -> int:
         if "metrics" in pipeline.__name__ or "normalization" in pipeline.__name__:
             valid_prefixes = valid_prefixes.union(
                 {
-                    "recidiviz.big_query.address_overrides",
                     "recidiviz.big_query.big_query_address",
                     "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.big_query.big_query_utils",
@@ -256,7 +256,6 @@ def main() -> int:
         ):
             valid_prefixes = valid_prefixes.union(
                 {
-                    "recidiviz.big_query.address_overrides",
                     "recidiviz.big_query.big_query_address",
                     "recidiviz.big_query.big_query_query_builder",
                     "recidiviz.big_query.big_query_utils",
@@ -301,6 +300,8 @@ def main() -> int:
         "recidiviz.utils.environment",
         "recidiviz.utils.metadata",
         "recidiviz.utils.yaml_dict",
+        "recidiviz.big_query.address_overrides",
+        "recidiviz.big_query.big_query_address",
     }
 
     success &= check_dependencies_for_entrypoint(

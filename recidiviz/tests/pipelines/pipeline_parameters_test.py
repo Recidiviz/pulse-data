@@ -20,10 +20,12 @@ import unittest
 from typing import Any
 
 import recidiviz
+from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
 )
+from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
@@ -40,9 +42,10 @@ class TestValidPipelineParameters(unittest.TestCase):
     YAML_PATH = "pipelines/calculation_pipeline_templates.yaml"
     FULL_PATH = os.path.join(ROOT, YAML_PATH)
 
-    PIPELINE_CONFIG = YAMLDict.from_path(FULL_PATH)
-
     PROJECT_ID = "project"
+
+    def setUp(self) -> None:
+        self.PIPELINE_CONFIG = YAMLDict.from_path(self.FULL_PATH)
 
     def test_metrics_pipelines_for_valid_parameters(self) -> None:
         metric_pipelines = self.PIPELINE_CONFIG.pop_dicts("metric_pipelines")
@@ -68,3 +71,20 @@ class TestValidPipelineParameters(unittest.TestCase):
         for pipeline in supplemental_pipelines:
             d: dict[str, Any] = pipeline.get()
             SupplementalPipelineParameters(project=self.PROJECT_ID, **d)
+
+    def test_ingest_pipelines_for_valid_parameters(self) -> None:
+        ingest_pipelines = self.PIPELINE_CONFIG.pop_dicts("ingest_pipelines")
+
+        for pipeline in ingest_pipelines:
+            d: dict[str, Any] = pipeline.get()
+            IngestPipelineParameters(project=self.PROJECT_ID, **d)
+
+    def test_valid_get_dataset_param_names(self) -> None:
+        for pipeline_params_subclass in PipelineParameters.__subclasses__():
+            for param_name in pipeline_params_subclass.get_dataset_param_names():
+                self.assertTrue(
+                    hasattr(pipeline_params_subclass, param_name),
+                    f"Found invalid param name returned from get_dataset_param_names() "
+                    f"for class [{pipeline_params_subclass.__class__}]: {param_name}."
+                    f"That field does not exist on that class.",
+                )

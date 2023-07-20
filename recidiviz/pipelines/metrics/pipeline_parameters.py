@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class for metrics pipeline parameters"""
-from typing import Optional
+from typing import List, Optional
 
 import attr
 
@@ -64,3 +64,12 @@ class MetricsPipelineParameters(PipelineParameters):
 
     def define_output(self) -> str:
         return DATAFLOW_METRICS_DATASET
+
+    @classmethod
+    def get_dataset_param_names(cls) -> List[str]:
+        return [
+            *super().get_dataset_param_names(),
+            "state_data_input",
+            "normalized_input",
+            "static_reference_input",
+        ]

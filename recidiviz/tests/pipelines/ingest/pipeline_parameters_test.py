@@ -156,3 +156,52 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 job_name="test_job",
                 service_account_email="some-test-account@somerandomwebsite.com",
             )
+
+    def test_update_with_sandbox_prefix(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            output="test_output",
+            ingest_view_results_output="test_ingest_view_output",
+        ).update_datasets_with_sandbox_prefix("my_prefix")
+
+        expected_parameters = {
+            "state_code": "US_OZ",
+            "pipeline": "test_pipeline_name",
+            "output": "my_prefix_test_output",
+            "raw_data_table_input": "my_prefix_us_oz_raw_data",
+            "reference_view_input": "my_prefix_reference_views",
+            "ingest_view_results_output": "my_prefix_test_ingest_view_output",
+            "ingest_instance": "PRIMARY",
+            "materialization_method": "original",
+        }
+
+        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+
+    def test_update_with_sandbox_prefix_secondary(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            output="test_output",
+            ingest_view_results_output="test_ingest_view_output",
+            ingest_instance="SECONDARY",
+        ).update_datasets_with_sandbox_prefix("my_prefix")
+
+        expected_parameters = {
+            "state_code": "US_OZ",
+            "pipeline": "test_pipeline_name",
+            "output": "my_prefix_test_output",
+            "raw_data_table_input": "my_prefix_us_oz_raw_data_secondary",
+            "reference_view_input": "my_prefix_reference_views",
+            "ingest_view_results_output": "my_prefix_test_ingest_view_output",
+            "ingest_instance": "SECONDARY",
+            "materialization_method": "original",
+        }
+
+        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)

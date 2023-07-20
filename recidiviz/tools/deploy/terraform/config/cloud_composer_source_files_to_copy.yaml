@@ -45,3 +45,5 @@
 - [recidiviz/utils, string.py]
 - [recidiviz/utils, types.py]
 - [recidiviz/utils, yaml_dict.py]
+- [recidiviz/big_query, address_overrides.py]
+- [recidiviz/big_query, big_query_address.py]

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class for supplemental pipeline parameters"""
+from typing import List
+
 import attr
 
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
@@ -31,3 +33,7 @@ class SupplementalPipelineParameters(PipelineParameters):
 
     def define_output(self) -> str:
         return SUPPLEMENTAL_DATA_DATASET
+
+    @classmethod
+    def get_dataset_param_names(cls) -> List[str]:
+        return super().get_dataset_param_names()

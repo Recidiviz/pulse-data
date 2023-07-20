@@ -20,10 +20,10 @@ This file is uploaded to GCS on deploy.
 """
 import os
 from collections import defaultdict
-from typing import Dict, Iterable, List, Optional, Type
+from typing import Dict, Iterable, List, Optional, Type, Union
 
-from airflow.decorators import dag
-from airflow.models import BaseOperator, DagRun, TaskInstance
+from airflow.decorators import dag, task
+from airflow.models import DagRun, TaskInstance
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -83,17 +83,6 @@ config_file: str = config_file_opt
 project_id: str = project_id_opt
 
 retry: Retry = Retry(predicate=lambda _: False)
-
-
-def flex_dataflow_operator_for_pipeline(
-    pipeline_parameters: PipelineParameters,
-) -> RecidivizDataflowFlexTemplateOperator:
-    return RecidivizDataflowFlexTemplateOperator(
-        task_id=pipeline_parameters.job_name,
-        location=pipeline_parameters.region,
-        body=pipeline_parameters.flex_template_launch_body(),
-        project_id=project_id,
-    )
 
 
 def update_all_managed_views_operator() -> TaskGroup:
@@ -259,31 +248,79 @@ def response_can_refresh_proceed_check(response: Response) -> bool:
     return data.lower() == "true"
 
 
-def create_pipeline_parameters_by_state(
-    pipeline_configs: Iterable[YAMLDict], parameter_cls: Type[PipelineParametersT]
-) -> Dict[str, List[PipelineParametersT]]:
-    pipeline_params_by_state: Dict[str, List[PipelineParametersT]] = defaultdict(list)
+def create_pipeline_configs_by_state(
+    pipeline_configs: Iterable[YAMLDict],
+) -> Dict[str, List[YAMLDict]]:
+    pipeline_params_by_state: Dict[str, List[YAMLDict]] = defaultdict(list)
     for pipeline_config in pipeline_configs:
-        params = parameter_cls(project=project_id, **pipeline_config.get())  # type: ignore
-        if project_id == GCP_PROJECT_STAGING or not params.staging_only:
-            pipeline_params_by_state[params.state_code].append(params)
+        if project_id == GCP_PROJECT_STAGING or not pipeline_config.peek_optional(
+            "staging_only", bool
+        ):
+            state_code = pipeline_config.peek("state_code", str)
+            pipeline_params_by_state[state_code].append(pipeline_config)
     return pipeline_params_by_state
 
 
-def normalization_pipeline_branches_by_state_code() -> Dict[str, BaseOperator]:
+def build_dataflow_pipeline_task_group(
+    pipeline_config: YAMLDict,
+    parameter_cls: Type[PipelineParametersT],
+) -> TaskGroup:
+    """Builds a task Group that handles creating the flex template operator for a given
+    pipeline parameters.
+    """
+    job_name = pipeline_config.peek("job_name", str)
+    with TaskGroup(group_id=job_name) as dataflow_pipeline_group:
+
+        @task(task_id="create_flex_template")
+        def create_flex_template(
+            dag_run: Optional[DagRun] = None,
+            task_instance: Optional[TaskInstance] = None,
+        ) -> Dict[str, Union[str, int, bool]]:
+            if not task_instance:
+                raise ValueError(
+                    "task_instance not provided. This should be automatically set by Airflow."
+                )
+            if not dag_run:
+                raise ValueError(
+                    "dag_run not provided. This should be automatically set by Airflow."
+                )
+            parameters: PipelineParameters = parameter_cls(
+                project=project_id,
+                ingest_instance=get_ingest_instance(dag_run),
+                **pipeline_config.get(),  # type: ignore
+            )
+
+            sandbox_prefix = get_sandbox_prefix(task_instance)
+            if sandbox_prefix:
+                parameters = parameters.update_datasets_with_sandbox_prefix(
+                    sandbox_prefix
+                )
+
+            return parameters.flex_template_launch_body()
+
+        _ = RecidivizDataflowFlexTemplateOperator(
+            task_id="run_pipeline",
+            location=pipeline_config.peek("region", str),
+            body=create_flex_template(),
+            project_id=project_id,
+        )
+
+    return dataflow_pipeline_group
+
+
+def normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
     normalization_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "normalization_pipelines"
     )
     normalization_pipeline_params_by_state: Dict[
-        str, List[NormalizationPipelineParameters]
-    ] = create_pipeline_parameters_by_state(
-        normalization_pipelines, NormalizationPipelineParameters
-    )
+        str, List[YAMLDict]
+    ] = create_pipeline_configs_by_state(normalization_pipelines)
 
     return {
-        state_code: flex_dataflow_operator_for_pipeline(
+        state_code: build_dataflow_pipeline_task_group(
             # There should only be one normalization pipeline per state
-            one(parameters_list)
+            pipeline_config=one(parameters_list),
+            parameter_cls=NormalizationPipelineParameters,
         )
         for state_code, parameters_list in normalization_pipeline_params_by_state.items()
     }
@@ -295,31 +332,34 @@ def post_normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]
     supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "supplemental_dataset_pipelines"
     )
-    metric_pipeline_params_by_state = create_pipeline_parameters_by_state(
-        metric_pipelines, MetricsPipelineParameters
-    )
-    supplemental_pipeline_parameters_by_state = create_pipeline_parameters_by_state(
-        supplemental_dataset_pipelines, SupplementalPipelineParameters
+    metric_pipeline_params_by_state = create_pipeline_configs_by_state(metric_pipelines)
+    supplemental_pipeline_parameters_by_state = create_pipeline_configs_by_state(
+        supplemental_dataset_pipelines
     )
 
-    all_pipeline_params_by_state: Dict[str, List[PipelineParameters]] = defaultdict(
-        list
+    all_branched_states = set(
+        list(metric_pipeline_params_by_state.keys())
+        + list(supplemental_pipeline_parameters_by_state.keys())
     )
-    for state_code, metric_parameters in metric_pipeline_params_by_state.items():
-        all_pipeline_params_by_state[state_code].extend(metric_parameters)
-    for (
-        state_code,
-        supplemental_parameters,
-    ) in supplemental_pipeline_parameters_by_state.items():
-        all_pipeline_params_by_state[state_code].extend(supplemental_parameters)
 
     branches_by_state_code = {}
-    for state_code, parameters_list in all_pipeline_params_by_state.items():
+    for state_code in all_branched_states:
         with TaskGroup(
             group_id=f"{state_code}_dataflow_pipelines"
         ) as state_code_dataflow_pipelines:
-            for parameters in parameters_list:
-                flex_dataflow_operator_for_pipeline(parameters)
+            for pipeline_config in metric_pipeline_params_by_state[state_code]:
+                build_dataflow_pipeline_task_group(
+                    pipeline_config=pipeline_config,
+                    parameter_cls=MetricsPipelineParameters,
+                )
+
+            for pipeline_config in supplemental_pipeline_parameters_by_state[
+                state_code
+            ]:
+                build_dataflow_pipeline_task_group(
+                    pipeline_config=pipeline_config,
+                    parameter_cls=SupplementalPipelineParameters,
+                )
 
         branches_by_state_code[state_code] = state_code_dataflow_pipelines
 
@@ -328,7 +368,7 @@ def post_normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]
 
 def validation_branches_by_state_code(
     states_to_validate: Iterable[str],
-) -> Dict[str, BaseOperator]:
+) -> Dict[str, TaskGroup]:
     branches_by_state_code = {}
     for state_code in states_to_validate:
         branches_by_state_code[state_code] = execute_validations_operator(state_code)

@@ -16,6 +16,7 @@
 # =============================================================================
 """Class for ingest pipeline parameters"""
 from enum import Enum
+from typing import List
 
 import attr
 
@@ -91,3 +92,11 @@ class IngestPipelineParameters(PipelineParameters):
                 "following is a sandbox dataset (either both must be sandbox or neither): "
                 f"output is {self.output}, ingest_view_results_output is {self.ingest_view_results_output}"
             )
+
+    @classmethod
+    def get_dataset_param_names(cls) -> List[str]:
+        return [
+            *super().get_dataset_param_names(),
+            "raw_data_table_input",
+            "ingest_view_results_output",
+        ]

@@ -71,3 +71,24 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "test_job")
+
+    def test_update_with_sandbox_prefix(self) -> None:
+        pipeline_parameters = SupplementalPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            output="test_output",
+            reference_view_input="test_view",
+        ).update_datasets_with_sandbox_prefix("my_prefix")
+
+        expected_parameters = {
+            "state_code": "US_OZ",
+            "pipeline": "test_pipeline_name",
+            "reference_view_input": "my_prefix_test_view",
+            "output": "my_prefix_test_output",
+            "ingest_instance": "PRIMARY",
+        }
+
+        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
