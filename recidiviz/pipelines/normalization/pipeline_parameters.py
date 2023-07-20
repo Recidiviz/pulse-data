@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class for normalization pipeline parameters"""
-from typing import Optional
+from typing import List, Optional
 
 import attr
 
@@ -54,3 +54,11 @@ class NormalizationPipelineParameters(PipelineParameters):
 
     def define_output(self) -> str:
         return normalized_state_dataset_for_state_code(StateCode(self.state_code))
+
+    @classmethod
+    def get_dataset_param_names(cls) -> List[str]:
+        return [
+            *super().get_dataset_param_names(),
+            "state_data_input",
+            "normalized_input",
+        ]
