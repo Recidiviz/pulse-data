@@ -124,7 +124,12 @@ class PipelineParameters:
         self, _attribute: Attribute, service_account_email: Optional[str]
     ) -> None:
         regex = r"[a-z0-9-]+@[a-z0-9-]+\.iam\.gserviceaccount\.com"
-        if service_account_email and re.match(regex, service_account_email) is None:
+        default_regex = r"[a-z0-9-]+@developer\.gserviceaccount\.com"
+        if (
+            service_account_email
+            and re.match(regex, service_account_email) is None
+            and re.match(default_regex, service_account_email) is None
+        ):
             raise ValueError(
                 f"service_account_email must be a valid service account email address, but was {service_account_email}"
             )
