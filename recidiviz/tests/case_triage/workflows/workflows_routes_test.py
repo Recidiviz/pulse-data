@@ -503,7 +503,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "Hello, is it me you're looking for?",
             "recipientPhoneNumber": "5153338822",
-            "mid": "abc-123",
         }
 
         with self.test_app.test_request_context():
@@ -551,7 +550,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "I can see it in your eyes",
             "recipientPhoneNumber": "5153338822",
-            "mid": "abc-123",
         }
 
         with self.test_app.test_request_context():
@@ -581,7 +579,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "I can see it in your smile",
             "recipientPhoneNumber": "5153338822",
-            "mid": "abc-123",
         }
 
         with self.test_app.test_request_context():
@@ -620,7 +617,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "You're all I've ever wanted and my arms are open wide",
             "recipientPhoneNumber": "5153338822",
-            "mid": "abc-123",
         }
 
         with self.test_app.test_request_context():
