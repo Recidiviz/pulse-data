@@ -23,12 +23,14 @@ python -m recidiviz.tools.justice_counts.generate_agency_summary_csv \
 """
 
 import argparse
+import datetime
 from collections import defaultdict
 from itertools import groupby
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import pandas as pd
 
+from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -37,17 +39,20 @@ from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_contr
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+CREATED_AT = "created_at"
+LAST_LOGIN = "last_login"
+LAST_UPDATE = "last_update"
 NUM_RECORDS_WITH_DATA = "num_records_with_data"
 NUM_METRICS_WITH_DATA = "num_metrics_with_data"
 NUM_METRICS_CONFIGURED = "num_metrics_configured"
 NUM_METRICS_AVAILABLE = "num_metrics_available"
 NUM_METRICS_UNAVAILABLE = "num_metrics_unavailable"
 IS_ALPHA_PARTNER = "is_alpha_partner"
+IS_SUPERAGENCY = "is_superagency"
 
 # To add:
 # NUM_METRICS_UNCONFIGURED = "num_metrics_unconfigured"
 # NUM_METRICS_DEFINED = "num_metrics_defined"
-# LAST_LOGIN = "last_login"
 
 # These are the IDs of our alpha partner agencies in production
 ALPHA_PARTNER_IDS = {74, 75, 73, 77, 79, 80, 81, 83, 84, 85}
@@ -67,7 +72,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, int]:
+def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
     """Given a list of Datapoints belonging to a particular agency,
     return a dictionary containing summary statistics.
     """
@@ -77,7 +82,17 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, int]:
     metrics_available = set()
     metrics_unavailable = set()
 
+    last_update = None
     for datapoint in datapoints:
+        # For now, an agency's last_update is the max(dp["created_at"])
+        # over all of its datapoints. That means if a user edits an existing datapoint,
+        # it won't count towards last_update.
+        # TODO(#22370) Add updated_at to schema.Datapoint and use that instead
+        if datapoint["created_at"]:
+            datapoint_created_at = datapoint["created_at"].date()
+            if not last_update or (last_update and datapoint_created_at > last_update):
+                last_update = datapoint_created_at
+
         # Process report datapoints (i.e. those that contain data for a time period)
         if datapoint["is_report_datapoint"] and datapoint["value"] is not None:
             # Group datapoints by report (i.e. time period)
@@ -104,6 +119,7 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, int]:
                 metrics_unavailable.add(datapoint["metric_definition_key"])
 
     return {
+        LAST_UPDATE: last_update or "",
         NUM_RECORDS_WITH_DATA: len(report_id_to_datapoints),
         NUM_METRICS_WITH_DATA: len(metric_key_to_datapoints),
         NUM_METRICS_CONFIGURED: len(metrics_configured),
@@ -116,31 +132,94 @@ def generate_agency_summary_csv() -> None:
     """Generates a CSV with data about all agencies with Publisher accounts."""
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
+
+    auth0_client = Auth0Client(  # nosec
+        domain_secret_name="justice_counts_auth0_api_domain",
+        client_id_secret_name="justice_counts_auth0_api_client_id",
+        client_secret_secret_name="justice_counts_auth0_api_client_secret",
+    )
+    auth0_users = auth0_client.get_all_users()
+    auth0_user_id_to_user = {user["user_id"]: user for user in auth0_users}
+
     with cloudsql_proxy_control.connection(schema_type=schema_type):
         with SessionFactory.for_proxy(database_key) as session:
             agencies = session.execute(
                 "select * from source where type = 'agency'"
             ).all()
+            agency_user_account_associations = session.execute(
+                "select * from agency_user_account_association"
+            ).all()
+            users = session.execute("select * from user_account").all()
             datapoints = session.execute("select * from datapoint").all()
+
+            user_id_to_auth0_user = {
+                user["id"]: auth0_user_id_to_user.get(user["auth0_user_id"])
+                for user in users
+            }
+
+            agency_id_to_users = defaultdict(list)
+            for assoc in agency_user_account_associations:
+                auth0_user = user_id_to_auth0_user[assoc["user_account_id"]]
+                if (
+                    # Skip over CSG and Recidiviz users -- we shouldn't
+                    # count as a true login!
+                    auth0_user
+                    and "csg" not in auth0_user["email"]
+                    and "recidiviz" not in auth0_user["email"]
+                ):
+                    agency_id_to_users[assoc["agency_id"]].append(auth0_user)
 
             # We have some test agencies in production, currently distinguished only in name
             test_agency_ids = {
                 a["id"] for a in agencies if "TEST" in a["name"] or "Test" in a["name"]
             }
-            non_test_agencies = [
-                dict(a) for a in agencies if a["id"] not in test_agency_ids
+            # Skip child agencies, since a superagency might have hundreds of them
+            child_agency_ids = {a["id"] for a in agencies if a["super_agency_id"]}
+
+            original_agencies = agencies
+            agencies = [
+                dict(a)
+                for a in original_agencies
+                if a["id"] not in (test_agency_ids | child_agency_ids)
             ]
-            agency_id_to_agency = {a["id"]: a for a in non_test_agencies}
+            agency_id_to_agency = {a["id"]: a for a in agencies}
 
-            print(f"Number of non-test agencies: {len(non_test_agencies)}")
+            print(f"Number of agencies: {len(agencies)}")
 
-            for agency in non_test_agencies:
+            for agency in agencies:
+                users = agency_id_to_users[agency["id"]]
+                created_at = None
+                last_login = None
+                for user in users:
+                    # For now, we assume that an agency's created_at date is the
+                    # earliest creation date of any of its users.
+                    # TODO(#22371) Add created_at to schema.Agency and use that instead
+                    user_created_at = datetime.datetime.strptime(
+                        user["created_at"].split("T")[0], "%Y-%m-%d"
+                    ).date()
+                    if not created_at or (user_created_at < created_at):
+                        created_at = user_created_at
+
+                    # The agency's last_login is the most recent login date of
+                    # any of its users.
+                    if "last_login" not in user:
+                        continue
+                    user_last_login = datetime.datetime.strptime(
+                        user["last_login"].split("T")[0], "%Y-%m-%d"
+                    ).date()
+                    if not last_login or (user_last_login > last_login):
+                        last_login = user_last_login
+
+                agency[LAST_LOGIN] = last_login or ""
+                agency[CREATED_AT] = created_at or ""
+                agency[LAST_UPDATE] = ""
                 agency[NUM_RECORDS_WITH_DATA] = 0
                 agency[NUM_METRICS_WITH_DATA] = 0
                 agency[NUM_METRICS_CONFIGURED] = 0
                 agency[NUM_METRICS_AVAILABLE] = 0
                 agency[NUM_METRICS_UNAVAILABLE] = 0
                 agency[IS_ALPHA_PARTNER] = agency["id"] in ALPHA_PARTNER_IDS
+                agency[IS_SUPERAGENCY] = bool(agency["is_superagency"])
 
             agency_id_to_datapoints_groupby = groupby(
                 sorted(datapoints, key=lambda x: x["source_id"]),
@@ -171,12 +250,16 @@ def generate_agency_summary_csv() -> None:
                 .reindex(
                     columns=[
                         "state",
+                        CREATED_AT,
+                        LAST_LOGIN,
+                        LAST_UPDATE,
                         NUM_RECORDS_WITH_DATA,
                         NUM_METRICS_WITH_DATA,
                         NUM_METRICS_CONFIGURED,
                         NUM_METRICS_AVAILABLE,
                         NUM_METRICS_UNAVAILABLE,
                         IS_ALPHA_PARTNER,
+                        IS_SUPERAGENCY,
                         "systems",
                     ]
                 )
