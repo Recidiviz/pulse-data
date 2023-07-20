@@ -22,6 +22,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, List, Optional
 
 from opencensus.ext.stackdriver import stats_exporter as stackdriver
+from opencensus.ext.stackdriver.stats_exporter import Options
 from opencensus.stats import stats as stats_module
 from opencensus.stats import view as view_module
 from opencensus.tags import TagContext, TagMap
@@ -38,8 +39,8 @@ def stats() -> stats_module._Stats:
     return stats_module.stats
 
 
-def register_stackdriver_exporter() -> None:
-    exporter = stackdriver.new_stats_exporter()
+def register_stackdriver_exporter(options: Optional[Options] = None) -> None:
+    exporter = stackdriver.new_stats_exporter(options=options)
     stats().view_manager.register_exporter(exporter)
 
 
