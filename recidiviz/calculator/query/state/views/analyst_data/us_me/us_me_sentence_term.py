@@ -73,14 +73,16 @@ WITH revocations AS (
     SELECT
         t.state_code, 
         t.person_id,
+        Cis_100_Client_Id,
         COALESCE(admission_date, {revert_nonnull_start_date_clause('start_date')}) AS start_date,
         {revert_nonnull_end_date_clause('end_date')} AS end_date,
         t.Cis_1200_Term_Status_Cd AS status,
         term_id,
     FROM (
+            -- Cast dates, join with recidiviz ids and make sure intake_date and 
+            --   expected release date are not null
             SELECT
                 *,
-                
                 {nonnull_start_date_clause('DATE(SAFE_CAST(intake_date AS DATETIME))')} AS start_date,
                 {nonnull_end_date_clause('DATE(SAFE_CAST(Curr_Cust_Rel_Date AS DATETIME))')} AS end_date,  
                 -- TODO(#16175) should ingest the expected release date sometime soon
@@ -100,9 +102,30 @@ WITH revocations AS (
     QUALIFY ROW_NUMBER() OVER(PARTITION BY Term_Id ORDER BY admission_date DESC) = 1
     )
 
-    
-SELECT *
-FROM term_cte
+-- finally, if someone spent time in county, we adjust their start date to reflect that
+SELECT 
+  t.state_code,
+  t.person_id,
+  DATE_SUB(t.start_date, INTERVAL IFNULL(county.days_spent_in_county, 0) DAY) AS start_date,
+  t.end_date, 
+  t.status,
+  t.term_id,
+FROM term_cte t
+LEFT JOIN (
+    -- days in county jail
+    SELECT 
+      Cis_400_Cis_100_Client_Id,
+      Cis_319_Term_Id,
+      SAFE_CAST(LEFT(Court_Order_Sent_Date, 10) AS DATE) AS crt_order_sent_date,
+      MAX(SAFE_CAST(Detention_Days_Num AS INT64)) AS days_spent_in_county,
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_401_CRT_ORDER_HDR_latest`
+    -- only include days in county if the person was sentenced to county jail
+    WHERE Apply_Det_Days_Ind = 'Y'
+    GROUP BY 1,2,3
+) county
+  ON t.Cis_100_Client_Id = county.Cis_400_Cis_100_Client_Id
+    AND t.term_id = county.Cis_319_Term_Id
+    AND t.start_date = county.crt_order_sent_date
 """
 
 US_ME_SENTENCE_TERM_VIEW_BUILDER = SimpleBigQueryViewBuilder(
