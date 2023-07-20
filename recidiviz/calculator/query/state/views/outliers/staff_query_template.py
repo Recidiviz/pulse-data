@@ -45,5 +45,5 @@ INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff
 WHERE staff.state_code IN ({list_to_query_string(get_outliers_enabled_states(), quoted=True)}) 
   AND {today_between_start_date_and_nullable_end_date_exclusive_clause("start_date", "end_date_exclusive")}
   AND attrs.role_subtype = '{role}'
-  {get_all_config_based_query_filters_query_str()}
+  AND {get_all_config_based_query_filters_query_str()}
     """
