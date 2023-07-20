@@ -40,7 +40,8 @@ _QUERY_TEMPLATE = """
             ARRAY_AGG(projected_completion_date_max ORDER BY COALESCE(projected_completion_date_max,'9999-01-01')) AS ineligible_sentences_expiration_date
             )) AS reason,
     FROM `{project_id}.{sessions_dataset}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
+    -- TODO(#22472): Incorporate `sentences_preprocessed_id_array_projected_completion` into criteria
+    UNNEST (sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id
     JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
     WHERE span.state_code = 'US_TN'

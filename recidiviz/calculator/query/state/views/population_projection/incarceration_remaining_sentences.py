@@ -98,7 +98,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             AND ss.state_code = sessions.state_code
             AND run_date_array.run_date BETWEEN ss.start_date
                 AND COALESCE(DATE_SUB(ss.end_date, INTERVAL 1 DAY), '9999-01-01'),
-        UNNEST(sentence_imposed_group_id_array) AS sentence_imposed_group_id
+        UNNEST(sentence_imposed_group_id_array_actual_completion) AS sentence_imposed_group_id
         LEFT JOIN
             `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` sentences
             ON sentences.person_id = ss.person_id

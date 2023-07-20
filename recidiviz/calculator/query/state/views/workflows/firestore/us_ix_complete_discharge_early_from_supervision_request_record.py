@@ -73,7 +73,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
     /* This CTE creates a list of open parent sentences that have consecutive sentences */ 
     SELECT sent.sentence_id
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`,
-        UNNEST (sentences_preprocessed_id_array) sentences_preprocessed_id
+        UNNEST (sentences_preprocessed_id_array_actual_completion) sentences_preprocessed_id
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.us_ix_consecutive_sentences_preprocessed_materialized` cs
@@ -97,7 +97,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         charge.judge_full_name,
         cn.Docket AS case_number,
       FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`,
-        UNNEST (sentences_preprocessed_id_array) sentences_preprocessed_id
+        UNNEST (sentences_preprocessed_id_array_actual_completion) sentences_preprocessed_id
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
       LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_charge` charge

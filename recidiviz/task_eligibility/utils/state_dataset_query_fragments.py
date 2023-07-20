@@ -175,7 +175,7 @@ def get_current_offenses() -> str:
         FROM `{project_id}.{sessions_dataset}.sentence_spans_materialized`
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date DESC) = 1
       ) s,
-      UNNEST(sentences_preprocessed_id_array) as sentences_preprocessed_id
+      UNNEST(sentences_preprocessed_id_array_actual_completion) as sentences_preprocessed_id
       LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sentences
         USING(person_id, state_code, sentences_preprocessed_id)
     """
