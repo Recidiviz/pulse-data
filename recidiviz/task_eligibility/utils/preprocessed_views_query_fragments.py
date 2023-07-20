@@ -17,6 +17,7 @@
 """Helper SQL fragments that do standard queries against pre-processed views.
 """
 
+from typing import List, Optional
 
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
@@ -417,6 +418,7 @@ def spans_within_x_and_y_months_of_start_date(
     table_view: str,
     dataset: str,
     project_id: str = "project_id",
+    where_clause_additions: Optional[List[str]] = None,
 ) -> str:
     """
     Returns a SQL query that returns spans of time where someone is between |x_months| and
@@ -429,6 +431,7 @@ def spans_within_x_and_y_months_of_start_date(
         table_view (str): Name of the table or view to query.
         dataset (str): BigQuery dataset.
         project_id (str): Project id. Defaults to 'project_id'
+        where_clause_additions Optional[List[str]]: Optional additional WHERE clauses to add to the first CTE.
 
     Returns:
         str: SQL query as a string.
@@ -436,6 +439,10 @@ def spans_within_x_and_y_months_of_start_date(
     Example usage:
         query = spans_within_x_and_y_months_of_start_date(3, 6, "start_date_plus_3_months", "my_table_view")
     """
+
+    where_clause_additions_sql: str = ""
+    if where_clause_additions:
+        where_clause_additions_sql = "AND " + " AND ".join(list(where_clause_additions))
 
     return f"""cte AS (
         SELECT
@@ -446,6 +453,7 @@ def spans_within_x_and_y_months_of_start_date(
             {nonnull_end_date_clause('end_date')} AS end_date,
         FROM `{{{project_id}}}.{{{dataset}}}.{table_view}`
         WHERE meets_criteria=True
+            {where_clause_additions_sql}
     )
 
 SELECT
