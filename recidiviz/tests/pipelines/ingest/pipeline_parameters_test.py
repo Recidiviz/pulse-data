@@ -129,6 +129,20 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "some-test-account@recidiviz-staging.iam.gserviceaccount.com",
         )
 
+    def test_creation_valid_service_account_email_default_compute(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            service_account_email="12345-compute@developer.gserviceaccount.com",
+        )
+        self.assertEqual(
+            pipeline_parameters.service_account_email,
+            "12345-compute@developer.gserviceaccount.com",
+        )
+
     def test_creation_invalid_service_account_email(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
