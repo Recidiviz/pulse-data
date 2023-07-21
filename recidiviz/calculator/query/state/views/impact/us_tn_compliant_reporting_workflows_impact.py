@@ -50,7 +50,6 @@ joined_query AS (
     SELECT
         state_code,
         district AS supervision_district,
-        district,
         district_name,
         variant_id,
         variant_date,
@@ -84,7 +83,6 @@ US_TN_COMPLIANT_REPORTING_WORKFLOWS_IMPACT_VIEW_BUILDER = (
         columns=[
             "state_code",
             "supervision_district",
-            "district",
             "district_name",
             "variant_id",
             "variant_date",

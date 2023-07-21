@@ -132,8 +132,6 @@ def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     for impact_view_builder in IMPACT_DASHBOARD_VIEW_BUILDERS:
         if f"{impact_view_builder.view_id}.csv" == filename:
             view_builder = impact_view_builder
-            # remove district column since it's not in the database table schema and will cause an error when importing
-            view_builder.columns.remove("district")
             view_id = impact_view_builder.view_id
     if not view_builder and not view_id:
         return (
