@@ -248,6 +248,17 @@ AVG_DAILY_POPULATION_HIGH_RISK_LEVEL = DailyAvgSpanCountMetric(
     },
 )
 
+AVG_DAILY_POPULATION_LIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
+    name="avg_population_limited_supervision_justice_impact",
+    display_name="Average Population: Limited Supervision (Justice Impact Type)",
+    description="Average daily count of clients on limited supervision, "
+    "mutually exclusive from other justice impact types",
+    span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
+    span_attribute_filters={
+        "justice_impact_type": ["LIMITED_SUPERVISION"],
+    },
+)
+
 AVG_DAILY_POPULATION_LOW_RISK_LEVEL = DailyAvgSpanCountMetric(
     name="avg_population_low_risk_level",
     display_name="Average Population: Low Risk Level",
@@ -276,6 +287,27 @@ AVG_DAILY_POPULATION_NONWHITE = DailyAvgSpanCountMetric(
     span_types=[PersonSpanType.PERSON_DEMOGRAPHICS],
     span_attribute_filters={
         "prioritized_race_or_ethnicity": '!= "WHITE"',
+    },
+)
+
+AVG_DAILY_POPULATION_NONLIMITED_SUPERVISION = DailyAvgSpanCountMetric(
+    name="avg_population_nonlimited_supervision",
+    display_name="Average Population: Non-limited Supervision",
+    description="Average daily population of individuals with non-limited supervision",
+    span_types=[PersonSpanType.SUPERVISION_LEVEL_SESSION],
+    span_attribute_filters={
+        "supervision_level": '!= "LIMITED"',
+    },
+)
+
+AVG_DAILY_POPULATION_NONLIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
+    name="avg_population_nonlimited_supervision_justice_impact",
+    display_name="Average Population: Non-limited Supervision (Justice Impact Type)",
+    description="Average daily population of individuals on non-limited supervision, "
+    "mutually exclusive from other justice impact types",
+    span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
+    span_attribute_filters={
+        "justice_impact_type": ["NONLIMITED_SUPERVISION"],
     },
 )
 
@@ -345,6 +377,30 @@ AVG_DAILY_POPULATION_SHOCK_INCARCERATION = DailyAvgSpanCountMetric(
     span_attribute_filters={
         "compartment_level_1": ["INCARCERATION"],
         "compartment_level_2": ["SHOCK_INCARCERATION"],
+    },
+)
+
+AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT = DailyAvgSpanCountMetric(
+    name="avg_population_solitary_confinement",
+    display_name="Average Population: Solitary Confinement",
+    description="Average daily population of individuals in solitary confinement",
+    span_types=[PersonSpanType.HOUSING_TYPE_SESSION],
+    span_attribute_filters={
+        "housing_unit_type": [
+            "TEMPORARY_SOLITARY_CONFINEMENT",
+            "PERMANENT_SOLITARY_CONFINEMENT",
+        ],
+    },
+)
+
+AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
+    name="avg_population_solitary_confinement_justice_impact",
+    display_name="Average Population: Solitary Confinement (Justice Impact Type)",
+    description="Average daily population of individuals in solitary confinement, "
+    "mutually exclusive from other justice impact types",
+    span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
+    span_attribute_filters={
+        "justice_impact_type": ["SOLITARY"],
     },
 )
 
@@ -422,6 +478,70 @@ AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE = DailyAvgSpanCountMetric(
         "case_type_start": "IS NULL",
     },
 )
+
+AVG_DAILY_POPULATION_MAXIMUM_CUSTODY = DailyAvgSpanCountMetric(
+    name="avg_population_max_custody",
+    display_name="Average Population: Maximum Custody",
+    description="Average daily population of individuals in maximum custody",
+    span_types=[PersonSpanType.CUSTODY_LEVEL_SESSION],
+    span_attribute_filters={
+        "custody_level": ["MAXIMUM"],
+    },
+)
+
+AVG_DAILY_POPULATION_MAXIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
+    name="avg_population_max_custody_justice_impact",
+    display_name="Average Population: Maximum Custody (Justice Impact Type)",
+    description="Average daily population of individuals in maximum custody, mutually "
+    "exclusive from other justice impact types",
+    span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
+    span_attribute_filters={
+        "justice_impact_type": ["MAX_CUSTODY"],
+    },
+)
+
+AVG_DAILY_POPULATION_MEDIUM_CUSTODY = DailyAvgSpanCountMetric(
+    name="avg_population_medium_custody",
+    display_name="Average Population: Maximum Custody",
+    description="Average daily population of individuals in maximum custody",
+    span_types=[PersonSpanType.CUSTODY_LEVEL_SESSION],
+    span_attribute_filters={
+        "custody_level": ["MEDIUM", "CLOSE"],
+    },
+)
+
+AVG_DAILY_POPULATION_MEDIUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
+    name="avg_population_medium_custody_justice_impact",
+    display_name="Average Population: Medium Custody (Justice Impact Type)",
+    description="Average daily population of individuals in medium custody, mutually "
+    "exclusive from other justice impact types",
+    span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
+    span_attribute_filters={
+        "justice_impact_type": ["MEDIUM_CUSTODY"],
+    },
+)
+
+AVG_DAILY_POPULATION_MINIMUM_CUSTODY = DailyAvgSpanCountMetric(
+    name="avg_population_min_custody",
+    display_name="Average Population: Minimum Custody",
+    description="Average daily population of individuals in minimum custody",
+    span_types=[PersonSpanType.CUSTODY_LEVEL_SESSION],
+    span_attribute_filters={
+        "custody_level": ["MINIMUM", "RESTRICTIVE_MINIMUM", "INTERNAL_UNKNOWN"],
+    },
+)
+
+AVG_DAILY_POPULATION_MINIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
+    name="avg_population_min_custody_justice_impact",
+    display_name="Average Population: Minimum Custody (Justice Impact Type)",
+    description="Average daily population of individuals in minimum custody, mutually "
+    "exclusive from other justice impact types",
+    span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
+    span_attribute_filters={
+        "justice_impact_type": ["MIN_CUSTODY"],
+    },
+)
+
 
 AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
     name="avg_lsir_score",

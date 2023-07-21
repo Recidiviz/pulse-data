@@ -34,6 +34,14 @@ MEDIUM_SECURITY_WEIGHT = 2.5
 SUPERVISION_WEIGHT = 1 / 25
 LIMITED_UNSUPERVISED_WEIGHT = 1 / 50
 
+# flags for compartments corresponding to justice impact weights
+LIMITED_SUPERVISION_TYPE = "LIMITED_SUPERVISION"
+MAX_SECURITY_TYPE = "MAXIMUM_CUSTODY"
+MEDIUM_SECURITY_TYPE = "MEDIUM_CUSTORY"
+MINIMUM_SECURITY_TYPE = "MIN_SUPERVISION"
+SOLITARY_CONFINEMENT_TYPE = "SOLITARY"
+SUPERVISION_TYPE = "NONLIMITED_SUPERVISION"
+
 _VIEW_NAME = "justice_impact_sessions"
 
 _VIEW_DESCRIPTION = f"""
@@ -46,12 +54,74 @@ justice compartments.
 
 Weights are defined as follows:
 - Max Security Incarceration: {MAX_SECURITY_WEIGHT}
-- Solitary confinement: {SOLITARY_CONFINEMENT_WEIGHT}
+- Solitary Confinement: {SOLITARY_CONFINEMENT_WEIGHT}
 - Medium Security Incarceration: {MEDIUM_SECURITY_WEIGHT}
 - Min Security Incarceration: 1
 - Supervision: {SUPERVISION_WEIGHT}
 - Limited/unsupervised: {LIMITED_UNSUPERVISED_WEIGHT}
 """
+
+
+# helper function for getting compartment-specific levels or weights
+def get_justice_impact_type_or_weight_column(column: str) -> str:
+    """
+    Returns the column SQL for the given justice impact type or weight.
+
+    `column` can be one of:
+    - "type": the justice impact type (e.g. "MAXIMUM_CUSTODY")
+    - "weight": the justice impact weight (e.g. 30)
+    """
+
+    if column not in [
+        "type",
+        "weight",
+    ]:
+        raise ValueError(
+            f"Column {column} is not a valid column for justice impact sessions."
+        )
+
+    return f"""CASE
+            WHEN compartment_level_1 IN (
+                "DEATH", "ERRONEOUS_RELEASE", "INTERNAL_UNKNOWN", "LIBERTY", "SUSPENSION"
+            ) THEN {0 if column == "weight" else "NULL"}
+            -- TODO(#22252): Delete this reference to `housing_unit_type` once
+            -- `housing_unit_category` replaces it as the super-type for housing placement
+            WHEN housing_unit_type IN (
+                "TEMPORARY_SOLITARY_CONFINEMENT",
+                "PERMANENT_SOLITARY_CONFINEMENT"
+            )
+            -- OR housing_unit_category = "SOLITARY_CONFINEMENT"
+            THEN {SOLITARY_CONFINEMENT_WEIGHT if column == "weight" else f'"{SOLITARY_CONFINEMENT_TYPE}"'}
+            WHEN compartment_level_1 IN (
+                "INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY"
+            ) THEN
+                -- determine security level of incarceration
+                CASE
+                    WHEN correctional_level IN (
+                        "MAXIMUM"
+                    ) THEN {MAX_SECURITY_WEIGHT if column == "weight" else f'"{MAX_SECURITY_TYPE}"'}
+                    WHEN correctional_level IN (
+                        "MEDIUM", "CLOSE"
+                    ) THEN {MEDIUM_SECURITY_WEIGHT if column == "weight" else f'"{MEDIUM_SECURITY_TYPE}"'}
+                    -- the rest is assumed minimum security or equivalent
+                    -- this includes MINIMUM, RESTRICTIVE_MINIMUM, and INTERNAL_UNKNOWN
+                    ELSE {1 if column == "weight" else f'"{MINIMUM_SECURITY_TYPE}"'} END
+            -- all remaining compartments supervision or investigation
+            -- first, handle unconventional supervision (ignore qualitative factors)
+            WHEN compartment_level_1 IN (
+                "INVESTIGATION", "PENDING_SUPERVISION"
+            ) THEN {SUPERVISION_WEIGHT if column == "weight" else f'"{SUPERVISION_TYPE}"'}
+            -- second, weights for unsupervised parole/probation
+            WHEN correctional_level IN (
+                "LIMITED", "UNSUPERVISED"
+            ) THEN {LIMITED_UNSUPERVISED_WEIGHT if column == "weight" else f'"{LIMITED_SUPERVISION_TYPE}"'}
+            -- finally, supervised parole/probation
+            WHEN compartment_level_1 IN (
+                "SUPERVISION", "SUPERVISION_OUT_OF_STATE"
+            ) THEN {SUPERVISION_WEIGHT if column == "weight" else f'"{SUPERVISION_TYPE}"'}
+            -- the above should cover all cases
+            ELSE NULL END"""
+
 
 _QUERY_TEMPLATE = f"""
 WITH weights AS (
@@ -60,48 +130,10 @@ WITH weights AS (
         person_id,
         start_date,
         end_date_exclusive,
-        -- Below we weight every compartment level 1 in compartment_sub_sessions
-        -- with exceptions for more specific experiences (e.g. solitary confinement)
-        CASE
-            WHEN compartment_level_1 IN (
-                "DEATH", "ERRONEOUS_RELEASE", "INTERNAL_UNKNOWN", "LIBERTY", "SUSPENSION"
-            ) THEN 0
-            -- TODO(#22252): Delete this reference to `housing_unit_type` once 
-            -- `housing_unit_category` replaces it as the super-type for housing placement
-            WHEN housing_unit_type IN (
-                "TEMPORARY_SOLITARY_CONFINEMENT",
-                "PERMANENT_SOLITARY_CONFINEMENT"
-            ) OR housing_unit_category IN ("SOLITARY_CONFINEMENT")
-            THEN {SOLITARY_CONFINEMENT_WEIGHT}
-            WHEN compartment_level_1 IN (
-                "INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY"
-            ) THEN
-                -- determine security level of incarceration
-                CASE
-                    WHEN correctional_level IN (
-                        "MAXIMUM"
-                    ) THEN {MAX_SECURITY_WEIGHT}
-                    WHEN correctional_level IN (
-                        "MEDIUM", "CLOSE"
-                    ) THEN {MEDIUM_SECURITY_WEIGHT}
-                    -- the rest is assumed minimum security or equivalent
-                    -- this includes MINIMUM, RESTRICTIVE_MINIMUM, and INTERNAL_UNKNOWN
-                    ELSE 1 END
-            -- all remaining compartments supervision or investigation
-            -- first, handle unconventional supervision (ignore qualitative factors)
-            WHEN compartment_level_1 IN (
-                "INVESTIGATION", "PENDING_SUPERVISION"
-            ) THEN {SUPERVISION_WEIGHT}
-            -- second, weights for unsupervised parole/probation
-            WHEN correctional_level IN (
-                "LIMITED", "UNSUPERVISED"
-            ) THEN {LIMITED_UNSUPERVISED_WEIGHT}
-            -- finally, supervised parole/probation
-            WHEN compartment_level_1 IN (
-                "SUPERVISION", "SUPERVISION_OUT_OF_STATE"
-            ) THEN {SUPERVISION_WEIGHT}
-            -- the above should cover all cases
-            ELSE NULL END AS justice_impact_weight,
+        -- label each period with a mutually exclusive type of justice impact
+        {get_justice_impact_type_or_weight_column("type")} AS justice_impact_type,
+        -- assign a weight to each period of justice impact
+        {get_justice_impact_type_or_weight_column("weight")} AS justice_impact_weight,
     FROM
         `{{project_id}}.{{compartment_sub_sessions}}`
 )
@@ -110,7 +142,7 @@ WITH weights AS (
 , sessionized_cte AS (
 {aggregate_adjacent_spans(
     table_name="weights",
-    attribute="justice_impact_weight",
+    attribute=["justice_impact_type", "justice_impact_weight"],
     session_id_output_name="session_id",
     end_date_field_name="end_date_exclusive",
 )}
@@ -122,6 +154,7 @@ SELECT
     session_id,
     start_date,
     end_date_exclusive,
+    justice_impact_type,
     justice_impact_weight,
     DATE_DIFF(
         end_date_exclusive, start_date, DAY
