@@ -89,6 +89,30 @@ class TestRawTableColumnInfo(unittest.TestCase):
             datetime_column_info.datetime_sql_parsers,
         )
 
+    def test_valid_external_id_cols(self) -> None:
+        # Should run without crashing
+
+        # External id primary column
+        _ = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
+            is_pii=False,
+            description=None,
+            known_values=None,
+            external_id_type="US_OZ_EG",
+            is_primary_for_external_id_type=True,
+        )
+
+        # Non-primary column but has an external id type
+        _ = RawTableColumnInfo(
+            name="COL1",
+            field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
+            is_pii=False,
+            description=None,
+            known_values=None,
+            external_id_type="US_OZ_EG",
+        )
+
     def test_bad_datetime_sql_parsers(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -133,6 +157,46 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 datetime_sql_parsers=[
                     "SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', '')) AS DATETIME),"
                 ],
+            )
+
+    def test_bad_external_id_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected external_id_type to be None and is_primary_for_external_id_type to be False when field_type is string for COL1",
+        ):
+            _ = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.STRING,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                external_id_type="string",
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected external_id_type to be None and is_primary_for_external_id_type to be False when field_type is string for COL1",
+        ):
+            _ = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.STRING,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                is_primary_for_external_id_type=True,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected is_primary_for_external_id_type to be False when external id type is None for COL1*",
+        ):
+            _ = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                is_primary_for_external_id_type=True,
             )
 
 
@@ -503,6 +567,24 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 ],
             )
 
+    def test_external_id_wrong_field_type(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Expected external_id_type to be None and is_primary_for_external_id_type to be False when field_type is*",
+        ):
+            _ = attr.evolve(
+                self.sparse_config,
+                columns=[
+                    RawTableColumnInfo(
+                        name="Col1",
+                        description="description",
+                        is_pii=False,
+                        field_type=RawTableColumnFieldType.STRING,
+                        external_id_type="US_OZ_EG",
+                    ),
+                ],
+            )
+
     def test_table_relationship_does_not_match_file_tag(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -536,6 +618,41 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                 ],
             )
 
+    def test_duplicate_external_ids(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found duplicate external ID types in raw_file \[myFile\]$",
+        ):
+            _ = attr.evolve(
+                self.sparse_config,
+                columns=[
+                    RawTableColumnInfo(
+                        name="Col1",
+                        description="description",
+                        is_pii=False,
+                        field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
+                        external_id_type="US_OZ_EG",
+                    ),
+                    RawTableColumnInfo(
+                        name="Col2",
+                        description="some other description",
+                        is_pii=False,
+                        field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
+                        external_id_type="US_OZ_EG",
+                    ),
+                ],
+            )
+
+    def test_is_primary_person_table_without_id(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Table marked as primary person table, but no primary external ID column was specified for file \[myFile\]$",
+        ):
+            _ = attr.evolve(
+                self.sparse_config,
+                is_primary_person_table=True,
+            )
+
 
 class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
     """Tests for DirectIngestRegionRawFileConfig"""
@@ -545,6 +662,25 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             region_code="us_xx",
             region_module=fake_regions,
         )
+        self.sparse_config = DirectIngestRawFileConfig(
+            file_tag="myFile",
+            file_path="/path/to/myFile.yaml",
+            file_description="This is a raw data file",
+            data_classification=RawDataClassification.SOURCE,
+            columns=[],
+            custom_line_terminator=None,
+            primary_key_cols=[],
+            supplemental_order_by_clause="",
+            encoding="UTF-8",
+            separator=",",
+            ignore_quotes=False,
+            always_historical_export=True,
+            no_valid_primary_keys=False,
+            import_chunk_size_rows=10,
+            infer_columns_from_config=False,
+            table_relationships=[],
+        )
+
         self.sparse_config = DirectIngestRawFileConfig(
             file_tag="myFile",
             file_path="/path/to/myFile.yaml",
@@ -581,6 +717,146 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 region_code="us_yy",
                 region_module=fake_regions,
             )
+
+    def test_many_primary_person_tables(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^The following tables in region: us_xx are marked as primary"
+            " person tables, but only one primary person table is allowed per region",
+        ):
+            primary_person_table_config1 = attr.evolve(
+                self.sparse_config,
+                file_tag="root1",
+                is_primary_person_table=True,
+                columns=[
+                    RawTableColumnInfo(
+                        name="Col1",
+                        description="description",
+                        is_pii=False,
+                        field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
+                        external_id_type="US_OZ_EG",
+                        is_primary_for_external_id_type=True,
+                    ),
+                ],
+            )
+            primary_person_table_config2 = attr.evolve(
+                self.sparse_config,
+                file_tag="root2",
+                is_primary_person_table=True,
+                columns=[
+                    RawTableColumnInfo(
+                        name="Col1",
+                        description="description",
+                        is_pii=False,
+                        field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
+                        external_id_type="US_OZ_EG",
+                        is_primary_for_external_id_type=True,
+                    ),
+                ],
+            )
+            _ = attr.evolve(
+                self.us_xx_region_config,
+                raw_file_configs={
+                    "root1": primary_person_table_config1,
+                    "root2": primary_person_table_config2,
+                },
+            )
+
+    def test_many_person_id_types(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Duplicate columns marked as primary for external id type US_OZ_EG in region",
+        ):
+            primary_col_config1 = attr.evolve(
+                self.sparse_config,
+                file_tag="root1",
+                columns=[
+                    RawTableColumnInfo(
+                        name="Col1",
+                        description="description",
+                        is_pii=False,
+                        field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
+                        external_id_type="US_OZ_EG",
+                        is_primary_for_external_id_type=True,
+                    ),
+                ],
+            )
+            primary_col_config2 = attr.evolve(
+                self.sparse_config,
+                file_tag="root2",
+                columns=[
+                    RawTableColumnInfo(
+                        name="Col1",
+                        description="description",
+                        is_pii=False,
+                        field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
+                        external_id_type="US_OZ_EG",
+                        is_primary_for_external_id_type=True,
+                    ),
+                ],
+            )
+            _ = attr.evolve(
+                self.us_xx_region_config,
+                raw_file_configs={
+                    "root1": primary_col_config1,
+                    "root2": primary_col_config2,
+                },
+            )
+
+    def test_key_mismatch(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^The file tagged myFile was labeled in code as not_matching_key in region",
+        ):
+            _ = attr.evolve(
+                self.us_xx_region_config,
+                raw_file_configs={"not_matching_key": self.sparse_config},
+            )
+
+    def test_external_id_without_primary(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^These external ID types are present on columns, without a corresponding"
+            " column marked as the primary for that external id type, in region",
+        ):
+            config_with_external_ids = attr.evolve(
+                self.sparse_config,
+                file_tag="file1",
+                columns=[
+                    RawTableColumnInfo(
+                        name="Col1",
+                        description="description",
+                        is_pii=False,
+                        field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
+                        external_id_type="US_OZ_EG",
+                    ),
+                ],
+            )
+            _ = attr.evolve(
+                self.us_xx_region_config,
+                raw_file_configs={"file1": config_with_external_ids},
+            )
+
+    def test_valid_external_id(self) -> None:
+        # Should run without crashing
+        config_with_external_id = attr.evolve(
+            self.sparse_config,
+            file_tag="root1",
+            columns=[
+                RawTableColumnInfo(
+                    name="Col1",
+                    description="description",
+                    is_pii=False,
+                    field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
+                    external_id_type="US_OZ_EG",
+                    is_primary_for_external_id_type=True,
+                ),
+            ],
+        )
+        _ = attr.evolve(
+            self.us_xx_region_config,
+            raw_file_configs={"root1": config_with_external_id},
+        )
 
     def test_parse_yaml(self) -> None:
         region_config = self.us_xx_region_config

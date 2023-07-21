@@ -21,7 +21,7 @@ import re
 import unittest
 from datetime import datetime
 from types import ModuleType
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import yaml
 from mock import patch
@@ -32,7 +32,12 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
-from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
+from recidiviz.common.constants.state import external_id_types
+from recidiviz.common.constants.states import (
+    PLAYGROUND_STATE_INFO,
+    STATE_CODE_PATTERN,
+    StateCode,
+)
 from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
@@ -63,6 +68,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collecto
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    RawTableColumnFieldType,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -264,34 +270,57 @@ class DirectIngestRegionDirStructureBase:
                     region_module=self.region_module_override,
                 )
 
-            if builders or raw_file_manager.raw_file_configs:
-                if region.is_ingest_launched_in_env() is not None:
-                    self.test.assertTrue(raw_file_manager.raw_file_configs)
-                config_file_tags = set()
-                for config in raw_file_manager.raw_file_configs.values():
-                    self.test.assertTrue(
-                        config.file_tag not in config_file_tags,
-                        f"Multiple raw file configs defined with the same "
-                        f"file_tag [{config.file_tag}]",
-                    )
-                    config_file_tags.add(config.file_tag)
+            if not builders and not raw_file_manager.raw_file_configs:
+                continue
 
-                    path = GcsfsFilePath.from_directory_and_file_name(
-                        GcsfsBucketPath("fake-bucket"),
-                        to_normalized_unprocessed_raw_file_name(
-                            f"{config.file_tag}.csv",
-                        ),
-                    )
-                    parts = filename_parts_from_path(path)
-                    self.test.assertEqual(parts.file_tag, config.file_tag)
+            if region.is_ingest_launched_in_env() is not None:
+                self.test.assertTrue(raw_file_manager.raw_file_configs)
+            config_file_tags = set()
+            possible_external_ids = [
+                getattr(external_id_types, v)
+                for v in dir(external_id_types)
+                if re.match(STATE_CODE_PATTERN, v)
+            ]
+            for config in raw_file_manager.raw_file_configs.values():
+                self.test.assertTrue(
+                    config.file_tag not in config_file_tags,
+                    f"Multiple raw file configs defined with the same "
+                    f"file_tag [{config.file_tag}]",
+                )
+                config_file_tags.add(config.file_tag)
 
-                    # Assert that normalized column names in the config match the output of
-                    # the column name normalizer function
-                    for column in config.columns:
-                        normalized_column_name = normalize_column_name_for_bq(
-                            column.name
+                path = GcsfsFilePath.from_directory_and_file_name(
+                    GcsfsBucketPath("fake-bucket"),
+                    to_normalized_unprocessed_raw_file_name(
+                        f"{config.file_tag}.csv",
+                    ),
+                )
+                parts = filename_parts_from_path(path)
+                self.test.assertEqual(parts.file_tag, config.file_tag)
+
+                # Assert that normalized column names in the config match the output of
+                # the column name normalizer function
+                external_id_type_categories: Dict[str, RawTableColumnFieldType] = {}
+                for column in config.columns:
+                    normalized_column_name = normalize_column_name_for_bq(column.name)
+                    self.test.assertEqual(column.name, normalized_column_name)
+
+                    if not column.external_id_type:
+                        continue
+
+                    # Check that the external id type, if there is one, is a constant
+                    self.test.assertIn(column.external_id_type, possible_external_ids)
+
+                    if column.external_id_type not in external_id_type_categories:
+                        external_id_type_categories[
+                            column.external_id_type
+                        ] = column.field_type
+                    else:
+                        # Check that external id types are treated consistently as either person or staff
+                        self.test.assertEqual(
+                            external_id_type_categories[column.external_id_type],
+                            column.field_type,
                         )
-                        self.test.assertEqual(column.name, normalized_column_name)
 
     def test_raw_files_yaml_define_schema_pragma(self) -> None:
         for region_code in self.region_dir_names:

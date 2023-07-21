@@ -104,6 +104,18 @@ class RawTableColumnInfo:
     datetime_sql_parsers: Optional[List[str]] = attr.ib(
         default=None, validator=attr_validators.is_opt_list
     )
+    # If this column holds an external id type, designates which type it is
+    # (out of the external types defined in common/constants/state/external_id_types.py)
+    external_id_type: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    # True if this column holds external ID information in a primary person table.
+    # Should only be set for a column of type PERSON_EXTERNAL_ID or STAFF_EXTERNAL_ID.
+    # If true for a column of type PERSON_EXTERNAL_ID, then the table that this column
+    # belongs to is an ID type root for that region (Note this does not necessarily
+    # mean the table is the is_primary_person_table for the region, since there may be
+    # multiple tables that are ID type roots for the region.)
+    is_primary_for_external_id_type: bool = attr.ib(default=False)
 
     def __attrs_post_init__(self) -> None:
         # Known values should not be present unless this is a string field
@@ -113,6 +125,24 @@ class RawTableColumnInfo:
             )
 
         self._validate_datetime_sql_parsers()
+
+        # Enforce that external_id_type and is_primary_for_external_id_type should only be set
+        # if field type is an external id
+        is_external_id_field = self.field_type in (
+            RawTableColumnFieldType.PERSON_EXTERNAL_ID,
+            RawTableColumnFieldType.STAFF_EXTERNAL_ID,
+        )
+
+        if (
+            self.external_id_type or self.is_primary_for_external_id_type
+        ) and not is_external_id_field:
+            raise ValueError(
+                f"Expected external_id_type to be None and is_primary_for_external_id_type to be False when field_type is {self.field_type.value} for {self.name}"
+            )
+        if self.is_primary_for_external_id_type and not self.external_id_type:
+            raise ValueError(
+                f"Expected is_primary_for_external_id_type to be False when external id type is None for {self.name}"
+            )
 
     def _validate_datetime_sql_parsers(self) -> None:
         """Validates the datetime_sql field by ensuring that is_datetime is set to True
@@ -262,6 +292,14 @@ class DirectIngestRawFileConfig:
     table_relationships: List[RawTableRelationshipInfo] = attr.ib(
         validator=attr_validators.is_list
     )
+    # True if this is the overall table representing person (JII) information
+    # for this region. All other raw data tables containing person-level information
+    # should be able to be joined back to this table, either directly or indirectly,
+    # via PERSON_EXTERNAL_ID type columns.
+    # Each region may only have one raw file marked as is_primary_person_table; this
+    # designation may be arbitrary if there are multiple primary tables representing
+    # person information, such as if there are multiple source data systems.
+    is_primary_person_table: bool = attr.ib(default=False)
 
     def __attrs_post_init__(self) -> None:
         self._validate_primary_keys()
@@ -269,6 +307,16 @@ class DirectIngestRawFileConfig:
         column_names = [column.name for column in self.columns]
         if len(column_names) != len(set(column_names)):
             raise ValueError(f"Found duplicate columns in raw_file [{self.file_tag}]")
+
+        external_id_types = [
+            column.external_id_type
+            for column in self.columns
+            if column.external_id_type
+        ]
+        if len(external_id_types) != len(set(external_id_types)):
+            raise ValueError(
+                f"Found duplicate external ID types in raw_file [{self.file_tag}]"
+            )
 
         missing_columns = set(self.primary_key_cols) - {
             column.name for column in self.columns
@@ -296,6 +344,16 @@ class DirectIngestRawFileConfig:
                         f"[{relationship_2.join_sql()}] defined in "
                         f"[{self.file_path}]"
                     )
+
+        if self.is_primary_person_table and not self.has_primary_external_id_col:
+            raise ValueError(
+                f"Table marked as primary person table, but no primary external ID"
+                f" column was specified for file [{self.file_tag}]"
+            )
+
+    @property
+    def has_primary_external_id_col(self) -> bool:
+        return any(column.is_primary_for_external_id_type for column in self.columns)
 
     def _validate_primary_keys(self) -> None:
         """Confirm that the primary key configuration is valid for this config. If this
@@ -455,6 +513,11 @@ class DirectIngestRawFileConfig:
                     datetime_sql_parsers=column.pop_list_optional(
                         "datetime_sql_parsers", str
                     ),
+                    external_id_type=column.pop_optional("external_id_type", str),
+                    is_primary_for_external_id_type=column.pop_optional(
+                        "is_primary_for_external_id_type", bool
+                    )
+                    or False,
                 )
             )
             if len(column) > 0:
@@ -497,6 +560,9 @@ class DirectIngestRawFileConfig:
             if table_relationships_yamls
             else []
         )
+        is_primary_person_table = (
+            file_config_dict.pop_optional("is_primary_person_table", bool) or False
+        )
 
         if len(file_config_dict) > 0:
             raise ValueError(
@@ -537,6 +603,7 @@ class DirectIngestRawFileConfig:
                 else False
             ),
             table_relationships=table_relationships,
+            is_primary_person_table=is_primary_person_table,
         )
 
 
@@ -549,6 +616,60 @@ class DirectIngestRegionRawFileConfig:
     region_module: ModuleType = attr.ib(default=regions)
     yaml_config_file_dir: str = attr.ib()
     raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
+
+    def __attrs_post_init__(self) -> None:
+        # Verify that all configs are in the dictionary with the right tags
+        for labeled_file_tag, config in self.raw_file_configs.items():
+            if config.file_tag != labeled_file_tag:
+                raise ValueError(
+                    f"The file tagged {config.file_tag} was labeled in code as"
+                    f" {labeled_file_tag} in region: {self.region_code}."
+                )
+
+        configs = self.raw_file_configs.values()
+
+        # Verify that only one file is marked as the is_primary_person_table
+        is_primary_person_tables = list(
+            filter(lambda config: config.is_primary_person_table, configs)
+        )
+        if len(is_primary_person_tables) >= 2:
+            raise ValueError(
+                f"The following tables in region: {self.region_code} are marked"
+                f" as primary person tables, but only one primary person table is"
+                f" allowed per region: {[c.file_tag for c in is_primary_person_tables]}"
+            )
+
+        # Verify that all columns marked as primary for some external ID within this region
+        # are distinct ID types
+        external_id_type_primaries = set()
+        external_ids_present = set()
+        columns_with_external_id_types = [
+            column
+            for config in configs
+            for column in config.columns
+            if column.external_id_type
+        ]
+        for col in columns_with_external_id_types:
+            if col.is_primary_for_external_id_type:
+                if col.external_id_type in external_id_type_primaries:
+                    raise ValueError(
+                        f"Duplicate columns marked as primary for external id type "
+                        f"{col.external_id_type} in region: {self.region_code}"
+                    )
+                external_id_type_primaries.add(col.external_id_type)
+            if col.external_id_type:
+                external_ids_present.add(col.external_id_type)
+
+        # Verify that every non-null external ID type on any column has
+        # a corresponding external ID primary column
+        id_types_without_primaries = external_ids_present - external_id_type_primaries
+        if id_types_without_primaries:
+            raise ValueError(
+                f"These external ID types are present on columns, without a"
+                f" corresponding column marked as the primary for that"
+                f" external id type, in region {self.region_code}:"
+                f" {id_types_without_primaries}"
+            )
 
     @property
     def default_config_filename(self) -> str:
