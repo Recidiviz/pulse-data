@@ -84,6 +84,18 @@ WHERE
         span_end_date_col="LEAD(contact_date) OVER (PARTITION BY person_id ORDER BY contact_date)",
     ),
     SpanQueryBuilder(
+        span_type=PersonSpanType.CUSTODY_LEVEL_SESSION,
+        description="Non-overlapping spans of time over which a person has a certain custody level",
+        sql_source="""SELECT *
+FROM
+    `{project_id}.sessions.custody_level_sessions_materialized`
+WHERE
+    custody_level IS NOT NULL""",
+        attribute_cols=["custody_level"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
         span_type=PersonSpanType.EMPLOYMENT_PERIOD,
         description="Employment periods -- can be overlapping",
         sql_source="""SELECT *
@@ -110,10 +122,23 @@ WHERE
         span_end_date_col="employment_status_end_date_exclusive",
     ),
     SpanQueryBuilder(
+        span_type=PersonSpanType.HOUSING_TYPE_SESSION,
+        description="Non-overlapping spans of time over which a person has a certain housing type",
+        sql_source="""SELECT *
+FROM
+    `{project_id}.sessions.housing_unit_type_sessions_materialized`
+WHERE
+    housing_unit_type IS NOT NULL""",
+        attribute_cols=["housing_unit_type"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
         span_type=PersonSpanType.JUSTICE_IMPACT_SESSION,
         description="Person days of justice involvement weighted by type",
         sql_source=JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER.table_for_query,
         attribute_cols=[
+            "justice_impact_type",
             "justice_impact_weight",
             "unweighted_days_justice_impacted",
             "weighted_days_justice_impacted",
