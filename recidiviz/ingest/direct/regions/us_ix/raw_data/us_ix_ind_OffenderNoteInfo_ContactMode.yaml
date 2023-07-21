@@ -35,3 +35,12 @@ columns:
     description: |-
       Timestamp for most recent record modification.
     field_type: datetime
+table_relationships:
+  - foreign_table: ind_ContactMode
+    join_logic:
+      - ind_OffenderNoteInfo_ContactMode.ContactModeId = ind_ContactMode.ContactModeId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ind_OffenderNoteInfo
+    join_logic:
+      - ind_OffenderNoteInfo_ContactMode.OffenderNoteInfoId = ind_OffenderNoteInfo.OffenderNoteInfoId
+    cardinality: MANY_TO_ONE

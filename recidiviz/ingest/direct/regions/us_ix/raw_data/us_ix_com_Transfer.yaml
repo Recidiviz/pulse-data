@@ -170,3 +170,36 @@ columns:
   - name: EmergencyTransfer
     description: |-
       TODO(#15329): Fill in column description
+table_relationships:
+  - foreign_table: com_TransferType
+    join_logic:
+      - com_Transfer.TransferTypeId = com_TransferType.TransferTypeId
+    cardinality: MANY_TO_ONE
+  - foreign_table: com_TransferReason
+    join_logic:
+      - com_Transfer.TransferReasonId = com_TransferReason.TransferReasonId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_Location
+    join_logic:
+      - com_Transfer.DOCLocationFromId = ref_Location.LocationId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_Location
+    join_logic:
+      - com_Transfer.DOCLocationToId = ref_Location.LocationId
+    cardinality: MANY_TO_ONE
+  - foreign_table: com_TransferStatus
+    join_logic:
+      - com_Transfer.TransferStatusId = com_TransferStatus.TransferStatusId
+    cardinality: MANY_TO_ONE
+  - foreign_table: scl_Term
+    join_logic:
+      - com_Transfer.TermId = scl_Term.TermId
+    cardinality: MANY_TO_ONE
+  - foreign_table: hsn_BedType
+    join_logic:
+      - com_Transfer.BedTypeId = hsn_BedType.BedTypeId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ind_Offender
+    join_logic:
+      - com_Transfer.OffenderId = ind_Offender.OffenderId
+    cardinality: MANY_TO_ONE

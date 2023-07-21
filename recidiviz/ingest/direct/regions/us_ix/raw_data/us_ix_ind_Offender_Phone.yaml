@@ -39,3 +39,12 @@ columns:
     description: |-
       Timestamp for record modification.
     field_type: datetime
+table_relationships:
+  - foreign_table: ref_Phone
+    join_logic:
+      - ind_Offender_Phone.PhoneId = ref_Phone.PhoneId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ind_Offender
+    join_logic:
+      - ind_Offender_Phone.OffenderId = ind_Offender.OffenderId
+    cardinality: MANY_TO_ONE

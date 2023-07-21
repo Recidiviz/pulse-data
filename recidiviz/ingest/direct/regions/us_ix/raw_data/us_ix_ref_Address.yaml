@@ -78,3 +78,20 @@ columns:
     description: |-
       Timestamp for record modification.
     field_type: datetime
+table_relationships:
+  - foreign_table: ref_Location
+    join_logic:
+      - ref_Address.JurisdictionId = ref_Location.LocationId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_Location
+    join_logic:
+      - ref_Address.CountyId = ref_Location.LocationId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_Location
+    join_logic:
+      - ref_Address.StateId = ref_Location.LocationId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_Location
+    join_logic:
+      - ref_Address.CountryId = ref_Location.LocationId
+    cardinality: MANY_TO_ONE

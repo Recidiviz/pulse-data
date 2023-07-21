@@ -51,3 +51,16 @@ columns:
       TODO(#15329): Fill in column description
   - name: AlertVisibilityTypeId
     description: Code for visibility status of this alert, joins to `ind_AlertVisibilityType.AlertVisibilityTypeId`.
+table_relationships:
+  - foreign_table: ind_Offender_Alert
+    join_logic:
+      - ind_Alert.AlertId = ind_Offender_Alert.AlertId
+    cardinality: ONE_TO_MANY
+  - foreign_table: ind_AlertType
+    join_logic:
+      - ind_Alert.AlertTypeId = ind_AlertType.AlertTypeId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ind_AlertVisibilityType
+    join_logic:
+      - ind_Alert.AlertVisibilityTypeId = ind_AlertVisibilityType.AlertVisibilityTypeId
+    cardinality: MANY_TO_ONE
