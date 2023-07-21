@@ -19,9 +19,10 @@ import abc
 import os
 import re
 import unittest
+from collections import defaultdict
 from datetime import datetime
 from types import ModuleType
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Set, Tuple
 
 import yaml
 from mock import patch
@@ -842,5 +843,108 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 f"{extra_ingest_view_files}",
             )
 
-    # TODO(#21897) Write unit test that checks that any raw input fixture has a
-    # corresponding output file in the ingest view test directory.
+    def test_raw_input_fixture_has_corresponding_ingest_view_output_file(self) -> None:
+        for region_code in get_existing_direct_ingest_states():
+            if region_code == StateCode.US_OZ:
+                continue
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=region_code.value
+            )
+            ingest_view_manifest_collector = IngestViewManifestCollector(
+                region=region,
+                delegate=IngestViewResultsParserDelegateImpl(
+                    region=region,
+                    schema_type=SchemaType.STATE,
+                    # Pick an arbitrary instance, it doesn't matter
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                    results_update_datetime=datetime.now(),
+                ),
+            )
+            view_collector = DirectIngestViewQueryBuilderCollector(
+                region,
+                list(ingest_view_manifest_collector.ingest_view_to_manifest.keys()),
+            )
+            ingest_view_to_raw_data_dependencies: Dict[str, Set[str]] = {}
+            for (
+                ingest_view,
+                _,
+            ) in ingest_view_manifest_collector.ingest_view_to_manifest.items():
+                ingest_view_to_raw_data_dependencies[ingest_view] = {
+                    raw_data_dependency.raw_file_config.file_tag
+                    for raw_data_dependency in view_collector.get_query_builder_by_view_name(
+                        ingest_view
+                    ).raw_table_dependency_configs
+                }
+
+            if region.region_module.__file__ is None:
+                raise ValueError(f"No file associated with {region.region_module}.")
+            region_fixtures_directory = os.path.join(
+                os.path.dirname(direct_ingest_fixtures.__file__),
+                region_code.value.lower(),
+            )
+
+            if "raw" not in os.listdir(
+                region_fixtures_directory
+            ) or "ingest_view" not in os.listdir(region_fixtures_directory):
+                continue
+
+            raw_data_fixtures_directory = os.path.join(region_fixtures_directory, "raw")
+            file_name_to_raw_data_folder = defaultdict(list)
+            for raw_data_dir in os.listdir(raw_data_fixtures_directory):
+                if not os.path.isdir(
+                    os.path.join(raw_data_fixtures_directory, raw_data_dir)
+                ):
+                    continue
+                raw_data_files = [
+                    file
+                    for file in os.listdir(
+                        os.path.join(raw_data_fixtures_directory, raw_data_dir)
+                    )
+                    if file.endswith(".csv")
+                ]
+                file_name_to_raw_data_folder[raw_data_dir] = raw_data_files
+
+            ingest_view_fixtures_directory = os.path.join(
+                region_fixtures_directory, "ingest_view"
+            )
+            file_name_to_ingest_view_folder = defaultdict(list)
+            for ingest_view_dir in os.listdir(ingest_view_fixtures_directory):
+                if not os.path.isdir(
+                    os.path.join(ingest_view_fixtures_directory, ingest_view_dir)
+                ):
+                    continue
+                ingest_view_files = [
+                    file
+                    for file in os.listdir(
+                        os.path.join(ingest_view_fixtures_directory, ingest_view_dir)
+                    )
+                    if file.endswith(".csv")
+                ]
+                file_name_to_ingest_view_folder[ingest_view_dir] = ingest_view_files
+
+            for (
+                ingest_view,
+                raw_data_dependencies,
+            ) in ingest_view_to_raw_data_dependencies.items():
+                for raw_data_dependency in raw_data_dependencies:
+                    if (
+                        ingest_view in file_name_to_ingest_view_folder
+                        and raw_data_dependency in file_name_to_raw_data_folder
+                    ):
+                        raw_file_fixtures = file_name_to_raw_data_folder[
+                            raw_data_dependency
+                        ]
+                        if f"{raw_data_dependency}@ALL" in file_name_to_raw_data_folder:
+                            raw_file_fixtures = (
+                                raw_file_fixtures
+                                + file_name_to_raw_data_folder[
+                                    f"{raw_data_dependency}@ALL"
+                                ]
+                            )
+                        for file in file_name_to_ingest_view_folder[ingest_view]:
+                            self.assertTrue(
+                                file in raw_file_fixtures,
+                                f"Found extra output fixture files for {ingest_view} in [{os.path.join(ingest_view_fixtures_directory, ingest_view)}] "
+                                f"that do not correspond to any input fixture files in [{os.path.join(raw_data_fixtures_directory, raw_data_dependency)}]: "
+                                f"extra file: {file}, files in ingest view: {file_name_to_ingest_view_folder[ingest_view]}, files in raw data: {raw_file_fixtures}",
+                            )
