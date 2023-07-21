@@ -174,6 +174,7 @@ function control_start {
   # It assumes the existence of application_default_credentials.json
   # Run `gcloud auth application-default login` if you are running into authentication errors
   docker run -d \
+    --user 0 \
     -p "$DATABASE_HOST":"$DATABASE_PORT":"$DATABASE_PORT" \
     -v ~/.config/gcloud:/config \
     "$CLOUDSQL_PROXY_IMAGE" /cloud_sql_proxy \
@@ -187,6 +188,7 @@ function control_start {
     exit "$CLOUDSQL_PROXY_NEVER_STARTED_ERROR_EXIT_CODE"
   else
     echo "Started Cloud SQL Proxy container with name: ${CONTAINER_NAME}"
+    echo "If you encounter issues with connecting, check the logs \`docker logs ${CONTAINER_NAME}\`"
   fi
 
   # Wait for Postgres to be ready before continuing
