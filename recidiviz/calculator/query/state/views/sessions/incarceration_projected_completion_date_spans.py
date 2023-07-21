@@ -77,7 +77,7 @@ prioritized_projected_completion_dates AS (
       -- currently on supervision then the sentence span will get clipped to the supervision session end date when
       -- taking the intersection with supervision sessions below.
       IF(
-        start_date = MAX(start_date) OVER (PARTITION BY state_code, person_id, priority)
+        start_date = MAX(start_date) OVER (PARTITION BY state_code, person_id)
         AND {nonnull_end_date_clause("end_date_exclusive")} <= CURRENT_DATE("US/Eastern"),
         NULL,
         end_date_exclusive
