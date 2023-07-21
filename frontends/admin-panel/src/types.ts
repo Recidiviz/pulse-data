@@ -93,8 +93,11 @@ export interface StateUserPermissionsResponse {
 export interface StateUserForm extends StateUserPermissionsResponse, Routes {
   useCustomPermissions: boolean;
   reason: string;
-  featureVariantName: string;
-  featureVariantValue: FeatureVariantValue;
+  featureVariant: {
+    name: string;
+    enabled: boolean;
+    activeDate?: string;
+  };
 }
 
 // State Role Permissions
@@ -106,8 +109,11 @@ export interface StateRolePermissionsResponse {
 }
 export interface StateRoleForm extends StateRolePermissionsResponse, Routes {
   reason: string;
-  featureVariantName: string;
-  featureVariantValue: FeatureVariantValue;
+  featureVariant: {
+    name: string;
+    enabled: boolean;
+    activeDate?: string;
+  };
 }
 
 type FeatureVariantValue = { activeDate?: Date; variant?: string } | false;

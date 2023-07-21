@@ -78,8 +78,12 @@ export const CustomPermissionsPanel = ({
     <Note>
       - Once the variant is enabled by selecting &quot;True&quot;, an
       &quot;Active Date&quot; can also be specified if the feature should become
-      active at a specific date and time, otherwise the variant will be active
-      immediately
+      active at a specific date and time (in *your* time zone), otherwise the
+      variant will be active immediately
+    </Note>
+    <Note>
+      - Disabling the variant by selecting &quot;False&quot; always takes place
+      immediately.
     </Note>
     <FeatureVariantFormItem disabled={hidePermissions} form={form} />
   </>

@@ -14,26 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import {
-  DatePicker,
-  DatePickerProps,
-  Form,
-  FormInstance,
-  Input,
-  Select,
-  Space,
-} from "antd";
-import moment, { Moment } from "moment";
+import { DatePicker, Form, FormInstance, Input, Select, Space } from "antd";
 import { useEffect, useState } from "react";
 import styled from "styled-components/macro";
-
-const DATETIME_FORMAT = "YYYY-MM-DDTHH:mm:ssZ";
 
 const SelectContainer = styled.div`
   .ant-picker {
     width: 145px;
     height: 32px;
-    margin-bottom: 24px;
   }
 `;
 
@@ -45,11 +33,10 @@ export const FeatureVariantFormItem = ({
   form: FormInstance;
 }): JSX.Element => {
   const [datePickerDisabled, setDatePickerDisabled] = useState(true);
-  const [activeDate, setActiveDate] = useState<Moment>();
 
   const options = [
     {
-      value: JSON.stringify({}),
+      value: true,
       label: "True",
     },
     {
@@ -58,19 +45,6 @@ export const FeatureVariantFormItem = ({
     },
   ];
 
-  const handleDateChange = (value: DatePickerProps["value"]) => {
-    setActiveDate(moment(value));
-    form.setFieldsValue({
-      featureVariantValue: JSON.stringify({
-        activeDate: `${moment(value).format(DATETIME_FORMAT)}`,
-      }),
-    });
-  };
-
-  useEffect(() => {
-    setActiveDate(undefined);
-  }, [datePickerDisabled]);
-
   useEffect(() => {
     setDatePickerDisabled(true);
   }, [disabled]);
@@ -78,10 +52,10 @@ export const FeatureVariantFormItem = ({
   return (
     <SelectContainer>
       <Space>
-        <Form.Item name="featureVariantName">
+        <Form.Item name={["featureVariant", "name"]}>
           <Input disabled={disabled} placeholder="Feature variant name" />
         </Form.Item>
-        <Form.Item name="featureVariantValue" labelCol={{ span: 13 }}>
+        <Form.Item name={["featureVariant", "enabled"]} labelCol={{ span: 13 }}>
           <Select
             allowClear
             style={{
@@ -92,15 +66,20 @@ export const FeatureVariantFormItem = ({
             disabled={disabled}
           />
         </Form.Item>
-        <DatePicker
-          showTime
-          onChange={handleDateChange}
-          placeholder="Set Active Date"
-          disabled={datePickerDisabled || disabled}
-          format={DATETIME_FORMAT}
-          allowClear={false}
-          value={activeDate}
-        />
+        <Form.Item
+          name={["featureVariant", "activeDate"]}
+          labelCol={{ span: 13 }}
+        >
+          <DatePicker
+            showTime={{
+              format: "h:mm A",
+              minuteStep: 15,
+            }}
+            placeholder="Set Active Date"
+            disabled={datePickerDisabled || disabled}
+            allowClear
+          />
+        </Form.Item>
       </Space>
     </SelectContainer>
   );

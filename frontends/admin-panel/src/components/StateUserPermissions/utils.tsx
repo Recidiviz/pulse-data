@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { SearchOutlined } from "@ant-design/icons";
-import { Button, FormInstance, Input, Space, Typography } from "antd";
+import { InfoCircleOutlined, SearchOutlined } from "@ant-design/icons";
+import { Button, FormInstance, Input, Space, Tooltip, Typography } from "antd";
 import { ColumnType, FilterDropdownProps } from "antd/lib/table/interface";
+import moment from "moment";
 import {
   FeatureVariants,
   Routes,
@@ -28,17 +29,20 @@ import { ROUTES_PERMISSIONS_LABELS } from "../constants";
 
 export function updatePermissionsObject(
   existing: Partial<Routes>,
-  updated: Partial<Routes>
+  updated: Partial<Routes>,
+  remove: string[]
 ): Partial<Routes> | undefined;
 
 export function updatePermissionsObject(
   existing: Partial<FeatureVariants>,
-  updated: Partial<FeatureVariants>
+  updated: Partial<FeatureVariants>,
+  remove: string[]
 ): Partial<FeatureVariants> | undefined;
 
 export function updatePermissionsObject(
   existing: Partial<Routes> | Partial<FeatureVariants>,
-  updated: Partial<Routes> | Partial<FeatureVariants>
+  updated: Partial<Routes> | Partial<FeatureVariants>,
+  remove: string[]
 ): Partial<Routes> | Partial<FeatureVariants> | undefined {
   const newPermission = Object.entries(updated).reduce(
     (permissions, [permissionType, permissionValue]) => {
@@ -52,9 +56,10 @@ export function updatePermissionsObject(
     },
     existing
   );
-  return newPermission && Object.keys(newPermission).length > 0
-    ? newPermission
-    : undefined;
+  remove.forEach(
+    (key: string) => delete newPermission[key as keyof typeof newPermission]
+  );
+  return newPermission;
 }
 
 export const checkResponse = async (response: Response): Promise<void> => {
@@ -93,6 +98,15 @@ export const formatText = (
   }
   return text;
 };
+
+const titleWithInfoTooltip = (title: string, tooltip: string) => (
+  <>
+    {title}{" "}
+    <Tooltip title={tooltip}>
+      <InfoCircleOutlined />
+    </Tooltip>
+  </>
+);
 
 const getColumnSearchProps = (dataIndex: string) => ({
   filterDropdown: ({
@@ -294,7 +308,10 @@ export const getPermissionsTableColumns = (
       },
     },
     {
-      title: "Feature variants",
+      title: titleWithInfoTooltip(
+        "Feature variants",
+        "Note: active times are in *your* time zone"
+      ),
       dataIndex: "featureVariants",
       key: "featureVariants",
       width: 350,
@@ -310,8 +327,8 @@ export const getPermissionsTableColumns = (
           props: {
             style: {
               background:
-                JSON.stringify(role?.featureVariants) ===
-                JSON.stringify(record.featureVariants)
+                JSON.stringify(role?.featureVariants ?? {}) ===
+                JSON.stringify(record.featureVariants ?? {})
                   ? "none"
                   : "yellow",
               whiteSpace: "pre",
@@ -423,19 +440,28 @@ export const aggregateFormPermissionResults = (
   formResults: Partial<StateUserForm>
 ): {
   routes: Partial<Routes>;
-  featureVariants: Partial<FeatureVariants>;
+  featureVariantsToAdd: Partial<FeatureVariants>;
+  featureVariantsToRemove: string[];
 } => {
   const routes = Object.fromEntries(
     Object.keys(ROUTES_PERMISSIONS_LABELS)
       .filter((key) => key in formResults)
       .map((key) => [key, formResults[key as keyof StateUserForm]])
   ) as Partial<Routes>;
-  const featureVariants = formResults.featureVariantName
+  const featureVariantsToAdd = formResults.featureVariant?.enabled
     ? {
-        [formResults.featureVariantName]: formResults.featureVariantValue,
+        [formResults.featureVariant.name]: {
+          ...(formResults.featureVariant.activeDate && {
+            activeDate: new Date(formResults.featureVariant.activeDate),
+          }),
+        },
       }
     : {};
-  return { routes, featureVariants };
+  const featureVariantsToRemove =
+    formResults.featureVariant && !formResults.featureVariant.enabled
+      ? [formResults.featureVariant.name]
+      : [];
+  return { routes, featureVariantsToAdd, featureVariantsToRemove };
 };
 
 export const formatFeatureVariants = (
@@ -451,7 +477,7 @@ export const formatFeatureVariants = (
       const value =
         !variant || variant.activeDate === undefined
           ? !!variant
-          : variant.activeDate;
+          : moment(variant.activeDate).format("lll");
       return `${fvName}: ${value}`;
     })
     .join("\n");
