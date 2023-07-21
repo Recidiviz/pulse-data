@@ -67,3 +67,20 @@ columns:
   - name: IsManual
     description: |-
       TODO(#15329): Fill in column description
+table_relationships:
+  - foreign_table: ind_Offender
+    join_logic:
+      - ind_OffenderNoteInfo.OffenderId = ind_Offender.OffenderId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_NoteType
+    join_logic:
+      - ind_OffenderNoteInfo.NoteTypeId = ref_NoteType.NoteTypeId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ref_Employee
+    join_logic:
+      - ind_OffenderNoteInfo.StaffId = ref_Employee.EmployeeId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ind_OffenderNoteStatus
+    join_logic:
+      - ind_OffenderNoteInfo.OffenderNoteStatusId = ind_OffenderNoteStatus.OffenderNoteStatusId
+    cardinality: MANY_TO_ONE

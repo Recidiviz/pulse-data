@@ -81,3 +81,12 @@ columns:
   - name: IsSystemCreated
     description: |-
       TODO(#15329): Fill in column description
+table_relationships:
+  - foreign_table: ind_LegalStatus
+    join_logic:
+      - ind_OffenderLegalStatus.LegalStatusId = ind_LegalStatus.LegalStatusId
+    cardinality: MANY_TO_ONE
+  - foreign_table: ind_LegalStatusChangeReason
+    join_logic:
+      - ind_OffenderLegalStatus.LegalStatusChangeReasonId = ind_LegalStatusChangeReason.LegalStatusChangeReasonId
+    cardinality: MANY_TO_ONE
