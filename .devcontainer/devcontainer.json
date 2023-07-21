@@ -19,6 +19,18 @@
 			"channels": "conda-forge",
 			"packages": "gdal cmake"
 		}
+		"docker-in-docker": {
+			"version": "latest",
+			"moby": true,
+			"dockerDashComposeVersion": "v1",
+			"_comment": "VS Code runs as a Docker container. So if we want to build/run Docker, we need to support running Docker within Docker"
+		},
+		"terraform": {
+			"version": "latest",
+			"tflint": "latest",
+			"terragrunt": "latest",
+			"_comment": "Terraform is needed if we want to run deployments from within VS Code Containers"
+		}
 	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
