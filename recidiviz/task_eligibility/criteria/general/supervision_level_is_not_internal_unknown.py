@@ -31,6 +31,7 @@ _DESCRIPTION = """This criteria view builder defines spans of time, where client
  INTERNAL_UNKNOWN as tracked by our `sessions` dataset."""
 
 _QUERY_TEMPLATE = f"""
+#TODO(#22511) refactor to build off of a general criteria view builder
 WITH internal_unknown_spans AS (
 SELECT
         state_code,

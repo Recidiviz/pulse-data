@@ -30,6 +30,7 @@ _DESCRIPTION = """This criteria view builder defines spans of time where clients
 supervision level as tracked by our `sessions` dataset."""
 
 _QUERY_TEMPLATE = """
+#TODO(#22511) refactor to build off of a general criteria view builder
 SELECT
     state_code,
     person_id,
