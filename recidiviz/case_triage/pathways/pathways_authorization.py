@@ -29,6 +29,8 @@ from recidiviz.common.str_field_utils import capitalize_first
 from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.flask_exception import FlaskException
 
+CSG_ALLOWED_STATES = ["US_MI", "US_MO", "US_PA", "US_TN"]
+
 
 def on_successful_authorization(
     claims: Dict[str, Any], offline_mode: Optional[bool] = False
@@ -79,6 +81,10 @@ def on_successful_authorization(
     if user_state_code == "RECIDIVIZ":
         return
 
+    state_allowed = user_state_code == requested_state or (
+        user_state_code == "CSG" and requested_state in CSG_ALLOWED_STATES
+    )
+
     requested_endpoint = request.view_args["metric_name"]
     enabled_endpoints = [
         # transform routes of the format system_prisonToSupervision --> PrisonToSupervision
@@ -86,18 +92,14 @@ def on_successful_authorization(
         for (route, enabled) in app_metadata.get("routes", {}).items()
         if enabled and route.startswith("system_")
     ]
-    allowed = any(
+    endpoint_allowed = any(
         requested_endpoint.startswith(endpoint)
         # Make sure we don't consider system_prison as eligible for PrisonToSupervisionTransitions
         and not requested_endpoint.startswith(endpoint + "To")
         for endpoint in enabled_endpoints
     )
 
-    if (
-        user_state_code == requested_state
-        and user_state_code in enabled_states
-        and allowed
-    ):
+    if state_allowed and endpoint_allowed:
         return
 
     raise AuthorizationError(code="not_authorized", description="Access denied")

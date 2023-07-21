@@ -157,6 +157,30 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
             )
         )
 
+    @mock.patch(
+        "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states",
+        return_value=["US_CA", "US_TN"],
+    )
+    def test_csg_auth(self, _mock_enabled_states: MagicMock) -> None:
+        # Allowed state, allowed endpoint
+        self.assertIsNone(
+            self.process_claims(
+                "/US_TN/PrisonPopulationOverTimeCount", user_state_code="CSG"
+            )
+        )
+
+        # Allowed state, disallowed endpoint
+        with self.assertRaises(FlaskException):
+            self.process_claims(
+                "/US_TN/PrisonToSupervisionTransitions", user_state_code="CSG"
+            )
+
+        # Disallowed state, allowed endpoint
+        with self.assertRaises(FlaskException):
+            self.process_claims(
+                "/US_CA/PrisonPopulationOverTimeCount", user_state_code="CSG"
+            )
+
     def test_invalid_state_code(self) -> None:
         with self.assertRaises(FlaskException) as assertion:
             self.process_claims(
