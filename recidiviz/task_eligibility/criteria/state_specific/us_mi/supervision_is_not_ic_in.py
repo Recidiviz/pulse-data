@@ -37,6 +37,7 @@ defined as supervised in Michigan but sentenced in a different state.
 """
 
 _QUERY_TEMPLATE = f"""
+#TODO(#22511) refactor to build off of a general criteria view builder
 WITH ic_in_spans AS (
     SELECT 
         state_code,

@@ -36,6 +36,7 @@ in SAI (Special Alternative Incarceration).
 """
 
 _QUERY_TEMPLATE = f"""
+#TODO(#22511) refactor to build off of a general criteria view builder
 WITH sai_spans AS (
     SELECT
         state_code,

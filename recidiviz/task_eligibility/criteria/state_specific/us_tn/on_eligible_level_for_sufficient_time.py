@@ -34,6 +34,7 @@ _DESCRIPTION = """Describes the spans of time when a TN client has been on an el
 sufficient amount of time"""
 
 # TODO(#20870) - Deprecate this in favor of better long term solution to excluding these levels
+# TODO(#22511) potentially refactor to build off of a general criteria view builder
 EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "3D3"]
 
 _QUERY_TEMPLATE = f"""
