@@ -61,7 +61,11 @@ resource "google_bigquery_data_transfer_config" "experiments" {
   params = {
     destination_table_name_template = "experiments_materialized"
     write_disposition               = "WRITE_TRUNCATE"
-    query                           = "SELECT * FROM `${var.project_id}.static_reference_tables.experiments` WHERE state_code IS NOT NULL"
+    query                           = <<-EOT
+SELECT *
+FROM `${var.project_id}.static_reference_tables.experiments`
+WHERE experiment_id IS NOT NULL
+EOT
   }
 }
 
@@ -77,7 +81,11 @@ resource "google_bigquery_data_transfer_config" "experiment_assignments" {
   params = {
     destination_table_name_template = "experiment_assignments_materialized"
     write_disposition               = "WRITE_TRUNCATE"
-    query                           = "SELECT * FROM `${var.project_id}.static_reference_tables.experiment_assignments` WHERE state_code IS NOT NULL"
+    query                           = <<-EOT
+SELECT * 
+FROM `${var.project_id}.static_reference_tables.experiment_assignments`
+WHERE state_code IS NOT NULL
+EOT
   }
 }
 
@@ -94,6 +102,23 @@ resource "google_bigquery_data_transfer_config" "synthetic_state_weights" {
   params = {
     destination_table_name_template = "synthetic_state_weights_materialized"
     write_disposition               = "WRITE_TRUNCATE"
-    query                           = "SELECT * FROM `${var.project_id}.static_reference_tables.synthetic_state_weights` WHERE state_code IS NOT NULL"
+    query                           = <<-EOT
+SELECT
+  state_code,
+  assignment_date,
+  ARRAY(
+    SELECT trim(val)
+    FROM UNNEST(SPLIT(TRIM(control_states, "[]"))) val
+  ) AS control_states,
+  ARRAY(
+    SELECT trim(val)
+    FROM UNNEST(SPLIT(TRIM(control_weights, "[]"))) val
+  ) AS control_weights,
+  metric_matched_on,
+FROM
+  `${var.project_id}.static_reference_tables.synthetic_state_weights`
+WHERE
+  state_code IS NOT NULL
+EOT
   }
 }
