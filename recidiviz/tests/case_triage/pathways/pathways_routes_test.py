@@ -48,7 +48,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (
     load_metrics_fixture,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.types import assert_type
 
 
@@ -115,7 +115,7 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
 
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.count_by_dimension_metric_path = (
             "/pathways/US_TN/LibertyToPrisonTransitionsCount"
@@ -148,7 +148,9 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
             os.environ["AUTH0_CLAIM_NAMESPACE"] = self.old_auth_claim_namespace
         else:
             os.unsetenv("AUTH0_CLAIM_NAMESPACE")
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

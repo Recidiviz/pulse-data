@@ -31,7 +31,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.server_config import database_keys_for_schema_type
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 
@@ -155,7 +155,7 @@ class DryRunEngineIteratorDelegate(EngineIteratorDelegate):
         self, database_key: SQLAlchemyDatabaseKey
     ) -> dict[str, Optional[str]]:
         overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         return overridden_env_vars
@@ -163,7 +163,7 @@ class DryRunEngineIteratorDelegate(EngineIteratorDelegate):
     def get_engine(self, database_key: SQLAlchemyDatabaseKey) -> Engine:
         return SQLAlchemyEngineManager.init_engine_for_postgres_instance(
             database_key=database_key,
-            db_url=local_postgres_helpers.postgres_db_url_from_env_vars(),
+            db_url=local_persistence_helpers.postgres_db_url_from_env_vars(),
         )
 
     def teardown_engine(self, database_key: SQLAlchemyDatabaseKey) -> None:

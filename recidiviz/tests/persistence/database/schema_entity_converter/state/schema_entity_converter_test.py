@@ -32,7 +32,7 @@ from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @pytest.mark.uses_db
@@ -47,12 +47,12 @@ class TestStateSchemaEntityConverter(TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 

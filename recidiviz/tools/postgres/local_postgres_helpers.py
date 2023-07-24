@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""This module generates a local postgres instance for use in scripts in testing."""
+"""This module generates a local postgres instance for use in scripts and testing.
+It is purposely separated from SQLAlchemyEngine / DatabaseKey dependencies for use in
+both the Airflow and Recidiviz pipenvs"""
 import logging
 import os
 import pwd
@@ -22,74 +24,17 @@ import shutil
 import tempfile
 from typing import Dict, Optional
 
-from sqlalchemy.engine import URL, Engine
-from sqlalchemy.exc import ProgrammingError
-from sqlalchemy.orm.session import close_all_sessions
+from sqlalchemy.engine import URL
 
 from conftest import get_pytest_worker_id
-from recidiviz.persistence.database.base_schema import (
-    CaseTriageBase,
-    JusticeCountsBase,
-    OperationsBase,
-    StateBase,
-)
-from recidiviz.persistence.database.constants import (
-    SQLALCHEMY_DB_HOST,
-    SQLALCHEMY_DB_NAME,
-    SQLALCHEMY_DB_PASSWORD,
-    SQLALCHEMY_DB_PORT,
-    SQLALCHEMY_DB_USER,
-)
-from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
-from recidiviz.persistence.database.schema.pathways.schema import PathwaysBase
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
-)
-from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_schema import (
-    FakeBase,
-)
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils import environment
 from recidiviz.utils.environment import in_ci
 
-DECLARATIVE_BASES = [
-    OperationsBase,
-    StateBase,
-    JusticeCountsBase,
-    FakeBase,
-    CaseTriageBase,
-    PathwaysBase,
-    OutliersBase,
-]
 LINUX_TEST_DB_OWNER_NAME = "recidiviz_test_db_owner"
 TEST_POSTGRES_DB_NAME = "recidiviz_test_db"
 TEST_POSTGRES_USER_NAME = "recidiviz_test_usr"
 DEFAULT_POSTGRES_DATA_DIRECTORY = "/usr/local/var/postgres"
-
-
-def update_local_sqlalchemy_postgres_env_vars() -> Dict[str, Optional[str]]:
-    """Updates the appropriate env vars for SQLAlchemy to talk to a locally created Postgres instance.
-
-    It returns the old set of env variables that were overridden.
-    """
-    sqlalchemy_vars = [
-        SQLALCHEMY_DB_NAME,
-        SQLALCHEMY_DB_HOST,
-        SQLALCHEMY_DB_PORT,
-        SQLALCHEMY_DB_USER,
-        SQLALCHEMY_DB_PASSWORD,
-    ]
-    original_values = {env_var: os.environ.get(env_var) for env_var in sqlalchemy_vars}
-
-    os.environ[SQLALCHEMY_DB_NAME] = get_on_disk_postgres_database_name()
-    os.environ[SQLALCHEMY_DB_HOST] = "localhost"
-    os.environ[SQLALCHEMY_DB_USER] = TEST_POSTGRES_USER_NAME
-    os.environ[SQLALCHEMY_DB_PORT] = str(get_on_disk_postgres_port())
-    os.environ[SQLALCHEMY_DB_PASSWORD] = ""
-
-    return original_values
 
 
 def restore_local_env_vars(overridden_env_vars: Dict[str, Optional[str]]) -> None:
@@ -248,32 +193,6 @@ def _stop_on_disk_postgresql_database(
     )
 
 
-@environment.local_only
-def use_on_disk_postgresql_database(
-    database_key: SQLAlchemyDatabaseKey, create_tables: Optional[bool] = True
-) -> Engine:
-    """Connects SQLAlchemy to a local test postgres server. Should be called after the test database and user have
-    already been initialized.
-
-    This includes:
-    1. Create all tables in the newly created Postgres database
-    2. Bind the global SessionMaker to the new database engine
-    """
-    if database_key.declarative_meta not in DECLARATIVE_BASES:
-        raise ValueError(f"Unexpected database key: {database_key}.")
-
-    engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
-        database_key=database_key,
-        db_url=on_disk_postgres_db_url(),
-    )
-
-    if create_tables:
-        # Auto-generate all tables that exist in our schema in this database
-        database_key.declarative_meta.metadata.create_all(engine)
-
-    return engine
-
-
 def get_on_disk_postgres_port() -> int:
     return 54300 + get_pytest_worker_id()
 
@@ -297,35 +216,3 @@ def on_disk_postgres_db_url(
         port=get_on_disk_postgres_port(),
         database=database,
     )
-
-
-@environment.local_only
-def postgres_db_url_from_env_vars() -> URL:
-    return URL.create(
-        drivername="postgresql",
-        username=os.getenv(SQLALCHEMY_DB_USER),
-        password=os.getenv(SQLALCHEMY_DB_PASSWORD),
-        host=os.getenv(SQLALCHEMY_DB_HOST),
-        port=os.getenv(SQLALCHEMY_DB_PORT),
-        database=os.getenv(SQLALCHEMY_DB_NAME),
-    )
-
-
-@environment.local_only
-def teardown_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None:
-    """Clears state in an on-disk postgres database for a given schema, for use once a single test has completed. As an
-    optimization, does not actually drop tables, just clears them. As a best practice, you should call
-    stop_and_clear_on_disk_postgresql_database() once all tests in a test class are complete to actually drop the
-    tables.
-    """
-    # Ensure all sessions are closed, otherwise the below may hang.
-    close_all_sessions()
-
-    for table in reversed(database_key.declarative_meta.metadata.sorted_tables):
-        with SessionFactory.using_database(database_key) as session:
-            try:
-                session.execute(table.delete())
-            except ProgrammingError:
-                pass
-
-    SQLAlchemyEngineManager.teardown_engine_for_database_key(database_key=database_key)

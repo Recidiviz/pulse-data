@@ -81,7 +81,7 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
     clear_db_ids,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.environment import in_ci
 from recidiviz.utils.log_helpers import write_html_diff_to_file
 from recidiviz.utils.types import assert_type
@@ -149,8 +149,10 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
             SchemaType.OPERATIONS
         )
-        local_postgres_helpers.use_on_disk_postgresql_database(self.main_database_key)
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.main_database_key
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
             self.operations_database_key
         )
 
@@ -181,10 +183,10 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         self.did_rerun_for_idempotence = False
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.operations_database_key
         )
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.main_database_key
         )
         self.metadata_patcher.stop()

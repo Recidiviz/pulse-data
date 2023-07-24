@@ -30,7 +30,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tools.case_triage.load_fixtures import reset_case_triage_fixtures
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @pytest.mark.uses_db
@@ -47,7 +47,7 @@ class TestLoadFixtures(TestCase):
     def setUp(self) -> None:
         self.db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
 
         # We need to build up the database using the migrations instead of
@@ -71,7 +71,7 @@ class TestLoadFixtures(TestCase):
             r.migrate_up_to("head")
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.db_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(self.db_key)
         local_postgres_helpers.restore_local_env_vars(self.env_vars)
 
     @classmethod

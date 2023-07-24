@@ -70,7 +70,7 @@ from recidiviz.persistence.persistence_utils import (
     EntityDeserializationResult,
     RootEntityT,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 DATE = date(year=2019, day=1, month=2)
 DATETIME = datetime(DATE.year, DATE.month, DATE.day)
@@ -702,7 +702,7 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
         )
         self.isolation_level_patcher.start()
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.matching_delegate_patcher = patch(
             "recidiviz.persistence.entity_matching.legacy.state."
@@ -712,7 +712,9 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
         self.mock_matching_delegate = self.matching_delegate_patcher.start()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
         self.isolation_level_patcher.stop()
 
         self.bq_client_patcher.stop()
@@ -895,7 +897,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
         )
         self.isolation_level_patcher.start()
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.matching_delegate_patcher = patch(
             "recidiviz.persistence.entity_matching.legacy.state."
@@ -905,7 +907,9 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
         self.mock_matching_delegate = self.matching_delegate_patcher.start()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
         self.isolation_level_patcher.stop()
 
         self.bq_client_patcher.stop()

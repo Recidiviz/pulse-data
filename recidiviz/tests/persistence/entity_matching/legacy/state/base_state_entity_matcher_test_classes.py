@@ -42,7 +42,7 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
     clear_db_ids,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @pytest.mark.uses_db
@@ -58,10 +58,12 @@ class BaseStateEntityMatcherTest(TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -157,11 +159,13 @@ class BaseStateMatchingUtilsTest(TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
         self.field_index = CoreEntityFieldIndex()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

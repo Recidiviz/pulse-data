@@ -53,7 +53,7 @@ from recidiviz.persistence.persistence import (
     OVERALL_THRESHOLD,
 )
 from recidiviz.persistence.persistence_utils import EntityDeserializationResult
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 EXTERNAL_ID = "EXTERNAL_ID"
 EXTERNAL_ID_2 = "EXTERNAL_ID_2"
@@ -159,7 +159,7 @@ class TestStatePersistence(TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         # State persistence ends up having to instantiate the us_nd_controller to
         # get enum overrides, and the controller goes on to create bigquery,
@@ -172,7 +172,9 @@ class TestStatePersistence(TestCase):
         self.task_client_patcher.start()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()

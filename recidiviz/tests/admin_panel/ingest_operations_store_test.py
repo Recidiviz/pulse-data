@@ -54,7 +54,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -72,7 +72,7 @@ class IngestOperationsStoreTestBase(TestCase):
 
     def setUp(self) -> None:
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.operations_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.operations_key)
 
         self.state_code_list_patcher = mock.patch(
             "recidiviz.admin_panel.ingest_operations_store.get_direct_ingest_states_launched_in_env",
@@ -106,7 +106,9 @@ class IngestOperationsStoreTestBase(TestCase):
         self.operations_store = IngestOperationsStore()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.operations_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.operations_key
+        )
         self.state_code_list_patcher.stop()
         self.fs_patcher.stop()
         self.task_manager_patcher.stop()

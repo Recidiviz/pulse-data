@@ -50,7 +50,7 @@ from recidiviz.tests.auth.helpers import (
     generate_fake_user_overrides,
     generate_fake_user_restrictions,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 _FIXTURE_PATH = os.path.abspath(
     os.path.join(
@@ -123,9 +123,9 @@ class AuthEndpointTests(TestCase):
         # Setup database
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
-        db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
+        db_url = local_persistence_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.app, SchemaType.CASE_TRIAGE, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
@@ -189,7 +189,9 @@ class AuthEndpointTests(TestCase):
     def tearDown(self) -> None:
         self.fs_patcher.stop()
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     def assertReasonLog(self, log_messages: List[str], expected: str) -> None:
         self.assertIn(

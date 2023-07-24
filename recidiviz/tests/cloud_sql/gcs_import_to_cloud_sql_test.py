@@ -52,7 +52,7 @@ from recidiviz.tests.auth.helpers import (
     add_entity_to_database_session,
     generate_fake_user_restrictions,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 def build_list_constraints_query(schema: str, table: str) -> str:
@@ -126,7 +126,7 @@ class TestGCSImportToCloudSQL(TestCase):
             Mock(return_value=self.mock_instance_id),
         )
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.table_name = DashboardUserRestrictions.__tablename__
         self.model = DashboardUserRestrictions
@@ -137,7 +137,9 @@ class TestGCSImportToCloudSQL(TestCase):
 
     def tearDown(self) -> None:
         self.cloud_sql_client_patcher.stop()
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     def _mock_load_data_from_csv(
         self, values: Optional[List[str]] = None, **_kwargs: Any

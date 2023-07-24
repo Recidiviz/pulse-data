@@ -59,7 +59,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.outliers import fixtures
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 def load_model_fixture(
@@ -109,9 +109,7 @@ class TestOutliersQuerier(TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx")
-        local_postgres_helpers.use_on_disk_postgresql_database(
-            self.database_key, create_tables=True
-        )
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         with SessionFactory.using_database(self.database_key) as session:
             for unit in load_model_fixture(SupervisionUnit):
@@ -132,7 +130,9 @@ class TestOutliersQuerier(TestCase):
                 session.add(SupervisionDirector(**director))
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

@@ -90,7 +90,7 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_supervision_violation,
     generate_supervision_violation_response,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 class TestStateSchemaEnums(TestSchemaEnums):
@@ -200,12 +200,14 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -415,14 +417,14 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
@@ -663,14 +665,14 @@ class TestStateTaskDeadline(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
@@ -826,14 +828,14 @@ class TestStateSupervisionPeriod(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
@@ -958,14 +960,14 @@ class TestStateAssessment(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
@@ -1090,14 +1092,14 @@ class TestStateSupervisionContact(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
@@ -1222,14 +1224,14 @@ class TestStateProgramAssignment(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
@@ -1354,14 +1356,14 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(
+        local_persistence_helpers.use_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
         )
 

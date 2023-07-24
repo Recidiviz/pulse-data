@@ -47,7 +47,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity, entity_graph_eq
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 def _fake_eq(e1: Entity, e2: Entity) -> bool:
@@ -86,7 +86,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code="us_xx",
@@ -114,7 +114,9 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.entity_eq_patcher.stop()
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

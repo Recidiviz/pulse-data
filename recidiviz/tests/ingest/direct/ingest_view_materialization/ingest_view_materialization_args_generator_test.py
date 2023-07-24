@@ -51,7 +51,7 @@ from recidiviz.tests.ingest.direct.fakes.fake_single_ingest_view_collector impor
     FakeSingleIngestViewCollector,
 )
 from recidiviz.tests.utils.fake_region import fake_region
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 _ID = 1
 _DATE_1 = datetime.datetime(year=2019, month=7, day=20)
@@ -109,14 +109,16 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         self.mock_project_id_fn.return_value = self.mock_project_id
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.ingest_database_name = "ingest_database_name"
         self.ingest_instance = DirectIngestInstance.PRIMARY
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
