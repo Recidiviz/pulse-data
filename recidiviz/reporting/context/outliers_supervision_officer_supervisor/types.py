@@ -36,3 +36,9 @@ class MultipleMetricHighlight:
 class Highlights:
     multiple_metrics: Optional[List[MultipleMetricHighlight]] = attr.ib()
     no_outliers: Optional[str] = attr.ib()
+
+
+@attr.s
+class Faq:
+    text: str = attr.ib()
+    url: str = attr.ib()

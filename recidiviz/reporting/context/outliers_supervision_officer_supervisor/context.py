@@ -92,6 +92,7 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixture
     target_fixture_favorable_zero,
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.types import (
+    Faq,
     Highlights,
     MetricHighlightDetail,
     MultipleMetricHighlight,
@@ -129,7 +130,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
 
     def _prepare_for_generation(self) -> dict:
         prepared_data = {
-            "headline": f"Your {self._report_month} Unit Report",
+            "headline": f"Your {self._report_month} Unit Alert",
             "state_name": self.batch.state_code.get_state().name,
             "officer_label": self._config.supervision_officer_label,
             "metric_periods": {
@@ -149,6 +150,8 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
                 if m.metric.outcome_type == MetricOutcome.ADVERSE
             ],
             "highlights": self._highlights,
+            "faq": self._faq,
+            "feedback_form_url": "https://forms.gle/Z92UyBnowsLQuAuv7",
         }
         self.prepared_data = prepared_data
         return prepared_data
@@ -311,6 +314,21 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
             )
         return None
 
+    @property
+    def _faq(self) -> List[Faq]:
+        return [
+            Faq(
+                text="How are these metrics calculated?",
+                url=self._config.learn_more_url,
+            ),
+            Faq(
+                text="How is “far” from average defined?",
+                url=self._config.learn_more_url,
+            ),
+            Faq(text="Who made this email?", url=self._config.learn_more_url),
+            Faq(text="Read the full methodology", url=self._config.learn_more_url),
+        ]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -343,6 +361,7 @@ if __name__ == "__main__":
                 metric_fixtures[TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION],
             ],
             supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
         )
     elif known_args.cmd == "db":
         test_report_date = datetime.datetime.now()
@@ -381,7 +400,9 @@ if __name__ == "__main__":
                 report_data = context.get_prepared_data()
 
             filepath_relative = os.path.join(
-                known_args.dest, f"{recipient.email_address}.html"
+                known_args.dest,
+                batch.state_code.value,
+                f"{recipient.email_address}.html",
             )
             dest = os.path.join(os.getcwd(), filepath_relative)
             os.makedirs(os.path.dirname(dest), exist_ok=True)

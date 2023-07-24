@@ -68,6 +68,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                 metric_fixtures[EARLY_DISCHARGE_REQUESTS],
             ],
             supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
         )
 
     def _get_prepared_data(
@@ -353,3 +354,20 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             actual["highlights"].no_outliers,
             "technical incarceration rate, absconsion rate, or earned discharge request rate",
         )
+
+    def test_faq(self) -> None:
+        """Verify static values are provided to renderer"""
+        actual = self._get_prepared_data(
+            OfficerSupervisorReportData(
+                metrics=[],
+                metrics_without_outliers=[],
+                recipient_email_address=self.test_email,
+            )
+        )
+
+        self.assertEqual(
+            actual["feedback_form_url"], "https://forms.gle/Z92UyBnowsLQuAuv7"
+        )
+
+        for q in actual["faq"]:
+            self.assertEqual(q.url, self.config.learn_more_url)

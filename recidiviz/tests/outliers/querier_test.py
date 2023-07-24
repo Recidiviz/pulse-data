@@ -147,6 +147,7 @@ class TestOutliersQuerier(TestCase):
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_1, TEST_METRIC_2],
             supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
         )
 
         actual = (
@@ -403,6 +404,7 @@ class TestOutliersQuerier(TestCase):
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_1],
             supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
         )
 
         actual = OutliersQuerier().get_supervision_district_report_data_by_district(
@@ -843,6 +845,7 @@ class TestOutliersQuerier(TestCase):
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_1],
             supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
         )
 
         actual = OutliersQuerier().get_supervision_director_report_data(
