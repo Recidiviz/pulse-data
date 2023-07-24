@@ -143,6 +143,8 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                     case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 )
             ],
+            supervising_officer_staff_external_id="ABCDE",
+            supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
@@ -208,6 +210,8 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                         case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                     )
                 ],
+                supervising_officer_staff_external_id="ABCDE",
+                supervising_officer_staff_external_id_type="MO_STAFF",
             ),
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
@@ -228,6 +232,8 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                         case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                     )
                 ],
+                supervising_officer_staff_external_id="ABCDE",
+                supervising_officer_staff_external_id_type="MO_STAFF",
             ),
         ]
 
@@ -333,6 +339,8 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             termination_date=None,
             termination_reason=StateSupervisionPeriodTerminationReason.PARDONED,
             supervision_type=None,
+            supervising_officer_staff_external_id="ABCDE",
+            supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
@@ -383,6 +391,8 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 supervising_officer=None,
                 supervision_site=None,
                 supervision_period_id=29000070008912345,
+                supervising_officer_staff_external_id="ABCDE",
+                supervising_officer_staff_external_id_type="MO_STAFF",
             ),
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
@@ -396,6 +406,8 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 supervising_officer=None,
                 supervision_site=None,
                 supervision_period_id=29000070008912346,
+                supervising_officer_staff_external_id="ABCDE",
+                supervising_officer_staff_external_id_type="MO_STAFF",
             ),
         ]
 
@@ -420,6 +432,8 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             termination_reason_raw_text="65L9100",
             termination_date=date(2020, 9, 15),
             supervision_type=None,
+            supervising_officer_staff_external_id="ABCDE",
+            supervising_officer_staff_external_id_type="MO_STAFF",
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=2,
@@ -432,6 +446,8 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             termination_reason_raw_text="65O2015",
             termination_date=date(2020, 10, 1),
             supervision_type=None,
+            supervising_officer_staff_external_id="FGHIJ",
+            supervising_officer_staff_external_id_type="MO_STAFF",
         )
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
