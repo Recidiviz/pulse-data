@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Constants for line staff tools admin"""
+from typing import Dict
+
 from recidiviz.admin_panel.line_staff_tools.raw_data import (
     US_TN_STANDARDS_ADMIN_SCHEMA,
     US_TN_STANDARDS_DUE_SCHEMA,
@@ -24,7 +26,7 @@ from recidiviz.common.constants.states import StateCode
 
 EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA, StateCode.US_MO, StateCode.US_IX]
 
-RAW_FILES_CONFIG = {
+RAW_FILES_CONFIG: Dict[StateCode, Dict[str, RawDataConfig]] = {
     StateCode.US_TN: {
         "STANDARDS_DUE": RawDataConfig(
             table_name="us_tn_standards_due",
