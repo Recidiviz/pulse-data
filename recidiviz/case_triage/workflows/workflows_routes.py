@@ -49,6 +49,7 @@ from recidiviz.case_triage.workflows.twilio_validation import WorkflowsTwilioVal
 from recidiviz.case_triage.workflows.utils import (
     allowed_twilio_dev_recipient,
     get_sms_request_firestore_path,
+    get_workflows_consolidated_status,
     jsonify_response,
 )
 from recidiviz.case_triage.workflows.workflows_authorization import (
@@ -87,6 +88,10 @@ WORKFLOWS_ALLOWED_ORIGINS = [
     r"https\://app-staging\.recidiviz\.org$",
     cloud_run_metadata.url,
 ]
+
+LOCALHOST_URL = "http://localhost:5000"
+STAGING_URL = "https://app-staging.recidiviz.org"
+PRODUCTION_URL = "https://app.recidiviz.org"
 
 OPT_OUT_MESSAGE = "To stop receiving these texts, reply: STOP."
 
@@ -357,7 +362,8 @@ def create_workflows_api_blueprint() -> Blueprint:
         firestore_client = FirestoreClientImpl()
         firestore_path = get_sms_request_firestore_path(state, recipient_external_id)
         client_firestore_id = f"{state.lower()}_{recipient_external_id}"
-        month_code = datetime.date.today().strftime("%m_%Y")
+        month = datetime.date.today().strftime("%m_%Y")
+        month_code = f"milestones_{month}"
 
         try:
             cloud_task_manager = SingleCloudTaskQueueManager(
@@ -372,7 +378,6 @@ def create_workflows_api_blueprint() -> Blueprint:
                 absolute_uri=f"{cloud_run_metadata.url}"
                 f"/workflows/external_request/{state_code}/send_sms_request",
                 body={
-                    "mid": mid,
                     "message": message,
                     "recipient": f"+1{recipient_phone_number}",
                     "client_firestore_id": client_firestore_id,
@@ -411,8 +416,8 @@ def create_workflows_api_blueprint() -> Blueprint:
                     "by": sender_id,
                 },
                 "status": ExternalSystemRequestStatus.IN_PROGRESS.value,
-                "messageDetails.mid": mid,
-                "messageDetails.sentBy": sender_id,
+                "mid": mid,
+                "sentBy": sender_id,
             },
             merge=True,
         )
@@ -426,7 +431,6 @@ def create_workflows_api_blueprint() -> Blueprint:
         # Validate schema
         data = load_api_schema(WorkflowsSendSmsRequestSchema, cloud_task_body)
 
-        mid = data["mid"]
         message = data["message"]
         recipient = data["recipient"]
         recipient_external_id = data["recipient_external_id"]
@@ -458,6 +462,12 @@ def create_workflows_api_blueprint() -> Blueprint:
         firestore_client = FirestoreClientImpl()
         firestore_path = get_sms_request_firestore_path(state, recipient_external_id)
 
+        url = LOCALHOST_URL
+        if get_gcp_environment() == "recidiviz-staging":
+            url = STAGING_URL
+        if get_gcp_environment() == "recidiviz-123":
+            url = PRODUCTION_URL
+
         try:
             client = TwilioClient(account_sid, auth_token)
 
@@ -465,7 +475,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 body=message,
                 messaging_service_sid=messaging_service_sid,
                 to=recipient,
-                status_callback=f"{cloud_run_metadata.url}/workflows/webhook/twilio_status?mid={mid}",
+                status_callback=f"{url}/workflows/webhook/twilio_status",
             )
 
             client.messages.create(
@@ -477,10 +487,8 @@ def create_workflows_api_blueprint() -> Blueprint:
             firestore_client.set_document(
                 firestore_path,
                 {
-                    "messageDetails.lastUpdated": datetime.datetime.now(
-                        datetime.timezone.utc
-                    ),
-                    "messageDetails.sid": response_message.sid,
+                    "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                    "message_sid": response_message.sid,
                 },
                 merge=True,
             )
@@ -507,20 +515,47 @@ def create_workflows_api_blueprint() -> Blueprint:
             "Successfully sent sms request to twilio", HTTPStatus.OK
         )
 
+    @workflows_api.post("/webhook/twilio_status")
+    @requires_api_schema(TwilioSmsStatusResponseSchema)
+    def handle_twilio_status() -> Response:
+        data = load_api_schema(TwilioSmsStatusResponseSchema, g.api_data)
+        status = data["message_status"]
+        message_sid = data["message_sid"]
+        error_code = data["error_code"]
+        error_message = data["error_message"]
+
+        logging.info("Twilio status api data: [%d]", data)
+
+        firestore_client = FirestoreClientImpl()
+        milestones_messages_ref = firestore_client.get_collection_group(
+            collection_path="milestonesMessages"
+        )
+        query = milestones_messages_ref.where("message_sid", "==", message_sid)
+        client_updates_docs = query.get()
+
+        for doc in client_updates_docs:
+            logging.info(
+                "Updating Twilio message status for doc: [%s]", doc.reference.path
+            )
+
+            firestore_client.set_document(
+                doc.reference.path,
+                {
+                    "status": get_workflows_consolidated_status(status),
+                    "errors": [error_message],
+                    "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                    "rawStatus": status,
+                    "errorCode": error_code,
+                    "errorMessage": error_message,
+                },
+                merge=True,
+            )
+
+        return make_response(jsonify(), HTTPStatus.NO_CONTENT)
+
     @workflows_api.get("/ip")
     def ip() -> Response:
         ip_response = requests.get("http://curlmyip.org", timeout=10)
         return jsonify({"ip": ip_response.text})
-
-    @workflows_api.post("/webhook/twilio_status")
-    @requires_api_schema(TwilioSmsStatusResponseSchema)
-    def handle_twilio_status() -> Response:
-        mid = request.args.get("mid")
-        data = load_api_schema(TwilioSmsStatusResponseSchema, g.api_data)
-
-        logging.info("twilio_status response: [%d]", data)
-        logging.info("twilio mid: [%s]", mid)
-
-        return make_response(jsonify(), HTTPStatus.NO_CONTENT)
 
     return workflows_api

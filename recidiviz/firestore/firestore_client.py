@@ -50,6 +50,10 @@ class FirestoreClient(abc.ABC):
         """Returns a reference to a Firestore collection."""
 
     @abc.abstractmethod
+    def get_collection_group(self, collection_path: str) -> CollectionReference:
+        """Returns a query object for a Firestore collection group."""
+
+    @abc.abstractmethod
     def get_document(self, document_path: str) -> DocumentReference:
         """Returns a reference to a Firestore document."""
 
@@ -126,6 +130,9 @@ class FirestoreClientImpl(FirestoreClient):
 
     def get_collection(self, collection_path: str) -> CollectionReference:
         return self.client.collection(collection_path)
+
+    def get_collection_group(self, collection_path: str) -> Query:
+        return self.client.collection_group(collection_path)
 
     def get_document(self, document_path: str) -> DocumentReference:
         return self.client.document(document_path)

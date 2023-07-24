@@ -120,11 +120,11 @@ class TwilioSmsStatusResponseSchema(CamelOrSnakeCaseSchema):
     Snake-cased keys are expected since the request is coming from the Twilio API
     """
 
-    sid = fields.Str(required=True)
-    status = fields.Str(required=True)
+    message_sid = fields.Str(required=True)
+    message_status = fields.Str(required=True)
     account_sid = fields.Str(required=True)
-    error_code = fields.Str(required=True, allow_none=True)
-    error_message = fields.Str(required=True, allow_none=True)
+    error_code = fields.Str(load_default=None, allow_none=True)
+    error_message = fields.Str(load_default=None, allow_none=True)
 
 
 def validate_e164_phone_number(phone_number: str) -> None:
@@ -146,6 +146,5 @@ class WorkflowsSendSmsRequestSchema(CamelOrSnakeCaseSchema):
     message = fields.Str(required=True)
     recipient_external_id = fields.Str(required=True)
     recipient = fields.Str(required=True, validate=validate_e164_phone_number)
-    mid = fields.Str(required=True)
     client_firestore_id = fields.Str(required=True)
     month_code = fields.Str(required=True)
