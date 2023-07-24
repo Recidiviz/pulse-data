@@ -31,10 +31,7 @@ columns:
     field_type: datetime
   - name: Violated_Conditions
     description: >-
-      This is a text field containing structured data which has been concatenated
-      together. It maybe useful to split this data apart. As it is, we have charge codes
-      concatenated to charge descriptions. See ARTICLE 47 — CHARGE CODES in the DOM for
-      the complete list.
+      This has been extracted into ParoleViolationCharges.
   - name: Response_Date
     description: >-
       TODO(#15297)

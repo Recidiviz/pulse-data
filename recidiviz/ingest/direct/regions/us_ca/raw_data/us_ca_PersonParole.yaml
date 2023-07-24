@@ -185,3 +185,29 @@ columns:
           An offender under DAPO's supervision currently in custody for federal
           charges  in a federal facility or federal contract bed.
       - value: Conversion
+  - name: PALAgentName # Added 2023-07-19
+    is_pii: True
+    description: >-
+      Name of the agent assigned to this person due to the fact that this person has
+      absconded.
+  - name: PALAgentBadge # Added 2023-07-19
+    is_pii: True
+    description: >-
+      Badge of the agent assigned to this person due to the fact that this person has
+      absconded.
+  - name: AbscondFlag # Added 2023-07-19
+    description: >-
+      Whether or not this person is absconded. Not used in ingest right now, though
+      perhaps should be. TODO(#22503)
+  - name: LATESTSUSPENDEDDATE # Added 2023-07-19
+    field_type: datetime
+    description: >-
+      The date the person was last suspended. Suspended is a specific status that I
+      think is intended to indicate the last time this person was suspended for an
+      absconsion, though I think individuals can be suspended for other things as well.
+  - name: ReinstateDate # Added 2023-07-19
+    field_type: datetime
+    description: >-
+      The date the most recent suspension was ended.
+  - name: SUPVEVNTDATE # Added 2023-07-19
+    field_type: datetime
