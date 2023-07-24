@@ -252,6 +252,9 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
             mock_metric_cache.assert_called_with(
                 state_code=StateCode.US_XX, metric_fetcher=ANY, redis=ANY
             )
+            mock_metric_cache.return_value.reset_cache.assert_called_with(
+                ALL_METRICS_BY_NAME["UsTnCompliantReportingWorkflowsImpact"]
+            )
             self.assertEqual(HTTPStatus.OK, response.status_code)
 
     def test_import_pathways_invalid_state(self) -> None:

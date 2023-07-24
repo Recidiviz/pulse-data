@@ -38,3 +38,11 @@ class Dimension(enum.Enum):
     SUPERVISION_TYPE = "supervision_type"
     TIME_PERIOD = "time_period"
     YEAR_MONTH = "year_month"
+    # Impact Dashboard Dimensions
+    START_DATE = "start_date"
+    END_DATE = "end_date"
+    AVG_DAILY_POPULATION = "avg_daily_population"
+    AVG_POPULATION_LIMITED_SUPERVISION_LEVEL = (
+        "avg_population_limited_supervision_level"
+    )
+    MONTHS_SINCE_TREATMENT = "months_since_treatment"
