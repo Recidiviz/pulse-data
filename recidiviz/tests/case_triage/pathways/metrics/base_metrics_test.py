@@ -49,7 +49,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.pathways import fixtures
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 def load_metrics_fixture(
@@ -93,7 +93,7 @@ class PathwaysMetricTestBase:
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_tn")
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         with SessionFactory.using_database(self.database_key) as session:
             for metric in load_metrics_fixture(self.schema):
@@ -102,7 +102,9 @@ class PathwaysMetricTestBase:
                 session.add(MetricMetadata(**metric_metadata))
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -112,6 +114,8 @@ class PathwaysMetricTestBase:
 
 
 class TestMetricHelpers(TestCase):
+    """Tests for the metric helpers"""
+
     def test_get_metrics_by_entity(self) -> None:
         self.assertEqual(
             [
@@ -124,6 +128,8 @@ class TestMetricHelpers(TestCase):
 
 @pytest.mark.uses_db
 class TestPathwaysMetricFetcher(TestCase):
+    """Tests for the PathwaysMetricFetcher"""
+
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
     engine: Engine
@@ -134,13 +140,15 @@ class TestPathwaysMetricFetcher(TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_co")
-        self.engine = local_postgres_helpers.use_on_disk_postgresql_database(
+        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
             self.database_key,
             create_tables=False,
         )
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

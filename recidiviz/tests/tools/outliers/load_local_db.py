@@ -41,7 +41,7 @@ from recidiviz.tools.outliers.load_local_db import (
     import_outliers_from_gcs,
     reset_outliers_fixtures,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.postgres.local_postgres_helpers import (
     get_on_disk_postgres_database_name,
 )
@@ -64,7 +64,7 @@ class TestLoadLocalDb(TestCase):
             SchemaType.OUTLIERS, get_on_disk_postgres_database_name()
         )
         self.env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
 
         self.engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
@@ -74,7 +74,7 @@ class TestLoadLocalDb(TestCase):
         OutliersBase.metadata.create_all(self.engine)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.db_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(self.db_key)
         local_postgres_helpers.restore_local_env_vars(self.env_vars)
 
     @classmethod

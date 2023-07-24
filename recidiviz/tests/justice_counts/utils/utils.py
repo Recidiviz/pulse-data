@@ -56,7 +56,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.tools.justice_counts.control_panel.load_fixtures import (
     reset_justice_counts_fixtures,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @pytest.mark.uses_db
@@ -73,7 +73,7 @@ class JusticeCountsDatabaseTestCase(TestCase):
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         self.env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
 
         # Auto-generate all tables that exist in our schema in this database
@@ -94,7 +94,9 @@ class JusticeCountsDatabaseTestCase(TestCase):
         reset_justice_counts_fixtures(self.engine)
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
         local_postgres_helpers.restore_local_env_vars(self.env_vars)
 
     @classmethod

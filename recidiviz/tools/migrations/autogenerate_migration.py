@@ -44,7 +44,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -90,7 +90,7 @@ def main(schema_type: SchemaType, message: str, use_local_db: bool) -> None:
         logging.info("Starting local postgres database for autogeneration...")
         tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         original_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
     else:
         # TODO(Recidiviz/zenhub-tasks#134): This code path will throw when pointed at staging

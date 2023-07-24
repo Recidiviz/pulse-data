@@ -37,7 +37,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import Batch
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
@@ -75,9 +75,9 @@ class ReportingEndpointTests(TestCase):
         schema_type = SchemaType.CASE_TRIAGE
         self.database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
         self.overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
-        db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
+        db_url = local_persistence_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.app, schema_type, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
@@ -107,7 +107,9 @@ class ReportingEndpointTests(TestCase):
         self.requires_gae_auth_patcher.stop()
         self.gcs_file_system_patcher.stop()
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -486,9 +488,9 @@ class ReportingEndpointTestsUSIX(TestCase):
         schema_type = SchemaType.CASE_TRIAGE
         self.database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
         self.overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
-        db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
+        db_url = local_persistence_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.app, schema_type, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
@@ -518,7 +520,9 @@ class ReportingEndpointTestsUSIX(TestCase):
         self.requires_gae_auth_patcher.stop()
         self.gcs_file_system_patcher.stop()
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

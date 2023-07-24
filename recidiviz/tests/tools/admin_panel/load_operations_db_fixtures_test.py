@@ -35,7 +35,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.tools.admin_panel.load_operations_db_fixtures import (
     reset_operations_db_fixtures,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @pytest.mark.uses_db
@@ -53,12 +53,14 @@ class TestOperationsLoadFixtures(unittest.TestCase):
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(
             SchemaType.OPERATIONS
         )
-        self.engine = local_postgres_helpers.use_on_disk_postgresql_database(
+        self.engine = local_persistence_helpers.use_on_disk_postgresql_database(
             self.database_key
         )
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

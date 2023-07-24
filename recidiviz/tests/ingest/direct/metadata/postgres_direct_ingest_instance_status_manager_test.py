@@ -44,7 +44,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @pytest.mark.uses_db
@@ -74,7 +74,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
 
     def setUp(self) -> None:
         self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.operations_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.operations_key)
         self.us_xx_primary_manager = PostgresDirectIngestInstanceStatusManager(
             StateCode.US_XX.value,
             DirectIngestInstance.PRIMARY,
@@ -92,7 +92,9 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
         )
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.operations_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.operations_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

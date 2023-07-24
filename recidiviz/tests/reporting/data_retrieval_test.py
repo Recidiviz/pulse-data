@@ -34,7 +34,7 @@ from recidiviz.reporting.data_retrieval import filter_recipients, retrieve_data,
 from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
@@ -79,7 +79,7 @@ class DataRetrievalTests(TestCase):
         self.state_code = StateCode.US_ID
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.po_report_batch = Batch(
             state_code=self.state_code,
@@ -108,7 +108,9 @@ class DataRetrievalTests(TestCase):
         self.gcs_factory_patcher.stop()
         self.get_secret_patcher.stop()
 
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

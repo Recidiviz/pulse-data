@@ -34,7 +34,7 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_person,
     generate_person_external_id,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 EXTERNAL_ID_1 = "EXTERNAL_ID_1"
 EXTERNAL_ID_2 = "EXTERNAL_ID_2"
@@ -54,12 +54,14 @@ class TestStatePersonDatabaseInvariantValidators(unittest.TestCase):
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.state_code = "US_XX"
 
     def tearDown(self) -> None:
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:

@@ -52,7 +52,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -94,11 +94,13 @@ class TestApplicationDataImportPathwaysRoutes(TestCase):
         self.database_key = PathwaysDatabaseManager.database_key_for_state(
             self.state_code
         )
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
         self.fs_patcher.stop()
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
     def test_import_trigger_pathways(self, mock_task_manager: MagicMock) -> None:
@@ -435,11 +437,13 @@ class TestApplicationDataImportOutliersRoutes(TestCase):
         self.database_key = self.database_manager.database_key_for_state(
             self.state_code
         )
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
         self.fs_patcher.stop()
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
     def test_import_trigger_outliers(self, mock_task_manager: MagicMock) -> None:

@@ -34,7 +34,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @pytest.mark.uses_db
@@ -56,10 +56,10 @@ class MigrationsTestBase(TestCase):
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(self.schema_type)
         self.overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
         self.engine = create_engine(
-            local_postgres_helpers.postgres_db_url_from_env_vars()
+            local_persistence_helpers.postgres_db_url_from_env_vars()
         )
 
     def tearDown(self) -> None:
@@ -67,7 +67,9 @@ class MigrationsTestBase(TestCase):
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
 
     def fetch_all_enums(self) -> Dict[str, Set[str]]:
-        engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
+        engine = create_engine(
+            local_persistence_helpers.postgres_db_url_from_env_vars()
+        )
 
         conn = engine.connect()
         rows = conn.execute(
@@ -92,7 +94,9 @@ class MigrationsTestBase(TestCase):
         """Returns a dictionary mapping constraint name to constraint definition for all
         CHECK and UNIQUENESS constraints defined in the database.
         """
-        engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
+        engine = create_engine(
+            local_persistence_helpers.postgres_db_url_from_env_vars()
+        )
 
         conn = engine.connect()
         rows = conn.execute(
@@ -111,7 +115,9 @@ class MigrationsTestBase(TestCase):
 
     def fetch_all_indices(self) -> Dict[str, str]:
         """Returns a list of all indices defined in the database."""
-        engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
+        engine = create_engine(
+            local_persistence_helpers.postgres_db_url_from_env_vars()
+        )
 
         conn = engine.connect()
         rows = conn.execute(
@@ -156,10 +162,10 @@ class MigrationsTestBase(TestCase):
 
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
 
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         # Fetch constraints after having SQLAlchemy load the schema
         schema_constraints = self.fetch_all_constraints()
@@ -195,7 +201,9 @@ class MigrationsTestBase(TestCase):
             )
 
         # Cleanup needed for this method.
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     def test_indices_match_schema(self) -> None:
         with runner(self.default_config(), self.engine) as r:
@@ -210,10 +218,10 @@ class MigrationsTestBase(TestCase):
 
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
 
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         # Fetch indices after having SQLAlchemy load the schema
         schema_indices = self.fetch_all_indices()
@@ -254,7 +262,9 @@ class MigrationsTestBase(TestCase):
                 )
 
         # Cleanup needed for this method.
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     def test_enums_match_schema(self) -> None:
         with runner(self.default_config(), self.engine) as r:
@@ -269,10 +279,10 @@ class MigrationsTestBase(TestCase):
 
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
 
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         # Check enum values
         schema_enums = self.fetch_all_enums()
@@ -284,7 +294,9 @@ class MigrationsTestBase(TestCase):
             self.assertCountEqual(migration_values, schema_values, f"{enum_name}")
 
         # Cleanup needed for this method.
-        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
 
     def test_full_upgrade(self) -> None:
         """Enforce that migrations can be run forward to completion."""
@@ -403,7 +415,7 @@ class TestOperationsMigrations(MigrationsTestBase):
             r.migrate_up_to("head")
 
             engine = create_engine(
-                local_postgres_helpers.postgres_db_url_from_env_vars()
+                local_persistence_helpers.postgres_db_url_from_env_vars()
             )
 
             conn = engine.connect()

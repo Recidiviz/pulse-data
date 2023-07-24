@@ -39,7 +39,7 @@ from recidiviz.reporting.email_reporting_utils import (
 )
 from recidiviz.tests.reporting.email_generation_test import EmailGenerationTests
 from recidiviz.tests.utils.with_secrets import with_secrets
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -76,9 +76,9 @@ class EmailReportingIntegrationTests(TestCase):
         schema_type = SchemaType.CASE_TRIAGE
         self.database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
         self.overridden_env_vars = (
-            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
         )
-        db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
+        db_url = local_persistence_helpers.postgres_db_url_from_env_vars()
         engine = setup_scoped_sessions(self.app, schema_type, db_url)
         self.database_key.declarative_meta.metadata.create_all(engine)
 
@@ -106,7 +106,7 @@ class EmailReportingIntegrationTests(TestCase):
         self.requires_gae_auth_patcher.stop()
         self.gcs_file_system_patcher.stop()
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
-        local_postgres_helpers.teardown_on_disk_postgresql_database(
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         )
 

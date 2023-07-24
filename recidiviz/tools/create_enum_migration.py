@@ -24,7 +24,7 @@ from sqlalchemy import create_engine
 from recidiviz.persistence.database import migrations
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.tools.utils.migration_script_helpers import (
     create_new_empty_migration_and_return_filename,
     get_migration_header_section,
@@ -65,9 +65,9 @@ def _get_old_enum_values(schema_type: SchemaType, enum_name: str) -> List[str]:
     db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
     database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
     overridden_env_vars = (
-        local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
     )
-    engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
+    engine = create_engine(local_persistence_helpers.postgres_db_url_from_env_vars())
 
     try:
         # Fetch enums
