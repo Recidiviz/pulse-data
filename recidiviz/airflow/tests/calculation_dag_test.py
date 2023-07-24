@@ -33,9 +33,7 @@ from recidiviz import pipelines
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
-from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.utils.environment import GCPEnvironment
 
 # Need to import calculation_dag inside test suite so environment variables are set before importing,
@@ -52,7 +50,7 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
 )
 
 _UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
-    "update_managed_views_all.execute_entrypoint_operator"
+    "update_all_managed_views.execute_entrypoint_operator"
 )
 _VALIDATIONS_STATE_CODE_BRANCH_START = "validations.state_code_branch_start"
 _REFRESH_BQ_DATASET_TASK_ID = (
@@ -89,35 +87,17 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.environment_patcher.stop()
         self.project_environment_patcher.stop()
 
-    def update_reference_views_downstream_initialize_dag(self) -> None:
-        """Tests that the `bq_refresh` task is downstream of initialize_dag."""
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        self.assertNotEqual(0, len(dag.task_ids))
-
-        update_reference_views_group: TaskGroup = dag.task_group_dict[
-            "update_managed_views_reference_views_only"
-        ]
-        initialize_dag = dag.task_group_dict["initialize_dag"]
-
-        self.assertIn(
-            initialize_dag.group_id,
-            update_reference_views_group.upstream_group_ids,
-        )
-
-    def test_bq_refresh_downstream_update_reference_views(self) -> None:
+    def test_bq_refresh_downstream_initialize_dag(self) -> None:
         """Tests that the `bq_refresh` task is downstream of initialize_dag."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         bq_refresh_group: TaskGroup = dag.task_group_dict["bq_refresh"]
-        update_reference_views_dag = dag.task_group_dict[
-            "update_managed_views_reference_views_only"
-        ]
+        initialize_dag = dag.task_group_dict["initialize_dag"]
 
         self.assertIn(
-            update_reference_views_dag.group_id,
+            initialize_dag.group_id,
             bq_refresh_group.upstream_group_ids,
         )
 
@@ -288,7 +268,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_tasks_not_upstream = pipeline_task_ids - upstream_tasks
         self.assertEqual(set(), pipeline_tasks_not_upstream)
 
-    def test_update_managed_views_endpoint_exists(self) -> None:
+    def test_update_all_managed_views_endpoint_exists(self) -> None:
         """Tests that update_all_managed_views triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
@@ -302,20 +282,22 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
     @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_update_managed_views_endpoint(
+    def test_update_all_managed_views_endpoint(
         self,
         mock_build_kubernetes_pod_task_group: MagicMock,
         mock_get_sandbox_prefix: MagicMock,
     ) -> None:
-        from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
+        from recidiviz.airflow.dags.calculation_dag import (
+            update_all_managed_views_operator,
+        )
 
         mock_get_sandbox_prefix.return_value = None
 
-        update_managed_views_operator(ManagedViewUpdateType.ALL)
+        update_all_managed_views_operator()
 
         mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="update_managed_views_all",
-            container_name="update_managed_views_all",
+            group_id="update_all_managed_views",
+            container_name="update_all_managed_views",
             arguments=mock.ANY,
             trigger_rule=TriggerRule.ALL_DONE,
         )
@@ -337,20 +319,22 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
     @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_update_managed_views_endpoint_sandbox_prefix(
+    def test_update_all_managed_views_endpoint_sandbox_prefix(
         self,
         mock_build_kubernetes_pod_task_group: MagicMock,
         mock_get_sandbox_prefix: MagicMock,
     ) -> None:
-        from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
+        from recidiviz.airflow.dags.calculation_dag import (
+            update_all_managed_views_operator,
+        )
 
         mock_get_sandbox_prefix.return_value = "test_prefix"
 
-        update_managed_views_operator(ManagedViewUpdateType.ALL)
+        update_all_managed_views_operator()
 
         mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="update_managed_views_all",
-            container_name="update_managed_views_all",
+            group_id="update_all_managed_views",
+            container_name="update_all_managed_views",
             arguments=mock.ANY,
             trigger_rule=TriggerRule.ALL_DONE,
         )
@@ -368,42 +352,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "-m",
                 "recidiviz.entrypoints.view_update.update_all_managed_views",
                 "--sandbox_prefix=test_prefix",
-            ],
-        )
-
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_update_managed_views_endpoint_reference_views_only(
-        self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-    ) -> None:
-        from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
-
-        mock_get_sandbox_prefix.return_value = None
-
-        update_managed_views_operator(ManagedViewUpdateType.REFERENCE_VIEWS_ONLY)
-
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="update_managed_views_reference_views_only",
-            container_name="update_managed_views_reference_views_only",
-            arguments=mock.ANY,
-            trigger_rule=TriggerRule.ALL_DONE,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
-
-        self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.view_update.update_all_managed_views",
-                f"--dataset_ids_to_load={REFERENCE_VIEWS_DATASET}",
             ],
         )
 
