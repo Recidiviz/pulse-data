@@ -18,6 +18,7 @@
 import os
 import socket
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -129,3 +130,9 @@ def get_pathways_metric_redis() -> Redis:
         )
 
     return Redis(host=host, port=int(port), **get_redis_connection_options())
+
+
+def to_json_serializable(value: Any) -> str:
+    if isinstance(value, date):
+        return value.isoformat()
+    return value

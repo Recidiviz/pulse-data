@@ -40,6 +40,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     MetricMetadata,
     PrisonToSupervisionTransitions,
     SupervisionPopulationOverTime,
+    UsTnCompliantReportingWorkflowsImpact,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -122,6 +123,10 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
         self.person_level_metric_path = (
             "/pathways/US_TN/PrisonToSupervisionTransitionsPersonLevel"
         )
+        self.workflows_impact_metric_path = (
+            "/pathways/US_TN/UsTnCompliantReportingWorkflowsImpact"
+        )
+
         self.over_time_metric_path = "/pathways/US_TN/SupervisionPopulationOverTime"
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -133,6 +138,8 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 session.add(SupervisionPopulationOverTime(**metric))
             for metadata in load_metrics_fixture(MetricMetadata):
                 session.add(MetricMetadata(**metadata))
+            for metric in load_metrics_fixture(UsTnCompliantReportingWorkflowsImpact):
+                session.add(UsTnCompliantReportingWorkflowsImpact(**metric))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -499,6 +506,37 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
                 "metadata": {
                     "lastUpdated": "2022-08-01",
                 },
+            },
+            response.get_json(),
+        )
+
+    def test_workflows_impact_metric_path(self) -> None:
+        response = self.test_client.get(
+            self.workflows_impact_metric_path,
+            headers={"Origin": "http://localhost:3000"},
+            query_string={
+                f"filters[{Dimension.SUPERVISION_DISTRICT.value}]": "10",
+            },
+        )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code, response.get_json())
+        self.assertEqual(
+            {
+                "data": [
+                    {
+                        "avgDailyPopulation": 3927.9999999999995,
+                        "avgPopulationLimitedSupervisionLevel": 106.69999999999999,
+                        "districtName": "Test 10",
+                        "endDate": "2022-05-01",
+                        "monthsSinceTreatment": 0,
+                        "startDate": "2022-04-01",
+                        "stateCode": "US_TN",
+                        "supervisionDistrict": "10",
+                        "variantDate": "2022-04-11",
+                        "variantId": "WORKFLOWS_LAUNCH",
+                    }
+                ],
+                "metadata": {},
             },
             response.get_json(),
         )

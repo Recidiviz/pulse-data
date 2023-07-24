@@ -32,6 +32,7 @@ from recidiviz.case_triage.pathways.metrics.query_builders.metric_query_builder 
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
+from recidiviz.case_triage.util import to_json_serializable
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 
@@ -58,7 +59,7 @@ class PathwaysMetricFetcher:
             try:
                 data: List[Mapping[str, Union[str, int]]] = [
                     {
-                        snake_to_camel(column): result[index]
+                        snake_to_camel(column): to_json_serializable(result[index])
                         for index, column in enumerate(
                             data_query.statement.selected_columns.keys()
                         )
