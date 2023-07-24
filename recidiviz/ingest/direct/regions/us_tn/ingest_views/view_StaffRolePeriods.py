@@ -27,9 +27,14 @@ WITH first_reported_title AS(
     SELECT 
         StaffID, 
         StaffTitle
-    FROM {Staff@ALL}
-    WHERE StaffID IS NOT NULL
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY StatusDate ASC) = 1
+    FROM 
+        (SELECT 
+            StaffID, 
+            StaffTitle,
+            ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY StatusDate, LastUpdateDate ASC) as SEQ
+        FROM {Staff@ALL} s
+        WHERE StaffID IS NOT NULL) s 
+    WHERE SEQ = 1
 ),
 key_status_change_dates AS(
     #arbitrary first period start dates since beginning of time 
@@ -82,7 +87,7 @@ construct_periods AS (
     WINDOW person_sequence AS (PARTITION BY StaffID ORDER BY StatusChangeOrder)
 )
 SELECT 
-    StaffID,
+    REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
     Status,
     Start_Date,
     StaffTitle,
