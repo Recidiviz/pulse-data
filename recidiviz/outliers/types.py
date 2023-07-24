@@ -198,6 +198,8 @@ class OfficerSupervisorReportData:
     # List of OutliersMetric objects for metrics where there are no outliers
     metrics_without_outliers: List[OutliersMetricConfig] = attr.ib()
     recipient_email_address: str = attr.ib()
+    # Additional emails the report data should be CC'd to
+    additional_recipients: List[str] = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)

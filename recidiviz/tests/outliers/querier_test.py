@@ -201,6 +201,7 @@ class TestOutliersQuerier(TestCase):
                 ],
                 metrics_without_outliers=[TEST_METRIC_2],
                 recipient_email_address="supervisor1@recidiviz.org",
+                additional_recipients=["manager1@recidiviz.org"],
             ),
             "102": OfficerSupervisorReportData(
                 metrics=[
@@ -236,6 +237,10 @@ class TestOutliersQuerier(TestCase):
                 ],
                 metrics_without_outliers=[TEST_METRIC_1],
                 recipient_email_address="supervisor2@recidiviz.org",
+                additional_recipients=[
+                    "manager2@recidiviz.org",
+                    "manager3@recidiviz.org",
+                ],
             ),
             "103": OfficerSupervisorReportData(
                 metrics=[],
@@ -243,7 +248,10 @@ class TestOutliersQuerier(TestCase):
                     TEST_METRIC_1,
                     TEST_METRIC_2,
                 ],
-                recipient_email_address="supervisor3@recidiviz.org",
+                recipient_email_address="manager3@recidiviz.org",
+                additional_recipients=[
+                    "manager2@recidiviz.org",
+                ],
             ),
         }
 
@@ -312,6 +320,7 @@ class TestOutliersQuerier(TestCase):
                     }
                 ],
                 "recipient_email_address": "supervisor1@recidiviz.org",
+                "additional_recipients": ["manager1@recidiviz.org"],
             },
             "102": {
                 "metrics": [
@@ -366,6 +375,10 @@ class TestOutliersQuerier(TestCase):
                     }
                 ],
                 "recipient_email_address": "supervisor2@recidiviz.org",
+                "additional_recipients": [
+                    "manager2@recidiviz.org",
+                    "manager3@recidiviz.org",
+                ],
             },
             "103": {
                 "metrics": [],
@@ -385,7 +398,10 @@ class TestOutliersQuerier(TestCase):
                         "event_name": "LSU transfers",
                     },
                 ],
-                "recipient_email_address": "supervisor3@recidiviz.org",
+                "recipient_email_address": "manager3@recidiviz.org",
+                "additional_recipients": [
+                    "manager2@recidiviz.org",
+                ],
             },
         }
         self.assertEqual(actual, expected)
@@ -613,6 +629,102 @@ class TestOutliersQuerier(TestCase):
                 ],
                 entity_label="officer",
             ),
+            OutliersUpperManagementReportData(
+                recipient_name=PersonName(
+                    given_names="Manager",
+                    surname="3",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
+                recipient_email="manager3@recidiviz.org",
+                entities=[
+                    OutliersAggregatedMetricEntity(
+                        name=PersonName(
+                            given_names="Supervisor",
+                            surname="2",
+                            middle_names=None,
+                            name_suffix=None,
+                        ),
+                        metrics=[
+                            OutliersAggregatedMetricInfo(
+                                metric=TEST_METRIC_1,
+                                officers_far_pct=0.0,
+                                prev_officers_far_pct=0.0,
+                                officer_rates={
+                                    TargetStatus.MET: [
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="4",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.0,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.0,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=None,
+                                        ),
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="6",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.111000111000111,
+                                            target_status=TargetStatus.MET,
+                                            prev_rate=0.12001200120012002,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=TargetStatus.MET,
+                                        ),
+                                    ],
+                                    TargetStatus.NEAR: [
+                                        OfficerMetricEntity(
+                                            name=PersonName(
+                                                given_names="Officer",
+                                                surname="3",
+                                                middle_names=None,
+                                                name_suffix=None,
+                                            ),
+                                            rate=0.18409086725207563,
+                                            target_status=TargetStatus.NEAR,
+                                            prev_rate=0.18505667360629194,
+                                            supervisor_external_id="102",
+                                            supervision_district="2",
+                                            prev_target_status=TargetStatus.NEAR,
+                                        )
+                                    ],
+                                    TargetStatus.FAR: [],
+                                },
+                            )
+                        ],
+                    ),
+                    OutliersAggregatedMetricEntity(
+                        name=PersonName(
+                            given_names="Supervisor",
+                            surname="3",
+                            middle_names=None,
+                            name_suffix=None,
+                        ),
+                        metrics=[
+                            OutliersAggregatedMetricInfo(
+                                metric=TEST_METRIC_1,
+                                officers_far_pct=0,
+                                prev_officers_far_pct=0,
+                                officer_rates={
+                                    TargetStatus.MET: [],
+                                    TargetStatus.NEAR: [],
+                                    TargetStatus.FAR: [],
+                                },
+                            )
+                        ],
+                    ),
+                ],
+                entity_label="officer",
+            ),
         ]
 
         self.assertEqual(actual, expected)
@@ -737,6 +849,110 @@ class TestOutliersQuerier(TestCase):
                     "name_suffix": None,
                 },
                 "recipient_email": "manager2@recidiviz.org",
+                "entities": [
+                    {
+                        "name": {
+                            "given_names": "Supervisor",
+                            "surname": "2",
+                            "middle_names": None,
+                            "name_suffix": None,
+                        },
+                        "metrics": [
+                            {
+                                "metric": {
+                                    "name": "incarceration_starts_and_inferred",
+                                    "outcome_type": "ADVERSE",
+                                    "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                                    "body_display_name": "incarceration rate",
+                                    "event_name": "incarcerations",
+                                },
+                                "officers_far_pct": 0.0,
+                                "prev_officers_far_pct": 0.0,
+                                "officer_rates": {
+                                    "MET": [
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "4",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.0,
+                                            "target_status": "MET",
+                                            "prev_rate": 0.0,
+                                            "supervisor_external_id": "102",
+                                            "supervision_district": "2",
+                                            "prev_target_status": None,
+                                        },
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "6",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.111000111000111,
+                                            "target_status": "MET",
+                                            "prev_rate": 0.12001200120012002,
+                                            "supervisor_external_id": "102",
+                                            "supervision_district": "2",
+                                            "prev_target_status": "MET",
+                                        },
+                                    ],
+                                    "NEAR": [
+                                        {
+                                            "name": {
+                                                "given_names": "Officer",
+                                                "surname": "3",
+                                                "middle_names": None,
+                                                "name_suffix": None,
+                                            },
+                                            "rate": 0.18409086725207563,
+                                            "target_status": "NEAR",
+                                            "prev_rate": 0.18505667360629194,
+                                            "supervisor_external_id": "102",
+                                            "supervision_district": "2",
+                                            "prev_target_status": "NEAR",
+                                        }
+                                    ],
+                                    "FAR": [],
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "name": {
+                            "given_names": "Supervisor",
+                            "surname": "3",
+                            "middle_names": None,
+                            "name_suffix": None,
+                        },
+                        "metrics": [
+                            {
+                                "metric": {
+                                    "name": "incarceration_starts_and_inferred",
+                                    "outcome_type": "ADVERSE",
+                                    "title_display_name": "Incarceration Rate (CPVs & TPVs)",
+                                    "body_display_name": "incarceration rate",
+                                    "event_name": "incarcerations",
+                                },
+                                "officers_far_pct": 0,
+                                "prev_officers_far_pct": 0,
+                                "officer_rates": {"MET": [], "NEAR": [], "FAR": []},
+                            }
+                        ],
+                    },
+                ],
+                "entity_label": "officer",
+            },
+            {
+                "recipient_name": {
+                    "given_names": "Manager",
+                    "surname": "3",
+                    "middle_names": None,
+                    "name_suffix": None,
+                },
+                "recipient_email": "manager3@recidiviz.org",
                 "entities": [
                     {
                         "name": {

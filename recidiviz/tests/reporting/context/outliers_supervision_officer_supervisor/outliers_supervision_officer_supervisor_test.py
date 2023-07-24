@@ -118,6 +118,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                     metrics=[],
                     metrics_without_outliers=[],
                     recipient_email_address=self.test_email,
+                    additional_recipients=[],
                 )
             )["metric_periods"],
         )
@@ -129,6 +130,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                     metrics=[],
                     metrics_without_outliers=[],
                     recipient_email_address=self.test_email,
+                    additional_recipients=[],
                 )
             )["show_metric_section_headings"]
         )
@@ -140,6 +142,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                     metrics=[],
                     metrics_without_outliers=[],
                     recipient_email_address=self.test_email,
+                    additional_recipients=[],
                 )
             )["show_metric_section_headings"]
         )
@@ -156,6 +159,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             ],
             metrics_without_outliers=[],
             recipient_email_address=self.test_email,
+            additional_recipients=[],
         )
         actual = self._get_prepared_data(test_report)
 
@@ -176,6 +180,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
             ],
             metrics_without_outliers=[],
             recipient_email_address=self.test_email,
+            additional_recipients=[],
         )
 
         self.assertEqual(
@@ -242,6 +247,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                 metrics=[],
                 metrics_without_outliers=[],
                 recipient_email_address=self.test_email,
+                additional_recipients=[],
             )
         )
         self.assertIsNone(actual["highlights"].multiple_metrics)
@@ -271,6 +277,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                 ],
                 metrics_without_outliers=[],
                 recipient_email_address=self.test_email,
+                additional_recipients=[],
             )
         )
         self.assertEqual(
@@ -311,6 +318,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                 metrics=[],
                 metrics_without_outliers=[],
                 recipient_email_address=self.test_email,
+                additional_recipients=[],
             )
         )
         self.assertIsNone(actual["highlights"].no_outliers)
@@ -320,6 +328,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                 metrics=[],
                 metrics_without_outliers=[metric_fixtures[ABSCONSIONS_BENCH_WARRANTS]],
                 recipient_email_address=self.test_email,
+                additional_recipients=[],
             )
         )
         self.assertEqual(actual["highlights"].no_outliers, "absconsion rate")
@@ -332,6 +341,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                     metric_fixtures[EARLY_DISCHARGE_REQUESTS],
                 ],
                 recipient_email_address=self.test_email,
+                additional_recipients=[],
             )
         )
         self.assertEqual(
@@ -348,6 +358,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                     metric_fixtures[EARLY_DISCHARGE_REQUESTS],
                 ],
                 recipient_email_address=self.test_email,
+                additional_recipients=[],
             )
         )
         self.assertEqual(

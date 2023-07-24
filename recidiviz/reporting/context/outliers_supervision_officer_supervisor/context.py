@@ -456,5 +456,6 @@ if __name__ == "__main__":
                     metric_fixtures[ABSCONSIONS_BENCH_WARRANTS],
                 ],
                 "test-outliers-supervisor@recidiviz.org",
+                [],
             )
         )
