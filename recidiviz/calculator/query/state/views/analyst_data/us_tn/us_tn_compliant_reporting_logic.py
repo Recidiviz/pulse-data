@@ -621,7 +621,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = f"""
                 -- If offense is eligible then look at whether or not discretion is required
                 CASE 
                     -- If sentence info is missing, we stll want to surface past offense
-                    WHEN has_active_sentence = 0 THEN 2
+                    WHEN has_active_sentence = 0 AND eligible_offense != 0 THEN 2
                     WHEN COALESCE(eligible_offense, 1) = 1 
                     THEN (
                         CASE WHEN COALESCE(eligible_offense_discretion, 1) = 0 THEN 1
