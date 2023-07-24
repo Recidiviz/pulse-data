@@ -26,3 +26,4 @@ columns:
   - name: in_date # Added 2023-03-29
   - name: out_date # Added 2023-03-29
   - name: ParoleEndDate # Added 2023-03-29
+  - name: DrugTestResult # Added 2023-07-19
