@@ -31,7 +31,7 @@ WITH
     FROM {Staff@ALL}
     )
     SELECT 
-        StaffID, 
+        REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
         LastName,
         FirstName
     FROM most_recent_staff_information
