@@ -472,8 +472,8 @@ WHERE compartment_level_1 = "PENDING_CUSTODY"
         event_type=PersonEventType.RISK_SCORE_ASSESSMENT,
         description="Risk assessments",
         sql_source=f"""SELECT *,
-IFNULL(assessment_score_change, NULL) > 0 AS assessment_score_increase,
-IFNULL(assessment_score_change, NULL) < 0 AS assessment_score_decrease,
+    IFNULL(assessment_score_change, NULL) > 0 AS assessment_score_increase,
+    IFNULL(assessment_score_change, NULL) < 0 AS assessment_score_decrease,
 FROM (
     SELECT
         a.state_code,
@@ -502,6 +502,7 @@ FROM (
         attribute_cols=[
             "assessment_type",
             "assessment_score",
+            "assessment_score_change",
             "assessment_score_increase",
             "assessment_score_decrease",
         ],
