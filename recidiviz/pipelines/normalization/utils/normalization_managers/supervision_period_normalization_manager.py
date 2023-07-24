@@ -27,7 +27,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -463,11 +462,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                     f"at this point. Found {supervision_period}."
                 )
             supervising_officer_staff_id = None
-            if (
-                # TODO(#20552): remove can_hydrate_staff_ids check once StateStaff is fully ingested for all states
-                self._can_hydrate_staff_ids(StateCode(supervision_period.state_code))
-                and supervision_period.supervising_officer_staff_external_id
-            ):
+            if supervision_period.supervising_officer_staff_external_id:
                 if not supervision_period.supervising_officer_staff_external_id_type:
                     raise ValueError(
                         f"Found no supervising_officer_staff_external_id_type for supervising_officer_staff_external_id"
@@ -491,10 +486,3 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 supervision_periods_additional_attributes_map,
             ]
         )
-
-    @staticmethod
-    def _can_hydrate_staff_ids(state_code: StateCode) -> bool:
-        # TODO(#20552): delete this method once StateStaff is fully ingested for all states
-        return state_code not in {
-            StateCode.US_MO,
-        }
