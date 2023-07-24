@@ -74,6 +74,7 @@ class RetrieveDataTest(TestCase):
                 metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
             ],
             recipient_email_address="test@recidiviz.org",
+            additional_recipients=[],
         )
         query_mock.return_value = {"abc": report_without_outliers}
 
@@ -105,6 +106,7 @@ class RetrieveDataTest(TestCase):
                 metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
             ],
             recipient_email_address="test@recidiviz.org",
+            additional_recipients=[],
         )
         query_mock.return_value = {"abc": report_with_outliers}
 

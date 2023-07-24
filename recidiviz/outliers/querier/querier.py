@@ -21,7 +21,7 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from sqlalchemy.orm import Session, aliased
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
@@ -93,10 +93,33 @@ class OutliersQuerier:
         prev_end_date = end_date - relativedelta(months=1)
 
         with SessionFactory.using_database(db_key, autocommit=False) as session:
-            officer_supervisor_records = session.query(
-                SupervisionOfficerSupervisor.external_id,
-                SupervisionOfficerSupervisor.email,
-            ).all()
+            officer_supervisor_records = (
+                session.query(SupervisionOfficerSupervisor)
+                .select_from(SupervisionOfficerSupervisor)
+                # In Phase 1, DM's will be CC'd onto supervisor emails; thus, determine which DM's
+                # should be additional recipients by joining on the supervision_district
+                .join(
+                    SupervisionDistrictManager,
+                    and_(
+                        SupervisionOfficerSupervisor.state_code
+                        == SupervisionDistrictManager.state_code,
+                        SupervisionOfficerSupervisor.supervision_district
+                        == SupervisionDistrictManager.supervision_district,
+                    ),
+                )
+                .with_entities(
+                    SupervisionOfficerSupervisor.external_id,
+                    SupervisionOfficerSupervisor.email,
+                    func.array_agg(SupervisionDistrictManager.email).label(
+                        "additional_recipients"
+                    ),
+                )
+                .group_by(
+                    SupervisionOfficerSupervisor.external_id,
+                    SupervisionOfficerSupervisor.email,
+                )
+                .all()
+            )
 
             state_config = self.get_outliers_config(state_code)
 
@@ -109,7 +132,11 @@ class OutliersQuerier:
 
             officer_supervisor_id_to_data = {}
 
-            for (external_id, email) in officer_supervisor_records:
+            for (
+                external_id,
+                email,
+                additional_recipients,
+            ) in officer_supervisor_records:
                 (
                     metrics,
                     metrics_with_outliers,
@@ -124,6 +151,12 @@ class OutliersQuerier:
                     metrics=metrics,
                     metrics_without_outliers=metrics_with_outliers,
                     recipient_email_address=email,
+                    # Ensure that we don't duplicate emails for the intended recipient
+                    additional_recipients=[
+                        recipient
+                        for recipient in additional_recipients
+                        if recipient != email
+                    ],
                 )
 
             return officer_supervisor_id_to_data
