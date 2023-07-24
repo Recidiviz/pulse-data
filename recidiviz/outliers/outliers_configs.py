@@ -71,6 +71,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
         additional_exclusions={"specialized_caseload_type": ["OTHER"]},
+        learn_more_url="https://drive.google.com/file/d/1x2c9ZEjLUbgSkf9N_VQURWbowh03wSG3/view",
     ),
     StateCode.US_PA: OutliersConfig(
         metrics=[
@@ -101,5 +102,6 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75
         AND (avg_population_community_confinement / avg_daily_population) <= 0.05""",
+        learn_more_url="https://drive.google.com/file/d/1NvTuKhN-N1-ba1KMI562_z9ka932JqXQ/view",
     ),
 }

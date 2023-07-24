@@ -124,6 +124,9 @@ class OutliersConfig:
     # The string that represents what a state calls its supervision staff member, e.g. "officer" or "agent"
     supervision_officer_label: str = attr.ib()
 
+    # URL that methodology/FAQ links can be pointed to
+    learn_more_url: str = attr.ib()
+
     # Location exclusions; a unit of analysis mapped to a list of ids to exclude
     unit_of_analysis_to_exclusion: Dict[MetricUnitOfAnalysisType, List[str]] = attr.ib(
         default=None
