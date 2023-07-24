@@ -182,14 +182,12 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
     schema = WorkflowsSendSmsRequestSchema
 
     VALID_NUMBER = "+12223334444"
-    MID = "AAA-BBBB-XX-DD"
     CLIENT_FIRESTORE_ID = "ABC-123"
     MONTH_CODE = "01_2023"
 
     test_valid_data = valid_schema_test(
         {
             "recipient": VALID_NUMBER,
-            "mid": MID,
             "message": "Some pig!",
             "client_firestore_id": CLIENT_FIRESTORE_ID,
             "month_code": MONTH_CODE,
@@ -209,7 +207,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
     test_invalid_phone_number = invalid_schema_test(
         {
             "recipient": "(555) 666-7777",
-            "mid": MID,
             "message": "That'll do, pig. That'll do.",
             "client_firestore_id": CLIENT_FIRESTORE_ID,
             "month_code": MONTH_CODE,
@@ -219,7 +216,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
     test_invalid_phone_number = invalid_schema_test(
         {
             "recipient": "15556667777",
-            "mid": MID,
             "message": "That'll do, pig. That'll do.",
             "client_firestore_id": CLIENT_FIRESTORE_ID,
             "month_code": MONTH_CODE,
@@ -229,7 +225,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
     test_invalid_missing_client_firestore_id = invalid_schema_test(
         {
             "recipient": VALID_NUMBER,
-            "mid": MID,
             "message": "That'll do, pig. That'll do.",
             "month_code": MONTH_CODE,
         }
@@ -238,7 +233,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
     test_invalid_missing_monthy_code = invalid_schema_test(
         {
             "recipient": VALID_NUMBER,
-            "mid": MID,
             "message": "That'll do, pig. That'll do.",
             "client_firestore_id": CLIENT_FIRESTORE_ID,
         }
@@ -247,7 +241,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
     test_missing_recipient_external_id = invalid_schema_test(
         {
             "recipient": VALID_NUMBER,
-            "mid": MID,
             "message": "1112223333",
         }
     )
@@ -345,58 +338,54 @@ class WorkflowsTwilioSmsStatusResponseSchemaTest(SchemaTestCase):
 
     SID = "12345"
     ACCOUNT_SID = "ABC-123"
+    ERROR_CODE = "3000"
+    ERROR_MESSAGE = "Blocked"
 
     test_valid_data = valid_schema_test(
         {
-            "error_code": None,
-            "error_message": None,
-            "sid": SID,
-            "status": "200",
-            "account_sid": ACCOUNT_SID,
+            "MessageSid": SID,
+            "MessageStatus": "200",
+            "AccountSid": ACCOUNT_SID,
+            "ErrorCode": ERROR_CODE,
+            "ErrorMessage": ERROR_MESSAGE,
         }
     )
 
-    test_invalid_missing_error_code = invalid_schema_test(
+    test_invalid_missing_message_sid = invalid_schema_test(
         {
-            "error_message": None,
-            "sid": SID,
-            "status": "200",
-            "account_sid": ACCOUNT_SID,
+            "MessageStatus": "200",
+            "AccountSid": ACCOUNT_SID,
         }
     )
 
-    test_invalid_missing_error_message = invalid_schema_test(
+    test_invalid_missing_message_status = invalid_schema_test(
         {
-            "error_code": None,
-            "sid": SID,
-            "status": "200",
-            "account_sid": ACCOUNT_SID,
-        }
-    )
-
-    test_invalid_missing_sid = invalid_schema_test(
-        {
-            "error_code": None,
-            "error_message": None,
-            "status": "200",
-            "account_sid": ACCOUNT_SID,
-        }
-    )
-
-    test_invalid_missing_status = invalid_schema_test(
-        {
-            "error_code": None,
-            "error_message": None,
-            "sid": SID,
-            "account_sid": ACCOUNT_SID,
+            "MessageSid": SID,
+            "AccountSid": ACCOUNT_SID,
         }
     )
 
     test_invalid_missing_account_sid = invalid_schema_test(
         {
-            "error_code": None,
-            "error_message": None,
-            "sid": SID,
-            "status": "200",
+            "MessageSid": SID,
+            "MessageStatus": "200",
+        }
+    )
+
+    test_valid_missing_error_code = valid_schema_test(
+        {
+            "MessageSid": SID,
+            "MessageStatus": "200",
+            "AccountSid": ACCOUNT_SID,
+            "ErrorMessage": ERROR_MESSAGE,
+        }
+    )
+
+    test_valid_missing_error_message = valid_schema_test(
+        {
+            "MessageSid": SID,
+            "MessageStatus": "200",
+            "AccountSid": ACCOUNT_SID,
+            "ErrorCode": ERROR_CODE,
         }
     )

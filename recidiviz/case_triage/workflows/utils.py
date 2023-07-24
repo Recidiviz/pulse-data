@@ -21,6 +21,7 @@ from http import HTTPStatus
 
 from flask import Response, jsonify, make_response
 
+from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 
 
@@ -50,3 +51,12 @@ def get_sms_request_firestore_path(state: str, recipient_external_id: str) -> st
     month_code = datetime.date.today().strftime("%m_%Y")
     client_firestore_id = f"{state.lower()}_{recipient_external_id}"
     return f"clientUpdatesV2/{client_firestore_id}/milestonesMessages/{month_code}"
+
+
+def get_workflows_consolidated_status(status: str) -> str:
+    if status.lower() in ["undelivered", "failed", "canceled"]:
+        return ExternalSystemRequestStatus.FAILURE.value
+    if status.lower() in ["delivered", "read"]:
+        return ExternalSystemRequestStatus.SUCCESS.value
+    # The IN_PROGRESS statuses are ["accepted", "scheduled", "queued", "sending", "sent"]
+    return ExternalSystemRequestStatus.IN_PROGRESS.value

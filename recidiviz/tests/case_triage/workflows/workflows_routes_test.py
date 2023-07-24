@@ -514,10 +514,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         expected_task_body = {
             "recipient": f"+1{request_body['recipientPhoneNumber']}",
-            "mid": "MY UUID",
             "message": request_body["message"],
             "client_firestore_id": "us_ca_123",
-            "month_code": "01_2023",
+            "month_code": "milestones_01_2023",
             "recipient_external_id": PERSON_EXTERNAL_ID,
         }
         mock_task_manager.return_value.create_task.assert_called_once()
@@ -533,8 +532,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                     "by": STAFF_EMAIL,
                 },
                 "status": "IN_PROGRESS",
-                "messageDetails.mid": "MY UUID",
-                "messageDetails.sentBy": STAFF_EMAIL,
+                "mid": "MY UUID",
+                "sentBy": STAFF_EMAIL,
             },
             merge=True,
         )
@@ -647,7 +646,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "message": "Message!",
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
-                "mid": "ABC",
                 "client_firestore_id": "us_ca_123",
                 "month_code": "01_2023",
             },
@@ -661,7 +659,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                     body="Message!",
                     messaging_service_sid=mock_get_secret(),
                     to="+12223334444",
-                    status_callback="http://localhost:5000/workflows/webhook/twilio_status?mid=ABC",
+                    status_callback="http://localhost:5000/workflows/webhook/twilio_status",
                 ),
                 call(
                     body=OPT_OUT_MESSAGE,
@@ -692,7 +690,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "message": "Message!",
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
-                "mid": "ABC",
                 "client_firestore_id": "us_ca_123",
                 "month_code": "01_2023",
             },
@@ -713,7 +710,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "message": "Message!",
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
-                "mid": "ABC",
                 "client_firestore_id": "us_ca_123",
                 "month_code": "01_2023",
             },
@@ -731,7 +727,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "message": "Message!",
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
-                "mid": "ABC",
                 "client_firestore_id": "us_ca_123",
                 "month_code": "01_2023",
             },
@@ -760,7 +755,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "message": "Message!",
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
-                "mid": "ABC",
                 "client_firestore_id": "us_ca_123",
                 "month_code": "01_2023",
             },
@@ -802,7 +796,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "message": "Message!",
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
-                "mid": "ABC",
                 "client_firestore_id": "us_ca_123",
                 "month_code": "01_2023",
             },
@@ -810,29 +803,148 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         assert_type(response.get_json(), dict)
         self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
 
+    @freeze_time("2023-01-01 01:23:45")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
     )
-    def test_twilio_status_accepted(self, mock_validate: MagicMock) -> None:
-        mock_validate.return_value = True
+    def test_twilio_status_delivered(
+        self,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
         account_sid = "XYZ"
-        mid = "ABC-123"
+        doc = MagicMock()
+        doc.to_dict.return_value = {"message_sid": "ABC"}
+        doc.reference.path = (
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+        )
+        mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
+        mock_twilio_validator.return_value = True
 
         response = self.test_client.post(
-            f"/workflows/webhook/twilio_status?mid={mid}",
+            "/workflows/webhook/twilio_status",
             headers={
                 "Origin": "http://localhost:5000",
                 "X-Twilio-Signature": "1234567a",
             },
             json={
-                "error_code": "null",
-                "error_message": "null",
-                "sid": "ABC",
-                "status": "accepted",
-                "account_sid": account_sid,
+                "MessageSid": "ABC",
+                "MessageStatus": "delivered",
+                "AccountSid": account_sid,
             },
         )
         self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
+        mock_firestore.return_value.set_document.assert_called_once_with(
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023",
+            {
+                "status": "SUCCESS",
+                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                "rawStatus": "delivered",
+                "errors": [None],
+                "errorCode": None,
+                "errorMessage": None,
+            },
+            merge=True,
+        )
+
+    @freeze_time("2023-01-01 01:23:45")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
+    )
+    def test_twilio_status_failed(
+        self,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        account_sid = "XYZ"
+        doc = MagicMock()
+        doc.to_dict.return_value = {"message_sid": "ABC"}
+        doc.reference.path = (
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+        )
+        mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
+        mock_twilio_validator.return_value = True
+
+        response = self.test_client.post(
+            "/workflows/webhook/twilio_status",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            json={
+                "MessageSid": "ABC",
+                "MessageStatus": "failed",
+                "AccountSid": account_sid,
+                "ErrorCode": "30004",
+                "ErrorMessage": "Message blocked",
+            },
+        )
+        self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
+        mock_firestore.return_value.set_document.assert_called_once_with(
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023",
+            {
+                "status": "FAILURE",
+                "errors": ["Message blocked"],
+                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                "rawStatus": "failed",
+                "errorCode": "30004",
+                "errorMessage": "Message blocked",
+            },
+            merge=True,
+        )
+
+    @freeze_time("2023-01-01 01:23:45")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
+    )
+    def test_twilio_status_sending(
+        self,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        account_sid = "XYZ"
+        doc = MagicMock()
+        doc.to_dict.return_value = {"message_sid": "ABC"}
+        doc.reference.path = (
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+        )
+        mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
+        mock_twilio_validator.return_value = True
+
+        response = self.test_client.post(
+            "/workflows/webhook/twilio_status",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            json={
+                "MessageSid": "ABC",
+                "MessageStatus": "sending",
+                "AccountSid": account_sid,
+            },
+        )
+        self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
+        mock_firestore.return_value.set_document.assert_called_once_with(
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023",
+            {
+                "status": "IN_PROGRESS",
+                "errors": [None],
+                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                "rawStatus": "sending",
+                "errorCode": None,
+                "errorMessage": None,
+            },
+            merge=True,
+        )
 
 
 def make_cors_test(
