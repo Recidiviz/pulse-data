@@ -21,7 +21,7 @@ import time
 import unittest
 from datetime import datetime
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from airflow.decorators import task
 from airflow.exceptions import TaskDeferred
@@ -32,6 +32,10 @@ from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import 
     WaitUntilCanContinueOrCancelSensorAsync,
     initialize_calculation_dag_group,
 )
+from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
+    KNOWN_CONFIGURATION_PARAMETERS,
+)
+from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -68,14 +72,14 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
         self,
     ) -> None:
 
-        verify_and_update_parameters = test_dag.get_task(
+        verify_and_update_parameters_task = test_dag.get_task(
             "initialize_dag.verify_and_update_parameters"
         )
         handle_params_check = test_dag.get_task("initialize_dag.handle_params_check")
 
         self.assertEqual(
             handle_params_check.upstream_task_ids,
-            {verify_and_update_parameters.task_id},
+            {verify_and_update_parameters_task.task_id},
         )
 
     def test_handle_params_check_upstream_of_wait_to_continue_or_cancel(
@@ -113,6 +117,15 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
             handle_queueing_result.upstream_task_ids,
             {wait_to_continue_or_cancel.task_id},
         )
+
+
+@patch.dict(KNOWN_CONFIGURATION_PARAMETERS, {test_dag.dag_id: ["known_key"]})
+class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
+    def test_unknown_parameters(self) -> None:
+        with self.assertRaises(
+            ValueError, msg="Unknown configuration parameters supplied: unknown_key"
+        ):
+            test_dag.test(run_conf={"unknown_key": "value"})
 
 
 class TestWaitUntilCanContinueOrCancelSensorAsync(unittest.TestCase):

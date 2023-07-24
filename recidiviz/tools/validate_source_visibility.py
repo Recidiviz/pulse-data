@@ -316,6 +316,7 @@ def main() -> int:
             {
                 *valid_calculation_dag_prefixes,
                 "recidiviz.airflow",
+                "recidiviz.tools.postgres",
             }
         ),
     )
@@ -343,7 +344,12 @@ def main() -> int:
     success &= check_dependencies_for_entrypoint(
         "recidiviz/airflow/tests/sftp_dag_test.py",
         valid_module_prefixes=make_module_matcher(
-            {*valid_sftp_dag_prefixes, "recidiviz.airflow.tests"}
+            {
+                *valid_sftp_dag_prefixes,
+                "recidiviz.airflow.tests",
+                "recidiviz.tools.utils.script_helpers",
+                "recidiviz.tools.postgres.local_postgres_helpers",
+            }
         ),
     )
 

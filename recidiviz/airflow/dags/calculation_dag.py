@@ -44,9 +44,6 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
-from recidiviz.airflow.dags.utils.pagerduty_integration import (
-    pagerduty_integration_email,
-)
 from recidiviz.airflow.dags.utils.state_code_branch import create_state_code_branching
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
@@ -405,10 +402,7 @@ def metric_export_branches_by_state_code(
 # is paused and re-enabled.
 @dag(
     dag_id=f"{project_id}_calculation_dag",
-    default_args={
-        **DEFAULT_ARGS,  # type: ignore
-        "email": pagerduty_integration_email("pagerduty_integration_calculation_dag"),
-    },
+    default_args=DEFAULT_ARGS,
     schedule=None,
     catchup=False,
 )

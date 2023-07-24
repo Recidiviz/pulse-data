@@ -28,6 +28,10 @@ from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from kubernetes.client import models as k8s
 
+from recidiviz.airflow.dags.utils.environment import (
+    COMPOSER_ENVIRONMENT,
+    get_composer_environment,
+)
 from recidiviz.utils.environment import RECIDIVIZ_ENV, get_environment_for_project
 
 _project_id = os.environ.get("GCP_PROJECT")
@@ -91,13 +95,16 @@ def build_kubernetes_pod_task_group(
             arguments=set_kubernetes_arguments(),
             env_vars=[
                 # TODO(census-instrumentation/opencensus-python#796)
+                k8s.V1EnvVar(
+                    name=COMPOSER_ENVIRONMENT, value=get_composer_environment()
+                ),
                 k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name),
                 k8s.V1EnvVar(name="NAMESPACE", value=namespace),
                 k8s.V1EnvVar(
                     name=RECIDIVIZ_ENV,
                     value=get_environment_for_project(_project_id).value
-                    if _project_id
-                    else "",
+                    # TODO(#22516): Remove testing clause
+                    if _project_id and _project_id != "recidiviz-testing" else "",
                 ),
             ],
             container_resources=k8s.V1ResourceRequirements(
