@@ -18,16 +18,35 @@
 The DAG configuration to run our monitoring tasks pipelines in Dataflow simultaneously.
 This file is uploaded to GCS on deploy.
 """
+import logging
 import os
+from typing import Optional
 
 from airflow.decorators import dag
+from airflow.exceptions import AirflowNotFoundException
+from airflow.operators.python import PythonOperator
 
+from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
+    get_configured_pagerduty_integrations,
+    report_failed_tasks,
+)
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task_group,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
+from recidiviz.airflow.dags.utils.email import can_send_mail
 
 project_id = os.environ.get("GCP_PROJECT")
+DAG_ID = f"{project_id}_hourly_monitoring_dag"
+
+email: Optional[str]
+
+try:
+    configured_integrations = get_configured_pagerduty_integrations()
+    email = configured_integrations[DAG_ID]
+except (AirflowNotFoundException, KeyError) as e:
+    logging.info("Task failure alerts will not be sent as a result of %s", e)
+    email = None
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
@@ -35,8 +54,12 @@ project_id = os.environ.get("GCP_PROJECT")
 # to false, it ensures that new DAG runs aren't enqueued while the old one is
 # waiting to finish.
 @dag(
-    dag_id=f"{project_id}_hourly_monitoring_dag",
-    default_args=DEFAULT_ARGS,
+    dag_id=DAG_ID,
+    default_args={
+        **DEFAULT_ARGS,
+        "email": email,
+        "email_on_failure": can_send_mail(),
+    },  # type: ignore
     schedule="@hourly",
     catchup=False,
     max_active_runs=1,
@@ -50,6 +73,11 @@ def create_monitoring_dag() -> None:
             "-m",
             "recidiviz.entrypoints.monitoring.report_metric_export_timeliness",
         ],
+    )
+
+    PythonOperator(
+        task_id="airflow_failure_monitoring_and_alerting",
+        python_callable=report_failed_tasks,
     )
 
 

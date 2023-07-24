@@ -5,6 +5,7 @@
 - [recidiviz/airflow/dags/operators/sftp, "*.py"]
 - [recidiviz/airflow/dags/utils, "*.py"]
 - [recidiviz/airflow/dags/calculation, "*.py"]
+- [recidiviz/airflow/dags/monitoring, "*.py"]
 - [recidiviz/airflow/dags/sftp, "*.py"]
 - [recidiviz/airflow/dags/hooks, "*.py"]
 - [recidiviz/pipelines, calculation_pipeline_templates.yaml]

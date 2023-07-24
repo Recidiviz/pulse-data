@@ -28,6 +28,9 @@ from airflow.utils.context import Context
 from airflow.utils.state import State
 from airflow.utils.trigger_rule import TriggerRule
 
+from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
+    KNOWN_CONFIGURATION_PARAMETERS,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
@@ -56,6 +59,18 @@ def verify_and_update_parameters(
             "Dag run not passed to task. Should be automatically set due to function "
             "being a task."
         )
+
+    unknown_parameters = {
+        parameter
+        for parameter in dag_run.conf.keys()
+        if parameter not in KNOWN_CONFIGURATION_PARAMETERS[dag_run.dag_id]
+    }
+
+    if unknown_parameters:
+        raise ValueError(
+            f"Unknown configuration parameters supplied: {unknown_parameters}"
+        )
+
     ingest_instance = get_ingest_instance(dag_run)
     if not ingest_instance:
         raise ValueError("[ingest_instance] must be set in dag_run configuration")

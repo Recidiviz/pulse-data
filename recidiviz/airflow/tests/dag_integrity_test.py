@@ -17,11 +17,15 @@
 """
 Unit test to ensure that the DAGs are valid and will be properly loaded into the Airflow UI.
 """
+import os
 import unittest
 from unittest.mock import patch
 
 from airflow.models import DagBag
 
+from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
+    DISCRETE_CONFIGURATION_PARAMETERS,
+)
 from recidiviz.airflow.tests.calculation_dag_test import (
     CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
 )
@@ -62,4 +66,21 @@ class TestDagIntegrity(unittest.TestCase):
                 "recidiviz-testing_sftp_dag",
                 "recidiviz-testing_hourly_monitoring_dag",
             },
+        )
+
+    def test_discrete_parameters_registered(self) -> None:
+        """
+        Verify that the DAGs have their configuration parameters registered
+        """
+
+        # _project_id is None at definition time
+        parameter_keys_with_project = [
+            key.replace("None_", f'{os.environ["GCP_PROJECT"]}_')
+            for key in DISCRETE_CONFIGURATION_PARAMETERS
+        ]
+
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        self.assertSetEqual(
+            set(parameter_keys_with_project),
+            set(dag_bag.dag_ids),
         )
