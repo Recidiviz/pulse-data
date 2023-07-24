@@ -25,6 +25,7 @@ import dateutil.parser
 import pandas as pd
 from flask import Blueprint, Response, g, jsonify, request
 from google.api_core import exceptions
+from google.cloud import bigquery
 from numpy import datetime64
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
@@ -387,11 +388,19 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         with tempfile.TemporaryFile() as fp:
             df.to_csv(fp, index=False, header=False)
             bq = BigQueryClientImpl()
+            raw_data_config = RAW_FILES_CONFIG[state_code][upload_type]
             insert_job = bq.load_into_table_from_file_async(
                 fp,
                 bq.dataset_ref_for_id(STATIC_REFERENCE_TABLES_DATASET),
                 table_name,
-                schema=list(RAW_FILES_CONFIG[state_code][upload_type].schema.values()),
+                schema=[
+                    bigquery.SchemaField(
+                        name=schema_field_dict["name"],
+                        field_type=schema_field_dict["type"],
+                        mode=schema_field_dict["mode"],
+                    )
+                    for schema_field_dict in raw_data_config.schema.values()
+                ],
             )
             try:
                 insert_job.result()
