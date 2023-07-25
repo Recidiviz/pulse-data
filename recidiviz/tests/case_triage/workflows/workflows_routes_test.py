@@ -656,15 +656,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_twilio_messages.assert_has_calls(
             [
                 call(
-                    body="Message!",
+                    body=f"Message!\n{OPT_OUT_MESSAGE}",
                     messaging_service_sid=mock_get_secret(),
                     to="+12223334444",
                     status_callback="http://localhost:5000/workflows/webhook/twilio_status",
-                ),
-                call(
-                    body=OPT_OUT_MESSAGE,
-                    messaging_service_sid=mock_get_secret(),
-                    to="+12223334444",
                 ),
             ]
         )
