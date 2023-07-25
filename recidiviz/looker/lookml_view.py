@@ -15,13 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Creates a LookMLView object and associated functions"""
-import os
-from datetime import date
 from typing import List, Optional
 
 import attr
 
-import recidiviz
+from recidiviz.looker.lookml_utils import write_lookml_file
 from recidiviz.looker.lookml_view_field import LookMLViewField
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.utils.string import StrictStringFormatter
@@ -29,12 +27,6 @@ from recidiviz.utils.string import StrictStringFormatter
 VIEW_TEMPLATE = """{include_clause}view: {view_name} {{
 {extension_required}{extends_clause}{table_clause}{field_declarations}
 }}"""
-
-VIEW_FILE_TEMPLATE = """# This file was automatically generated using a pulse-data script on {date_str}.
-# To regenerate, see `{script_repo_relative_path}`.
-
-{view_body}
-"""
 
 
 @attr.define
@@ -88,27 +80,13 @@ class LookMLView:
 
     def write(self, output_directory: str, source_script_path: str) -> None:
         """
-        Writes LookML view string into the specified output directory with a header indicating the
-        date and script source of the auto-generated view.
+        Writes LookML view file into the specified output directory with a
+        header indicating the date and script source of the auto-generated view.
         """
-        date_str = date.today().isoformat()
-        script_repo_relative_path = os.path.join(
-            "recidiviz",
-            os.path.relpath(source_script_path, os.path.dirname(recidiviz.__file__)),
+        file_name = f"{self.view_name}.view.lkml"
+        write_lookml_file(
+            output_directory=output_directory,
+            file_name=file_name,
+            source_script_path=source_script_path,
+            file_body=self.build(),
         )
-        # if directory doesn't already exist, create
-        os.makedirs(output_directory, exist_ok=True)
-
-        with open(
-            os.path.join(output_directory, f"{self.view_name}.view.lkml"),
-            "w",
-            encoding="UTF-8",
-        ) as view_file:
-            file_text = StrictStringFormatter().format(
-                VIEW_FILE_TEMPLATE,
-                date_str=date_str,
-                script_repo_relative_path=script_repo_relative_path,
-                view_body=self.build(),
-            )
-
-            view_file.write(file_text)
