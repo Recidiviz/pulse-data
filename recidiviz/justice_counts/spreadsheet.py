@@ -325,14 +325,6 @@ class SpreadsheetInterface:
         )
 
     @staticmethod
-    def get_legacy_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
-        bucket_name = f"{metadata.project_id()}-justice-counts-control-panel-ingest"
-        return GcsfsFilePath(
-            bucket_name=bucket_name,
-            blob_name=spreadsheet.standardized_name,
-        )
-
-    @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
         bucket_name = (
             "justice-counts-staging-publisher-uploads"
@@ -522,21 +514,16 @@ class SpreadsheetInterface:
         )
 
         source_path = GcsfsFilePath.from_absolute_path(f"{bucket_name}/{filename}")
-        # TODO(#22175) Only write to justice-counts-staging and
-        # justice-counts-production.
-        legacy_path = SpreadsheetInterface.get_legacy_spreadsheet_path(
-            spreadsheet=spreadsheet
-        )
         destination_path = SpreadsheetInterface.get_spreadsheet_path(
             spreadsheet=spreadsheet
         )
 
         gcs_file_system = GcsfsFactory.build()
+
         # We need to copy the file into the bucket where we store workbooks
         # uploaded in Publisher because we reference that bucket when
         # fetching data for the Uploaded Files page in the Settings tab.
         gcs_file_system.copy(source_path, destination_path)
-        gcs_file_system.copy(source_path, legacy_path)
 
         metric_key_to_agency_datapoints = (
             DatapointInterface.get_metric_key_to_agency_datapoints(
