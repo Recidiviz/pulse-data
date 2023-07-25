@@ -49,11 +49,11 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
             "compliant_reporting_referral_record.json",
         )
         with open(path_to_fixture, "r", encoding="utf-8") as fp:
+            # Row 1: Data in old query only
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "200")
             self.assertEqual(
-                row,
                 {
                     "stateCode": "US_XX",
                     "poFirstName": "Joey",
@@ -106,14 +106,21 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "specialConditionsProgrammingFsw": False,
                     "specialConditionsProgrammingFswCurrent": False,
                     "offenseTypeEligibility": 2,
+                    "formInformation": {},
+                    "metadata": {},
+                    "criteria": {},
+                    "eligibleCriteria": {},
+                    "ineligibleCriteria": {},
+                    "caseNotes": {},
                 },
+                row,
             )
 
+            # Row 2: Eligible in new query
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "201")
             self.assertEqual(
-                row,
                 {
                     "stateCode": "US_XX",
                     "poFirstName": "Sally",
@@ -156,14 +163,162 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "specialConditionsProgrammingVictimImpactCurrent": False,
                     "specialConditionsProgrammingFsw": False,
                     "specialConditionsProgrammingFswCurrent": False,
+                    "externalId": "201",
+                    "criteria": {
+                        "hasActiveSentence": {"hasActiveSentence": True},
+                        "supervisionLevelIsNotInternalUnknown": None,
+                        "supervisionLevelIsNotInterstateCompact": None,
+                        "supervisionLevelIsNotUnassigned": None,
+                        "supervisionNotPastFullTermCompletionDateOrUpcoming90Days": {
+                            "eligibleDate": "2023-07-01"
+                        },
+                        "usTnFinesFeesEligible": {
+                            "hasFinesFeesBalanceBelow500": {"amountOwed": 45},
+                            "hasPayments3ConsecutiveMonths": {
+                                "amountOwed": 45,
+                                "consecutiveMonthlyPayments": 3,
+                            },
+                        },
+                        "usTnIneligibleOffensesExpired": None,
+                        "usTnNoArrestsInPastYear": None,
+                        "usTnNoDuiOffenseInPast5Years": None,
+                        "usTnNoHighSanctionsInPastYear": None,
+                        "usTnNoMurderConvictions": None,
+                        "usTnNoPriorRecordWithIneligibleCrOffense": {
+                            "ineligibleOffenseDates": ["2006-01-09"],
+                            "ineligibleOffenses": ["ASSAULT"],
+                        },
+                        "usTnNoRecentCompliantReportingRejections": None,
+                        "usTnNoZeroToleranceCodesSpans": None,
+                        "usTnNotInJudicialDistrict17WhileOnProbation": None,
+                        "usTnNotOnLifeSentenceOrLifetimeSupervision": {
+                            "lifetimeFlag": False
+                        },
+                        "usTnNotPermanentlyRejectedFromCompliantReporting": None,
+                        "usTnNotServingIneligibleCrOffense": None,
+                        "usTnNotServingUnknownCrOffense": None,
+                        "usTnOnEligibleLevelForSufficientTime": {
+                            "eligibleDate": "2018-04-05",
+                            "eligibleLevel": "MINIMUM",
+                        },
+                        "usTnPassedDrugScreenCheck": {
+                            "hasAtLeast1NegativeDrugTestPastYear": {
+                                "latestNegativeScreenDates": ["2023-03-04"],
+                                "latestNegativeScreenResults": ["DRUN"],
+                            },
+                            "hasAtLeast2NegativeDrugTestsPastYear": {
+                                "latestNegativeScreenDates": ["2023-03-04"],
+                                "latestNegativeScreenResults": ["DRUN"],
+                            },
+                            "latestAlcoholDrugNeedLevel": "LOW",
+                            "latestDrugTestIsNegative": {
+                                "latestDrugScreenDate": "2023-03-04",
+                                "latestDrugScreenResult": "DRUN",
+                            },
+                        },
+                        "usTnSpecialConditionsAreCurrent": {"speNoteDue": None},
+                    },
+                    "eligibleCriteria": {
+                        "hasActiveSentence": {"hasActiveSentence": True},
+                        "supervisionLevelIsNotInternalUnknown": None,
+                        "supervisionLevelIsNotInterstateCompact": None,
+                        "supervisionLevelIsNotUnassigned": None,
+                        "supervisionNotPastFullTermCompletionDateOrUpcoming90Days": {
+                            "eligibleDate": "2023-07-01"
+                        },
+                        "usTnFinesFeesEligible": {
+                            "hasFinesFeesBalanceBelow500": {"amountOwed": 45},
+                            "hasPayments3ConsecutiveMonths": {
+                                "amountOwed": 45,
+                                "consecutiveMonthlyPayments": 3,
+                            },
+                        },
+                        "usTnIneligibleOffensesExpired": None,
+                        "usTnNoArrestsInPastYear": None,
+                        "usTnNoDuiOffenseInPast5Years": None,
+                        "usTnNoHighSanctionsInPastYear": None,
+                        "usTnNoMurderConvictions": None,
+                        "usTnNoPriorRecordWithIneligibleCrOffense": {
+                            "ineligibleOffenseDates": ["2006-01-09"],
+                            "ineligibleOffenses": ["ASSAULT"],
+                        },
+                        "usTnNoRecentCompliantReportingRejections": None,
+                        "usTnNoZeroToleranceCodesSpans": None,
+                        "usTnNotInJudicialDistrict17WhileOnProbation": None,
+                        "usTnNotOnLifeSentenceOrLifetimeSupervision": {
+                            "lifetimeFlag": False
+                        },
+                        "usTnNotPermanentlyRejectedFromCompliantReporting": None,
+                        "usTnNotServingIneligibleCrOffense": None,
+                        "usTnNotServingUnknownCrOffense": None,
+                        "usTnOnEligibleLevelForSufficientTime": {
+                            "eligibleDate": "2018-04-05",
+                            "eligibleLevel": "MINIMUM",
+                        },
+                        "usTnPassedDrugScreenCheck": {
+                            "hasAtLeast1NegativeDrugTestPastYear": {
+                                "latestNegativeScreenDates": ["2023-03-04"],
+                                "latestNegativeScreenResults": ["DRUN"],
+                            },
+                            "hasAtLeast2NegativeDrugTestsPastYear": {
+                                "latestNegativeScreenDates": ["2023-03-04"],
+                                "latestNegativeScreenResults": ["DRUN"],
+                            },
+                            "latestAlcoholDrugNeedLevel": "LOW",
+                            "latestDrugTestIsNegative": {
+                                "latestDrugScreenDate": "2023-03-04",
+                                "latestDrugScreenResult": "DRUN",
+                            },
+                        },
+                        "usTnSpecialConditionsAreCurrent": {"speNoteDue": None},
+                    },
+                    "ineligibleCriteria": {},
+                    "formInformation": {
+                        "courtCostsPaid": None,
+                        "courtName": "Circuit Court",
+                        "currentExemptionsAndExpiration": None,
+                        "currentOffenses": ["THEFT"],
+                        "dateToday": "2023-07-21",
+                        "docketNumbers": ["123A", "456B"],
+                        "driversLicense": "12345",
+                        "driversLicenseRevoked": None,
+                        "driversLicenseSuspended": None,
+                        "expirationDate": "2023-07-01",
+                        "judicialDistrict": ["0", "1"],
+                        "restitutionAmt": None,
+                        "restitutionMonthlyPayment": None,
+                        "restitutionMonthlyPaymentTo": [],
+                        "sentenceLengthDays": "3552",
+                        "sentenceStartDate": "2013-10-09",
+                        "supervisionFeeArrearaged": "true",
+                        "supervisionFeeArrearagedAmount": "45.0",
+                        "supervisionFeeAssessed": "45.0",
+                        "supervisionFeeWaived": "false",
+                    },
+                    "metadata": {
+                        "allOffenses": ["BURGLARY", "THEFT"],
+                        "convictionCounties": ["123 - ABC", "456 - DEF"],
+                        "ineligibleOffensesExpired": [],
+                        "mostRecentArrestCheck": {
+                            "contactDate": "2023-03-01",
+                            "contactType": "ARRN",
+                        },
+                        "mostRecentSpeNote": {
+                            "contactDate": "2021-01-22",
+                            "contactType": "SPET",
+                        },
+                        "specialConditionsTerminatedDate": "2021-01-22",
+                    },
+                    "caseNotes": {},
                 },
+                row,
             )
 
+            # Row 3: Almost eligible in new query
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "202")
             self.assertEqual(
-                row,
                 {
                     "stateCode": "US_XX",
                     "poFirstName": "TEST",
@@ -198,7 +353,150 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "specialConditionsProgrammingVictimImpactCurrent": False,
                     "specialConditionsProgrammingFsw": False,
                     "specialConditionsProgrammingFswCurrent": False,
+                    "externalId": "202",
+                    "criteria": {
+                        "hasActiveSentence": {"hasActiveSentence": True},
+                        "supervisionLevelIsNotInternalUnknown": None,
+                        "supervisionLevelIsNotInterstateCompact": None,
+                        "supervisionLevelIsNotUnassigned": None,
+                        "supervisionNotPastFullTermCompletionDateOrUpcoming90Days": {
+                            "eligibleDate": "2029-06-06"
+                        },
+                        "usTnFinesFeesEligible": {
+                            "hasFinesFeesBalanceBelow500": {"amountOwed": 700},
+                            "hasPayments3ConsecutiveMonths": {
+                                "amountOwed": 700,
+                                "consecutiveMonthlyPayments": None,
+                            },
+                        },
+                        "usTnIneligibleOffensesExpired": None,
+                        "usTnNoArrestsInPastYear": None,
+                        "usTnNoDuiOffenseInPast5Years": None,
+                        "usTnNoHighSanctionsInPastYear": None,
+                        "usTnNoMurderConvictions": None,
+                        "usTnNoPriorRecordWithIneligibleCrOffense": None,
+                        "usTnNoRecentCompliantReportingRejections": None,
+                        "usTnNoZeroToleranceCodesSpans": None,
+                        "usTnNotInJudicialDistrict17WhileOnProbation": None,
+                        "usTnNotOnLifeSentenceOrLifetimeSupervision": {
+                            "lifetimeFlag": False
+                        },
+                        "usTnNotPermanentlyRejectedFromCompliantReporting": None,
+                        "usTnNotServingIneligibleCrOffense": None,
+                        "usTnNotServingUnknownCrOffense": None,
+                        "usTnOnEligibleLevelForSufficientTime": {
+                            "eligibleDate": "2020-08-01",
+                            "eligibleLevel": "MINIMUM",
+                        },
+                        "usTnPassedDrugScreenCheck": {
+                            "hasAtLeast1NegativeDrugTestPastYear": {
+                                "latestNegativeScreenDates": ["2023-02-28"],
+                                "latestNegativeScreenResults": ["DRUN"],
+                            },
+                            "hasAtLeast2NegativeDrugTestsPastYear": {
+                                "latestNegativeScreenDates": ["2023-02-28"],
+                                "latestNegativeScreenResults": ["DRUN"],
+                            },
+                            "latestAlcoholDrugNeedLevel": "LOW",
+                            "latestDrugTestIsNegative": {
+                                "latestDrugScreenDate": "2023-02-28",
+                                "latestDrugScreenResult": "DRUN",
+                            },
+                        },
+                        "usTnSpecialConditionsAreCurrent": {"speNoteDue": None},
+                    },
+                    "eligibleCriteria": {
+                        "hasActiveSentence": {"hasActiveSentence": True},
+                        "supervisionLevelIsNotInternalUnknown": None,
+                        "supervisionLevelIsNotInterstateCompact": None,
+                        "supervisionLevelIsNotUnassigned": None,
+                        "supervisionNotPastFullTermCompletionDateOrUpcoming90Days": {
+                            "eligibleDate": "2029-06-06"
+                        },
+                        "usTnIneligibleOffensesExpired": None,
+                        "usTnNoArrestsInPastYear": None,
+                        "usTnNoDuiOffenseInPast5Years": None,
+                        "usTnNoHighSanctionsInPastYear": None,
+                        "usTnNoMurderConvictions": None,
+                        "usTnNoPriorRecordWithIneligibleCrOffense": None,
+                        "usTnNoRecentCompliantReportingRejections": None,
+                        "usTnNoZeroToleranceCodesSpans": None,
+                        "usTnNotInJudicialDistrict17WhileOnProbation": None,
+                        "usTnNotOnLifeSentenceOrLifetimeSupervision": {
+                            "lifetimeFlag": False
+                        },
+                        "usTnNotPermanentlyRejectedFromCompliantReporting": None,
+                        "usTnNotServingIneligibleCrOffense": None,
+                        "usTnNotServingUnknownCrOffense": None,
+                        "usTnOnEligibleLevelForSufficientTime": {
+                            "eligibleDate": "2020-08-01",
+                            "eligibleLevel": "MINIMUM",
+                        },
+                        "usTnPassedDrugScreenCheck": {
+                            "hasAtLeast1NegativeDrugTestPastYear": {
+                                "latestNegativeScreenDates": ["2023-02-28"],
+                                "latestNegativeScreenResults": ["DRUN"],
+                            },
+                            "hasAtLeast2NegativeDrugTestsPastYear": {
+                                "latestNegativeScreenDates": ["2023-02-28"],
+                                "latestNegativeScreenResults": ["DRUN"],
+                            },
+                            "latestAlcoholDrugNeedLevel": "LOW",
+                            "latestDrugTestIsNegative": {
+                                "latestDrugScreenDate": "2023-02-28",
+                                "latestDrugScreenResult": "DRUN",
+                            },
+                        },
+                        "usTnSpecialConditionsAreCurrent": {"speNoteDue": None},
+                    },
+                    "ineligibleCriteria": {
+                        "usTnFinesFeesEligible": {
+                            "hasFinesFeesBalanceBelow500": {"amountOwed": 700},
+                            "hasPayments3ConsecutiveMonths": {
+                                "amountOwed": 700,
+                                "consecutiveMonthlyPayments": None,
+                            },
+                        }
+                    },
+                    "formInformation": {
+                        "courtCostsPaid": None,
+                        "courtName": "Circuit Court",
+                        "currentExemptionsAndExpiration": None,
+                        "currentOffenses": ["FAILURE TO APPEAR (FELONY)"],
+                        "dateToday": "2023-07-21",
+                        "docketNumbers": ["10000"],
+                        "driversLicense": None,
+                        "driversLicenseRevoked": None,
+                        "driversLicenseSuspended": None,
+                        "expirationDate": "2030-02-12",
+                        "judicialDistrict": ["1"],
+                        "restitutionAmt": "100.0",
+                        "restitutionMonthlyPayment": "0.0",
+                        "restitutionMonthlyPaymentTo": ["PAYMENT TO"],
+                        "sentenceLengthDays": "3629",
+                        "sentenceStartDate": "2020-03-07",
+                        "supervisionFeeArrearaged": "true",
+                        "supervisionFeeArrearagedAmount": "700.0",
+                        "supervisionFeeAssessed": "700.0",
+                        "supervisionFeeWaived": "false",
+                    },
+                    "metadata": {
+                        "allOffenses": ["FAILURE TO APPEAR (FELONY)", "EVADING ARREST"],
+                        "convictionCounties": ["123ABC"],
+                        "ineligibleOffensesExpired": [],
+                        "mostRecentArrestCheck": {
+                            "contactDate": "2023-04-01",
+                            "contactType": "ARRN",
+                        },
+                        "mostRecentSpeNote": {
+                            "contactDate": "2019-08-15",
+                            "contactType": "SPET",
+                        },
+                        "specialConditionsTerminatedDate": "2019-08-15",
+                    },
+                    "caseNotes": {},
                 },
+                row,
             )
 
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")

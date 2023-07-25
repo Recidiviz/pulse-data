@@ -93,7 +93,7 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     def filepath_url(self, filename: str) -> str:
         return f"gs://{self.get_filepath(filename).abs_path()}"
 
-    def preprocess_criterion_name(self, criterion: str) -> str:
+    def _preprocess_criterion_name(self, criterion: str) -> str:
         # Rename US_IX criteria to US_ID so we don't have to make frontend changes
         if self.state_code == StateCode.US_ID and criterion.upper().startswith("US_IX"):
             criterion = criterion.replace("US_IX", "US_ID", 1)
@@ -103,6 +103,28 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         # below is relatively naive and does not support CONSTANT_CASE,
         # which is what we expect these names to be
         return self.criteria_to_deprefix.get(criterion, criterion).lower()
+
+    def _is_reason_blob(self, value: Any) -> bool:
+        if not isinstance(value, List):
+            return False
+
+        for item in value:
+            if not isinstance(item, Dict):
+                return False
+            if sorted(item) != ["criteria_name", "reason"]:
+                return False
+
+        return True
+
+    def _process_criteria(self, criteria: List[Dict[str, Any]]) -> Dict[str, Any]:
+        return {
+            self._preprocess_criterion_name(
+                reason["criteria_name"]
+            ): self._process_criteria(reason["reason"])
+            if self._is_reason_blob(reason["reason"])
+            else reason["reason"]
+            for reason in criteria
+        }
 
     def build_document(self, row: dict[str, Any]) -> dict:
         """Transform the raw record from Big Query into a nested form for Firestore."""
@@ -127,12 +149,7 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
                 new_document["metadata"][formatted_key] = value
             # transform reasons array to mapping
             elif key == "reasons":
-                new_document["criteria"] = {
-                    self.preprocess_criterion_name(reason["criteria_name"]): reason[
-                        "reason"
-                    ]
-                    for reason in value
-                }
+                new_document["criteria"] = self._process_criteria(value)
             elif key == "case_notes":
                 if value:
                     for note in value:
@@ -148,7 +165,9 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
                             }
                         )
             elif key == "ineligible_criteria":
-                ineligible_criteria = {self.preprocess_criterion_name(v) for v in value}
+                ineligible_criteria = {
+                    self._preprocess_criterion_name(v) for v in value
+                }
             else:
                 new_document[key] = value
 

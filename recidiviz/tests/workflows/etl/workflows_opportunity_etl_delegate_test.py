@@ -186,6 +186,51 @@ EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
     "caseNotes": {},
 }
 
+TEST_DATA_WITH_NESTED_CRITERIA = {
+    "external_id": "234",
+    "reasons": [
+        {
+            "criteria_name": "US_TN_FINES_FEES_ELIGIBLE",
+            "reason": [
+                {
+                    "criteria_name": "HAS_FINES_FEES_BALANCE_BELOW_500",
+                    "reason": {"amount_owed": 100},
+                },
+                {
+                    "criteria_name": "HAS_PAYMENTS_3_CONSECUTIVE_MONTHS",
+                    "reason": {"amount_owed": 100, "consecutive_monthly_payments": 3},
+                },
+            ],
+        },
+    ],
+}
+
+EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA = {
+    "externalId": "234",
+    "criteria": {
+        "usTnFinesFeesEligible": {
+            "hasFinesFeesBalanceBelow500": {"amountOwed": 100},
+            "hasPayments3ConsecutiveMonths": {
+                "amountOwed": 100,
+                "consecutiveMonthlyPayments": 3,
+            },
+        },
+    },
+    "eligibleCriteria": {
+        "usTnFinesFeesEligible": {
+            "hasFinesFeesBalanceBelow500": {"amountOwed": 100},
+            "hasPayments3ConsecutiveMonths": {
+                "amountOwed": 100,
+                "consecutiveMonthlyPayments": 3,
+            },
+        },
+    },
+    "formInformation": {},
+    "ineligibleCriteria": {},
+    "metadata": {},
+    "caseNotes": {},
+}
+
 
 class TestWorkflowsETLDelegate(TestCase):
     """Tests for the Workflows ETL delegate."""
@@ -290,6 +335,12 @@ class TestWorkflowsETLDelegate(TestCase):
             expected,
             new_document,
         )
+
+    def test_transform_with_nested_criteria(self) -> None:
+        """Tests that the delegate can process a document where the "reason" in a reasons blob is itself, a reasons blob."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
+        result = delegate.transform_row(json.dumps(TEST_DATA_WITH_NESTED_CRITERIA))
+        self.assertEqual(("234", EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA), result)
 
 
 class TestWorkflowsETLConfig(TestCase):
