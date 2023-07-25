@@ -20,9 +20,11 @@ Helper functions for creating branches based on state codes.
 from typing import Any, Dict, Optional, Tuple, Union
 
 from airflow.decorators import task
+from airflow.exceptions import AirflowFailException
 from airflow.models import BaseOperator, DagRun
 from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import BranchPythonOperator
+from airflow.operators.python import BranchPythonOperator, PythonOperator
+from airflow.utils.state import TaskInstanceState
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -46,7 +48,6 @@ def _get_id_for_operator_or_group(
 
 def create_state_code_branching(
     branch_by_state_code: Dict[str, Union[BaseOperator, TaskGroup]],
-    branch_end_trigger_rule: TriggerRule = TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
 ) -> Tuple[BaseOperator, BaseOperator]:
     r"""
     Given a map of all possible branches by state code, creates a BranchPythonOperator, that
@@ -96,10 +97,29 @@ def create_state_code_branching(
         ]
 
     branch_start: BranchPythonOperator = get_selected_branch_ids()
-    branch_end = EmptyOperator(
-        task_id="state_code_branch_end",
-        trigger_rule=branch_end_trigger_rule,
-    )
+
+    @task(task_id="state_code_branch_end", trigger_rule=TriggerRule.NONE_SKIPPED)
+    def state_code_branch_end(dag_run: Optional[DagRun] = None, **kwargs: Any) -> Any:
+        if not dag_run:
+            raise ValueError(
+                "Dag run not passed to task. Should be automatically set due to function being a task."
+            )
+
+        current_task = kwargs["task"]
+        failed_task_instances = dag_run.get_task_instances(
+            state=[TaskInstanceState.FAILED, TaskInstanceState.UPSTREAM_FAILED]
+        )
+        failed_upstream_task_ids = [
+            t.task_id
+            for t in failed_task_instances
+            if t.task_id in current_task.upstream_task_ids
+        ]
+        if failed_upstream_task_ids:
+            raise AirflowFailException(
+                f"Failing - upstream nodes failed: {failed_upstream_task_ids}"
+            )
+
+    branch_end: PythonOperator = state_code_branch_end()
     for state_code, branch in branch_by_state_code.items():
         branch_start >> start_branch_by_state_code[state_code] >> branch >> branch_end
     return branch_start, branch_end

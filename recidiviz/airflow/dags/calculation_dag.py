@@ -447,9 +447,7 @@ def create_calculation_dag() -> None:
         post_normalization_pipelines_by_state = (
             post_normalization_pipeline_branches_by_state_code()
         )
-        create_state_code_branching(
-            post_normalization_pipelines_by_state, TriggerRule.NONE_FAILED
-        )
+        create_state_code_branching(post_normalization_pipelines_by_state)
 
     # This ensures that all of the normalization pipelines for a state will
     # run and the normalized_state dataset will be updated before the
@@ -464,7 +462,6 @@ def create_calculation_dag() -> None:
             validation_branches_by_state_code(
                 post_normalization_pipelines_by_state.keys()
             ),
-            TriggerRule.NONE_FAILED,
         )
 
     trigger_update_all_views >> validations
@@ -475,7 +472,6 @@ def create_calculation_dag() -> None:
                 metric_export_branches_by_state_code(
                     post_normalization_pipelines_by_state
                 ),
-                TriggerRule.NONE_FAILED,
             )
 
         for export in PIPELINE_AGNOSTIC_EXPORTS:
