@@ -55,9 +55,7 @@ class TestStateCodeBranch(unittest.TestCase):
         branching_end = test_dag.get_task("state_code_branch_end")
 
         self.assertEqual(len(test_dag.tasks), 9)
-        self.assertEqual(
-            branching_end.trigger_rule, TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS
-        )
+        self.assertEqual(branching_end.trigger_rule, TriggerRule.NONE_SKIPPED)
         self.assertEqual(
             branching_start.downstream_task_ids,
             {"US_XX_start", "US_YY_start", "US_ZZ_start"},
