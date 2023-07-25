@@ -199,6 +199,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 _,
                 _,
                 _,
+                _,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(file_path),

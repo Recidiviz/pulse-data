@@ -1927,18 +1927,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(response.status_code, 200)
             response_dict = assert_type(response.json, dict)
-            self.assertEqual(response_dict.get("name"), "law_enforcement_metrics.xlsx")
             self.assertEqual(
-                response_dict.get("uploaded_at"),
-                datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1000,
+                response_dict.get("file_name"), "law_enforcement_metrics.xlsx"
             )
-            self.assertEqual(
-                response_dict.get("uploaded_by_v2"),
-                {"name": self.test_schema_objects.test_user_A.name, "role": None},
-            )
-            self.assertEqual(response_dict.get("ingested_at"), None)
-            self.assertEqual(response_dict.get("status"), "UPLOADED")
-            self.assertEqual(response_dict.get("system"), "LAW_ENFORCEMENT")
             spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
             self.assertEqual(
@@ -1999,18 +1990,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 )
             self.assertEqual(response.status_code, 200)
             response_dict = assert_type(response.json, dict)
-            self.assertEqual(response_dict.get("name"), file_name)
-            self.assertEqual(
-                response_dict.get("uploaded_at"),
-                datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1000,
-            )
-            self.assertEqual(
-                response_dict.get("uploaded_by_v2"),
-                {"name": self.test_schema_objects.test_user_A.name, "role": None},
-            )
-            self.assertEqual(response_dict.get("ingested_at"), None)
-            self.assertEqual(response_dict.get("status"), "UPLOADED")
-            self.assertEqual(response_dict.get("system"), "LAW_ENFORCEMENT")
+            self.assertEqual(response_dict.get("file_name"), file_name)
             spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
             self.assertEqual(
@@ -2255,14 +2235,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.session.commit()
         self.session.refresh(agency)
-        spreadsheet = self.test_schema_objects.get_test_spreadsheet(
-            system=System.LAW_ENFORCEMENT,
-            user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-            agency_id=agency.id,
-        )
-        self.session.add(spreadsheet)
-        self.session.commit()
-        self.session.refresh(spreadsheet)
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
@@ -2280,10 +2252,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             )
             self.assertEqual(upload_response.status_code, 200)
-            upload_response_json = assert_type(upload_response.json, dict)
-            spreadsheet_id = upload_response_json.get("id")
+            spreadsheet = self.session.query(Spreadsheet).one()
             # Download spreadsheet
-            download_response = self.client.get(f"/api/spreadsheets/{spreadsheet_id}")
+            download_response = self.client.get(f"/api/spreadsheets/{spreadsheet.id}")
             self.assertEqual(download_response.status_code, 200)
 
     def test_update_spreadsheet(self) -> None:
@@ -2360,9 +2331,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             )
             self.assertEqual(upload_response.status_code, 200)
-            upload_response_json = assert_type(upload_response.json, dict)
-            spreadsheet_id = upload_response_json.get("id")
-            response = self.client.delete(f"/api/spreadsheets/{spreadsheet_id}")
+            spreadsheet = self.session.query(Spreadsheet).one()
+            response = self.client.delete(f"/api/spreadsheets/{spreadsheet.id}")
             self.assertEqual(response.status_code, 200)
             db_spreadsheet = self.session.query(Spreadsheet).one_or_none()
             self.assertEqual(db_spreadsheet, None)
