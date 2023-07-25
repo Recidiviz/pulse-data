@@ -58,7 +58,6 @@ from recidiviz.justice_counts.utils.constants import (
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import in_ci, in_test
 
 
 class SpreadsheetInterface:
@@ -246,6 +245,7 @@ class SpreadsheetInterface:
         Set[schema.Report],
         List[int],
         Set[schema.Report],
+        schema.Spreadsheet,
     ]:
         """Ingests spreadsheet for an agency and logs any errors."""
         user_account = None
@@ -321,6 +321,7 @@ class SpreadsheetInterface:
             uploader.updated_reports,
             uploader.existing_report_ids,
             unchanged_reports,
+            spreadsheet,
         )
 
     @staticmethod
@@ -441,7 +442,7 @@ class SpreadsheetInterface:
         # to convert the rows into datapoints.
         non_metric_errors = [e.to_json() for e in metric_key_to_errors.get(None, [])]
 
-        ingested_spreadsheet_json = {
+        return {
             "metrics": metrics,
             "non_metric_errors": non_metric_errors,
             "updated_reports": updated_report_jsons,
@@ -450,9 +451,14 @@ class SpreadsheetInterface:
             "file_name": spreadsheet.original_name,
         }
 
-        if in_ci() or in_test():
-            return ingested_spreadsheet_json
-
+    @staticmethod
+    def save_ingested_spreadsheet_json(
+        ingested_spreadsheet_json: Dict[str, Any], spreadsheet: schema.Spreadsheet
+    ) -> None:
+        """This function uploads/saves the ingested spreadsheet json (json that contains
+        errors/warnings as well as review metric data) to GCP bucket. This json is used
+        lated to power the standalone errors/warnings and review pages.
+        """
         transformed_ingested_spreadsheet_json = SpreadsheetInterface._transform_date(
             ingested_spreadsheet_json
         )
@@ -466,8 +472,6 @@ class SpreadsheetInterface:
             json.dumps(transformed_ingested_spreadsheet_json, default=str)
         )
         logging.info("%s stored in GCP", destination_blob_name)
-
-        return ingested_spreadsheet_json
 
     @staticmethod
     def _transform_date(contents: Dict) -> Dict:
@@ -502,6 +506,7 @@ class SpreadsheetInterface:
         Set[schema.Report],
         List[int],
         Set[schema.Report],
+        schema.Spreadsheet,
     ]:
         """Given a filename, an agency, and a system, this method copies the
         file from the agency's bulk upload bucket to GCS bucket where we store
