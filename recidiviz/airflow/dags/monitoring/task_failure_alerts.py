@@ -44,7 +44,7 @@ _project_id = os.getenv("GCP_PROJECT")
 KNOWN_CONFIGURATION_PARAMETERS: Dict[str, Set[str]] = {
     f"{_project_id}_calculation_dag": {
         "ingest_instance",
-        "state_code",
+        "state_code_filter",
         "sandbox_prefix",
     },
     f"{_project_id}_hourly_monitoring_dag": set(),

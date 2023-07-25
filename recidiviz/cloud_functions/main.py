@@ -86,7 +86,7 @@ def trigger_calculation_dag(
         dag_name,
         {
             "state_code_filter": json_body.get("state_code_filter"),
-            "sandbox_dataset_prefix": json_body.get("sandbox_dataset_prefix"),
+            "sandbox_prefix": json_body.get("sandbox_prefix"),
             "ingest_instance": json_body.get("ingest_instance"),
         },
     )
