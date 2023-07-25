@@ -96,7 +96,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         _ = RawTableColumnInfo(
             name="COL1",
             field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
-            is_pii=False,
+            is_pii=True,
             description=None,
             known_values=None,
             external_id_type="US_OZ_EG",
@@ -107,7 +107,7 @@ class TestRawTableColumnInfo(unittest.TestCase):
         _ = RawTableColumnInfo(
             name="COL1",
             field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
-            is_pii=False,
+            is_pii=True,
             description=None,
             known_values=None,
             external_id_type="US_OZ_EG",
@@ -197,6 +197,21 @@ class TestRawTableColumnInfo(unittest.TestCase):
                 description=None,
                 known_values=None,
                 is_primary_for_external_id_type=True,
+            )
+
+    def test_external_id_not_pii(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found field COL1 with external id type person_external_id which is not "
+            r"labeled `is_pii: True`.",
+        ):
+            _ = RawTableColumnInfo(
+                name="COL1",
+                field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
+                is_pii=False,
+                description=None,
+                known_values=None,
+                external_id_type="US_OZ_EG",
             )
 
 
@@ -629,14 +644,14 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                     RawTableColumnInfo(
                         name="Col1",
                         description="description",
-                        is_pii=False,
+                        is_pii=True,
                         field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
                         external_id_type="US_OZ_EG",
                     ),
                     RawTableColumnInfo(
                         name="Col2",
                         description="some other description",
-                        is_pii=False,
+                        is_pii=True,
                         field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
                         external_id_type="US_OZ_EG",
                     ),
@@ -732,7 +747,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     RawTableColumnInfo(
                         name="Col1",
                         description="description",
-                        is_pii=False,
+                        is_pii=True,
                         field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
                         external_id_type="US_OZ_EG",
                         is_primary_for_external_id_type=True,
@@ -747,7 +762,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     RawTableColumnInfo(
                         name="Col1",
                         description="description",
-                        is_pii=False,
+                        is_pii=True,
                         field_type=RawTableColumnFieldType.STAFF_EXTERNAL_ID,
                         external_id_type="US_OZ_EG",
                         is_primary_for_external_id_type=True,
@@ -774,7 +789,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     RawTableColumnInfo(
                         name="Col1",
                         description="description",
-                        is_pii=False,
+                        is_pii=True,
                         field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
                         external_id_type="US_OZ_EG",
                         is_primary_for_external_id_type=True,
@@ -788,7 +803,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     RawTableColumnInfo(
                         name="Col1",
                         description="description",
-                        is_pii=False,
+                        is_pii=True,
                         field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
                         external_id_type="US_OZ_EG",
                         is_primary_for_external_id_type=True,
@@ -826,7 +841,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                     RawTableColumnInfo(
                         name="Col1",
                         description="description",
-                        is_pii=False,
+                        is_pii=True,
                         field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
                         external_id_type="US_OZ_EG",
                     ),
@@ -846,7 +861,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 RawTableColumnInfo(
                     name="Col1",
                     description="description",
-                    is_pii=False,
+                    is_pii=True,
                     field_type=RawTableColumnFieldType.PERSON_EXTERNAL_ID,
                     external_id_type="US_OZ_EG",
                     is_primary_for_external_id_type=True,

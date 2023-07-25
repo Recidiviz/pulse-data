@@ -10,6 +10,8 @@ columns:
     is_pii: True
     description: |-
       Employee ID number
+    field_type: staff_external_id
+    external_id_type: US_MO_STAFF_BADGE_NUMBER
   - name: LNAME
     is_pii: True
     description: |-

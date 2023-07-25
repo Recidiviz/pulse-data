@@ -137,11 +137,19 @@ class RawTableColumnInfo:
             self.external_id_type or self.is_primary_for_external_id_type
         ) and not is_external_id_field:
             raise ValueError(
-                f"Expected external_id_type to be None and is_primary_for_external_id_type to be False when field_type is {self.field_type.value} for {self.name}"
+                f"Expected external_id_type to be None and "
+                f"is_primary_for_external_id_type to be False when field_type is "
+                f"{self.field_type.value} for {self.name}"
             )
         if self.is_primary_for_external_id_type and not self.external_id_type:
             raise ValueError(
-                f"Expected is_primary_for_external_id_type to be False when external id type is None for {self.name}"
+                f"Expected is_primary_for_external_id_type to be False when external "
+                f"id type is None for {self.name}"
+            )
+        if is_external_id_field and not self.is_pii:
+            raise ValueError(
+                f"Found field {self.name} with external id type "
+                f"{self.field_type.value} which is not labeled `is_pii: True`."
             )
 
     def _validate_datetime_sql_parsers(self) -> None:

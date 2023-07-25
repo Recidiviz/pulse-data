@@ -15,9 +15,16 @@ columns:
   - name: OFFENDER_BOOK_ID
     description: |-
       External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ND_ELITE_BOOKING
+    is_primary_for_external_id_type: True
   - name: ROOT_OFFENDER_ID
     description: |-
       External id for a unique person from the Elite system.
+    field_type: person_external_id
+    external_id_type: US_ND_ELITE
+    is_pii: True
   - name: BOOKING_NO
     description: |-
       A separate external ID for the booking, unused elsewhere in the system.

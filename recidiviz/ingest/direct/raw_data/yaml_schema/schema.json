@@ -27,6 +27,10 @@
       },
       "uniqueItems": true
     },
+    "is_primary_person_table": {
+      "description": "True if this is the overall table representing person (JII) information for this region. All other raw data tables containing person-level information should be able to be joined back to this table, either directly or indirectly, via PERSON_EXTERNAL_ID type columns. Each region may only have one raw file marked as is_primary_person_table; this designation may be arbitrary if there are multiple primary tables representing person information, such as if there are multiple source data systems.",
+      "type": "boolean"
+    },
     "columns": {
       "description": "A list of names and descriptions for each column in a file.",
       "type": "array",
@@ -41,6 +45,19 @@
           "description": {
             "description": "Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a raw data migration involving this column",
             "type": "string"
+          },
+          "field_type": {
+            "description": "Designates the type of data that this column contains",
+            "type": "string",
+            "enum": ["string", "datetime","person_external_id", "staff_external_id"]
+          },
+          "external_id_type": {
+            "description": "If this column holds an external id field_type, designates which type it is (out of the external types defined in common/constants/state/external_id_types.py).",
+            "type": "string"
+          },
+          "is_primary_for_external_id_type": {
+            "description": "True if this column holds external ID information in a primary person table. Should only be set for a column of type PERSON_EXTERNAL_ID or STAFF_EXTERNAL_ID. If true for a column of type PERSON_EXTERNAL_ID, then the table that this column belongs to is an ID type root for that region (Note this does not necessarily mean the table is the is_primary_person_table for the region, since there may be multiple tables that are ID type roots for the region.)",
+            "type": "boolean"
           },
           "known_values": {
             "description": "Describes possible enum values for this column if known",
