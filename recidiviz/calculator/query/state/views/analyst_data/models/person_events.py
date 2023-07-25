@@ -407,6 +407,7 @@ ON
     a.start_reason,
     -- Get the first non-null start_sub_reason among incarceration starts occurring during the super session
     COALESCE(b.start_sub_reason, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
+    viol.violation_date AS most_severe_violation_date,
     COUNT(DISTINCT c.referral_date)
         OVER (PARTITION BY a.person_id, a.start_date) AS prior_treatment_referrals_1y,
 FROM
@@ -423,6 +424,16 @@ LEFT JOIN
 ON
     a.person_id = c.person_id
     AND DATE_SUB(a.start_date, INTERVAL 365 DAY) <= c.referral_date
+LEFT JOIN
+    `{project_id}.dataflow_metrics_materialized.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` d
+ON
+    a.person_id = d.person_id
+    AND b.start_date = d.admission_date
+LEFT JOIN
+    `{project_id}.normalized_state.state_supervision_violation` viol
+ON
+    d.person_id = viol.person_id
+    AND d.most_severe_violation_id = viol.supervision_violation_id
 WHERE
     a.compartment_level_1 = "INCARCERATION"
 QUALIFY ROW_NUMBER() OVER (
@@ -433,6 +444,7 @@ QUALIFY ROW_NUMBER() OVER (
             "inflow_from_level_1",
             "inflow_from_level_2",
             "start_reason",
+            "most_severe_violation_date",
             "most_severe_violation_type",
             "prior_treatment_referrals_1y",
         ],
@@ -741,6 +753,7 @@ WHERE compartment_level_1 = "SUPERVISION"
     a.end_reason,
     -- Get the first non-null violation type among supervision terminations occurring during the super session
     COALESCE(c.most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
+    viol.violation_date AS most_severe_violation_date,
     c.termination_date AS most_severe_violation_type_termination_date,
     COUNT(DISTINCT d.referral_date)
         OVER (PARTITION BY a.person_id, a.end_date_exclusive) AS prior_treatment_referrals_1y,
@@ -759,6 +772,11 @@ LEFT JOIN
 ON
     a.person_id = c.person_id
     AND c.termination_date BETWEEN a.end_date_exclusive AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
+LEFT JOIN
+    `{{project_id}}.normalized_state.state_supervision_violation` viol
+ON
+    c.person_id = viol.person_id
+    AND c.most_severe_violation_id = viol.supervision_violation_id
 -- Referrals within one year of supervision termination
 LEFT JOIN
     `{{project_id}}.normalized_state.state_program_assignment` d
@@ -778,6 +796,7 @@ QUALIFY ROW_NUMBER() OVER (
             "compartment_level_2",
             "outflow_to_incarceration",
             "end_reason",
+            "most_severe_violation_date",
             "most_severe_violation_type",
             "most_severe_violation_type_termination_date",
             "prior_treatment_referrals_1y",
