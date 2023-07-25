@@ -58,6 +58,9 @@ _QUERY_TEMPLATE = """
         USING (state_code, person_id, sentences_preprocessed_id)
     WHERE span.state_code = 'US_TN'
         AND (is_isc_maybe_assaultive OR is_isc_maybe_ineligible OR is_missing_offense_desc)
+        -- This line restricts additionally to sentences that have not yet passed their projected completion date, filtering out 
+        -- sentences who have passed that date but may have a null completion date
+        AND sentences_preprocessed_id in UNNEST(sentences_preprocessed_id_array_projected_completion)
     GROUP BY 1,2,3,4
 """
 
