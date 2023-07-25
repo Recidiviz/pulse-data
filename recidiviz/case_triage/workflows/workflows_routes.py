@@ -462,10 +462,11 @@ def create_workflows_api_blueprint() -> Blueprint:
         firestore_client = FirestoreClientImpl()
         firestore_path = get_sms_request_firestore_path(state, recipient_external_id)
 
+        logging.info("Twilio send SMS gcp environment: [%s]", get_gcp_environment())
         url = LOCALHOST_URL
-        if get_gcp_environment() == "recidiviz-staging":
+        if get_gcp_environment() == "staging":
             url = STAGING_URL
-        if get_gcp_environment() == "recidiviz-123":
+        if get_gcp_environment() == "production":
             url = PRODUCTION_URL
 
         try:
