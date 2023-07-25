@@ -373,6 +373,7 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
                 metrics=[],
                 metrics_without_outliers=[],
                 recipient_email_address=self.test_email,
+                additional_recipients=[],
             )
         )
 
