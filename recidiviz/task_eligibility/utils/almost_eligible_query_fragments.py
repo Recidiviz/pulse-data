@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,9 @@ Helper SQL queries to find almost eligible individuals
 from typing import Optional
 
 
-def json_to_array_cte(from_table: str) -> str:
+def json_to_array_cte(
+    from_table: str,
+) -> str:
     """Helper method that returns a CTE where the
     reasons JSON is transformed to an array for
     easier later manipulation. Returned CTE also called
