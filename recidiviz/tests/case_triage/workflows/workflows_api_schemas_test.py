@@ -16,7 +16,6 @@
 #  =============================================================================
 """Implements tests for the Workflows API schemas."""
 from recidiviz.case_triage.workflows.api_schemas import (
-    TwilioSmsStatusResponseSchema,
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
@@ -326,66 +325,5 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
             "message": "Only I will remain",
             "sender_id": "rev.mum.mohiam",
-        }
-    )
-
-
-class WorkflowsTwilioSmsStatusResponseSchemaTest(SchemaTestCase):
-    """Tests for TwilioSmsStatusResponseSchema"""
-
-    camel_case = True
-    schema = TwilioSmsStatusResponseSchema
-
-    SID = "12345"
-    ACCOUNT_SID = "ABC-123"
-    ERROR_CODE = "3000"
-    ERROR_MESSAGE = "Blocked"
-
-    test_valid_data = valid_schema_test(
-        {
-            "MessageSid": SID,
-            "MessageStatus": "200",
-            "AccountSid": ACCOUNT_SID,
-            "ErrorCode": ERROR_CODE,
-            "ErrorMessage": ERROR_MESSAGE,
-        }
-    )
-
-    test_invalid_missing_message_sid = invalid_schema_test(
-        {
-            "MessageStatus": "200",
-            "AccountSid": ACCOUNT_SID,
-        }
-    )
-
-    test_invalid_missing_message_status = invalid_schema_test(
-        {
-            "MessageSid": SID,
-            "AccountSid": ACCOUNT_SID,
-        }
-    )
-
-    test_invalid_missing_account_sid = invalid_schema_test(
-        {
-            "MessageSid": SID,
-            "MessageStatus": "200",
-        }
-    )
-
-    test_valid_missing_error_code = valid_schema_test(
-        {
-            "MessageSid": SID,
-            "MessageStatus": "200",
-            "AccountSid": ACCOUNT_SID,
-            "ErrorMessage": ERROR_MESSAGE,
-        }
-    )
-
-    test_valid_missing_error_message = valid_schema_test(
-        {
-            "MessageSid": SID,
-            "MessageStatus": "200",
-            "AccountSid": ACCOUNT_SID,
-            "ErrorCode": ERROR_CODE,
         }
     )
