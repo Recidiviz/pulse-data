@@ -56,6 +56,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_simple(self) -> None:
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
+            external_id="sv1",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code="US_XX",
@@ -77,6 +78,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_multiple(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -88,6 +90,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -107,6 +110,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123457,
+            external_id="sv3",
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -129,6 +133,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_first(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -140,6 +145,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -155,6 +161,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123457,
+            external_id="sv3",
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -173,6 +180,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_most_recent(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
@@ -185,6 +193,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_XX",
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
@@ -201,6 +210,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123457,
+            external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
@@ -220,6 +230,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_most_recent_ensure_sorted(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_XX",
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
@@ -236,6 +247,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123457,
+            external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
@@ -248,6 +260,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
@@ -267,6 +280,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_most_recent_none(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_XX",
             violation_date=None,
             supervision_violation_types=[
@@ -283,6 +297,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123457,
+            external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
@@ -295,6 +310,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[
@@ -314,6 +330,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_empty(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[],
@@ -321,6 +338,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_XX",
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[
@@ -337,6 +355,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123457,
+            external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[
@@ -356,6 +375,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_all_empty(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[],
@@ -363,6 +383,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_XX",
             violation_date=datetime.date(2012, 6, 6),
             supervision_violation_types=[],
@@ -370,6 +391,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123457,
+            external_id="sv3",
             state_code="US_XX",
             violation_date=datetime.date(2012, 5, 20),
             supervision_violation_types=[],
@@ -383,6 +405,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_single_empty(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2010, 1, 1),
             supervision_violation_types=[],
@@ -397,6 +420,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
     def test_identify_most_severe_violation_fallback(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_XX",
             violation_date=None,
             supervision_violation_types=[
@@ -413,6 +437,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123457,
+            external_id="sv3",
             state_code="US_XX",
             violation_date=None,
             supervision_violation_types=[
@@ -425,6 +450,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=None,
             supervision_violation_types=[
@@ -448,6 +474,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
     def test_identify_violation_history_id_array_simple(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
+            external_id="sv1",
             supervision_violation_id=1000,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -463,6 +490,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
+            external_id="sv2",
             supervision_violation_id=2000,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -481,6 +509,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
     def test_identify_violation_history_id_array_single(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
+            external_id="sv1",
             supervision_violation_id=1000,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -504,6 +533,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
     def test_identify_violation_history_id_array_some_none(self) -> None:
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
+            external_id="sv1",
             supervision_violation_id=4321,
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -515,6 +545,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
 
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
+            external_id="sv2",
             supervision_violation_id=1234,
             supervision_violation_types=[],
         )
@@ -529,6 +560,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
         violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=3000,
+            external_id="sv1",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code="US_XX",
@@ -544,6 +576,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
         violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=2000,
+            external_id="sv2",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code="US_XX",
@@ -555,6 +588,7 @@ class TestViolationHistoryIdArray(unittest.TestCase):
         violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1000,
+            external_id="sv3",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code="US_XX",
@@ -577,6 +611,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         violations = [
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_XX",
+                external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
@@ -600,7 +635,10 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
     def test_get_violation_type_frequency_counter_no_types(self) -> None:
         violations = [
-            NormalizedStateSupervisionViolation.new_with_defaults(state_code="US_XX")
+            NormalizedStateSupervisionViolation.new_with_defaults(
+                state_code="US_XX",
+                external_id="sv1",
+            )
         ]
 
         violation_type_frequency_counter = (
@@ -615,6 +653,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         violations = [
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_MO",
+                external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
@@ -650,6 +689,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         violations = [
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_MO",
+                external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
@@ -680,6 +720,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         violations = [
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_MO",
+                external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
@@ -706,6 +747,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         violations = [
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_MO",
+                external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
@@ -726,6 +768,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
             ),
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_MO",
+                external_id="sv2",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
@@ -766,6 +809,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         violations = [
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_PA",
+                external_id="sv1",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
@@ -784,6 +828,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
             ),
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_PA",
+                external_id="sv2",
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
                         state_code="US_XX",
@@ -816,6 +861,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history(self):
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -836,6 +882,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_XX",
             response_date=datetime.date(2009, 1, 7),
@@ -874,6 +921,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_outside_lookback(self):
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -896,6 +944,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         supervision_violation_response_before_look_back = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 state_code="US_XX",
                 response_date=datetime.date(2018, 7, 25),
@@ -904,6 +953,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr2",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_XX",
             response_date=datetime.date(2019, 1, 20),
@@ -947,6 +997,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_us_mo_subtype(self):
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_MO",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -971,6 +1022,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_subtype="INI",
             state_code="US_MO",
@@ -1010,6 +1062,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_us_pa_subtype_high_technical(self):
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -1028,6 +1081,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_PA",
             response_date=datetime.date(2009, 1, 7),
@@ -1066,6 +1120,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_us_pa_subtype_substance_use(self):
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -1079,6 +1134,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_PA",
             response_date=datetime.date(2009, 1, 7),
@@ -1119,6 +1175,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     ):
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -1132,6 +1189,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_PA",
             response_date=datetime.date(2009, 1, 7),
@@ -1170,6 +1228,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_with_us_pa_subtype_multiple_types(self):
         supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=12345,
+            external_id="sv1",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -1183,6 +1242,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123456,
+            external_id="sv2",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -1196,6 +1256,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=1234567,
+            external_id="sv3",
             state_code="US_PA",
             violation_date=datetime.date(2009, 1, 3),
             supervision_violation_types=[
@@ -1209,6 +1270,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_PA",
             response_date=datetime.date(2009, 1, 7),
@@ -1228,6 +1290,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         supervision_violation_response_2 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=1234567,
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 state_code="US_PA",
                 response_date=datetime.date(2009, 1, 6),
@@ -1238,6 +1301,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         supervision_violation_response_3 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=1234567,
+                external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 state_code="US_PA",
                 response_date=datetime.date(2009, 1, 5),
@@ -1278,6 +1342,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
@@ -1320,6 +1385,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_citation_date(self):
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -1336,6 +1402,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.CITATION,
             response_date=datetime.date(2009, 1, 7),
             supervision_violation_response_decisions=[
@@ -1375,6 +1442,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         citation with a LAW condition."""
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_MO",
             violation_date=datetime.date(2009, 1, 7),
             supervision_violation_types=[
@@ -1394,6 +1462,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_MO",
+            external_id="svr1",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_subtype="ITR",

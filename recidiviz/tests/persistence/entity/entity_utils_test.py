@@ -106,10 +106,13 @@ class TestCoreEntityFieldIndex(TestCase):
     def test_getEntityRelationshipFieldNames_children(self) -> None:
         entity = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="ss1",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[
                 StateCharge.new_with_defaults(
-                    state_code="US_XX", status=StateChargeStatus.PRESENT_WITHOUT_INFO
+                    state_code="US_XX",
+                    external_id="c1",
+                    status=StateChargeStatus.PRESENT_WITHOUT_INFO,
                 )
             ],
             person=[StatePerson.new_with_defaults(state_code="US_XX")],

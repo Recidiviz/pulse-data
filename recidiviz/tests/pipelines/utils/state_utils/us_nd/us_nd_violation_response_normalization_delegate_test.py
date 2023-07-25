@@ -89,6 +89,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     def test_prepare_violation_responses_for_calculations_us_nd(self) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
+            external_id="sv1",
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -101,13 +102,15 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
             supervision_violation_response_id=123,
+            external_id="svr1",
             supervision_violation=supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
 
         other_supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123,
+            supervision_violation_id=456,
+            external_id="sv2",
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -120,6 +123,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         duplicate_ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
             supervision_violation_response_id=456,
+            external_id="svr2",
             supervision_violation=other_supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -129,6 +133,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             ssvr,
             supervision_violation=StateSupervisionViolation.new_with_defaults(
                 supervision_violation_id=38000012312345,
+                external_id=None,  # TODO(#22531): Hydrate this external_id properly
                 state_code=self.state_code,
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -156,6 +161,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     ) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
+            external_id="sv1",
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -168,6 +174,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
             supervision_violation_response_id=123,
+            external_id="svr1",
             supervision_violation=supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -175,6 +182,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         duplicate_supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
+            external_id="sv1",
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -187,6 +195,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         duplicate_ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
             supervision_violation_response_id=123,
+            external_id="svr1",
             supervision_violation=duplicate_supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -196,6 +205,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             ssvr,
             supervision_violation=attr.evolve(
                 supervision_violation,
+                external_id=None,  # TODO(#22531): Hydrate this external_id properly
                 supervision_violation_id=38000012312345,
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -228,6 +238,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     ) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
+            external_id="sv1",
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -240,6 +251,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
             supervision_violation_response_id=123,
+            external_id="svr1",
             supervision_violation=supervision_violation,
             response_date=datetime.date(2008, 12, 1),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -247,6 +259,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         other_supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=456,
+            external_id="sv2",
             state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -259,6 +272,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         other_ssvr = StateSupervisionViolationResponse.new_with_defaults(
             state_code=self.state_code,
             supervision_violation_response_id=456,
+            external_id="svr2",
             supervision_violation=other_supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -269,6 +283,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
                 ssvr,
                 supervision_violation=attr.evolve(
                     supervision_violation,
+                    external_id=None,  # TODO(#22531): Hydrate this external_id properly
                     supervision_violation_id=38000012312345,
                     supervision_violation_types=[
                         StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -282,7 +297,8 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             attr.evolve(
                 other_ssvr,
                 supervision_violation=attr.evolve(
-                    supervision_violation,
+                    other_supervision_violation,
+                    external_id=None,  # TODO(#22531): Hydrate this external_id properly
                     supervision_violation_id=38000012312346,
                     supervision_violation_types=[
                         StateSupervisionViolationTypeEntry.new_with_defaults(

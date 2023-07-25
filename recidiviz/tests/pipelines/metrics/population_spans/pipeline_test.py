@@ -186,6 +186,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
 
         incarceration_period = schema.StateIncarcerationPeriod(
             incarceration_period_id=fake_incarceration_period_id,
+            external_id=f"external_id_{fake_incarceration_period_id}",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -203,6 +204,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=fake_supervision_period_id,
+            external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             state_code="US_XX",
             supervision_level=StateSupervisionLevel.MEDIUM,
@@ -395,6 +397,7 @@ class TestClassifyResults(unittest.TestCase):
         """Tests the ClassifyResults DoFn."""
         incarceration_period = normalized_entities.NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -411,6 +414,7 @@ class TestClassifyResults(unittest.TestCase):
         supervision_period = (
             normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=2222,
+                external_id="sp1",
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 state_code="US_XX",
                 supervision_level=StateSupervisionLevel.MEDIUM,

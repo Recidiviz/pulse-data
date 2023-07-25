@@ -32,6 +32,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
 
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
         )
 
@@ -56,7 +57,10 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
         ip = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             supervision_violations=[
-                entities.StateSupervisionViolation.new_with_defaults(state_code="US_XX")
+                entities.StateSupervisionViolation.new_with_defaults(
+                    state_code="US_XX",
+                    external_id="sv1",
+                )
             ],
         )
 
@@ -81,6 +85,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
 
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_ZZ",
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
         )
 
@@ -97,6 +102,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
         field is empty on the entity."""
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip1",
             incarceration_type=None,
         )
 
@@ -117,6 +123,7 @@ class TestValidateDeprecatedEntityForStates(unittest.TestCase):
         raise an error if a deprecated entity is instantiated for the given state."""
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip1",
         )
 
         with self.assertRaises(ValueError) as e:
@@ -137,6 +144,7 @@ class TestValidateDeprecatedEntityForStates(unittest.TestCase):
         the given state."""
         sp = entities.StateSupervisionPeriod.new_with_defaults(
             state_code="US_ZZ",
+            external_id="sp1",
         )
 
         # Assert no error raised

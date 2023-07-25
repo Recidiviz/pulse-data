@@ -130,6 +130,7 @@ class TestFindProgramEvents(unittest.TestCase):
     def test_find_program_events(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             program_id="PG3",
             referral_date=date(2020, 1, 3),
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
@@ -139,6 +140,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2019, 7, 10),
@@ -148,6 +150,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=999,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2019, 3, 5),
             termination_date=date(2020, 10, 1),
@@ -222,6 +225,7 @@ class TestFindProgramReferrals(unittest.TestCase):
     def test_find_program_referrals(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -230,6 +234,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
@@ -239,6 +244,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=999,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -284,6 +290,7 @@ class TestFindProgramReferrals(unittest.TestCase):
     def test_find_program_referrals_no_referral(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
@@ -307,6 +314,7 @@ class TestFindProgramReferrals(unittest.TestCase):
     def test_find_program_referrals_multiple_assessments(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -315,6 +323,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 3, 10),
@@ -324,6 +333,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2009, 9, 14),
@@ -333,6 +343,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -373,6 +384,7 @@ class TestFindProgramReferrals(unittest.TestCase):
     def test_find_program_referrals_assessment_after_referral(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -381,6 +393,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 3, 10),
@@ -390,6 +403,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2009, 10, 4),
@@ -430,6 +444,7 @@ class TestFindProgramReferrals(unittest.TestCase):
     def test_find_program_referrals_multiple_supervisions(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -438,6 +453,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
@@ -447,6 +463,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -455,7 +472,8 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=222,
+            external_id="sp2",
             state_code="US_XX",
             start_date=date(2006, 12, 1),
             termination_date=date(2013, 1, 4),
@@ -507,6 +525,7 @@ class TestFindProgramReferrals(unittest.TestCase):
     def test_find_program_referrals_officer_info_us_nd(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_ND",
+            external_id="pa1",
             program_id="PG3",
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
@@ -514,6 +533,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_ND",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
@@ -523,6 +543,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_ND",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -585,6 +606,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
     def test_find_program_participation_events(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             referral_date=date(1999, 10, 3),
@@ -595,6 +617,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(1990, 3, 5),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -631,6 +654,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
     def test_find_program_participation_events_not_actively_participating(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -642,6 +666,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(1990, 3, 5),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -687,6 +712,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
     def test_find_program_participation_events_no_start_date(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             referral_date=date(1999, 10, 3),
@@ -706,6 +732,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
     def test_find_program_participation_events_no_discharge_date(self) -> None:
         program_assignment = NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             sequence_num=0,
             program_id="PG3",
             referral_date=date(1999, 10, 3),
@@ -733,6 +760,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
     def test_referrals_for_supervision_periods(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -742,6 +770,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score_bucket="39+",
@@ -780,6 +809,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
     def test_referrals_for_supervision_periods_same_type(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -789,6 +819,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp2",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -798,6 +829,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score_bucket="39+",
@@ -848,6 +880,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
     def test_referrals_for_supervision_periods_different_types(self) -> None:
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -857,6 +890,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp2",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -866,6 +900,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_score=39,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score_bucket="39+",

@@ -88,6 +88,7 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
     def test_simple_supervision_contacts_normalization(self) -> None:
         sc_1 = StateSupervisionContact.new_with_defaults(
             supervision_contact_id=1234,
+            external_id="c1",
             state_code=StateCode.US_XX.value,
             contact_date=datetime.date(2018, 3, 6),
             contact_type=StateSupervisionContactType.DIRECT,
@@ -95,6 +96,7 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
         )
         sc_2 = StateSupervisionContact.new_with_defaults(
             supervision_contact_id=1234,
+            external_id="c2",
             state_code=StateCode.US_XX.value,
             contact_date=datetime.date(2022, 1, 5),
             contact_type=StateSupervisionContactType.INTERNAL_UNKNOWN,
@@ -111,6 +113,7 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
     def test_supervision_contacts_additional_attributes(self) -> None:
         sc = StateSupervisionContact.new_with_defaults(
             supervision_contact_id=1,
+            external_id="c1",
             state_code=StateCode.US_XX.value,
             contact_date=datetime.date(2018, 3, 6),
             contact_type=StateSupervisionContactType.DIRECT,
@@ -135,6 +138,7 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
     def test_supervision_contacts_additional_attributes_none(self) -> None:
         sc = StateSupervisionContact.new_with_defaults(
             supervision_contact_id=1,
+            external_id="c1",
             state_code=StateCode.US_XX.value,
             contact_date=datetime.date(2018, 3, 6),
             contact_type=StateSupervisionContactType.DIRECT,

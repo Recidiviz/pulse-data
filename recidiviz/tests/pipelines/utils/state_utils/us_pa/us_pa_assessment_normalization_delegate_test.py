@@ -70,6 +70,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     assessment_id=1,
+                    external_id="a1",
                     state_code=STATE_CODE,
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_level=StateAssessmentLevel.LOW,
@@ -95,6 +96,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     assessment_id=1,
+                    external_id="a1",
                     state_code=STATE_CODE,
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_level=None,

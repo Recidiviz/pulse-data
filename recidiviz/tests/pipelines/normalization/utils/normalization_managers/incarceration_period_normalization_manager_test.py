@@ -91,6 +91,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -102,6 +103,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2011, 3, 4),
@@ -113,6 +115,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
@@ -142,6 +145,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -153,6 +157,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         revocation_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2010, 12, 4),
@@ -164,6 +169,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2015, 2, 4),
@@ -202,6 +208,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -236,6 +243,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         temporary_custody_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 1),
@@ -246,6 +254,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         temporary_custody_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -256,7 +265,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         board_hold = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
+            incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 22),
@@ -311,6 +321,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         not_board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -343,6 +354,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -356,6 +368,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -384,6 +397,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -397,6 +411,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -431,6 +446,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -444,6 +460,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -476,6 +493,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -489,6 +507,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -525,6 +544,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -538,6 +558,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -839,6 +860,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         zero_day_start = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -850,7 +872,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         valid_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
+            incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -862,7 +885,8 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         zero_day_end_different_reason = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
+            incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -894,6 +918,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -930,6 +955,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -941,6 +967,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2010, 12, 4),
@@ -952,6 +979,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2010, 12, 10),
@@ -963,6 +991,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4444,
+            external_id="ip4",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2015, 6, 1),
@@ -1038,6 +1067,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -1049,6 +1079,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2010, 12, 4),
@@ -1060,6 +1091,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2010, 12, 10),
@@ -1071,6 +1103,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=4444,
+            external_id="ip4",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2015, 6, 1),
@@ -1199,6 +1232,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         incarceration_period_in_future_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -1213,6 +1247,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_in_future_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -1252,6 +1287,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -1264,6 +1300,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2707,6 +2744,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2720,6 +2758,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2756,6 +2795,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2768,6 +2808,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2803,6 +2844,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2816,6 +2858,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2850,6 +2893,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2863,6 +2907,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2899,6 +2944,7 @@ class TestStatusChangeEdges(unittest.TestCase):
         state_code = "US_XX"
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",
@@ -2912,6 +2958,7 @@ class TestStatusChangeEdges(unittest.TestCase):
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON3",

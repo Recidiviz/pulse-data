@@ -238,6 +238,7 @@ class TestCaseCompliance(unittest.TestCase):
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ND.value,
+                external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
@@ -300,6 +301,7 @@ class TestCaseCompliance(unittest.TestCase):
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ND.value,
+                external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
@@ -360,6 +362,7 @@ class TestCaseCompliance(unittest.TestCase):
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ND.value,
+                external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
@@ -419,6 +422,7 @@ class TestCaseCompliance(unittest.TestCase):
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
@@ -431,12 +435,14 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -498,6 +504,7 @@ class TestCaseCompliance(unittest.TestCase):
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
@@ -510,6 +517,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 contact_method=StateSupervisionContactMethod.VIRTUAL,
@@ -517,6 +525,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c2",
                 contact_date=date(2018, 4, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 contact_method=StateSupervisionContactMethod.VIRTUAL,
@@ -624,6 +633,7 @@ class TestCaseCompliance(unittest.TestCase):
         assessments = [
             NormalizedStateAssessment.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="a1",
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_score=33,
                 assessment_level=StateAssessmentLevel.HIGH,
@@ -636,6 +646,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c1",
                 contact_date=date(2018, 3, 31),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -750,6 +761,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -757,6 +769,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -818,6 +831,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -825,6 +839,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -885,6 +900,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -892,6 +908,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -969,6 +986,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts_1 = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c1",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -976,6 +994,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c2",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -986,6 +1005,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts_2 = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c3",
                 contact_date=date(2019, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -993,6 +1013,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c4",
                 contact_date=date(2019, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1106,6 +1127,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts_1 = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c1",
                 contact_date=date(2019, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1113,6 +1135,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c2",
                 contact_date=date(2019, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1123,6 +1146,7 @@ class TestCaseCompliance(unittest.TestCase):
         supervision_contacts_2 = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c3",
                 contact_date=date(2018, 3, 6),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1130,6 +1154,7 @@ class TestCaseCompliance(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ID.value,
+                external_id="c4",
                 contact_date=date(2018, 4, 30),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1227,6 +1252,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1342,6 +1368,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1390,6 +1417,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1437,6 +1465,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1487,6 +1516,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1537,6 +1567,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1586,6 +1617,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1634,6 +1666,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1788,6 +1821,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1836,6 +1870,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1884,6 +1919,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1933,6 +1969,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[StateGender.FEMALE] + 1,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -1982,6 +2019,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=SEX_OFFENSE_LSIR_MINIMUM_SCORE[StateGender.FEMALE] - 1,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -2108,6 +2146,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             sequence_num=0,
@@ -2153,6 +2192,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             sequence_num=0,
@@ -2198,6 +2238,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=100,
             assessment_date=date(2010, 2, 2),

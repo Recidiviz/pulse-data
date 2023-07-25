@@ -72,11 +72,13 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="INI",  # Should be included
@@ -93,11 +95,13 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="ITR",  # Should be included
@@ -114,11 +118,13 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="SUP",  # Should not be included
@@ -131,6 +137,7 @@ class TestFilterViolationResponses(unittest.TestCase):
         expected_output = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,
             )
@@ -142,11 +149,13 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="SUP",  # Should be included
@@ -159,11 +168,13 @@ class TestFilterViolationResponses(unittest.TestCase):
         expected_output = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="SUP",  # Should be included
@@ -176,12 +187,14 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="SUP",  # Should not be included
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="HOF",  # Should not be included
@@ -199,6 +212,7 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="XXX",  # Not one we expect to see
@@ -214,11 +228,13 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="SUP",  # Should not be included
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,
             ),
@@ -230,6 +246,7 @@ class TestFilterViolationResponses(unittest.TestCase):
         expected_output: List[StateSupervisionViolationResponse] = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,
             )
@@ -248,6 +265,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="sv1",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -273,6 +291,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="sv1",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -303,6 +322,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="sv1",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -333,6 +353,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="sv1",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -363,7 +384,10 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = StateSupervisionViolation.new_with_defaults(state_code=_STATE_CODE)
+        violation = StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="sv1",
+        )
 
         # Act
         type_subtype_strings = (

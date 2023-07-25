@@ -57,6 +57,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     def test_find_most_recent_applicable_assessment_LSIR(self):
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
             assessment_score=17,
@@ -66,6 +67,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             assessment_date=date(2018, 4, 29),
             assessment_score=17,
@@ -89,6 +91,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     def test_find_most_recent_applicable_assessment_LSIR_no_matches(self):
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             assessment_date=date(2018, 4, 29),
             assessment_score=17,
@@ -118,6 +121,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     ):
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             assessment_date=date(2018, 4, 29),
             assessment_score=17,
@@ -139,6 +143,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
     def test_find_most_recent_applicable_assessment_no_assessment_score(self):
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_date=date(2018, 4, 29),
             assessment_score=None,
@@ -162,6 +167,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         lsir_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=state_code,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
             assessment_score=17,
@@ -171,6 +177,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         oras_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=state_code,
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             assessment_date=date(2018, 4, 29),
             assessment_score=17,
@@ -196,6 +203,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         lsir_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=state_code,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
             assessment_score=17,
@@ -205,6 +213,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         oras_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=state_code,
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             assessment_date=date(2018, 4, 29),
             assessment_score=17,
@@ -230,6 +239,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         lsir_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=state_code,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
             assessment_score=17,
@@ -239,6 +249,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
 
         oras_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=state_code,
+            external_id="a2",
             assessment_date=date(2018, 4, 29),
             assessment_score=17,
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,

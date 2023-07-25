@@ -56,6 +56,7 @@ class TestUsMoIncarcerationNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_MO.value,
+            external_id="ip1",
             release_date=date(2009, 1, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="40I2000",
@@ -63,6 +64,7 @@ class TestUsMoIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_MO.value,
+            external_id="ip2",
             admission_date=date(2009, 1, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="40I2000",
@@ -85,6 +87,7 @@ class TestUsMoIncarcerationNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_MO.value,
+            external_id="ip1",
             release_date=date(2009, 1, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="40I2000",
@@ -92,6 +95,7 @@ class TestUsMoIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_MO.value,
+            external_id="ip2",
             admission_date=date(2009, 2, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="40I2000",
@@ -114,6 +118,7 @@ class TestUsMoIncarcerationNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_MO.value,
+            external_id="ip1",
             release_date=date(2009, 1, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="40I2000",
@@ -121,6 +126,7 @@ class TestUsMoIncarcerationNormalizationDelegate(unittest.TestCase):
         )
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_MO.value,
+            external_id="ip2",
             admission_date=date(2009, 2, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text="40I2000",

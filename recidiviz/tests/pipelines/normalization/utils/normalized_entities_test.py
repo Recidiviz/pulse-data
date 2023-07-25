@@ -98,9 +98,11 @@ class TestNormalizedEntities(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             _ = NormalizedStateSupervisionViolationResponse(
                 state_code=STATE_CODE,
+                external_id="external_id",
                 sequence_num=1,
                 supervision_violation=state_entities.StateSupervisionViolation(
                     state_code=STATE_CODE,
+                    external_id="external_id",
                 ),
             )
 
@@ -119,6 +121,7 @@ class TestNormalizedEntities(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             _ = NormalizedStateSupervisionPeriod(
                 state_code=STATE_CODE,
+                external_id="external_id",
                 sequence_num=1,
                 case_type_entries=[
                     state_entities.StateSupervisionCaseTypeEntry(
@@ -145,6 +148,7 @@ class TestNormalizedEntities(unittest.TestCase):
         ):
             _ = NormalizedStateSupervisionPeriod(
                 state_code=STATE_CODE,
+                external_id="external_id",
                 sequence_num=1,
                 case_type_entries=NormalizedStateSupervisionCaseTypeEntry(  # type: ignore[arg-type]
                     state_code=STATE_CODE,
@@ -154,7 +158,9 @@ class TestNormalizedEntities(unittest.TestCase):
 
     def test_ref_is_unset(self) -> None:
         # Assert that this does not fail when case_type_entries is unset
-        _ = NormalizedStateSupervisionPeriod(state_code=STATE_CODE, sequence_num=1)
+        _ = NormalizedStateSupervisionPeriod(
+            state_code=STATE_CODE, external_id="external_id", sequence_num=1
+        )
 
     def test_new_fields_are_all_flat_fields(self) -> None:
         """Tests that all attributes added to NormalizedStateEntity classes are flat

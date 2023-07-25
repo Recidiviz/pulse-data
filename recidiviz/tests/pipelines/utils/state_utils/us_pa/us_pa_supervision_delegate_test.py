@@ -90,6 +90,7 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_PA",
             start_date=date(2018, 5, 1),
             termination_date=date(2018, 5, 15),
@@ -102,6 +103,7 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
         incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
             state_code="US_PA",
             incarceration_sentence_id=123,
+            external_id="is1",
             effective_date=date(2018, 5, 1),
             projected_max_release_date=date(2018, 5, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -121,6 +123,7 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_PA",
             start_date=date(2018, 5, 1),
             termination_date=date(2018, 5, 15),
@@ -133,6 +136,7 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
         incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
             state_code="US_PA",
             incarceration_sentence_id=123,
+            external_id="is1",
             effective_date=date(2018, 4, 1),
             completion_date=date(2018, 4, 30),
             projected_max_release_date=date(2018, 5, 10),
@@ -154,6 +158,7 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
         latest date."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_PA",
             start_date=date(2018, 5, 1),
             termination_date=date(2018, 5, 15),
@@ -166,6 +171,7 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
         incarceration_sentence = NormalizedStateIncarcerationSentence.new_with_defaults(
             state_code="US_PA",
             incarceration_sentence_id=123,
+            external_id="is1",
             effective_date=date(2018, 5, 1),
             projected_max_release_date=date(2018, 5, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -173,7 +179,8 @@ class TestUsPaSupervisionDelegate(unittest.TestCase):
         incarceration_sentence_2 = (
             NormalizedStateIncarcerationSentence.new_with_defaults(
                 state_code="US_PA",
-                incarceration_sentence_id=123,
+                incarceration_sentence_id=456,
+                external_id="is2",
                 effective_date=date(2018, 5, 1),
                 projected_max_release_date=date(2018, 6, 10),
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,

@@ -200,6 +200,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
+            external_id="sp1",
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -264,6 +265,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_ID",
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
@@ -416,6 +418,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
+            external_id="sp1",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
@@ -453,6 +456,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
+            external_id="sp1",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
@@ -488,6 +492,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_us_id_sanction_admission_shock_incarceration(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
+            external_id="sp1",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
@@ -518,6 +523,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
+            external_id="sp1",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
@@ -579,6 +585,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
+            external_id="sp1",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
@@ -640,6 +647,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
+            external_id="sp1",
             supervision_period_id=111,
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
@@ -751,6 +759,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=111,
+            external_id="sp1",
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,

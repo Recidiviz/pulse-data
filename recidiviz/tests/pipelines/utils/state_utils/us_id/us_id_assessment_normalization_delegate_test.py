@@ -81,6 +81,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     assessment_id=1,
+                    external_id="a1",
                     state_code=STATE_CODE,
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_score=score,
@@ -120,6 +121,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     assessment_id=1,
+                    external_id="a1",
                     state_code=STATE_CODE,
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_score=score,
@@ -147,6 +149,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     assessment_id=1,
+                    external_id="a1",
                     state_code=STATE_CODE,
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_score=10,
@@ -174,6 +177,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     assessment_id=1,
+                    external_id="a1",
                     state_code=STATE_CODE,
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_score=None,
@@ -181,6 +185,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                 ),
                 StateAssessment(
                     assessment_id=2,
+                    external_id="a2",
                     state_code=STATE_CODE,
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_score=None,
@@ -217,6 +222,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     assessment_id=1,
+                    external_id="a1",
                     state_code=STATE_CODE,
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_score=10,

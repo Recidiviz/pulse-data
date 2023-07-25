@@ -163,6 +163,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
     def test_get_commitment_from_supervision_details(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -209,6 +210,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         terminated_supervision_period = (
             NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+                external_id="sp1",
                 sequence_num=0,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
@@ -221,6 +223,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         overlapping_supervision_period = (
             NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_2,
+                external_id="sp2",
                 sequence_num=1,
                 state_code="US_XX",
                 start_date=date(2018, 5, 19),
@@ -290,6 +293,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         terminated_supervision_period = (
             NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+                external_id="sp1",
                 sequence_num=0,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
@@ -303,6 +307,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         overlapping_supervision_period = (
             NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_2,
+                external_id="sp2",
                 sequence_num=1,
                 state_code="US_XX",
                 start_date=date(2018, 5, 19),
@@ -357,6 +362,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
     ) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
             state_code="US_ND",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -399,6 +405,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
     def test_get_commitment_from_supervision_details_us_nd(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
             state_code="US_ND",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -556,6 +563,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             admission_date=date(2020, 1, 1),
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
@@ -563,6 +571,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         pre_commitment_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
             sequence_num=0,
             state_code="US_XX",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -574,6 +583,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         supervision_period_while_in_prison = (
             NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=222,
+                external_id="sp2",
                 sequence_num=1,
                 state_code="US_XX",
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -611,6 +621,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
     ) -> None:
         pre_commitment_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2016, 3, 5),
             termination_date=date(2016, 5, 19),

@@ -204,6 +204,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            external_id="ip1",
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
@@ -216,6 +217,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
+            external_id="ip2",
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
@@ -228,6 +230,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         subsequent_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
+            external_id="ip3",
             state_code=state_code,
             county_code="124",
             facility="San Quentin",
@@ -238,6 +241,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=fake_supervision_period_id,
+            external_id="sp1",
             state_code=state_code,
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -251,6 +255,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=1122,
+            external_id="ss1",
             state_code=state_code,
             supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
             effective_date=date(2015, 3, 1),
@@ -262,6 +267,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=123,
+            external_id="is1",
             state_code=state_code,
             person_id=fake_person_id,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -274,6 +280,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
+            external_id="a1",
             state_code=state_code,
             assessment_date=date(2015, 3, 19),
             assessment_type=StateAssessmentType.LSIR,
@@ -282,6 +289,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_contact = schema.StateSupervisionContact(
             state_code=state_code,
+            external_id="c1",
             contact_date=supervision_period.start_date,
             person_id=fake_person_id,
         )
@@ -581,6 +589,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -594,6 +603,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -608,6 +618,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         # This probation supervision period ended in a revocation
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
+            external_id="sp1",
             state_code="US_XX",
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -646,6 +657,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         ssvr = schema.StateSupervisionViolationResponse(
             supervision_violation_response_id=fake_svr_id,
+            external_id="svr1",
             state_code="US_XX",
             person_id=fake_person_id,
             supervision_violation_id=fake_violation_id,
@@ -657,6 +669,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         violation_report = schema.StateSupervisionViolationResponse(
             supervision_violation_response_id=99999,
+            external_id="svr2",
             state_code="US_XX",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             is_draft=False,
@@ -672,6 +685,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_violation = schema.StateSupervisionViolation(
             supervision_violation_id=fake_violation_id,
+            external_id="sv1",
             state_code="US_XX",
             person_id=fake_person_id,
             supervision_violation_responses=[violation_report, ssvr],
@@ -685,6 +699,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         # This incarceration period was due to a probation revocation
         revocation_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -696,6 +711,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
+            external_id="a1",
             state_code="US_XX",
             assessment_date=date(2015, 3, 19),
             assessment_type=StateAssessmentType.LSIR,
@@ -873,6 +889,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=123,
+            external_id="is1",
             state_code="US_XX",
             person_id=fake_person_id_1,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -949,6 +966,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
+            external_id="a1",
             state_code="US_XX",
             assessment_date=date(2015, 3, 19),
             assessment_type=StateAssessmentType.LSIR,
@@ -1122,6 +1140,7 @@ class TestClassifyEvents(unittest.TestCase):
         supervision_period_termination_date = date(2015, 5, 29)
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
+            external_id="sp1",
             state_code="US_XX",
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1152,11 +1171,13 @@ class TestClassifyEvents(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
             incarceration_sentence_id=123,
+            external_id="is1",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 10),

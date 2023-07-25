@@ -199,6 +199,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             county_code="124",
@@ -212,6 +213,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
+            external_id="sp1",
             state_code=state_code,
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
@@ -226,6 +228,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             county_code="124",
@@ -240,6 +243,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         subsequent_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             county_code="124",
@@ -252,6 +256,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
+            external_id="a1",
             state_code=state_code,
             assessment_date=date(2015, 3, 19),
             assessment_type=StateAssessmentType.LSIR,
@@ -594,6 +599,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
+            external_id="sp1",
             state_code=state_code,
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -610,6 +616,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             facility="PRISON XX",

@@ -151,6 +151,7 @@ class TestViolationPipeline(unittest.TestCase):
         )
         violation_response = schema.StateSupervisionViolationResponse(
             state_code="US_XX",
+            external_id="svr1",
             supervision_violation_response_id=1234,
             response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2021, 1, 4),
@@ -167,6 +168,7 @@ class TestViolationPipeline(unittest.TestCase):
         )
         violation = schema.StateSupervisionViolation(
             state_code="US_XX",
+            external_id="sv1",
             supervision_violation_id=fake_supervision_violation_id,
             violation_date=date(2021, 1, 1),
             is_violent=False,
@@ -325,6 +327,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
         )
         violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_XX",
+            external_id="svr1",
             response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2021, 1, 4),
             is_draft=False,
@@ -333,6 +336,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
         violation = (
             normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_XX",
+                external_id="sv1",
                 supervision_violation_id=self.fake_supervision_violation_id,
                 violation_date=date(2021, 1, 1),
                 is_violent=False,
@@ -421,6 +425,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
         violation = (
             normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code="US_XX",
+                external_id="sv1",
                 supervision_violation_id=self.fake_supervision_violation_id,
                 violation_date=date(2021, 1, 1),
                 is_violent=False,

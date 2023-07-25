@@ -53,7 +53,9 @@ class TestResponsesOnMostRecentResponseDate(unittest.TestCase):
         for response_date in response_dates:
             violation_responses.append(
                 StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX", response_date=response_date
+                    state_code="US_XX",
+                    external_id=f"external_id_{response_date.isoformat()}",
+                    response_date=response_date,
                 )
             )
 
@@ -106,16 +108,19 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                 response_date=datetime.date(2000, 1, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1997, 3, 1),
             ),
@@ -131,11 +136,13 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
             [
                 StateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
+                    external_id="svr2",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(1998, 2, 1),
                 ),
                 StateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
+                    external_id="svr3",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(1997, 3, 1),
                 ),
@@ -167,16 +174,19 @@ class TestViolationResponsesInWindow(unittest.TestCase):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2010, 1, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2017, 3, 1),
             ),
@@ -195,6 +205,7 @@ class TestViolationResponsesInWindow(unittest.TestCase):
             [
                 StateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
+                    external_id="svr1",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(2010, 1, 1),
                 )
@@ -206,16 +217,19 @@ class TestViolationResponsesInWindow(unittest.TestCase):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2010, 1, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1990, 2, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2017, 3, 1),
             ),
@@ -233,11 +247,13 @@ class TestViolationResponsesInWindow(unittest.TestCase):
             [
                 StateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
+                    external_id="svr2",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(1990, 2, 1),
                 ),
                 StateSupervisionViolationResponse.new_with_defaults(
                     state_code="US_XX",
+                    external_id="svr1",
                     response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                     response_date=datetime.date(2010, 1, 1),
                 ),
@@ -249,16 +265,19 @@ class TestViolationResponsesInWindow(unittest.TestCase):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2000, 1, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2019, 3, 1),
             ),
@@ -279,16 +298,19 @@ class TestViolationResponsesInWindow(unittest.TestCase):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(2000, 1, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1997, 3, 1),
             ),

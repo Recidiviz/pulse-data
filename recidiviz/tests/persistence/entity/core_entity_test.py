@@ -49,7 +49,8 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual(
             "state_supervision_violation_response",
             entities.StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX"
+                state_code="US_XX",
+                external_id="svr1",
             ).get_entity_name(),
         )
 
@@ -71,7 +72,9 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual(
             901,
             entities.StateSupervisionViolationResponse.new_with_defaults(
-                supervision_violation_response_id=901, state_code="US_XX"
+                supervision_violation_response_id=901,
+                state_code="US_XX",
+                external_id="svr1",
             ).get_id(),
         )
         self.assertIsNone(
@@ -233,7 +236,9 @@ class TestCoreEntity(unittest.TestCase):
 
     def test_isDefaultEnum(self) -> None:
         entity = entities.StateCharge.new_with_defaults(
-            state_code="US_XX", status=entities.StateChargeStatus.PRESENT_WITHOUT_INFO
+            state_code="US_XX",
+            external_id="c1",
+            status=entities.StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
         if not isinstance(db_entity, schema.StateCharge):
@@ -250,6 +255,7 @@ class TestCoreEntity(unittest.TestCase):
     def test_isDefaultEnum_incarceration_type(self) -> None:
         entity = entities.StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="is1",
             incarceration_type=entities.StateIncarcerationType.STATE_PRISON,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )

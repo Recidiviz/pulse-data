@@ -67,6 +67,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_ND",
             incarceration_period_id=111,
+            external_id="ip1",
             admission_date=admission_date,
             admission_reason=admission_reason,
             admission_reason_raw_text=admission_reason_raw_text,

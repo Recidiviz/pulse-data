@@ -172,13 +172,19 @@ def test_get_required_state_specific_delegates() -> None:
             ],
             entity_kwargs={
                 StateAssessment.__name__: [
-                    StateAssessment.new_with_defaults(state_code=state.value)
+                    StateAssessment.new_with_defaults(
+                        state_code=state.value,
+                        external_id="a1",
+                    )
                 ],
                 StatePerson.__name__: [
                     StatePerson.new_with_defaults(state_code=state.value)
                 ],
                 StateIncarcerationPeriod.__name__: [
-                    StateIncarcerationPeriod.new_with_defaults(state_code=state.value)
+                    StateIncarcerationPeriod.new_with_defaults(
+                        state_code=state.value,
+                        external_id="ip1",
+                    )
                 ],
                 StateStaffSupervisorPeriod.__name__: [
                     StateStaffSupervisorPeriod.new_with_defaults(
@@ -195,7 +201,10 @@ def test_get_required_state_specific_delegates() -> None:
             },
         )
 
-        test_sp = StateSupervisionPeriod.new_with_defaults(state_code=state.value)
+        test_sp = StateSupervisionPeriod.new_with_defaults(
+            state_code=state.value,
+            external_id="sp1",
+        )
 
         get_state_specific_case_compliance_manager(
             person=None,

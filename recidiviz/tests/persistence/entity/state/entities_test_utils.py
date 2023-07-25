@@ -222,10 +222,12 @@ def generate_full_graph_state_person(
     assessment_agent = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
         state_code="US_XX",
+        external_id="assessment_agent",
         full_name="MR SIR",
     )
 
     assessment1 = entities.StateAssessment.new_with_defaults(
+        external_id="a1",
         assessment_class=StateAssessmentClass.RISK,
         assessment_class_raw_text=None,
         assessment_type=StateAssessmentType.LSIR,
@@ -242,6 +244,7 @@ def generate_full_graph_state_person(
     )
 
     assessment2 = entities.StateAssessment.new_with_defaults(
+        external_id="a2",
         assessment_class=StateAssessmentClass.RISK,
         assessment_class_raw_text=None,
         assessment_type=StateAssessmentType.LSIR,
@@ -260,6 +263,7 @@ def generate_full_graph_state_person(
     person.assessments = [assessment1, assessment2]
 
     program_assignment_agent = StateAgent.new_with_defaults(
+        external_id="program_assignment_agent",
         agent_type=StateAgentType.SUPERVISION_OFFICER,
         state_code="US_XX",
         full_name='{"full_name": "AGENT PO"}',
@@ -297,6 +301,7 @@ def generate_full_graph_state_person(
     person.program_assignments = [program_assignment, program_assignment2]
 
     incident_outcome = entities.StateIncarcerationIncidentOutcome.new_with_defaults(
+        external_id="io1",
         outcome_type=StateIncarcerationIncidentOutcomeType.WARNING,
         outcome_type_raw_text="WARNING",
         date_effective=datetime.date(year=2003, month=8, day=20),
@@ -306,6 +311,7 @@ def generate_full_graph_state_person(
     )
 
     incarceration_incident = entities.StateIncarcerationIncident.new_with_defaults(
+        external_id="i1",
         incident_type=StateIncarcerationIncidentType.CONTRABAND,
         incident_type_raw_text="CONTRABAND",
         incident_date=datetime.date(year=2003, month=8, day=10),
@@ -319,6 +325,7 @@ def generate_full_graph_state_person(
     person.incarceration_incidents = [incarceration_incident]
 
     supervision_violation = entities.StateSupervisionViolation.new_with_defaults(
+        external_id="sv1",
         violation_date=datetime.date(year=2004, month=9, day=1),
         state_code="US_XX",
         is_violent=False,
@@ -341,6 +348,7 @@ def generate_full_graph_state_person(
     person.supervision_violations = [supervision_violation]
 
     supervising_officer = entities.StateAgent.new_with_defaults(
+        external_id="supervising_officer",
         agent_type=StateAgentType.SUPERVISION_OFFICER,
         state_code="US_XX",
         full_name="MS MADAM",
@@ -368,12 +376,14 @@ def generate_full_graph_state_person(
     person.supervision_contacts = [supervision_contact]
 
     supervision_officer_agent = entities.StateAgent.new_with_defaults(
+        external_id="supervision_officer_agent",
         agent_type=StateAgentType.SUPERVISION_OFFICER,
         state_code="US_XX",
         full_name="JOHN SMITH",
     )
 
     supervision_violation_response = entities.StateSupervisionViolationResponse.new_with_defaults(
+        external_id="svr1",
         response_type=StateSupervisionViolationResponseType.CITATION,
         response_date=datetime.date(year=2004, month=9, day=2),
         state_code="US_XX",
@@ -426,6 +436,7 @@ def generate_full_graph_state_person(
     person.supervision_sentences = [supervision_sentence]
 
     incarceration_period = entities.StateIncarcerationPeriod.new_with_defaults(
+        external_id="ip1",
         incarceration_type=StateIncarcerationType.STATE_PRISON,
         incarceration_type_raw_text=None,
         admission_date=datetime.date(year=2003, month=8, day=1),
@@ -547,6 +558,7 @@ def generate_full_graph_state_person(
     )
 
     supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
+        external_id="sp1",
         supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
         supervision_type_raw_text="PAROLE",
         start_date=datetime.date(year=2004, month=8, day=1),

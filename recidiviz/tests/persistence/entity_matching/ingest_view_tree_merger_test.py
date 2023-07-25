@@ -17,7 +17,6 @@
 """Tests for the IngestViewTreeMerger class."""
 import datetime
 import unittest
-from copy import deepcopy
 from itertools import permutations
 from typing import List, Union
 
@@ -33,15 +32,12 @@ from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
 )
 from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
     make_incarceration_incident,
-    make_incarceration_incident_outcome,
-    make_incarceration_sentence,
     make_person,
     make_person_external_id,
     make_person_race,
     make_staff,
     make_staff_external_id,
     make_staff_role_period,
-    make_state_charge,
 )
 
 
@@ -246,109 +242,6 @@ class TestIngestViewTreeMerger(unittest.TestCase):
 
         self.assertCountEqual(expected_staff, merge_result)
 
-    def test_merge_placeholder_with_different_children(self) -> None:
-        ingested_persons = [
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_incidents=[
-                    # Placeholder incident
-                    make_incarceration_incident(
-                        incarceration_incident_outcomes=[
-                            make_incarceration_incident_outcome(external_id="ID_1")
-                        ]
-                    )
-                ],
-            ),
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_incidents=[
-                    # Placeholder incident
-                    make_incarceration_incident(
-                        incarceration_incident_outcomes=[
-                            make_incarceration_incident_outcome(external_id="ID_2")
-                        ]
-                    )
-                ],
-            ),
-        ]
-        expected_people = [
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_incidents=[
-                    # Placeholder incidents merged
-                    make_incarceration_incident(
-                        incarceration_incident_outcomes=[
-                            make_incarceration_incident_outcome(external_id="ID_1"),
-                            make_incarceration_incident_outcome(external_id="ID_2"),
-                        ]
-                    ),
-                ],
-            ),
-        ]
-
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
-
-        merge_result = tree_merger.merge(ingested_persons)
-
-        self.assertCountEqual(expected_people, merge_result)
-
-    def test_merge_placeholder_with_matching_children(self) -> None:
-        ingested_persons = [
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_incidents=[
-                    # Placeholder incident
-                    make_incarceration_incident(
-                        incarceration_incident_outcomes=[
-                            make_incarceration_incident_outcome(external_id="ID_1")
-                        ]
-                    )
-                ],
-            ),
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_incidents=[
-                    # Placeholder incident
-                    make_incarceration_incident(
-                        incarceration_incident_outcomes=[
-                            make_incarceration_incident_outcome(external_id="ID_1")
-                        ]
-                    )
-                ],
-            ),
-        ]
-        expected_people = [
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_incidents=[
-                    # Placeholder incident
-                    make_incarceration_incident(
-                        incarceration_incident_outcomes=[
-                            make_incarceration_incident_outcome(external_id="ID_1")
-                        ]
-                    )
-                ],
-            )
-        ]
-
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
-
-        merge_result = tree_merger.merge(ingested_persons)
-
-        self.assertCountEqual(expected_people, merge_result)
-
     def test_merge_people_with_demographic_info(self) -> None:
         ingested_persons = [
             make_person(
@@ -385,99 +278,6 @@ class TestIngestViewTreeMerger(unittest.TestCase):
                 incarceration_incidents=[
                     make_incarceration_incident(external_id="ID_1"),
                     make_incarceration_incident(external_id="ID_2"),
-                ],
-            ),
-        ]
-
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
-
-        merge_result = tree_merger.merge(ingested_persons)
-
-        self.assertCountEqual(expected_people, merge_result)
-
-    def test_merge_placeholder_chain_with_one_to_one_relationships(self) -> None:
-        ingested_persons = [
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_sentences=[
-                    make_incarceration_sentence(
-                        external_id="ID_1",
-                        charges=[
-                            # Placeholder charge
-                            make_state_charge()
-                        ],
-                    )
-                ],
-            ),
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_sentences=[
-                    make_incarceration_sentence(
-                        external_id="ID_1",
-                        charges=[
-                            # Placeholder charge
-                            make_state_charge()
-                        ],
-                    )
-                ],
-            ),
-        ]
-        expected_people = [deepcopy(ingested_persons[0])]
-
-        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
-
-        merge_result = tree_merger.merge(ingested_persons)
-
-        self.assertCountEqual(expected_people, merge_result)
-
-    def test_merge_non_placeholder_children_without_external_ids(self) -> None:
-        ingested_persons = [
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_sentences=[
-                    make_incarceration_sentence(
-                        external_id="ID_1",
-                        charges=[
-                            # Placeholder charge
-                            make_state_charge()
-                        ],
-                    )
-                ],
-            ),
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_sentences=[
-                    make_incarceration_sentence(
-                        external_id="ID_1",
-                        charges=[
-                            # Placeholder charge
-                            make_state_charge()
-                        ],
-                    )
-                ],
-            ),
-        ]
-        expected_people = [
-            make_person(
-                external_ids=[
-                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                ],
-                incarceration_sentences=[
-                    make_incarceration_sentence(
-                        external_id="ID_1",
-                        charges=[
-                            # Placeholder charge
-                            make_state_charge()
-                        ],
-                    )
                 ],
             ),
         ]

@@ -179,10 +179,12 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
                 incarceration_period_id=111,
+                external_id="ip1",
             ),
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
                 incarceration_period_id=222,
+                external_id="ip2",
             ),
         ]
 
@@ -204,12 +206,14 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
                 incarceration_period_id=111,
+                external_id="ip1",
                 sequence_num=0,
                 purpose_for_incarceration_subtype="XYZ",
             ),
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
                 incarceration_period_id=222,
+                external_id="ip2",
                 sequence_num=1,
                 purpose_for_incarceration_subtype="AAA",
             ),
@@ -258,13 +262,17 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         self,
     ) -> None:
         charge = entities.StateCharge.new_with_defaults(
-            state_code="US_XX", status=StateChargeStatus.PRESENT_WITHOUT_INFO
+            state_code="US_XX",
+            external_id="c1",
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
         early_discharge = entities.StateEarlyDischarge.new_with_defaults(
             state_code="US_XX",
+            external_id="ed1",
         )
         ss1 = entities.StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="ss1",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentence_id=1,
             charges=[charge],
@@ -272,6 +280,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         )
         ss2 = entities.StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="ss2",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentence_id=2,
             charges=[charge],
@@ -293,11 +302,16 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
 
         expected_charge = FakeNormalizedStateCharge(
             state_code="US_XX",
+            external_id="c1",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
         )
-        expected_early_discharge = FakeNormalizedStateEarlyDischarge(state_code="US_XX")
+        expected_early_discharge = FakeNormalizedStateEarlyDischarge(
+            state_code="US_XX",
+            external_id="ed1",
+        )
         expected_ss1 = FakeNormalizedStateSupervisionSentence(
             state_code="US_XX",
+            external_id="ss1",
             supervision_sentence_id=1,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[expected_charge],
@@ -305,6 +319,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         )
         expected_ss2 = FakeNormalizedStateSupervisionSentence(
             state_code="US_XX",
+            external_id="ss2",
             supervision_sentence_id=2,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[expected_charge],
@@ -340,6 +355,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
                 incarceration_period_id=111,
+                external_id="ip1",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 admission_date=datetime.date(2000, 1, 1),
             )
@@ -361,7 +377,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                     "county_code": None,
                     "custodial_authority": None,
                     "custodial_authority_raw_text": None,
-                    "external_id": None,
+                    "external_id": "ip1",
                     "facility": None,
                     "housing_unit": None,
                     "housing_unit_category": None,
@@ -409,7 +425,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             (
                 StateSupervisionViolation.__name__,
                 {
-                    "external_id": None,
+                    "external_id": "sv1",
                     "is_sex_offense": None,
                     "is_violent": False,
                     "person_id": 123,
@@ -456,7 +472,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 {
                     "deciding_body_type": "SUPERVISION_OFFICER",
                     "deciding_body_type_raw_text": None,
-                    "external_id": None,
+                    "external_id": "svr1",
                     "is_draft": None,
                     "person_id": 123,
                     "response_date": datetime.date(2004, 9, 2),
@@ -484,7 +500,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 {
                     "deciding_body_type": "SUPERVISION_OFFICER",
                     "deciding_body_type_raw_text": None,
-                    "external_id": None,
+                    "external_id": "svr2",
                     "is_draft": None,
                     "person_id": 123,
                     "response_date": datetime.date(2004, 10, 3),
@@ -514,24 +530,28 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
 
         supervision_sentence1 = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="ss1",
             supervision_sentence_id=111,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence2 = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="ss2",
             supervision_sentence_id=222,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence3 = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="ss3",
             supervision_sentence_id=333,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
         charge1 = StateCharge.new_with_defaults(
             charge_id=1,
+            external_id="c1",
             state_code="US_XX",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence1, supervision_sentence2],
@@ -539,6 +559,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
 
         charge2 = StateCharge.new_with_defaults(
             charge_id=2,
+            external_id="c2",
             state_code="US_XX",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence1, supervision_sentence2],
@@ -546,6 +567,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
 
         early_discharge = StateEarlyDischarge.new_with_defaults(
             early_discharge_id=1,
+            external_id="ed1",
             state_code="US_XX",
             supervision_sentence=supervision_sentence1,
         )
@@ -594,7 +616,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 StateSupervisionSentence.__name__,
                 {
                     "supervision_sentence_id": 111,
-                    "external_id": None,
+                    "external_id": "ss1",
                     "status": "PRESENT_WITHOUT_INFO",
                     "status_raw_text": None,
                     "supervision_type": None,
@@ -633,7 +655,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 StateSupervisionSentence.__name__,
                 {
                     "supervision_sentence_id": 222,
-                    "external_id": None,
+                    "external_id": "ss2",
                     "status": "PRESENT_WITHOUT_INFO",
                     "status_raw_text": None,
                     "supervision_type": None,
@@ -656,7 +678,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 StateCharge.__name__,
                 {
                     "charge_id": 1,
-                    "external_id": None,
+                    "external_id": "c1",
                     "status": "PRESENT_WITHOUT_INFO",
                     "status_raw_text": None,
                     "offense_date": None,
@@ -688,7 +710,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 StateCharge.__name__,
                 {
                     "charge_id": 2,
-                    "external_id": None,
+                    "external_id": "c2",
                     "status": "PRESENT_WITHOUT_INFO",
                     "status_raw_text": None,
                     "offense_date": None,
@@ -728,7 +750,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                     "decision_status": None,
                     "decision_status_raw_text": None,
                     "early_discharge_id": 1,
-                    "external_id": None,
+                    "external_id": "ed1",
                     "incarceration_sentence_id": None,
                     "person_id": 123,
                     "request_date": None,
@@ -742,7 +764,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 StateSupervisionSentence.__name__,
                 {
                     "supervision_sentence_id": 333,
-                    "external_id": None,
+                    "external_id": "ss3",
                     "status": "PRESENT_WITHOUT_INFO",
                     "status_raw_text": None,
                     "supervision_type": None,

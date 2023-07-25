@@ -58,6 +58,7 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             ),
@@ -74,16 +75,19 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,  # Should not be included
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr3",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
             ),
@@ -95,6 +99,7 @@ class TestFilterViolationResponses(unittest.TestCase):
         expected_output = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             )
@@ -106,11 +111,13 @@ class TestFilterViolationResponses(unittest.TestCase):
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr1",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.CITATION,  # Should not be included
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_STATE_CODE,
+                external_id="svr2",
                 response_date=date(2021, 1, 1),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,  # Should not be included
             ),

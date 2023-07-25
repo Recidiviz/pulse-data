@@ -34,7 +34,9 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
     def test_person_and_kwargs_for_identifier(self) -> None:
         person_input = StatePerson.new_with_defaults(state_code="US_XX", person_id=123)
 
-        assessment = StateAssessment.new_with_defaults(state_code="US_XX")
+        assessment = StateAssessment.new_with_defaults(
+            state_code="US_XX", external_id="a1"
+        )
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
             StatePerson.__name__: iter([person_input]),
@@ -57,7 +59,9 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
             state_code="US_XX", person_id=123
         )
 
-        assessment = StateAssessment.new_with_defaults(state_code="US_XX")
+        assessment = StateAssessment.new_with_defaults(
+            state_code="US_XX", external_id="a1"
+        )
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
             # There should never be two StatePerson entities with the same person_id. This should fail loudly.
@@ -69,7 +73,9 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
             _ = person_and_kwargs_for_identifier(arg_to_entities_map)
 
     def test_person_and_kwargs_for_identifier_no_person(self) -> None:
-        assessment = StateAssessment.new_with_defaults(state_code="US_XX")
+        assessment = StateAssessment.new_with_defaults(
+            state_code="US_XX", external_id="a1"
+        )
 
         arg_to_entities_map: Dict[str, Iterable[Any]] = {
             # There should never be two StatePerson entities with the same person_id. This should fail loudly.

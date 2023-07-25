@@ -45,11 +45,13 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="ip1",
             admission_date=date(2009, 1, 10),
         )
         incarceration_sentences = [
             NormalizedStateIncarcerationSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="is1",
                 status=StateSentenceStatus.COMPLETED,
                 sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", '
                 '"TERM_COMMUNITY_RELEASE_DATE": "", '
@@ -72,12 +74,14 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="ip1",
             admission_date=date(2009, 1, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
         incarceration_sentences = [
             NormalizedStateIncarcerationSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="is1",
                 status=StateSentenceStatus.COMPLETED,
                 sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", '
                 '"TERM_COMMUNITY_RELEASE_DATE": "", '
@@ -100,12 +104,14 @@ class TestUsMeIncarcerationNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="ip1",
             admission_date=date(2009, 1, 10),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
         incarceration_sentences = [
             NormalizedStateIncarcerationSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="is1",
                 status=StateSentenceStatus.COMPLETED,
                 sentence_metadata='{"CONSECUTIVE_SENTENCE_ID": "", '
                 '"TERM_COMMUNITY_RELEASE_DATE": "", '

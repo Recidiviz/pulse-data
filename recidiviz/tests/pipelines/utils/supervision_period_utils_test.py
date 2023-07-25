@@ -79,6 +79,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
     def test_identify_most_severe_case_type(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     state_code="US_XX",
@@ -98,6 +99,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
         for case_type in StateSupervisionCaseType:
             supervision_period = StateSupervisionPeriod.new_with_defaults(
                 state_code="US_XX",
+                external_id="sp1",
                 case_type_entries=[
                     StateSupervisionCaseTypeEntry.new_with_defaults(
                         state_code="US_XX", case_type=case_type
@@ -112,6 +114,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
     def test_identify_most_severe_case_type_no_type_entries(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             case_type_entries=[],
         )
 
@@ -428,6 +431,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
         self.release_date = date(2020, 1, 31)
         self.incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
+            external_id="ip1",
             state_code="US_XX",
             admission_date=self.admission_date,
             release_date=self.release_date,
@@ -435,6 +439,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
         )
         self.supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             sequence_num=0,
             state_code="US_XX",
             start_date=self.release_date,
@@ -570,6 +575,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2015, 5, 19),
@@ -592,6 +598,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2002, 11, 5),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -610,6 +617,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2015, 5, 19),
@@ -632,6 +640,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=intersection_date,
             termination_date=date(2015, 5, 19),
@@ -657,6 +666,7 @@ class TestFilterOutSpTypesExcludedFromPreAdmissionSearch(unittest.TestCase):
     ) -> None:
         sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             sequence_num=0,
             state_code="US_XX",
             start_date=date(2020, 1, 1),
@@ -676,6 +686,7 @@ class TestFilterOutSpTypesExcludedFromPreAdmissionSearch(unittest.TestCase):
     ) -> None:
         sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             sequence_num=0,
             state_code="US_XX",
             start_date=date(2020, 1, 1),

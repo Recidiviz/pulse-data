@@ -379,6 +379,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2008, 11, 20),
@@ -392,6 +393,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2011, 4, 5),
@@ -405,6 +407,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         subsequent_reincarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=3333,
+                external_id="ip3",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2017, 1, 4),
@@ -475,6 +478,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         only_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2000, 1, 9),
@@ -509,6 +513,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         only_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2008, 11, 20),
@@ -529,6 +534,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         invalid_open_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2008, 11, 20),
@@ -539,7 +545,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         closed_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=1111,
+                incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2008, 11, 20),
@@ -605,6 +612,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         were released conditionally."""
         only_incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2000, 1, 9),
@@ -638,6 +646,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         initial_incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -650,6 +659,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2011, 4, 5),
@@ -704,6 +714,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         initial_incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -716,6 +727,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2011, 4, 5),
@@ -770,6 +782,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         initial_incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -782,6 +795,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2011, 4, 5),
@@ -837,6 +851,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2008, 11, 20),
@@ -850,6 +865,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2011, 4, 5),
@@ -904,6 +920,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2008, 11, 20),
@@ -917,6 +934,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2010, 12, 4),
@@ -957,6 +975,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         initial_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2008, 11, 20),
@@ -970,6 +989,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         first_reincarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2011, 4, 5),
@@ -1112,6 +1132,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         next_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
+                external_id="ip1",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(1999, 12, 10),
@@ -1161,6 +1182,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
     def test_find_valid_reincarceration_period(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -1171,6 +1193,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2010, 3, 2),
@@ -1193,6 +1216,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
     def test_find_valid_reincarceration_period_overlapping_periods(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -1203,6 +1227,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -1226,6 +1251,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
     def test_find_valid_reincarceration_period_invalid_admission_reason(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -1237,6 +1263,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         for admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
             incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2010, 3, 2),
@@ -1262,6 +1289,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         release_date = date(2009, 4, 21)
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -1273,6 +1301,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=2222,
+                external_id="ip2",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2010, 3, 2),

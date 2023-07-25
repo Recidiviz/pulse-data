@@ -97,6 +97,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            external_id="sv1",
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=self.state_code,
@@ -109,6 +110,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         supervision_violation_response = (
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 supervision_violation=supervision_violation,
                 response_date=datetime.date(1999, 10, 12),
@@ -152,11 +154,13 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            external_id="sv1",
         )
 
         supervision_violation_response = (
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 supervision_violation=supervision_violation,
                 response_date=datetime.date(1999, 10, 12),
@@ -193,6 +197,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            external_id="sv1",
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=self.state_code,
@@ -205,6 +210,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         supervision_violation_response = (
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 supervision_violation=supervision_violation,
                 response_date=datetime.date(1999, 10, 12),

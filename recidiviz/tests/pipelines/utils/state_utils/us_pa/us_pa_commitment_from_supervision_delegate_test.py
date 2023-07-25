@@ -328,6 +328,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         board_hold = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             admission_date=date(2019, 11, 18),
@@ -339,6 +340,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         shock_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             admission_date=date(2020, 1, 1),
@@ -347,6 +349,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         pre_board_hold_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
             sequence_num=0,
             state_code=STATE_CODE,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -356,6 +359,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         pre_commitment_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_2,
+            external_id="sp2",
             sequence_num=1,
             state_code=STATE_CODE,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -367,6 +371,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         supervision_period_while_in_prison = (
             NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_3,
+                external_id="sp3",
                 sequence_num=2,
                 state_code=STATE_CODE,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -420,6 +425,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         board_hold = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             admission_date=date(2019, 11, 18),
@@ -431,6 +437,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         shock_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             admission_date=date(2020, 1, 1),
@@ -439,6 +446,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         pre_board_hold_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
+            external_id="sp1",
             sequence_num=0,
             state_code=STATE_CODE,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -449,6 +457,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         board_hold_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_2,
+            external_id="sp2",
             sequence_num=1,
             state_code=STATE_CODE,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -459,6 +468,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         supervision_period_while_in_prison = (
             NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID_3,
+                external_id="sp3",
                 sequence_num=2,
                 state_code=STATE_CODE,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
