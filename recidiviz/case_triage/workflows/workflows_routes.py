@@ -117,7 +117,7 @@ def create_workflows_api_blueprint() -> Blueprint:
         if request.endpoint == webhook_endpoint:
             signature = request.headers["X-Twilio-Signature"]
             twilio_validator.validate(
-                url=request.url, params=request.json, signature=signature
+                url=request.url, params=request.data, signature=signature
             )
             return
         if request.endpoint == proxy_endpoint:
