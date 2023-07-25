@@ -473,16 +473,10 @@ def create_workflows_api_blueprint() -> Blueprint:
             client = TwilioClient(account_sid, auth_token)
 
             response_message = client.messages.create(
-                body=message,
+                body=f"{message}\n{OPT_OUT_MESSAGE}",
                 messaging_service_sid=messaging_service_sid,
                 to=recipient,
                 status_callback=f"{url}/workflows/webhook/twilio_status",
-            )
-
-            client.messages.create(
-                body=OPT_OUT_MESSAGE,
-                messaging_service_sid=messaging_service_sid,
-                to=recipient,
             )
 
             firestore_client.set_document(
