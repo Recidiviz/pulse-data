@@ -505,11 +505,12 @@ function update_deployment_status {
   local RELEASE_VERSION_TAG=$4
 
   DEPLOYMENT_STATUS="${NEW_DEPLOYMENT_STATUS}"
+  GCLOUD_USER=$(gcloud config get-value account)
   if [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_STARTED}" ]; then
     initialize_deployment_log
 
     EMOJI=${DEPLOYMENT_STARTED_EMOJI[$RANDOM % ${#DEPLOYMENT_STARTED_EMOJI[@]}]}
-    DEPLOY_STARTED_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` Deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
+    DEPLOY_STARTED_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` ${GCLOUD_USER} started deploying \`${COMMIT_HASH}\` to \`${PROJECT_ID}\`"
     deployment_bot_message "${PROJECT_ID}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "${DEPLOY_STARTED_MESSAGE}" > /dev/null
 
     # Register exit hook in case the deploy fails midway
@@ -519,7 +520,6 @@ function update_deployment_status {
   elif [ "${DEPLOYMENT_STATUS}" == "${DEPLOYMENT_STATUS_SUCCEEDED}" ]; then
       MINUTES=$((SECONDS / 60))
       EMOJI=${DEPLOYMENT_SUCCESS_EMOJI[$RANDOM % ${#DEPLOYMENT_SUCCESS_EMOJI[@]}]}
-      GCLOUD_USER=$(gcloud config get-value account)
       DEPLOY_SUCCEEDED_MESSAGE="${EMOJI} \`[${RELEASE_VERSION_TAG}]\` ${GCLOUD_USER} successfully deployed to \`${PROJECT_ID}\` in ${MINUTES} minutes"
 
       local SUCCESS_MESSAGE_TS
