@@ -615,7 +615,7 @@ class EventValueMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
         """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
-        return f"SAFE_DIVIDE(SUM({self.event_count_metric.name} * {self.name}), SUM({self.event_count_metric.name}))"
+        return f"SAFE_DIVIDE(SUM({self.event_count_metric.name} * {self.name}), SUM({self.event_count_metric.name})) AS {self.name}"
 
 
 @attr.define(frozen=True, kw_only=True)
