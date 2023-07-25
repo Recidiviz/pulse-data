@@ -5,11 +5,15 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - EK_DOC
+is_primary_person_table: True
 columns:
   - name: EK_DOC
     is_pii: True
     description: |-
       DOC ID Number
+    field_type: person_external_id
+    external_id_type: US_MO_DOC
+    is_primary_for_external_id_type: True
   - name: EK_CYC
     description: |-
       Cycle Number
@@ -34,14 +38,24 @@ columns:
   - name: EK_SID
     description: |-
       Person SID Number
+    field_type: person_external_id
+    external_id_type: US_MO_SID
+    is_primary_for_external_id_type: True
+    is_pii: True
   - name: EK_FBI
     is_pii: True
     description: |-
       Person FBI Number
+    field_type: person_external_id
+    external_id_type: US_MO_FBI
+    is_primary_for_external_id_type: True
   - name: EK_OLN
     is_pii: True
     description: |-
       Operator License Number
+    field_type: person_external_id
+    external_id_type: US_MO_OLN
+    is_primary_for_external_id_type: True
   - name: EK_OLC
     description: |-
       Person Assigned Location

@@ -10,15 +10,21 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - SID
+is_primary_person_table: True
 columns:
   - name: SID
     description: |-
       External id for a unique person from the Docstars system.
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ND_SID
+    is_primary_for_external_id_type: True
   - name: ITAGROOT_ID
     description: |-
       External id for a unique person from the Elite system (synced with Docstars).
     is_pii: True
+    field_type: person_external_id
+    external_id_type: US_ND_ELITE
   - name: LAST_NAME
     description: |-
       Surname of the person.
