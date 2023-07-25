@@ -106,6 +106,8 @@ class OutliersQuerier:
                         SupervisionOfficerSupervisor.supervision_district
                         == SupervisionDistrictManager.supervision_district,
                     ),
+                    # Ensure to use a LEFT OUTER JOIN
+                    isouter=True,
                 )
                 .with_entities(
                     SupervisionOfficerSupervisor.external_id,
