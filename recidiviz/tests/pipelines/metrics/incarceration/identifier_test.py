@@ -219,6 +219,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
     def test_find_incarceration_events(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -266,6 +267,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
     def test_find_incarceration_events_transfer(self) -> None:
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -280,6 +282,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON 10",
@@ -337,6 +340,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -350,6 +354,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON 10",
@@ -428,6 +433,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
     def test_find_incarceration_events_multiple_sentences(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -552,6 +558,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def test_admission_event_for_period_us_mo(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_MO",
             facility="PRISON3",
@@ -563,6 +570,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
+            external_id="sp1",
             state_code="US_MO",
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 2, 15),
@@ -590,6 +598,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def test_admission_event_for_period(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -624,6 +633,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def test_admission_event_for_temporary_custody_period(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -758,6 +768,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def test_admission_event_for_period_all_admission_reasons(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -785,6 +796,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def test_admission_event_for_period_specialized_pfi(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -816,6 +828,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def test_admission_event_for_period_county_jail(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             state_code="US_XX",
             facility="CJ10",
@@ -928,6 +941,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=date(2008, 12, 7),
             supervision_violation_types=[
@@ -941,6 +955,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2008, 12, 7),
             supervision_violation_response_decisions=[
@@ -954,12 +969,14 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv2",
             state_code="US_XX",
             violation_date=date(2009, 11, 13),
         )
 
         supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr2",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_XX",
             response_date=date(2009, 11, 13),
@@ -976,6 +993,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=6789,
+            external_id="sv3",
             violation_date=date(2009, 12, 1),
             supervision_violation_types=[
                 NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -988,6 +1006,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_violation_response_3 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr3",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2009, 12, 1),
             supervision_violation_response_decisions=[
@@ -1079,6 +1098,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_violation_old = (
             NormalizedStateSupervisionViolation.new_with_defaults(
                 supervision_violation_id=123455,
+                external_id="sv1",
                 state_code="US_XX",
                 violation_date=date(2007, 12, 7),
                 supervision_violation_types=[
@@ -1093,6 +1113,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_violation_response_old = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2007, 12, 7),
             supervision_violation_response_decisions=[
@@ -1106,6 +1127,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
+            external_id="sv2",
             supervision_violation_id=6789,
             violation_date=date(2009, 12, 1),
             supervision_violation_types=[
@@ -1119,6 +1141,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_XX",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr2",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2009, 12, 1),
             supervision_violation_response_decisions=[
@@ -1216,6 +1239,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code=state_code,
             violation_date=date(2008, 12, 7),
             supervision_violation_types=[
@@ -1229,6 +1253,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=state_code,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_subtype="INI",
             response_date=date(2008, 12, 7),
@@ -1245,6 +1270,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             NormalizedStateSupervisionViolation.new_with_defaults(
                 state_code=state_code,
                 supervision_violation_id=6789,
+                external_id="sv2",
                 violation_date=date(2012, 12, 1),
                 supervision_violation_types=[
                     NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
@@ -1258,6 +1284,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_violation_response_sup = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=state_code,
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr2",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_subtype="SUP",
             response_date=date(2012, 12, 1),
@@ -1365,6 +1392,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_ND",
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
@@ -1377,6 +1405,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
         ssvr = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code="US_ND",
+            external_id="svr1",
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             supervision_violation=supervision_violation,
             response_date=date(2018, 5, 25),
@@ -1475,6 +1504,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
     def test_release_event_for_period(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="sp1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -1514,6 +1544,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
     def test_release_event_for_period_all_release_reasons(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             facility="PRISON3",
@@ -1539,6 +1570,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
     def test_release_event_for_period_county_jail(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
             state_code="US_XX",
             facility="CJ19",
@@ -1576,6 +1608,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
     def test_release_event_for_period_us_id(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_ID",
             facility="PRISON3",
@@ -1589,6 +1622,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
+            external_id="sp1",
             supervision_period_id=111,
             start_date=incarceration_period.release_date,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1640,6 +1674,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
     def test_release_event_for_period_us_mo(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_MO",
             facility="PRISON3",
@@ -1651,6 +1686,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         )
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
+            external_id="sp1",
             state_code="US_MO",
             start_date=date(2019, 12, 4),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1706,6 +1742,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         release_reason = StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_ND",
             facility="NDSP",
@@ -1720,6 +1757,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1112,
             state_code="US_ND",
+            external_id="sp1",
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2010, 12, 4),
         )

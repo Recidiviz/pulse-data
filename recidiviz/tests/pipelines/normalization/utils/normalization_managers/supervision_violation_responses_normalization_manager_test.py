@@ -75,63 +75,69 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     def test_default_filtered_violation_responses_for_violation_history_draft(
         self,
     ) -> None:
-        placeholder_violation = StateSupervisionViolation.new_with_defaults(
-            state_code=self.state_code,
+        sparse_violation = StateSupervisionViolation.new_with_defaults(
+            state_code=self.state_code, external_id="sv1"
         )
 
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr1",
                 supervision_violation_response_id=123,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 is_draft=True,
                 response_date=datetime.date(2000, 1, 1),
-                supervision_violation=placeholder_violation,
+                supervision_violation=sparse_violation,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr2",
                 supervision_violation_response_id=456,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
-                supervision_violation=placeholder_violation,
+                supervision_violation=sparse_violation,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr3",
                 supervision_violation_response_id=789,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1997, 3, 1),
-                supervision_violation=placeholder_violation,
+                supervision_violation=sparse_violation,
             ),
         ]
 
-        placeholder_violation.supervision_violation_responses = violation_responses
+        sparse_violation.supervision_violation_responses = violation_responses
 
         normalized_responses = self._normalized_violation_responses_for_calculations(
             violation_responses=violation_responses
         )
 
-        expected_placeholder_violation = StateSupervisionViolation.new_with_defaults(
+        expected_sparse_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            external_id="sv1",
         )
 
         expected_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr3",
                 supervision_violation_response_id=789,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1997, 3, 1),
-                supervision_violation=expected_placeholder_violation,
+                supervision_violation=expected_sparse_violation,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr2",
                 supervision_violation_response_id=456,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
-                supervision_violation=expected_placeholder_violation,
+                supervision_violation=expected_sparse_violation,
             ),
         ]
 
-        expected_placeholder_violation.supervision_violation_responses = (
+        expected_sparse_violation.supervision_violation_responses = (
             expected_violation_responses
         )
 
@@ -143,61 +149,67 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     def test_default_filtered_violation_responses_for_violation_history_null_date(
         self,
     ) -> None:
-        placeholder_violation = StateSupervisionViolation.new_with_defaults(
-            state_code=self.state_code,
+        sparse_violation = StateSupervisionViolation.new_with_defaults(
+            state_code=self.state_code, external_id="sv1"
         )
 
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr1",
                 supervision_violation_response_id=123,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                supervision_violation=placeholder_violation,
+                supervision_violation=sparse_violation,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr2",
                 supervision_violation_response_id=456,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
-                supervision_violation=placeholder_violation,
+                supervision_violation=sparse_violation,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr3",
                 supervision_violation_response_id=789,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1997, 3, 1),
-                supervision_violation=placeholder_violation,
+                supervision_violation=sparse_violation,
             ),
         ]
 
-        placeholder_violation.supervision_violation_responses = violation_responses
+        sparse_violation.supervision_violation_responses = violation_responses
 
         normalized_responses = self._normalized_violation_responses_for_calculations(
             violation_responses=violation_responses
         )
 
-        expected_placeholder_violation = StateSupervisionViolation.new_with_defaults(
+        expected_sparse_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            external_id="sv1",
         )
 
         expected_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr3",
                 supervision_violation_response_id=789,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1997, 3, 1),
-                supervision_violation=expected_placeholder_violation,
+                supervision_violation=expected_sparse_violation,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr2",
                 supervision_violation_response_id=456,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=datetime.date(1998, 2, 1),
-                supervision_violation=expected_placeholder_violation,
+                supervision_violation=expected_sparse_violation,
             ),
         ]
 
-        expected_placeholder_violation.supervision_violation_responses = (
+        expected_sparse_violation.supervision_violation_responses = (
             expected_violation_responses
         )
 
@@ -210,6 +222,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            external_id="sv1",
             supervision_violation_id=123,
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
@@ -223,6 +236,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         supervision_violation_response = (
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                external_id="svr1",
                 supervision_violation_response_id=456,
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 supervision_violation=supervision_violation,

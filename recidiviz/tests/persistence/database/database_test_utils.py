@@ -64,6 +64,7 @@ def generate_test_supervision_violation_response(
 
     instance = state_schema.StateSupervisionViolationResponse(
         supervision_violation_response_id=456,
+        external_id="external_id",
         state_code="US_XX",
         person_id=person_id,
         supervision_violation_response_decisions=decisions,
@@ -81,6 +82,7 @@ def generate_test_supervision_violation_response(
 def generate_test_assessment(person_id) -> state_schema.StateAssessment:
     instance = state_schema.StateAssessment(
         assessment_id=345,
+        external_id="external_id",
         state_code="US_XX",
         assessment_type=StateAssessmentType.LSIR.value,
         assessment_score=10,
@@ -95,6 +97,7 @@ def generate_test_supervision_case_type(
     instance = state_schema.StateSupervisionCaseTypeEntry(
         person_id=person_id,
         supervision_case_type_entry_id=12345,
+        external_id="external_id",
         state_code="US_XX",
         case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE.value,
         case_type_raw_text="DV",
@@ -108,6 +111,7 @@ def generate_test_supervision_contact(
     instance = state_schema.StateSupervisionContact(
         person_id=person_id,
         supervision_contact_id=12345,
+        external_id="external_id",
         state_code="US_XX",
         contacted_agent=contacted_agent,
         status=StateSupervisionContactStatus.COMPLETED.value,
@@ -124,6 +128,7 @@ def generate_test_supervision_violation(
 
     instance = state_schema.StateSupervisionViolation(
         supervision_violation_id=supervision_violation_id,
+        external_id="external_id",
         state_code="US_XX",
         person_id=person_id,
         supervision_violated_conditions=[
@@ -157,6 +162,7 @@ def generate_test_supervision_period(
 ) -> state_schema.StateSupervisionPeriod:
     instance = state_schema.StateSupervisionPeriod(
         supervision_period_id=4444,
+        external_id="external_id",
         state_code="US_XX",
         person_id=person_id,
         case_type_entries=case_types,
@@ -170,6 +176,7 @@ def generate_test_incarceration_incident_outcome(
 ) -> state_schema.StateIncarcerationIncidentOutcome:
     instance = state_schema.StateIncarcerationIncidentOutcome(
         incarceration_incident_outcome_id=3211,
+        external_id="external_id",
         outcome_type=StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR.value,
         state_code="US_XX",
         person_id=person_id,
@@ -182,6 +189,7 @@ def generate_test_incarceration_incident(
 ) -> state_schema.StateIncarcerationIncident:
     instance = state_schema.StateIncarcerationIncident(
         incarceration_incident_id=321,
+        external_id="external_id",
         state_code="US_XX",
         person_id=person_id,
         incarceration_incident_outcomes=incarceration_incident_outcomes,
@@ -195,6 +203,7 @@ def generate_test_incarceration_period(
 ) -> state_schema.StateIncarcerationPeriod:
     instance = state_schema.StateIncarcerationPeriod(
         incarceration_period_id=5555,
+        external_id="external_id",
         state_code="US_XX",
         person_id=person_id,
     )
@@ -207,6 +216,7 @@ def generate_test_charge(
     state_code: str = "US_XX",
 ) -> state_schema.StateCharge:
     instance = state_schema.StateCharge(
+        external_id=f"{charge_id}",
         charge_id=charge_id,
         person_id=person_id,
         state_code=state_code,
@@ -221,6 +231,7 @@ def generate_test_supervision_sentence(
 ) -> state_schema.StateSupervisionSentence:
     instance = state_schema.StateSupervisionSentence(
         supervision_sentence_id=1111,
+        external_id="external_id",
         status=StateSentenceStatus.SERVING.value,
         state_code="US_XX",
         person_id=person_id,
@@ -236,6 +247,7 @@ def generate_test_incarceration_sentence(
 ) -> state_schema.StateIncarcerationSentence:
     instance = state_schema.StateIncarcerationSentence(
         incarceration_sentence_id=2222,
+        external_id="external_id",
         status=StateSentenceStatus.SUSPENDED.value,
         state_code="US_XX",
         person_id=person_id,

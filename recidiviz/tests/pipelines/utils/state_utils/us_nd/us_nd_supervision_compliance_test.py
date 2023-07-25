@@ -77,6 +77,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
         evaluation_date = date(2018, 4, 30)
         assessment_out_of_range = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 3, 10),
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -84,6 +85,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
         )
         assessment_out_of_range_2 = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a2",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 5, 10),
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -91,6 +93,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
         )
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a3",
             assessment_id=1,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=1,
@@ -100,6 +103,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
         )
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a4",
             assessment_id=2,
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=100,
@@ -109,6 +113,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
         )
         assessment_no_score = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a5",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -169,36 +174,42 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         evaluation_date = date(2018, 4, 30)
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c1",
             contact_date=date(2018, 4, 1),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_2 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c2",
             contact_date=date(2018, 4, 15),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_3 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c3",
             contact_date=date(2018, 4, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_out_of_range = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c4",
             contact_date=date(2018, 3, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_incomplete = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c5",
             contact_date=date(2018, 4, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.ATTEMPTED,
         )
         contact_wrong_type = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c6",
             contact_date=date(2018, 4, 30),
             contact_type=StateSupervisionContactType.COLLATERAL,
             status=StateSupervisionContactStatus.COMPLETED,
@@ -498,6 +509,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
+                external_id=f"c_{contact_date.isoformat()}",
                 contact_date=contact_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -538,6 +550,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code=StateCode.US_ND.value,
+                external_id="c1",
                 contact_date=supervision_period.start_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -583,6 +596,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
+                external_id="c1",
                 # Only contact happened before supervision started
                 contact_date=start_of_supervision - relativedelta(days=100),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -633,6 +647,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
+                external_id="c1",
                 contact_date=supervision_period.start_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 # Only contact was not completed
@@ -683,6 +698,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
+                external_id="c1",
                 contact_date=supervision_period.start_date,
                 # Only contact is invalid type
                 contact_type=StateSupervisionContactType.COLLATERAL,
@@ -732,6 +748,7 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
+                external_id="c1",
                 contact_date=start_of_supervision,
                 # Only contact is invalid type
                 contact_type=StateSupervisionContactType.COLLATERAL,
@@ -889,6 +906,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_score = 25
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
             assessment_score=assessment_score,
@@ -930,6 +948,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_score = 25
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
             assessment_score=assessment_score,
@@ -987,6 +1006,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
+                external_id="c1",
                 contact_date=start_of_supervision + relativedelta(days=1),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1081,6 +1101,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
+                external_id="c1",
                 contact_date=start_of_supervision + relativedelta(days=1),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1162,6 +1183,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         """Tests home visit frequency for medium level"""
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c1",
             contact_date=date(2018, 3, 8),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
@@ -1169,6 +1191,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         )
         contact_2 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c2",
             contact_date=date(2019, 3, 6),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
@@ -1219,6 +1242,7 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
         """Tests home visit frequency for medium level when standard is not met"""
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
+            external_id="c1",
             contact_date=date(2018, 3, 5),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,

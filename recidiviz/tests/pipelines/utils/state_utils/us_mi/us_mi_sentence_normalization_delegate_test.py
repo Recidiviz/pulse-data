@@ -39,6 +39,7 @@ class TestUsMiSentenceNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="is1",
             projected_max_release_date=None,
             effective_date=date(2023, 1, 1),
             max_length_days=365,
@@ -53,6 +54,7 @@ class TestUsMiSentenceNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="is1",
             projected_max_release_date=None,
             effective_date=None,
             max_length_days=365,
@@ -67,6 +69,7 @@ class TestUsMiSentenceNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="is1",
             projected_max_release_date=None,
             effective_date=date(2023, 1, 1),
             max_length_days=None,
@@ -81,6 +84,7 @@ class TestUsMiSentenceNormalizationDelegate(unittest.TestCase):
     ) -> None:
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="is1",
             projected_max_release_date=date(2023, 7, 1),
             effective_date=date(2023, 1, 1),
             max_length_days=365,

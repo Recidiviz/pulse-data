@@ -352,6 +352,7 @@ class MultipleStateTestMixin:
         person_state_1.assessments.append(
             StateAssessment.new_with_defaults(
                 state_code=STATE_CODE,
+                external_id="a1",
                 assessment_class=StateAssessmentClass.RISK,
                 assessment_class_raw_text="RISK",
             )
@@ -361,6 +362,7 @@ class MultipleStateTestMixin:
         person_state_2.assessments.append(
             StateAssessment.new_with_defaults(
                 state_code=STATE_CODE_2,
+                external_id="a2",
                 assessment_class=StateAssessmentClass.RISK,
                 assessment_class_raw_text="RISK",
             )
@@ -449,6 +451,7 @@ class MultipleStateTestMixin:
         person_state_1.assessments.append(
             StateAssessment.new_with_defaults(
                 state_code=STATE_CODE,
+                external_id="a1",
                 assessment_class=StateAssessmentClass.RISK,
                 assessment_class_raw_text="RISK",
             )

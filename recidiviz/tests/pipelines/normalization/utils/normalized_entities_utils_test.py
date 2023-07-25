@@ -221,6 +221,7 @@ class TestGetSharedAdditionalAttributesMapForEntities(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
                 incarceration_period_id=111,
+                external_id="ip1",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 admission_date=datetime.date(2000, 1, 1),
                 release_date=datetime.date(2002, 1, 1),
@@ -228,6 +229,7 @@ class TestGetSharedAdditionalAttributesMapForEntities(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
                 incarceration_period_id=222,
+                external_id="ip2",
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 admission_date=datetime.date(2002, 1, 1),
             ),
@@ -273,6 +275,7 @@ def get_violation_tree(
     starting_id_value = starting_id_value or 1
 
     supervision_violation = entities.StateSupervisionViolation.new_with_defaults(
+        external_id="sv1",
         supervision_violation_id=starting_id_value,
         violation_date=datetime.date(year=2004, month=9, day=1),
         state_code="US_XX",
@@ -296,6 +299,7 @@ def get_violation_tree(
     )
 
     supervision_violation_response_1 = entities.StateSupervisionViolationResponse.new_with_defaults(
+        external_id="svr1",
         supervision_violation_response_id=starting_id_value + 3,
         response_type=entities.StateSupervisionViolationResponseType.CITATION,
         response_date=datetime.date(year=2004, month=9, day=2),
@@ -313,6 +317,7 @@ def get_violation_tree(
     )
 
     supervision_violation_response_2 = entities.StateSupervisionViolationResponse.new_with_defaults(
+        external_id="svr2",
         supervision_violation_response_id=starting_id_value + 5,
         response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
         response_date=datetime.date(year=2004, month=10, day=3),
@@ -354,6 +359,7 @@ def get_normalized_violation_tree(
     starting_sequence_num = starting_sequence_num or 0
 
     supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
+        external_id="sv1",
         supervision_violation_id=starting_id_value,
         violation_date=datetime.date(year=2004, month=9, day=1),
         state_code="US_XX",
@@ -377,6 +383,7 @@ def get_normalized_violation_tree(
     )
 
     supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        external_id="svr1",
         supervision_violation_response_id=starting_id_value + 3,
         response_type=entities.StateSupervisionViolationResponseType.CITATION,
         response_date=datetime.date(year=2004, month=9, day=2),
@@ -395,6 +402,7 @@ def get_normalized_violation_tree(
     )
 
     supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+        external_id="svr2",
         supervision_violation_response_id=starting_id_value + 5,
         response_type=entities.StateSupervisionViolationResponseType.VIOLATION_REPORT,
         response_date=datetime.date(year=2004, month=10, day=3),
@@ -590,6 +598,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         # Entity of a new type, so can get un-incremented value
         entity_3 = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=789,
+            external_id="sp1",
             state_code=state_code.value,
         )
 

@@ -134,6 +134,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
         incarceration_period = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             county_code="124",
@@ -147,6 +148,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
+            external_id="sp1",
             state_code=state_code,
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,

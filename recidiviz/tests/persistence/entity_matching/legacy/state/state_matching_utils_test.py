@@ -421,12 +421,14 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_mergeFlatFields_twoDbEntities(self) -> None:
         to_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
+            external_id="is1",
             incarceration_sentence_id=_ID,
             county_code="county_code",
             status=StateSentenceStatus.SERVING,
         )
         from_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
+            external_id="is1",
             incarceration_sentence_id=_ID_2,
             county_code="county_code-updated",
             max_length_days=10,
@@ -435,6 +437,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
         expected_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
+            external_id="is1",
             incarceration_sentence_id=_ID,
             county_code="county_code-updated",
             max_length_days=10,
@@ -449,18 +452,21 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_mergeFlatFields(self) -> None:
         ing_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
+            external_id="is1",
             county_code="county_code-updated",
             max_length_days=10,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
         )
         db_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
+            external_id="is1",
             incarceration_sentence_id=_ID,
             county_code="county_code",
             status=StateSentenceStatus.SERVING,
         )
         expected_entity = schema.StateIncarcerationSentence(
             state_code=_STATE_CODE,
+            external_id="is1",
             incarceration_sentence_id=_ID,
             county_code="county_code-updated",
             max_length_days=10,
@@ -475,22 +481,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     @staticmethod
     def convert_to_entity(db_entity: DatabaseEntity) -> Entity:
         return StateSchemaToEntityConverter().convert_all([db_entity])[0]
-
-    def test_mergeFlatFields_DoNotOverwriteWithPlaceholder(self) -> None:
-        field_index = CoreEntityFieldIndex()
-        for db_entity_cls in get_state_database_entities():
-            for old in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
-                for new in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
-                    if old.get_external_id() != new.get_external_id():
-                        continue
-                    # Expect unchanged
-                    expected = self.convert_to_entity(old)
-                    updated = merge_flat_fields(
-                        new_entity=new,
-                        old_entity=old,
-                        field_index=field_index,
-                    )
-                    self.assertEqual(expected, self.convert_to_entity(updated))
 
     def test_mergeFlatFields_DoNotOverwriteWithReferenceItems(self) -> None:
         field_index = CoreEntityFieldIndex()

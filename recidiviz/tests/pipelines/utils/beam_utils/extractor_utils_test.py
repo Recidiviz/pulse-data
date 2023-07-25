@@ -138,6 +138,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ]
 
         schema_assessment = schema.StateAssessment(
+            external_id="a1",
             assessment_class=StateAssessmentClass.RISK,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2012, 4, 1),
@@ -443,6 +444,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ]
 
         schema_assessment = schema.StateAssessment(
+            external_id="a1",
             assessment_class=StateAssessmentClass.RISK,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2012, 4, 1),
@@ -869,6 +871,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         ]
 
         schema_assessment = schema.StateAssessment(
+            external_id="a1",
             assessment_class=StateAssessmentClass.RISK,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2012, 4, 1),
@@ -1261,6 +1264,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
 
         schema_program_assignment = schema.StateProgramAssignment(
             state_code="US_XX",
+            external_id="pa1",
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             person_id=person_id,
         )
@@ -1291,6 +1295,7 @@ class TestExtractDataForPipeline(unittest.TestCase):
         entity_races = entity_converter.convert_all([schema_race_1, schema_race_2])
         entity_program = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
             state_code="US_XX",
+            external_id="pa1",
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             sequence_num=0,
         )
@@ -1425,10 +1430,12 @@ class TestExtractDataForPipeline(unittest.TestCase):
             normalized_entities.NormalizedStateSupervisionViolation.new_with_defaults(
                 supervision_violation_id=321,
                 state_code="US_XX",
+                external_id="external_id",
             )
         )
         entity_violation_response = normalized_entities.NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=456,
+            external_id="external_id",
             state_code="US_XX",
             response_date=datetime.date(2000, 1, 1),
             supervision_violation=entity_violation,
@@ -1504,7 +1511,10 @@ class TestConnectHydratedRelatedEntities(unittest.TestCase):
             state_code=state_code, race=StateRace.WHITE
         )
 
-        assessment = entities.StateAssessment.new_with_defaults(state_code=state_code)
+        assessment = entities.StateAssessment.new_with_defaults(
+            state_code=state_code,
+            external_id="a1",
+        )
 
         element = (
             person_id,

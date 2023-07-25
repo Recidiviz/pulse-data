@@ -1150,6 +1150,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1161,6 +1162,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 11),
@@ -1193,6 +1195,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1204,6 +1207,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 11),
@@ -1215,6 +1219,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_3 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=333,
+            external_id="ip3",
             sequence_num=2,
             admission_date=date(2020, 5, 1),
             release_date=date(2020, 10, 3),
@@ -1226,6 +1231,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_4 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=444,
+            external_id="ip4",
             sequence_num=3,
             admission_date=date(2020, 10, 3),
             release_date=date(2020, 10, 11),
@@ -1271,6 +1277,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1282,6 +1289,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 11),
@@ -1293,6 +1301,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_3 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=333,
+            external_id="ip3",
             sequence_num=2,
             admission_date=date(2000, 10, 12),
             release_date=date(2001, 1, 3),
@@ -1304,6 +1313,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_4 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=444,
+            external_id="ip4",
             sequence_num=3,
             admission_date=date(2001, 1, 4),
             release_date=date(2001, 10, 11),
@@ -1345,6 +1355,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1355,6 +1366,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 11),
@@ -1389,6 +1401,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1401,6 +1414,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
@@ -1437,6 +1451,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1448,6 +1463,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
@@ -1488,6 +1504,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1499,6 +1516,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
@@ -1520,6 +1538,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         board_hold = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1531,6 +1550,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
@@ -1563,6 +1583,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(1993, 1, 1),
             release_date=date(1995, 8, 3),
@@ -1574,6 +1595,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         board_hold = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=1,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
@@ -1585,6 +1607,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=333,
+            external_id="ip3",
             sequence_num=2,
             admission_date=date(2019, 4, 8),
             release_date=date(2020, 10, 31),
@@ -1622,6 +1645,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1633,6 +1657,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         incarceration_period_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=222,
+            external_id="ip3",
             sequence_num=1,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
@@ -1643,6 +1668,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         incarceration_period_3 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=333,
+            external_id="ip3",
             admission_date=date(2019, 4, 8),
             release_date=date(2020, 10, 31),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1665,6 +1691,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         bh_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(2000, 1, 1),
             release_date=date(2000, 10, 3),
@@ -1675,7 +1702,8 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
 
         bh_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            incarceration_period_id=111,
+            incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=0,
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 17),
@@ -1686,7 +1714,8 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
 
         bh_3 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            incarceration_period_id=111,
+            incarceration_period_id=333,
+            external_id="ip3",
             sequence_num=0,
             admission_date=date(2000, 10, 17),
             release_date=date(2000, 10, 31),
@@ -1697,7 +1726,8 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            incarceration_period_id=222,
+            incarceration_period_id=444,
+            external_id="ip4",
             sequence_num=1,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),
@@ -1727,6 +1757,7 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
         bh_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             sequence_num=0,
             admission_date=date(1992, 1, 1),
             release_date=date(1992, 4, 3),
@@ -1737,7 +1768,8 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
 
         bh_2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            incarceration_period_id=111,
+            incarceration_period_id=222,
+            external_id="ip2",
             sequence_num=0,
             admission_date=date(2000, 10, 3),
             release_date=date(2000, 10, 17),
@@ -1748,7 +1780,8 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
 
         bh_3 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            incarceration_period_id=111,
+            incarceration_period_id=333,
+            external_id="ip3",
             sequence_num=0,
             admission_date=date(2000, 10, 17),
             release_date=date(2000, 10, 31),
@@ -1759,7 +1792,8 @@ class TestMostRecentBoardHoldSpan(unittest.TestCase):
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
-            incarceration_period_id=222,
+            incarceration_period_id=444,
+            external_id="ip4",
             sequence_num=1,
             admission_date=date(2015, 10, 3),
             release_date=date(2015, 10, 11),

@@ -47,6 +47,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
                 supervision_violation_response_id=123,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2008, 12, 7),
             )
@@ -55,6 +56,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
         supervision_violation_response_2 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=234,
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 state_code=state_code,
                 response_date=date(2009, 11, 13),
@@ -65,6 +67,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
                 supervision_violation_response_id=345,
+                external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2009, 12, 1),
             )
@@ -98,6 +101,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
                 supervision_violation_response_id=123,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2008, 12, 7),
             )
@@ -106,6 +110,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
         supervision_violation_response_2 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=234,
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 state_code=state_code,
                 response_date=date(2009, 11, 13),
@@ -117,6 +122,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
                 supervision_violation_response_id=345,
+                external_id="svr3",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2012, 12, 1),
             )

@@ -111,6 +111,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
         evaluation_date = date(2018, 4, 30)
         assessment_out_of_range = NormalizedStateAssessment.new_with_defaults(
             state_code="US_IX",
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 3, 10),
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -118,6 +119,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
         )
         assessment_out_of_range_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_IX",
+            external_id="a2",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 5, 10),
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -126,6 +128,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_IX",
             assessment_id=1,
+            external_id="a3",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=1,
             assessment_date=date(2018, 4, 30),
@@ -135,6 +138,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_IX",
             assessment_id=2,
+            external_id="a4",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=100,
             assessment_date=date(2018, 4, 30),
@@ -143,6 +147,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
         )
         assessment_no_score = NormalizedStateAssessment.new_with_defaults(
             state_code="US_IX",
+            external_id="a5",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
             assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -202,36 +207,42 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         evaluation_date = date(2018, 4, 30)
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_IX",
+            external_id="c1",
             contact_date=date(2018, 4, 1),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_2 = StateSupervisionContact.new_with_defaults(
             state_code="US_IX",
+            external_id="c2",
             contact_date=date(2018, 4, 15),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_3 = StateSupervisionContact.new_with_defaults(
             state_code="US_IX",
+            external_id="c3",
             contact_date=date(2018, 4, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_out_of_range = StateSupervisionContact.new_with_defaults(
             state_code="US_IX",
+            external_id="c3",
             contact_date=date(2018, 3, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         contact_incomplete = StateSupervisionContact.new_with_defaults(
             state_code="US_IX",
+            external_id="c4",
             contact_date=date(2018, 4, 30),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.ATTEMPTED,
         )
         contact_wrong_type = StateSupervisionContact.new_with_defaults(
             state_code="US_IX",
+            external_id="c5",
             contact_date=date(2018, 4, 30),
             contact_type=StateSupervisionContactType.COLLATERAL,
             status=StateSupervisionContactStatus.COMPLETED,
@@ -313,6 +324,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id="c1",
                 contact_date=supervision_period.start_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -365,6 +377,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id="c1",
                 # Only contact happened before supervision started
                 contact_date=start_of_supervision - relativedelta(days=100),
                 contact_type=StateSupervisionContactType.DIRECT,
@@ -418,6 +431,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id="c1",
                 contact_date=supervision_period.start_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 # Only contact was not completed
@@ -471,6 +485,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id="c1",
                 contact_date=supervision_period.start_date,
                 # Only contact is invalid type
                 contact_type=StateSupervisionContactType.COLLATERAL,
@@ -745,6 +760,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id=f"c_{contact_date.isoformat()}",
                 contact_date=contact_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -979,6 +995,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
                 contact_date=contact_date,
+                external_id=f"c_{contact_date.isoformat()}",
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
@@ -1071,6 +1088,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id="c1",
                 contact_date=previous_contact_date,
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1202,6 +1220,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id="c1",
                 contact_date=date(2018, 4, 1),
                 contact_type=StateSupervisionContactType.DIRECT,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1209,6 +1228,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id="c2",
                 contact_date=date(2019, 4, 1),
                 contact_type=StateSupervisionContactType.COLLATERAL,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1280,6 +1300,7 @@ class TestNextRecommendedContactDate(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_IX",
+                external_id="c1",
                 contact_date=previous_contact_date,
                 contact_type=StateSupervisionContactType.COLLATERAL,
                 status=StateSupervisionContactStatus.COMPLETED,
@@ -1783,7 +1804,8 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2018, 4, 2)
         assessment_score = 25
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_IX.value,
+            state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 2),
             assessment_score=assessment_score,
@@ -1825,7 +1847,8 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2018, 4, 2)
         assessment_score = 34
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_IX.value,
+            state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
             assessment_score=assessment_score,
@@ -1866,7 +1889,8 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_date = date(2010, 4, 2)
         assessment_score = 25
         assessment = NormalizedStateAssessment.new_with_defaults(
-            state_code=StateCode.US_IX.value,
+            state_code=StateCode.US_ID.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
             assessment_score=assessment_score,
@@ -1920,6 +1944,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         assessment_boundary_score = SEX_OFFENSE_LSIR_MINIMUM_SCORE[gender]
         assessment_boundary = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_IX.value,
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
             assessment_score=assessment_boundary_score,
@@ -1949,6 +1974,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
         assessment_under_boundary = NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_IX.value,
+            external_id="a2",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=assessment_date,
             assessment_score=assessment_boundary_score - 1,
@@ -2007,6 +2033,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
     def _assessment_with_score(self, score: int) -> NormalizedStateAssessment:
         return NormalizedStateAssessment.new_with_defaults(
             state_code=StateCode.US_IX.value,
+            external_id=f"{score}",
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=self.start_of_supervision,
             assessment_score=score,
@@ -2238,6 +2265,7 @@ class TestSupervisionDowngrades(unittest.TestCase):
                 # this would result in a MINIMUM recommendation
                 NormalizedStateAssessment.new_with_defaults(
                     state_code=StateCode.US_IX.value,
+                    external_id="a1",
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_date=supervision_start - timedelta(days=14),
                     assessment_score=1,

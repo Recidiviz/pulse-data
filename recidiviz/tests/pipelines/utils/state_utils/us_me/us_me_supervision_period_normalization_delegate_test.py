@@ -56,12 +56,14 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         """Assert that assessments taken within an active period are used to set the supervision level."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2010, 1, 1),
             termination_date=None,
         )
         assessments = [
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a1",
                 assessment_date=date(2010, 1, 1),
                 assessment_type_raw_text="ADULT, FEMALE, COMMUNITY",
                 assessment_level=StateAssessmentLevel.MODERATE,
@@ -79,6 +81,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         internal unknown."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 3, 30),
         )
@@ -94,18 +97,21 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         """Assert that spin-w is used if it is the most recent."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 3, 30),
         )
         assessments = [
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a1",
                 assessment_date=date(2010, 3, 1),
                 assessment_type_raw_text="SPIN-W",
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
             ),
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a2",
                 assessment_date=date(2010, 1, 1),
                 assessment_type_raw_text="ADULT, FEMALE, COMMUNITY",
                 assessment_level=StateAssessmentLevel.MODERATE,
@@ -122,24 +128,28 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         """Assert that LSIR Adult, Female, Community is used if it is the most recent."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 3, 30),
         )
         assessments = [
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a1",
                 assessment_date=date(2010, 3, 1),
                 assessment_type_raw_text="SPIN-W",
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
             ),
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a2",
                 assessment_date=date(2010, 1, 1),
                 assessment_type_raw_text="ADULT, FEMALE, COMMUNITY",
                 assessment_level=StateAssessmentLevel.MODERATE,
             ),
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a3",
                 assessment_date=date(2010, 3, 15),
                 assessment_type_raw_text="ADULT, FEMALE, COMMUNITY",
                 assessment_level=StateAssessmentLevel.MAXIMUM,
@@ -156,12 +166,14 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         """Assert that the most recent Static 99 assessment level is used."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 3, 30),
         )
         assessments = [
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a1",
                 assessment_date=date(2010, 3, 1),
                 assessment_type=StateAssessmentType.STATIC_99,
                 assessment_type_raw_text="STATIC 99",
@@ -169,6 +181,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             ),
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a2",
                 assessment_date=date(2010, 3, 15),
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_type_raw_text="ADULT, MALE, COMMUNITY",
@@ -176,6 +189,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             ),
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a3",
                 assessment_date=date(2010, 1, 1),
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_type_raw_text="ADULT, MALE, COMMUNITY",
@@ -183,6 +197,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             ),
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a4",
                 assessment_date=date(2010, 1, 1),
                 assessment_type=StateAssessmentType.STATIC_99,
                 assessment_type_raw_text="STATIC 99 R",
@@ -200,12 +215,14 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         """Assert that the most recent LSIR assessment level is used if no Static 99 is present."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 3, 30),
         )
         assessments = [
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a1",
                 assessment_date=date(2010, 3, 15),
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_type_raw_text="ADULT, MALE, COMMUNITY",
@@ -213,6 +230,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
             ),
             StateAssessment.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="a2",
                 assessment_date=date(2010, 1, 1),
                 assessment_type=StateAssessmentType.LSIR,
                 assessment_type_raw_text="ADULT, MALE, COMMUNITY",
@@ -231,6 +249,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2009, 1, 1),
             termination_date=date(2010, 1, 7),
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
@@ -238,11 +257,13 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         supervision_sentences = [
             NormalizedStateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="ss1",
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
             NormalizedStateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="ss2",
                 completion_date=date(2010, 1, 2),
                 status=StateSentenceStatus.REVOKED,
             ),
@@ -261,6 +282,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2009, 1, 1),
             termination_date=date(2009, 12, 26),
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
@@ -268,11 +290,13 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         supervision_sentences = [
             NormalizedStateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="ss1",
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
             NormalizedStateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="ss2",
                 completion_date=date(2010, 1, 2),
                 status=StateSentenceStatus.REVOKED,
             ),
@@ -291,6 +315,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2009, 1, 1),
             termination_date=date(2010, 1, 7),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
@@ -298,11 +323,13 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         supervision_sentences = [
             NormalizedStateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="ss1",
                 completion_date=date(2010, 3, 1),
                 status=StateSentenceStatus.COMPLETED,
             ),
             NormalizedStateSupervisionSentence.new_with_defaults(
                 state_code=StateCode.US_ME.value,
+                external_id="ss2",
                 completion_date=date(2010, 1, 2),
                 status=StateSentenceStatus.COMPLETED,
             ),
@@ -321,6 +348,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_ME.value,
+            external_id="sp1",
             start_date=date(2009, 1, 1),
             termination_date=date(2010, 1, 7),
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,

@@ -53,6 +53,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="sv1",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -78,6 +79,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="sv1",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -102,6 +104,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="sv1",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -126,6 +129,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="sv1",
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
                     state_code=_STATE_CODE,
@@ -150,6 +154,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_PA",
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
@@ -176,6 +181,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_PA",
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
@@ -202,6 +208,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_PA",
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
@@ -226,6 +233,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_PA",
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
@@ -247,7 +255,10 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         self,
     ) -> None:
         # Arrange
-        violation = StateSupervisionViolation.new_with_defaults(state_code=_STATE_CODE)
+        violation = StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="sv1",
+        )
 
         # Act
         type_subtype_strings = (

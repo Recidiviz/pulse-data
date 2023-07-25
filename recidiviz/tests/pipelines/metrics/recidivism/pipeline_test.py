@@ -179,6 +179,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -192,6 +193,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         first_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -205,6 +207,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         subsequent_reincarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -305,6 +308,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         initial_incarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -318,6 +322,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         first_reincarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -331,6 +336,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         subsequent_reincarceration_1 = schema.StateIncarcerationPeriod(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -342,6 +348,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         initial_incarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=4444,
+            external_id="ip4",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -355,6 +362,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         first_reincarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=5555,
+            external_id="ip5",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -368,6 +376,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         subsequent_reincarceration_2 = schema.StateIncarcerationPeriod(
             incarceration_period_id=6666,
+            external_id="ip6",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             county_code="124",
@@ -498,6 +507,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         initial_incarceration = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
@@ -509,6 +519,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         first_reincarceration = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2011, 4, 5),
@@ -521,6 +532,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         subsequent_reincarceration = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=3333,
+                external_id="ip3",
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 state_code="US_XX",
                 admission_date=date(2017, 1, 4),
@@ -623,6 +635,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         only_incarceration = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code="US_XX",
             admission_date=date(2008, 11, 20),

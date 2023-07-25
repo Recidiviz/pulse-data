@@ -61,6 +61,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
     def test_infer_additional_periods(self) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code=StateCode.US_PA.value,
             start_date=date(2010, 2, 1),
             termination_date=date(2010, 3, 1),
@@ -72,6 +73,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_period_non_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=2,
+            external_id="sp2",
             state_code=StateCode.US_PA.value,
             start_date=date(2010, 3, 15),
             termination_date=date(2010, 4, 1),
@@ -90,6 +92,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=420000012312345,
+                external_id=None,  # TODO(#22531): Hydrate this external_id properly
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
                 termination_date=date(2010, 3, 15),
@@ -109,6 +112,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code=StateCode.US_PA.value,
             start_date=date(2010, 2, 1),
             termination_date=date(2010, 3, 1),
@@ -125,6 +129,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=420000012312345,
+                external_id=None,  # TODO(#22531): Hydrate this external_id properly
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
                 termination_date=None,
@@ -142,6 +147,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code=StateCode.US_PA.value,
             start_date=date(2010, 2, 1),
             termination_date=date(2010, 3, 1),
@@ -154,6 +160,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         incarceration_period_post_absconsion = (
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1,
+                external_id="ip1",
                 state_code=StateCode.US_PA.value,
                 admission_date=date(2010, 3, 15),
                 release_date=date(2010, 4, 30),
@@ -170,6 +177,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=420000012312345,
+                external_id=None,  # TODO(#22531): Hydrate this external_id properly
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
                 termination_date=date(2010, 3, 15),
@@ -187,6 +195,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code=StateCode.US_PA.value,
             start_date=date(2010, 2, 1),
             termination_date=date(2010, 3, 1),
@@ -198,6 +207,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_period_post_absconsion = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=2,
+            external_id=None,  # TODO(#22531): Hydrate this external_id properly
             state_code=StateCode.US_PA.value,
             start_date=date(2010, 3, 15),
             termination_date=date(2010, 3, 30),
@@ -210,6 +220,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
         incarceration_period_post_absconsion = (
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1,
+                external_id="ip1",
                 state_code=StateCode.US_PA.value,
                 admission_date=date(2010, 3, 16),
                 release_date=date(2010, 4, 30),
@@ -226,6 +237,7 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_period_absconsion,
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=420000012312345,
+                external_id=None,  # TODO(#22531): Hydrate this external_id properly
                 state_code=StateCode.US_PA.value,
                 start_date=date(2010, 3, 1),
                 termination_date=date(2010, 3, 15),

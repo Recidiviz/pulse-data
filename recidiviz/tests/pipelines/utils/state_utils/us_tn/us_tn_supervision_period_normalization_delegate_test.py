@@ -43,16 +43,19 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
     def test_drop_9999_12_31_periods(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp1",
             start_date=date(2010, 1, 1),
             termination_date=None,
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp2",
             start_date=date(2010, 1, 1),
             termination_date=date(9999, 12, 31),
         )
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp3",
             start_date=date(2010, 1, 1),
             termination_date=date(2020, 12, 31),
         )
@@ -69,6 +72,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp1",
             start_date=date(2022, 12, 15),
             termination_date=date(2023, 1, 31),
             supervision_level_raw_text="",
@@ -76,6 +80,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp2",
             start_date=date(2023, 1, 31),
             termination_date=date(2023, 2, 10),
             supervision_level_raw_text="",
@@ -98,6 +103,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp1",
             start_date=date(2022, 12, 15),
             termination_date=date(2023, 1, 31),
             supervision_level_raw_text="",
@@ -105,6 +111,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp2",
             start_date=date(2023, 1, 31),
             termination_date=date(2023, 3, 30),
             supervision_level_raw_text="",
@@ -127,6 +134,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp1",
             start_date=date(2022, 12, 15),
             termination_date=date(2023, 1, 31),
             supervision_level_raw_text="",
@@ -134,6 +142,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp2",
             start_date=date(2023, 1, 31),
             termination_date=date(2023, 2, 15),
             supervision_level_raw_text="",
@@ -156,6 +165,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp1",
             start_date=date(2022, 12, 15),
             termination_date=date(2023, 1, 31),
             supervision_level_raw_text="",
@@ -163,6 +173,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp2",
             start_date=date(2023, 1, 31),
             termination_date=None,
             supervision_level_raw_text="",
@@ -186,6 +197,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
     ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp1",
             start_date=date(2022, 12, 15),
             termination_date=date(2023, 3, 31),
             supervision_level_raw_text="",
@@ -193,6 +205,7 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=StateCode.US_TN.value,
+            external_id="sp2",
             start_date=date(2023, 3, 31),
             termination_date=None,
             supervision_level_raw_text="",

@@ -205,12 +205,14 @@ class TestUsMiViolationResponseNormalizationDelegate(unittest.TestCase):
 
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="ip1",
             admission_date=date(2022, 6, 1),
             admission_reason_raw_text="NOT14",
         )
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="ip2",
             admission_date=date(2022, 6, 1),
             admission_reason_raw_text="14",
         )

@@ -76,6 +76,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
     def test_prepare_supervision_periods_for_calculations(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code="US_XX",
             start_date=datetime.date(2006, 1, 1),
             termination_date=datetime.date(2007, 12, 31),
@@ -99,6 +100,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code="US_XX",
             start_date=datetime.date(2006, 1, 1),
             termination_date=datetime.date(2007, 12, 31),
@@ -116,6 +118,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code="US_XX",
             start_date=datetime.date(1990, 1, 1),
             termination_date=datetime.date(2007, 12, 31),
@@ -128,6 +131,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         updated_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code="US_XX",
             start_date=datetime.date(1990, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
@@ -140,6 +144,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
     def test_prepare_supervision_periods_for_calculations_placeholder(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
         )
 
@@ -153,6 +158,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
+            external_id="sp1",
             state_code="US_XX",
             start_date=None,
             termination_date=None,
@@ -168,6 +174,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         """Tests if the open supervision periods after a period ending in death are dropped"""
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code="US_XX",
             start_date=datetime.date(2000, 12, 29),
             termination_date=datetime.date(2001, 1, 1),
@@ -176,6 +183,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=2,
+            external_id="sp2",
             state_code="US_XX",
             start_date=datetime.date(2001, 1, 5),
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
@@ -185,6 +193,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=3,
+            external_id="sp3",
             state_code="US_XX",
             start_date=datetime.date(2001, 1, 6),
         )
@@ -209,6 +218,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         period ending in death is closed and updated to be TERMINATED"""
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code="US_XX",
             start_date=datetime.date(2001, 1, 1),
             termination_date=datetime.date(2001, 1, 30),
@@ -217,6 +227,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=2,
+            external_id="sp2",
             state_code="US_XX",
             start_date=datetime.date(2001, 1, 15),
         )
@@ -248,6 +259,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         period ending in death is dropped"""
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
+            external_id="sp1",
             state_code="US_XX",
             start_date=datetime.date(2020, 1, 1),
             termination_date=datetime.date(2020, 1, 31),
@@ -255,6 +267,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=2,
+            external_id="sp2",
             state_code="US_XX",
             start_date=datetime.date(2020, 1, 15),
         )
@@ -283,6 +296,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 10, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -292,6 +306,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             start_date=datetime.date(2000, 10, 1),
             termination_date=datetime.date(2003, 3, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -314,6 +329,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             start_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_date=datetime.date(2000, 1, 1),
@@ -323,6 +339,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             start_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
         )
@@ -342,6 +359,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
     ) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             supervision_period_id=111,
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
@@ -351,6 +369,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp2",
             supervision_period_id=222,
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
@@ -374,6 +393,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
@@ -383,6 +403,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -403,6 +424,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
@@ -414,6 +436,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -487,6 +510,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
@@ -498,6 +522,7 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,

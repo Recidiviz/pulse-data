@@ -49,6 +49,7 @@ class TestUsCoCommitmentFromSupervisionDelegate(unittest.TestCase):
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_CO",
             incarceration_period_id=111,
+            external_id="ip1",
             admission_date=date(2019, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             admission_reason_raw_text="10",
@@ -69,6 +70,7 @@ class TestUsCoCommitmentFromSupervisionDelegate(unittest.TestCase):
         ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_CO",
             incarceration_period_id=111,
+            external_id="ip1",
             admission_date=date(2019, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
             admission_reason_raw_text="10",

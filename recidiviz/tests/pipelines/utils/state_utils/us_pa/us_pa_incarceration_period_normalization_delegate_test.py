@@ -116,6 +116,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         parole_board_permanent_decision = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2018, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -235,6 +236,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         parole_board_permanent_decision = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2018, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -293,6 +295,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         parole_board_permanent_decision = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2018, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -351,6 +354,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         parole_board_permanent_decision = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2018, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -485,6 +489,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         parole_board_permanent_decision = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2018, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -539,6 +544,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         parole_board_permanent_decision = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2018, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -734,6 +740,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         state_code = "US_PA"
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
@@ -774,6 +781,7 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
 
         parole_board_permanent_decision_outside_window = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2018, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -792,6 +800,7 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
 
         parole_board_permanent_decision_in_window = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr2",
             response_date=date(year=2019, month=12, day=30),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -832,6 +841,7 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=STATE_CODE,
+                external_id="svr1",
                 response_date=date(year=2018, month=5, day=16),
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             )
@@ -856,6 +866,7 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
 
         parole_board_permanent_decision_outside_window = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2020, month=5, day=16),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -887,6 +898,7 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
 
         parole_board_permanent_decision_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2019, month=12, day=30),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -905,6 +917,7 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
 
         parole_board_permanent_decision_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr2",
             response_date=date(year=2019, month=12, day=30),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -960,6 +973,7 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
 
         parole_board_permanent_decision_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2019, month=12, day=30),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -978,6 +992,7 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
 
         parole_board_permanent_decision_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr2",
             response_date=date(year=2019, month=12, day=30),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -1007,6 +1022,7 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
 
         parole_board_permanent_decision_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr1",
             response_date=date(year=2019, month=12, day=30),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",
@@ -1025,6 +1041,7 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
 
         parole_board_permanent_decision_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
+            external_id="svr2",
             response_date=date(year=2019, month=12, day=30),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             response_type_raw_text="PERMANENT_DECISION",

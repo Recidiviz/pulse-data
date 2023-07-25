@@ -157,6 +157,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         program_assignment = schema.StateProgramAssignment(
             state_code="US_XX",
+            external_id="pa1",
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
             person_id=fake_person_id,
@@ -165,6 +166,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
+            external_id="a1",
             state_code="US_XX",
             assessment_date=date(2015, 3, 19),
             assessment_type="LSIR",
@@ -173,6 +175,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=fake_supervision_period_id,
+            external_id="sp1",
             state_code="US_XX",
             county_code="124",
             start_date=date(2015, 3, 14),
@@ -360,6 +363,7 @@ class TestProgramPipeline(unittest.TestCase):
         # Program assignment for a different person
         program_assignment = schema.StateProgramAssignment(
             state_code="US_XX",
+            external_id="pa1",
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
             person_id=fake_person_id_2,
@@ -368,6 +372,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
+            external_id="a1",
             state_code="US_XX",
             assessment_date=date(2015, 3, 19),
             assessment_type="LSIR",
@@ -376,6 +381,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
+            external_id="sp1",
             state_code="US_XX",
             county_code="124",
             start_date=date(2015, 3, 14),
@@ -492,6 +498,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
             sequence_num=0,
+            external_id="pa1",
             state_code="US_XX",
             program_id="PG3",
             program_location_id="XYZ",
@@ -502,6 +509,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
@@ -513,6 +521,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
                 sequence_num=0,
                 supervision_period_id=111,
+                external_id="sp1",
                 state_code="US_XX",
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 2, 19),
@@ -607,6 +616,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
             sequence_num=0,
+            external_id="pa1",
             state_code="US_ND",
             program_id="PG3",
             program_location_id="XYZ",
@@ -617,6 +627,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
             state_code="US_ND",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
@@ -628,6 +639,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
                 sequence_num=0,
                 supervision_period_id=111,
+                external_id="sp1",
                 state_code="US_ND",
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 3, 1),
@@ -720,6 +732,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
@@ -731,6 +744,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
                 sequence_num=0,
                 supervision_period_id=111,
+                external_id="sp1",
                 state_code="US_XX",
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
@@ -795,6 +809,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
             sequence_num=0,
+            external_id="pa1",
             state_code="US_XX",
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -805,6 +820,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
                 sequence_num=0,
                 supervision_period_id=111,
+                external_id="sp1",
                 state_code="US_XX",
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
@@ -886,6 +902,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         program_assignment = normalized_entities.NormalizedStateProgramAssignment.new_with_defaults(
             sequence_num=0,
+            external_id="pa1",
             state_code="US_XX",
             program_id="PG3",
             referral_date=date(2009, 10, 3),
@@ -894,6 +911,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         assessment = normalized_entities.NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),

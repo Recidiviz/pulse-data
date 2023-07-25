@@ -43,6 +43,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             state_code="US_XX",
             sequence_num=0,
             supervision_period_id=111,
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
@@ -52,6 +53,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             state_code="US_XX",
             sequence_num=1,
             supervision_period_id=222,
+            external_id="sp2",
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -78,6 +80,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             state_code="US_XX",
             sequence_num=0,
             supervision_period_id=111,
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
@@ -88,6 +91,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             state_code="US_XX",
             sequence_num=1,
             supervision_period_id=222,
+            external_id="sp2",
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -98,6 +102,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             state_code="US_XX",
             sequence_num=2,
             supervision_period_id=333,
+            external_id="sp3",
             start_date=date(2020, 5, 1),
             termination_date=date(2020, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -108,6 +113,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             state_code="US_XX",
             sequence_num=3,
             supervision_period_id=444,
+            external_id="sp4",
             start_date=date(2020, 10, 3),
             termination_date=date(2020, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -141,6 +147,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -151,6 +158,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -161,6 +169,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            external_id="sp3",
             sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -171,6 +180,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_4 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=444,
+            external_id="sp4",
             sequence_num=3,
             start_date=date(2001, 1, 4),
             termination_date=date(2001, 10, 11),
@@ -206,6 +216,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -215,6 +226,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -243,6 +255,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -254,6 +267,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -266,6 +280,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            external_id="sp3",
             sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -301,6 +316,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -312,6 +328,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -324,6 +341,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            external_id="sp3",
             sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -357,6 +375,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -368,6 +387,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -380,6 +400,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            external_id="sp3",
             sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -415,6 +436,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -426,6 +448,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -438,6 +461,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_period_3 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=333,
+            external_id="sp3",
             sequence_num=2,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -475,6 +499,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -484,6 +509,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -507,6 +533,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
@@ -516,6 +543,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -541,6 +569,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
@@ -550,6 +579,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2020, 10, 3),
             termination_date=date(2020, 10, 11),
@@ -580,6 +610,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
@@ -588,6 +619,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2000, 10, 1),
             termination_date=date(2000, 11, 1),
@@ -611,6 +643,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_period_1 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             sequence_num=0,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
@@ -619,6 +652,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_period_2 = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=222,
+            external_id="sp2",
             sequence_num=1,
             start_date=date(2010, 10, 1),
             termination_date=date(2010, 11, 1),
@@ -641,6 +675,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=111,
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,

@@ -112,6 +112,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             incarceration_period_1,
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=260000012345678,
+                external_id=None,  # TODO(#22531): Hydrate this external_id properly
                 state_code=_STATE_CODE,
                 admission_date=date(2022, 7, 1),
                 release_date=date(2022, 8, 1),

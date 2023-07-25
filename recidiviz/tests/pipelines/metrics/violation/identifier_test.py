@@ -115,6 +115,7 @@ class TestFindViolationEvents(unittest.TestCase):
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -124,6 +125,7 @@ class TestFindViolationEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -180,6 +182,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -189,6 +192,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -295,6 +299,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -304,6 +309,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -364,6 +370,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response_non_perm = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -379,6 +386,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response_perm = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                 response_date=date(2021, 1, 5),
                 is_draft=False,
@@ -388,6 +396,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -444,6 +453,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response_non_draft = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -459,6 +469,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response_draft = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 3),
                 is_draft=True,
@@ -468,6 +479,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -526,6 +538,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response_1 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -541,6 +554,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response_2 = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr2",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 5),
                 is_draft=False,
@@ -550,6 +564,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -609,6 +624,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -621,6 +637,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -683,6 +700,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="INI",
                 response_date=date(2021, 1, 4),
@@ -693,6 +711,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -780,6 +799,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="INI",
                 response_date=date(2021, 1, 4),
@@ -790,6 +810,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -874,6 +895,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -883,6 +905,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -942,6 +965,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_subtype="INI",
                 response_date=date(2021, 1, 4),
@@ -952,6 +976,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -1064,6 +1089,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 state_code=state_code,
+                external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
                 is_draft=False,
@@ -1073,6 +1099,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,
@@ -1183,6 +1210,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response_non_perm = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=1,
+                external_id="svr1",
                 state_code=state_code,
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2021, 1, 4),
@@ -1200,6 +1228,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_response_perm = (
             NormalizedStateSupervisionViolationResponse.new_with_defaults(
                 supervision_violation_response_id=2,
+                external_id="svr2",
                 state_code=state_code,
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                 response_date=date(2021, 1, 5),
@@ -1211,6 +1240,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code=state_code,
             supervision_violation_id=1,
+            external_id="sv1",
             violation_date=date(2021, 1, 1),
             is_violent=False,
             is_sex_offense=False,

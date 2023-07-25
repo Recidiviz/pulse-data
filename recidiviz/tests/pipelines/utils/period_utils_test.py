@@ -56,12 +56,14 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     def test_find_last_terminated_period_before_date(self):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2010, 8, 30),
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp2",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 9, 1),
         )
@@ -80,12 +82,14 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     def test_find_last_terminated_period_before_date_none(self):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 1),
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp2",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 1, 1),
         )
@@ -104,12 +108,14 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     def test_find_last_terminated_period_before_date_ends_before_cutoff(self):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 1),
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp2",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 1, 1),
         )
@@ -136,12 +142,14 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     def test_find_last_terminated_period_before_date_ends_on_cutoff_date(self):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 1),
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp2",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 1, 1),
         )
@@ -166,6 +174,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     def test_find_last_terminated_period_before_date_overlapping(self):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2007, 9, 20),
         )
@@ -173,6 +182,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
         # Overlapping supervision period should not be returned
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp2",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 1, 1),
         )
@@ -193,6 +203,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     ):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2007, 9, 20),
         )
@@ -200,6 +211,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
         # Overlapping supervision period that should have been found in the other identifier code
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp2",
             start_date=date(2006, 3, 1),
         )
 
@@ -226,6 +238,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     def test_find_last_terminated_period_before_date_month_boundary(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 3, 31),
         )
@@ -243,6 +256,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     ):
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2006, 3, 1),
             termination_date=date(2007, 12, 31),
         )
@@ -260,6 +274,7 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
     ):
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
         )
@@ -353,6 +368,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
     def test_find_earliest_period_ending_in_death_in_sp(self):
         supervision_period_death = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 2),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
@@ -360,6 +376,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip1",
             admission_date=date(2005, 1, 1),
         )
 
@@ -380,12 +397,14 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
     def test_find_earliest_period_ending_in_death_multiple_ip_death(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 2),
         )
 
         later_death_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip1",
             admission_date=date(2005, 1, 3),
             release_date=date(2005, 1, 6),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
@@ -394,6 +413,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
         earliest_death_incarceration_period = (
             StateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",
+                external_id="ip2",
                 admission_date=date(2005, 1, 3),
                 release_date=date(2005, 1, 4),
                 release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
@@ -418,12 +438,14 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
     def test_find_earliest_period_ending_in_death_no_deaths(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 2),
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip1",
             admission_date=date(2005, 1, 3),
             release_date=date(2005, 1, 6),
         )
@@ -442,6 +464,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
     def test_find_earliest_period_ending_in_death_both_sp_ip_deaths(self):
         supervision_period_death = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
@@ -449,6 +472,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip1",
             admission_date=date(2003, 1, 3),
             release_date=date(2004, 1, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
@@ -456,6 +480,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
 
         incarceration_period_death = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip2",
             admission_date=date(2004, 1, 3),
             release_date=date(2005, 1, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
@@ -479,12 +504,14 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
     def test_find_earliest_period_ending_in_death_no_end_date(self):
         supervision_period_death = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip1",
             admission_date=date(2003, 1, 3),
             release_date=date(2004, 1, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
@@ -492,6 +519,7 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
 
         incarceration_period_death = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="ip2",
             admission_date=date(2004, 1, 3),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
         )
@@ -513,18 +541,21 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
     def test_sort_periods_by_set_dates_and_statuses_sps(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp1",
             start_date=date(2000, 1, 1),
             termination_date=date(2010, 8, 30),
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp2",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 9, 1),
         )
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
+            external_id="sp3",
             start_date=date(2012, 12, 1),
             termination_date=date(2018, 2, 4),
         )
@@ -545,6 +576,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -555,6 +587,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
 
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2011, 3, 4),
@@ -565,6 +598,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
 
         ip_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
@@ -592,6 +626,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -602,6 +637,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
 
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2011, 3, 4),
@@ -612,6 +648,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
 
         ip_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
@@ -637,6 +674,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
+            external_id="ip1",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -647,6 +685,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
 
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=2222,
+            external_id="ip2",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
@@ -657,6 +696,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
 
         ip_3 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=3333,
+            external_id="ip3",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             state_code=state_code,
             admission_date=date(2012, 2, 4),

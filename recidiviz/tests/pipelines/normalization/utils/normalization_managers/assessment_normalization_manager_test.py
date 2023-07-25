@@ -78,11 +78,13 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
     def test_sort_assessments(self) -> None:
         assessment_1 = StateAssessment.new_with_defaults(
             state_code=self.state_code,
+            external_id="a1",
             assessment_date=datetime.date(2000, 1, 1),
             assessment_id=1,
         )
         assessment_2 = StateAssessment.new_with_defaults(
             state_code=self.state_code,
+            external_id="a2",
             assessment_date=datetime.date(2001, 1, 1),
             assessment_id=2,
         )
@@ -116,6 +118,7 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
     def test_default_sorted_assessments_with_additional_attributes(self) -> None:
         assessment_1 = StateAssessment.new_with_defaults(
             state_code=self.state_code,
+            external_id="external_id",
             assessment_date=datetime.date(2000, 1, 1),
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=10,
@@ -125,6 +128,7 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
         )
         assessment_2 = StateAssessment.new_with_defaults(
             state_code=self.state_code,
+            external_id="external_id2",
             assessment_date=datetime.date(2000, 1, 1),
             assessment_type=StateAssessmentType.LSIR,
             assessment_id=2,
@@ -170,6 +174,7 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     state_code=self.state_code,
+                    external_id="external_id",
                     assessment_type=StateAssessmentType.LSIR,
                     assessment_score=score,
                     assessment_id=1,
@@ -228,6 +233,7 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
             assessments=[
                 StateAssessment(
                     state_code=self.state_code,
+                    external_id="external_id",
                     assessment_type=assessment_type,
                     assessment_level=assessment_level,
                     assessment_id=1,
@@ -253,6 +259,7 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
         assessments = [
             StateAssessment.new_with_defaults(
                 state_code=self.state_code,
+                external_id="external_id",
                 assessment_date=datetime.date(2000, 1, 1),
                 assessment_id=i,
                 assessment_type=a,

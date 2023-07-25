@@ -280,6 +280,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -776,6 +777,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="ss1",
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
             status=StateSentenceStatus.COMPLETED,
@@ -834,6 +836,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
+            external_id="ss1",
             supervision_sentence_id=111,
             effective_date=date(2017, 1, 1),
             status=StateSentenceStatus.COMPLETED,
@@ -1905,6 +1908,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -2218,6 +2222,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_ID",
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -2311,6 +2316,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_PA",
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_score=33,
@@ -2514,6 +2520,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_ID",
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -2762,6 +2769,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code=state_code,
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
@@ -2779,6 +2787,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         violation_report_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=state_code,
             supervision_violation_response_id=888,
+            external_id="svr1",
             response_date=date(2018, 4, 21),
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             supervision_violation=supervision_violation_1,
@@ -2793,6 +2802,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=32663,
+            external_id="sv2",
             state_code=state_code,
             violation_date=date(2019, 1, 20),
             supervision_violation_types=[
@@ -2806,6 +2816,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         violation_report_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             state_code=state_code,
             supervision_violation_response_id=999,
+            external_id="svr2",
             response_date=date(2019, 1, 20),
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             supervision_violation=supervision_violation_2,
@@ -3680,6 +3691,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -3690,6 +3702,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=24,
             assessment_level=StateAssessmentLevel.MEDIUM,
@@ -3786,6 +3799,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
         assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
+            external_id="a1",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=24,
             assessment_date=date(2017, 12, 17),
@@ -4832,6 +4846,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             incarceration_period_id=111,
+            external_id="ip1",
             admission_date=date(2017, 6, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -5194,6 +5209,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         first_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2018, 3, 10),
@@ -5204,6 +5220,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         first_reassessment_score = 29
         first_reassessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=first_reassessment_score,
             assessment_date=date(2018, 5, 18),
@@ -5214,6 +5231,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         last_assessment_score = 19
         last_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=last_assessment_score,
             assessment_date=date(2019, 5, 10),
@@ -5321,6 +5339,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         first_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2018, 3, 10),
@@ -5426,6 +5445,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         too_early_assessment = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=38,
             assessment_date=date(2017, 12, 10),
@@ -5435,6 +5455,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
 
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2018, 1, 10),
@@ -5445,6 +5466,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         assessment_2_score = 29
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=assessment_2_score,
             assessment_date=date(2018, 5, 18),
@@ -5455,6 +5477,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         assessment_3_score = 19
         assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_CA",
+            external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=assessment_3_score,
             assessment_date=date(2019, 11, 21),
@@ -6138,12 +6161,14 @@ class TestGetMostSevereResponseDecision(unittest.TestCase):
     def test_get_most_severe_response_decision(self) -> None:
         supervision_violation = NormalizedStateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123455,
+            external_id="sv1",
             state_code="US_XX",
             violation_date=date(2009, 1, 3),
         )
 
         supervision_violation_response = NormalizedStateSupervisionViolationResponse.new_with_defaults(
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code="US_XX",
             response_date=date(2009, 1, 7),
@@ -6569,6 +6594,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
     def test_find_assessment_score_change(self) -> None:
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_score=33,
@@ -6579,6 +6605,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -6589,6 +6616,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=23,
             assessment_level=StateAssessmentLevel.MEDIUM,
@@ -6629,6 +6657,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
     def test_find_assessment_score_change_insufficient_assessments(self) -> None:
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
@@ -6638,6 +6667,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
@@ -6681,6 +6711,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
     ) -> None:
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
@@ -6690,6 +6721,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
@@ -6726,6 +6758,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
     def test_find_assessment_score_change_different_type(self) -> None:
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
@@ -6735,6 +6768,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
@@ -6744,6 +6778,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a3",
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=23,
             assessment_date=date(2016, 1, 13),
@@ -6781,6 +6816,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
     def test_find_assessment_score_change_same_date(self) -> None:
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 23),
@@ -6790,6 +6826,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
@@ -6799,6 +6836,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=23,
             assessment_date=date(2016, 11, 2),
@@ -6864,6 +6902,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
     def test_find_assessment_score_change_outside_boundary(self) -> None:
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a1",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2011, 3, 23),
@@ -6873,6 +6912,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_2 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a2",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2015, 11, 2),
@@ -6882,6 +6922,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
         assessment_3 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
+            external_id="a3",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=23,
             assessment_date=date(2016, 1, 13),

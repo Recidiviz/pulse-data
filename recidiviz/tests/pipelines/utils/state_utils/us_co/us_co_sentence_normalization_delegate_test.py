@@ -41,6 +41,7 @@ class TestUsCoSentenceNormalizationDelegate(unittest.TestCase):
     def test_replaces_invalid_dates_incarceration_sentence(self) -> None:
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="is1",
             date_imposed=datetime.date(1000, 1, 1),
             effective_date=datetime.date(934, 3, 3),
             completion_date=datetime.date(1000, 1, 1),
@@ -54,11 +55,13 @@ class TestUsCoSentenceNormalizationDelegate(unittest.TestCase):
     def test_replaces_invalid_dates_charges_preserving_relationship(self) -> None:
         charge = StateCharge.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="c1",
             status=StateChargeStatus.PRESENT_WITHOUT_INFO,
             date_charged=datetime.date(1000, 1, 1),
         )
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="is1",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[charge],
         )
@@ -70,6 +73,7 @@ class TestUsCoSentenceNormalizationDelegate(unittest.TestCase):
     def test_does_not_replace_dates_if_valid_incarceration_sentence(self) -> None:
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
+            external_id="is1",
             date_imposed=datetime.date(2000, 1, 1),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )

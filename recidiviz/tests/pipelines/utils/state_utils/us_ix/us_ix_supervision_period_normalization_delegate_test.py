@@ -44,6 +44,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=1,
+            external_id="sp1",
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
@@ -52,6 +53,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=2,
+            external_id="sp2",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=supervision_period_previous.termination_date,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -71,6 +73,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=1,
+            external_id="sp1",
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=previous_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
@@ -79,6 +82,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=2,
+            external_id="sp2",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=previous_termination_date + relativedelta(months=1, days=2),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -95,6 +99,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=1,
+            external_id="sp1",
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=self.upper_bound_date - relativedelta(days=10),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
@@ -103,6 +108,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=2,
+            external_id="sp2",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=supervision_period_previous.termination_date,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -120,6 +126,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=1,
+            external_id="sp1",
             start_date=self.upper_bound_date - relativedelta(days=100),
             termination_date=previous_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
@@ -128,6 +135,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period_one_day = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=2,
+            external_id="sp2",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=previous_termination_date,
             termination_date=previous_termination_date + relativedelta(days=10),
@@ -135,6 +143,7 @@ class TestUsIxSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_period_ongoing = StateSupervisionPeriod.new_with_defaults(
             state_code="US_IX",
             supervision_period_id=3,
+            external_id="sp3",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             start_date=supervision_period_one_day.termination_date,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
