@@ -1251,7 +1251,12 @@ def get_api_blueprint(
                 return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
             system = schema.System[agency.systems[0]]
+
             if len(agency.systems) > 1:
+                # Agencies with multiple systems will have a folder in their GCS bucket
+                # for each system that they can report for. When a file is uploaded to
+                # a folder within a bucket, the filepath is prefixed with the folder
+                # name (e.g <SYSTEM>/<FILE_NAME>, LAW_ENFORCEMENT/my_upload.xlsx).
                 system_str, _ = os.path.split(attributes[OBJECT_ID])
                 system = schema.System[system_str]
 
