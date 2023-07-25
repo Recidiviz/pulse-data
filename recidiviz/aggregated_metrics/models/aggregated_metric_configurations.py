@@ -133,8 +133,8 @@ AVG_CRITICAL_CASELOAD_SIZE = MiscAggregatedMetric(
 AVG_CRITICAL_CASELOAD_SIZE_OFFICER = MiscAggregatedMetric(
     name="avg_critical_caseload_size_officer",
     display_name="Average Critical Caseload Size Per Officer",
-    description="Average of the count of clients in each officer's caseload among days when "
-    "officer has critical caseload size",
+    description="Average of the count of clients in each officer's caseload among days "
+    "when officer has critical caseload size",
     populations=[MetricPopulationType.SUPERVISION],
     aggregation_levels=[
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
@@ -176,10 +176,41 @@ AVG_DAILY_POPULATION_COMMUNITY_CONFINEMENT = DailyAvgSpanCountMetric(
     },
 )
 
+AVG_DAILY_POPULATION_CRIME_AGAINST_PERSON = DailyAvgSpanCountMetric(
+    name="avg_daily_population_crime_against_person",
+    display_name="Average Population: Crime Against Person",
+    description="Average daily count of clients sentenced for a crime against person",
+    span_types=[PersonSpanType.SENTENCE_SPAN],
+    span_attribute_filters={
+        "any_is_crime_against_person": ["true"],
+    },
+)
+
+AVG_DAILY_POPULATION_CRIME_AGAINST_PROPERTY = DailyAvgSpanCountMetric(
+    name="avg_daily_population_crime_against_property",
+    display_name="Average Population: Crime Against Property",
+    description="Average daily count of clients sentenced for crime against property",
+    span_types=[PersonSpanType.SENTENCE_SPAN],
+    span_attribute_filters={
+        "any_is_crime_against_property": ["true"],
+    },
+)
+
+AVG_DAILY_POPULATION_CRIME_AGAINST_SOCIETY = DailyAvgSpanCountMetric(
+    name="avg_daily_population_crime_against_society",
+    display_name="Average Population: Crime Against Society",
+    description="Average daily count of clients sentenced for crime against society",
+    span_types=[PersonSpanType.SENTENCE_SPAN],
+    span_attribute_filters={
+        "any_is_crime_against_society": ["true"],
+    },
+)
+
 AVG_DAILY_POPULATION_DOMESTIC_VIOLENCE_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_domestic_violence_case_type",
     display_name="Average Population: Domestic Violence Case Type",
-    description="Average daily count of clients on supervision with a domestic violence case type",
+    description="Average daily count of clients on supervision with a domestic "
+    "violence case type",
     span_types=[PersonSpanType.COMPARTMENT_SESSION],
     span_attribute_filters={
         "compartment_level_1": ["SUPERVISION"],
@@ -201,7 +232,8 @@ AVG_DAILY_POPULATION_DRUG_CASE_TYPE = DailyAvgSpanCountMetric(
 AVG_DAILY_POPULATION_EMPLOYED = DailyAvgSpanCountMetric(
     name="avg_population_employed",
     display_name="Average Population With Employment",
-    description="Average daily count of clients with some form of employment or alternate occupation/status",
+    description="Average daily count of clients with some form of employment or "
+    "alternate occupation/status",
     span_types=[PersonSpanType.EMPLOYMENT_STATUS_SESSION],
     span_attribute_filters={"is_employed": ["true"]},
 )
@@ -272,7 +304,8 @@ AVG_DAILY_POPULATION_LOW_RISK_LEVEL = DailyAvgSpanCountMetric(
 AVG_DAILY_POPULATION_MENTAL_HEALTH_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_mental_health_case_type",
     display_name="Average Population: Mental Health Case Type",
-    description="Average daily count of clients on supervision with a mental health case type",
+    description="Average daily count of clients on supervision with a mental health "
+    "case type",
     span_types=[PersonSpanType.COMPARTMENT_SESSION],
     span_attribute_filters={
         "compartment_level_1": ["SUPERVISION"],
@@ -361,7 +394,8 @@ AVG_DAILY_POPULATION_PROBATION = DailyAvgSpanCountMetric(
 AVG_DAILY_POPULATION_SEX_OFFENSE_CASE_TYPE = DailyAvgSpanCountMetric(
     name="avg_population_sex_offense_case_type",
     display_name="Average Population: Sex Offense Case Type",
-    description="Average daily count of clients on supervision with a sex offense case type",
+    description="Average daily count of clients on supervision with a sex offense case "
+    "type",
     span_types=[PersonSpanType.COMPARTMENT_SESSION],
     span_attribute_filters={
         "compartment_level_1": ["SUPERVISION"],
@@ -401,6 +435,28 @@ AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT_JUSTICE_IMPACT = DailyAvgSpanCountMetr
     span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
     span_attribute_filters={
         "justice_impact_type": ["SOLITARY"],
+    },
+)
+
+AVG_DAILY_POPULATION_DRUG_OFFENSE_SENTENCE = DailyAvgSpanCountMetric(
+    name="avg_population_drug_offense_sentence",
+    display_name="Average Population: Drug Offense",
+    description="Average daily population of clients sentenced for at least one drug "
+    "offense",
+    span_types=[PersonSpanType.SENTENCE_SPAN],
+    span_attribute_filters={
+        "any_is_drug_uniform": ["true"],
+    },
+)
+
+AVG_DAILY_POPULATION_VIOLENT_OFFENSE_SENTENCE = DailyAvgSpanCountMetric(
+    name="avg_population_violent_offense_sentence",
+    display_name="Average Population: Violent Offense",
+    description="Average daily population of clients sentenced for at least one violent"
+    " offense",
+    span_types=[PersonSpanType.SENTENCE_SPAN],
+    span_attribute_filters={
+        "any_is_violent_uniform": ["true"],
     },
 )
 
@@ -639,7 +695,8 @@ DAYS_ABSCONDED_365 = AssignmentSpanDaysMetric(
     name="days_absconded_365",
     display_name="Days Absconded Within 1 Year Of Assignment",
     description="Sum of the number of days with absconsion or bench warrant status "
-    "within 1 year following assignment, for all assignments during the analysis period",
+    "within 1 year following assignment, for all assignments during the analysis "
+    "period",
     span_types=[PersonSpanType.COMPARTMENT_SESSION],
     span_attribute_filters={
         "compartment_level_2": ["ABSCONSION", "BENCH_WARRANT"],
@@ -662,8 +719,8 @@ DAYS_AT_LIBERTY_365 = AssignmentSpanDaysMetric(
 DAYS_EMPLOYED_365 = AssignmentSpanDaysMetric(
     name="days_employed_365",
     display_name="Days Employed Within 1 Year Of Assignment",
-    description="Sum of the number of days clients had valid employment status within 1 "
-    "year following assignment, for all assignments during the analysis period",
+    description="Sum of the number of days clients had valid employment status within "
+    "1 year following assignment, for all assignments during the analysis period",
     span_types=[PersonSpanType.EMPLOYMENT_STATUS_SESSION],
     span_attribute_filters={
         "is_employed": ["true"],
@@ -700,7 +757,8 @@ DAYS_OUT_OF_STATE_365 = AssignmentSpanDaysMetric(
     name="days_out_of_state_365",
     display_name="Days Out of State Within 1 Year Of Assignment",
     description="Sum of the number of days incarcerated or supervised out of state "
-    "within 1 year following assignment, for all assignments during the analysis period",
+    "within 1 year following assignment, for all assignments during the analysis "
+    "period",
     span_types=[PersonSpanType.COMPARTMENT_SESSION],
     span_attribute_filters={
         "compartment_level_1": [
@@ -726,8 +784,8 @@ DAYS_PENDING_CUSTODY_365 = AssignmentSpanDaysMetric(
 DAYS_SINCE_MOST_RECENT_COMPLETED_CONTACT = DailyAvgTimeSinceSpanStartMetric(
     name="avg_days_since_most_recent_completed_contact",
     display_name="Days Since Most Recent Completed Contact",
-    description="Average number of days since a client's most recent completed contact, "
-    "across all days on which client is in population",
+    description="Average number of days since a client's most recent completed "
+    "contact, across all days on which client is in population",
     span_types=[PersonSpanType.COMPLETED_CONTACT_SESSION],
     span_attribute_filters={},
 )
@@ -757,9 +815,11 @@ DAYS_SUPERVISED_365 = AssignmentSpanDaysMetric(
 
 DAYS_TO_FIRST_ABSCONSION_BENCH_WARRANT_365 = AssignmentDaysToFirstEventMetric(
     name="days_to_first_absconsion_bench_warrant_365",
-    display_name="Days To First Absconsion/Bench Warrant (Legal Status) Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first absconsion/bench warrant legal "
-    "status within 1 year following assignment, for all assignments during the analysis period",
+    display_name="Days To First Absconsion/Bench Warrant (Legal Status) Within 1 Year "
+    "After Assignment",
+    description="Sum of the number of days prior to first absconsion/bench warrant "
+    "legal status within 1 year following assignment, for all assignments during the "
+    "analysis period",
     event_types=[PersonEventType.ABSCONSION_BENCH_WARRANT],
     event_attribute_filters={},
     window_length_days=365,
@@ -808,7 +868,8 @@ DAYS_TO_FIRST_VIOLATION_365 = AssignmentDaysToFirstEventMetric(
 DAYS_TO_FIRST_VIOLATION_365_BY_TYPE_METRICS = [
     AssignmentDaysToFirstEventMetric(
         name=f"days_to_first_violation_{category.lower()}_365",
-        display_name=f"Days To First {category.title()} Violation Within 1 Year After Assignment",
+        display_name=f"Days To First {category.title()} Violation Within 1 Year After "
+        "Assignment",
         description=f"Sum of the number of days prior to first {category.lower()} "
         "violation within 1 year following assignment, for all assignments during the "
         "analysis period",
@@ -832,7 +893,8 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_365 = AssignmentDaysToFirstEventMetric(
 DAYS_TO_FIRST_VIOLATION_RESPONSE_365_BY_TYPE_METRICS = [
     AssignmentDaysToFirstEventMetric(
         name=f"days_to_first_violation_response_{category.lower()}_365",
-        display_name=f"Days To First {category.title()} Violation Response Within 1 Year After Assignment",
+        display_name=f"Days To First {category.title()} Violation Response Within 1 "
+        "Year After Assignment",
         description=f"Sum of the number of days prior to first {category.lower()} "
         "violation response within 1 year following assignment, for all assignments "
         "during the analysis period",
@@ -890,7 +952,8 @@ EMPLOYED_STATUS_STARTS = EventCountMetric(
 EMPLOYER_CHANGES_365 = AssignmentEventCountMetric(
     name="employer_changes_365",
     display_name="Employer Changes Within 1 Year Of Assignment",
-    description="Number of times client starts employment with a new employer within 1 year of assignment",
+    description="Number of times client starts employment with a new employer within 1 "
+    "year of assignment",
     event_types=[PersonEventType.EMPLOYMENT_PERIOD_START],
     event_attribute_filters={},
 )
@@ -898,8 +961,8 @@ EMPLOYER_CHANGES_365 = AssignmentEventCountMetric(
 INCARCERATIONS_INFERRED = EventCountMetric(
     name="incarcerations_inferred",
     display_name="Inferred Incarcerations",
-    description="Number of inferred incarceration events that do not align with an observed "
-    "incarceration session start",
+    description="Number of inferred incarceration events that do not align with an "
+    "observed incarceration session start",
     event_types=[PersonEventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON],
     event_attribute_filters={"outflow_to_incarceration": ["false"]},
 )
@@ -919,6 +982,14 @@ INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
+
+INCARCERATION_RELEASES_1_MONTH_AFTER_PAROLE_ELIGIBILITY_DATE = EventCountMetric(
+    name="incarceration_releases_1_month_after_parole_eligibility_date",
+    display_name="Incarceration Releases 1 Month After Parole Eligibility Date",
+    description="Number of releases occurring at least 1 month after one's parole eligibility date",
+    event_types=[PersonEventType.INCARCERATION_RELEASE],
+    event_attribute_filters={"parole_release_1_month_flag": ["true"]},
+)
 
 INCARCERATION_STARTS = EventCountMetric(
     name="incarceration_starts",
@@ -942,7 +1013,8 @@ INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
 
 INCARCERATION_STARTS_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCountMetric(
     name="incarceration_starts_technical_violation_no_prior_treatment_referral",
-    display_name="Incarceration Starts, Technical Violation, No Prior Treatment Referral",
+    display_name="Incarceration Starts, Technical Violation, No Prior Treatment "
+    "Referral",
     description="Number of observed incarceration starts for which the most severe "
     "violation type was technical, and where there were no preceding treatment"
     "referrals during the past 1 year",
@@ -956,7 +1028,8 @@ INCARCERATION_STARTS_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCoun
 INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
     name="incarceration_starts_and_inferred",
     display_name="Incarceration Starts And Inferred Incarcerations",
-    description="Number of total observed incarceration starts or inferred incarcerations",
+    description="Number of total observed incarceration starts or inferred "
+    "incarcerations",
     event_types=[
         PersonEventType.INCARCERATION_START,
         PersonEventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
@@ -967,9 +1040,11 @@ INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
 INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
     EventCountMetric(
         name=f"incarceration_starts_and_inferred_{category.lower()}_violation",
-        display_name=f"Incarceration Starts And Inferred Incarcerations, {category.title()} Violation",
+        display_name="Incarceration Starts And Inferred Incarcerations, "
+        f"{category.title()} Violation",
         description="Number of total observed incarceration starts or inferred "
-        f"incarcerations for which the most severe violation type was {category.lower()}",
+        f"incarcerations for which the most severe violation type was "
+        f"{category.lower()}",
         event_types=[
             PersonEventType.INCARCERATION_START,
             PersonEventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
@@ -981,10 +1056,11 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
 
 INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCountMetric(
     name="incarceration_starts_and_inferred_technical_violation_no_prior_treatment_referral",
-    display_name="Incarceration Starts And Inferred Incarcerations, Technical Violation, No Prior Treatment Referral",
-    description="Number of observed incarceration starts or inferred incarcerations for which the most severe "
-    "violation type was technical, and where there were no preceding treatment"
-    "referrals during the past 1 year",
+    display_name="Incarceration Starts And Inferred Incarcerations, Technical "
+    "Violation, No Prior Treatment Referral",
+    description="Number of observed incarceration starts or inferred incarcerations "
+    "for which the most severe violation type was technical, and where there were no "
+    "preceding treatment referrals during the past 1 year",
     event_types=[
         PersonEventType.INCARCERATION_START,
         PersonEventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
@@ -1007,8 +1083,8 @@ LATE_OPPORTUNITY_METRICS_INCARCERATION = [
     EventCountMetric(
         name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",
         display_name=f"{num_days} Days Late: {b.task_title}",
-        description=f"Number of times clients surpass {num_days} days of being eligible "
-        f"for opportunities of type: {b.task_title.lower()}",
+        description=f"Number of times clients surpass {num_days} days of being "
+        f"eligible for opportunities of type: {b.task_title.lower()}",
         event_types=[PersonEventType[f"TASK_ELIGIBLE_{num_days}_DAYS"]],
         event_attribute_filters={
             "task_type": [b.task_type_name],
@@ -1023,8 +1099,8 @@ LATE_OPPORTUNITY_METRICS_SUPERVISION = [
     EventCountMetric(
         name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",
         display_name=f"{num_days} Days Late: {b.task_title}",
-        description=f"Number of times clients surpass {num_days} days of being eligible "
-        f"for opportunities of type: {b.task_title.lower()}",
+        description=f"Number of times clients surpass {num_days} days of being "
+        f"eligible for opportunities of type: {b.task_title.lower()}",
         event_types=[PersonEventType[f"TASK_ELIGIBLE_{num_days}_DAYS"]],
         event_attribute_filters={
             "task_type": [b.task_type_name],
@@ -1041,6 +1117,32 @@ LIBERTY_STARTS = EventCountMetric(
     description="Number of transitions to liberty",
     event_types=[PersonEventType.LIBERTY_START],
     event_attribute_filters={},
+)
+
+DAYS_SENTENCED_AT_LIBERTY_START = EventValueMetric(
+    name="days_sentenced_at_liberty_start",
+    display_name="Days Sentenced At Liberty Start",
+    description="Days sentenced as of the start of liberty",
+    event_types=[
+        PersonEventType.INCARCERATION_RELEASE,
+        PersonEventType.SUPERVISION_RELEASE,
+    ],
+    event_attribute_filters={"outflow_to_level_1": ["LIBERTY"]},
+    event_value_numeric="days_sentenced",
+    event_count_metric=LIBERTY_STARTS,
+)
+
+DAYS_SERVED_AT_LIBERTY_START = EventValueMetric(
+    name="days_served_at_liberty_start",
+    display_name="Days Served At Liberty Start",
+    description="Days served as of the start of liberty",
+    event_types=[
+        PersonEventType.INCARCERATION_RELEASE,
+        PersonEventType.SUPERVISION_RELEASE,
+    ],
+    event_attribute_filters={"outflow_to_level_1": ["LIBERTY"]},
+    event_value_numeric="days_served",
+    event_count_metric=LIBERTY_STARTS,
 )
 
 LSIR_ASSESSMENTS = EventCountMetric(
@@ -1132,11 +1234,11 @@ AVG_LSIR_SCORE_AT_ASSIGNMENT = AssignmentSpanValueAtStartMetric(
 MAX_DAYS_STABLE_EMPLOYMENT_365 = AssignmentSpanMaxDaysMetric(
     name="max_days_stable_employment_365",
     display_name="Maximum Days Stable Employment Within 1 Year of Assignment",
-    description="Number of days in the longest stretch of continuous stable employment (same employer and job) within 1 year of assignment",
+    description="Number of days in the longest stretch of continuous stable employment "
+    "(same employer and job) within 1 year of assignment",
     span_types=[PersonSpanType.EMPLOYMENT_PERIOD],
     span_attribute_filters={},
 )
-
 
 PAROLE_BOARD_HEARINGS = EventCountMetric(
     name="parole_board_hearings",
@@ -1157,7 +1259,8 @@ PAROLE_BOARD_HEARINGS_APPROVED = EventCountMetric(
 PAROLE_BOARD_HEARINGS_AVG_DAYS_SINCE_INCARCERATION = EventValueMetric(
     name="parole_board_hearing_avg_days_since_incarceration",
     display_name="Parole Board Hearings: Avg. Days Since Incarceration Start",
-    description="Average number of days between the start of incarceration and all parole board hearings occurring during the period",
+    description="Average number of days between the start of incarceration and all "
+    "parole board hearings occurring during the period",
     event_types=[PersonEventType.PAROLE_HEARING],
     event_attribute_filters={},
     event_value_numeric="days_since_incarceration_start",
@@ -1191,8 +1294,8 @@ PENDING_CUSTODY_STARTS = EventCountMetric(
 PERSON_DAYS_WEIGHTED_JUSTICE_IMPACT = SumSpanDaysMetric(
     name="person_days_weighted_justice_impact",
     display_name="Person-Days: Weighted Justice Impact",
-    description="Total number of person-days impacted by the justice system, weighted by "
-    "compartment type",
+    description="Total number of person-days impacted by the justice system, weighted "
+    "by compartment type",
     span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
     span_attribute_filters={},
     weight_col="justice_impact_weight",
@@ -1234,9 +1337,59 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
 PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
     name="prop_period_with_critical_caseload",
     display_name="Proportion Of Analysis Period With Critical Caseload",
-    description="Proportion of the analysis period for which an officer has a critical caseload size",
+    description="Proportion of the analysis period for which an officer has a critical"
+    "caseload size",
     populations=[MetricPopulationType.SUPERVISION],
     aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
+)
+
+# This exists to support PROP_SENTENCE_ metrics
+SUPERVISION_STARTS_FROM_INCARCERATION = EventCountMetric(
+    name="supervision_starts_from_incarceration",
+    display_name="Supervision Starts From Incarceration",
+    description="Number of transitions to supervision from incarceration",
+    event_types=[PersonEventType.SUPERVISION_START],
+    event_attribute_filters={"inflow_from_level_1": ["INCARCERATION"]},
+)
+
+PROP_SENTENCE_SERVED_AT_INCARCERATION_TO_SUPERVISION_TRANSITION = EventValueMetric(
+    name="prop_sentence_at_incarceration_outflow_to_supervision",
+    display_name="Proportion Sentence Served At Incarceration To Supervision "
+    "Transition",
+    description="Average proportion of sentence served at the transition from "
+    "incarceration to supervision",
+    event_types=[PersonEventType.INCARCERATION_RELEASE],
+    event_attribute_filters={"outflow_to_level_1": ["SUPERVISION"]},
+    event_value_numeric="prop_sentence_served",
+    event_count_metric=SUPERVISION_STARTS_FROM_INCARCERATION,
+)
+
+PROP_SENTENCE_SERVED_AT_LIBERTY_START = EventValueMetric(
+    name="prop_sentence_served_at_liberty_start",
+    display_name="Proportion Sentence Served At Liberty Start",
+    description="Average proportion of sentence served as of the release event",
+    event_types=[
+        PersonEventType.INCARCERATION_RELEASE,
+        PersonEventType.SUPERVISION_RELEASE,
+    ],
+    event_attribute_filters={"outflow_to_level_1": ["LIBERTY"]},
+    event_value_numeric="prop_sentence_served",
+    event_count_metric=LIBERTY_STARTS,
+)
+
+
+PROP_SENTENCE_SERVED_AT_SUPERVISION_INFLOW_FROM_INCARCERATION = EventValueMetric(
+    name="prop_sentence_at_supervision_inflow_from_incarceration",
+    display_name="Proportion Sentence Served At Incarceration To Supervision "
+    "Transition",
+    description="Average proportion of sentence served at the transition from "
+    "incarceration to supervision",
+    event_types=[
+        PersonEventType.SUPERVISION_START,
+    ],
+    event_attribute_filters={"inflow_from_level_1": ["INCARCERATION"]},
+    event_value_numeric="prop_sentence_served",
+    event_count_metric=SUPERVISION_STARTS_FROM_INCARCERATION,
 )
 
 SUPERVISION_LEVEL_DOWNGRADES = EventCountMetric(
@@ -1263,7 +1416,6 @@ SUPERVISION_LEVEL_UPGRADES = EventCountMetric(
     event_attribute_filters={"change_type": ["UPGRADE"]},
 )
 
-
 SUPERVISION_STARTS = EventCountMetric(
     name="supervision_starts",
     display_name="Supervision Starts",
@@ -1271,6 +1423,18 @@ SUPERVISION_STARTS = EventCountMetric(
     event_types=[PersonEventType.SUPERVISION_START],
     event_attribute_filters={},
 )
+
+SUPERVISION_STARTS_1_MONTH_AFTER_PAROLE_ELIGIBILITY_DATE = EventCountMetric(
+    name="supervision_starts_1_month_after_parole_eligibility_date",
+    display_name="Supervision Starts One Month After Parole Eligibility",
+    description="Number of people who are delayed for parole by at least 1 month",
+    event_types=[PersonEventType.INCARCERATION_RELEASE],
+    event_attribute_filters={
+        "parole_release_1_month_flag": ["true"],
+        "outflow_to_level_1": ["SUPERVISION"],
+    },
+)
+
 
 # get unique completion task types
 TASK_COMPLETED_METRICS_INCARCERATION = [
@@ -1308,8 +1472,8 @@ TREATMENT_REFERRALS = EventCountMetric(
 UNSUCCESSFUL_SUPERVISION_TERMINATIONS = EventCountMetric(
     name="unsuccessful_supervision_terminations",
     display_name="Unsuccessful Supervision Terminations",
-    description="Number of unsuccessful supervision terminations (incarceration starts, absconsion/bench warrants, "
-    "pending custody starts)",
+    description="Number of unsuccessful supervision terminations (incarceration "
+    "starts, absconsion/bench warrants, pending custody starts)",
     event_types=[
         PersonEventType.ABSCONSION_BENCH_WARRANT,
         PersonEventType.INCARCERATION_START,

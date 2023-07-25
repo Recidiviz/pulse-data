@@ -162,6 +162,7 @@ WHERE
     spans.person_id,
     spans.start_date,
     spans.end_date_exclusive,
+
     -- Characteristics from sentence spans
     LOGICAL_OR(sentences.is_drug_uniform) AS any_is_drug_uniform,
     LOGICAL_OR(sentences.is_violent_uniform) AS any_is_violent_uniform,
@@ -175,10 +176,11 @@ WHERE
     MAX(task_deadlines.projected_supervision_release_date) AS projected_supervision_release_snapshot_date,
     MAX(task_deadlines.projected_incarceration_release_date) AS projected_incarceration_release_snapshot_date,
     MAX(task_deadlines.parole_eligibility_date) AS parole_eligibility_snapshot_date,
+
 FROM
     `{project_id}.sessions.sentence_spans_materialized` spans,
-    UNNEST(sentences_preprocessed_id_array_actual_completion) as sentences_preprocessed_id,
-    UNNEST(sentence_deadline_id_array) as sentence_deadline_id
+    UNNEST(sentences_preprocessed_id_array_actual_completion) AS sentences_preprocessed_id,
+    UNNEST(sentence_deadline_id_array) AS sentence_deadline_id
 LEFT JOIN
     `{project_id}.sessions.sentences_preprocessed_materialized` sentences
 USING
