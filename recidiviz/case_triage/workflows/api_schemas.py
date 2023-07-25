@@ -114,19 +114,6 @@ class WorkflowsEnqueueSmsRequestSchema(CamelOrSnakeCaseSchema):
     sender_id = fields.Str(required=True)
 
 
-class TwilioSmsStatusResponseSchema(CamelOrSnakeCaseSchema):
-    """
-    The schema expected by the /workflows/webhook/twilio_status
-    Snake-cased keys are expected since the request is coming from the Twilio API
-    """
-
-    message_sid = fields.Str(required=True)
-    message_status = fields.Str(required=True)
-    account_sid = fields.Str(required=True)
-    error_code = fields.Str(load_default=None, allow_none=True)
-    error_message = fields.Str(load_default=None, allow_none=True)
-
-
 def validate_e164_phone_number(phone_number: str) -> None:
     """
     Validates that a string matches E.164 schema for a US phone number

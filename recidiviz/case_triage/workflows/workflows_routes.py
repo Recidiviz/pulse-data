@@ -33,7 +33,6 @@ from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_ap
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.workflows.api_schemas import (
     ProxySchema,
-    TwilioSmsStatusResponseSchema,
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
@@ -64,6 +63,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.environment import get_gcp_environment, in_gcp, in_gcp_production
 from recidiviz.utils.metadata import CloudRunMetadata
+from recidiviz.utils.params import get_str_param_value
 from recidiviz.utils.secrets import get_secret
 
 if in_gcp():
@@ -511,15 +511,19 @@ def create_workflows_api_blueprint() -> Blueprint:
         )
 
     @workflows_api.post("/webhook/twilio_status")
-    @requires_api_schema(TwilioSmsStatusResponseSchema)
     def handle_twilio_status() -> Response:
-        data = load_api_schema(TwilioSmsStatusResponseSchema, g.api_data)
-        status = data["message_status"]
-        message_sid = data["message_sid"]
-        error_code = data["error_code"]
-        error_message = data["error_message"]
-
-        logging.info("Twilio status api data: [%d]", data)
+        status = get_str_param_value(
+            "MessageStatus", request.values, preserve_case=True
+        )
+        message_sid = get_str_param_value(
+            "MessageSid", request.values, preserve_case=True
+        )
+        error_code = get_str_param_value(
+            "ErrorCode", request.values, preserve_case=True
+        )
+        error_message = get_str_param_value(
+            "ErrorMessage", request.values, preserve_case=True
+        )
 
         firestore_client = FirestoreClientImpl()
         milestones_messages_ref = firestore_client.get_collection_group(

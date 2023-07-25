@@ -18,6 +18,7 @@
 import datetime
 import logging
 from http import HTTPStatus
+from typing import Optional
 
 from flask import Response, jsonify, make_response
 
@@ -53,10 +54,10 @@ def get_sms_request_firestore_path(state: str, recipient_external_id: str) -> st
     return f"clientUpdatesV2/{client_firestore_id}/milestonesMessages/{month_code}"
 
 
-def get_workflows_consolidated_status(status: str) -> str:
-    if status.lower() in ["undelivered", "failed", "canceled"]:
+def get_workflows_consolidated_status(status: Optional[str]) -> str:
+    if status and status.lower() in ["undelivered", "failed", "canceled"]:
         return ExternalSystemRequestStatus.FAILURE.value
-    if status.lower() in ["delivered", "read"]:
+    if status and status.lower() in ["delivered", "read"]:
         return ExternalSystemRequestStatus.SUCCESS.value
     # The IN_PROGRESS statuses are ["accepted", "scheduled", "queued", "sending", "sent"]
     return ExternalSystemRequestStatus.IN_PROGRESS.value

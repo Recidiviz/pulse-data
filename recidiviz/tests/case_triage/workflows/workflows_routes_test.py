@@ -825,7 +825,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "Origin": "http://localhost:5000",
                 "X-Twilio-Signature": "1234567a",
             },
-            json={
+            data={
                 "MessageSid": "ABC",
                 "MessageStatus": "delivered",
                 "AccountSid": account_sid,
@@ -872,7 +872,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "Origin": "http://localhost:5000",
                 "X-Twilio-Signature": "1234567a",
             },
-            json={
+            data={
                 "MessageSid": "ABC",
                 "MessageStatus": "failed",
                 "AccountSid": account_sid,
@@ -921,7 +921,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "Origin": "http://localhost:5000",
                 "X-Twilio-Signature": "1234567a",
             },
-            json={
+            data={
                 "MessageSid": "ABC",
                 "MessageStatus": "sending",
                 "AccountSid": account_sid,
