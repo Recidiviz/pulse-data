@@ -25,6 +25,7 @@ and conform to the following:
 3) Each file name is [email address].html
 4) The contents of the file are ready to be sent with no further modification
 """
+import json
 import logging
 import re
 from datetime import date, datetime
@@ -34,6 +35,9 @@ import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
+from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
+    ADDITIONAL_EMAIL_ADDRESSES_KEY,
+)
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_EMAIL_SUBJECT,
     Batch,
@@ -119,6 +123,40 @@ def deliver(
     )
 
     for recipient_email_address in html_files:
+        additional_cc_addresses = []
+        html_path = utils.get_html_filepath(
+            batch,
+            recipient_email_address,
+        )
+
+        file_metadata = get_file_metadata(html_path)
+
+        if (
+            redirect_address is None
+            and file_metadata
+            and ADDITIONAL_EMAIL_ADDRESSES_KEY in file_metadata
+        ):
+            # If there is no redirect address, then we expect the additional emails to exist in the metadata.
+            # See recidiviz/reporting/email_generation.py for where the metadata is written.
+            additional_cc_addresses = (
+                json.loads(file_metadata[ADDITIONAL_EMAIL_ADDRESSES_KEY])
+                if file_metadata[ADDITIONAL_EMAIL_ADDRESSES_KEY]
+                else []
+            )
+
+            if additional_cc_addresses:
+                logging.info(
+                    "CCing the following addresses on email to %s: [%s] ",
+                    recipient_email_address,
+                    ",".join(address for address in additional_cc_addresses),
+                )
+
+        all_cc_addresses = (
+            cc_addresses + additional_cc_addresses
+            if cc_addresses
+            else additional_cc_addresses
+        )
+
         sent_successfully = sendgrid.send_message(
             to_email=recipient_email_address,
             from_email=from_email_address,
@@ -127,7 +165,7 @@ def deliver(
             html_content=html_files[recipient_email_address],
             attachment_title=attachment_title,
             redirect_address=redirect_address,
-            cc_addresses=cc_addresses,
+            cc_addresses=all_cc_addresses if all_cc_addresses else None,
             text_attachment_content=attachment_files.get(recipient_email_address),
         )
 
@@ -217,6 +255,23 @@ def load_files_from_storage(bucket_name: str, batch_id_path: str) -> Dict[str, s
         files[email_address] = body
 
     return files
+
+
+def get_file_metadata(file_path: GcsfsFilePath) -> Optional[Dict[str, str]]:
+    """
+    Gets the metadata for the object at the given path if it exists in the fs.
+
+    Args:
+        file_path: The GCS file path to get metadata for
+    """
+    try:
+        gcs_file_system = GcsfsFactory.build()
+        metadata = gcs_file_system.get_metadata(path=file_path)
+    except Exception:
+        logging.error("Error while attempting to get metadata at %s", file_path)
+        raise
+
+    return metadata
 
 
 def get_sender_info(report_type: ReportType) -> Tuple[str, str]:
