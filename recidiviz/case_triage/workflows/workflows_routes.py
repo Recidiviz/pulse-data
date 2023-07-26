@@ -115,6 +115,8 @@ def create_workflows_api_blueprint() -> Blueprint:
         if request.method == "OPTIONS":
             return
         if request.endpoint == webhook_endpoint:
+            logging.info("Twilio webhook endpoint request origin: [%s]", request.origin)
+
             signature = request.headers["X-Twilio-Signature"]
             params = request.values.to_dict()
             twilio_validator.validate(
@@ -128,9 +130,9 @@ def create_workflows_api_blueprint() -> Blueprint:
 
     @workflows_api.before_request
     def validate_cors() -> Optional[Response]:
-        if request.endpoint == proxy_endpoint:
-            # Proxy requests will generally be sent from a developer's machine and not a browser,
-            # so there is no origin to check against.
+        if request.endpoint in [proxy_endpoint, webhook_endpoint]:
+            # Proxy or webhook requests will generally be sent from a developer's machine or Twilio server
+            # and not a browser, so there is no origin to check against.
             return None
 
         is_allowed = any(
