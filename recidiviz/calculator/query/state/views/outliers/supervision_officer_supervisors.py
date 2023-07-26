@@ -34,11 +34,22 @@ SUPERVISION_OFFICER_SUPERVISORS_QUERY_TEMPLATE = f"""
 WITH 
 supervision_officer_supervisors AS (
     {staff_query_template(role="SUPERVISION_OFFICER_SUPERVISOR")}
+),
+us_ix_additional_supervisors AS (
+    -- Include additional staff who do not have role_subtype=SUPERVISION_OFFICER_SUPERVISOR but directly supervise officers
+    SELECT *
+    FROM `{{project_id}}.{{reference_views_dataset}}.us_ix_leadership_supervisors`
 )
 
 SELECT 
     {{columns}}
 FROM supervision_officer_supervisors
+
+UNION ALL
+
+SELECT
+    {{columns}}
+FROM us_ix_additional_supervisors
 """
 
 SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -48,6 +59,7 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
     description=SUPERVISION_OFFICER_SUPERVISORS_DESCRIPTION,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     should_materialize=True,
     columns=[
         "state_code",
