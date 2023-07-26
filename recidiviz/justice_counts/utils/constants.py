@@ -45,4 +45,9 @@ class DatapointGetRequestEntryPoint(enum.Enum):
 AUTOMATIC_UPLOAD_BUCKET_REGEX = re.compile(r".*-ingest-agency-(?P<agency_id>[0-9]+)")
 
 # Bucket to store Bulk Upload Errors/Warnings JSON
-ERRORS_WARNINGS_JSON_BUCKET = "justice-counts-staging-bulk-upload-errors-warnings-json"
+ERRORS_WARNINGS_JSON_BUCKET_STAGING = (
+    "justice-counts-staging-bulk-upload-errors-warnings-json"
+)
+ERRORS_WARNINGS_JSON_BUCKET_PROD = (
+    "justice-counts-production-bulk-upload-errors-warnings-json"
+)

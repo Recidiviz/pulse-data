@@ -54,10 +54,12 @@ from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     CHILD_AGENCY_NAME_TO_UPLOAD_NAME,
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
-    ERRORS_WARNINGS_JSON_BUCKET,
+    ERRORS_WARNINGS_JSON_BUCKET_PROD,
+    ERRORS_WARNINGS_JSON_BUCKET_STAGING,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
+from recidiviz.utils.environment import in_gcp_staging
 
 
 class SpreadsheetInterface:
@@ -457,7 +459,10 @@ class SpreadsheetInterface:
         # Upload json to GCP bucket
         # Source: https://cloud.google.com/storage/docs/uploading-objects-from-memory
         storage_client = storage.Client()
-        bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET)
+        if in_gcp_staging():
+            bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET_STAGING)
+        else:
+            bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET_PROD)
         destination_blob_name = spreadsheet.standardized_name.replace("xlsx", "json")
         blob = bucket.blob(destination_blob_name)
         blob.upload_from_string(
