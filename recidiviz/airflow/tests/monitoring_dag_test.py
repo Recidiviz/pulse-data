@@ -350,3 +350,73 @@ class TestDagIntegrity(AirflowIntegrationTest):
             self.assertEqual(
                 tertiary_incident.next_success_date, july_eighth_tertiary.execution_date
             )
+
+    def test_graph_never_succeeded_most_recent_success(self) -> None:
+        """
+        Given a DAG where a task failed once introduced
+
+        2023-07-06 2023-07-07 2023-07-08
+        🟥         🟩         🟩
+
+        Assert that the last successful run of `parent_task` was `never`
+        Assert that the next successful run of `parent_task` was `2023-07-07`
+        """
+
+        with Session(bind=self.engine) as session:
+            july_sixth_primary = dummy_dag_run(test_dag, "2023-07-06 12:00")
+            july_sixth_parent_primary = dummy_ti(
+                parent_task, july_sixth_primary, "failed"
+            )
+
+            july_seventh_primary = dummy_dag_run(test_dag, "2023-07-07 12:00")
+            july_seventh_primary_parent = dummy_ti(
+                parent_task, july_seventh_primary, state="success"
+            )
+
+            july_eighth_primary = dummy_dag_run(test_dag, "2023-07-08 12:00")
+
+            july_eighth_primary_parent = dummy_ti(
+                parent_task, july_eighth_primary, state="success"
+            )
+
+            session.add_all(
+                [
+                    july_sixth_primary,
+                    july_sixth_parent_primary,
+                    july_seventh_primary,
+                    july_seventh_primary_parent,
+                    july_eighth_primary,
+                    july_eighth_primary_parent,
+                ]
+            )
+
+            df = _build_task_instance_state_dataframe(
+                dag_ids=[test_dag.dag_id], session=session
+            )
+
+            self.assertEqual(
+                df.to_string(),
+                monitoring_fixtures.read_fixture(
+                    "test_graph_never_succeeded_most_recent_success.txt"
+                ),
+            )
+
+            history = AirflowAlertingIncident.build_incident_history(
+                dag_ids=[test_dag.dag_id], session=session
+            )
+
+            incident_key = "test_dag.parent_task, last succeeded: never"
+            self.assertIn(incident_key, history)
+            incident = history[incident_key]
+            # Assert that the task has never succeeded
+            self.assertEqual(incident.previous_success_date, None)
+            # Assert that the most recent failure was on July 6th
+            self.assertEqual(
+                incident.most_recent_failure_date,
+                july_sixth_primary.execution_date,
+            )
+            # Assert that the next success was on July 7th
+            self.assertEqual(
+                incident.next_success_date,
+                july_seventh_primary.execution_date,
+            )
