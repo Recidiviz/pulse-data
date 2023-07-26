@@ -58,6 +58,10 @@ class MetricPopulation:
     def population_name_short(self) -> str:
         return self.population_type.value.lower()
 
+    @property
+    def population_name_title(self) -> str:
+        return self.population_type.value.title().replace("_", " ")
+
     def get_conditions_query_string(self) -> str:
         return "\n AND ".join(
             [

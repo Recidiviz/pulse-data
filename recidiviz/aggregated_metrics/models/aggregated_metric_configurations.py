@@ -1337,7 +1337,7 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
 PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
     name="prop_period_with_critical_caseload",
     display_name="Proportion Of Analysis Period With Critical Caseload",
-    description="Proportion of the analysis period for which an officer has a critical"
+    description="Proportion of the analysis period for which an officer has a critical "
     "caseload size",
     populations=[MetricPopulationType.SUPERVISION],
     aggregation_levels=[MetricUnitOfAnalysisType.SUPERVISION_OFFICER],
