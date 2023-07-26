@@ -61,7 +61,8 @@ from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import (
     AUTOMATIC_UPLOAD_BUCKET_REGEX,
-    ERRORS_WARNINGS_JSON_BUCKET,
+    ERRORS_WARNINGS_JSON_BUCKET_PROD,
+    ERRORS_WARNINGS_JSON_BUCKET_STAGING,
 )
 from recidiviz.justice_counts.utils.datapoint_utils import filter_deprecated_datapoints
 from recidiviz.justice_counts.utils.email import send_confirmation_email
@@ -1561,7 +1562,10 @@ def get_api_blueprint(
             # Download Errors/Warnings json from GCP
             # Source: https://cloud.google.com/python/docs/reference/storage/latest/google.cloud.storage.blob.Blob#google_cloud_storage_blob_Blob_download_as_bytes
             storage_client = storage.Client()
-            bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET)
+            if in_gcp_staging():
+                bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET_STAGING)
+            else:
+                bucket = storage_client.bucket(ERRORS_WARNINGS_JSON_BUCKET_PROD)
             blob = bucket.blob(json_location)
             content_bytes = blob.download_as_bytes()
             contents = json.loads(content_bytes)
