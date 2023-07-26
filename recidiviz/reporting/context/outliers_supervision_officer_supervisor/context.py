@@ -131,7 +131,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
     def _prepare_for_generation(self) -> dict:
         prepared_data = {
             "headline": f"Your {self._report_month} Unit Alert",
-            "state_name": self.batch.state_code.get_state().name,
+            "state_name": self._state_name,
             "officer_label": self._config.supervision_officer_label,
             "metric_periods": {
                 "current": self._current_metric_period,
@@ -155,6 +155,15 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
         }
         self.prepared_data = prepared_data
         return prepared_data
+
+    @property
+    def _state_name(self) -> str:
+        return (
+            "Idaho"
+            # special case due to Atlas migration
+            if self.batch.state_code == StateCode.US_IX
+            else self.batch.state_code.get_state().name
+        )
 
     @property
     def _report_date(self) -> datetime.date:

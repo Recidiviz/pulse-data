@@ -383,3 +383,16 @@ class OutliersSupervisionOfficerSupervisorTest(TestCase):
 
         for q in actual["faq"]:
             self.assertEqual(q.url, self.config.learn_more_url)
+
+    def test_ix_name(self) -> None:
+        """Special case handling for temporary Idaho/ATLAS migration object"""
+        self.batch.state_code = StateCode.US_IX
+        actual = self._get_prepared_data(
+            OfficerSupervisorReportData(
+                metrics=[],
+                metrics_without_outliers=[],
+                recipient_email_address=self.test_email,
+                additional_recipients=[],
+            )
+        )
+        self.assertEqual("Idaho", actual["state_name"])
