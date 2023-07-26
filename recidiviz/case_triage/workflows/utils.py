@@ -49,7 +49,8 @@ def allowed_twilio_dev_recipient(recipient_phone_number: str) -> bool:
 
 
 def get_sms_request_firestore_path(state: str, recipient_external_id: str) -> str:
-    month_code = datetime.date.today().strftime("%m_%Y")
+    month = datetime.date.today().strftime("%m_%Y")
+    month_code = f"milestones_{month}"
     client_firestore_id = f"{state.lower()}_{recipient_external_id}"
     return f"clientUpdatesV2/{client_firestore_id}/milestonesMessages/{month_code}"
 

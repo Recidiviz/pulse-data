@@ -518,7 +518,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "recipient": f"+1{request_body['recipientPhoneNumber']}",
             "message": request_body["message"],
             "client_firestore_id": "us_ca_123",
-            "month_code": "milestones_01_2023",
             "recipient_external_id": PERSON_EXTERNAL_ID,
         }
         mock_task_manager.return_value.create_task.assert_called_once()
@@ -527,7 +526,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             expected_task_body,
         )
         mock_firestore.return_value.set_document.assert_called_once_with(
-            "clientUpdatesV2/us_ca_123/milestonesMessages/01_2023",
+            "clientUpdatesV2/us_ca_123/milestonesMessages/milestones_01_2023",
             {
                 "updated": {
                     "date": datetime.datetime.now(datetime.timezone.utc),
@@ -593,7 +592,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         mock_task_manager.return_value.create_task.assert_called_once()
         mock_firestore.return_value.set_document.assert_called_once_with(
-            "clientUpdatesV2/us_ca_123/milestonesMessages/01_2023",
+            "clientUpdatesV2/us_ca_123/milestonesMessages/milestones_01_2023",
             {
                 "status": "FAILURE",
                 "updated": {
@@ -652,7 +651,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "client_firestore_id": "us_ca_123",
-                "month_code": "01_2023",
             },
         )
 
@@ -661,7 +659,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_twilio_messages.assert_has_calls(
             [
                 call(
-                    body=f"Message!\n{OPT_OUT_MESSAGE}",
+                    body=f"Message!\n\n{OPT_OUT_MESSAGE}",
                     messaging_service_sid=mock_get_secret(),
                     to="+12223334444",
                     status_callback="http://localhost:5000/workflows/webhook/twilio_status",
@@ -691,7 +689,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "client_firestore_id": "us_ca_123",
-                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
@@ -711,7 +708,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "client_firestore_id": "us_ca_123",
-                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
@@ -728,7 +724,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "client_firestore_id": "us_ca_123",
-                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
@@ -756,7 +751,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "client_firestore_id": "us_ca_123",
-                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
@@ -765,7 +759,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             response.status_code,
         )
         mock_firestore.return_value.set_document.assert_called_once_with(
-            "clientUpdatesV2/us_ca_123/milestonesMessages/01_2023",
+            "clientUpdatesV2/us_ca_123/milestonesMessages/milestones_01_2023",
             {
                 "status": "FAILURE",
                 "updated": {
@@ -797,7 +791,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "recipient": "+12223334444",
                 "recipient_external_id": PERSON_EXTERNAL_ID,
                 "client_firestore_id": "us_ca_123",
-                "month_code": "01_2023",
             },
         )
         assert_type(response.get_json(), dict)
@@ -817,7 +810,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         doc = MagicMock()
         doc.to_dict.return_value = {"message_sid": "ABC"}
         doc.reference.path = (
-            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023"
         )
         mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
             doc
@@ -838,7 +831,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
         mock_firestore.return_value.set_document.assert_called_once_with(
-            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023",
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023",
             {
                 "status": "SUCCESS",
                 "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
@@ -864,7 +857,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         doc = MagicMock()
         doc.to_dict.return_value = {"message_sid": "ABC"}
         doc.reference.path = (
-            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023"
         )
         mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
             doc
@@ -887,7 +880,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
         mock_firestore.return_value.set_document.assert_called_once_with(
-            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023",
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023",
             {
                 "status": "FAILURE",
                 "errors": ["Message blocked"],
@@ -913,7 +906,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         doc = MagicMock()
         doc.to_dict.return_value = {"message_sid": "ABC"}
         doc.reference.path = (
-            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023"
         )
         mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
             doc
@@ -934,7 +927,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
         self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
         mock_firestore.return_value.set_document.assert_called_once_with(
-            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023",
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023",
             {
                 "status": "IN_PROGRESS",
                 "errors": [None],

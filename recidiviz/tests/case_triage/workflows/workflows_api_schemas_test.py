@@ -182,14 +182,12 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
 
     VALID_NUMBER = "+12223334444"
     CLIENT_FIRESTORE_ID = "ABC-123"
-    MONTH_CODE = "01_2023"
 
     test_valid_data = valid_schema_test(
         {
             "recipient": VALID_NUMBER,
             "message": "Some pig!",
             "client_firestore_id": CLIENT_FIRESTORE_ID,
-            "month_code": MONTH_CODE,
             "recipient_external_id": "123",
         }
     )
@@ -199,7 +197,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
             "recipient": VALID_NUMBER,
             "message": "Baa Ram Ewe",
             "client_firestore_id": CLIENT_FIRESTORE_ID,
-            "month_code": MONTH_CODE,
         }
     )
 
@@ -208,7 +205,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
             "recipient": "(555) 666-7777",
             "message": "That'll do, pig. That'll do.",
             "client_firestore_id": CLIENT_FIRESTORE_ID,
-            "month_code": MONTH_CODE,
         }
     )
 
@@ -217,7 +213,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
             "recipient": "15556667777",
             "message": "That'll do, pig. That'll do.",
             "client_firestore_id": CLIENT_FIRESTORE_ID,
-            "month_code": MONTH_CODE,
         }
     )
 
@@ -225,15 +220,6 @@ class WorkflowsSendSmsRequestSchemaTest(SchemaTestCase):
         {
             "recipient": VALID_NUMBER,
             "message": "That'll do, pig. That'll do.",
-            "month_code": MONTH_CODE,
-        }
-    )
-
-    test_invalid_missing_monthy_code = invalid_schema_test(
-        {
-            "recipient": VALID_NUMBER,
-            "message": "That'll do, pig. That'll do.",
-            "client_firestore_id": CLIENT_FIRESTORE_ID,
         }
     )
 

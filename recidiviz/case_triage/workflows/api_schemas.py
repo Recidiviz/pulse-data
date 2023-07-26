@@ -135,4 +135,3 @@ class WorkflowsSendSmsRequestSchema(CamelOrSnakeCaseSchema):
     recipient_external_id = fields.Str(required=True)
     recipient = fields.Str(required=True, validate=validate_e164_phone_number)
     client_firestore_id = fields.Str(required=True)
-    month_code = fields.Str(required=True)

@@ -18,7 +18,12 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from recidiviz.case_triage.workflows.utils import allowed_twilio_dev_recipient
+from freezegun import freeze_time
+
+from recidiviz.case_triage.workflows.utils import (
+    allowed_twilio_dev_recipient,
+    get_sms_request_firestore_path,
+)
 
 
 class TestWorkflowsRouteUtils(TestCase):
@@ -63,3 +68,10 @@ class TestWorkflowsRouteUtils(TestCase):
         mock_firestore_impl.return_value.get_document.side_effect = Exception
 
         self.assertFalse(allowed_twilio_dev_recipient("8775994444"))
+
+    @freeze_time("2023-01-01 01:23:45")
+    def test_get_sms_request_firestore_path(self) -> None:
+        self.assertEqual(
+            get_sms_request_firestore_path(state="US_CA", recipient_external_id="1234"),
+            "clientUpdatesV2/us_ca_1234/milestonesMessages/milestones_01_2023",
+        )
