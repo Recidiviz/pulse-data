@@ -3,7 +3,9 @@ file_tag: ParoleEmployment
 file_description: |-
   Employment information.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OffenderId
+  - EMPSTARTDATE
 columns:
   - name: OffenderId
     is_pii: True
