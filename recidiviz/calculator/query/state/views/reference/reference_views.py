@@ -72,6 +72,9 @@ from recidiviz.calculator.query.state.views.reference.us_id_case_update_info imp
 from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info import (
     US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.us_ix_leadership_supervisors import (
+    US_IX_LEADERSHIP_SUPERVISORS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
@@ -100,4 +103,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_IX_LOCATION_METADATA_VIEW_BUILDER,
     WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
+    US_IX_LEADERSHIP_SUPERVISORS_VIEW_BUILDER,
 ]
