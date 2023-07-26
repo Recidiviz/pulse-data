@@ -93,6 +93,8 @@ def execute_update_all_managed_views(
     project_id: str,
     sandbox_prefix: Optional[str],
     dataset_ids_to_load: Optional[List[str]] = None,
+    clean_managed_datasets: bool = True,
+    allow_slow_views: bool = False,
 ) -> None:
     """
     Updates all views in the view registry. If dataset_ids_to_load is provided, only views in those datasets and
@@ -124,13 +126,16 @@ def execute_update_all_managed_views(
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         view_builders_to_update=view_builders,
-        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+        historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED
+        if clean_managed_datasets
+        else None,
         address_overrides=address_overrides_for_view_builders(
             view_dataset_override_prefix=sandbox_prefix, view_builders=view_builders
         )
         if sandbox_prefix
         else None,
         force_materialize=True,
+        allow_slow_views=allow_slow_views,
     )
     end = datetime.datetime.now()
     runtime_sec = int((end - start).total_seconds())
