@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Callable, DefaultDict, Dict, List, Optional, Set
@@ -39,6 +40,9 @@ from recidiviz.justice_counts.agency_jurisdictions import AgencyJurisdictionInte
 from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
+)
+from recidiviz.justice_counts.bulk_upload.template_generator import (
+    generate_bulk_upload_template,
 )
 from recidiviz.justice_counts.control_panel.utils import (
     get_auth0_user_id,
@@ -1636,6 +1640,28 @@ def get_api_blueprint(
             and "." in filename
             and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
         )
+
+    @api_blueprint.route("/template", methods=["GET"])
+    @auth_decorator
+    def get_bulk_upload_template() -> response.Response:
+        request_json = assert_type(request.json, dict)
+        system = request_json.get("system")
+
+        if system is None:
+            return make_response(
+                "No system was provided in the request body.",
+                500,
+            )
+
+        system_enum = schema.System[system]
+
+        with tempfile.TemporaryDirectory() as tempbulkdir:
+            file_path = os.path.join(tempbulkdir, str(system) + ".xlsx")
+            generate_bulk_upload_template(system_enum, file_path)
+            try:
+                return send_file(file_path, as_attachment=True)
+            except Exception as e:
+                raise _get_error(error=e) from e
 
     ### Dashboards ###
 
