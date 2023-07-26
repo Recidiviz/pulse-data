@@ -33,6 +33,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     MiscAggregatedMetric,
     SumSpanDaysMetric,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulation,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
@@ -162,6 +165,7 @@ def measure_for_metric(
 
 def get_metric_filter_parameter(
     metrics: List[AggregatedMetric],
+    population: MetricPopulation,
     aggregation_level: Optional[MetricUnitOfAnalysis] = None,
     default_metric: Optional[AggregatedMetric] = None,
 ) -> ParameterLookMLViewField:
@@ -178,8 +182,12 @@ def get_metric_filter_parameter(
     return ParameterLookMLViewField(
         field_name="metric_filter",
         parameters=[
+            LookMLFieldParameter.label(
+                f"[{population.population_name_title}] Metric Filter"
+            ),
             LookMLFieldParameter.description(
-                "Used to select one metric for a Look. Works across all levels of observation."
+                "Used to select one metric for a Look. Works across all levels of "
+                f"observation for the {population.population_type.value} population."
             ),
             LookMLFieldParameter.view_label("Metric Menu"),
             *additional_params,

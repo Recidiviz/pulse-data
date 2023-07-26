@@ -27,6 +27,7 @@ import os
 from typing import List
 
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
+    METRIC_POPULATIONS_BY_TYPE,
     METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
@@ -152,14 +153,14 @@ def _generate_period_span_metric_view(
         time_period.start_date,
         time_period.end_date,
         {metric_aggregation_fragment}
-    FROM 
+    FROM
         eligible_spans ses
-    INNER JOIN 
+    INNER JOIN
         ${{time_periods.SQL_TABLE_NAME}} time_period
-    ON 
+    ON
         ses.start_date < time_period.end_date
         AND time_period.start_date < {nonnull_current_date_clause("ses.end_date")}
-    GROUP BY 
+    GROUP BY
         1, 2, 3, 4, 5, 6
     """
     return LookMLView(
@@ -221,7 +222,7 @@ def _generate_period_event_metric_view(
             {nonnull_end_date_exclusive_clause("assignments.assignment_end_date")},
             DATE_SUB(time_period.end_date, INTERVAL 1 DAY)
     )
-    
+
     GROUP BY
     1, 2, 3, 4, 5, 6
     """
@@ -270,11 +271,11 @@ def _generate_assignment_span_metric_view(
 
         COUNT(DISTINCT CONCAT(assignments.person_id, assignments.assignment_date)) AS assignments,
         {metric_aggregation_fragment}
-    FROM 
+    FROM
         ${{time_periods.SQL_TABLE_NAME}} time_period
     LEFT JOIN
         ${{attributes.SQL_TABLE_NAME}} assignments
-    ON 
+    ON
         assignments.assignment_date BETWEEN time_period.start_date AND DATE_SUB(time_period.end_date, INTERVAL 1 DAY)
     LEFT JOIN
         `{analyst_dataset}.person_spans_materialized` spans
@@ -282,10 +283,10 @@ def _generate_assignment_span_metric_view(
         assignments.person_id = spans.person_id
         AND (
             spans.start_date > assignments.assignment_date
-            OR assignments.assignment_date BETWEEN spans.start_date 
+            OR assignments.assignment_date BETWEEN spans.start_date
                 AND {nonnull_end_date_exclusive_clause("spans.end_date")}
         )
-    GROUP BY 
+    GROUP BY
         1, 2, 3, 4, 5, 6
     """
     return LookMLView(
@@ -347,11 +348,11 @@ def _generate_assignment_event_metric_view(
             assignments.assignment_date,
             assignments.all_attributes,
             {metric_aggregation_fragment_inner}
-        FROM 
+        FROM
             ${{time_periods.SQL_TABLE_NAME}} time_period
         LEFT JOIN
             ${{attributes.SQL_TABLE_NAME}} assignments
-        ON 
+        ON
             assignments.assignment_date BETWEEN time_period.start_date AND DATE_SUB(time_period.end_date, INTERVAL 1 DAY)
         LEFT JOIN
             `{analyst_dataset}.person_events_materialized` events
@@ -361,7 +362,7 @@ def _generate_assignment_event_metric_view(
         GROUP BY
             1, 2, 3, 4, 5, 6, 7, 8
     )
-    GROUP BY 
+    GROUP BY
         1, 2, 3, 4, 5, 6
     """
     return LookMLView(
@@ -395,7 +396,7 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
         FROM
           ${attributes.SQL_TABLE_NAME}
     )
-    
+
     -- map all_attributes to original columns
     , column_mapping AS (
         SELECT DISTINCT
@@ -407,7 +408,7 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
         FROM
             assignments_and_attributes_cte
     )
-    
+
     -- period_span metrics
     , period_span_metrics AS (
         SELECT
@@ -415,7 +416,7 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
         FROM
             ${period_span_aggregated_metrics.SQL_TABLE_NAME}
     )
-    
+
     -- period_event metrics
     , period_event_metrics AS (
         SELECT
@@ -423,7 +424,7 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
         FROM
             ${period_event_aggregated_metrics.SQL_TABLE_NAME}
     )
-    
+
     -- assignment_span metrics
     , assignment_span_metrics AS (
         SELECT
@@ -431,7 +432,7 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
         FROM
             ${assignment_span_aggregated_metrics.SQL_TABLE_NAME}
     )
-    
+
     -- assignment_event metrics
     , assignment_event_metrics AS (
         SELECT
@@ -439,7 +440,7 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
         FROM
             ${assignment_event_aggregated_metrics.SQL_TABLE_NAME}
     )
-    
+
     -- join all metrics on unit-of-analysis and attribute struct to return original columns
     SELECT
         * EXCEPT(unit_of_analysis, all_attributes),
@@ -463,7 +464,9 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
     USING
         (state_code, unit_of_analysis, all_attributes, period, start_date, end_date)
 """
-    metric_filter_parameter = get_metric_filter_parameter(metrics)
+    metric_filter_parameter = get_metric_filter_parameter(
+        metrics, METRIC_POPULATIONS_BY_TYPE[MetricPopulationType.SUPERVISION]
+    )
     metric_value_measure = get_metric_value_measure(
         "custom_metrics", metric_filter_parameter
     )
