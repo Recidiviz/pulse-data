@@ -136,20 +136,19 @@ class AirflowAlertingIncident:
             failed_runs = collapsed_runs[
                 collapsed_runs.state == TaskInstanceState.failed
             ]
-            successful_runs = collapsed_runs[
-                collapsed_runs.state == TaskInstanceState.success
-            ]
 
             # Generate a hash map of failures, grouped by the last successful execution
             for index, row in failed_runs.iterrows():
                 dag_id, conf, task_id = index
 
-                previous_success = successful_runs[
-                    successful_runs.execution_date < row.execution_date
+                previous_success = task_runs[
+                    (task_runs.state == TaskInstanceState.success)
+                    & (task_runs.execution_date < row.execution_date)
                 ].execution_date.max()
 
-                next_success = successful_runs[
-                    successful_runs.execution_date > row.execution_date
+                next_success = task_runs[
+                    (task_runs.state == TaskInstanceState.success)
+                    & (task_runs.execution_date > row.execution_date)
                 ].execution_date.min()
 
                 incident = AirflowAlertingIncident(
