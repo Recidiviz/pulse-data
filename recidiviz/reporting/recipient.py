@@ -17,6 +17,7 @@
 
 """Data class for report recipients"""
 import copy
+from typing import List
 
 import attr
 
@@ -29,6 +30,7 @@ class Recipient:
     email_address: str = attr.ib()
     state_code: StateCode = attr.ib()
     district: str = attr.ib(default=None)
+    additional_email_addresses: List[str] = attr.ib(default=[])
 
     # Includes various fields for report rendering
     data: dict = attr.ib(default=attr.Factory(dict))

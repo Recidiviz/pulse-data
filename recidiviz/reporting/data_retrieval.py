@@ -109,6 +109,8 @@ def start(
 
     if test_address:
         logging.info("Overriding batch emails with test address: %s", test_address)
+
+        # If a test address is used, do not include the additional email addresses in the new recipient object.
         recipients = [
             Recipient(
                 email_address=utils.format_test_address(
@@ -226,6 +228,7 @@ def retrieve_data(
                     "review_month": date.month,
                     "review_year": date.year,
                 },
+                additional_email_addresses=supervisor_info.additional_recipients,
             )
             for supervisor_info in results_by_supervisor.values()
         ]

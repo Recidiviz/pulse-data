@@ -14,51 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Tests for reporting/email_generation.py."""
-import json
-import os
-from typing import Optional
+from typing import List
 from unittest import TestCase
 from unittest.mock import patch
 
 import pytest
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.outliers.constants import INCARCERATION_STARTS_TECHNICAL_VIOLATION
+from recidiviz.outliers.types import OfficerSupervisorReportData, OutliersConfig
+from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
+    metric_fixtures,
+)
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
-from recidiviz.reporting.data_retrieval import filter_recipients, retrieve_data, start
+from recidiviz.reporting.data_retrieval import filter_recipients, start
 from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
-from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-
-FIXTURE_FILE = "po_monthly_report_data_fixture.json"
-
-
-def build_report_json_fixture(email_address: str) -> str:
-    return json.dumps(
-        {
-            "email_address": email_address,
-            "state_code": "US_ID",
-            "district": "DISTRICT OFFICE 3, CALDWELL",
-        }
-    )
 
 
 @pytest.mark.uses_db
-class DataRetrievalTests(TestCase):
+class OutliersDataRetrievalTests(TestCase):
     """Tests for reporting/data_retrieval.py."""
-
-    # Stores the location of the postgres DB for this test run
-    temp_db_dir: Optional[str]
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -76,30 +55,17 @@ class DataRetrievalTests(TestCase):
         self.get_secret_patcher = patch("recidiviz.utils.secrets.get_secret")
         self.get_secret_patcher.start()
 
-        self.state_code = StateCode.US_ID
-
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
-
-        self.po_report_batch = Batch(
-            state_code=self.state_code,
-            batch_id="test-po-batch",
-            report_type=ReportType.POMonthlyReport,
+        self.retrieve_data_patcher = patch(
+            "recidiviz.reporting.data_retrieval.retrieve_data"
         )
+        self.mock_retrieve_data = self.retrieve_data_patcher.start()
 
-        self.top_opp_report_batch = Batch(
+        self.state_code = StateCode.US_IX
+
+        self.outliers_officer_supervisors = Batch(
             state_code=self.state_code,
-            batch_id="test-top-opp-batch",
-            report_type=ReportType.TopOpportunities,
-        )
-
-    def _write_test_data(self, test_data: str) -> None:
-        self.fake_gcs.upload_from_string(
-            GcsfsFilePath.from_absolute_path(
-                "gs://recidiviz-test-report-data/po_monthly_report/US_ID/po_monthly_report_data.json"
-            ),
-            test_data,
-            "text/json",
+            batch_id="test-outliers-supervisors-batch",
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
 
     def tearDown(self) -> None:
@@ -108,112 +74,142 @@ class DataRetrievalTests(TestCase):
         self.gcs_factory_patcher.stop()
         self.get_secret_patcher.stop()
 
-        local_persistence_helpers.teardown_on_disk_postgresql_database(
-            self.database_key
+
+class OutliersSupervisionOfficerSupervisorDataRetrievalTest(OutliersDataRetrievalTests):
+    """Class for tests specific to OutliersSupervisionOfficerSupervisor report type"""
+
+    @property
+    def config(self) -> OutliersConfig:
+        return OutliersConfig(
+            metrics=[
+                metric_fixtures[INCARCERATION_STARTS_TECHNICAL_VIOLATION],
+            ],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
         )
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
-            cls.temp_db_dir
+    @property
+    def report(self) -> OfficerSupervisorReportData:
+        return OfficerSupervisorReportData(
+            metrics=[],
+            metrics_without_outliers=[],
+            recipient_email_address="recidiviz@recidiviz.org",
+            additional_recipients=["additional@recidiviz.org"],
         )
+
+    @property
+    def recipients(self) -> List[Recipient]:
+        return [
+            Recipient(
+                email_address="recidiviz@recidiviz.org",
+                state_code=StateCode.US_IX,
+                additional_email_addresses=["additional@recidiviz.org"],
+                data={
+                    "report": self.report,
+                    "config": self.config,
+                    "review_year": "2023",
+                    "review_month": "7",
+                },
+            )
+        ]
 
     def test_start(self) -> None:
-        """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
-        and prepared html template for the report context."""
-        with open(
-            os.path.join(
-                f"{os.path.dirname(__file__)}/context/po_monthly_report", FIXTURE_FILE
-            ),
-            encoding="utf-8",
-        ) as fixture_file:
-            # Remove newlines
-            self._write_test_data(json.dumps(json.loads(fixture_file.read())))
+        """Test the start() function with no failures or excpetions"""
+
+        self.mock_retrieve_data.return_value = self.recipients
+
+        result = start(
+            batch=self.outliers_officer_supervisors,
+        )
+
+        self.assertEqual(len(result.failures), 0)
+        self.assertListEqual(result.successes, ["recidiviz@recidiviz.org"])
+
+        self.mock_email_generation.assert_called()
+
+        self.mock_email_generation.reset_mock()
+        self.mock_retrieve_data.reset_mock()
+
+    def test_start_none_match_allowlist(self) -> None:
+        """Assert generate() is not called when the recipients do not match any in the email_allowlist"""
+        self.mock_retrieve_data.return_value = self.recipients
+
+        start(
+            batch=self.outliers_officer_supervisors,
+            email_allowlist=["excluded@recidiviz.org"],
+        )
+
+        self.mock_email_generation.assert_not_called()
+
+        self.mock_email_generation.reset_mock()
+        self.mock_retrieve_data.reset_mock()
+
+    def test_start_generation_failure(self) -> None:
+        """Test that when an email fails to generate, it is counted in the failures."""
+
+        self.mock_retrieve_data.return_value = [
+            Recipient(
+                email_address="recidiviz@recidiviz.org",
+                state_code=StateCode.US_IX,
+                additional_email_addresses=["additional@recidiviz.org"],
+                data={
+                    "report": self.report,
+                    "config": self.config,
+                    "review_year": "2023",
+                    "review_month": "7",
+                },
+            )
+        ]
 
         self.mock_email_generation.side_effect = ValueError(
             "This email failed to generate!"
         )
 
         result = start(
-            batch=self.po_report_batch,
-            region_code="US_ID_D3",
-            test_address="dan@recidiviz.org",
+            batch=self.outliers_officer_supervisors,
         )
 
-        self.assertListEqual(result.failures, ["dan+letter@recidiviz.org"])
+        self.assertListEqual(result.failures, ["recidiviz@recidiviz.org"])
         self.assertEqual(len(result.successes), 0)
 
-        # Email generated for recipient matching US_ID_3
         self.mock_email_generation.assert_called()
 
         self.mock_email_generation.reset_mock()
+        self.mock_retrieve_data.reset_mock()
 
-        start(
-            batch=self.po_report_batch,
-            email_allowlist=["excluded@recidiviz.org"],
-        )
+    def test_start_test_address(self) -> None:
+        """
+        Test that if a test address is used, the additional_email_recipients is empty in the recipients objects
+        that are used in the call to generate the email.
+        """
 
-        # No recipients to email (none match `email_allowlist`)
-        self.mock_email_generation.assert_not_called()
-
-    def test_metadata_added(self) -> None:
-        """Tests that the metadata.json file is correctly added."""
-        with open(
-            os.path.join(
-                f"{os.path.dirname(__file__)}/context/po_monthly_report", FIXTURE_FILE
-            ),
-            encoding="utf-8",
-        ) as fixture_file:
-            # Remove newlines
-            self._write_test_data(json.dumps(json.loads(fixture_file.read())))
+        self.mock_retrieve_data.return_value = self.recipients
 
         result = start(
-            batch=self.po_report_batch,
-            region_code="US_ID_D3",
+            batch=self.outliers_officer_supervisors, test_address="test@recidiviz.org"
         )
-        self.assertEqual(len(result.successes), 1)
 
-        # Test that metadata file is created correctly
-        metadata_file = self.fake_gcs.download_as_string(
-            GcsfsFilePath.from_absolute_path(
-                f"gs://recidiviz-test-report-html/US_ID/{self.po_report_batch.batch_id}/metadata.json"
-            )
-        )
+        self.assertEqual(len(result.failures), 0)
+        self.assertListEqual(result.successes, ["test+recidiviz@recidiviz.org"])
+
+        # Assert that the Recipient argument in the generate() does not include any additional email addresses
         self.assertEqual(
-            json.loads(metadata_file),
-            {
-                "report_type": ReportType.POMonthlyReport.value,
-                "review_month": "5",
-                "review_year": "2021",
-            },
-        )
-
-    def test_retrieve_data_po_monthly_report(self) -> None:
-        test_data = "\n".join(
-            [
-                build_report_json_fixture("first@recidiviz.org"),
-                "my invalid json",
-                build_report_json_fixture("second@recidiviz.org"),
-            ]
-        )
-        self._write_test_data(test_data)
-
-        recipients = retrieve_data(batch=self.po_report_batch)
-
-        # Invalid JSON lines are ignored; warnings are logged
-        self.assertEqual(len(recipients), 2)
-        self.assertEqual(recipients[0].email_address, "first@recidiviz.org")
-        self.assertEqual(recipients[1].email_address, "second@recidiviz.org")
-
-        # An archive of report JSON is stored
-        self.assertEqual(
-            self.fake_gcs.download_as_string(
-                GcsfsFilePath.from_absolute_path(
-                    f"gs://recidiviz-test-report-data-archive/{self.state_code.value}/{self.po_report_batch.batch_id}.json"
-                )
+            self.mock_email_generation.call_args_list[0].args[1],
+            Recipient(
+                email_address="test+recidiviz@recidiviz.org",
+                state_code=StateCode.US_IX,
+                additional_email_addresses=[],
+                data={
+                    "report": self.report,
+                    "config": self.config,
+                    "review_year": "2023",
+                    "review_month": "7",
+                },
             ),
-            test_data,
         )
+
+        self.mock_email_generation.reset_mock()
+        self.mock_retrieve_data.reset_mock()
 
     def test_filter_recipients(self) -> None:
         dev_from_idaho = Recipient.from_report_json(

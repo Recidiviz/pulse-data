@@ -24,6 +24,9 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.reporting import email_delivery
+from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
+    ADDITIONAL_EMAIL_ADDRESSES_KEY,
+)
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import Batch
 
@@ -189,6 +192,75 @@ class EmailDeliveryTest(TestCase):
             html_content=self.mock_files[self.to_address],
             attachment_title=self.attachment_title,
             redirect_address=None,
+            cc_addresses=None,
+            text_attachment_content=self.mock_files[self.to_address],
+        )
+
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    @patch(
+        "recidiviz.reporting.email_delivery.get_file_metadata",
+        Mock(
+            return_value={
+                ADDITIONAL_EMAIL_ADDRESSES_KEY: '["additional@recidiviz.org"]'
+            }
+        ),
+    )
+    def test_deliver_calls_send_message_with_additional_addresses(
+        self, mock_load_files_from_storage: MagicMock
+    ) -> None:
+        """Given a batch_id, test that the SendGridClientWrapper send_message is called with
+        the data it needs to send an email to the recipient with the additional address from metadata CC'd
+        """
+        mock_load_files_from_storage.return_value = self.mock_files
+
+        with self.assertLogs(level="INFO"):
+            email_delivery.deliver(
+                self.batch,
+                self.report_date,
+            )
+
+        self.mock_sendgrid_client.send_message.assert_called_with(
+            to_email=self.to_address,
+            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
+            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            subject="Your monthly Recidiviz report",
+            html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
+            redirect_address=None,
+            cc_addresses=["additional@recidiviz.org"],
+            text_attachment_content=self.mock_files[self.to_address],
+        )
+
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    @patch(
+        "recidiviz.reporting.email_delivery.get_file_metadata",
+        Mock(
+            return_value={
+                ADDITIONAL_EMAIL_ADDRESSES_KEY: '["additional@recidiviz.org"]'
+            }
+        ),
+    )
+    def test_deliver_calls_send_message_with_additional_addresses_no_cc(
+        self, mock_load_files_from_storage: MagicMock
+    ) -> None:
+        """Given a batch_id, test that the SendGridClientWrapper send_message is called with
+        the data it needs to send an email to the recipient but do not CC because there is a redirect address.
+        """
+        mock_load_files_from_storage.return_value = self.mock_files
+
+        with self.assertLogs(level="INFO"):
+            email_delivery.deliver(
+                self.batch, self.report_date, "redirect@recidiviz.org"
+            )
+
+        self.mock_sendgrid_client.send_message.assert_called_with(
+            to_email=self.to_address,
+            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
+            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            subject="Your monthly Recidiviz report",
+            html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
+            redirect_address="redirect@recidiviz.org",
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
         )

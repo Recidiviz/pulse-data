@@ -22,18 +22,26 @@ Generates the HTML for email reports and stores it for later delivery.
 
 import json
 import logging
+from typing import Dict
 
 from google.cloud import pubsub_v1
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
+    ADDITIONAL_EMAIL_ADDRESSES_KEY,
+)
 from recidiviz.reporting.context.po_monthly_report.constants import Batch
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
 
 
-def generate(batch: Batch, recipient: Recipient, report_context: ReportContext) -> None:
+def generate(
+    batch: Batch,
+    recipient: Recipient,
+    report_context: ReportContext,
+) -> None:
     """Generates and uploads the HTML file and the file attachment for the identified recipient's email.
 
     Receives the full user data, applies it to the HTML template and stores the result in Cloud Storage.
@@ -71,6 +79,17 @@ def generate(batch: Batch, recipient: Recipient, report_context: ReportContext) 
             file_path=attachment_path,
             file_contents=attachment_content,
             content_type="text/plain",
+        )
+
+    if recipient.additional_email_addresses:
+        # Add the additional email addresses to the html file's metadata, so they will be CC'd on the email.
+        update_gcs_metadata(
+            file_path=html_path,
+            metadata={
+                ADDITIONAL_EMAIL_ADDRESSES_KEY: json.dumps(
+                    recipient.additional_email_addresses
+                )
+            },
         )
 
 
@@ -112,6 +131,22 @@ def upload_file_contents_to_gcs(
         )
     except Exception:
         logging.error("Error while attempting upload of %s", file_path)
+        raise
+
+
+def update_gcs_metadata(file_path: GcsfsFilePath, metadata: Dict[str, str]) -> None:
+    """
+    Updates the custom metadata for the object at the given path if it exists in the fs.
+
+    Args:
+        file_path: The GCS path to write to
+        metadata: The metadata that will be written for the file at file_path
+    """
+    try:
+        gcs_file_system = GcsfsFactory.build()
+        gcs_file_system.update_metadata(path=file_path, new_metadata=metadata)
+    except Exception:
+        logging.error("Error while attempting to update metadata at %s", file_path)
         raise
 
 
