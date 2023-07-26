@@ -31,17 +31,17 @@ SUPERVISION_OFFICER_SUPERVISORS_DESCRIPTION = """A parole and/or probation offic
 
 
 SUPERVISION_OFFICER_SUPERVISORS_QUERY_TEMPLATE = f"""
-WITH 
+WITH
 supervision_officer_supervisors AS (
     {staff_query_template(role="SUPERVISION_OFFICER_SUPERVISOR")}
 ),
 us_ix_additional_supervisors AS (
     -- Include additional staff who do not have role_subtype=SUPERVISION_OFFICER_SUPERVISOR but directly supervise officers
     SELECT *
-    FROM `{{project_id}}.{{reference_views_dataset}}.us_ix_leadership_supervisors`
+    FROM `{{project_id}}.{{reference_views_dataset}}.us_ix_leadership_supervisors_materialized`
 )
 
-SELECT 
+SELECT
     {{columns}}
 FROM supervision_officer_supervisors
 
