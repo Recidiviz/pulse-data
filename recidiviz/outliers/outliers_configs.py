@@ -62,8 +62,8 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             OutliersMetricConfig.build_from_metric(
                 metric=EARLY_DISCHARGE_REQUESTS,
                 title_display_name="Earned Discharge Request Rate",
-                body_display_name="Early Discharge request rate",
-                event_name="early discharge requests",
+                body_display_name="earned discharge request rate",
+                event_name="earned discharge requests",
             ),
         ],
         supervision_officer_label="officer",
