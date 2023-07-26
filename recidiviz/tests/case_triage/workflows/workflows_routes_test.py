@@ -42,6 +42,7 @@ PERSON_EXTERNAL_ID = "123"
 STAFF_ID = "456"
 STAFF_EMAIL = "fake email address"
 CONTACT_NOTE_DATE_TIME = datetime.datetime.now()
+USER_HASH = "xyz+&123_="
 
 
 class WorkflowsBlueprintTestCase(TestCase):
@@ -503,6 +504,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "Hello, is it me you're looking for?",
             "recipientPhoneNumber": "5153338822",
+            "userHash": USER_HASH,
         }
 
         with self.test_app.test_request_context():
@@ -549,6 +551,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "I can see it in your eyes",
             "recipientPhoneNumber": "5153338822",
+            "userHash": USER_HASH,
         }
 
         with self.test_app.test_request_context():
@@ -578,6 +581,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "I can see it in your smile",
             "recipientPhoneNumber": "5153338822",
+            "userHash": USER_HASH,
         }
 
         with self.test_app.test_request_context():
@@ -616,6 +620,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             "senderId": STAFF_EMAIL,
             "message": "You're all I've ever wanted and my arms are open wide",
             "recipientPhoneNumber": "5153338822",
+            "userHash": USER_HASH,
         }
 
         with self.test_app.test_request_context():

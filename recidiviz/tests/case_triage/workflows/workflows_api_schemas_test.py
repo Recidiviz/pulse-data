@@ -257,6 +257,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
     INVALID_NUMBER_AREA_CODE_STARTS_WITH_0 = "0223334444"
     INVALID_NUMBER_FORMATTED = "(222) 333-4444"
     INVALID_NUMBER_E164 = "+12223334444"
+    USER_HASH = "xyz+&123_="
 
     test_valid_data = valid_schema_test(
         {
@@ -264,6 +265,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "I must not fear",
             "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
+            "user_hash": USER_HASH,
         }
     )
 
@@ -273,6 +275,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "Fear is the mind-killer",
             "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
+            "user_hash": USER_HASH,
         }
     )
 
@@ -282,6 +285,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "Fear is the little-death that brings total obliteration",
             "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
+            "user_hash": USER_HASH,
         }
     )
 
@@ -291,6 +295,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "I will face my fear",
             "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
+            "user_hash": USER_HASH,
         }
     )
 
@@ -300,6 +305,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "I will permit it to pass over me and through me",
             "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
+            "user_hash": USER_HASH,
         }
     )
 
@@ -309,6 +315,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "And when it has gone past, I will turn the inner eye to see its path",
             "recipient_external_id": "paul.atreides",
             "sender_id": "rev.mum.mohiam",
+            "user_hash": USER_HASH,
         }
     )
 
@@ -317,6 +324,7 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
             "message": "Where the fear has gone there will be nothing",
             "recipient_external_id": "paul.atreides",
+            "user_hash": USER_HASH,
         }
     )
 
@@ -325,5 +333,15 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
             "message": "Only I will remain",
             "sender_id": "rev.mum.mohiam",
+            "user_hash": USER_HASH,
+        }
+    )
+
+    test_invalid_missing_user_hash = invalid_schema_test(
+        {
+            "recipient_phone_number": INVALID_NUMBER_AREA_CODE_STARTS_WITH_1,
+            "message": "Only I will remain",
+            "sender_id": "rev.mum.mohiam",
+            "recipient_external_id": "paul.atreides",
         }
     )

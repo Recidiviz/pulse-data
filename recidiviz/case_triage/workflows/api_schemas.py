@@ -112,6 +112,7 @@ class WorkflowsEnqueueSmsRequestSchema(CamelOrSnakeCaseSchema):
     recipient_phone_number = fields.Str(required=True, validate=validate_phone_number)
     recipient_external_id = fields.Str(required=True)
     sender_id = fields.Str(required=True)
+    user_hash = fields.Str(required=True)
 
 
 def validate_e164_phone_number(phone_number: str) -> None:
