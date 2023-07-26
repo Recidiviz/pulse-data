@@ -74,6 +74,7 @@ class SendGridClientWrapper:
         cc_addresses: Optional[List[str]] = None,
         text_attachment_content: Optional[str] = None,
         attachment_title: Optional[str] = None,
+        disable_link_click: Optional[bool] = False,
     ) -> mail_helpers.Mail:
         """Creates the request body for the email that will be sent. Includes all required data to send a single email.
 
@@ -99,6 +100,14 @@ class SendGridClientWrapper:
                 attachment_title,
             )
 
+        if disable_link_click:
+            message.tracking_settings = mail_helpers.TrackingSettings(  # type: ignore[attr-defined]
+                click_tracking=mail_helpers.ClickTracking(  # type: ignore[attr-defined]
+                    enable=False,
+                    enable_text=False,
+                ),
+            )
+
         return message
 
     @staticmethod
@@ -119,6 +128,7 @@ class SendGridClientWrapper:
         cc_addresses: Optional[List[str]] = None,
         text_attachment_content: Optional[str] = None,
         attachment_title: Optional[str] = None,
+        disable_link_click: Optional[bool] = False,
     ) -> bool:
         """Sends the email to the provided address by making a Twilio SendGrid API request.
 
@@ -136,6 +146,7 @@ class SendGridClientWrapper:
             instead of the to_email address.
             cc_addresses: (Optional) A list of email addresses to CC
             text_attachment_content: (Optional) Content for the plain text attachment file
+            disable_link_click: (Optional) Boolean to indicate if we want to disable link click tracking
 
         Returns:
             True if the message is sent successfully
@@ -154,7 +165,9 @@ class SendGridClientWrapper:
             attachment_title=attachment_title,
             cc_addresses=cc_addresses,
             text_attachment_content=text_attachment_content,
+            disable_link_click=disable_link_click,
         )
+
         try:
             response = self.client.send(message)
         except Exception:

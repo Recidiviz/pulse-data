@@ -1316,8 +1316,8 @@ def get_api_blueprint(
                 success=True,
                 file_name=file_name,
                 agency_id=agency_id_str,
+                spreadsheet_id=spreadsheet.id,
                 metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=metric_definitions,
             )
 
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
