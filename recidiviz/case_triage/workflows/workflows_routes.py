@@ -365,8 +365,6 @@ def create_workflows_api_blueprint() -> Blueprint:
         firestore_client = FirestoreClientImpl()
         firestore_path = get_sms_request_firestore_path(state, recipient_external_id)
         client_firestore_id = f"{state.lower()}_{recipient_external_id}"
-        month = datetime.date.today().strftime("%m_%Y")
-        month_code = f"milestones_{month}"
 
         try:
             cloud_task_manager = SingleCloudTaskQueueManager(
@@ -384,7 +382,6 @@ def create_workflows_api_blueprint() -> Blueprint:
                     "message": message,
                     "recipient": f"+1{recipient_phone_number}",
                     "client_firestore_id": client_firestore_id,
-                    "month_code": month_code,
                     "recipient_external_id": recipient_external_id,
                 },
                 headers=headers_copy,
@@ -476,7 +473,7 @@ def create_workflows_api_blueprint() -> Blueprint:
             client = TwilioClient(account_sid, auth_token)
 
             response_message = client.messages.create(
-                body=f"{message}\n{OPT_OUT_MESSAGE}",
+                body=f"{message}\n\n{OPT_OUT_MESSAGE}",
                 messaging_service_sid=messaging_service_sid,
                 to=recipient,
                 status_callback=f"{url}/workflows/webhook/twilio_status",
