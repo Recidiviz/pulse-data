@@ -33,7 +33,7 @@ class WorkflowsTwilioValidator:
         validator = RequestValidator(validation_secret)
 
         logging.info(
-            "Workflows Twilio Validator for url: [%s], params: [%d], signature: [%s]",
+            "Workflows Twilio Validator for url: [%s], params: [%s], signature: [%s]",
             url,
             params,
             signature,
@@ -42,7 +42,9 @@ class WorkflowsTwilioValidator:
         # Check if the incoming signature is valid for the application URL and the incoming parameters
         validation_result = validator.validate(url, params, signature)
 
-        logging.info("Workflows Twilio Validator validation result: [%s]")
+        logging.info(
+            "Workflows Twilio Validator validation result: [%s]", validation_result
+        )
 
         if not validation_result:
             raise AuthorizationError(
