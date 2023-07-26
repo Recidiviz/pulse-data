@@ -42,9 +42,11 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task_group,
 )
+from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
 from recidiviz.airflow.dags.utils.state_code_branch import create_state_code_branching
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
@@ -82,7 +84,10 @@ project_id: str = project_id_opt
 retry: Retry = Retry(predicate=lambda _: False)
 
 
-def update_all_managed_views_operator() -> TaskGroup:
+def update_managed_views_operator(view_update_type: ManagedViewUpdateType) -> TaskGroup:
+
+    group_id = f"update_managed_views_{view_update_type.value}"
+
     def get_kubernetes_arguments(
         _dag_run: DagRun, task_instance: TaskInstance
     ) -> List[str]:
@@ -92,6 +97,10 @@ def update_all_managed_views_operator() -> TaskGroup:
         if sandbox_prefix:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
+        if view_update_type == ManagedViewUpdateType.REFERENCE_VIEWS_ONLY:
+            additional_args.append(f"--dataset_ids_to_load={REFERENCE_VIEWS_DATASET}")
+            additional_args.append("--clean_managed_datasets=False")
+
         return [
             "python",
             "-m",
@@ -100,8 +109,8 @@ def update_all_managed_views_operator() -> TaskGroup:
         ]
 
     return build_kubernetes_pod_task_group(
-        group_id="update_all_managed_views",
-        container_name="update_all_managed_views",
+        group_id=group_id,
+        container_name=group_id,
         arguments=get_kubernetes_arguments,
         trigger_rule=TriggerRule.ALL_DONE,
     )
@@ -419,9 +428,15 @@ def create_calculation_dag() -> None:
         operations_bq_refresh_completion = refresh_bq_dataset_operator("OPERATIONS")
         case_triage_bq_refresh_completion = refresh_bq_dataset_operator("CASE_TRIAGE")
 
-    initialize_calculation_dag_group() >> bq_refresh
+    (
+        initialize_calculation_dag_group()
+        >> update_managed_views_operator(
+            ManagedViewUpdateType.REFERENCE_VIEWS_ONLY
+        )  # TODO(#22528): Remove this once pipelines implicitly get the latest views.
+        >> bq_refresh
+    )
 
-    trigger_update_all_views = update_all_managed_views_operator()
+    trigger_update_all_views = update_managed_views_operator(ManagedViewUpdateType.ALL)
 
     (
         [
