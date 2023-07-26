@@ -1095,6 +1095,9 @@ class StateIncarcerationIncidentOutcome(
     date_effective: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
+    projected_end_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
     hearing_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )

@@ -2088,6 +2088,9 @@ class StateIncarcerationIncidentOutcome(StateBase, _ReferencesStatePersonSharedC
         comment=STATE_CODE_COMMENT,
     )
     date_effective = Column(Date, comment="The date on which the outcome takes effect.")
+    projected_end_date = Column(
+        Date, comment="The date on which the outcome is supposed to end."
+    )
     hearing_date = Column(
         Date, comment="The date on which the hearing for the incident is taking place."
     )
