@@ -16,6 +16,7 @@
 # =============================================================================
 """Validation interface for Workflows-related external requests from Twilio"""
 import logging
+from typing import Dict
 
 from twilio.request_validator import RequestValidator
 
@@ -26,7 +27,7 @@ from recidiviz.utils.secrets import get_secret
 class WorkflowsTwilioValidator:
     """Validation interface for Workflows-related external requests from Twilio"""
 
-    def validate(self, url: str, signature: str, params: bytes) -> None:
+    def validate(self, url: str, signature: str, params: Dict[str, str]) -> None:
         validation_secret = get_secret("twilio_auth_token")
 
         # Initialize the request validator
