@@ -75,6 +75,7 @@ class SendGridClientWrapper:
         text_attachment_content: Optional[str] = None,
         attachment_title: Optional[str] = None,
         disable_link_click: Optional[bool] = False,
+        disable_unsubscribe: Optional[bool] = False,
         reply_to_email: Optional[str] = None,
         reply_to_name: Optional[str] = None,
     ) -> mail_helpers.Mail:
@@ -105,13 +106,16 @@ class SendGridClientWrapper:
                 attachment_title,
             )
 
-        if disable_link_click:
-            message.tracking_settings = mail_helpers.TrackingSettings(  # type: ignore[attr-defined]
-                click_tracking=mail_helpers.ClickTracking(  # type: ignore[attr-defined]
+        if disable_link_click or disable_unsubscribe:
+            args = {}
+            if disable_link_click:
+                args["click_tracking"] = mail_helpers.ClickTracking(  # type: ignore[attr-defined]
                     enable=False,
                     enable_text=False,
-                ),
-            )
+                )
+            if disable_unsubscribe:
+                args["subscription_tracking"] = mail_helpers.SubscriptionTracking(enable=False)  # type: ignore[attr-defined]
+            message.tracking_settings = mail_helpers.TrackingSettings(**args)  # type: ignore[attr-defined]
 
         return message
 
@@ -134,6 +138,7 @@ class SendGridClientWrapper:
         text_attachment_content: Optional[str] = None,
         attachment_title: Optional[str] = None,
         disable_link_click: Optional[bool] = False,
+        disable_unsubscribe: Optional[bool] = False,
         reply_to_email: Optional[str] = None,
         reply_to_name: Optional[str] = None,
     ) -> bool:
@@ -175,6 +180,7 @@ class SendGridClientWrapper:
             cc_addresses=cc_addresses,
             text_attachment_content=text_attachment_content,
             disable_link_click=disable_link_click,
+            disable_unsubscribe=disable_unsubscribe,
             reply_to_email=reply_to_email,
             reply_to_name=reply_to_name,
         )

@@ -170,6 +170,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=None,
+            disable_unsubscribe=True,
         )
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
@@ -198,6 +199,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
@@ -235,6 +237,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=["additional@recidiviz.org"],
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
@@ -271,6 +274,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address="redirect@recidiviz.org",
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
@@ -307,6 +311,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=self.redirect_address,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
@@ -351,6 +356,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
         self.assertEqual(len(result.successes), 1)
         self.assertEqual(len(result.failures), 0)
@@ -409,6 +415,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
 
     @patch(
@@ -439,6 +446,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
 
         # subject stored with file
@@ -460,6 +468,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
 
         # default
@@ -480,6 +489,7 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
 
         mock_get_file_metadata.return_value = None
@@ -497,4 +507,5 @@ class EmailDeliveryTest(TestCase):
             redirect_address=None,
             cc_addresses=None,
             text_attachment_content=self.mock_files[self.to_address],
+            disable_unsubscribe=True,
         )
