@@ -29,8 +29,6 @@ input_columns:
 unused_columns:
   - CALC_POS_REL_DATE
   - OVR_POS_REL_DATE
-launch_env:
-  $env: is_staging
 output:
   StatePerson:
     external_ids:
