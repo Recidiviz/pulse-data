@@ -45,6 +45,9 @@ from recidiviz.calculator.query.state.views.analyst_data.models.person_event_typ
 from recidiviz.calculator.query.state.views.analyst_data.models.person_span_type import (
     PersonSpanType,
 )
+from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
+    JusticeImpactType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -287,7 +290,7 @@ AVG_DAILY_POPULATION_LIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMetri
     "mutually exclusive from other justice impact types",
     span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
     span_attribute_filters={
-        "justice_impact_type": ["LIMITED_SUPERVISION"],
+        "justice_impact_type": [JusticeImpactType.LIMITED_SUPERVISION.value],
     },
 )
 
@@ -340,7 +343,7 @@ AVG_DAILY_POPULATION_NONLIMITED_SUPERVISION_JUSTICE_IMPACT = DailyAvgSpanCountMe
     "mutually exclusive from other justice impact types",
     span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
     span_attribute_filters={
-        "justice_impact_type": ["NONLIMITED_SUPERVISION"],
+        "justice_impact_type": [JusticeImpactType.NONLIMITED_SUPERVISION.value],
     },
 )
 
@@ -459,7 +462,7 @@ AVG_DAILY_POPULATION_SOLITARY_CONFINEMENT_JUSTICE_IMPACT = DailyAvgSpanCountMetr
     "mutually exclusive from other justice impact types",
     span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
     span_attribute_filters={
-        "justice_impact_type": ["SOLITARY"],
+        "justice_impact_type": [JusticeImpactType.SOLITARY_CONFINEMENT.value],
     },
 )
 
@@ -577,7 +580,7 @@ AVG_DAILY_POPULATION_MAXIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     "exclusive from other justice impact types",
     span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
     span_attribute_filters={
-        "justice_impact_type": ["MAX_CUSTODY"],
+        "justice_impact_type": [JusticeImpactType.MAXIMUM_CUSTODY.value],
     },
 )
 
@@ -598,7 +601,7 @@ AVG_DAILY_POPULATION_MEDIUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     "exclusive from other justice impact types",
     span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
     span_attribute_filters={
-        "justice_impact_type": ["MEDIUM_CUSTODY"],
+        "justice_impact_type": [JusticeImpactType.MEDIUM_CUSTODY.value],
     },
 )
 
@@ -619,7 +622,7 @@ AVG_DAILY_POPULATION_MINIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
     "exclusive from other justice impact types",
     span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION],
     span_attribute_filters={
-        "justice_impact_type": ["MIN_CUSTODY"],
+        "justice_impact_type": [JusticeImpactType.MINIMUM_CUSTODY.value],
     },
 )
 

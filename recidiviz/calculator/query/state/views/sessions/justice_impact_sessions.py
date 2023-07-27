@@ -14,7 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Sessionized table with spans of weighted justice impact"""
+"""
+Sessionized table with spans of weighted justice impact
+
+We define relative weights for different types of justice involvement, each
+scaled relative to minimum security incarceration = 1. These weights were determined
+via UXR with JIIs.
+"""
+
+from enum import Enum
+from typing import Union
+
+import attr
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
@@ -25,25 +36,65 @@ from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions im
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# below we define relative weights for different types of justice involvement, each
-# scaled relative to minimum security incarceration = 1. These weights are determined
-# by UXR with JIIs.
-MAX_SECURITY_WEIGHT = 30
-SOLITARY_CONFINEMENT_WEIGHT = 7.5
-MEDIUM_SECURITY_WEIGHT = 2.5
-SUPERVISION_WEIGHT = 1 / 25
-LIMITED_UNSUPERVISED_WEIGHT = 1 / 50
 
 # flags for compartments corresponding to justice impact weights
-LIMITED_SUPERVISION_TYPE = "LIMITED_SUPERVISION"
-MAX_SECURITY_TYPE = "MAXIMUM_CUSTODY"
-MEDIUM_SECURITY_TYPE = "MEDIUM_CUSTORY"
-MINIMUM_SECURITY_TYPE = "MIN_SUPERVISION"
-SOLITARY_CONFINEMENT_TYPE = "SOLITARY"
-SUPERVISION_TYPE = "NONLIMITED_SUPERVISION"
+class JusticeImpactType(Enum):
+    LIMITED_SUPERVISION = "LIMITED_SUPERVISION"
+    MAXIMUM_CUSTODY = "MAXIMUM_CUSTODY"
+    MEDIUM_CUSTODY = "MEDIUM_CUSTODY"
+    MINIMUM_CUSTODY = "MINIMUM_CUSTODY"
+    NONLIMITED_SUPERVISION = "NONLIMITED_SUPERVISION"
+    SOLITARY_CONFINEMENT = "SOLITARY_CONFINEMENT"
+
+
+@attr.define(frozen=True, kw_only=True)
+class JusticeImpact:
+    """
+    Class that stores information about a justice impact type.
+    """
+
+    justice_impact_type: JusticeImpactType
+    weight: float
+
+    @property
+    def name(self) -> str:
+        return self.justice_impact_type.value
+
+
+JUSTICE_IMPACT_TYPE_LIST = [
+    JusticeImpact(
+        justice_impact_type=JusticeImpactType.MAXIMUM_CUSTODY,
+        weight=30.0,
+    ),
+    JusticeImpact(
+        justice_impact_type=JusticeImpactType.SOLITARY_CONFINEMENT,
+        weight=7.5,
+    ),
+    JusticeImpact(
+        justice_impact_type=JusticeImpactType.MEDIUM_CUSTODY,
+        weight=2.5,
+    ),
+    JusticeImpact(
+        justice_impact_type=JusticeImpactType.MINIMUM_CUSTODY,
+        weight=1.0,
+    ),
+    JusticeImpact(
+        justice_impact_type=JusticeImpactType.NONLIMITED_SUPERVISION,
+        weight=1 / 25,
+    ),
+    JusticeImpact(
+        justice_impact_type=JusticeImpactType.LIMITED_SUPERVISION,
+        weight=1 / 50,
+    ),
+]
+JUSTICE_IMPACT_TYPES = {j.justice_impact_type: j for j in JUSTICE_IMPACT_TYPE_LIST}
+
 
 _VIEW_NAME = "justice_impact_sessions"
 
+_WEIGHT_DOCSTRING = "\n".join(
+    [f"- {ji_type.name}: {ji_type.weight}" for ji_type in JUSTICE_IMPACT_TYPES.values()]
+)
 _VIEW_DESCRIPTION = f"""
 This table contains spans of justice impact weighted by the relative impact of each
 compartment (as determined by UXR with JIIs). The weights are relative to
@@ -53,13 +104,37 @@ facilitate apples-to-apples comparisons of the impact of Recidiviz tools on diff
 justice compartments.
 
 Weights are defined as follows:
-- Max Security Incarceration: {MAX_SECURITY_WEIGHT}
-- Solitary Confinement: {SOLITARY_CONFINEMENT_WEIGHT}
-- Medium Security Incarceration: {MEDIUM_SECURITY_WEIGHT}
-- Min Security Incarceration: 1
-- Supervision: {SUPERVISION_WEIGHT}
-- Limited/unsupervised: {LIMITED_UNSUPERVISED_WEIGHT}
+{_WEIGHT_DOCSTRING}
 """
+
+
+# helper function for getting justice impact type name or weight for a single entity
+def get_ji_type_or_weight(
+    ji_type: JusticeImpactType,
+    column: str,
+) -> Union[str, float]:
+    """
+    Returns a string justice impact type name or weight for a given
+    JusticeImpact object.
+    """
+    if column not in [
+        "type",
+        "weight",
+    ]:
+        raise ValueError(
+            f"Column {column} is not a valid column for justice impact sessions."
+        )
+
+    if ji_type not in JUSTICE_IMPACT_TYPES:
+        raise ValueError(
+            f"Justice impact type {ji_type} is not a valid justice impact type."
+        )
+    justice_impact_object = JUSTICE_IMPACT_TYPES[ji_type]
+
+    if column == "weight":
+        return justice_impact_object.weight
+    # if type, return the name with quotes
+    return f'"{justice_impact_object.name}"'
 
 
 # helper function for getting compartment-specific levels or weights
@@ -91,7 +166,7 @@ def get_justice_impact_type_or_weight_column(column: str) -> str:
                 "PERMANENT_SOLITARY_CONFINEMENT"
             )
             -- OR housing_unit_category = "SOLITARY_CONFINEMENT"
-            THEN {SOLITARY_CONFINEMENT_WEIGHT if column == "weight" else f'"{SOLITARY_CONFINEMENT_TYPE}"'}
+            THEN {get_ji_type_or_weight(JusticeImpactType.SOLITARY_CONFINEMENT, column)}
             WHEN compartment_level_1 IN (
                 "INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY"
             ) THEN
@@ -99,26 +174,26 @@ def get_justice_impact_type_or_weight_column(column: str) -> str:
                 CASE
                     WHEN correctional_level IN (
                         "MAXIMUM"
-                    ) THEN {MAX_SECURITY_WEIGHT if column == "weight" else f'"{MAX_SECURITY_TYPE}"'}
+                    ) THEN {get_ji_type_or_weight(JusticeImpactType.MAXIMUM_CUSTODY, column)}
                     WHEN correctional_level IN (
                         "MEDIUM", "CLOSE"
-                    ) THEN {MEDIUM_SECURITY_WEIGHT if column == "weight" else f'"{MEDIUM_SECURITY_TYPE}"'}
+                    ) THEN {get_ji_type_or_weight(JusticeImpactType.MEDIUM_CUSTODY, column)}
                     -- the rest is assumed minimum security or equivalent
                     -- this includes MINIMUM, RESTRICTIVE_MINIMUM, and INTERNAL_UNKNOWN
-                    ELSE {1 if column == "weight" else f'"{MINIMUM_SECURITY_TYPE}"'} END
+                    ELSE {get_ji_type_or_weight(JusticeImpactType.MINIMUM_CUSTODY, column)} END
             -- all remaining compartments supervision or investigation
             -- first, handle unconventional supervision (ignore qualitative factors)
             WHEN compartment_level_1 IN (
                 "INVESTIGATION", "PENDING_SUPERVISION"
-            ) THEN {SUPERVISION_WEIGHT if column == "weight" else f'"{SUPERVISION_TYPE}"'}
+            ) THEN {get_ji_type_or_weight(JusticeImpactType.NONLIMITED_SUPERVISION, column)}
             -- second, weights for unsupervised parole/probation
             WHEN correctional_level IN (
                 "LIMITED", "UNSUPERVISED"
-            ) THEN {LIMITED_UNSUPERVISED_WEIGHT if column == "weight" else f'"{LIMITED_SUPERVISION_TYPE}"'}
+            ) THEN {get_ji_type_or_weight(JusticeImpactType.LIMITED_SUPERVISION, column)}
             -- finally, supervised parole/probation
             WHEN compartment_level_1 IN (
                 "SUPERVISION", "SUPERVISION_OUT_OF_STATE"
-            ) THEN {SUPERVISION_WEIGHT if column == "weight" else f'"{SUPERVISION_TYPE}"'}
+            ) THEN {get_ji_type_or_weight(JusticeImpactType.NONLIMITED_SUPERVISION, column)}
             -- the above should cover all cases
             ELSE NULL END"""
 
