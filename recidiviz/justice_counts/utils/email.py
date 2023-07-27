@@ -43,7 +43,7 @@ def send_confirmation_email(
     notifying that their upload has either succeeded or failed. We do so by using the
     SendGridClientWrapper.
 
-    Emails are sent to all users associated with the given agency.
+    Emails are sent to all users associated with the given agency (except for CSG users).
     """
     send_grid_client = SendGridClientWrapper(key_type="justice_counts")
 
@@ -58,9 +58,10 @@ def send_confirmation_email(
         spreadsheet_id=spreadsheet_id,
     )
 
+    # Send confirmation email to all users that belong to the agency
+    # except for CSG users
     for user_email in user_emails:
-        # TODO(#21717) Un-gate email notifications
-        if "@recidiviz.org" in user_email and in_gcp_staging():
+        if "@csg.org" not in user_email:
             try:
                 send_grid_client.send_message(
                     to_email=user_email,
