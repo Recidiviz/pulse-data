@@ -93,7 +93,12 @@ def deliver(
             ",".join(address for address in cc_addresses),
         )
 
-    from_email_name, from_email_address = get_sender_info(batch.report_type)
+    (
+        from_email_name,
+        from_email_address,
+        reply_to_address,
+        reply_to_name,
+    ) = get_sender_info(batch.report_type)
 
     content_bucket = utils.get_email_content_bucket_name()
     html_files = load_files_from_storage(content_bucket, utils.get_html_folder(batch))
@@ -167,6 +172,8 @@ def deliver(
             redirect_address=redirect_address,
             cc_addresses=all_cc_addresses if all_cc_addresses else None,
             text_attachment_content=attachment_files.get(recipient_email_address),
+            reply_to_email=reply_to_address,
+            reply_to_name=reply_to_name,
         )
 
         if sent_successfully:
@@ -274,23 +281,17 @@ def get_file_metadata(file_path: GcsfsFilePath) -> Optional[Dict[str, str]]:
     return metadata
 
 
-def get_sender_info(report_type: ReportType) -> Tuple[str, str]:
-    if report_type in [
-        ReportType.POMonthlyReport,
-        ReportType.OutliersSupervisionOfficerSupervisor,
-    ]:
-        try:
-            from_email_address = utils.get_env_var("FROM_EMAIL_ADDRESS")
-            from_email_name = utils.get_env_var("FROM_EMAIL_NAME")
-        except KeyError:
-            logging.error(
-                "Unable to get a required environment variables `FROM_EMAIL_ADDRESS` or `FROM_EMAIL_NAME`. "
-                "Exiting."
-            )
-            raise
-
+def get_sender_info(report_type: ReportType) -> Tuple[str, str, str, str]:
+    if report_type == ReportType.POMonthlyReport:
+        from_email_name = "Recidiviz Reports"
+    elif report_type == ReportType.OutliersSupervisionOfficerSupervisor:
+        from_email_name = "Recidiviz Alerts"
     else:
         logging.error("Unsupported report type: %s", report_type.value)
         raise ValueError(f"Unsupported report type: {report_type.value}")
 
-    return from_email_name, from_email_address
+    from_email_address = "reports@recidiviz.org"
+    reply_to_address = "feedback@recidiviz.org"
+    reply_to_name = "Recidiviz Support"
+
+    return from_email_name, from_email_address, reply_to_address, reply_to_name

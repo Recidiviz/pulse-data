@@ -17,8 +17,7 @@
 """Tests for the wrapper class SendGridClientWrapper"""
 import collections
 from unittest import TestCase
-from unittest.mock import call, Mock, MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
@@ -109,6 +108,43 @@ class SendGridClientWrapperTest(TestCase):
         self.assertTrue(hasattr(mock_message, "cc"))
         self.assertEqual(len(mock_message.cc), 2)
         mock_parent.assert_has_calls(expected_calls)
+
+    def test_send_message_with_reply_to(self) -> None:
+        """Given a reply to address, test it is added to the Mail message"""
+        to_email = "test@test.org"
+        from_email = "<Recidiviz> dev@recidiviz.org"
+
+        subject = "Your monthly Recidiviz Report"
+        html_content = "<html></html>"
+        reply_to_email = "reply@recidiviz.org"
+        reply_to_name = "Reply Receiver"
+
+        self.mock_mail_helpers.Email.return_value = from_email
+
+        Mail = collections.namedtuple("Mail", [])
+        mock_message = MagicMock(return_value=Mail())
+        self.mock_mail_helpers.Mail.return_value = mock_message
+
+        self.mock_mail_helpers.ReplyTo.return_value = (reply_to_email, reply_to_name)
+
+        self.mock_client.send.return_value = self.success_response
+
+        with self.assertLogs(level="INFO"):
+            response = self.wrapper.send_message(
+                to_email=to_email,
+                from_email="dev@recidiviz.org",
+                reply_to_email=reply_to_email,
+                reply_to_name=reply_to_name,
+                subject=subject,
+                html_content=html_content,
+                attachment_title=self.attachment_title,
+                from_email_name="Recidiviz",
+            )
+            self.assertTrue(response)
+
+        self.mock_mail_helpers.ReplyTo.assert_called_with(reply_to_email, reply_to_name)
+        self.assertTrue(hasattr(mock_message, "reply_to"))
+        self.assertEqual(mock_message.reply_to, (reply_to_email, reply_to_name))
 
     def test_send_message_exception(self) -> None:
         """Test that an error is logged when an exception is raised and it returns False"""

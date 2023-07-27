@@ -75,6 +75,8 @@ class SendGridClientWrapper:
         text_attachment_content: Optional[str] = None,
         attachment_title: Optional[str] = None,
         disable_link_click: Optional[bool] = False,
+        reply_to_email: Optional[str] = None,
+        reply_to_name: Optional[str] = None,
     ) -> mail_helpers.Mail:
         """Creates the request body for the email that will be sent. Includes all required data to send a single email.
 
@@ -88,6 +90,9 @@ class SendGridClientWrapper:
             subject=subject,
             html_content=html_content,
         )
+        if reply_to_email:
+            message.reply_to = mail_helpers.ReplyTo(reply_to_email, reply_to_name)
+
         if cc_addresses:
             message.cc = [
                 mail_helpers.Cc(email=cc_email_address)
@@ -129,6 +134,8 @@ class SendGridClientWrapper:
         text_attachment_content: Optional[str] = None,
         attachment_title: Optional[str] = None,
         disable_link_click: Optional[bool] = False,
+        reply_to_email: Optional[str] = None,
+        reply_to_name: Optional[str] = None,
     ) -> bool:
         """Sends the email to the provided address by making a Twilio SendGrid API request.
 
@@ -147,6 +154,8 @@ class SendGridClientWrapper:
             cc_addresses: (Optional) A list of email addresses to CC
             text_attachment_content: (Optional) Content for the plain text attachment file
             disable_link_click: (Optional) Boolean to indicate if we want to disable link click tracking
+            reply_to_email: (Optional) An alternate email address for recipients to reply to
+            reply_to_name: (Optional) Name associated with the reply-to email
 
         Returns:
             True if the message is sent successfully
@@ -166,6 +175,8 @@ class SendGridClientWrapper:
             cc_addresses=cc_addresses,
             text_attachment_content=text_attachment_content,
             disable_link_click=disable_link_click,
+            reply_to_email=reply_to_email,
+            reply_to_name=reply_to_name,
         )
 
         try:

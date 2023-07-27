@@ -67,11 +67,10 @@ class EmailDeliveryTest(TestCase):
         self.mock_utils.get_html_folder.return_value = "my-html-folder"
         self.mock_utils.get_attachments_folder.return_value = "my-attachments-folder"
 
-        self.mock_env_vars = {
-            "FROM_EMAIL_ADDRESS": "dev@recidiviz.org",
-            "FROM_EMAIL_NAME": "Recidiviz",
-        }
-        self.mock_utils.get_env_var.side_effect = self.mock_env_vars.get
+        self.default_sender_email = "reports@recidiviz.org"
+        self.default_sender_name = "Recidiviz Alerts"
+        self.default_reply_to_email = "feedback@recidiviz.org"
+        self.default_reply_to_name = "Recidiviz Support"
 
     def tearDown(self) -> None:
         self.sendgrid_client_patcher.stop()
@@ -160,8 +159,10 @@ class EmailDeliveryTest(TestCase):
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
-            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
-            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            from_email=self.default_sender_email,
+            from_email_name=self.default_sender_name,
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
             attachment_title=self.attachment_title,
@@ -186,8 +187,10 @@ class EmailDeliveryTest(TestCase):
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
-            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
-            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            from_email=self.default_sender_email,
+            from_email_name=self.default_sender_name,
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
             attachment_title=self.attachment_title,
@@ -221,8 +224,10 @@ class EmailDeliveryTest(TestCase):
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
-            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
-            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            from_email=self.default_sender_email,
+            from_email_name=self.default_sender_name,
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
             attachment_title=self.attachment_title,
@@ -255,8 +260,10 @@ class EmailDeliveryTest(TestCase):
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
-            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
-            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            from_email=self.default_sender_email,
+            from_email_name=self.default_sender_name,
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
             attachment_title=self.attachment_title,
@@ -289,8 +296,10 @@ class EmailDeliveryTest(TestCase):
 
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
-            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
-            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            from_email=self.default_sender_email,
+            from_email_name=self.default_sender_name,
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
             attachment_title=self.attachment_title,
@@ -315,22 +324,6 @@ class EmailDeliveryTest(TestCase):
         self.assertEqual(len(result.successes), 0)
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
-    def test_deliver_fails_missing_env_vars(
-        self, mock_load_files_from_storage: MagicMock
-    ) -> None:
-        """Given a batch_id and a redirect_address, test that the SendGridClientWrapper send_message is called with
-        the redirect_address, and the to address is included in the subject."""
-        self.mock_utils.get_env_var.side_effect = KeyError
-        with self.assertRaises(KeyError), self.assertLogs(level="ERROR"):
-            email_delivery.deliver(
-                self.batch,
-                self.report_date,
-            )
-
-        mock_load_files_from_storage.assert_not_called()
-        self.mock_sendgrid_client.send_message.assert_not_called()
-
-    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
     def test_deliver_correctly_with_email_allowlist(
         self, mock_load_files_from_storage: MagicMock
     ) -> None:
@@ -347,8 +340,10 @@ class EmailDeliveryTest(TestCase):
             )
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
-            from_email=self.mock_env_vars["FROM_EMAIL_ADDRESS"],
-            from_email_name=self.mock_env_vars["FROM_EMAIL_NAME"],
+            from_email=self.default_sender_email,
+            from_email_name=self.default_sender_name,
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
             subject="Your monthly Recidiviz report",
             html_content=self.mock_files[self.to_address],
             attachment_title=self.attachment_title,
@@ -389,3 +384,28 @@ class EmailDeliveryTest(TestCase):
         )
 
         self.assertEqual(files, {f"{self.to_address}": "<html>"})
+
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    def test_sender_config(self, mock_load_files_from_storage: MagicMock) -> None:
+        mock_load_files_from_storage.return_value = self.mock_files
+
+        self.batch.report_type = ReportType.POMonthlyReport
+        with self.assertLogs(level="INFO"):
+            email_delivery.deliver(
+                self.batch,
+                self.report_date,
+            )
+
+        self.mock_sendgrid_client.send_message.assert_called_with(
+            to_email=self.to_address,
+            from_email=self.default_sender_email,
+            from_email_name="Recidiviz Reports",
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
+            subject="Your monthly Recidiviz report",
+            html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
+            redirect_address=None,
+            cc_addresses=None,
+            text_attachment_content=self.mock_files[self.to_address],
+        )
