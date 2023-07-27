@@ -183,6 +183,7 @@ def deliver(
             text_attachment_content=attachment_files.get(recipient_email_address),
             reply_to_email=reply_to_address,
             reply_to_name=reply_to_name,
+            disable_unsubscribe=True,
         )
 
         if sent_successfully:

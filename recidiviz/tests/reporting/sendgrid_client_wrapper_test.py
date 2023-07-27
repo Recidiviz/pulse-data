@@ -220,3 +220,35 @@ class SendGridClientWrapperTest(TestCase):
             text_attachment_content=None,
         )
         self.mock_mail_helpers.Attachment.assert_not_called()
+
+    def test_send_message_with_unsubscribe_disabled(self) -> None:
+        self.mock_mail_helpers.Email.return_value = "<Recidiviz> dev@recidiviz.org"
+
+        Mail = collections.namedtuple("Mail", [])
+        mock_message = MagicMock(return_value=Mail())
+        self.mock_mail_helpers.Mail.return_value = mock_message
+
+        self.mock_mail_helpers.SubscriptionTracking.return_value = {"enable": False}
+        self.mock_mail_helpers.TrackingSettings.return_value = "tracking settings here"
+
+        self.mock_client.send.return_value = self.success_response
+        to_email = "test@test.org"
+        subject = "Your monthly Recidiviz Report"
+
+        with self.assertLogs(level="INFO"):
+            self.wrapper.send_message(
+                to_email=to_email,
+                from_email="dev@recidiviz.org",
+                subject=subject,
+                html_content="<html></html>",
+                attachment_title=self.attachment_title,
+                from_email_name="Recidiviz",
+                disable_unsubscribe=True,
+            )
+
+        self.mock_mail_helpers.SubscriptionTracking.assert_called_with(enable=False)
+        self.mock_mail_helpers.TrackingSettings.assert_called_with(
+            subscription_tracking={"enable": False}
+        )
+        self.assertTrue(hasattr(mock_message, "tracking_settings"))
+        self.assertEqual(mock_message.tracking_settings, "tracking settings here")
