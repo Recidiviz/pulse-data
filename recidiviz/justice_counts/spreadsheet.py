@@ -57,6 +57,7 @@ from recidiviz.justice_counts.utils.constants import (
     ERRORS_WARNINGS_JSON_BUCKET_PROD,
     ERRORS_WARNINGS_JSON_BUCKET_STAGING,
 )
+from recidiviz.justice_counts.utils.datapoint_utils import get_dimension_id
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_gcp_staging
@@ -362,7 +363,7 @@ class SpreadsheetInterface:
                 if (
                     datapoint.report_id is None
                     and datapoint.value is None
-                    and datapoint.get_dimension_id() is None
+                    and get_dimension_id(datapoint=datapoint) is None
                 ):
                     metric_key_to_enabled[
                         datapoint.metric_definition_key

@@ -27,6 +27,10 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 )
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.justice_counts.utils.datapoint_utils import (
+    get_dimension_id,
+    get_dimension_member,
+)
 
 from .utils.date_utils import convert_date_range_to_year_month
 
@@ -90,7 +94,7 @@ class FeedInterface:
         for datapoint in datapoints:
             metric_key = datapoint.metric_definition_key
             system = METRIC_KEY_TO_METRIC[metric_key].system
-            dimension_id = datapoint.get_dimension_id()
+            dimension_id = get_dimension_id(datapoint=datapoint)
             system_metric_key_and_dim_id_to_datapoints[
                 (system, metric_key, dimension_id)
             ].append(datapoint)
@@ -105,7 +109,6 @@ class FeedInterface:
             metric_key,
             dimension_id,
         ), datapoints in system_metric_key_and_dim_id_to_datapoints.items():
-
             rows = []
             metricfile = SYSTEM_METRIC_KEY_AND_DIM_ID_TO_METRICFILE[
                 (system, metric_key, dimension_id)
@@ -132,7 +135,7 @@ class FeedInterface:
                     start_date=start_date, end_date=end_date
                 )
                 for datapoint in time_range_datapoints:
-                    row = {}
+                    row: Dict[str, Any] = {}
                     row["year"] = year
                     if month is not None:
                         row["month"] = month
@@ -145,7 +148,7 @@ class FeedInterface:
                             )
                         row[
                             metricfile.disaggregation_column_name
-                        ] = datapoint.get_dimension_member()
+                        ] = get_dimension_member(datapoint=datapoint)
 
                     row["value"] = datapoint.value
                     rows.append(row)
