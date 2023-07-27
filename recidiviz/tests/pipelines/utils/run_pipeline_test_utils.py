@@ -64,7 +64,7 @@ def run_test_pipeline(
         non_default_options = options.get_all_options(drop_default=True)
         expected_non_default_options = {
             "project": project_id,
-            "save_main_session": True,
+            "save_main_session": False,
         }
 
         for option in expected_non_default_options:
@@ -88,9 +88,7 @@ def run_test_pipeline(
     )
 
     if issubclass(pipeline_cls, StateIngestPipeline):
-        read_from_bq_class = (
-            "recidiviz.pipelines.ingest.state.pipeline.ReadFromBigQuery"
-        )
+        read_from_bq_class = "recidiviz.pipelines.ingest.state.generate_ingest_view_results.ReadFromBigQuery"
     else:
         read_from_bq_class = (
             "recidiviz.pipelines.utils.beam_utils.extractor_utils.ReadFromBigQuery"

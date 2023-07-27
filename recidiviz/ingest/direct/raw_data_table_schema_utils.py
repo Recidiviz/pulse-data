@@ -27,11 +27,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     DirectIngestRawFileImportManager,
     get_region_raw_file_config,
 )
-from recidiviz.ingest.direct.types.direct_ingest_constants import (
-    FILE_ID_COL_NAME,
-    IS_DELETED_COL_NAME,
-    UPDATE_DATETIME_COL_NAME,
-)
+from recidiviz.ingest.direct.types.direct_ingest_constants import FILE_ID_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
@@ -77,17 +73,8 @@ def _get_raw_data_table_schema(
 ) -> List[bigquery.SchemaField]:
     """Retrieve the raw data BQ schema for a given raw file tag."""
     region_config = get_region_raw_file_config(state_code.value.lower())
-    region_raw_file_config = region_config.raw_file_configs
-
-    raw_data_config = region_raw_file_config[raw_file_tag]
-    columns = [column.name for column in raw_data_config.columns] + [
-        FILE_ID_COL_NAME,
-        UPDATE_DATETIME_COL_NAME,
-        IS_DELETED_COL_NAME,
-    ]
-    schema = DirectIngestRawFileImportManager.create_raw_table_schema_from_columns(
+    schema = DirectIngestRawFileImportManager.create_raw_table_schema(
         raw_file_config=region_config.raw_file_configs[raw_file_tag],
-        columns=columns,
     )
 
     return schema

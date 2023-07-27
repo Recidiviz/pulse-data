@@ -37,7 +37,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.utils.script_helpers import run_command
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECTS, in_test
 
 
 class NormalizeSandboxJobName(argparse.Action):
@@ -178,7 +178,7 @@ class PipelineParameters:
             "--project",
             type=str,
             help="ID of the GCP project.",
-            choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+            choices=GCP_PROJECTS if not in_test() else None,
             required=True,
         )
 

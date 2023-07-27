@@ -203,6 +203,7 @@ TEST_STATE_CODE = "US_XX"
 TEST_STATE_CODE_DOCS = "US_WW"
 TEST_STATE_CODE_LOOKER = "US_LL"
 TEST_STATE_CODE_2 = "US_YY"
+TEST_STATE_CODE_DATAFLOW = "US_DD"
 
 """
     US_XX serves as a generic placeholder state for any state that is to be ingested and
@@ -284,6 +285,23 @@ TEST_STATE_INFO = {
             "name_metaphone": "TEST",
         }
     ),
+    TEST_STATE_CODE_DATAFLOW: us.states.State(
+        **{
+            "fips": "82",
+            "name": "Test State",
+            "abbr": "DD",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": False,
+            "is_continental": True,
+            "statehood_year": 9999,
+            "capital": "Test",
+            "capital_tz": "America/Test",
+            "ap_abbr": "Test",
+            "time_zones": ["America/Test", "America/Test"],
+            "name_metaphone": "TEST",
+        }
+    ),
 }
 
 
@@ -353,6 +371,7 @@ class _FakeStateCode(_SharedStateCode):
     US_IX = "US_IX"  # US_ID
 
     # Test codes
+    US_DD = TEST_STATE_CODE_DATAFLOW
     US_LL = TEST_STATE_CODE_LOOKER
     US_WW = TEST_STATE_CODE_DOCS
     US_XX = TEST_STATE_CODE
@@ -448,6 +467,7 @@ if typing.TYPE_CHECKING:
         US_IX = "US_IX"  # US_ID
 
         # Test codes
+        US_DD = TEST_STATE_CODE_DATAFLOW
         US_LL = TEST_STATE_CODE_LOOKER
         US_WW = TEST_STATE_CODE_DOCS
         US_XX = TEST_STATE_CODE
