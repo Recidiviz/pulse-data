@@ -242,6 +242,49 @@ FROM `{project_id}.sessions.supervision_level_sessions_materialized`""",
         span_end_date_col="end_date_exclusive",
     ),
     SpanQueryBuilder(
+        span_type=PersonSpanType.TASK_CRITERIA_SPAN,
+        description="Spans of time over which a person is eligible for a given criteria",
+        sql_source="""SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    "INCARCERATION_PAST_FULL_TERM_RELEASE_DATE" AS criteria,
+    meets_criteria,
+FROM
+    `{project_id}.task_eligibility_criteria_general.incarceration_past_full_term_completion_date_materialized`
+
+UNION ALL
+
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    "SUPERVISION_PAST_FULL_TERM_RELEASE_DATE" AS criteria,
+    meets_criteria,
+FROM
+    `{project_id}.task_eligibility_criteria_general.supervision_past_full_term_completion_date_materialized`
+
+UNION ALL
+
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    "INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE" AS criteria,
+    meets_criteria,
+FROM
+    `{project_id}.task_eligibility_criteria_general.incarceration_past_parole_eligibility_date_materialized`""",
+        attribute_cols=[
+            "criteria",
+            "meets_criteria",
+        ],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date",
+    ),
+    SpanQueryBuilder(
         span_type=PersonSpanType.TASK_ELIGIBILITY_SESSION,
         description="Task eligibility spans",
         sql_source="""SELECT

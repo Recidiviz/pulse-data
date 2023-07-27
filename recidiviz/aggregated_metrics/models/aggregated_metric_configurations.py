@@ -177,7 +177,7 @@ AVG_DAILY_POPULATION_COMMUNITY_CONFINEMENT = DailyAvgSpanCountMetric(
 )
 
 AVG_DAILY_POPULATION_CRIME_AGAINST_PERSON = DailyAvgSpanCountMetric(
-    name="avg_daily_population_crime_against_person",
+    name="avg_population_crime_against_person",
     display_name="Average Population: Crime Against Person",
     description="Average daily count of clients sentenced for a crime against person",
     span_types=[PersonSpanType.SENTENCE_SPAN],
@@ -187,7 +187,7 @@ AVG_DAILY_POPULATION_CRIME_AGAINST_PERSON = DailyAvgSpanCountMetric(
 )
 
 AVG_DAILY_POPULATION_CRIME_AGAINST_PROPERTY = DailyAvgSpanCountMetric(
-    name="avg_daily_population_crime_against_property",
+    name="avg_population_crime_against_property",
     display_name="Average Population: Crime Against Property",
     description="Average daily count of clients sentenced for crime against property",
     span_types=[PersonSpanType.SENTENCE_SPAN],
@@ -197,7 +197,7 @@ AVG_DAILY_POPULATION_CRIME_AGAINST_PROPERTY = DailyAvgSpanCountMetric(
 )
 
 AVG_DAILY_POPULATION_CRIME_AGAINST_SOCIETY = DailyAvgSpanCountMetric(
-    name="avg_daily_population_crime_against_society",
+    name="avg_population_crime_against_society",
     display_name="Average Population: Crime Against Society",
     description="Average daily count of clients sentenced for crime against society",
     span_types=[PersonSpanType.SENTENCE_SPAN],
@@ -377,6 +377,31 @@ AVG_DAILY_POPULATION_PAROLE_BOARD_HOLD = DailyAvgSpanCountMetric(
     span_attribute_filters={
         "compartment_level_1": ["INCARCERATION"],
         "compartment_level_2": ["PAROLE_BOARD_HOLD"],
+    },
+)
+
+AVG_DAILY_POPULATION_PAST_FULL_TERM_RELEASE_DATE = DailyAvgSpanCountMetric(
+    name="avg_population_past_full_term_release_date",
+    display_name="Average Population: Past Full Term Release Date",
+    description="Average daily count of clients beyond their full term release date",
+    span_types=[PersonSpanType.TASK_CRITERIA_SPAN],
+    span_attribute_filters={
+        "criteria": [
+            "INCARCERATION_PAST_FULL_TERM_RELEASE_DATE",
+            "SUPERVISION_PAST_FULL_TERM_RELEASE_DATE",
+        ],
+        "meets_criteria": ["true"],
+    },
+)
+
+AVG_DAILY_POPULATION_PAST_PAROLE_ELIGIBILITY_DATE = DailyAvgSpanCountMetric(
+    name="avg_population_past_parole_eligibility_date",
+    display_name="Average Population: Past Parole Eligibility Date",
+    description="Average daily count of clients beyond their parole eligibility date",
+    span_types=[PersonSpanType.TASK_CRITERIA_SPAN],
+    span_attribute_filters={
+        "criteria": ["INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE"],
+        "meets_criteria": ["true"],
     },
 )
 
