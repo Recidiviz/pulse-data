@@ -24,28 +24,28 @@
       "name": "output",
       "label": "Test output dataset",
       "helpText": "If specified, the pipeline will write to this test dataset.",
-      "regexes": ["[1-9a-z_]+"],
+      "regexes": ["[0-9a-z_]+"],
       "isOptional": true
     },
     {
       "name": "state_data_input",
       "label": "BigQuery dataset to query for state entities",
       "helpText": "If specified, the pipeline will query this dataset instead of the default.",
-      "regexes": ["[1-9a-z_]+"],
+      "regexes": ["[0-9a-z_]+"],
       "isOptional": true
     },
     {
       "name": "reference_view_input",
       "label": "BigQuery reference view dataset to query",
       "helpText": "If specified, the pipeline will query this BigQuery reference view dataset instead of the default.",
-      "regexes": ["[1-9a-z_]+"],
+      "regexes": ["[0-9a-z_]+"],
       "isOptional": true
     },
     {
       "name": "normalized_input",
       "label": "BigQuery dataset to query for normalized state entities",
       "helpText": "If specified, the pipeline will query this dataset instead of the default.",
-      "regexes": ["[1-9a-z_]+"],
+      "regexes": ["[0-9a-z_]+"],
       "isOptional": true
     },
     {
