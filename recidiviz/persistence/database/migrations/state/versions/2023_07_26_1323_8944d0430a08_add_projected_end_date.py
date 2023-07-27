@@ -2,7 +2,7 @@
 """add_projected_end_date
 
 Revision ID: 8944d0430a08
-Revises: 5b5d6d1f42a0
+Revises: c84adc99e1d7
 Create Date: 2023-07-26 13:23:13.596519
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8944d0430a08"
-down_revision = "5b5d6d1f42a0"
+down_revision = "c84adc99e1d7"
 branch_labels = None
 depends_on = None
 

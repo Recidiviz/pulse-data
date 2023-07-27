@@ -44,9 +44,14 @@ def decimal_str_as_int_str(dec_str: str) -> str:
     """Converts a comma-separated string representation of an integer into a string
     representing a simple integer with no commas.
 
+    As of 7/25/23 there is one case of a ROOT_OFFENDER_ID being reused. This is handled
+    by appending -2 to the value in a raw data migration, in which case the value is
+    already a string representation of an integer and is returned as is.
+
     E.g. _decimal_str_as_int_str('1,234.00') -> '1234'
+         _decimal_str_as_int_str('1234-2') -> '1234-2'
     """
-    if not dec_str:
+    if not dec_str or "-" in dec_str:
         return dec_str
 
     return str(int(float(dec_str.replace(",", ""))))
