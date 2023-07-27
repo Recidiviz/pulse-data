@@ -45,7 +45,7 @@ Dataflow sessions is the most finely grained sessionized view. This view is uniq
 5. `supervising_officer_external_id`
 6. `case_type`
 
-This table is the source of other sessions tables such as `compartment_sessions`, `location_sessions`, and `supervision_officer_sessions`. 
+This table is the source of other sessions tables such as `compartment_sessions`, `location_sessions`, and `supervision_officer_sessions`.
 
 ## Field Definitions
 
@@ -63,46 +63,46 @@ This table is the source of other sessions tables such as `compartment_sessions`
 ## Methodology
 
 1. Union together the three population metrics
-    1. There are three dataflow population metrics - `INCARCERATION_POPULATION`, `SUPERVISION_POPULATION`, and `SUPERVISION_OUT_OF_STATE_POPULATION`. Each of these has a value for each person and day for which they are counted towards that population. 
+    1. There are three dataflow population metrics - `INCARCERATION_POPULATION`, `SUPERVISION_POPULATION`, and `SUPERVISION_OUT_OF_STATE_POPULATION`. Each of these has a value for each person and day for which they are counted towards that population.
 
-2. Deduplicate 
+2. Deduplicate
     1. There are cases in each of these individual dataflow metrics where we have the same person on the same day with different values for supervision types or specialized purpose for incarceration. If someone is present in both `PROBATION` and `PAROLE` on a given day, they are recategorized to `DUAL`. The unioned population data is then deduplicated to be unique on person and day. We prioritize the metrics in the following order: (1) `INCARCERATION_POPULATION`, (2) `SUPERVISION_POPULATION`, (3) `SUPERVISION_OUT_OF_STATE_POPULATION`. This means that if a person shows up in both incarceration and supervision population on the same day, we list that person as only being incarcerated.
 
-3. Aggregate into sessions 
+3. Aggregate into sessions
     1. Continuous dates within `metric_source`, `compartment_level_1`, `compartment_level_2`, `location`, `correctional_level`, `supervising_officer_external_id`, `case_type`, and `person_id`
 """
 
 DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     WITH population_cte AS
     /*
-    Union together incarceration and supervision population metrics (both in state and out of state). There are cases in 
-    each of these individual dataflow metrics where we have the same person on the same day with different values for 
-    supervision types or specialized purpose for incarceration. This deduplication is handled further down in the query. 
-    
+    Union together incarceration and supervision population metrics (both in state and out of state). There are cases in
+    each of these individual dataflow metrics where we have the same person on the same day with different values for
+    supervision types or specialized purpose for incarceration. This deduplication is handled further down in the query.
+
     Create a field that identifies the compartment_level_1 (incarceration vs supervision) and compartment_level_2.
-    
+
     The field "metric_source" is pulled from dataflow metric as to distinguish the population metric data sources. This
     is done because SUPERVISION can come from either SUPERVISION_POPULATION and SUPERVISION_OUT_OF_STATE_POPULATION.
     Compartment location is defined as facility for incarceration and supervision office and district for supervision
     periods.
     */
     (
-    SELECT 
+    SELECT
         person_id,
         start_date_inclusive AS start_date,
-        end_date_exclusive,     
+        end_date_exclusive,
         metric_type AS metric_source,
         state_code,
         IF(included_in_state_population, 'INCARCERATION', 'INCARCERATION_NOT_INCLUDED_IN_STATE') AS compartment_level_1,
         /* TODO(#6126): Investigate ID missing reason for incarceration */
-        CASE 
-            WHEN state_code = 'US_ND' AND facility = 'CPP' 
+        CASE
+            WHEN state_code = 'US_ND' AND facility = 'CPP'
                 THEN 'COMMUNITY_CONFINEMENT'
             ELSE COALESCE(purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
         COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
         COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
         CAST(NULL AS STRING) AS supervision_office,
-        CAST(NULL AS STRING) AS supervision_district,    
+        CAST(NULL AS STRING) AS supervision_district,
         custody_level AS correctional_level,
         custody_level_raw_text AS correctional_level_raw_text,
         housing_unit,
@@ -114,12 +114,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         gender,
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
     WHERE state_code NOT IN ('{{incarceration_special_states}}')
-            
+
     UNION ALL
     -- TODO(#15610): Remove ID preprocessing file when out of state facilities are flagged in sessions
     SELECT *
     FROM `{{project_id}}.{{sessions_dataset}}.us_id_incarceration_population_metrics_preprocessed_materialized`
-    
+
     UNION ALL
     -- TODO(#15610): Remove CO preprocessing file when out of state facilities are flagged in sessions
     SELECT *
@@ -129,7 +129,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     SELECT
         person_id,
         start_date_inclusive AS start_date,
-        end_date_exclusive,      
+        end_date_exclusive,
         metric_type AS metric_source,
         state_code,
         IF(included_in_state_population, 'SUPERVISION', 'SUPERVISION_OUT_OF_STATE') AS compartment_level_1,
@@ -156,12 +156,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     SELECT
         *
     FROM `{{project_id}}.{{sessions_dataset}}.us_tn_supervision_population_metrics_preprocessed_materialized`
-    
+
     UNION ALL
     -- TODO(#15613): Remove PA community confinement recategorization when hydrated in population metrics
     SELECT
         *
-    FROM `{{project_id}}.{{sessions_dataset}}.us_pa_supervision_population_metrics_preprocessed_materialized`        
+    FROM `{{project_id}}.{{sessions_dataset}}.us_pa_supervision_population_metrics_preprocessed_materialized`
     )
     ,
     population_with_location_names AS (
@@ -282,7 +282,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                         end_date_field_name='end_date_exclusive'
                     )}
     )
-    SELECT 
+    SELECT
         person_id,
         dataflow_session_id,
         state_code,
