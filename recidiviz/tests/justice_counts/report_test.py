@@ -33,6 +33,7 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
+from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils.utils import (
@@ -619,11 +620,11 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(datapoints_with_value), 2)
             report_metric = self.test_schema_objects.funding_metric
             self.assertEqual(
-                datapoints_with_value[0].get_value(),
+                get_value(datapoints_with_value[0]),
                 report_metric.value,
             )
             self.assertEqual(
-                datapoints_with_value[1].get_value(),
+                get_value(datapoints_with_value[1]),
                 assert_type(report_metric.contexts, list)[0].value,
             )
 
@@ -681,15 +682,15 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             reported_aggregated_dimensions = assert_type(
                 incomplete_report.aggregated_dimensions, list
             )
-            self.assertEqual(datapoints_with_value[0].get_value(), 100)
+            self.assertEqual(get_value(datapoints_with_value[0]), 100)
             self.assertEqual(
-                datapoints_with_value[1].get_value(),
+                get_value(datapoints_with_value[1]),
                 reported_aggregated_dimensions[0].dimension_to_value[
                     CallType.NON_EMERGENCY
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[2].get_value(),
+                get_value(datapoints_with_value[2]),
                 "our metrics are different because xyz",
             )
 
@@ -716,26 +717,26 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(datapoints_with_value), 5)
 
             self.assertEqual(
-                datapoints_with_value[0].get_value(),
+                get_value(datapoints_with_value[0]),
                 report_metric.value,
             )
             aggregated_dimensions = assert_type(
                 report_metric.aggregated_dimensions, list
             )
             self.assertEqual(
-                datapoints_with_value[1].get_value(),
+                get_value(datapoints_with_value[1]),
                 aggregated_dimensions[0].dimension_to_value[CallType.EMERGENCY],
             )
             self.assertEqual(
-                datapoints_with_value[2].get_value(),
+                get_value(datapoints_with_value[2]),
                 aggregated_dimensions[0].dimension_to_value[CallType.NON_EMERGENCY],
             )
             self.assertEqual(
-                datapoints_with_value[3].get_value(),
+                get_value(datapoints_with_value[3]),
                 aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
             )
             self.assertEqual(
-                datapoints_with_value[4].get_value(),
+                get_value(datapoints_with_value[4]),
                 "our metrics are different because xyz",
             )
 
@@ -764,56 +765,56 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(datapoints_with_value), 25)
 
             self.assertEqual(
-                datapoints_with_value[0].get_value(),
+                get_value(datapoints_with_value[0]),
                 report_metric.value,
             )
             aggregated_dimensions = assert_type(
                 report_metric.aggregated_dimensions, list
             )
             self.assertEqual(
-                datapoints_with_value[1].get_value(),
+                get_value(datapoints_with_value[1]),
                 aggregated_dimensions[0].dimension_to_value[
                     RaceAndEthnicity.HISPANIC_AMERICAN_INDIAN_ALASKAN_NATIVE
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[2].get_value(),
+                get_value(datapoints_with_value[2]),
                 aggregated_dimensions[0].dimension_to_value[
                     RaceAndEthnicity.HISPANIC_ASIAN
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[3].get_value(),
+                get_value(datapoints_with_value[3]),
                 aggregated_dimensions[0].dimension_to_value[
                     RaceAndEthnicity.HISPANIC_BLACK
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[4].get_value(),
+                get_value(datapoints_with_value[4]),
                 aggregated_dimensions[0].dimension_to_value[
                     RaceAndEthnicity.HISPANIC_MORE_THAN_ONE_RACE
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[5].get_value(),
+                get_value(datapoints_with_value[5]),
                 aggregated_dimensions[0].dimension_to_value[
                     RaceAndEthnicity.HISPANIC_NATIVE_HAWAIIAN_PACIFIC_ISLANDER
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[6].get_value(),
+                get_value(datapoints_with_value[6]),
                 aggregated_dimensions[0].dimension_to_value[
                     RaceAndEthnicity.HISPANIC_WHITE
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[7].get_value(),
+                get_value(datapoints_with_value[7]),
                 aggregated_dimensions[0].dimension_to_value[
                     RaceAndEthnicity.HISPANIC_OTHER
                 ],
             )
             self.assertEqual(
-                datapoints_with_value[8].get_value(),
+                get_value(datapoints_with_value[8]),
                 aggregated_dimensions[0].dimension_to_value[
                     RaceAndEthnicity.HISPANIC_UNKNOWN
                 ],
@@ -884,23 +885,23 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 report_metric.aggregated_dimensions, list
             )
             self.assertEqual(
-                datapoints_with_value[0].get_value(),
+                get_value(datapoints_with_value[0]),
                 report_metric.value,
             )
             self.assertEqual(
-                datapoints_with_value[1].get_value(),
+                get_value(datapoints_with_value[1]),
                 aggregated_dimensions[0].dimension_to_value[CallType.EMERGENCY],
             )
             self.assertEqual(
-                datapoints_with_value[2].get_value(),
+                get_value(datapoints_with_value[2]),
                 aggregated_dimensions[0].dimension_to_value[CallType.NON_EMERGENCY],
             )
             self.assertEqual(
-                datapoints_with_value[3].get_value(),
+                get_value(datapoints_with_value[3]),
                 aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
             )
             self.assertEqual(
-                datapoints_with_value[4].get_value(),
+                get_value(datapoints_with_value[4]),
                 assert_type(report_metric.contexts, list)[0].value,
             )
 
@@ -927,25 +928,25 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(datapoints_with_value), 5)
 
             self.assertEqual(
-                datapoints_with_value[0].get_value(), new_report_metric.value
+                get_value(datapoints_with_value[0]), new_report_metric.value
             )
             aggregated_dimensions = assert_type(
                 new_report_metric.aggregated_dimensions, list
             )
             self.assertEqual(
-                datapoints_with_value[1].get_value(),
+                get_value(datapoints_with_value[1]),
                 aggregated_dimensions[0].dimension_to_value[CallType.EMERGENCY],
             )
             self.assertEqual(
-                datapoints_with_value[2].get_value(),
+                get_value(datapoints_with_value[2]),
                 aggregated_dimensions[0].dimension_to_value[CallType.NON_EMERGENCY],
             )
             self.assertEqual(
-                datapoints_with_value[3].get_value(),
+                get_value(datapoints_with_value[3]),
                 aggregated_dimensions[0].dimension_to_value[CallType.UNKNOWN],
             )
             self.assertEqual(
-                datapoints_with_value[4].get_value(),
+                get_value(datapoints_with_value[4]),
                 assert_type(new_report_metric.contexts, list)[0].value,
             )
 
@@ -1267,12 +1268,12 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
             self.assertEqual(len(datapoints_with_value), 5)
-            self.assertEqual(datapoints_with_value[0].get_value(), 100.0)
-            self.assertEqual(datapoints_with_value[1].get_value(), 20.0)
-            self.assertEqual(datapoints_with_value[2].get_value(), 60.0)
-            self.assertEqual(datapoints_with_value[3].get_value(), 20.0)
+            self.assertEqual(get_value(datapoints_with_value[0]), 100.0)
+            self.assertEqual(get_value(datapoints_with_value[1]), 20.0)
+            self.assertEqual(get_value(datapoints_with_value[2]), 60.0)
+            self.assertEqual(get_value(datapoints_with_value[3]), 20.0)
             self.assertEqual(
-                datapoints_with_value[4].get_value(),
+                get_value(datapoints_with_value[4]),
                 "our metrics are different because xyz",
             )
 

@@ -53,6 +53,7 @@ from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesS
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
@@ -1431,7 +1432,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 report.last_modified_at.timestamp(), self.now_time.timestamp()
             )
-            self.assertEqual(report.datapoints[0].get_value(), value)
+            self.assertEqual(get_value(report.datapoints[0]), value)
             self.assertEqual(
                 report.modified_by,
                 [user_account.id],
@@ -1486,20 +1487,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             datapoints = report.datapoints
             self.assertEqual(len(datapoints), 7)
             # Aggregate Value
-            self.assertEqual(datapoints[0].get_value(), 110)
+            self.assertEqual(get_value(datapoints[0]), 110)
             # Emergency Calls
-            self.assertEqual(datapoints[1].get_value(), value)
+            self.assertEqual(get_value(datapoints[1]), value)
             # Non Emergency Calls
-            self.assertEqual(datapoints[2].get_value(), 10)
+            self.assertEqual(get_value(datapoints[2]), 10)
             # Other Calls
-            self.assertEqual(datapoints[3].get_value(), None)
+            self.assertEqual(get_value(datapoints[3]), None)
             # Unknown Calls
-            self.assertEqual(datapoints[4].get_value(), None)
+            self.assertEqual(get_value(datapoints[4]), None)
             # Funding
-            self.assertEqual(datapoints[5].get_value(), 2000000)
+            self.assertEqual(get_value(datapoints[5]), 2000000)
             # INCLUDES_EXCLUDES_DESCRIPTION
             self.assertEqual(
-                datapoints[6].get_value(), "our metrics are different because xyz"
+                get_value(datapoints[6]), "our metrics are different because xyz"
             )
 
     def test_update_multiple_report_statuses(self) -> None:

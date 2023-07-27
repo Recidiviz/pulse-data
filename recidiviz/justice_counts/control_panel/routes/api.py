@@ -68,7 +68,10 @@ from recidiviz.justice_counts.utils.constants import (
     ERRORS_WARNINGS_JSON_BUCKET_PROD,
     ERRORS_WARNINGS_JSON_BUCKET_STAGING,
 )
-from recidiviz.justice_counts.utils.datapoint_utils import filter_deprecated_datapoints
+from recidiviz.justice_counts.utils.datapoint_utils import (
+    filter_deprecated_datapoints,
+    get_dimension_id_and_member,
+)
 from recidiviz.justice_counts.utils.email import send_confirmation_email
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.environment import (
@@ -1787,7 +1790,7 @@ def get_api_blueprint(
                 (
                     dimension_id,
                     dimension_member,
-                ) = datapoint.get_dimension_id_and_member()
+                ) = get_dimension_id_and_member(datapoint=datapoint)
                 if dimension_id is not None and dimension_member is not None:
                     metric_key_to_dimension_id_to_dimension_member_to_datapoints_json[
                         datapoint.metric_definition_key
@@ -1878,9 +1881,7 @@ def get_api_blueprint(
                     (
                         dimension_id,
                         dimension_member,
-                    ) = DatapointInterface.get_dimension_id_and_member(
-                        dimension_identifier_to_member=datapoint.dimension_identifier_to_member
-                    )
+                    ) = get_dimension_id_and_member(datapoint=datapoint)
 
                 if datapoint.is_report_datapoint:
                     datapoint_json = DatapointInterface.to_json_response(

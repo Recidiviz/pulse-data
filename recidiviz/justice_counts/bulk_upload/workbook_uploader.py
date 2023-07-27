@@ -43,6 +43,7 @@ from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID
+from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.justice_counts.utils.metric_breakdown_to_sheet_name import (
     METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME,
 )
@@ -158,7 +159,7 @@ class WorkbookUploader:
             reports=reports
         )
         existing_datapoints_dict_unchanged = {
-            unique_key: datapoint.get_value()
+            unique_key: get_value(datapoint=datapoint)
             for unique_key, datapoint in existing_datapoints_dict.items()
         }
         sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[self.system.value]
@@ -293,7 +294,7 @@ class WorkbookUploader:
             if (
                 unique_key in existing_datapoints_dict_unchanged
                 and existing_datapoints_dict_unchanged[unique_key]
-                != datapoint.get_value()
+                != get_value(datapoint=datapoint)
             ):
                 # datapoint that previously existed has been updated/changed
                 agency_id = unique_key[2]

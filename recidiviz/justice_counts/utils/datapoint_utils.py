@@ -16,8 +16,9 @@
 # =============================================================================
 """Utilities for working with the Datapoint model."""
 
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
+from recidiviz.common.constants.justice_counts import ValueType
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
@@ -90,3 +91,80 @@ def filter_deprecated_datapoints(
 ) -> List[schema.Datapoint]:
     "Filter out deprecated datapoints from the given list."
     return [dp for dp in datapoints if not is_datapoint_deprecated(datapoint=dp)]
+
+
+def get_value(
+    datapoint: schema.Datapoint,
+    use_value: Optional[str] = None,
+) -> Any:
+    """This function converts the value of a datapoint to it's
+    correct type. All datapoint values are stored as strings
+    within the database, but we use the datapoint's `value_type`
+    field to identify whether the true type is a string or number.
+    If the value is number, we check if the number is "integer-like",
+    i.e. ends in .0, and if so we convert it to an int.
+
+    If use_value is not None, then get_value will return the value of
+    the use_value parameter, not the datapoint. This functionality is
+    used to cast datapoint history values to their correct type.
+    Basically, this lets us re-use the casting functionality of
+    this method on something besides a datapoint.
+    """
+    value = datapoint.value if use_value is None else use_value
+
+    try:
+        status = datapoint.report.status
+    except AttributeError:
+        # not an instantiated datapoint
+        status = None
+
+    if value is None:
+        return value
+
+    if datapoint.context_key is None or datapoint.value_type == ValueType.NUMBER:
+        try:
+            float_value = float(value)
+        except ValueError as e:
+            if status == schema.ReportStatus.PUBLISHED and use_value is None:
+                raise ValueError(
+                    f"Datapoint represents a float value, but is a string. Datapoint value: {value}",
+                ) from e
+            return value
+
+        if float_value.is_integer():
+            return int(float_value)
+
+        return float_value
+
+    return value
+
+
+def get_dimension_id_and_member(
+    datapoint: schema.Datapoint,
+) -> Tuple[Optional[str], Optional[str]]:
+    dimension_identifier_to_member = datapoint.dimension_identifier_to_member
+    if dimension_identifier_to_member is None:
+        return (None, None)
+    if len(dimension_identifier_to_member) > 1:
+        raise ValueError(
+            "Datapoints with more than one dimension are not currently supported."
+        )
+    return list(dimension_identifier_to_member.items())[0]
+
+
+def get_dimension_id(
+    datapoint: schema.Datapoint,
+) -> Optional[str]:
+    id_and_member = get_dimension_id_and_member(datapoint=datapoint)
+    if id_and_member is None:
+        return None
+    return id_and_member[0]
+
+
+def get_dimension_member(
+    datapoint: schema.Datapoint,
+) -> Optional[str]:
+    id_and_member = get_dimension_id_and_member(datapoint=datapoint)
+    if id_and_member is None:
+        return None
+    return id_and_member[1]

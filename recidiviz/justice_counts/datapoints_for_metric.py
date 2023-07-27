@@ -40,7 +40,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricContextData,
     MetricInterface,
 )
-from recidiviz.justice_counts.utils.datapoint_utils import get_dimension
+from recidiviz.justice_counts.utils.datapoint_utils import get_dimension, get_value
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.types import assert_type
 
@@ -104,7 +104,9 @@ class DatapointsForMetric:
                 context.key.value
             )
             agency_value = (
-                agency_datapoint.get_value() if agency_datapoint is not None else None
+                get_value(datapoint=agency_datapoint)
+                if agency_datapoint is not None
+                else None
             )
             contexts.append(MetricContextData(key=context.key, value=agency_value))
         return contexts
@@ -150,7 +152,8 @@ class DatapointsForMetric:
                     dimension_to_contexts={
                         dim_base: [
                             MetricContextData(
-                                key=ContextKey(context_key), value=datapoint.get_value()
+                                key=ContextKey(context_key),
+                                value=get_value(datapoint=datapoint),
                             )
                             for context_key, datapoint in context_key_to_datapoints.items()
                         ]
@@ -294,7 +297,6 @@ class DatapointsForMetric:
         # in is the enabled status.
         for dimension_id, dimension_datapoints in dimension_id_to_datapoint.items():
             for datapoint in dimension_datapoints:
-
                 dimension_enum_member, success = get_dimension(datapoint=datapoint)
                 if not success:
                     # This datapoint has a deprecated dimension identifier or value,
@@ -310,7 +312,7 @@ class DatapointsForMetric:
                     and curr_dimension_dict is not None
                 ):
                     curr_dimension_dict[dimension_enum_member] = (
-                        datapoint.get_value()
+                        get_value(datapoint=datapoint)
                         if create_dimension_to_value_dict
                         else datapoint.enabled is not False
                     )

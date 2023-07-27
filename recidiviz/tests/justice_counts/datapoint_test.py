@@ -43,6 +43,7 @@ from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
 )
+from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Datapoint,
     DatapointHistory,
@@ -364,13 +365,13 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     FundingType.OTHER: [
                         MetricContextData(
                             key=ContextKey(other_datapoint.context_key),
-                            value=other_datapoint.get_value(),
+                            value=get_value(datapoint=other_datapoint),
                         )
                     ],
                     FundingType.UNKNOWN: [
                         MetricContextData(
                             key=ContextKey(unknown_datapoint.context_key),
-                            value=unknown_datapoint.get_value(),
+                            value=get_value(datapoint=unknown_datapoint),
                         )
                     ],
                 },

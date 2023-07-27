@@ -29,7 +29,7 @@ or adding `source.id` to the primary key of all objects and partitioning along t
 """
 import enum
 import re
-from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
+from typing import Any, Dict, List, Optional, Set, TypeVar
 
 from sqlalchemy import BOOLEAN, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
@@ -722,59 +722,6 @@ class Datapoint(JusticeCountsBase):
         lazy="select",
         passive_deletes=True,
     )
-
-    def get_value(self, use_value: Optional[str] = None) -> Any:
-        """This function converts the value of a datapoint to it's
-        correct type because all datapoint values are stored as strings
-        within the database.
-
-        if use_value is not None, then get_value will return the value of
-        the use_value parameter, not the datapoint. This functionality is
-        used to cast datapoint history values to their correct type.
-        """
-        value = self.value if use_value is None else use_value
-        status = self.report.status if self.report else None
-        if value is None:
-            return value
-        if self.context_key is None or self.value_type == ValueType.NUMBER:
-            try:
-                float_value = float(value)
-
-                if float_value.is_integer():
-                    return int(float_value)
-
-                return float_value
-
-            except ValueError as e:
-                if status == ReportStatus.PUBLISHED and use_value is None:
-                    raise ValueError(
-                        f"Datapoint represents a float value, but is a string. Datapoint ID: {self.id}, value: {value}",
-                    ) from e
-
-        return value
-
-    def get_dimension_id_and_member(
-        self,
-    ) -> Tuple[Optional[str], Optional[str]]:
-        if self.dimension_identifier_to_member is None:
-            return (None, None)
-        if len(self.dimension_identifier_to_member) > 1:
-            raise ValueError(
-                "Datapoints with more than one dimension are not currently supported."
-            )
-        return list(self.dimension_identifier_to_member.items())[0]
-
-    def get_dimension_id(self) -> Optional[str]:
-        id_and_member = self.get_dimension_id_and_member()
-        if id_and_member is None:
-            return None
-        return id_and_member[0]
-
-    def get_dimension_member(self) -> Optional[str]:
-        id_and_member = self.get_dimension_id_and_member()
-        if id_and_member is None:
-            return None
-        return id_and_member[1]
 
 
 class ReportTableInstance(JusticeCountsBase):

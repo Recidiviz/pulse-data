@@ -47,6 +47,9 @@ from recidiviz.justice_counts.utils.constants import (
 from recidiviz.justice_counts.utils.datapoint_utils import (
     filter_deprecated_datapoints,
     get_dimension,
+    get_dimension_id_and_member,
+    get_dimension_member,
+    get_value,
 )
 from recidiviz.justice_counts.utils.persistence_utils import (
     expunge_existing,
@@ -165,11 +168,6 @@ class DatapointInterface:
             disaggregation_display_name = dimension.human_readable_name()
             dimension_display_name = dimension.dimension_value
 
-        # If the datapoint is a true schema.Datapoint object, we can call
-        # methods like datapoint.get_value(). Otherwise we can't. Sometimes
-        # we prefer to work with tuples for performance reasons.
-        datapoint_is_instantiated = isinstance(datapoint, schema.Datapoint)
-
         return {
             "id": datapoint.id,
             "report_id": datapoint.report_id,
@@ -180,11 +178,9 @@ class DatapointInterface:
             "metric_display_name": metric_display_name,
             "disaggregation_display_name": disaggregation_display_name,
             "dimension_display_name": dimension_display_name,
-            "value": datapoint.get_value()
-            if datapoint_is_instantiated
-            else DatapointInterface.string_to_number(datapoint.value),
-            "old_value": datapoint.get_value(use_value=old_value)
-            if datapoint_is_instantiated and old_value is not None
+            "value": get_value(datapoint=datapoint),
+            "old_value": get_value(datapoint=datapoint, use_value=old_value)
+            if old_value is not None
             else None,
             "is_published": is_published,
             "frequency": frequency.value,
@@ -238,9 +234,7 @@ class DatapointInterface:
                         (
                             dimension_id,
                             dimension_member,
-                        ) = DatapointInterface.get_dimension_id_and_member(
-                            dimension_identifier_to_member=datapoint.dimension_identifier_to_member
-                        )
+                        ) = get_dimension_id_and_member(datapoint=datapoint)
                         if dimension_id is not None:
                             dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id][
                                 dimension_member  # type: ignore[index]
@@ -261,9 +255,7 @@ class DatapointInterface:
                     (
                         dimension_id,
                         dimension_member,
-                    ) = DatapointInterface.get_dimension_id_and_member(
-                        dimension_identifier_to_member=datapoint.dimension_identifier_to_member
-                    )
+                    ) = get_dimension_id_and_member(datapoint=datapoint)
                     if dimension_member is None or dimension_id is None:
                         raise JusticeCountsServerError(
                             code="invalid_datapoint",
@@ -309,7 +301,7 @@ class DatapointInterface:
                     # If a datapoint has a report attached to it and has no context key or
                     # dimension_identifier_to_member value, it represents the reported aggregate value
                     # of a metric.
-                    metric_datapoints.aggregated_value = datapoint.get_value()
+                    metric_datapoints.aggregated_value = get_value(datapoint=datapoint)
                 if datapoint.is_report_datapoint is False:
                     # If a datapoint has a source attached to it and has no context key or
                     # dimension_identifier_to_member value, it represents the weather or not the
@@ -439,8 +431,8 @@ class DatapointInterface:
             # Save existing datapoint value before it gets overwritten in merge
             existing_datapoint_value = existing_datapoint.value
             # Compare values using `get_value` so e.g. 3 == 3.0
-            equal_to_existing = (
-                new_datapoint.get_value() == existing_datapoint.get_value()
+            equal_to_existing = get_value(datapoint=new_datapoint) == get_value(
+                datapoint=existing_datapoint
             )
             new_datapoint.id = existing_datapoint.id
             new_datapoint = session.merge(new_datapoint)
@@ -833,7 +825,7 @@ class DatapointInterface:
             ):
                 return True
 
-            dimension_member = datapoint.get_dimension_member()
+            dimension_member = get_dimension_member(datapoint=datapoint)
             if (
                 datapoint.context_key is None
                 and dimension_member is not None
@@ -885,38 +877,3 @@ class DatapointInterface:
             )
         }
         return metric_key_to_agency_datapoints
-
-    @staticmethod
-    def string_to_number(value: str) -> Any:
-        """Converts a string representation of a number to an int or float.
-        NOTE: This method is similar to schema.Datapoint.get_value.
-        The main difference is that it does not require an instantiated datapoint
-        object to work.
-        TODO(#22410): Dedupe these methods
-        """
-        if value is None or not value.isnumeric():
-            return value
-
-        float_value = float(value)
-
-        if float_value.is_integer():
-            return int(float_value)
-
-        return float_value
-
-    @staticmethod
-    def get_dimension_id_and_member(
-        dimension_identifier_to_member: Dict[str, Any],
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """NOTE: This method is identical to schema.Datapoint.get_dimension_id_and_member.
-        The only difference is that it does not require an instantiated datapoint
-        object to work.
-        TODO(#22410): Dedupe these methods
-        """
-        if dimension_identifier_to_member is None:
-            return (None, None)
-        if len(dimension_identifier_to_member) > 1:
-            raise ValueError(
-                "Datapoints with more than one dimension are not currently supported."
-            )
-        return list(dimension_identifier_to_member.items())[0]
