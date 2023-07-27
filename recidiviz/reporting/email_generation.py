@@ -31,6 +31,7 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
+    SUBJECT_LINE_KEY,
 )
 from recidiviz.reporting.context.po_monthly_report.constants import Batch
 from recidiviz.reporting.context.report_context import ReportContext
@@ -67,6 +68,10 @@ def generate(
         file_path=html_path,
         file_contents=html_content,
         content_type="text/html; charset=utf-8",
+    )
+
+    update_gcs_metadata(
+        file_path=html_path, metadata={SUBJECT_LINE_KEY: prepared_data["headline"]}
     )
 
     if attachment_content:

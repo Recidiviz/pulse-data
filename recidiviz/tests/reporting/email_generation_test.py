@@ -28,6 +28,7 @@ from recidiviz.outliers.constants import INCARCERATION_STARTS_TECHNICAL_VIOLATIO
 from recidiviz.outliers.types import OfficerSupervisorReportData, OutliersConfig
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
+    SUBJECT_LINE_KEY,
 )
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context import (
     OutliersSupervisionOfficerSupervisorContext,
@@ -157,7 +158,7 @@ class OutliersSupervisionOfficerSupervisorGenerationTest(EmailGenerationTests):
 
             self.assertEqual(
                 self.gcs_file_system.get_metadata(path),
-                {},
+                {SUBJECT_LINE_KEY: "Your October Unit Alert"},
             )
 
     def test_generate_with_additional_email_address(self) -> None:
@@ -195,7 +196,10 @@ class OutliersSupervisionOfficerSupervisorGenerationTest(EmailGenerationTests):
 
             self.assertEqual(
                 self.gcs_file_system.get_metadata(path),
-                {ADDITIONAL_EMAIL_ADDRESSES_KEY: '["additional@recidiviz.org"]'},
+                {
+                    ADDITIONAL_EMAIL_ADDRESSES_KEY: '["additional@recidiviz.org"]',
+                    SUBJECT_LINE_KEY: "Your October Unit Alert",
+                },
             )
 
     def test_generate_incomplete_data(self) -> None:
