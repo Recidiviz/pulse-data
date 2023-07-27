@@ -17,8 +17,8 @@
 """
 View that preprocesses state staff periods to extract relevant attributes and external id's.
 """
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
     generate_largest_value_query_fragment,
@@ -43,11 +43,10 @@ _SUPERVISION_OFFICER_ATTRIBUTES = [
     "supervision_unit_name",
     "supervision_district_inferred",
     "supervision_office_inferred",
-    "role_type",
-    "role_subtype",
     "specialized_caseload_type",
     "supervisor_staff_external_id",
     "supervisor_staff_id",
+    "role_type",
 ]
 
 SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE = f"""
@@ -191,8 +190,14 @@ sub_sessions_dedup AS (
             table_columns=_SUPERVISION_OFFICER_ATTRIBUTES, 
             partition_columns=["state_code", "staff_id", "start_date"]
         )},
+        FIRST_VALUE(role_subtype IGNORE NULLS) OVER (
+            PARTITION BY {list_to_query_string(["state_code", "staff_id", "start_date"])}
+            ORDER BY COALESCE(role_subtype_priority, 99), role_subtype DESC
+        ) AS role_subtype
     FROM
         sub_sessions_with_attributes
+    LEFT JOIN `{{project_id}}.sessions.state_staff_role_subtype_dedup_priority` subtype
+        USING(role_subtype)
     -- Remove zero-day sessions
     WHERE
         start_date < {nonnull_end_date_clause("end_date")}
