@@ -37,6 +37,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
+    SUBJECT_LINE_KEY,
 )
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_EMAIL_SUBJECT,
@@ -121,7 +122,6 @@ def deliver(
     succeeded_email_sends: List[str] = []
     failed_email_sends: List[str] = []
     sendgrid = SendGridClientWrapper()
-    subject = DEFAULT_EMAIL_SUBJECT if subject_override is None else subject_override
     report_date_str = report_date.strftime("%Y-%m")
     attachment_title = (
         f"{report_date_str} Recidiviz Monthly Report - Client Details.txt"
@@ -135,6 +135,15 @@ def deliver(
         )
 
         file_metadata = get_file_metadata(html_path)
+
+        if subject_override:
+            subject = subject_override
+        elif file_metadata and (
+            subject_from_metadata := file_metadata.get(SUBJECT_LINE_KEY)
+        ):
+            subject = subject_from_metadata
+        else:
+            subject = DEFAULT_EMAIL_SUBJECT
 
         if (
             redirect_address is None

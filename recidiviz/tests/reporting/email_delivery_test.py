@@ -26,6 +26,7 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.reporting import email_delivery
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
+    SUBJECT_LINE_KEY,
 )
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import Batch
@@ -396,6 +397,94 @@ class EmailDeliveryTest(TestCase):
                 self.report_date,
             )
 
+        self.mock_sendgrid_client.send_message.assert_called_with(
+            to_email=self.to_address,
+            from_email=self.default_sender_email,
+            from_email_name="Recidiviz Reports",
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
+            subject="Your monthly Recidiviz report",
+            html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
+            redirect_address=None,
+            cc_addresses=None,
+            text_attachment_content=self.mock_files[self.to_address],
+        )
+
+    @patch(
+        "recidiviz.reporting.email_delivery.get_file_metadata",
+    )
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    def test_deliver_with_subject(
+        self, mock_load_files_from_storage: MagicMock, mock_get_file_metadata: MagicMock
+    ) -> None:
+        mock_load_files_from_storage.return_value = self.mock_files
+
+        # override option
+        self.batch.report_type = ReportType.POMonthlyReport
+        with self.assertLogs(level="INFO"):
+            email_delivery.deliver(
+                self.batch, self.report_date, subject_override="Test subject override"
+            )
+
+        self.mock_sendgrid_client.send_message.assert_called_with(
+            to_email=self.to_address,
+            from_email=self.default_sender_email,
+            from_email_name="Recidiviz Reports",
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
+            subject="Test subject override",
+            html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
+            redirect_address=None,
+            cc_addresses=None,
+            text_attachment_content=self.mock_files[self.to_address],
+        )
+
+        # subject stored with file
+        mock_get_file_metadata.return_value = {
+            SUBJECT_LINE_KEY: "Subject from metadata"
+        }
+        with self.assertLogs(level="INFO"):
+            email_delivery.deliver(self.batch, self.report_date)
+
+        self.mock_sendgrid_client.send_message.assert_called_with(
+            to_email=self.to_address,
+            from_email=self.default_sender_email,
+            from_email_name="Recidiviz Reports",
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
+            subject="Subject from metadata",
+            html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
+            redirect_address=None,
+            cc_addresses=None,
+            text_attachment_content=self.mock_files[self.to_address],
+        )
+
+        # default
+        mock_get_file_metadata.return_value = {
+            "some other key": "Subject from metadata"
+        }
+        with self.assertLogs(level="INFO"):
+            email_delivery.deliver(self.batch, self.report_date)
+        self.mock_sendgrid_client.send_message.assert_called_with(
+            to_email=self.to_address,
+            from_email=self.default_sender_email,
+            from_email_name="Recidiviz Reports",
+            reply_to_email=self.default_reply_to_email,
+            reply_to_name=self.default_reply_to_name,
+            subject="Your monthly Recidiviz report",
+            html_content=self.mock_files[self.to_address],
+            attachment_title=self.attachment_title,
+            redirect_address=None,
+            cc_addresses=None,
+            text_attachment_content=self.mock_files[self.to_address],
+        )
+
+        mock_get_file_metadata.return_value = None
+        with self.assertLogs(level="INFO"):
+            email_delivery.deliver(self.batch, self.report_date)
         self.mock_sendgrid_client.send_message.assert_called_with(
             to_email=self.to_address,
             from_email=self.default_sender_email,

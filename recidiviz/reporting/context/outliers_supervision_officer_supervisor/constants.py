@@ -17,3 +17,5 @@
 """Constants for the SupervisionOfficerSupervisor report."""
 
 ADDITIONAL_EMAIL_ADDRESSES_KEY = "additional_email_addresses"
+
+SUBJECT_LINE_KEY = "subject_line"
