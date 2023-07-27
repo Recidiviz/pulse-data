@@ -17,6 +17,8 @@ Dependencies:
 
 1. [VSCode](https://code.visualstudio.com/download)
 1. Docker as per [VSCode requirements](https://code.visualstudio.com/docs/devcontainers/containers#_system-requirements)
+1. Install the Docker VSCode extension (`ms-azuretools.vscode-docker`)
+1. Install the Microsoft Dev Containers VSCode extension (`ms-vscode-remote.remote-containers`)
 
 To use:
 
