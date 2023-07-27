@@ -63,7 +63,7 @@ from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_ingest_pipeline_enabled_states,
     get_normalization_pipeline_enabled_states,
 )
-from recidiviz.pipelines.ingest.utils.ingest_view_query_helpers import (
+from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (

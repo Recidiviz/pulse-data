@@ -39,14 +39,10 @@ from recidiviz.pipelines.ingest.pipeline_parameters import (
     IngestPipelineParameters,
     MaterializationMethod,
 )
-from recidiviz.pipelines.ingest.utils.ingest_view_query_helpers import (
-    generate_date_bound_tuples_query,
-    get_ingest_view_date_diff_query,
+from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
+    GenerateIngestViewResults,
 )
-from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
-    ReadFromBigQuery,
-    WriteToBigQuery,
-)
+from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
 
 class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
@@ -90,27 +86,18 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     ingest_view
                 ).raw_table_dependency_configs
             ]
+
             ingest_view_results = (
                 p
-                | f"Read {ingest_view} date pairs based on raw data tables."
-                >> ReadFromBigQuery(
-                    query=generate_date_bound_tuples_query(
-                        project_id=self.pipeline_parameters.project,
-                        state_code=self.pipeline_parameters.state_code,
-                        raw_data_tables=raw_data_tables,
-                        materialization_method=materialization_method,
-                    )
-                )
-                | f"Generate date diff queries for {ingest_view} based on date pairs."
-                >> beam.Map(
-                    get_ingest_view_date_diff_query,
+                | f"Materialize {ingest_view} results"
+                >> GenerateIngestViewResults(
                     project_id=self.pipeline_parameters.project,
                     state_code=self.pipeline_parameters.state_code,
                     ingest_view_name=ingest_view,
+                    raw_data_tables=raw_data_tables,
                     ingest_instance=ingest_instance,
+                    materialization_method=materialization_method,
                 )
-                | f"Read {ingest_view} date diff queries based on date pairs."
-                >> beam.io.ReadAllFromBigQuery()
             )
 
             _ = (

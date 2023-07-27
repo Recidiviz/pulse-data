@@ -568,6 +568,20 @@ class DirectIngestRawFileImportManager:
             temp_raw_data_diff_table_address.table_id,
         )
 
+    @classmethod
+    def create_raw_table_schema(
+        cls, *, raw_file_config: DirectIngestRawFileConfig
+    ) -> List[bigquery.SchemaField]:
+        return cls.create_raw_table_schema_from_columns(
+            raw_file_config=raw_file_config,
+            columns=[column.name for column in raw_file_config.columns]
+            + [
+                FILE_ID_COL_NAME,
+                UPDATE_DATETIME_COL_NAME,
+                IS_DELETED_COL_NAME,
+            ],
+        )
+
     @staticmethod
     def create_raw_table_schema_from_columns(
         *,

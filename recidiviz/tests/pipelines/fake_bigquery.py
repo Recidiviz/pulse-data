@@ -16,6 +16,7 @@
 # =============================================================================
 """Helper classes for mocking reading / writing from BigQuery in tests."""
 import abc
+import datetime
 import re
 from typing import (
     Any,
@@ -37,6 +38,10 @@ from apache_beam.pvalue import PBegin, PCollection
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
 
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_results_contents_handle import (
+    BigQueryResultsContentsHandle,
+)
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entities_by_association_table,
@@ -55,6 +60,9 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     column_names_on_bq_schema_for_normalized_state_entity,
 )
 from recidiviz.pipelines.utils.beam_utils.extractor_utils import UNIFYING_ID_KEY
+from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BigQueryEmulatorTestCase,
+)
 from recidiviz.tests.pipelines.calculator_test_utils import NormalizedDatabaseDict
 
 DatasetStr = str
@@ -194,14 +202,65 @@ class FakeReadFromBigQuery(apache_beam.PTransform):
         )
 
 
-class FakeReadAllFromBigQuery(apache_beam.PTransform):
-    def __init__(self, table_values: List[Dict[str, Any]]) -> None:
-        super().__init__()
-        self._table_values = table_values
+class FakeReadFromBigQueryWithEmulator(apache_beam.PTransform):
+    """Must be used from within a test that extends BigQueryEmulatorTestCase, returns a
+    PCollection of query results. Mocks ReadFromBigQuery PTransform.
+    """
 
-    def expand(self, input_or_inputs: PCollection) -> Any:
-        return input_or_inputs | "Mapping to values" >> apache_beam.FlatMap(
-            lambda _: self._table_values
+    def __init__(self, query: str, test_case: BigQueryEmulatorTestCase) -> None:
+        super().__init__()
+        self._query = query
+        self._test_case = test_case
+
+    def expand(self, input_or_inputs: PBegin) -> PCollection[Dict[str, Any]]:
+        return (
+            input_or_inputs
+            | "Querying table against BQ Emulator"
+            >> apache_beam.Create(
+                values=list(
+                    BigQueryResultsContentsHandle(
+                        self._test_case.bq_client.run_query_async(
+                            query_str=self._query, use_query_cache=True
+                        )
+                    ).get_contents_iterator()
+                )
+            )
+            # The Dataflow BQ IO connectors return datetime objects as strings, but not
+            # the BQ Python client, so to match expected behavior, we convert to strings
+            # here.
+            | "Cleaning values" >> apache_beam.Map(change_datetime_to_str)
+        )
+
+
+class FakeReadAllFromBigQueryWithEmulator(apache_beam.PTransform):
+    """Must be used from within a test that extends BigQueryEmulatorTestCase, returns a
+    PCollection of query results. Mocks ReadAllFromBigQuery PTransform.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def expand(
+        self, input_or_inputs: PCollection[apache_beam.io.ReadFromBigQueryRequest]
+    ) -> PCollection[Dict[str, Any]]:
+        return (
+            input_or_inputs
+            | "Querying table against BQ Emulator"
+            >> apache_beam.FlatMap(self._query_against_emulator)
+        )
+
+    def _query_against_emulator(
+        self, request: apache_beam.io.ReadFromBigQueryRequest
+    ) -> List[Dict[str, Any]]:
+        # NOTE: Ideally this class would mimic FakeReadFromBigQueryWithEmulator and
+        # get bq_client from the TestCase, however for some reason this class must
+        # be pickleable (we don't know why this one and not
+        # FakeReadFromBigQueryWithEmulator), so cannot store the TestCase on the class.
+        bq_client = BigQueryClientImpl()
+        return list(
+            BigQueryResultsContentsHandle(
+                bq_client.run_query_async(query_str=request.query, use_query_cache=True)
+            ).get_contents_iterator()
         )
 
 
@@ -623,6 +682,31 @@ class FakeWriteExactOutputToBigQuery(FakeWriteToBigQuery):
         assert_that(input_or_inputs, equal_to(self._expected_output))
 
 
+class FakeWriteOutputToBigQueryWithValidator(FakeWriteToBigQuery):
+    """Allows for the write results of BigQuery to be validated in a custom way."""
+
+    def __init__(
+        self,
+        output_table: str,
+        expected_output_tags: Collection[str],
+        expected_output: Dict[str, List[Dict[str, Any]]],
+        validator_fn_generator: Callable[
+            [List[Dict[str, Any]]], Callable[[List[Dict[str, Any]]], None]
+        ],
+    ) -> None:
+        super().__init__(output_table, expected_output_tags)
+        self._expected_output = expected_output
+        # This function takes in a list of expected results and returns a function that will verify
+        # that the pipeline output matches the expected results.
+        self._validator_fn_generator = validator_fn_generator
+
+    def expand(self, input_or_inputs: PCollection) -> Any:
+        assert_that(
+            input_or_inputs,
+            self._validator_fn_generator(self._expected_output[self._output_table]),
+        )
+
+
 FakeWriteToBigQueryType = TypeVar("FakeWriteToBigQueryType", bound=FakeWriteToBigQuery)
 
 
@@ -655,6 +739,9 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
             schema: Optional[  # pylint: disable=unused-argument,redefined-outer-name
                 beam_bigquery.TableSchema
             ] = None,
+            validator_fn_generator: Optional[  # pylint: disable=unused-argument
+                Callable[[List[Dict[str, Any]]], Callable[[List[Dict[str, Any]]], None]]
+            ] = None,
         ) -> FakeWriteToBigQueryType:
             if output_dataset != expected_dataset:
                 raise ValueError(
@@ -673,6 +760,14 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
             )
 
         return write_constructor
+
+
+def change_datetime_to_str(output: Dict[str, Any]) -> Dict[str, Any]:
+    """Converts datetime objects to strings in the output."""
+    for key, value in output.items():
+        if isinstance(value, datetime.datetime):
+            output[key] = value.strftime("%Y-%m-%d %H:%M:%S")
+    return output
 
 
 def id_list_str_to_set(id_list_str: str) -> Set[int]:

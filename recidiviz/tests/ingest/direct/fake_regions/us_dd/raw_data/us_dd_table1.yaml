@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: table1
+file_description: |-
+  table1 file description
+data_classification: source
+primary_key_cols:
+  - COL1
+columns:
+  - name: COL1
+    description: |-
+      column 1 description
+  - name: COL2
+    description: |-
+      column 2 description
+table_relationships:
+  - foreign_table: table2
+    join_logic:
+      - table1.COL1 = table2.COL1
