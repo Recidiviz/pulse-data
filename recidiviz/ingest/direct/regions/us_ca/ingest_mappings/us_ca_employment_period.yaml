@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - sequence_number
+  - EMPSTARTDATE
+  - EMPLENDDATE
+  - EMPLOYMENTTYPE
+  - address
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_CA_DOC")
+    employment_periods:
+      - StateEmploymentPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OffenderId
+                - sequence_number
+          start_date: EMPSTARTDATE
+          end_date: EMPLENDDATE
+          employer_address: address
+          job_title: EMPLOYMENTTYPE
+          employment_status: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED)
