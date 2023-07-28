@@ -71,3 +71,4 @@ columns:
   - name: DefaultDashboardLayout
   - name: UserPhoneNumber
     is_pii: True
+  - name: MeetingLink

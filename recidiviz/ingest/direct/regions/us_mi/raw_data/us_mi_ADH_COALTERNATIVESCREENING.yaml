@@ -58,3 +58,5 @@ columns:
   - name: DateComputedAsString
   - name: FkShSyCodeMatrixType
   - name: FkPtMaster
+  - name: OldRecId
+  - name: IsQa
