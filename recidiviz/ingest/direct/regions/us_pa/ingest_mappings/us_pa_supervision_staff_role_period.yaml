@@ -36,15 +36,18 @@ output:
               $mappings:
                 StateStaffRoleSubtype.SUPERVISION_OFFICER:
                   - "SUPERVISION_OFFICER"
+                  - "PRL AGT 2"
+                  - "PRL AGT 1"
                 StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
                   - "SUPERVISION_OFFICER_SUPERVISOR"
+                  - "PRL SUPV"
                 StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
-                  - "District Director"
-                  - "Deputy District Director"
+                  - "DISTRICT DIRECTOR"
+                  - "DEPUTY DISTRICT DIRECTOR"
                 StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER:
-                  - "Regional Director"
+                  - "REGIONAL DIRECTOR"
                 StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
-                  - "Deputy Secretary"
-                  - "Executive Assistant"
+                  - "DEPUTY SECRETARY"
+                  - "EXECUTIVE ASSISTANT"
                 StateStaffRoleSubtype.INTERNAL_UNKNOWN:
                   - "INTERNAL_UNKNOWN"
