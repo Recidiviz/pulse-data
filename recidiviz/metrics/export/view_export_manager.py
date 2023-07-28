@@ -210,14 +210,16 @@ def export_view_data_to_cloud_storage(
     )
 
     do_metric_export_for_configs(
-        export_configs={export_job_name: export_configs_for_filter},
+        export_name=export_job_name,
+        view_export_configs=export_configs_for_filter,
         override_view_exporter=override_view_exporter,
         state_code_filter=state_code,
     )
 
 
 def do_metric_export_for_configs(
-    export_configs: Dict[str, Sequence[ExportBigQueryViewConfig]],
+    export_name: str,
+    view_export_configs: Sequence[ExportBigQueryViewConfig],
     state_code_filter: Optional[str],
     override_view_exporter: Optional[BigQueryViewExporter] = None,
 ) -> None:
@@ -225,49 +227,46 @@ def do_metric_export_for_configs(
 
     gcsfs_client = GcsfsFactory.build()
 
-    for export_name, view_export_configs in export_configs.items():
-        export_log_message = f"Starting [{export_name}] export"
-        export_log_message += (
-            f" for state_code [{state_code_filter}]." if state_code_filter else "."
+    export_log_message = f"Starting [{export_name}] export"
+    export_log_message += (
+        f" for state_code [{state_code_filter}]." if state_code_filter else "."
+    )
+
+    logging.info(export_log_message)
+
+    delegate_export_map = get_delegate_export_map(
+        gcsfs_client, export_name, view_export_configs, override_view_exporter
+    )
+
+    try:
+        export_views_with_exporters(
+            gcsfs_client, view_export_configs, delegate_export_map
         )
+    except ViewExportValidationError as e:
+        warning_message = f"Export validation failed for {export_name}"
 
-        logging.info(export_log_message)
+        if state_code_filter:
+            warning_message += f" for state: {state_code_filter}"
 
-        delegate_export_map = get_delegate_export_map(
-            gcsfs_client, export_name, view_export_configs, override_view_exporter
-        )
-        # The export will error if the validations fail for the set of view_export_configs. We want to log this failure
-        # as a warning, but not block on the rest of the exports.
-        try:
-            export_views_with_exporters(
-                gcsfs_client, view_export_configs, delegate_export_map
-            )
-        except ViewExportValidationError as e:
-            warning_message = f"Export validation failed for {export_name}"
+        logging.warning("%s\n%s", warning_message, str(e))
+        with monitoring.measurements(
+            {
+                monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_name,
+                monitoring.TagKey.REGION: state_code_filter,
+            }
+        ) as measurements:
+            measurements.measure_int_put(m_failed_metric_export_validation, 1)
 
-            if state_code_filter:
-                warning_message += f" for state: {state_code_filter}"
-
-            logging.warning("%s\n%s", warning_message, str(e))
-            with monitoring.measurements(
-                {
-                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_name,
-                    monitoring.TagKey.REGION: state_code_filter,
-                }
-            ) as measurements:
-                measurements.measure_int_put(m_failed_metric_export_validation, 1)
-
-            # Do not treat validation failures as fatal errors
-            continue
-        except Exception as e:
-            with monitoring.measurements(
-                {
-                    monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_name,
-                    monitoring.TagKey.REGION: state_code_filter,
-                }
-            ) as measurements:
-                measurements.measure_int_put(m_failed_metric_export_job, 1)
-            raise e
+        raise e
+    except Exception as e:
+        with monitoring.measurements(
+            {
+                monitoring.TagKey.METRIC_VIEW_EXPORT_NAME: export_name,
+                monitoring.TagKey.REGION: state_code_filter,
+            }
+        ) as measurements:
+            measurements.measure_int_put(m_failed_metric_export_job, 1)
+        raise e
 
 
 def get_delegate_export_map(
