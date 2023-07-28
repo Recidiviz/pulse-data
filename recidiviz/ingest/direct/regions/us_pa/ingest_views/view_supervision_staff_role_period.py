@@ -45,8 +45,8 @@ WITH officer_start_dates AS (
     ON (agent_roster.Employ_Num = agent_history.Agent_EmpNum)
     GROUP BY 1
 ),
-supervisor_start_dates AS( 
-    -- pull earliest dates from relagenthistory, assume all these people are still employed
+supervisor_start_dates AS ( 
+-- pull earliest dates from relagenthistory, assume all these people are still employed
     SELECT 
         agent_roster.Employ_Num,
         MIN(agent_history.LastModifiedDateTime) as start_date,
@@ -70,12 +70,24 @@ SELECT
 FROM officer_start_dates
 JOIN supervisor_start_dates
 USING(Employ_Num)
+),
+cntc_base AS (
+SELECT
+  DISTINCT PRL_AGNT_EMPL_NO,
+  FIRST_VALUE(cntc.START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO, PRL_AGNT_JOB_CLASSIFCTN ORDER BY CREATED_DATE) AS start_date,
+  LAST_VALUE(UPPER(PRL_AGNT_JOB_CLASSIFCTN))  OVER (PARTITION BY PRL_AGNT_EMPL_NO,PRL_AGNT_JOB_CLASSIFCTN ORDER BY CREATED_DATE) AS role_subtype,
+FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY} cntc
+WHERE PRL_AGNT_EMPL_NO NOT IN (
+    SELECT DISTINCT Employ_Num
+    FROM all_periods
 )
-
+AND PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv')
+), 
+periods_with_subtypes AS (
 SELECT 
     Employ_Num, 
     start_date,
-    end_date,
+    CAST(end_date AS STRING) AS end_date,
     CASE 
         WHEN start_date = all_periods.sup_start THEN 'SUPERVISION_OFFICER_SUPERVISOR'
         WHEN start_date IS NULL THEN 'INTERNAL_UNKNOWN'
@@ -84,17 +96,29 @@ SELECT
     1 AS period_seq_num
 FROM all_periods
 WHERE start_date IS NOT NULL -- excludes people who appear in roster but never in case history
+)
 
+SELECT 
+    COALESCE(periods_with_subtypes.Employ_Num, sup.ext_id) as Employ_Num, 
+    COALESCE(periods_with_subtypes.start_date, '1900-01-01') AS start_date,
+    periods_with_subtypes.end_date,
+    -- if a person supervises someone, even if they also appear in the leadership roster,
+    -- keep their role subtype as SUPERVISION_OFFICER_SUPERVISOR for product view compatibility.
+    COALESCE(periods_with_subtypes.role_subtype,UPPER(sup.role)) AS role_subtype,
+    COALESCE(periods_with_subtypes.period_seq_num, 1) AS period_seq_num
+FROM periods_with_subtypes 
+FULL OUTER JOIN {RECIDIVIZ_REFERENCE_field_supervisor_list} sup
+    ON(ext_id = Employ_Num)
 
 UNION ALL
 
-SELECT
-    DISTINCT CAST(ext_id AS STRING),
-    '1900-01-01' AS start_date,
-    NULL AS end_date,
-    role AS role_subtype,
-    1 as period_seq_num
-FROM {RECIDIVIZ_REFERENCE_field_supervisor_list}
+SELECT 
+  PRL_AGNT_EMPL_NO,
+  START_DATE,
+  LEAD(START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS end_date,
+  role_subtype,
+  ROW_NUMBER() OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) as period_seq
+FROM cntc_base;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
