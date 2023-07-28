@@ -29,8 +29,8 @@ from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.monitoring import task_failure_alerts
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
-    AirflowAlertingIncident,
     _build_task_instance_state_dataframe,
+    build_incident_history,
 )
 from recidiviz.airflow.tests.fixtures import monitoring as monitoring_fixtures
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
@@ -307,17 +307,14 @@ class TestDagIntegrity(AirflowIntegrationTest):
             df = _build_task_instance_state_dataframe(
                 dag_ids=[test_dag.dag_id], session=session
             )
-
             self.assertEqual(
                 df.to_string(),
                 monitoring_fixtures.read_fixture("test_graph_config_idempotency.txt"),
             )
 
-            history = AirflowAlertingIncident.build_incident_history(
-                dag_ids=[test_dag.dag_id], session=session
-            )
+            history = build_incident_history(dag_ids=[test_dag.dag_id], session=session)
 
-            incident_key = '{"instance": "SECONDARY"} test_dag.parent_task, last succeeded: 2023-07-06 12:01 UTC'
+            incident_key = '{"instance": "SECONDARY"} test_dag.parent_task, started: 2023-07-07 12:01 UTC'
             self.assertIn(incident_key, history)
             secondary_incident = history[incident_key]
             # Assert that the task was last successful on July 6th
@@ -325,13 +322,19 @@ class TestDagIntegrity(AirflowIntegrationTest):
                 secondary_incident.previous_success_date,
                 july_sixth_secondary.execution_date,
             )
+            # Assert that the starting date was on July 7th
+            self.assertEqual(
+                secondary_incident.incident_start_date,
+                july_seventh_secondary.execution_date,
+            )
+
             # Assert that the most recent failure was on July 8th
             self.assertEqual(
-                secondary_incident.most_recent_failure_date,
+                secondary_incident.most_recent_failure,
                 july_eighth_secondary.execution_date,
             )
 
-            incident_key = '{"instance": "TERTIARY"} test_dag.parent_task, last succeeded: 2023-07-06 12:02 UTC'
+            incident_key = '{"instance": "TERTIARY"} test_dag.parent_task, started: 2023-07-07 12:02 UTC'
             self.assertIn(incident_key, history)
             tertiary_incident = history[incident_key]
             # Assert that the task was last successful on July 6th
@@ -340,9 +343,15 @@ class TestDagIntegrity(AirflowIntegrationTest):
                 july_sixth_tertiary.execution_date,
             )
 
+            # Assert that the starting failure date was on July 7th
+            self.assertEqual(
+                tertiary_incident.incident_start_date,
+                july_seventh_tertiary.execution_date,
+            )
+
             # Assert that the most recent failure was on July 7th
             self.assertEqual(
-                tertiary_incident.most_recent_failure_date,
+                tertiary_incident.most_recent_failure,
                 july_seventh_tertiary.execution_date,
             )
 
@@ -401,18 +410,16 @@ class TestDagIntegrity(AirflowIntegrationTest):
                 ),
             )
 
-            history = AirflowAlertingIncident.build_incident_history(
-                dag_ids=[test_dag.dag_id], session=session
-            )
+            history = build_incident_history(dag_ids=[test_dag.dag_id], session=session)
 
-            incident_key = "test_dag.parent_task, last succeeded: never"
+            incident_key = "test_dag.parent_task, started: 2023-07-06 12:00 UTC"
             self.assertIn(incident_key, history)
             incident = history[incident_key]
             # Assert that the task has never succeeded
             self.assertEqual(incident.previous_success_date, None)
             # Assert that the most recent failure was on July 6th
             self.assertEqual(
-                incident.most_recent_failure_date,
+                incident.most_recent_failure,
                 july_sixth_primary.execution_date,
             )
             # Assert that the next success was on July 7th

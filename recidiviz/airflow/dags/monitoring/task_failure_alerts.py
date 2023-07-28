@@ -17,12 +17,11 @@
 import json
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from enum import Enum
 from pprint import pprint
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Set
 
-import attr
 import pandas
 from airflow.exceptions import AirflowNotFoundException
 from airflow.models import Connection, DagRun, TaskInstance
@@ -32,6 +31,12 @@ from airflow.utils.state import State
 from sqlalchemy import case, func, text
 from sqlalchemy.orm import Query, Session
 
+from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
+    AirflowAlertingIncident,
+)
+from recidiviz.airflow.dags.monitoring.alerting_trigger_predicates import (
+    should_trigger_airflow_alerting_incident,
+)
 from recidiviz.airflow.dags.utils.email import can_send_mail
 from recidiviz.airflow.dags.utils.environment import (
     get_composer_environment,
@@ -64,109 +69,74 @@ DAGS_TO_IGNORE_IN_ALERTING = ["airflow_monitoring"]
 INCIDENT_START_DATE_LOOKBACK = timedelta(days=30)
 
 
-@attr.s(auto_attribs=True)
-class AirflowAlertingIncident:
-    """Representation of an alerting incident"""
+@provide_session
+def build_incident_history(
+    dag_ids: List[str],
+    session: Session = NEW_SESSION,
+) -> Dict[str, AirflowAlertingIncident]:
+    """Builds a dictionary of incidents to report"""
+    dataframe = _build_task_instance_state_dataframe(dag_ids=dag_ids, session=session)
 
-    dag_id: str
-    conf: str
-    task_id: str
-    most_recent_failure_date: datetime
-    # This value will never be more than INCIDENT_START_DATE_LOOKBACK ago, even if it started failing before then.
-    previous_success_date: Optional[datetime]
-    next_success_date: Optional[datetime]
+    dataframe = dataframe[
+        (dataframe.state == TaskInstanceState.failed)
+        | (dataframe.state == TaskInstanceState.success)
+    ]
 
-    @property
-    def unique_incident_id(self) -> str:
-        """
-        The PagerDuty email integration is configured to group incidents by their subject.
-        Incidents can only be resolved once. Afterward, any new alerts will not re-open the incident.
-        The unique incident id includes the last successful task run in order to group incidents by distinct sets of
-        consecutive failures.
-        """
-        conf_string = f"{self.conf} " if self.conf != "{}" else ""
-        success_string = (
-            self.previous_success_date.strftime("%Y-%m-%d %H:%M %Z")
-            if self.previous_success_date is not None
-            else "never"
-        )
-        return f"{conf_string}{self.dag_id}.{self.task_id}, last succeeded: {success_string}"
+    # Map of unique incident IDs to incidents
+    incidents: Dict[str, AirflowAlertingIncident] = {}
 
-    @property
-    def should_report_to_pagerduty(self) -> bool:
-        """Incidents are only reported to PagerDuty if they are "active" (opened, still occurring, or resolved) within
-        the last two days.
-        This has no functional difference and is only done to save on SendGrid email quota.
-        edge case: if the monitoring DAG is down for more than 2 days, some auto-resolve emails will be missed
-        """
-        now_utc = datetime.now(tz=timezone.utc)
-        most_recent_update = max(
-            self.previous_success_date or datetime.fromtimestamp(0, tz=timezone.utc),
-            self.most_recent_failure_date,
-            self.next_success_date or datetime.fromtimestamp(0, tz=timezone.utc),
+    # Loop over discrete dag members (dag_id, conf, task_id)
+    for discrete_dag in dataframe.index:
+        # Select all task runs for this discrete dag and copy slice into a new DataFrame
+        task_runs = dataframe.loc[discrete_dag].copy()
+        dag_id, conf, task_id = discrete_dag
+
+        task_state_sessions = task_runs.groupby(["session_id"]).agg(
+            start_date=("execution_date", "min"),
+            end_date=("execution_date", "max"),
+            state=("state", "first"),
         )
 
-        return timedelta(days=2) > now_utc - most_recent_update
+        # Generate a hash map of failures, grouped by the last successful execution
+        for _index, row in task_state_sessions.iterrows():
+            if row.state != TaskInstanceState.failed:
+                continue
 
-    @staticmethod
-    @provide_session
-    def build_incident_history(
-        dag_ids: List[str],
-        session: Session = NEW_SESSION,
-    ) -> Dict[str, "AirflowAlertingIncident"]:
-        """Builds a dictionary of incidents to report"""
-        dataframe = _build_task_instance_state_dataframe(
-            dag_ids=dag_ids, session=session
-        )
+            previous_success = task_runs[
+                (task_runs.state == TaskInstanceState.success)
+                & (task_runs.execution_date < row.start_date)
+            ].execution_date.max()
 
-        dataframe = dataframe[
-            (dataframe.state == TaskInstanceState.failed)
-            | (dataframe.state == TaskInstanceState.success)
-        ]
+            next_success = task_runs[
+                (task_runs.state == TaskInstanceState.success)
+                & (task_runs.execution_date > row.end_date)
+            ].execution_date.min()
 
-        # Map of unique incident IDs to incidents
-        incidents: Dict[str, AirflowAlertingIncident] = {}
-
-        # Loop over discrete dag members (dag_id, conf, task_id)
-        for discrete_dag in dataframe.index:
-            # Select all task runs for this discrete dag
-            task_runs = dataframe.loc[discrete_dag]
-            # Collapse the dataframe into one row per state transition (i.e. success -> failed edges)
-            collapsed_runs = task_runs[task_runs.state != task_runs.state.shift(-1)]
-            failed_runs = collapsed_runs[
-                collapsed_runs.state == TaskInstanceState.failed
+            execution_dates = [
+                execution_date.to_pydatetime()
+                for execution_date in task_runs[
+                    task_runs.execution_date.between(
+                        row.start_date, row.end_date, inclusive="both"
+                    )
+                ].execution_date.to_list()
             ]
 
-            # Generate a hash map of failures, grouped by the last successful execution
-            for index, row in failed_runs.iterrows():
-                dag_id, conf, task_id = index
+            incident = AirflowAlertingIncident(
+                dag_id=dag_id,
+                conf=conf,
+                task_id=task_id,
+                failed_execution_dates=execution_dates,
+                previous_success_date=previous_success.to_pydatetime()
+                if not pandas.isna(previous_success)
+                else None,
+                next_success_date=next_success.to_pydatetime()
+                if not pandas.isna(next_success)
+                else None,
+            )
 
-                previous_success = task_runs[
-                    (task_runs.state == TaskInstanceState.success)
-                    & (task_runs.execution_date < row.execution_date)
-                ].execution_date.max()
+            incidents[incident.unique_incident_id] = incident
 
-                next_success = task_runs[
-                    (task_runs.state == TaskInstanceState.success)
-                    & (task_runs.execution_date > row.execution_date)
-                ].execution_date.min()
-
-                incident = AirflowAlertingIncident(
-                    dag_id=dag_id,
-                    conf=conf,
-                    task_id=task_id,
-                    most_recent_failure_date=row.execution_date.to_pydatetime(),
-                    previous_success_date=previous_success.to_pydatetime()
-                    if not pandas.isna(previous_success)
-                    else None,
-                    next_success_date=next_success.to_pydatetime()
-                    if not pandas.isna(next_success)
-                    else None,
-                )
-
-                incidents[incident.unique_incident_id] = incident
-
-        return incidents
+    return incidents
 
 
 class TaskInstanceState(Enum):
@@ -249,13 +219,7 @@ def _build_task_instance_state_dataframe(
 ) -> pandas.DataFrame:
     """Builds a DataFrame representation of our task instance state"""
     df = pandas.DataFrame(
-        columns=[
-            "dag_id",
-            "execution_date",
-            "conf",
-            "task_id",
-            "state",
-        ],
+        columns=["dag_id", "execution_date", "conf", "task_id", "state"],
         data=list(_query_task_instance_state(dag_ids=dag_ids, session=session).all()),
     )
     # Slice the conf parameters down to the discrete conf params
@@ -272,6 +236,8 @@ def _build_task_instance_state_dataframe(
     df.state = df.state.apply(TaskInstanceState)
     df.execution_date = df.execution_date.dt.to_pydatetime()
     df = df.set_index(["dag_id", "conf", "task_id"]).sort_index()
+    df["state_change"] = df.state != df.state.shift(1)
+    df["session_id"] = df.groupby(level=df.index.names)["state_change"].cumsum()
 
     return df
 
@@ -298,8 +264,9 @@ def report_failed_tasks(
     """
     pagerduty_integrations = get_configured_pagerduty_integrations()
 
-    incident_history = AirflowAlertingIncident.build_incident_history(
-        dag_ids=pagerduty_integrations.keys(), session=session
+    incident_history = build_incident_history(
+        dag_ids=pagerduty_integrations.keys(),
+        session=session,
     )
 
     # Print the incident history for use when reviewing task logs
@@ -313,10 +280,16 @@ def report_failed_tasks(
         return
 
     for incident in incident_history.values():
-        if not incident.should_report_to_pagerduty:
+        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
+
+        for message in messages:
             logging.info(
-                "Skipping reporting of incident: %s", incident.unique_incident_id
+                "Skipping reporting of incident: %s, reason: %s",
+                incident.unique_incident_id,
+                message,
             )
+
+        if not should_trigger:
             continue
 
         event = (
