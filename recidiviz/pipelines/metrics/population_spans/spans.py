@@ -22,6 +22,7 @@ import attr
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodCustodyLevel,
+    StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
     StateSpecializedPurposeForIncarceration,
 )
@@ -59,6 +60,11 @@ class IncarcerationPopulationSpan(Span, IncludedInStateMixin):
 
     # The housing unit within the facility in which the person currently resides
     housing_unit: Optional[str] = attr.ib(default=None)
+
+    # The type of housing unit within the facility in which the person currently resides
+    housing_unit_category: Optional[
+        StateIncarcerationPeriodHousingUnitCategory
+    ] = attr.ib(default=None)
 
     # Where the person is currently being housed regardless of technical assignment/custody level
     housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = attr.ib(
