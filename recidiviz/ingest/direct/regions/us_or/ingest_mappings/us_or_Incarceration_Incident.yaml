@@ -16,6 +16,7 @@ input_columns:
   - SUBMITTED_DATE # report_date mtofdr
   - DISCIPLINARY_SANCTION # outcome_type mtsanc
   - START_DATE # date_effective (outcome) mtsanc
+  - STOP_DATE # projected_end_date mtsanc
   - ACTUAL_DAYS # punishment_length_days mtsanc
 unused_columns: []
 output:
@@ -129,6 +130,7 @@ output:
                       - MISCONDUCT_SANCTION_ID
                 hearing_date: DECISION_DATE
                 date_effective: START_DATE
+                projected_end_date: STOP_DATE
                 report_date: SUBMITTED_DATE
                 outcome_type:
                   $enum_mapping:
