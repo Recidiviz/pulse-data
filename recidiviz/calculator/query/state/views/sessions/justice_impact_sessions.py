@@ -165,7 +165,7 @@ def get_justice_impact_type_or_weight_column(column: str) -> str:
                 "TEMPORARY_SOLITARY_CONFINEMENT",
                 "PERMANENT_SOLITARY_CONFINEMENT"
             )
-            -- OR housing_unit_category = "SOLITARY_CONFINEMENT"
+            OR housing_unit_category = "SOLITARY_CONFINEMENT"
             THEN {get_ji_type_or_weight(JusticeImpactType.SOLITARY_CONFINEMENT, column)}
             WHEN compartment_level_1 IN (
                 "INCARCERATION", "INCARCERATION_OUT_OF_STATE", "PENDING_CUSTODY"
