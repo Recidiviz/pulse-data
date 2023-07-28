@@ -24,6 +24,7 @@ from recidiviz.tools.analyst.estimate_effects import (
     est_did_effect,
     est_es_effect,
     get_panel_ols_result,
+    pairwise_stratify,
     validate_df,
 )
 
@@ -377,3 +378,136 @@ class TestEffectEstimationFunctions(unittest.TestCase):
             date_column="start_date",
             control_columns=["controls"],
         )
+
+
+class TestPairwiseStratify(unittest.TestCase):
+    """Tests for pairwise_stratify() method in estimate_effects.py"""
+
+    def test_required_columns_present(self) -> None:
+        "Verify that error thrown if required columns are not present in stratified df"
+
+        # create dummy df
+        df = _DUMMY_DF.copy()
+
+        # verify error thrown if categorical_columns or continuous_column not provided
+        with self.assertRaises(ValueError):
+            pairwise_stratify(
+                df=df,
+                unit_of_treatment_column="unit_of_treatment",
+            )
+
+        # verify error thrown if unit_of_treatment_column not in df
+        with self.assertRaises(ValueError):
+            pairwise_stratify(
+                df=df,
+                unit_of_treatment_column="missing_unit_of_treatment",
+                categorical_columns=["cluster_column"],
+            )
+
+        # verify error thrown if categorical_columns not in df
+        with self.assertRaises(ValueError):
+            pairwise_stratify(
+                df=df,
+                unit_of_treatment_column="unit_of_treatment",
+                categorical_columns=["missing_categorical_column"],
+            )
+
+        # verify error thrown if continuous_column not in df
+        with self.assertRaises(ValueError):
+            pairwise_stratify(
+                df=df,
+                unit_of_treatment_column="unit_of_treatment",
+                continuous_column="missing_continuous_column",
+            )
+
+        # no error thrown if all columns found
+        pairwise_stratify(
+            df=df,
+            unit_of_treatment_column="unit_of_treatment",
+            categorical_columns=["cluster_column"],
+            continuous_column="weights",
+        )
+
+    def test_treated_column(self) -> None:
+        """
+        Verify that treated column present in returned stratified df and correctly
+        valued.
+        """
+
+        # create dummy df
+        df = pd.DataFrame(
+            {
+                "unit_of_treatment": ["a", "a", "a", "a"],
+                "categorical_column": ["x", "x", "y", "y"],
+                "continuous_column": [1, 98, 2, 99],
+            }
+        )
+
+        # verify treated column present in stratified df
+        stratified_df = pairwise_stratify(
+            df=df,
+            unit_of_treatment_column="unit_of_treatment",
+            categorical_columns=["categorical_column"],
+            continuous_column="continuous_column",
+        )
+        self.assertIn("treated", stratified_df.columns)
+        for v in ["group_id", "pair_id"]:
+            self.assertNotIn(v, stratified_df.columns)
+
+        # verify group_id and pair_id returned if keep_block_and_pair_ids=True
+        stratified_df = pairwise_stratify(
+            df=df,
+            unit_of_treatment_column="unit_of_treatment",
+            categorical_columns=["categorical_column"],
+            continuous_column="continuous_column",
+            keep_block_and_pair_ids=True,
+        )
+        for v in ["treated", "group_id", "pair_id"]:
+            self.assertIn(v, stratified_df.columns)
+
+        # binary values only
+        self.assertTrue(
+            stratified_df.treated.isin([0, 1]).all(),
+            "Treated column should only contain binary values.",
+        )
+
+        # equal number of treated = 0 or 1 for even number of units
+        self.assertEqual(
+            stratified_df.treated.value_counts()[0],
+            stratified_df.treated.value_counts()[1],
+            "Treated column should have equal number of 0s and 1s.",
+        )
+
+        # in the current case, the first and last two units should be paired,
+        # that is, have the same paid_id and group_id
+        for v in ["group_id", "pair_id"]:
+            self.assertEqual(
+                stratified_df.loc[0, v],
+                stratified_df.loc[1, v],
+                "First two units should be in the same group.",
+            )
+            self.assertEqual(
+                stratified_df.loc[2, v],
+                stratified_df.loc[3, v],
+                "Last two units should be in the same group.",
+            )
+
+        # new case with contiuous column only
+        # in this case, the first and third unit should be paired
+        stratified_df = pairwise_stratify(
+            df=df,
+            unit_of_treatment_column="unit_of_treatment",
+            continuous_column="continuous_column",
+            keep_block_and_pair_ids=True,
+        )
+        for v in ["group_id", "pair_id"]:
+            self.assertEqual(
+                stratified_df.loc[0, v],
+                stratified_df.loc[2, v],
+                "First and third units should be in the same group.",
+            )
+            self.assertEqual(
+                stratified_df.loc[1, v],
+                stratified_df.loc[3, v],
+                "Second and fourth units should be in the same group.",
+            )

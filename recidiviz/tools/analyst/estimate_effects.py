@@ -18,6 +18,7 @@
 
 from typing import List, Optional, Union
 
+import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 from linearmodels import PanelOLS
@@ -483,3 +484,97 @@ def est_es_effect(
     )
 
     return res
+
+
+def pairwise_stratify(
+    df: pd.DataFrame,
+    unit_of_treatment_column: str,
+    categorical_columns: Optional[List[str]] = None,
+    continuous_column: Optional[str] = None,
+    seed: Optional[int] = 42,
+    keep_block_and_pair_ids: bool = False,
+) -> pd.DataFrame:
+    """
+    Takes a dataframe `df` with unit of treatment as indicated by
+    `unit_of_treatment_column` and a column or set of columns designated by
+    `categorical_columns` and `continuous_column` and returns the dataframe with a new
+    column "treated" that is a binary indicator for whether the unit is
+    treated.
+
+    This function assigns treatment via pairwise stratification where units are
+    first grouped by `categorical_columns` and then sorted by `continuous_column` and
+    paired. Units are then randomly assigned treatment in pairs.
+
+    By construction, probability of treatment for any unit is 0.5. It is possible to get
+    overall imbalanced treatment (P(treated) != 0.5) if there are an odd number of
+    units.
+
+    `seed` is used to get deterministic treatment assignments.
+
+    `keep_block_and_pair_ids` returns the dataframe with two additional columns:
+    - block_id: the id of the block of units that were grouped together (i.e. using
+     `categorical_columns`))
+    - pair_id: the id of the pair of units that were paired together (within blocks
+     using `continuous_column`)
+    """
+    # verify that categorical_columns or continuous_column is not None
+    if categorical_columns is None and continuous_column is None:
+        raise ValueError("Must specify either categorical_columns or continuous_column")
+
+    # verify that included columns are in df
+    included_columns = [unit_of_treatment_column]
+    if categorical_columns:
+        included_columns.extend(categorical_columns)
+    if continuous_column:
+        included_columns.append(continuous_column)
+    for col in included_columns:
+        if col not in df.columns:
+            raise ValueError(f"Column {col} not in df")
+
+    # keep only relevant vars
+    dftmp = df.loc[:, included_columns].copy()
+
+    # get block id
+    if categorical_columns:
+        dftmp["group_id"] = dftmp.groupby(categorical_columns).grouper.group_info[0]
+    else:
+        dftmp["group_id"] = 1
+
+    # handle no cont_var
+    if continuous_column is None:
+        dftmp["continuous_column"] = 1
+        continuous_column = "continuous_column"
+
+    # get pairs along cont_var within group_id
+    # first random number handles ties
+    np.random.seed(seed)
+
+    dftmp["randn"] = np.random.uniform(0, 1, len(dftmp))
+    dftmp.sort_values(
+        ["group_id", continuous_column, "randn"], ascending=False, inplace=True
+    )
+    dftmp["pair_id"] = np.floor(dftmp.groupby("group_id").cumcount() / 2).astype(int)
+
+    # now randomize order within pairs
+    # new random number
+
+    dftmp["randn"] = np.random.uniform(0, 1, len(dftmp))
+    dftmp.sort_values(["group_id", "pair_id", "randn"], ascending=False, inplace=True)
+    dftmp["treated"] = dftmp.groupby("group_id").cumcount() % 2
+
+    # handle odd numbers within group_id
+    for g in dftmp.group_id.unique():
+        dfsub = dftmp.loc[dftmp.group_id == g]
+        # check if odd number of entries
+        if len(dfsub) % 2 == 1:
+            # get index of first observation (sorted descending, so first ob is odd)
+            idx = dfsub.head(1).index[0]
+            # randomly assign treatment to the person
+            dftmp.loc[idx, "treated"] = int(np.random.uniform(0, 1) < 0.5)
+
+    # merge `treated` using index and return
+    keep_cols = ["treated"]
+    if keep_block_and_pair_ids:
+        keep_cols.extend(["group_id", "pair_id"])
+    df = df.join(dftmp[keep_cols], how="outer")
+    return df
