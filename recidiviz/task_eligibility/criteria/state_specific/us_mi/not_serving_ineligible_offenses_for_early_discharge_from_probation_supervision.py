@@ -22,6 +22,8 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -35,6 +37,7 @@ someone is not serving on probation for any ineligible offense listed below:
     - Not serving for MCL 750.81
     - Not serving for MC 750.84 (Assault with intent to commit Great bodily harm less than murder)
     - Not serving for an offense that requires a mandatory probation term (750.411H, 750.411I, 750.136b) 
+    - Not serving for a sex offense
 """
 _QUERY_TEMPLATE = f"""
  SELECT
@@ -48,8 +51,10 @@ _QUERY_TEMPLATE = f"""
     WHERE span.state_code = "US_MI"
         AND sent.sentence_sub_type = "PROBATION" 
         --only include spans with ineligible offenses 
+        AND sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
+            WHERE CAST(requires_so_registration AS BOOL))
         --include all statutes that have 750.81 followed by a digit (but not by a letter) since those are not substatutes
-        AND ((sent.statute LIKE '750.81%' AND REGEXP_CONTAINS(statute, r'750\\.81(\\d+)*$'))
+        OR ((sent.statute LIKE '750.81%' AND REGEXP_CONTAINS(statute, r'750\\.81(\\d+)*$'))
         OR sent.statute LIKE '750.84%'
         OR sent.statute LIKE '750.411H%'
         OR sent.statute LIKE '750.411I%'
@@ -65,6 +70,10 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MI,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
     )
 )
 
