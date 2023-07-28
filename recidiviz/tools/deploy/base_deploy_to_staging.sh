@@ -81,13 +81,12 @@ verify_hash "$COMMIT_HASH"
 run_cmd verify_can_deploy "$PROJECT_ID"
 
 if [[ -n ${DEBUG_BUILD_NAME} ]]; then
-    DOCKER_IMAGE_TAG=${VERSION_TAG}-${DEBUG_BUILD_NAME}
-    GAE_VERSION=$(echo "$VERSION_TAG" | tr '.' '-')-${DEBUG_BUILD_NAME}
-else
-    DOCKER_IMAGE_TAG=${VERSION_TAG}
-    GAE_VERSION=$(echo "$VERSION_TAG" | tr '.' '-')
+    VERSION_TAG=${VERSION_TAG}-${DEBUG_BUILD_NAME}
 fi
+DOCKER_IMAGE_TAG=${VERSION_TAG}
+GAE_VERSION=$(echo "$VERSION_TAG" | tr '.' '-')
 
+update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
 # app engine deploy paths
 APP_ENGINE_IMAGE_BASE=us.gcr.io/$PROJECT_ID/appengine/default
@@ -192,8 +191,6 @@ else
     echo "Found Asset Generation service build, proceeding to use image ${ASSET_GENERATION_BUILD_URL} for the release, tagging to ${ASSET_GENERATION_IMAGE_URL}"
     run_cmd gcloud -q container images add-tag "${ASSET_GENERATION_BUILD_URL}" "${ASSET_GENERATION_IMAGE_URL}"
 fi
-
-update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
 
 if [[ -n ${PROMOTE} ]]; then
     # Update latest tag to reflect staging as well
