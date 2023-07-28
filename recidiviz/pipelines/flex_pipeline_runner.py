@@ -24,7 +24,6 @@ from typing import List, Type
 
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
-from recidiviz.utils import environment
 
 
 def pipeline_cls_for_pipeline_name(pipeline_name: str) -> Type[BasePipeline]:
@@ -48,7 +47,6 @@ def run_flex_pipeline(pipeline_name: str, argv: List[str]) -> None:
     """Runs the given pipeline_module with the arguments contained in argv."""
     pipeline_cls = pipeline_cls_for_pipeline_name(pipeline_name)
     pipeline = pipeline_cls.build_from_args(argv)
-    environment.setup_environment(pipeline.pipeline_parameters.project)
     pipeline.run()
 
 

@@ -41,7 +41,6 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.pipelines.ingest.pipeline_parameters import MaterializationMethod
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import ReadFromBigQuery
-from recidiviz.utils import environment
 from recidiviz.utils.string import StrictStringFormatter
 
 INGEST_VIEW_DATE_BOUND_TUPLES_QUERY_TEMPLATE = f"""
@@ -127,7 +126,6 @@ class GenerateIngestViewResults(beam.PTransform):
             | f"Generate date diff queries for {self.ingest_view_name} based on date pairs."
             >> beam.Map(
                 self.get_ingest_view_date_diff_query,
-                project_id=self.project_id,
                 state_code=self.state_code,
                 ingest_view_name=self.ingest_view_name,
                 ingest_instance=self.ingest_instance,
@@ -168,15 +166,11 @@ class GenerateIngestViewResults(beam.PTransform):
     @staticmethod
     def get_ingest_view_date_diff_query(
         date_pair: Dict[str, Any],
-        project_id: str,
         state_code: str,
         ingest_view_name: str,
         ingest_instance: DirectIngestInstance,
     ) -> beam.io.ReadFromBigQueryRequest:
         """Returns a query that calculates the date diff between the upper and lower bound dates."""
-        # TODO(#22164) Automatically set up environment for Dataflow workers.
-        if not environment.in_test() and not environment.in_ci():
-            environment.setup_environment(project_id)
         region = direct_ingest_regions.get_direct_ingest_region(region_code=state_code)
         view_builder: DirectIngestViewQueryBuilder = (
             DirectIngestViewQueryBuilderCollector(

@@ -72,18 +72,18 @@ echo "Updating configuration / infrastructure in preparation for deploy"
 verify_hash "$TAG_COMMIT_HASH"
 pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_COMMIT_HASH"
 
-DATAFLOW_STAGING_IMAGE_URL="us-docker.pkg.dev/recidiviz-staging/dataflow/default:${GIT_VERSION_TAG}" || exit_on_fail
+DATAFLOW_BUILD_URL="us-docker.pkg.dev/recidiviz-123/dataflow/build:${TAG_COMMIT_HASH}" || exit_on_fail
 DATAFLOW_PROD_IMAGE_URL="us-docker.pkg.dev/recidiviz-123/dataflow/default:${GIT_VERSION_TAG}" || exit_on_fail
 
 echo "Tagging dataflow image for deploy"
 {
-    run_cmd_no_exiting gcloud -q container images add-tag "${DATAFLOW_STAGING_IMAGE_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
+    run_cmd_no_exiting gcloud -q container images add-tag "${DATAFLOW_BUILD_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
 } || {
     echo "Falling back to manual docker tag commands"
     # We are running these fallback commands in case the add-tag command above times out
     # (likely due to network bandwidth)
-    run_cmd docker pull "${DATAFLOW_STAGING_IMAGE_URL}"
-    run_cmd docker tag "${DATAFLOW_STAGING_IMAGE_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
+    run_cmd docker pull "${DATAFLOW_BUILD_URL}"
+    run_cmd docker tag "${DATAFLOW_BUILD_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
     run_cmd docker push "${DATAFLOW_PROD_IMAGE_URL}"
 }
 

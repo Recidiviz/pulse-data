@@ -67,7 +67,7 @@ REQUIRED_PACKAGES = [
 ]
 
 setuptools.setup(
-    name="recidiviz-calculation-pipelines",
+    name="pulse-dataflow-pipelines",
     # TODO(#2031): Dynamically set the package version
     version="1.0.0",
     install_requires=REQUIRED_PACKAGES,
