@@ -69,9 +69,7 @@ def create_monitoring_dag() -> None:
         group_id="generate_export_timeliness_metrics",
         container_name="generate_export_timeliness_metric",
         arguments=[
-            "python",
-            "-m",
-            "recidiviz.entrypoints.monitoring.report_metric_export_timeliness",
+            "--entrypoint=MetricExportTimelinessEntrypoint",
         ],
     )
 

@@ -102,9 +102,7 @@ def update_managed_views_operator(view_update_type: ManagedViewUpdateType) -> Ta
             additional_args.append("--clean_managed_datasets=False")
 
         return [
-            "python",
-            "-m",
-            "recidiviz.entrypoints.view_update.update_all_managed_views",
+            "--entrypoint=UpdateAllManagedViewsEntrypoint",
             *additional_args,
         ]
 
@@ -127,9 +125,7 @@ def refresh_bq_dataset_operator(schema_type: str) -> TaskGroup:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
         return [
-            "python",
-            "-m",
-            "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
+            "--entrypoint=BigQueryRefreshEntrypoint",
             f"--schema_type={schema_type.upper()}",
             f"--ingest_instance={get_ingest_instance(dag_run)}",
             *additional_args,
@@ -158,9 +154,7 @@ def execute_update_normalized_state() -> TaskGroup:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
         return [
-            "python",
-            "-m",
-            "recidiviz.entrypoints.normalization.update_normalized_state_dataset",
+            "--entrypoint=UpdateNormalizedStateEntrypoint",
             f"--ingest_instance={get_ingest_instance(dag_run)}",
             *additional_args,
         ]
@@ -184,9 +178,7 @@ def execute_validations_operator(state_code: str) -> TaskGroup:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
         return [
-            "python",
-            "-m",
-            "recidiviz.entrypoints.validation.validate",
+            "--entrypoint=ValidationEntrypoint",
             f"--state_code={state_code}",
             f"--ingest_instance={get_ingest_instance(dag_run)}",
             *additional_args,
@@ -217,9 +209,7 @@ def trigger_metric_view_data_operator(
             additional_args.append(f"--state_code={state_code}")
 
         return [
-            "python",
-            "-m",
-            "recidiviz.entrypoints.metric_export.metric_view_export",
+            "--entrypoint=MetricViewExportEntrypoint",
             f"--export_job_name={export_job_name}",
             *additional_args,
         ]

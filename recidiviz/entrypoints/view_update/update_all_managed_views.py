@@ -17,53 +17,52 @@
 """Script for manage view updates to occur - to be called only within the Airflow DAG's
 KubernetesPodOperator."""
 import argparse
-import logging
 
 from recidiviz.big_query.view_update_manager import execute_update_all_managed_views
+from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.utils.metadata import project_id
 from recidiviz.utils.params import str_to_bool, str_to_list
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parses arguments for the managed views update process."""
-    parser = argparse.ArgumentParser()
+class UpdateAllManagedViewsEntrypoint(EntrypointInterface):
+    """Entrypoint for updating managed views"""
 
-    parser.add_argument(
-        "--sandbox_prefix",
-        help="The sandbox prefix for which the refresh needs to write to",
-        type=str,
-    )
+    @staticmethod
+    def get_parser() -> argparse.ArgumentParser:
+        """Parses arguments for the managed views update process."""
+        parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--dataset_ids_to_load",
-        dest="dataset_ids_to_load",
-        help="A list of dataset_ids to load separated by commas. If provided, only "
-        "loads datasets in this list plus ancestors.",
-        type=str_to_list,
-        required=False,
-    )
+        parser.add_argument(
+            "--sandbox_prefix",
+            help="The sandbox prefix for which the refresh needs to write to",
+            type=str,
+        )
 
-    parser.add_argument(
-        "--clean_managed_datasets",
-        help="If true (default), will clean all historically managed datasets before updating.",
-        type=str_to_bool,
-        default=True,
-    )
+        parser.add_argument(
+            "--dataset_ids_to_load",
+            dest="dataset_ids_to_load",
+            help="A list of dataset_ids to load separated by commas. If provided, only "
+            "loads datasets in this list plus ancestors.",
+            type=str_to_list,
+            required=False,
+        )
 
-    return parser.parse_args()
+        parser.add_argument(
+            "--clean_managed_datasets",
+            help="If true (default), will clean all historically managed datasets before updating.",
+            type=str_to_bool,
+            default=True,
+        )
 
+        return parser
 
-if __name__ == "__main__":
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.INFO)
-
-    args = parse_arguments()
-
-    execute_update_all_managed_views(
-        project_id=project_id(),
-        sandbox_prefix=args.sandbox_prefix,
-        dataset_ids_to_load=args.dataset_ids_to_load,
-        clean_managed_datasets=args.clean_managed_datasets,
-        # Should allow slow views if not cleaning managed datasets and is updating is slow.
-        allow_slow_views=not args.clean_managed_datasets,
-    )
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
+        execute_update_all_managed_views(
+            project_id(),
+            sandbox_prefix=args.sandbox_prefix,
+            dataset_ids_to_load=args.dataset_ids_to_load,
+            clean_managed_datasets=args.clean_managed_datasets,
+            # Should allow slow views if not cleaning managed datasets and is updating is slow.
+            allow_slow_views=not args.clean_managed_datasets,
+        )

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,20 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Script for generating metric export timeliness monitoring time series.
-
-Example usage (run from `pipenv shell`):
-
-python -m recidiviz.entrypoints.monitoring.report_metric_export_timeliness \
-    --project_id recidiviz-123
-"""
+"""Contains the interface for entrypoints"""
 import argparse
 
-from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
-from recidiviz.monitoring.export_timeliness import report_export_timeliness_metrics
 
+class EntrypointInterface:
+    """Interface for our entrypoints"""
 
-class MetricExportTimelinessEntrypoint(EntrypointInterface):
     @staticmethod
-    def run_entrypoint(_args: argparse.Namespace) -> None:
-        report_export_timeliness_metrics()
+    def get_parser() -> argparse.ArgumentParser:
+        parser = argparse.ArgumentParser()
+
+        return parser
+
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
+        raise NotImplementedError()

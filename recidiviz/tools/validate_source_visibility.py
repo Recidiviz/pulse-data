@@ -435,6 +435,7 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.common",
+                "recidiviz.entrypoints",
                 "recidiviz.monitoring",
                 "recidiviz.justice_counts",
                 "recidiviz.pipelines",

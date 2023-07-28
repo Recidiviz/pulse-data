@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Creates monitoring client for measuring and recording stats."""
+import time
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import wraps
@@ -23,6 +24,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from opencensus.ext.stackdriver import stats_exporter as stackdriver
 from opencensus.ext.stackdriver.stats_exporter import Options
+from opencensus.metrics.transport import DEFAULT_INTERVAL, GRACE_PERIOD
 from opencensus.stats import stats as stats_module
 from opencensus.stats import view as view_module
 from opencensus.tags import TagContext, TagMap
@@ -37,6 +39,12 @@ def monitoring_metric_url(view: view_module.View) -> str:
 # pylint: disable=protected-access
 def stats() -> stats_module._Stats:
     return stats_module.stats
+
+
+def wait_for_stackdriver_export() -> None:
+    # Keep the thread alive long enough for the stackdriver exporter to report metrics at least once.
+    # TODO(#20775): Once migrated to OpenTelemetry, replace this sleep with a synchronous export
+    time.sleep(DEFAULT_INTERVAL + GRACE_PERIOD + 10)
 
 
 def register_stackdriver_exporter(options: Optional[Options] = None) -> None:

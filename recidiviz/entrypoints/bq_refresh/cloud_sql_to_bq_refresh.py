@@ -14,11 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Script for a CloudSQL to BigQuery refresh to occur for a given CloudSQL instance
-to be called only within the Airflow DAG's KubernetesPodOperator."""
+"""Entrypoint for CloudSQL to BigQuery refresh to occur for a given CloudSQL instance"""
 import argparse
-import logging
 
+from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
     execute_cloud_sql_to_bq_refresh,
@@ -26,39 +25,40 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control i
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parses arguments for the Cloud SQL to BQ refresh process."""
-    parser = argparse.ArgumentParser()
+class BigQueryRefreshEntrypoint(EntrypointInterface):
+    """Entrypoint for CloudSQL to BigQuery refresh to occur for a given CloudSQL instance"""
 
-    parser.add_argument(
-        "--schema_type",
-        help="The schema type that the refresh should occur for",
-        type=SchemaType,
-        choices=list(SchemaType),
-        required=True,
-    )
-    parser.add_argument(
-        "--ingest_instance",
-        help="The ingest instance for the specified STATE refresh",
-        type=DirectIngestInstance,
-        choices=list(DirectIngestInstance),
-        required=True,
-    )
-    parser.add_argument(
-        "--sandbox_prefix",
-        help="The sandbox prefix for which the refresh needs to write to",
-        type=str,
-    )
+    @staticmethod
+    def get_parser() -> argparse.ArgumentParser:
+        """Parses arguments for the Cloud SQL to BQ refresh process."""
+        parser = argparse.ArgumentParser()
 
-    return parser.parse_args()
+        parser.add_argument(
+            "--schema_type",
+            help="The schema type that the refresh should occur for",
+            type=SchemaType,
+            choices=list(SchemaType),
+            required=True,
+        )
+        parser.add_argument(
+            "--ingest_instance",
+            help="The ingest instance for the specified STATE refresh",
+            type=DirectIngestInstance,
+            choices=list(DirectIngestInstance),
+            required=True,
+        )
+        parser.add_argument(
+            "--sandbox_prefix",
+            help="The sandbox prefix for which the refresh needs to write to",
+            type=str,
+        )
 
+        return parser
 
-if __name__ == "__main__":
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.INFO)
-
-    args = parse_arguments()
-
-    execute_cloud_sql_to_bq_refresh(
-        args.schema_type, args.ingest_instance, args.sandbox_prefix
-    )
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
+        execute_cloud_sql_to_bq_refresh(
+            schema_type=args.schema_type,
+            ingest_instance=args.ingest_instance,
+            sandbox_prefix=args.sandbox_prefix,
+        )

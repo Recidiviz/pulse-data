@@ -17,43 +17,42 @@
 """Script for a Metric View Export to occur for a given export config to be called only
 within the Airflow DAG's KubernetesPodOperator."""
 import argparse
-import logging
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.metrics.export.view_export_manager import execute_metric_view_data_export
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parses arguments for the Metric View Export process."""
-    parser = argparse.ArgumentParser()
+class MetricViewExportEntrypoint(EntrypointInterface):
+    @staticmethod
+    def get_parser() -> argparse.ArgumentParser:
+        """Parses arguments for the Metric View Export process."""
+        parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--state_code",
-        help="The state code that the export should occur for",
-        type=StateCode,
-        choices=list(StateCode),
-    )
-    parser.add_argument(
-        "--export_job_name",
-        help="The export job name that the export should occur for",
-        type=str,
-        required=True,
-    )
-    parser.add_argument(
-        "--sandbox_prefix",
-        help="The sandbox prefix for which the export needs to write to",
-        type=str,
-    )
+        parser.add_argument(
+            "--state_code",
+            help="The state code that the export should occur for",
+            type=StateCode,
+            choices=list(StateCode),
+        )
+        parser.add_argument(
+            "--export_job_name",
+            help="The export job name that the export should occur for",
+            type=str,
+            required=True,
+        )
+        parser.add_argument(
+            "--sandbox_prefix",
+            help="The sandbox prefix for which the export needs to write to",
+            type=str,
+        )
 
-    return parser.parse_args()
+        return parser
 
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    args = parse_arguments()
-
-    execute_metric_view_data_export(
-        state_code=args.state_code,
-        export_job_name=args.export_job_name,
-        sandbox_prefix=args.sandbox_prefix,
-    )
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
+        execute_metric_view_data_export(
+            state_code=args.state_code,
+            export_job_name=args.export_job_name,
+            sandbox_prefix=args.sandbox_prefix,
+        )
