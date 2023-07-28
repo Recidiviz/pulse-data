@@ -431,10 +431,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         mock_view_exporter.export_and_validate.side_effect = ViewExportValidationError
 
-        # Should not throw
-        view_export_manager.export_view_data_to_cloud_storage(
-            self.mock_export_name, override_view_exporter=mock_view_exporter
-        )
+        with self.assertRaises(ViewExportValidationError):
+            view_export_manager.export_view_data_to_cloud_storage(
+                self.mock_export_name, override_view_exporter=mock_view_exporter
+            )
 
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
@@ -482,7 +482,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         with self.assertRaises(ViewExportConfigurationError):
             view_export_manager.do_metric_export_for_configs(
-                {"EXPORT": view_export_configs}, state_code_filter=None
+                export_name="EXPORT",
+                view_export_configs=view_export_configs,
+                state_code_filter=None,
             )
 
     @mock.patch(
