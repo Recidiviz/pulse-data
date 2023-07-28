@@ -79,7 +79,13 @@ def build_kubernetes_pod_task_group(
                 task_instance.task_id,
                 " ".join(argv),
             )
-            return ["run", *argv]
+            return [
+                "run",
+                "python",
+                "-m",
+                "recidiviz.entrypoints.entrypoint_executor",
+                *argv,
+            ]
 
         namespace = "composer-user-workloads"
         KubernetesPodOperator(

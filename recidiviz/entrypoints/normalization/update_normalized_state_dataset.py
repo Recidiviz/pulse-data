@@ -17,48 +17,47 @@
 """Script for update_normalized_state_dataset
 to be called only within the Airflow DAG's KubernetesPodOperator."""
 import argparse
-import logging
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.calculation_data_storage_manager import (
     execute_update_normalized_state_dataset,
 )
 
 
-def parse_arguments() -> argparse.Namespace:
-    """Parses arguments for the Cloud SQL to BQ refresh process."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--state_code_filter",
-        help="the state to update",
-        type=StateCode,
-        choices=list(StateCode),
-    )
-    parser.add_argument(
-        "--ingest_instance",
-        help="The ingest instance data is from",
-        type=DirectIngestInstance,
-        choices=list(DirectIngestInstance),
-        required=True,
-    )
-    parser.add_argument(
-        "--sandbox_prefix",
-        help="The sandbox prefix for which the refresh needs to write to",
-        type=str,
-    )
+class UpdateNormalizedStateEntrypoint(EntrypointInterface):
+    @staticmethod
+    def get_parser() -> argparse.ArgumentParser:
+        """Parses arguments for the Cloud SQL to BQ refresh process."""
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--state_code_filter",
+            help="the state to update",
+            type=StateCode,
+            choices=list(StateCode),
+        )
+        parser.add_argument(
+            "--ingest_instance",
+            help="The ingest instance data is from",
+            type=DirectIngestInstance,
+            choices=list(DirectIngestInstance),
+            required=True,
+        )
+        parser.add_argument(
+            "--sandbox_prefix",
+            help="The sandbox prefix for which the refresh needs to write to",
+            type=str,
+        )
 
-    return parser.parse_args()
+        return parser
 
-
-if __name__ == "__main__":
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.INFO)
-
-    args = parse_arguments()
-
-    execute_update_normalized_state_dataset(
-        ingest_instance=args.ingest_instance,
-        state_codes_filter=[args.state_code_filter] if args.state_code_filter else None,
-        sandbox_dataset_prefix=args.sandbox_prefix,
-    )
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
+        execute_update_normalized_state_dataset(
+            ingest_instance=args.ingest_instance,
+            state_codes_filter=[args.state_code_filter]
+            if args.state_code_filter
+            else None,
+            sandbox_dataset_prefix=args.sandbox_prefix,
+        )

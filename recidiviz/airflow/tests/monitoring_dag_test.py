@@ -92,7 +92,7 @@ child_task = dummy_task(test_dag, "child_task")
 parent_task >> child_task
 
 
-class TestDagIntegrity(AirflowIntegrationTest):
+class TestMonitoringDag(AirflowIntegrationTest):
     """Tests the dags defined in the /dags package."""
 
     def test_graph_map_index(self) -> None:

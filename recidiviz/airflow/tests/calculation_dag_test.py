@@ -19,10 +19,11 @@ Unit test to test the calculation pipeline DAG logic.
 """
 import os
 import unittest
-from typing import Set
+from typing import Dict, List, Set
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
+import yaml
 from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
@@ -35,7 +36,6 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
 )
 from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
-from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.utils.environment import GCPEnvironment
 
 # Need to import calculation_dag inside test suite so environment variables are set before importing,
@@ -69,6 +69,16 @@ class TestCalculationPipelineDag(unittest.TestCase):
     """Tests the calculation pipeline DAGs."""
 
     CALCULATION_DAG_ID = f"{_PROJECT_ID}_calculation_dag"
+    entrypoint_args_fixture: Dict[str, List[str]] = {}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        with open(
+            os.path.join(os.path.dirname(__file__), "fixtures/entrypoints_args.yaml"),
+            "r",
+            encoding="utf-8",
+        ) as fixture_file:
+            cls.entrypoint_args_fixture = yaml.safe_load(fixture_file)
 
     def setUp(self) -> None:
         self.environment_patcher = patch(
@@ -325,14 +335,9 @@ class TestCalculationPipelineDag(unittest.TestCase):
         ]
         if not callable(arguments):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
-
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.view_update.update_all_managed_views",
-            ],
+            self.entrypoint_args_fixture["test_update_all_managed_views_endpoint"],
         )
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
@@ -363,11 +368,8 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.view_update.update_all_managed_views",
-                "--sandbox_prefix=test_prefix",
+            self.entrypoint_args_fixture[
+                "test_update_all_managed_views_endpoint_sandbox_prefix"
             ],
         )
 
@@ -399,12 +401,8 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.view_update.update_all_managed_views",
-                f"--dataset_ids_to_load={REFERENCE_VIEWS_DATASET}",
-                "--clean_managed_datasets=False",
+            self.entrypoint_args_fixture[
+                "test_update_managed_views_endpoint_reference_views_only"
             ],
         )
 
@@ -451,13 +449,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
-                "--schema_type=STATE",
-                "--ingest_instance=PRIMARY",
-            ],
+            self.entrypoint_args_fixture["test_refresh_bq_dataset_task"],
         )
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
@@ -491,14 +483,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh",
-                "--schema_type=STATE",
-                "--ingest_instance=SECONDARY",
-                "--sandbox_prefix=test_prefix",
-            ],
+            self.entrypoint_args_fixture["test_refresh_bq_dataset_task_secondary"],
         )
 
     def test_validations_task_exists(self) -> None:
@@ -545,13 +530,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.validation.validate",
-                "--state_code=US_ND",
-                "--ingest_instance=PRIMARY",
-            ],
+            self.entrypoint_args_fixture["test_validations_task"],
         )
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
@@ -585,14 +564,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.validation.validate",
-                "--state_code=US_ND",
-                "--ingest_instance=SECONDARY",
-                "--sandbox_prefix=test_prefix",
-            ],
+            self.entrypoint_args_fixture["test_validations_task_secondary"],
         )
 
     def test_trigger_metric_view_data_operator_exists(self) -> None:
@@ -638,12 +610,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.metric_export.metric_view_export",
-                "--export_job_name=INGEST_METADATA",
-            ],
+            self.entrypoint_args_fixture["test_trigger_metric_view_data_operator"],
         )
 
     @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
@@ -678,12 +645,8 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.metric_export.metric_view_export",
-                "--export_job_name=INGEST_METADATA",
-                "--sandbox_prefix=test_prefix",
+            self.entrypoint_args_fixture[
+                "test_trigger_metric_view_data_operator_sandbox_prefix"
             ],
         )
 
@@ -719,11 +682,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             arguments(MagicMock(), MagicMock()),
-            [
-                "python",
-                "-m",
-                "recidiviz.entrypoints.metric_export.metric_view_export",
-                "--export_job_name=INGEST_METADATA",
-                "--state_code=US_XX",
+            self.entrypoint_args_fixture[
+                "test_trigger_metric_view_data_operator_state_code"
             ],
         )

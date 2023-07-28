@@ -16,15 +16,12 @@
 # =============================================================================
 """Export timeliness monitoring"""
 import logging
-import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 # TODO(python/mypy#10360): Direct imports are used to workaround mypy issue
 import google.cloud.monitoring_v3 as monitoring_v3  # pylint: disable=consider-using-from-import
 from google.cloud.storage import Blob, Client
-from opencensus.ext.stackdriver.stats_exporter import GLOBAL_RESOURCE_TYPE, Options
-from opencensus.metrics.transport import DEFAULT_INTERVAL, GRACE_PERIOD
 from opencensus.stats import aggregation, measure
 from opencensus.stats import view as opencensus_view
 
@@ -144,14 +141,6 @@ def report_export_timeliness_metrics() -> None:
     """Collects file age from the GCS buckets used in exports and creates measurements"""
     monitoring.register_views([export_file_age_view])
 
-    monitoring.register_stackdriver_exporter(
-        # We register the Stackdriver using the resource type of `global`.
-        # The exporter would automatically detect that we are running in a `k8s_container` resource,
-        # but we do not want these metrics associated with that resource type.
-        # More information can be found here- https://cloud.google.com/monitoring/api/resources
-        options=Options(project_id=metadata.project_id(), resource=GLOBAL_RESOURCE_TYPE)
-    )
-
     product_configs = ProductConfigs.from_file()
 
     storage_client = Client()
@@ -183,7 +172,3 @@ def report_export_timeliness_metrics() -> None:
                 }
             ) as measurements:
                 measurements.measure_int_put(m_export_file_age, creation_timestamp)
-
-    # Keep the thread alive long enough for the stackdriver exporter to report metrics at least once.
-    # TODO(#20775): Once migrated to OpenTelemetry, replace this sleep with a synchronous export
-    time.sleep(DEFAULT_INTERVAL + GRACE_PERIOD + 10)

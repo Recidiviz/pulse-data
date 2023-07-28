@@ -1,0 +1,52 @@
+# This file maintains the list of known entrypoint usages
+# It is used in both Airflow tests and recidiviz/tests/entrypoints/entrypoints_test.py
+test_update_all_managed_views_endpoint:
+  - --entrypoint=UpdateAllManagedViewsEntrypoint
+
+test_update_all_managed_views_endpoint_sandbox_prefix:
+  - --entrypoint=UpdateAllManagedViewsEntrypoint
+  - --sandbox_prefix=test_prefix
+
+test_update_managed_views_endpoint_reference_views_only:
+  - --entrypoint=UpdateAllManagedViewsEntrypoint
+  - --dataset_ids_to_load=reference_views
+  - --clean_managed_datasets=False
+
+test_refresh_bq_dataset_task:
+  - --entrypoint=BigQueryRefreshEntrypoint
+  - --schema_type=STATE
+  - --ingest_instance=PRIMARY
+
+test_refresh_bq_dataset_task_secondary:
+  - --entrypoint=BigQueryRefreshEntrypoint
+  - --schema_type=STATE
+  - --ingest_instance=SECONDARY
+  - --sandbox_prefix=test_prefix
+
+test_validations_task:
+  - --entrypoint=ValidationEntrypoint
+  - --state_code=US_ND
+  - --ingest_instance=PRIMARY
+
+test_validations_task_secondary:
+  - --entrypoint=ValidationEntrypoint
+  - --state_code=US_ND
+  - --ingest_instance=SECONDARY
+  - --sandbox_prefix=test_prefix
+
+test_trigger_metric_view_data_operator:
+  - --entrypoint=MetricViewExportEntrypoint
+  - --export_job_name=INGEST_METADATA
+
+test_trigger_metric_view_data_operator_sandbox_prefix:
+  - --entrypoint=MetricViewExportEntrypoint
+  - --export_job_name=INGEST_METADATA
+  - --sandbox_prefix=test_prefix
+
+test_trigger_metric_view_data_operator_state_code:
+  - --entrypoint=MetricViewExportEntrypoint
+  - --export_job_name=INGEST_METADATA
+  - --state_code=US_XX
+
+test_monitoring_dag_args:
+  - --entrypoint=MetricExportTimelinessEntrypoint
