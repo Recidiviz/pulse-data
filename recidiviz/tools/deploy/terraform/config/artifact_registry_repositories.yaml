@@ -28,3 +28,9 @@ repositories:
     repository_id: "dataflow"
     description: "Repository for docker images used in Dataflow pipeline runners"
     format: "DOCKER"
+
+  dataflow_dev:
+    location: "us"
+    repository_id: "dataflow-dev"
+    description: "Repository for docker images used when running sandbox pipelines"
+    format: "DOCKER"

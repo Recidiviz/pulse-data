@@ -27,6 +27,7 @@ import os
 import sys
 from enum import Enum
 from functools import wraps
+from importlib.metadata import PackageNotFoundError, metadata
 from typing import Any, Callable, Optional
 
 import recidiviz
@@ -62,7 +63,7 @@ def in_gcp() -> bool:
         True if on hosted GCP instance
         False if not
     """
-    return get_gcp_environment() in GCP_ENVIRONMENTS
+    return get_gcp_environment() in GCP_ENVIRONMENTS or in_dataflow_worker()
 
 
 def in_cloud_run() -> bool:
@@ -70,6 +71,16 @@ def in_cloud_run() -> bool:
         CloudRunEnvironment.get_service_name()
         return True
     except NotInCloudRunError:
+        return False
+
+
+def in_dataflow_worker() -> bool:
+    """If the `pulse-dataflow-pipelines` package is installed,
+    we assume that the code is running in the Dataflow worker"""
+    try:
+        metadata("pulse-dataflow-pipelines")
+        return True
+    except PackageNotFoundError:
         return False
 
 
@@ -114,15 +125,6 @@ def get_gcp_environment() -> Optional[str]:
         The gae instance we are running in, or None if it is not set
     """
     return os.getenv(RECIDIVIZ_ENV)
-
-
-def setup_environment(project: str) -> None:
-    """Configures the environment for runtimes that do not have access to the metadata server
-    This allows our in_gcp() / project_id() calls to function as expected
-    """
-    environment = get_environment_for_project(project)
-    os.environ[GOOGLE_CLOUD_PROJECT] = project
-    os.environ[RECIDIVIZ_ENV] = environment.value
 
 
 def get_project_for_environment(environment: GCPEnvironment) -> str:

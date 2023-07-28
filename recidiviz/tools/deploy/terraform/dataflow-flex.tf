@@ -18,9 +18,6 @@
 resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger" {
   provider    = google-beta
   description = "Builds a remote Docker image for flex pipelines on every push to main or a release branch."
-  # A build trigger is only needed in staging, when we push to prod the existing staging image will just be retagged,
-  # instead of pushing the same image to both prod and staging upon every commit.
-  count = var.project_id == "recidiviz-staging" ? 1 : 0
 
   github {
     owner = "Recidiviz"
@@ -30,8 +27,21 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
     }
   }
 
-  filename = "recidiviz/pipelines/cloudbuild.pipelines.yaml"
-
+  build {
+    step {
+      name = "gcr.io/kaniko-project/executor:v1.8.1"
+      args = [
+        "--destination=us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA",
+        "--cache=true",
+        "--dockerfile=recidiviz/pipelines/Dockerfile.pipelines",
+        # For unknown reasons, Cloud Build does not respect these arguments in the format of `--build-arg=""`
+        "--build-arg",
+        format("GOOGLE_CLOUD_PROJECT=\"%s\"", var.project_id),
+        "--build-arg",
+        format("RECIDIVIZ_ENV=\"%s\"", var.project_id == "recidiviz-123" ? "production" : "staging")
+      ]
+    }
+  }
 }
 
 resource "google_storage_bucket_object" "flex_template_metadata" {

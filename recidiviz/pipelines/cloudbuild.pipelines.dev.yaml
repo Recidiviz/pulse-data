@@ -5,8 +5,11 @@
 steps:
   - name: "gcr.io/kaniko-project/executor:v1.8.1"
     args:
-      [
-        "--destination=${_IMAGE_PATH}",
-        "--cache=true",
-        "--dockerfile=recidiviz/pipelines/Dockerfile.pipelines",
-      ]
+      - --destination=${_IMAGE_PATH}
+      - --cache=true
+      - --dockerfile=recidiviz/pipelines/Dockerfile.pipelines
+      # For unknown reasons, Cloud Build does not respect these arguments in the format of `--build-arg=""`
+      - --build-arg
+      - GOOGLE_CLOUD_PROJECT="${_GOOGLE_CLOUD_PROJECT}"
+      - --build-arg
+      - RECIDIVIZ_ENV="${_RECIDIVIZ_ENV}"

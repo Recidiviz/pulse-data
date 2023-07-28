@@ -103,6 +103,7 @@ from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation, run_command
+from recidiviz.utils.environment import get_environment_for_project
 
 
 def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
@@ -184,7 +185,7 @@ def run_sandbox_calculation_pipeline() -> None:
     cloudbuild_absolute_path = get_cloudbuild_path()
     template_absolute_path = get_template_path(params.flex_template_name)
     artifact_reg_image_path = (
-        f"us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}/build:latest"
+        f"us-docker.pkg.dev/{params.project}/dataflow-dev/{username}/build:latest"
     )
 
     # Have the user confirm that the sandbox dataflow dataset exists.
@@ -197,13 +198,18 @@ def run_sandbox_calculation_pipeline() -> None:
 
     if not known_args.skip_build:
         submit_build_start = time.time()
-
+        environment = get_environment_for_project(params.project)
         # Build and submit the image to "us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}-build:latest"
         print(
             "Submitting build (this takes a few minutes, or longer on the first run).....\n"
         )
         run_command(
-            f"gcloud builds submit --project={params.project} --config {cloudbuild_absolute_path} --substitutions=_IMAGE_PATH={artifact_reg_image_path}",
+            f"""
+                gcloud builds submit \
+                --project={params.project} \
+                --config {cloudbuild_absolute_path} \
+                --substitutions=_IMAGE_PATH={artifact_reg_image_path},_GOOGLE_CLOUD_PROJECT={params.project},_RECIDIVIZ_ENV={environment.value}
+            """,
             timeout_sec=900,
         )
 
@@ -236,7 +242,7 @@ def run_sandbox_calculation_pipeline() -> None:
         "Authorization": "Bearer " + fetch_google_auth_token(),
     }
     response = requests.post(
-        f"https://dataflow.googleapis.com/v1b3/projects/recidiviz-staging/locations/{params.region}/flexTemplates:launch",
+        f"https://dataflow.googleapis.com/v1b3/projects/{params.project}/locations/{params.region}/flexTemplates:launch",
         headers=headers,
         data=pipeline_launch_body,
         timeout=60,
