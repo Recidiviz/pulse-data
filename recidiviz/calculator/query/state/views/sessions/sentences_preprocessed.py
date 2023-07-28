@@ -17,11 +17,11 @@
 """Processed Sentencing Data"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_start_date_clause,
 )
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
     STATES_WITH_SEPARATE_INCARCERATION_SENTENCES_PREPROCESSED,
     STATES_WITH_SEPARATE_SENTENCES_PREPROCESSED,
@@ -35,7 +35,7 @@ SENTENCES_PREPROCESSED_VIEW_NAME = "sentences_preprocessed"
 SENTENCES_PREPROCESSED_VIEW_DESCRIPTION = """Processed Sentencing Data"""
 
 # TODO(#13746): Investigate whether completion_date in state agnostic sentences preprocessed should allow for a date in the future
-SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
+SENTENCES_PREPROCESSED_QUERY_TEMPLATE = f"""
     WITH
     sentences_cte AS
     (
@@ -70,23 +70,23 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.county_code,
         sis.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
-    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` AS sis
-    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_incarceration_sentence_association` assoc
+    FROM `{{project_id}}.normalized_state.state_incarceration_sentence` AS sis
+    LEFT JOIN `{{project_id}}.normalized_state.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
-    LEFT JOIN `{project_id}.{sessions_dataset}.charges_preprocessed` charge
+    LEFT JOIN `{{project_id}}.sessions.charges_preprocessed` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sis.external_id IS NOT NULL
-        AND sis.state_code NOT IN ({special_states}, {incarceration_special_states})
+        AND sis.state_code NOT IN ({{special_states}}, {{incarceration_special_states}})
 
     UNION ALL
 
-    SELECT * FROM `{project_id}.{sessions_dataset}.us_nd_incarceration_sentences_preprocessed`
+    SELECT * FROM `{{project_id}}.sessions.us_nd_incarceration_sentences_preprocessed`
 
     UNION ALL
 
-    SELECT * FROM `{project_id}.{sessions_dataset}.us_co_incarceration_sentences_preprocessed`
+    SELECT * FROM `{{project_id}}.sessions.us_co_incarceration_sentences_preprocessed`
 
     UNION ALL
 
@@ -117,15 +117,15 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.county_code,
         sss.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
-    FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence` AS sss
-    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_supervision_sentence_association` assoc
+    FROM `{{project_id}}.normalized_state.state_supervision_sentence` AS sss
+    LEFT JOIN `{{project_id}}.normalized_state.state_charge_supervision_sentence_association` assoc
         ON assoc.state_code = sss.state_code
         AND assoc.supervision_sentence_id = sss.supervision_sentence_id
-    LEFT JOIN `{project_id}.{sessions_dataset}.charges_preprocessed` charge
+    LEFT JOIN `{{project_id}}.sessions.charges_preprocessed` charge
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sss.external_id IS NOT NULL
-        AND sss.state_code NOT IN ({special_states})
+        AND sss.state_code NOT IN ({{special_states}})
     ),
     /*
     Joins back to sessions to create a "session_id_imposed" field as well as to the consecutive id preprocessed file
@@ -196,10 +196,10 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             ses.session_id AS session_id_closest,
             DATE_DIFF(ses.start_date, sen.date_imposed, DAY) AS sentence_to_session_offset_days
         FROM sentences_cte sen
-        LEFT JOIN `{project_id}.{sessions_dataset}.consecutive_sentences_preprocessed_materialized` cs
+        LEFT JOIN `{{project_id}}.sessions.consecutive_sentences_preprocessed_materialized` cs
             USING (person_id, state_code, sentence_id, sentence_type)
         -- TODO(#13012): Revisit join logic condition to see if we can improve hydration of imposed session id
-        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` ses
+        LEFT JOIN `{{project_id}}.sessions.compartment_sessions_materialized` ses
             ON ses.person_id = sen.person_id
             AND ses.state_code = sen.state_code
             -- Join to all incarceration/supervision sessions and then pick the closest one to the date imposed
@@ -222,7 +222,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
                 total_education_attendance_credits,
                 total_treatment_credits
                 )
-        FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized`
+        FROM `{{project_id}}.sessions.us_tn_sentences_preprocessed_materialized`
     ),
     /*
     Collect all discharge/release dates to liberty as inferred sentence completion dates
@@ -232,12 +232,12 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             state_code,
             person_id,
             end_date_exclusive AS completion_date
-        FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+        FROM `{{project_id}}.sessions.compartment_sessions_materialized`
         WHERE outflow_to_level_1 IN ("LIBERTY", "DEATH")
             -- Do not infer sentence completion dates for temporary releases to liberty
             AND COALESCE(end_reason, "EXTERNAL_UNKNOWN") != "TEMPORARY_RELEASE"
             -- Don't infer sentence completion dates for some states
-            AND state_code NOT IN ({states_without_inferred_completion_date})
+            AND state_code NOT IN ({{states_without_inferred_completion_date}})
     ),
     /*
     Use the next successful supervision termination date following the effective date
@@ -253,8 +253,8 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         LEFT JOIN inferred_completion_dates comp
             ON sen.state_code = comp.state_code
             AND sen.person_id = comp.person_id
-            AND sen.effective_date < comp.completion_date
-            AND COALESCE(sen.date_imposed, sen.effective_date) < comp.completion_date
+            AND {nonnull_start_date_clause("sen.effective_date")} < comp.completion_date
+            AND {nonnull_start_date_clause("COALESCE(sen.date_imposed, sen.effective_date)")} < comp.completion_date
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY sen.state_code, sen.person_id, sen.sentence_id, sen.charge_id
             ORDER BY comp.completion_date ASC
@@ -274,8 +274,6 @@ SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SENTENCES_PREPROCESSED_VIEW_NAME,
     view_query_template=SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    sessions_dataset=SESSIONS_DATASET,
     special_states=list_to_query_string(
         string_list=STATES_WITH_SEPARATE_SENTENCES_PREPROCESSED,
         quoted=True,
