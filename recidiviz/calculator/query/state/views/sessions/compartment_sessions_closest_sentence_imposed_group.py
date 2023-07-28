@@ -17,6 +17,10 @@
 """View that reduces sentence groups to 1 record and summarizes information about that sentence group"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_exclusive_clause,
+    nonnull_start_date_clause,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,7 +34,7 @@ COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_DESCRIPTION = """
     based on difference between session start date and sentence imposed date.
     """
 
-COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = """
+COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = f"""
     SELECT
         a.state_code,
         a.person_id,
@@ -40,15 +44,15 @@ COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = """
         b.sentence_imposed_group_id,
         b.date_imposed,
     FROM 
-        `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
+        `{{project_id}}.sessions.compartment_sessions_materialized` a
     LEFT JOIN 
-        `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` b
+        `{{project_id}}.sessions.sentence_imposed_group_summary_materialized` b
     ON 
         a.person_id = b.person_id
         AND a.state_code = b.state_code
         -- Check for overlap between session and sentence group (effective date to projected completion date max)
         AND COALESCE(b.projected_completion_date_max, b.completion_date) > a.start_date
-        AND COALESCE(DATE_SUB(a.end_date_exclusive, INTERVAL 1 DAY), "9999-01-01") > b.effective_date
+        AND {nonnull_end_date_exclusive_clause("a.end_date_exclusive")} > {nonnull_start_date_clause("b.effective_date")}
     QUALIFY ROW_NUMBER() OVER (
         PARTITION BY a.person_id, a.session_id
         ORDER BY ABS(COALESCE(DATE_DIFF(b.date_imposed, a.start_date, DAY), 999999999))
@@ -57,7 +61,6 @@ COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = """
 
 COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
-    sessions_dataset=SESSIONS_DATASET,
     view_id=COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_NAME,
     view_query_template=COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE,
     description=COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_DESCRIPTION,
