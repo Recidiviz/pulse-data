@@ -37,7 +37,7 @@ MISCONDUCTS AS (
     #mtr.RULE_ALLEGED,
     #mtr.RULE_FOUND,
     #mto.NEXT_NUMBER,
-    #DECISION_STATUS, # would we ever want this?
+    #DECISION_STATUS,
     mtr.RULE_FINDING,
     mto.EFFECTIVE_DATE, 
     mto.LOCATION_CODE, 
@@ -47,10 +47,10 @@ MISCONDUCTS AS (
     DECISION_DATE, 
     mto.SUBMITTED_DATE, 
     mts.START_DATE,
+    mts.STOP_DATE,
     mts.ACTUAL_DAYS,
     #mts.SANCTION_AMOUNT,
     #mts.SUSPENSE_DATE, 
-    #mts.SANCTION_ACTUAL_END_DATE,
     CASE
       WHEN LONG_DESCRIPTION IN ('AIC Assault I','Arson', 'Assault of a Member of Public', 'Compromising an Employee', 'Disturbance', 'Distribution I', 'Drug Possession', 'Escape I', 'Extortion I', 'Hostage Taking', 'Possession a Electronic Device', 'Possession of an Escape Device', 'Possession of a Weapon', 'Racketeering', 'Sexual Assault', 'Staff Assault I', 'Unauthorized Organization I', 'Inmate Assault I', 'Assault I', 'Disturbance I', 'Escape', 'Drug Smuggling', 'Poss Dang/Deadly Weap/Esc Dev', 'Possess a Weapon or Escape Dev', 'Posses of an Electronic Device', 'Possess a Weapon', 'Possess an Escape Device', 'Sexual Assault/Abuse', 'Drug Distribution') THEN '1'
       WHEN LONG_DESCRIPTION IN ('Assault II', 'AIC Assault II', 'Inmate Assault II', 'Contraband I', 'Distribution II', 'Escape II', 'Extortion II', 'Leave Violation', 'Sexual Harassment', 'Staff Assault II', 'Harassment (Rac/Relig/Sex)', 'Harrassment (Rac/Relig/Sex)') THEN '2'
