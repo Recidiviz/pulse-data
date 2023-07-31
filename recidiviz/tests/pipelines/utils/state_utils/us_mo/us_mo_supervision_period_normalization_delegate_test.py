@@ -193,7 +193,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
-                external_id=None,  # TODO(#22531): Hydrate this external_id properly
+                external_id=f"{self.person_id}-0-NORMALIZED",
                 start_date=date(2020, 9, 1),
                 termination_date=date(2020, 9, 15),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -216,7 +216,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             ),
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
-                external_id=None,  # TODO(#22531): Hydrate this external_id properly
+                external_id=f"{self.person_id}-1-NORMALIZED",
                 start_date=date(2020, 9, 15),
                 termination_date=date(2020, 10, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -297,7 +297,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
-                external_id=None,  # TODO(#22531): Hydrate this external_id properly
+                external_id=f"{self.person_id}-0-NORMALIZED",
                 start_date=date(2020, 9, 1),
                 termination_date=date(2020, 9, 15),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -311,7 +311,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             ),
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
-                external_id=None,  # TODO(#22531): Hydrate this external_id properly
+                external_id=f"{self.person_id}-1-NORMALIZED",
                 start_date=date(2020, 9, 15),
                 termination_date=date(2020, 10, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -385,7 +385,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
-                external_id=None,  # TODO(#22531): Hydrate this external_id properly
+                external_id=f"{self.person_id}-0-NORMALIZED",
                 start_date=date(2020, 9, 1),
                 termination_date=date(2020, 9, 15),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -401,7 +401,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
             ),
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_MO",
-                external_id=None,  # TODO(#22531): Hydrate this external_id properly
+                external_id=f"{self.person_id}-1-NORMALIZED",
                 start_date=date(2020, 9, 15),
                 termination_date=None,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -494,13 +494,13 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         expected_periods = [
             attr.evolve(
                 supervision_period_1,
-                external_id=None,  # TODO(#22531): Hydrate this external_id properly
+                external_id=f"{self.person_id}-0-NORMALIZED",
                 supervision_period_id=29000070008912345,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
             attr.evolve(
                 supervision_period_2,
-                external_id=None,  # TODO(#22531): Hydrate this external_id properly
+                external_id=f"{self.person_id}-1-NORMALIZED",
                 supervision_period_id=29000070008912346,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
