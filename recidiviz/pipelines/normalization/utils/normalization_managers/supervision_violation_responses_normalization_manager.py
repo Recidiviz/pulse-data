@@ -46,6 +46,7 @@ from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
+from recidiviz.utils.types import assert_type
 
 
 class StateSpecificViolationResponseNormalizationDelegate(StateSpecificDelegate):
@@ -229,6 +230,10 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
 
             base_violation = StateSupervisionViolation(
                 state_code=base_response_to_update.state_code,
+                external_id=assert_type(
+                    base_response_to_update.supervision_violation,
+                    StateSupervisionViolation,
+                ).external_id,
             )
 
             new_violation_type_entries = copy_entities_and_add_unique_ids(
