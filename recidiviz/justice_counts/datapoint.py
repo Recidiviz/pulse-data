@@ -132,14 +132,18 @@ class DatapointInterface:
         To improve performance, rather than returning fully instantiated
         datapoint objects, we return a tuple of their properties.
         """
-        return session.query(*schema.Datapoint.__table__.columns).filter(
-            # Published report datapoints
-            (schema.Datapoint.report_id.in_(report_ids))
-            # Agency datapoints
-            | (
-                (schema.Datapoint.source_id == agency_id)
-                & (schema.Datapoint.is_report_datapoint == false())
+        return (
+            session.query(*schema.Datapoint.__table__.columns)
+            .filter(
+                # Published report datapoints
+                (schema.Datapoint.report_id.in_(report_ids))
+                # Agency datapoints
+                | (
+                    (schema.Datapoint.source_id == agency_id)
+                    & (schema.Datapoint.is_report_datapoint == false())
+                )
             )
+            .order_by(schema.Datapoint.start_date.asc())
         )
 
     ### Export to the FE ###
