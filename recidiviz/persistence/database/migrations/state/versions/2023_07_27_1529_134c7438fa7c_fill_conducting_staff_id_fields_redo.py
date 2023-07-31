@@ -54,7 +54,6 @@ def upgrade() -> None:
     for state_code, id_type in [
         ("US_TN", "US_TN_STAFF_TOMIS"),
         ("US_ME", "US_ME_EMPLOYEE"),
-        ("US_MI", "US_MI_COMPAS_USER"),
     ]:
         op.execute(
             StrictStringFormatter().format(
