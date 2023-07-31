@@ -250,7 +250,7 @@ class UsMoSupervisionNormalizationDelegate(
         )
 
         new_supervision_periods: List[StateSupervisionPeriod] = []
-        for time_span in time_spans:
+        for i, time_span in enumerate(time_spans):
             start_date = time_span.lower_bound_inclusive_date
             end_date = time_span.upper_bound_exclusive_date
             period_supervision_type = self._get_period_supervision_type(
@@ -313,6 +313,7 @@ class UsMoSupervisionNormalizationDelegate(
 
             new_supervision_period = StateSupervisionPeriod(
                 state_code=StateCode.US_MO.value,
+                external_id=f"{person_id}-{i}-NORMALIZED",
                 start_date=start_date,
                 termination_date=end_date,
                 supervision_type=period_supervision_type,
