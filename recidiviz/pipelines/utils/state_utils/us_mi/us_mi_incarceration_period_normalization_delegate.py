@@ -95,6 +95,7 @@ class UsMiIncarcerationNormalizationDelegate(
                     # create a new incarceration period for this TEMPORARY RELEASE period
                     new_incarceration_period = StateIncarcerationPeriod(
                         state_code=StateCode.US_MI.value,
+                        external_id=f"{incarceration_period.external_id}-2-INFERRED",
                         admission_date=incarceration_period.release_date,
                         release_date=next_incarceration_period.admission_date,
                         admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
