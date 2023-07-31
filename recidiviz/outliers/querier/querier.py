@@ -157,7 +157,7 @@ class OutliersQuerier:
                     additional_recipients=[
                         recipient
                         for recipient in additional_recipients
-                        if recipient != email
+                        if recipient != email and recipient is not None
                     ],
                 )
 
