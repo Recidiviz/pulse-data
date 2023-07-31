@@ -46,6 +46,16 @@ us_pa_supervision_district_managers AS (
     LPAD(district, 2, "0") AS supervision_district,
   FROM `{project_id}.{static_reference_dataset}.us_pa_upper_mgmt`  
   WHERE role IN ('District Director', 'Deputy District Director')
+
+  UNION ALL 
+
+  SELECT
+    'US_PA' AS state_code,
+    CAST(external_id AS STRING) AS external_id,
+    full_name,
+    email,
+    supervision_district
+FROM `{project_id}.{reference_views_dataset}.us_pa_leadership_supervisors`  
 ),
 us_ix_supervision_district_managers AS (
   SELECT 

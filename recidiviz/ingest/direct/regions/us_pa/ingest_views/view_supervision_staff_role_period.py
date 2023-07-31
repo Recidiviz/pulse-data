@@ -55,7 +55,6 @@ supervisor_start_dates AS (
     ON (agent_roster.Employ_Num = agent_history.Supervisor_EmpNum)
     GROUP BY 1
 ),
-
 all_periods AS (
 SELECT 
     officer_start_dates.Employ_Num,
@@ -71,18 +70,6 @@ FROM officer_start_dates
 JOIN supervisor_start_dates
 USING(Employ_Num)
 ),
-cntc_base AS (
-SELECT
-  DISTINCT PRL_AGNT_EMPL_NO,
-  FIRST_VALUE(cntc.START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO, PRL_AGNT_JOB_CLASSIFCTN ORDER BY CREATED_DATE) AS start_date,
-  LAST_VALUE(UPPER(PRL_AGNT_JOB_CLASSIFCTN))  OVER (PARTITION BY PRL_AGNT_EMPL_NO,PRL_AGNT_JOB_CLASSIFCTN ORDER BY CREATED_DATE) AS role_subtype,
-FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY} cntc
-WHERE PRL_AGNT_EMPL_NO NOT IN (
-    SELECT DISTINCT Employ_Num
-    FROM all_periods
-)
-AND PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv')
-), 
 periods_with_subtypes AS (
 SELECT 
     Employ_Num, 
@@ -96,29 +83,60 @@ SELECT
     1 AS period_seq_num
 FROM all_periods
 WHERE start_date IS NOT NULL -- excludes people who appear in roster but never in case history
+),
+cntc_base AS (
+-- include officers who only appear in supervision contacts data, not any roster
+SELECT
+  DISTINCT PRL_AGNT_EMPL_NO as Employ_Num,
+  FIRST_VALUE(cntc.START_DATE) OVER (
+    PARTITION BY PRL_AGNT_EMPL_NO, PRL_AGNT_JOB_CLASSIFCTN 
+    ORDER BY CREATED_DATE
+    ) AS start_date,
+  LEAD(START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS end_date,
+  -- we cannot know whether these agents are still actively employed, so we assume they are.
+  -- End dates are only dates that they changed positions.
+  LAST_VALUE(UPPER(PRL_AGNT_JOB_CLASSIFCTN)) OVER (
+    PARTITION BY PRL_AGNT_EMPL_NO,PRL_AGNT_JOB_CLASSIFCTN 
+    ORDER BY CREATED_DATE
+    ) AS role_subtype
+FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY} cntc
+WHERE PRL_AGNT_EMPL_NO NOT IN (
+    SELECT DISTINCT Employ_Num
+    FROM periods_with_subtypes
+)
+AND PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv')
+),
+complete_base AS (
+SELECT
+    Employ_Num,
+    start_date,
+    end_date,
+    role_subtype,
+    period_seq_num,
+FROM periods_with_subtypes 
+
+UNION ALL 
+
+SELECT 
+    *, 
+    ROW_NUMBER() OVER (
+        PARTITION BY cntc_base.Employ_Num 
+        ORDER BY cntc_base.start_date
+        ) AS period_seq_num
+    FROM cntc_base
 )
 
 SELECT 
-    COALESCE(periods_with_subtypes.Employ_Num, sup.ext_id) as Employ_Num, 
-    COALESCE(periods_with_subtypes.start_date, '1900-01-01') AS start_date,
-    periods_with_subtypes.end_date,
+    COALESCE(complete_base.Employ_Num, sup.ext_id) AS Employ_Num, 
+    COALESCE(complete_base.start_date, '1900-01-01') AS start_date,
+    complete_base.end_date,
     -- if a person supervises someone, even if they also appear in the leadership roster,
     -- keep their role subtype as SUPERVISION_OFFICER_SUPERVISOR for product view compatibility.
-    COALESCE(periods_with_subtypes.role_subtype,UPPER(sup.role)) AS role_subtype,
-    COALESCE(periods_with_subtypes.period_seq_num, 1) AS period_seq_num
-FROM periods_with_subtypes 
+    COALESCE(complete_base.role_subtype,UPPER(sup.role)) AS role_subtype,
+    COALESCE(complete_base.period_seq_num, 1) as period_seq_num
+FROM complete_base 
 FULL OUTER JOIN {RECIDIVIZ_REFERENCE_field_supervisor_list} sup
     ON(ext_id = Employ_Num)
-
-UNION ALL
-
-SELECT 
-  PRL_AGNT_EMPL_NO,
-  START_DATE,
-  LEAD(START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS end_date,
-  role_subtype,
-  ROW_NUMBER() OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) as period_seq
-FROM cntc_base;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
