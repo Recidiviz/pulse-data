@@ -51,6 +51,7 @@ from recidiviz.case_triage.workflows.utils import (
     get_workflows_consolidated_status,
     jsonify_response,
 )
+from recidiviz.case_triage.workflows.workflows_analytics import WorkflowsSegmentClient
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
     on_successful_authorization_recidiviz_only,
@@ -512,6 +513,9 @@ def create_workflows_api_blueprint() -> Blueprint:
 
     @workflows_api.post("/webhook/twilio_status")
     def handle_twilio_status() -> Response:
+        # Segment setup
+        segment_client = WorkflowsSegmentClient()
+
         status = get_str_param_value(
             "MessageStatus", request.values, preserve_case=True
         )
@@ -533,6 +537,22 @@ def create_workflows_api_blueprint() -> Blueprint:
         client_updates_docs = query.get()
 
         for doc in client_updates_docs:
+            milestonesMessage = doc.to_dict()
+            # This endpoint will be hit multiple times per message, so check here if this is a new status change from
+            # what we already have in Firestore.
+            if milestonesMessage.get("rawStatus", "") != status:
+                logging.info(
+                    "Updating Segment logs with message status for doc: [%s]",
+                    doc.reference.path,
+                )
+                segment_client.track_milestones_message_status(
+                    user_hash=milestonesMessage.get("userHash", ""),
+                    twilioRawStatus=status,
+                    status=get_workflows_consolidated_status(status),
+                    error_code=error_code,
+                    error_message=error_message,
+                )
+
             logging.info(
                 "Updating Twilio message status for doc: [%s]", doc.reference.path
             )

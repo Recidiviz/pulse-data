@@ -801,8 +801,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
     )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_delivered(
         self,
+        _mock_segment_client: MagicMock,
         mock_twilio_validator: MagicMock,
         mock_firestore: MagicMock,
     ) -> None:
@@ -848,8 +850,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
     )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_failed(
         self,
+        _mock_segment_client: MagicMock,
         mock_twilio_validator: MagicMock,
         mock_firestore: MagicMock,
     ) -> None:
@@ -897,8 +901,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
     )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
     def test_twilio_status_sending(
         self,
+        _mock_segment_client: MagicMock,
         mock_twilio_validator: MagicMock,
         mock_firestore: MagicMock,
     ) -> None:
@@ -938,6 +944,90 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             },
             merge=True,
         )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
+    )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
+    def test_handle_twilio_status_segment_tracks_new_status(
+        self,
+        mock_segment_client: MagicMock,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        account_sid = "XYZ"
+        doc = MagicMock()
+        doc.to_dict.return_value = {"message_sid": "ABC", "userHash": "test-123"}
+        doc.reference.path = (
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+        )
+        mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
+        mock_twilio_validator.return_value = True
+
+        self.test_client.post(
+            "/workflows/webhook/twilio_status",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            data={
+                "MessageSid": "ABC",
+                "MessageStatus": "undelivered",
+                "AccountSid": account_sid,
+                "ErrorCode": "404",
+                "ErrorMessage": "Phone number not found",
+            },
+        )
+        mock_segment_client.return_value.track_milestones_message_status.assert_called_with(
+            user_hash="test-123",
+            twilioRawStatus="undelivered",
+            status="FAILURE",
+            error_code="404",
+            error_message="Phone number not found",
+        )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
+    )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
+    def test_handle_twilio_status_segment_unchanged_status(
+        self,
+        mock_segment_client: MagicMock,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        account_sid = "XYZ"
+        doc = MagicMock()
+        doc.to_dict.return_value = {
+            "rawStatus": "delivered",
+            "message_sid": "ABC",
+            "userHash": "test-123",
+        }
+        doc.reference.path = (
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+        )
+        mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
+        mock_twilio_validator.return_value = True
+
+        self.test_client.post(
+            "/workflows/webhook/twilio_status",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            data={
+                "MessageSid": "ABC",
+                "MessageStatus": "delivered",
+                "AccountSid": account_sid,
+            },
+        )
+        mock_segment_client.return_value.track_milestones_message_status.assert_not_called()
 
 
 def make_cors_test(
