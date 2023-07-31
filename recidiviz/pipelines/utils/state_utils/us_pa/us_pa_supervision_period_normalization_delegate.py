@@ -98,7 +98,7 @@ class UsPaSupervisionNormalizationDelegate(
                     if index < len(supervision_periods) - 1
                     else None
                 )
-                termination_date: Optional[date] = None
+                termination_date: Optional[date]
                 if next_supervision_start_date and next_incarceration_admission_date:
                     termination_date = min(
                         next_supervision_start_date,
@@ -115,6 +115,7 @@ class UsPaSupervisionNormalizationDelegate(
                     continue
                 new_supervision_period = StateSupervisionPeriod(
                     state_code=StateCode.US_PA.value,
+                    external_id=f"{supervision_period.external_id}-2-INFERRED",
                     start_date=supervision_period.termination_date,
                     termination_date=termination_date,
                     supervision_type=supervision_period.supervision_type,
