@@ -3,7 +3,10 @@ file_tag: ParoleHousing
 file_description: |-
   Housing information.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OffenderId
+  - ADDREFFECTIVEDATE
+  - AddressTypeDesc
 columns:
   - name: OffenderId
     is_pii: True
