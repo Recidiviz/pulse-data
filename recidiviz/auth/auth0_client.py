@@ -21,11 +21,11 @@ import random
 import string
 from functools import wraps
 from http import HTTPStatus
-from typing import Any, Callable, Dict, List, Optional, TypedDict, Union
+from typing import Any, Callable, Dict, List, Optional, TypedDict, Union, cast
 
 from auth0.authentication import GetToken
 from auth0.exceptions import Auth0Error
-from auth0.management import Auth0
+from auth0.management.auth0 import Auth0
 from auth0.rest import RestClientOptions
 from ratelimit import limits, sleep_and_retry
 
@@ -144,7 +144,7 @@ class Auth0Client:
     @_refresh_token_if_needed
     def get_user_by_id(self, user_id: str) -> Auth0User:
         """Given an Auth0 user id, return the corresponding user."""
-        return self.client.users.get(id=user_id)
+        return cast(Auth0User, self.client.users.get(id=user_id))
 
     @_refresh_token_if_needed
     def get_all_users(self) -> List[Auth0User]:
@@ -165,7 +165,7 @@ class Auth0Client:
                     "last_login",
                 ],
             )
-            users = response["users"]
+            users = cast(List[Auth0User], response)
             all_users.extend(users)
             page += 1
             continue_fetching = len(users) == MAX_RESULTS_PER_PAGE
@@ -188,7 +188,7 @@ class Auth0Client:
                 fields=["user_id", "email", "app_metadata"],
                 q=lucene_query,
             )
-            all_users.extend(response["users"])
+            all_users.extend(cast(List[Auth0User], response))
         return all_users
 
     @sleep_and_retry
@@ -210,7 +210,7 @@ class Auth0Client:
             "password": "".join(random_password_characters),
         }
 
-        return self.client.users.create(body=body)
+        return cast(Auth0User, self.client.users.create(body=body))
 
     @sleep_and_retry
     @limits(calls=AUTH0_QPS_LIMIT, period=1)
@@ -240,7 +240,7 @@ class Auth0Client:
         if app_metadata is not None:
             body["app_metadata"] = app_metadata
 
-        return self.client.users.update(id=user_id, body=body)
+        return cast(Auth0User, self.client.users.update(id=user_id, body=body))
 
     @sleep_and_retry
     @limits(calls=AUTH0_QPS_LIMIT, period=1)
@@ -248,7 +248,7 @@ class Auth0Client:
     def send_verification_email(
         self,
         user_id: str,
-    ) -> None:
+    ) -> Dict[str, Any]:
         """Sends verification email to user."""
 
         return self.client.jobs.send_verification_email(body={"user_id": user_id})
@@ -267,7 +267,10 @@ class Auth0Client:
 
         This function is limited to two calls per second. Any calls beyond that will cause the function to sleep until
         it is safe to call again."""
-        return self.client.users.update(id=user_id, body={"app_metadata": app_metadata})
+        return cast(
+            Auth0User,
+            self.client.users.update(id=user_id, body={"app_metadata": app_metadata}),
+        )
 
     @staticmethod
     def _create_search_users_by_email_query(email_addresses: List[str]) -> str:
