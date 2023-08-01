@@ -16,8 +16,9 @@
 # =============================================================================
 """Contains functions for executing entrypoints"""
 import argparse
+import logging
 import sys
-from typing import List, Tuple, Type
+from typing import List, Set, Tuple, Type
 
 from opencensus.ext.stackdriver.stats_exporter import GLOBAL_RESOURCE_TYPE, Options
 
@@ -40,7 +41,7 @@ from recidiviz.entrypoints.view_update.update_all_managed_views import (
 )
 from recidiviz.utils import metadata, monitoring
 
-ENTRYPOINTS = {
+ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     BigQueryRefreshEntrypoint,
     MetricViewExportEntrypoint,
     MetricExportTimelinessEntrypoint,
@@ -90,5 +91,6 @@ def execute_entrypoint(entrypoint: str, entrypoint_argv: List[str]) -> None:
 
 
 if __name__ == "__main__":
+    logging.basicConfig()
     args, unknown_args = parse_arguments(sys.argv[1:])
     execute_entrypoint(args.entrypoint, entrypoint_argv=unknown_args)
