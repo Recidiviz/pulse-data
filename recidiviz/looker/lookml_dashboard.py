@@ -20,12 +20,16 @@ from typing import List, Optional
 
 import attr
 
+from recidiviz.looker.lookml_dashboard_filter import LookMLDashboardFilter
 from recidiviz.looker.lookml_dashboard_parameter import LookMLDashboardParameter
 from recidiviz.looker.lookml_utils import write_lookml_file
 from recidiviz.utils.string import StrictStringFormatter
 
 DASHBOARD_TEMPLATE = """- dashboard: {dashboard_name}
   {parameters}
+
+  filters:
+  {filters}
 """
 
 
@@ -38,6 +42,9 @@ class LookMLDashboard:
 
     dashboard_name: str
     parameters: List[LookMLDashboardParameter]
+    filters: List[LookMLDashboardFilter] = attr.field(
+        validator=attr.validators.min_len(1)
+    )
     load_configuration_wait: bool = attr.field(default=False)
     extended_dashboard: Optional[str] = attr.field(default=None)
     extension_required: bool = attr.field(default=False)
@@ -52,10 +59,13 @@ class LookMLDashboard:
             all_parameters.append("extension: required")
         parameters_clause = "\n  ".join(all_parameters)
 
+        filters_clause = "\n\n  ".join(f.build() for f in self.filters)
+
         return StrictStringFormatter().format(
             DASHBOARD_TEMPLATE,
             dashboard_name=self.dashboard_name,
             parameters=parameters_clause,
+            filters=filters_clause,
         )
 
     def write(self, output_directory: str, source_script_path: str) -> None:
