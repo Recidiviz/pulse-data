@@ -65,7 +65,7 @@ class Auth0ClientTest(TestCase):
             {"user_id": "1", "email": "one@test.gov"},
             {"user_id": "2", "email": "two@test.gov"},
         ]
-        list_response = {"total": "1", "start": "0", "users": expected_users}
+        list_response = expected_users
 
         self.mock_client.users.list.return_value = list_response
 
