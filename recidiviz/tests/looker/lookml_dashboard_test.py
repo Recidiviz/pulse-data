@@ -18,20 +18,35 @@
 import unittest
 
 from recidiviz.looker.lookml_dashboard import LookMLDashboard
+from recidiviz.looker.lookml_dashboard_filter import LookMLDashboardFilter
 
 
 class LookMLDashboardTest(unittest.TestCase):
     """Tests correctness of LookML dashboard generation"""
 
+    def test_no_filters_dashboard(self) -> None:
+        # Not including filters throws an error.
+        with self.assertRaisesRegex(ValueError, r"Length of 'filters' must be => 1: 0"):
+            _ = LookMLDashboard(
+                dashboard_name="test_dashboard",
+                parameters=[],
+                filters=[],
+            )
+
     def test_empty_lookml_dashboard(self) -> None:
-        # Empty dashboard
+        # Empty dashboard, basic filter
         dashboard = LookMLDashboard(
             dashboard_name="test_dashboard",
             parameters=[],
+            filters=[LookMLDashboardFilter(name="test filter")],
         ).build()
-        expected = """- dashboard: test_dashboard"""
-        # The format string results in trailing whitespace which we don't care about
-        self.assertEqual(dashboard.strip(), expected)
+        expected = """- dashboard: test_dashboard
+  
+
+  filters:
+  - name: test filter
+"""
+        self.assertEqual(dashboard, expected)
 
     def test_lookml_dashboard_display_parameters(self) -> None:
         # Empty dashboard with extension required, an extended
@@ -42,10 +57,13 @@ class LookMLDashboardTest(unittest.TestCase):
             extension_required=True,
             extended_dashboard="test_extended_dashboard",
             parameters=[],
+            filters=[LookMLDashboardFilter(name="test filter")],
         ).build()
         expected = """- dashboard: test_dashboard
   load_configuration: wait
   extends: test_extended_dashboard
   extension: required
-"""
-        self.assertEqual(dashboard, expected)
+
+  filters:
+  - name: test filter"""
+        self.assertEqual(dashboard.strip(), expected)
