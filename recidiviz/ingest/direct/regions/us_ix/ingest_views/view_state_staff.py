@@ -97,7 +97,7 @@ names as (
             LastName,
             Suffix,
             Email,
-            ROW_NUMBER() OVER(PARTITION BY StaffId ORDER BY CASE Source WHEN 'ATLAS' THEN 1 WHEN 'CIS' THEN 2 END, SourceId DESC) as priority
+            ROW_NUMBER() OVER(PARTITION BY StaffId ORDER BY CASE Source WHEN 'ATLAS' THEN 1 WHEN 'CIS' THEN 2 END, LPAD(SourceId, 8, '0') DESC) as priority
         FROM unioned
     ) sub_all_names
     WHERE priority = 1
