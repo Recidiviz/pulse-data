@@ -91,6 +91,6 @@ def execute_entrypoint(entrypoint: str, entrypoint_argv: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
+    logging.basicConfig(level=logging.INFO)
     args, unknown_args = parse_arguments(sys.argv[1:])
     execute_entrypoint(args.entrypoint, entrypoint_argv=unknown_args)
