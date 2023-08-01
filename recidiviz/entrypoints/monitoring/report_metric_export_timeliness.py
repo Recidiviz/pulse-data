@@ -29,5 +29,9 @@ from recidiviz.monitoring.export_timeliness import report_export_timeliness_metr
 
 class MetricExportTimelinessEntrypoint(EntrypointInterface):
     @staticmethod
-    def run_entrypoint(_args: argparse.Namespace) -> None:
+    def get_parser() -> argparse.ArgumentParser:
+        return EntrypointInterface.get_parser()
+
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
         report_export_timeliness_metrics()
