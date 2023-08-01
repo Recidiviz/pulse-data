@@ -55,7 +55,7 @@ us_pa_supervision_district_managers AS (
     full_name,
     email,
     supervision_district
-FROM `{project_id}.{reference_views_dataset}.us_pa_leadership_supervisors`  
+FROM `{project_id}.{reference_views_dataset}.us_pa_leadership_supervisors_materialized`  
 ),
 us_ix_supervision_district_managers AS (
   SELECT 
