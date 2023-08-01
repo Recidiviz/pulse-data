@@ -30,6 +30,9 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#22851): Consider rewording to "Not transient, absconded, or in custody"
+_REASON_STRING = "Not transient"
+
 _CRITERIA_NAME = "US_CA_HOUSING_TYPE_IS_NOT_TRANSIENT"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has a stable
@@ -57,7 +60,7 @@ SELECT
   start_date,
   end_date,
   TRUE AS meets_criteria,
-  TO_JSON(STRUCT('Not transient' AS current_housing)) AS reason
+  TO_JSON(STRUCT('{{reason_string}}' AS current_housing)) AS reason
 FROM sustainable_housing
 WHERE start_date != {nonnull_end_date_clause('end_date')}
 """
@@ -70,6 +73,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        reason_string=_REASON_STRING,
     )
 )
 

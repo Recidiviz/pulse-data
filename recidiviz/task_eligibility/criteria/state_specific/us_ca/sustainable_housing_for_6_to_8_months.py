@@ -35,13 +35,6 @@ _US_CA_CRITERIA_DATASET = task_eligibility_criteria_state_specific_dataset(
     StateCode.US_CA
 )
 
-# excluding date of first data transfer to avoid artificial start dates of
-# sustainable housing periods
-_US_CA_DATE_OF_FIRST_DATA_TRANSFER = "2023-01-04"
-_WHERE_CLAUSE_ADDITIONS = [
-    f"start_date != '{_US_CA_DATE_OF_FIRST_DATA_TRANSFER}'",
-]
-
 _CRITERIA_NAME = "US_CA_SUSTAINABLE_HOUSING_FOR_6_TO_8_MONTHS"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
@@ -54,8 +47,7 @@ WITH {spans_within_x_and_y_months_of_start_date(
     y_months=8,
     start_date_plus_x_months_name_in_reason_blob='six_months_sustainable_housing',
     dataset = 'us_ca_criteria_dataset',
-    table_view= "housing_type_is_not_transient_materialized",
-    where_clause_additions= _WHERE_CLAUSE_ADDITIONS)}
+    table_view= "housing_type_is_not_transient_materialized")}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
