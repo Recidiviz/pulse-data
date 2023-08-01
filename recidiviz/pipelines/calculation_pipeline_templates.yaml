@@ -19,10 +19,6 @@ normalization_pipelines:
     state_code: US_CO
     region: us-west3
   - pipeline: comprehensive_normalization
-    job_name: us-id-normalization
-    state_code: US_ID
-    region: us-central1
-  - pipeline: comprehensive_normalization
     job_name: us-ix-normalization
     state_code: US_IX
     region: us-west3
@@ -127,33 +123,6 @@ metric_pipelines:
     state_code: US_MO
     metric_types: VIOLATION
     region: us-central1
-
-  # Full US_ID calculations with no time limit
-  - pipeline: population_span_metrics
-    job_name: full-us-id-population-span-metrics
-    state_code: US_ID
-    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-    region: us-east1
-  - pipeline: supervision_metrics
-    job_name: full-us-id-supervision-metrics
-    state_code: US_ID
-    metric_types: SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
-    region: us-central1
-  - pipeline: incarceration_metrics
-    job_name: full-us-id-incarceration-metrics
-    state_code: US_ID
-    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
-    region: us-west1
-  - pipeline: violation_metrics
-    job_name: full-us-id-violation-metrics
-    state_code: US_ID
-    metric_types: VIOLATION
-    region: us-east1
-  - pipeline: program_metrics
-    job_name: full-us-id-program-metrics
-    state_code: US_ID
-    metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
-    region: us-west1
 
   # Full US_IX calculations with no time limit
   - pipeline: population_span_metrics
@@ -311,12 +280,6 @@ metric_pipelines:
     staging_only: True
 
 supplemental_dataset_pipelines:
-  # TODO(#16661) Delete this once products are no longer reading from legacy US_ID infrastructure
-  - pipeline: us_id_case_note_extracted_entities_supplemental
-    job_name: us-id-case-note-extracted-entities
-    state_code: US_ID
-    region: us-central1
-
   # TODO(#16661) Rename US_IX -> US_ID in this file when we are ready to migrate the
   # new ATLAS pipeline to run for US_ID
   - pipeline: us_ix_case_note_extracted_entities_supplemental
