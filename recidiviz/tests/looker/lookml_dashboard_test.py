@@ -18,6 +18,7 @@
 import unittest
 
 from recidiviz.looker.lookml_dashboard import LookMLDashboard
+from recidiviz.looker.lookml_dashboard_element import LookMLDashboardElement
 from recidiviz.looker.lookml_dashboard_filter import LookMLDashboardFilter
 
 
@@ -31,33 +32,57 @@ class LookMLDashboardTest(unittest.TestCase):
                 dashboard_name="test_dashboard",
                 parameters=[],
                 filters=[],
+                elements=[LookMLDashboardElement(name="test element")],
+            )
+
+    def test_no_elements_dashboard(self) -> None:
+        # Not including elements throws an error.
+        with self.assertRaisesRegex(
+            ValueError, r"Length of 'elements' must be => 1: 0"
+        ):
+            _ = LookMLDashboard(
+                dashboard_name="test_dashboard",
+                parameters=[],
+                filters=[LookMLDashboardFilter(name="test element")],
+                elements=[],
             )
 
     def test_empty_lookml_dashboard(self) -> None:
-        # Empty dashboard, basic filter
+        # Empty dashboard, basic filter and element
         dashboard = LookMLDashboard(
             dashboard_name="test_dashboard",
             parameters=[],
             filters=[LookMLDashboardFilter(name="test filter")],
+            elements=[LookMLDashboardElement(name="test element")],
         ).build()
         expected = """- dashboard: test_dashboard
   
 
   filters:
   - name: test filter
+
+  elements:
+  - name: test element
 """
         self.assertEqual(dashboard, expected)
 
     def test_lookml_dashboard_display_parameters(self) -> None:
         # Empty dashboard with extension required, an extended
-        # dashboard and load configuration
+        # dashboard and load configuration, and more complex lists of filters/elements
         dashboard = LookMLDashboard(
             dashboard_name="test_dashboard",
             load_configuration_wait=True,
             extension_required=True,
             extended_dashboard="test_extended_dashboard",
             parameters=[],
-            filters=[LookMLDashboardFilter(name="test filter")],
+            filters=[
+                LookMLDashboardFilter(name="test filter", field="view_name.field_name"),
+                LookMLDashboardFilter(name="test filter 2"),
+            ],
+            elements=[
+                LookMLDashboardElement(name="test element"),
+                LookMLDashboardElement(name="test element 2", title="test title"),
+            ],
         ).build()
         expected = """- dashboard: test_dashboard
   load_configuration: wait
@@ -65,5 +90,14 @@ class LookMLDashboardTest(unittest.TestCase):
   extension: required
 
   filters:
-  - name: test filter"""
+  - name: test filter
+    field: view_name.field_name
+
+  - name: test filter 2
+
+  elements:
+  - name: test element
+
+  - name: test element 2
+    title: test title"""
         self.assertEqual(dashboard.strip(), expected)

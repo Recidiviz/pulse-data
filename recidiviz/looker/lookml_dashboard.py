@@ -20,6 +20,7 @@ from typing import List, Optional
 
 import attr
 
+from recidiviz.looker.lookml_dashboard_element import LookMLDashboardElement
 from recidiviz.looker.lookml_dashboard_filter import LookMLDashboardFilter
 from recidiviz.looker.lookml_dashboard_parameter import LookMLDashboardParameter
 from recidiviz.looker.lookml_utils import write_lookml_file
@@ -30,6 +31,9 @@ DASHBOARD_TEMPLATE = """- dashboard: {dashboard_name}
 
   filters:
   {filters}
+
+  elements:
+  {elements}
 """
 
 
@@ -43,6 +47,9 @@ class LookMLDashboard:
     dashboard_name: str
     parameters: List[LookMLDashboardParameter]
     filters: List[LookMLDashboardFilter] = attr.field(
+        validator=attr.validators.min_len(1)
+    )
+    elements: List[LookMLDashboardElement] = attr.field(
         validator=attr.validators.min_len(1)
     )
     load_configuration_wait: bool = attr.field(default=False)
@@ -61,11 +68,14 @@ class LookMLDashboard:
 
         filters_clause = "\n\n  ".join(f.build() for f in self.filters)
 
+        elements_clause = "\n\n  ".join(e.build() for e in self.elements)
+
         return StrictStringFormatter().format(
             DASHBOARD_TEMPLATE,
             dashboard_name=self.dashboard_name,
             parameters=parameters_clause,
             filters=filters_clause,
+            elements=elements_clause,
         )
 
     def write(self, output_directory: str, source_script_path: str) -> None:
