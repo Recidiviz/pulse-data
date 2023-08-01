@@ -15,7 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility classes for validating state entities and entity trees."""
+from recidiviz.persistence.database_invariant_validator.state.state_person_invariant_validators import (
+    state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_person,
+)
+from recidiviz.persistence.database_invariant_validator.state.state_staff_invariant_validators import (
+    state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_staff,
+)
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.persistence_utils import RootEntityT
 
 
@@ -25,7 +32,36 @@ def validate_root_entity(root_entity: RootEntityT) -> RootEntityT:
     constraints. If the root entity constraints are not met, an exception should be thrown.
 
     TODO(#21564): Check that the root entities do not violate any entity tree constraints.
-    This function should replicate the database_invariant_validator checks."""
+    This function should replicate the database_invariant_validator checks.
+    """
+    if len(root_entity.external_ids) == 0:
+        raise ValueError(
+            f"Found [{type(root_entity)}] with id [{root_entity.get_id()}] missing an "
+            f"external_id: {root_entity}"
+        )
+
+    if isinstance(root_entity, state_entities.StatePerson):
+        allows_multiple_ids_same_type = (
+            state_allows_multiple_ids_same_type_for_state_person(root_entity.state_code)
+        )
+    elif isinstance(root_entity, state_entities.StateStaff):
+        allows_multiple_ids_same_type = (
+            state_allows_multiple_ids_same_type_for_state_staff(root_entity.state_code)
+        )
+    else:
+        raise ValueError(f"Unexpected root entity type: {type(root_entity)}")
+
+    if not allows_multiple_ids_same_type:
+        external_id_types = set()
+        for external_id in root_entity.external_ids:
+            if external_id.id_type in external_id_types:
+                raise ValueError(
+                    f"Duplicate external id types for [{type(root_entity)}] with id "
+                    f"[{root_entity.get_id()}]: {external_id.id_type}"
+                )
+
+            external_id_types.add(external_id.id_type)
+
     return root_entity
 
 
