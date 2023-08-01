@@ -20,7 +20,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_PA_LEADERSHIP_SUPERVISORS_NAME = "US_PA_leadership_supervisors"
+US_PA_LEADERSHIP_SUPERVISORS_NAME = "us_pa_leadership_supervisors"
 
 US_PA_LEADERSHIP_SUPERVISORS_DESCRIPTION = """Provides a list of leadership folks in US_PA who also act as supervisors to be included in the Outliers supervision_officer_supervisors view
     """
