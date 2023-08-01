@@ -151,7 +151,7 @@ class OutliersSupervisionOfficerSupervisorContext(ReportContext):
             ],
             "highlights": self._highlights,
             "faq": self._faq,
-            "feedback_form_url": "https://forms.gle/Z92UyBnowsLQuAuv7",
+            "feedback_form_url": "https://forms.gle/c7WaTaC7wMu9CrsB9",
         }
         self.prepared_data = prepared_data
         return prepared_data
