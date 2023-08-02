@@ -61,6 +61,7 @@ from recidiviz.looker.lookml_view_field_parameter import (
 )
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.looker.parameterized_value import ParameterizedValue
+from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 from recidiviz.utils.string import StrictStringFormatter
 
 RAW_DATA_OPTION = "raw_data"
@@ -364,6 +365,7 @@ def generate_lookml_views(looker_dir: str) -> None:
     """
 
     view_dir = os.path.join(looker_dir, "views", "raw_data")
+    remove_lookml_files_from(view_dir)
     shared_fields_view = _generate_shared_fields_view()
     shared_fields_view.write(view_dir, source_script_path=__file__)
 

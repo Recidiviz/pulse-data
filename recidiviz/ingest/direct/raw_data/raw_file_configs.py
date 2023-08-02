@@ -755,6 +755,14 @@ class DirectIngestRegionRawFileConfig:
             paths.append(yaml_file_path)
         return paths
 
+    def get_primary_person_table(self) -> Optional[DirectIngestRawFileConfig]:
+        primary_person_table = [
+            config
+            for config in self.raw_file_configs.values()
+            if config.is_primary_person_table
+        ]
+        return one(primary_person_table) if primary_person_table else None
+
     def _read_configs_from_disk(self) -> Dict[str, DirectIngestRawFileConfig]:
         """Returns a dictionary of file tag to config for each raw data file tag we
         expect to see in this region.

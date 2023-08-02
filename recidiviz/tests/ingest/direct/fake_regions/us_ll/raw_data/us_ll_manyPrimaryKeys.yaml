@@ -10,10 +10,9 @@ columns:
   - name: col_name_1a
     description: |-
       First column.
-    known_values:
-      - value: A
-        description: A description
-      - value: B
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_OZ_EG
   - name: col_name_1b
     description: |-
       A column description that is long enough to take up
@@ -21,3 +20,8 @@ columns:
       literally and trailing/leading whitespace is removed.
   - name: undocumented_column
 encoding: ISO-456-7
+table_relationships:
+  - foreign_table: noPrimaryKeys
+    join_logic:
+      - manyPrimaryKeys.col_name_1b = noPrimaryKeys.col_name_1b
+      - manyPrimaryKeys.col_name_1b = "test value"

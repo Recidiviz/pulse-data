@@ -15,64 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit tests for person details LookML View generation"""
-
-import filecmp
-import os
-import tempfile
-import unittest
+from types import ModuleType
 
 from freezegun import freeze_time
-from mock import Mock, patch
 
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.raw_file_configs import (
-    DirectIngestRegionRawFileConfig,
+from recidiviz.tests.tools.looker.raw_data.person_details_generator_test_utils import (
+    PersonDetailsLookMLGeneratorTest,
 )
-from recidiviz.tests.ingest.direct import fake_regions
+from recidiviz.tools.looker.raw_data import person_details_view_generator
 from recidiviz.tools.looker.raw_data.person_details_view_generator import (
     generate_lookml_views,
 )
 
 
-class LookMLViewTest(unittest.TestCase):
+class LookMLViewTest(PersonDetailsLookMLGeneratorTest):
     """Tests LookML view generation functions"""
 
+    @classmethod
+    def generator_module(cls) -> ModuleType:
+        return person_details_view_generator
+
     @freeze_time("2000-06-30")
-    @patch(
-        "recidiviz.tools.looker.raw_data.person_details_view_generator.get_existing_direct_ingest_states"
-    )
-    @patch(
-        "recidiviz.tools.looker.raw_data.person_details_view_generator.DirectIngestRegionRawFileConfig"
-    )
-    def test_generate_lookml_views(
-        self, mock_region_config: Mock, mock_get_states: Mock
-    ) -> None:
-        # Only generate views corresponding to US_LL raw data files
-        def mock_config_constructor(
-            *, region_code: str
-        ) -> DirectIngestRegionRawFileConfig:
-            return DirectIngestRegionRawFileConfig(
-                region_code=region_code,
-                region_module=fake_regions,
-            )
-
-        mock_region_config.side_effect = mock_config_constructor
-        mock_get_states.return_value = [StateCode.US_LL]
-
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            generate_lookml_views(tmp_dir)
-            fixtures_dir = os.path.join(os.path.dirname(__file__), "fixtures")
-
-            for fixtures_path, _, filenames in os.walk(fixtures_dir):
-                # Get the fixtures inner directory corresponding to the temp inner directory
-                relpath = os.path.relpath(fixtures_path, start=fixtures_dir)
-                tmp_path = os.path.join(tmp_dir, relpath)
-
-                # Ensure every .lkml file in the fixture directory is equal
-                # byte-by-byte to the one in the temp directory
-                lkml_filenames = filter(lambda name: name.endswith(".lkml"), filenames)
-                _, mismatch, errors = filecmp.cmpfiles(
-                    tmp_path, fixtures_path, lkml_filenames, shallow=False
-                )
-                self.assertFalse(mismatch)
-                self.assertFalse(errors)
+    def test_generate_lookml_views(self) -> None:
+        self.generate_files(
+            function_to_test=generate_lookml_views,
+            filename_filter=".view.lkml",
+        )

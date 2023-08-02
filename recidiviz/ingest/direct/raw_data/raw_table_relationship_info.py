@@ -96,6 +96,13 @@ class JoinBooleanClause:
         """
 
     @abc.abstractmethod
+    def to_lookml(self) -> str:
+        """Converts this JoinBooleanClause to a string boolean clause that can be
+        placed into a LookML file, e.g.
+        "${my_table.col_1} = ${my_table2.col_2}".
+        """
+
+    @abc.abstractmethod
     def get_referenced_columns(self) -> List[JoinColumn]:
         """Returns a sorted, non-empty list of columns referenced in this clause."""
 
@@ -152,6 +159,13 @@ class ColumnEqualityJoinBooleanClause(JoinBooleanClause):
         "my_table.col_1 = my_table2.col_2".
         """
         return f"{self.column_1} = {self.column_2}"
+
+    def to_lookml(self) -> str:
+        """Converts this JoinBooleanClause to a string boolean clause that can be
+        placed into a LookML file, e.g.
+        "${my_table.col_1} = ${my_table2.col_2}".
+        """
+        return f"${{{self.column_1}}} = ${{{self.column_2}}}"
 
     def get_referenced_columns(self) -> List[JoinColumn]:
         return sorted(
@@ -220,6 +234,13 @@ class ColumnFilterJoinBooleanClause(JoinBooleanClause):
         """
         return f"{self.column} = {self.filter_value}"
 
+    def to_lookml(self) -> str:
+        """Converts this JoinBooleanClause to a string boolean clause that can be
+        placed into a LookML file, e.g.
+        "${my_table.col_1} = 'SOME_VALUE'".
+        """
+        return f"${{{self.column}}} = {self.filter_value}"
+
     def get_referenced_columns(self) -> List[JoinColumn]:
         return [self.column]
 
@@ -269,6 +290,12 @@ class RawTableRelationshipInfo:
         using AND to combine all individual boolean join clauses.
         """
         return " AND ".join([j.to_sql() for j in self.join_clauses])
+
+    def join_lookml(self) -> str:
+        """Builds a composite clause that can be used in a sql_on clause of a Looker
+        LookML join, using the LookML substitution operator.
+        """
+        return " AND ".join([j.to_lookml() for j in self.join_clauses])
 
     def invert(self) -> "RawTableRelationshipInfo":
         return RawTableRelationshipInfo(

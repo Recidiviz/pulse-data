@@ -23,7 +23,6 @@ import unittest
 from mock import Mock, patch
 
 from recidiviz.tools.looker.raw_data.person_details_lookml_writer import (
-    remove_lookml_files_from,
     write_lookml_files,
 )
 
@@ -31,29 +30,16 @@ from recidiviz.tools.looker.raw_data.person_details_lookml_writer import (
 class LookMLWriterTest(unittest.TestCase):
     """Tests raw data LookML generation script"""
 
-    def test_remove_lookml_files(self) -> None:
-        # Test that .lkml files are removed even in subdirectories
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            top_level_file = os.path.join(tmp_dir, "test.lkml")
-            subdir = os.path.join(tmp_dir, "directory")
-            subdir_file = os.path.join(subdir, "test.lkml")
-
-            os.mkdir(subdir)
-            with open(top_level_file, "x", encoding="UTF-8"), open(
-                subdir_file, "x", encoding="UTF-8"
-            ):
-                remove_lookml_files_from(tmp_dir)
-                for _, _, filenames in os.walk(tmp_dir):
-                    self.assertFalse(any(file.endswith(".lkml") for file in filenames))
-
     @patch(
-        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.remove_lookml_files_from"
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_views"
     )
     @patch(
         "recidiviz.tools.looker.raw_data.person_details_lookml_writer.prompt_for_confirmation"
     )
     def test_generate_lookml_wrong_directory(
-        self, mock_prompt: Mock, mock_remove: Mock
+        self,
+        mock_prompt: Mock,
+        mock_generate_views: Mock,
     ) -> None:
         # Attempt to generate files into a wrong directory,
         # check that the user was prompted and files are not removed
@@ -62,13 +48,30 @@ class LookMLWriterTest(unittest.TestCase):
             not_looker_dir = os.path.join(tmp_dir, "not_looker")
             write_lookml_files(not_looker_dir)
             mock_prompt.assert_called()
-            mock_remove.assert_not_called()
+            mock_generate_views.assert_not_called()
 
     @patch(
         "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_views"
     )
     @patch(
-        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.remove_lookml_files_from"
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.prompt_for_confirmation"
+    )
+    def test_generate_lookml_wrong_directory_still_proceed(
+        self,
+        mock_prompt: Mock,
+        mock_generate_views: Mock,
+    ) -> None:
+        # Attempt to generate files into a wrong directory,
+        # check that the user was prompted and we continue when they say to
+        mock_prompt.return_value = True
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            not_looker_dir = os.path.join(tmp_dir, "not_looker")
+            write_lookml_files(not_looker_dir)
+            mock_prompt.assert_called()
+            mock_generate_views.assert_called()
+
+    @patch(
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_views"
     )
     @patch(
         "recidiviz.tools.looker.raw_data.person_details_lookml_writer.prompt_for_confirmation"
@@ -76,7 +79,6 @@ class LookMLWriterTest(unittest.TestCase):
     def test_generate_lookml_right_directory(
         self,
         mock_prompt: Mock,
-        mock_remove: Mock,
         mock_generate_views: Mock,
     ) -> None:
         # Attempt to generate files into the correct directory,
@@ -85,5 +87,4 @@ class LookMLWriterTest(unittest.TestCase):
             looker_dir = os.path.join(tmp_dir, "looker")
             write_lookml_files(looker_dir)
             mock_prompt.assert_not_called()
-            mock_remove.assert_called()
             mock_generate_views.assert_called()
