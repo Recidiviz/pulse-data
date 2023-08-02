@@ -954,21 +954,29 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             self.kick_scheduler(just_finished_job=True)
             return
 
-        self.raw_file_import_manager.import_raw_file_to_big_query(
-            data_import_args.raw_data_file_path, file_metadata
-        )
+        should_schedule = False
+        with self.region_lock_manager.using_raw_file_lock(
+            raw_file_tag=data_import_args.file_id(),
+            expiration_in_seconds=self.default_job_lock_timeout_in_seconds(),
+        ):
+            self.raw_file_import_manager.import_raw_file_to_big_query(
+                data_import_args.raw_data_file_path, file_metadata
+            )
 
-        self.raw_file_metadata_manager.mark_raw_file_as_processed(
-            path=data_import_args.raw_data_file_path
-        )
-        processed_path = self.fs.mv_path_to_processed_path(
-            data_import_args.raw_data_file_path
-        )
+            self.raw_file_metadata_manager.mark_raw_file_as_processed(
+                path=data_import_args.raw_data_file_path
+            )
+            processed_path = self.fs.mv_path_to_processed_path(
+                data_import_args.raw_data_file_path
+            )
 
-        self.fs.mv_raw_file_to_storage(
-            processed_path, self.raw_data_storage_directory_path
-        )
-        self.kick_scheduler(just_finished_job=True)
+            self.fs.mv_raw_file_to_storage(
+                processed_path, self.raw_data_storage_directory_path
+            )
+            should_schedule = True
+
+        if should_schedule:
+            self.kick_scheduler(just_finished_job=True)
 
     def do_ingest_view_materialization(
         self, ingest_view_materialization_args: IngestViewMaterializationArgs

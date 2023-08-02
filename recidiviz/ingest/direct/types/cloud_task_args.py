@@ -79,6 +79,10 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
         parts = filename_parts_from_path(self.raw_data_file_path)
         return f"raw_data_import_{parts.stripped_file_name}_{parts.date_str}"
 
+    def file_id(self) -> str:
+        parts = filename_parts_from_path(self.raw_data_file_path)
+        return f"{parts.file_tag}_{parts.utc_upload_datetime_str}"
+
     def ingest_instance(self) -> DirectIngestInstance:
         return DirectIngestInstanceFactory.for_ingest_bucket(
             self.raw_data_file_path.bucket_path
