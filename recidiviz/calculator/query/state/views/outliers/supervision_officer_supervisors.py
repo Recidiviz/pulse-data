@@ -39,17 +39,51 @@ us_ix_additional_supervisors AS (
     -- Include additional staff who do not have role_subtype=SUPERVISION_OFFICER_SUPERVISOR but directly supervise officers
     SELECT *
     FROM `{{project_id}}.{{reference_views_dataset}}.us_ix_leadership_supervisors_materialized`
+),
+us_ix_supervision_officer_supervisors AS (
+    SELECT
+        {{columns}}
+    FROM supervision_officer_supervisors
+    WHERE state_code = 'US_IX'
+
+    UNION ALL
+
+    SELECT
+        {{columns}}
+    FROM us_ix_additional_supervisors
+),
+-- PA and ID are currently being joined separately because PA state staff is not hydrating
+-- emails correctly, so we need to pull emails from raw data in PA only. This logic
+-- will be simplified after a change to ingest logic for state_staff  TODO(#22842)
+
+-- We are also joining on the DM product view because the district numbers for some 
+-- supervisors who are also District Managers were missing. This will be fixed by a later
+-- ingest change.
+us_pa_supervision_officer_supervisors AS (
+    SELECT DISTINCT
+        supervision_officer_supervisors.state_code,
+        external_id,
+        staff_id,
+        supervision_officer_supervisors.full_name,
+        COALESCE(agent_roster.email_address, dm_product_view.email) AS email,
+        supervisor_external_id,
+        COALESCE(supervision_officer_supervisors.supervision_district, dm_product_view.supervision_district) AS supervision_district,
+        supervision_unit, 
+    FROM supervision_officer_supervisors
+    LEFT JOIN `{{project_id}}.{{outliers_dataset}}.supervision_district_managers_materialized` dm_product_view
+    USING(external_id)
+    LEFT JOIN `{{project_id}}.{{raw_dataset}}.RECIDIVIZ_REFERENCE_agent_districts_latest` agent_roster
+    ON(supervision_officer_supervisors.external_id = agent_roster.Employ_Num) 
+    WHERE supervision_officer_supervisors.state_code = 'US_PA'
 )
 
-SELECT
-    {{columns}}
-FROM supervision_officer_supervisors
+SELECT * FROM us_pa_supervision_officer_supervisors
+WHERE supervision_district NOT IN ('FAST','CO')
+
 
 UNION ALL
 
-SELECT
-    {{columns}}
-FROM us_ix_additional_supervisors
+SELECT * FROM us_ix_supervision_officer_supervisors
 """
 
 SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -60,6 +94,8 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    raw_dataset=dataset_config.US_PA_RAW_DATASET,
+    outliers_dataset=dataset_config.OUTLIERS_VIEWS_DATASET,
     should_materialize=True,
     columns=[
         "state_code",
