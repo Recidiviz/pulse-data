@@ -243,11 +243,12 @@ class TimeRangeUploader:
                 and previously_saved_aggregate_value != aggregate_value
             ):
                 description = f"The sum of all values ({aggregate_value}) in the {self.metricfile.canonical_filename} sheet for {self.time_range[0].strftime('%m/%d/%Y')}-{self.time_range[1].strftime('%m/%d/%Y')} does not equal the total value provided in the aggregate sheet ({previously_saved_aggregate_value})."
-                raise JusticeCountsBulkUploadException(
+                breakdown_total_warning = JusticeCountsBulkUploadException(
                     title="Breakdown Total Warning",
                     message_type=BulkUploadMessageType.WARNING,
                     description=description,
                 )
+                metric_key_to_errors[metric_key].append(breakdown_total_warning)
 
         return MetricInterface(
             key=self.metricfile.definition.key,
