@@ -96,7 +96,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             return self._raw_file_schema_metadata_as_entity(metadata)
 
     def has_raw_file_been_processed(self, path: GcsfsFilePath) -> bool:
-
         try:
             metadata = self.get_raw_file_metadata(path)
         except ValueError:

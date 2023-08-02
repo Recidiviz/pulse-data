@@ -49,6 +49,11 @@ class FakeGCSFileSystemDelegate:
     def on_file_added(self, path: GcsfsFilePath) -> None:
         """Will be called whenever a new file path is successfully added to the file system."""
 
+    @abc.abstractmethod
+    def on_file_delete(self, path: GcsfsFilePath) -> bool:
+        """Will be called whenever a new file path is to be deleted from the file system or not."""
+        return True
+
 
 @attr.s(frozen=True)
 class FakeGCSFileSystemEntry:
@@ -241,7 +246,8 @@ class FakeGCSFileSystem(GCSFileSystem):
 
     def delete(self, path: GcsfsFilePath) -> None:
         with self.mutex:
-            self.files.pop(path.abs_path())
+            if not self.delegate or self.delegate.on_file_delete(path):
+                self.files.pop(path.abs_path())
 
     def ls_with_blob_prefix(
         self, bucket_name: str, blob_prefix: str

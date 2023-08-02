@@ -34,6 +34,9 @@ GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_"
 STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
     f"{GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX}STATE_"
 )
+RAW_FILE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
+    f"{GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX}RAW_FILE_"
+)
 
 
 class DirectIngestRegionLockManager:
@@ -95,6 +98,20 @@ class DirectIngestRegionLockManager:
         ):
             yield
 
+    @contextmanager
+    def using_raw_file_lock(
+        self, *, raw_file_tag: str, expiration_in_seconds: int
+    ) -> Iterator[None]:
+        """A context manager for acquiring the lock for a given raw file. Usage:
+        With lock_manager.using_raw_file_lock(raw_file_tag="my_tag", expiration_in_seconds=60):
+            ... do work requiring the lock
+        """
+        with self.lock_manager.using_lock(
+            self._ingest_lock_name_for_raw_file(raw_file_tag),
+            expiration_in_seconds=expiration_in_seconds,
+        ):
+            yield
+
     @staticmethod
     def for_state_ingest(
         state_code: StateCode, ingest_instance: DirectIngestInstance
@@ -127,4 +144,12 @@ class DirectIngestRegionLockManager:
             STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
             + self.region_code.upper()
             + f"_{self.ingest_instance.name}"
+        )
+
+    def _ingest_lock_name_for_raw_file(self, raw_file_tag: str) -> str:
+        return (
+            RAW_FILE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            + self.region_code.upper()
+            + f"_{self.ingest_instance.name}"
+            + f"_{raw_file_tag}"
         )

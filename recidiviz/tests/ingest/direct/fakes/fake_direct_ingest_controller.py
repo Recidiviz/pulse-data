@@ -105,6 +105,11 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
         ):
             self.controller.handle_file(path, start_ingest=self.can_start_ingest)
 
+    def on_file_delete(self, path: GcsfsFilePath) -> bool:
+        # To simulate a raw file import happening twice, we do not want to delete the lock
+        # otherwise, we delete the file.
+        return not "someDuplicate" in path.file_name
+
 
 @attr.s
 class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
