@@ -215,7 +215,9 @@ def remove_queued_up_dags(dag_run: Optional[DagRun] = None) -> None:
             "being a task."
         )
     with create_session() as session:
-        session.query(DagRun).filter(dag_id=dag_run.dag_id, state=State.QUEUED).delete()
+        session.query(DagRun).filter(
+            DagRun.dag_id == dag_run.dag_id, DagRun.state == State.QUEUED
+        ).delete()
 
 
 @dag(
