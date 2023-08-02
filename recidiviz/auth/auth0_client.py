@@ -165,7 +165,8 @@ class Auth0Client:
                     "last_login",
                 ],
             )
-            users = cast(List[Auth0User], response)
+            # TODO(#22888) Remove when Auth0 fixes their type hints
+            users = response["users"]  # type: ignore
             all_users.extend(users)
             page += 1
             continue_fetching = len(users) == MAX_RESULTS_PER_PAGE
@@ -188,7 +189,8 @@ class Auth0Client:
                 fields=["user_id", "email", "app_metadata"],
                 q=lucene_query,
             )
-            all_users.extend(cast(List[Auth0User], response))
+            # TODO(#22888) Remove when Auth0 fixes their type hints
+            all_users.extend(response["users"])  # type: ignore
         return all_users
 
     @sleep_and_retry
