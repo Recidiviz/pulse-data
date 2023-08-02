@@ -62,7 +62,7 @@ class LookMLExplore:
         if self.view_name:
             view_name_clause = f"\n  view_name: {self.view_name}\n"
 
-        parameters = "".join([f"\n{param.build()}" for param in self.parameters])
+        parameters = "".join(f"\n  {param.build()}" for param in self.parameters)
 
         return StrictStringFormatter().format(
             EXPLORE_TEMPLATE,
