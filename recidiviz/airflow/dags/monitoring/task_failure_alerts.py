@@ -26,7 +26,7 @@ import pandas
 from airflow.exceptions import AirflowNotFoundException
 from airflow.models import Connection, DagRun, TaskInstance
 from airflow.providers.sendgrid.utils.emailer import send_email
-from airflow.utils.session import NEW_SESSION, provide_session
+from airflow.utils.session import NEW_SESSION, create_session, provide_session
 from airflow.utils.state import State
 from sqlalchemy import case, func, text
 from sqlalchemy.orm import Query, Session
@@ -66,16 +66,19 @@ DISCRETE_CONFIGURATION_PARAMETERS: Dict[str, List[str]] = {
 
 DAGS_TO_IGNORE_IN_ALERTING = ["airflow_monitoring"]
 
-INCIDENT_START_DATE_LOOKBACK = timedelta(days=30)
+INCIDENT_START_DATE_LOOKBACK = timedelta(days=7)
 
 
 @provide_session
 def build_incident_history(
     dag_ids: List[str],
+    lookback: timedelta = INCIDENT_START_DATE_LOOKBACK,
     session: Session = NEW_SESSION,
 ) -> Dict[str, AirflowAlertingIncident]:
     """Builds a dictionary of incidents to report"""
-    dataframe = _build_task_instance_state_dataframe(dag_ids=dag_ids, session=session)
+    dataframe = _build_task_instance_state_dataframe(
+        dag_ids=dag_ids, lookback=lookback, session=session
+    )
 
     dataframe = dataframe[
         (dataframe.state == TaskInstanceState.failed)
@@ -158,7 +161,9 @@ class TaskInstanceState(Enum):
 
 @provide_session
 def _query_task_instance_state(
-    dag_ids: List[str], session: Session = NEW_SESSION
+    dag_ids: List[str],
+    lookback: timedelta = INCIDENT_START_DATE_LOOKBACK,
+    session: Session = NEW_SESSION,
 ) -> Query:
     """Returns the alerting state of each task instance, aggregating across all dynamically mapped tasks
     for that task instance."""
@@ -192,7 +197,7 @@ def _query_task_instance_state(
         .join(TaskInstance.dag_run)
         .filter(
             func.age(DagRun.execution_date)
-            < text(f"interval '{INCIDENT_START_DATE_LOOKBACK.total_seconds()} seconds'")
+            < text(f"interval '{lookback.total_seconds()} seconds'")
         )
         .filter(DagRun.dag_id.in_(dag_ids))
     ).cte("latest_tasks")
@@ -215,13 +220,25 @@ def _query_task_instance_state(
 @provide_session
 def _build_task_instance_state_dataframe(
     dag_ids: List[str],
+    lookback: timedelta = INCIDENT_START_DATE_LOOKBACK,
     session: Session = NEW_SESSION,
 ) -> pandas.DataFrame:
     """Builds a DataFrame representation of our task instance state"""
+    data = list(
+        _query_task_instance_state(
+            dag_ids=dag_ids, lookback=lookback, session=session
+        ).all()
+    )
+
     df = pandas.DataFrame(
         columns=["dag_id", "execution_date", "conf", "task_id", "state"],
-        data=list(_query_task_instance_state(dag_ids=dag_ids, session=session).all()),
+        data=data,
     )
+
+    if not data:
+        logging.warning("No recent runs found for %s", dag_ids)
+        return df
+
     # Slice the conf parameters down to the discrete conf params
     df.conf = df.apply(
         lambda row: {
@@ -253,51 +270,54 @@ def get_configured_pagerduty_integrations() -> Dict[str, str]:
         raise e
 
 
-@provide_session
-def report_failed_tasks(
-    # Defaults to NEW_SESSION so mypy types session as Session rather than Session | None
-    session: Session = NEW_SESSION,
-) -> None:
+def report_failed_tasks() -> None:
     """Reports unique task failure incidents to PagerDuty.
     If the task has succeeded since the incident was opened, we send with the subject `Task success: `
     which resolves the open incident in PagerDuty.
     """
+
     pagerduty_integrations = get_configured_pagerduty_integrations()
-
-    incident_history = build_incident_history(
-        dag_ids=pagerduty_integrations.keys(),
-        session=session,
-    )
-
-    # Print the incident history for use when reviewing task logs
-    pprint(incident_history)
-
-    if is_experiment_environment() and not can_send_mail():
-        logging.info(
-            "Cannot report incidents to PagerDuty in %s as Sendgrid is not configured",
-            get_composer_environment(),
-        )
-        return
-
-    for incident in incident_history.values():
-        should_trigger, messages = should_trigger_airflow_alerting_incident(incident)
-
-        for message in messages:
-            logging.info(
-                "Skipping reporting of incident: %s, reason: %s",
-                incident.unique_incident_id,
-                message,
+    for dag_id in pagerduty_integrations.keys():
+        with create_session() as session:
+            logging.info("Building task history for dag: %s", dag_id)
+            incident_history = build_incident_history(
+                dag_ids=[dag_id],
+                session=session,
             )
 
-        if not should_trigger:
-            continue
+        # Print the incident history for use when reviewing task logs
+        pprint(incident_history)
 
-        event = (
-            "Task failure:" if incident.next_success_date is None else "Task success:"
-        )
+        if is_experiment_environment() and not can_send_mail():
+            logging.info(
+                "Cannot report incidents to PagerDuty in %s as Sendgrid is not configured",
+                get_composer_environment(),
+            )
+            return
 
-        send_email(
-            to=pagerduty_integrations[incident.dag_id],
-            subject=f"{event} {incident.unique_incident_id}",
-            html_content=f"{incident}",
-        )
+        for incident in incident_history.values():
+            should_trigger, messages = should_trigger_airflow_alerting_incident(
+                incident
+            )
+
+            for message in messages:
+                logging.info(
+                    "Skipping reporting of incident: %s, reason: %s",
+                    incident.unique_incident_id,
+                    message,
+                )
+
+            if not should_trigger:
+                continue
+
+            event = (
+                "Task failure:"
+                if incident.next_success_date is None
+                else "Task success:"
+            )
+
+            send_email(
+                to=pagerduty_integrations[incident.dag_id],
+                subject=f"{event} {incident.unique_incident_id}",
+                html_content=f"{incident}",
+            )

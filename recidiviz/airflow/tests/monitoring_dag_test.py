@@ -91,6 +91,8 @@ parent_task = dummy_task(test_dag, "parent_task")
 child_task = dummy_task(test_dag, "child_task")
 parent_task >> child_task
 
+TEST_START_DATE_LOOKBACK = datetime.timedelta(days=20 * 365)
+
 
 class TestMonitoringDag(AirflowIntegrationTest):
     """Tests the dags defined in the /dags package."""
@@ -144,7 +146,9 @@ class TestMonitoringDag(AirflowIntegrationTest):
             )
 
             df = _build_task_instance_state_dataframe(
-                dag_ids=[test_dag.dag_id], session=session
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
             )
             self.assertEqual(
                 df.to_string(),
@@ -177,7 +181,9 @@ class TestMonitoringDag(AirflowIntegrationTest):
             )
 
             df = _build_task_instance_state_dataframe(
-                dag_ids=[test_dag.dag_id], session=session
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
             )
 
             self.assertEqual(
@@ -305,14 +311,20 @@ class TestMonitoringDag(AirflowIntegrationTest):
             )
 
             df = _build_task_instance_state_dataframe(
-                dag_ids=[test_dag.dag_id], session=session
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
             )
             self.assertEqual(
                 df.to_string(),
                 monitoring_fixtures.read_fixture("test_graph_config_idempotency.txt"),
             )
 
-            history = build_incident_history(dag_ids=[test_dag.dag_id], session=session)
+            history = build_incident_history(
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
+            )
 
             incident_key = '{"instance": "SECONDARY"} test_dag.parent_task, started: 2023-07-07 12:01 UTC'
             self.assertIn(incident_key, history)
@@ -400,7 +412,9 @@ class TestMonitoringDag(AirflowIntegrationTest):
             )
 
             df = _build_task_instance_state_dataframe(
-                dag_ids=[test_dag.dag_id], session=session
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
             )
 
             self.assertEqual(
@@ -410,7 +424,11 @@ class TestMonitoringDag(AirflowIntegrationTest):
                 ),
             )
 
-            history = build_incident_history(dag_ids=[test_dag.dag_id], session=session)
+            history = build_incident_history(
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
+            )
 
             incident_key = "test_dag.parent_task, started: 2023-07-06 12:00 UTC"
             self.assertIn(incident_key, history)
