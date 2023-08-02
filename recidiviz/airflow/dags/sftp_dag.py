@@ -19,7 +19,8 @@ import logging
 import os
 from typing import Any, Dict, List, Optional, Union
 
-from airflow.decorators import dag
+from airflow.decorators import dag, task
+from airflow.models import DagRun
 from airflow.models.xcom_arg import XComArg
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import (
@@ -33,6 +34,8 @@ from airflow.providers.google.cloud.operators.tasks import (
     CloudTasksQueuePauseOperator,
     CloudTasksQueueResumeOperator,
 )
+from airflow.utils.session import create_session
+from airflow.utils.state import State
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -204,6 +207,17 @@ def queues_were_unpaused(
     return task_id_if_no_queues_to_resume
 
 
+@task
+def remove_queued_up_dags(dag_run: Optional[DagRun] = None) -> None:
+    if not dag_run:
+        raise ValueError(
+            "Dag run not passed to task. Should be automatically set due to function "
+            "being a task."
+        )
+    with create_session() as session:
+        session.query(DagRun).filter(dag_id=dag_run.dag_id, state=State.QUEUED).delete()
+
+
 @dag(
     dag_id=f"{project_id}_sftp_dag",
     # TODO(apache/airflow#29903) Remove this override and only override mapped task-level retries.
@@ -226,6 +240,8 @@ def sftp_dag() -> None:
         op_kwargs={"lock_id": "EXPORT_PROCESS_RUNNING_OPERATIONS"},
         ignore_downstream_trigger_rules=True,
     )
+    rm_dags = remove_queued_up_dags()
+    start_sftp >> rm_dags
     end_sftp = EmptyOperator(task_id="end_sftp", trigger_rule=TriggerRule.ALL_DONE)
     for state_code in sftp_enabled_states():
         with TaskGroup(group_id=state_code) as state_specific_task_group:
@@ -544,7 +560,7 @@ def sftp_dag() -> None:
                 >> [ingest_ready_file_upload, do_not_upload_ingest_ready_files]
             )
 
-        start_sftp >> state_specific_task_group >> end_sftp
+        rm_dags >> state_specific_task_group >> end_sftp
 
 
 dag = sftp_dag()
