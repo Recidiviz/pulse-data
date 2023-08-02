@@ -134,7 +134,8 @@ class MigrationsTestBase(TestCase):
        """
         )
 
-        return {row[0]: row[1] for row in rows}
+        # The alembic_version_pkc constraint is only added when migrations are run
+        return {row[0]: row[1] for row in rows if row[0] != "alembic_version_pkc"}
 
     def default_config(self) -> Config:
         return Config.from_raw_config(
@@ -227,12 +228,7 @@ class MigrationsTestBase(TestCase):
         schema_indices = self.fetch_all_indices()
 
         # Assert that they all match
-        indices_not_in_schema = (
-            set(migration_indices)
-            - set(schema_indices)
-            # This constraint is only added when migrations are run
-            - {"alembic_version_pkc"}
-        )
+        indices_not_in_schema = set(migration_indices) - set(schema_indices)
         if indices_not_in_schema:
             raise ValueError(
                 f"Found indices defined in migrations but not in schema.py: {indices_not_in_schema}."
@@ -318,6 +314,23 @@ class MigrationsTestBase(TestCase):
                     r.migrate_down_to(rev)
                 except Exception:
                     self.fail(f"Migrate down failed at revision: {rev}")
+
+            # Check that schema is empty
+            if enums := self.fetch_all_enums():
+                self.fail(
+                    f"Found enums still defined after all downgrade migrations run: {sorted(enums.keys())}"
+                )
+
+            if indices := self.fetch_all_indices():
+                self.fail(
+                    f"Found indices still defined after all downgrade migrations run: {sorted(indices.keys())}"
+                )
+
+            if schema_constraints := self.fetch_all_constraints():
+                self.fail(
+                    f"Found schema_constraints still defined after all downgrade migrations run: {sorted(schema_constraints.keys())}"
+                )
+
             for rev in revisions:
                 try:
                     r.migrate_up_to(rev)
