@@ -132,7 +132,7 @@ class DatapointInterface:
         To improve performance, rather than returning fully instantiated
         datapoint objects, we return a tuple of their properties.
         """
-        return (
+        datapoints = (
             session.query(*schema.Datapoint.__table__.columns)
             .filter(
                 # Published report datapoints
@@ -145,6 +145,7 @@ class DatapointInterface:
             )
             .order_by(schema.Datapoint.start_date.asc())
         )
+        return filter_deprecated_datapoints(datapoints=datapoints)
 
     ### Export to the FE ###
 
