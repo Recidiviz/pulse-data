@@ -52,3 +52,26 @@ class TestWorkflowsSegmentClient(TestCase):
                     "gcp_environment": "test_env",
                 },
             )
+
+    @patch("recidiviz.case_triage.workflows.workflows_analytics.secrets")
+    @patch("recidiviz.case_triage.workflows.workflows_analytics.get_gcp_environment")
+    def test_track_milestones_message_opt_out(
+        self, mock_get_gcp_environment: MagicMock, mock_secrets: MagicMock
+    ) -> None:
+        mock_secrets.get_secret.return_value = "TEST-KEY"
+        mock_get_gcp_environment.return_value = "test_env"
+        client = WorkflowsSegmentClient()
+        with patch.object(client, "track") as track:
+            client.track_milestones_message_opt_out(
+                user_hash="test-123",
+                opt_out_type="STOP",
+            )
+            mock_get_gcp_environment.assert_called_once()
+            track.assert_called_once_with(
+                "test-123",
+                "backend.milestones_message_opt_out",
+                {
+                    "opt_out_type": "STOP",
+                    "gcp_environment": "test_env",
+                },
+            )

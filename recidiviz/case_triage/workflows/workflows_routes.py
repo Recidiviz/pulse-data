@@ -46,9 +46,11 @@ from recidiviz.case_triage.workflows.interface import (
 )
 from recidiviz.case_triage.workflows.twilio_validation import WorkflowsTwilioValidator
 from recidiviz.case_triage.workflows.utils import (
+    TWILIO_CRITICAL_ERROR_CODES,
     allowed_twilio_dev_recipient,
     get_sms_request_firestore_path,
     get_workflows_consolidated_status,
+    get_workflows_texting_error_message,
     jsonify_response,
 )
 from recidiviz.case_triage.workflows.workflows_analytics import WorkflowsSegmentClient
@@ -63,6 +65,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 )
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.environment import get_gcp_environment, in_gcp, in_gcp_production
+from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.metadata import CloudRunMetadata
 from recidiviz.utils.params import get_str_param_value
 from recidiviz.utils.secrets import get_secret
@@ -522,12 +525,13 @@ def create_workflows_api_blueprint() -> Blueprint:
         message_sid = get_str_param_value(
             "MessageSid", request.values, preserve_case=True
         )
+        opt_out_type = get_str_param_value(
+            "OptOutType", request.values, preserve_case=True
+        )
         error_code = get_str_param_value(
             "ErrorCode", request.values, preserve_case=True
         )
-        error_message = get_str_param_value(
-            "ErrorMessage", request.values, preserve_case=True
-        )
+        error_message = get_workflows_texting_error_message(error_code)
 
         firestore_client = FirestoreClientImpl()
         milestones_messages_ref = firestore_client.get_collection_group(
@@ -553,22 +557,57 @@ def create_workflows_api_blueprint() -> Blueprint:
                     error_message=error_message,
                 )
 
+            # This endpoint will be hit multiple times per message, so check here if this is a new
+            # opt out type from what we already have in Firestore.
+            # Opt out types are: STOP, START, and HELP
+            # Error code is always 21610 for opt out status updates
+            if opt_out_type and opt_out_type != milestonesMessage.get("optOutType"):
+                logging.info(
+                    "Updating Segment logs with opt out type for doc: [%s]",
+                    doc.reference.path,
+                )
+                segment_client.track_milestones_message_opt_out(
+                    user_hash=milestonesMessage.get("userHash", ""),
+                    opt_out_type=opt_out_type,
+                )
+
             logging.info(
                 "Updating Twilio message status for doc: [%s]", doc.reference.path
             )
 
+            doc_update = {
+                "status": get_workflows_consolidated_status(status),
+                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                "rawStatus": status,
+            }
+
+            if error_code:
+                doc_update["errors"] = [error_message]
+                doc_update["errorCode"] = error_code
+
+            if opt_out_type:
+                doc_update["optOutType"] = opt_out_type
+
             firestore_client.set_document(
                 doc.reference.path,
-                {
-                    "status": get_workflows_consolidated_status(status),
-                    "errors": [error_message],
-                    "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                    "rawStatus": status,
-                    "errorCode": error_code,
-                    "errorMessage": error_message,
-                },
+                doc_update,
                 merge=True,
             )
+
+        try:
+            # Raise an exception if the error code from Twilio is an
+            # error with our account (vs a receiver or carrier error)
+            # https://docs.google.com/spreadsheets/d/1xGgbc86Lmnk0uL3e7n2XZAnF4U-vTD3Z6-pfKZCM2q8/edit#gid=0
+            if error_code and error_code in TWILIO_CRITICAL_ERROR_CODES:
+                message = f"Critical Twilio account error [{error_code}] for message_sid [{message_sid}]"
+                logging.error(message)
+                raise FlaskException(
+                    code="twilio_account_error",
+                    description=message,
+                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+        except FlaskException as error:
+            return make_response(str(error.description), error.status_code)
 
         return make_response(jsonify(), HTTPStatus.NO_CONTENT)
 

@@ -49,3 +49,18 @@ class WorkflowsSegmentClient(SegmentClient):
                 "gcp_environment": get_gcp_environment(),
             },
         )
+
+    # Opt out types are: STOP, START, and HELP
+    def track_milestones_message_opt_out(
+        self,
+        user_hash: str,
+        opt_out_type: str,
+    ) -> None:
+        self.track(
+            user_hash,
+            "backend.milestones_message_opt_out",
+            {
+                "opt_out_type": opt_out_type,
+                "gcp_environment": get_gcp_environment(),
+            },
+        )

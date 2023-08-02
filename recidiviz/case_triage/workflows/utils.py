@@ -62,3 +62,29 @@ def get_workflows_consolidated_status(status: Optional[str]) -> str:
         return ExternalSystemRequestStatus.SUCCESS.value
     # The IN_PROGRESS statuses are ["accepted", "scheduled", "queued", "sending", "sent"]
     return ExternalSystemRequestStatus.IN_PROGRESS.value
+
+
+# These are the error codes from Twilio that are sent to the status webhook
+# if there is an error with our account (vs a receiver or carrier error)
+# https://docs.google.com/spreadsheets/d/1xGgbc86Lmnk0uL3e7n2XZAnF4U-vTD3Z6-pfKZCM2q8/edit#gid=0
+TWILIO_CRITICAL_ERROR_CODES = {"30001", "30002", "30007", "30010"}
+
+
+def get_workflows_texting_error_message(error_code: Optional[str]) -> str:
+    # Most common Twillio error code descriptions:
+    # https://www.twilio.com/docs/sms/troubleshooting/debugging-tools#error-codes
+    if error_code in ["30002"]:
+        return "The message could not be delivered at this time. Consider congratulating the client in person or through some other way."
+    if error_code in ["30003"]:
+        return "The message could not be delivered at this time. The recipient's device is switched off or otherwise unavailable. Consider congratulating the client in person or through some other way."
+    if error_code in ["30004"]:
+        return "The message could not be delivered. This recipient can't receive messages. Consider congratulating the client in person or through some other way."
+    if error_code in ["30005"]:
+        return "The message could not be delivered. The mobile number entered is unknown or may no longer exist. Please update to a valid number and re-send."
+    if error_code in ["30006"]:
+        return "The message could not be delivered. The number entered is not a valid mobile number or may be a landline and is unable to receive the message. Please update to a valid number and re-send."
+    if error_code in ["30007"]:
+        return "The message could not be delivered. It has been flagged as spam by the carrier. Please update the body of the message and re-send."
+    if error_code in ["21610"]:
+        return "The message could not be delivered because the recipient has opted out of receiving messages from this number. Consider congratulating the client in person or through some other way."
+    return "The message could not be delivered at this time. Consider congratulating the client in person or through some other way."
