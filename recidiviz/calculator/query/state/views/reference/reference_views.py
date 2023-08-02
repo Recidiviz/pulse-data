@@ -81,9 +81,6 @@ from recidiviz.calculator.query.state.views.reference.us_ix_leadership_superviso
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.us_pa_leadership_supervisors import (
-    US_PA_LEADERSHIP_SUPERVISORS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,
 )
@@ -110,6 +107,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
     US_IX_LEADERSHIP_SUPERVISORS_VIEW_BUILDER,
-    US_PA_LEADERSHIP_SUPERVISORS_VIEW_BUILDER,
     US_IX_DUAL_SUPERVISORS_OFFICERS_VIEW_BUILDER,
 ]
