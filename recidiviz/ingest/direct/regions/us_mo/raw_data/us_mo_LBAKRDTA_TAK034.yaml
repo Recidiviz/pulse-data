@@ -37,6 +37,8 @@ columns:
     is_pii: True
     description: |-
       Employee ID Card Number
+    field_type: staff_external_id
+    external_id_type: US_MO_STAFF_BADGE_NUMBER
   - name: CE_DCR
     description: |-
       Row Creation Date
@@ -51,3 +53,10 @@ columns:
       Row Modify Time
 # We always sort periods with null ('0') dates as the most recent row
 supplemental_order_by_clause: "CASE WHEN CE_EH = '0' then 0 ELSE 1 END, CE_EH DESC"
+table_relationships:
+  - foreign_table: LBCMDATA_APFX90
+    join_logic:
+      - LBAKRDTA_TAK034.CE_PON = LBCMDATA_APFX90.BDGNO
+  - foreign_table: LBCMDATA_APFX91
+    join_logic:
+      - LBAKRDTA_TAK034.CE_PON = LBCMDATA_APFX91.BDGNO

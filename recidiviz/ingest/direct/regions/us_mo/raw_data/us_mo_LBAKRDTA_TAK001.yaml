@@ -216,3 +216,40 @@ columns:
     is_pii: True
     description: |-
       User Identification
+table_relationships:
+  - foreign_table: ORAS_WEEKLY_SUMMARY_UPDATE
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = ORAS_WEEKLY_SUMMARY_UPDATE.DOC_ID
+  - foreign_table: LBAKRDTA_TAK015
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK015.BL_DOC
+    cardinality: ONE_TO_MANY
+  - foreign_table: LBAKRDTA_TAK017
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK017.BN_DOC
+    cardinality: ONE_TO_MANY
+  - foreign_table: LBAKRDTA_TAK020
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK020.BQ_DOC
+    cardinality: ONE_TO_MANY
+  - foreign_table: LBAKRDTA_TAK022
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK022.BS_DOC
+    cardinality: ONE_TO_MANY
+  - foreign_table: LBAKRDTA_TAK023
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK023.BT_DOC
+    cardinality: ONE_TO_MANY
+  - foreign_table: LBAKRDTA_TAK024
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK024.BU_DOC
+    cardinality: ONE_TO_MANY
+  - foreign_table: LBAKRDTA_TAK025
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK025.BV_DOC
+    cardinality: ONE_TO_MANY
+  - foreign_table: LBAKRDTA_TAK026
+    join_logic:
+      - LBAKRDTA_TAK001.EK_DOC = LBAKRDTA_TAK026.BW_DOC
+    cardinality: ONE_TO_MANY
+  # TODO(#22829): Hydrate all other MO table connections to LBAKRDTA_TAK001 here

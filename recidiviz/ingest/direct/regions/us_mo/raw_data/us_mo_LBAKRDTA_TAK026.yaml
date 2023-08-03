@@ -41,3 +41,14 @@ columns:
     description: |-
       Row Modify Time
 always_historical_export: True
+table_relationships:
+  # Associates each status with any sentences that status applies to
+  - foreign_table: LBAKRDTA_TAK025
+    join_logic:
+      - LBAKRDTA_TAK025.BV_DOC = LBAKRDTA_TAK026.BW_DOC
+      - LBAKRDTA_TAK025.BV_CYC = LBAKRDTA_TAK026.BW_CYC
+      - LBAKRDTA_TAK025.BV_SSO = LBAKRDTA_TAK026.BW_SSO
+  - foreign_table: LBAKRCOD_TAK146
+    join_logic:
+      - LBAKRDTA_TAK026.BW_SCD = LBAKRCOD_TAK146.FH_SCD
+    cardinality: MANY_TO_ONE
