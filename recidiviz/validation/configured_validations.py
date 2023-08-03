@@ -168,16 +168,6 @@ from recidiviz.validation.views.state.overlapping_incarceration_periods import (
 from recidiviz.validation.views.state.overlapping_supervision_periods import (
     OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.po_report_avgs_per_district_state import (
-    PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.po_report_distinct_by_officer_month import (
-    PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.po_report_missing_fields import (
-    PO_REPORT_COMPARISON_COLUMNS,
-    PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.population_projection_data_validation.county_jail_population_person_level_external_comparison import (
     COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
     COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -397,14 +387,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
-            view_builder=PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
             view_builder=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
@@ -545,12 +527,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(
             view_builder=EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
-            comparison_columns=PO_REPORT_COMPARISON_COLUMNS,
-            validation_category=ValidationCategory.CONSISTENCY,
-            region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
             view_builder=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,

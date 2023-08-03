@@ -25,7 +25,7 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    PO_REPORT_DATASET,
+    SENDGRID_EMAIL_DATA_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -114,7 +114,7 @@ SELECT
     "PO_MONTHLY_REPORT_ACTION" AS event,
     EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE "US/Eastern") AS event_date,
     TO_JSON_STRING(STRUCT(event)) AS event_attributes, -- kind of action taken
-FROM `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
+FROM `{project_id}.{sendgrid_email_data_dataset}.sendgrid_po_report_email_events_2023_08_03_backup` events
 INNER JOIN
     `{project_id}.{static_reference_dataset}.po_report_recipients` users
 ON events.email = users.email_address
@@ -128,7 +128,7 @@ SELECT
     "PO_MONTHLY_REPORT_ACTION_FIRST" AS event,
     EXTRACT(DATETIME FROM events.event_datetime AT TIME ZONE "US/Eastern") AS event_date,
     TO_JSON_STRING(STRUCT(event)) AS event_attributes, -- kind of action taken
-FROM `{project_id}.{po_report_dataset}.sendgrid_po_report_email_events_materialized` events
+FROM `{project_id}.{sendgrid_email_data_dataset}.sendgrid_po_report_email_events_2023_08_03_backup` events
 INNER JOIN
     `{project_id}.{static_reference_dataset}.po_report_recipients` users
 ON events.email = users.email_address
@@ -162,7 +162,7 @@ OFFICER_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     case_triage_segment_dataset=CASE_TRIAGE_SEGMENT_DATASET,
     experiments_dataset=EXPERIMENTS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    po_report_dataset=PO_REPORT_DATASET,
+    sendgrid_email_data_dataset=SENDGRID_EMAIL_DATA_DATASET,
     should_materialize=True,
     clustering_fields=["state_code", "officer_external_id"],
     analyst_data_dataset=ANALYST_VIEWS_DATASET,

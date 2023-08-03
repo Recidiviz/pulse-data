@@ -90,7 +90,7 @@ WITH last_day_of_data AS (
         "RECEIVED_EMAIL" AS variant_id,
         DATE(events.event_datetime) AS variant_date,
     FROM
-        `{project_id}.po_report_views.sendgrid_po_report_email_events_materialized` events
+        `{project_id}.sendgrid_email_data.sendgrid_po_report_email_events_2023_08_03_backup` events
     INNER JOIN
         `{project_id}.static_reference_tables.po_report_recipients` users
     ON

@@ -23,7 +23,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     NORMALIZED_STATE_DATASET,
-    PO_REPORT_DATASET,
+    SENDGRID_EMAIL_DATA_DATASET,
     SESSIONS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -79,7 +79,7 @@ day_zero_reports AS (
         person_id,
         DATE(event_datetime) AS date_sent,
     FROM
-        `{{project_id}}.{{po_report_dataset}}.sendgrid_po_report_email_events_materialized`
+        `{{project_id}}.{{sendgrid_email_data_dataset}}.sendgrid_po_report_email_events_2023_08_03_backup`
     INNER JOIN
         `{{project_id}}.{{static_reference_dataset}}.po_report_recipients`
     ON
@@ -271,7 +271,7 @@ SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    po_report_dataset=PO_REPORT_DATASET,
+    sendgrid_email_data_dataset=SENDGRID_EMAIL_DATA_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,

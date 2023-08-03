@@ -104,9 +104,6 @@ from recidiviz.validation.views.metadata.column_counter import (
 from recidiviz.validation.views.metadata.validation_schema_config import (
     get_external_validation_schema,
 )
-from recidiviz.validation.views.state.po_report_clients import (
-    PO_REPORT_CLIENTS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.prod_staging_comparison.incarceration_admission_external_prod_staging_comparison import (
     INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
@@ -179,7 +176,6 @@ def get_view_builders_from_configured_validations() -> List[SimpleBigQueryViewBu
 def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
     return (
         [
-            PO_REPORT_CLIENTS_VIEW_BUILDER,
             SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
             SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
             SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,

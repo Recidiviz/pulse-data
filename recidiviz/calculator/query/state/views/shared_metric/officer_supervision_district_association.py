@@ -31,6 +31,8 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION = """
  Identifies the district in which a given parole officer has the largest number of cases.
  """
 
+# TODO(#22946): Deprecate this view in favor of `aggregated_metrics_views` or
+#  `state_staff_location_period` once that is hydrated for all relevant states.
 OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = """
     WITH all_officers_to_person_count_in_district AS (
         SELECT 
@@ -57,7 +59,7 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = """
     """
 
 OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.PO_REPORT_DATASET,
+    dataset_id=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     view_id=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_NAME,
     should_materialize=True,
     view_query_template=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE,

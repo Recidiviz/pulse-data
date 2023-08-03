@@ -22,7 +22,6 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
-    PO_REPORT_DATASET,
     SESSIONS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -60,7 +59,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         FROM `{project_id}.{case_triage_segment_dataset}.tracks` tracks
         INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
             ON tracks.user_id = recipients.segment_id
-        LEFT JOIN `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` district
+        LEFT JOIN `{project_id}.shared_metric_views.officer_supervision_district_association_materialized` district
             ON district.officer_external_id = recipients.officer_external_id
             AND district.state_code = recipients.state_code
             AND EXTRACT(MONTH FROM tracks.timestamp) = district.month
@@ -294,7 +293,6 @@ CASE_TRIAGE_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CASE_TRIAGE_EVENTS_QUERY_TEMPLATE,
     description=CASE_TRIAGE_EVENTS_VIEW_DESCRIPTION,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    po_report_dataset=PO_REPORT_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
     case_triage_segment_dataset=CASE_TRIAGE_SEGMENT_DATASET,

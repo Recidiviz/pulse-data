@@ -77,11 +77,9 @@ from google.cloud.bigquery import QueryJob
 from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
-from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
-    PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tools.load_views_to_sandbox import load_all_views_to_sandbox
@@ -127,10 +125,7 @@ OUTPUT_COMPARISON_TEMPLATE = """
 """
 
 # These views are known to not have deterministic output
-VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT = [
-    # TODO(#5034): must be deterministic and have reduced complexity to be included
-    PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
-]
+VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT: List[BigQueryViewBuilder] = []
 
 
 def compare_metric_view_output_to_sandbox(
@@ -321,7 +316,8 @@ def _view_output_comparison_job(
     allow_schema_changes: bool,
 ) -> Tuple[bigquery.QueryJob, str]:
     """Builds and executes the query that compares the base and sandbox views. Returns a tuple with the the QueryJob and
-    the table_id where the output will be written to in the sandbox_comparison_output_dataset_id dataset."""
+    the table_id where the output will be written to in the sandbox_comparison_output_dataset_id dataset.
+    """
     base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
     sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
     output_table_id = f"{view_builder.dataset_id}--{base_view_id}"

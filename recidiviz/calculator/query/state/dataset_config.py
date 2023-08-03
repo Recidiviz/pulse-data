@@ -68,9 +68,6 @@ COVID_DASHBOARD_REFERENCE_DATASET: str = "covid_public_data_reference_tables"
 # Where the views for the Overdue Discharge alert live
 OVERDUE_DISCHARGE_ALERT_DATASET: str = "overdue_discharge_alert"
 
-# Where the views for the PO Monthly report live
-PO_REPORT_DATASET: str = "po_report_views"
-
 LINESTAFF_DATA_VALIDATION: str = "linestaff_data_validation"
 
 # Where the views for the public dashboard live
