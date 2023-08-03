@@ -36,30 +36,24 @@ US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_DESCRIPTION = """This view has one r
 IX. This will be used to create criteria queries for the CRC and XCRC workflows."""
 
 US_IX_PAROLE_DATES_SPANS_PREPROCESSING_QUERY_TEMPLATE = """
-WITH cte AS (
-      SELECT
-      pei.person_id,
-      pei.state_code,
-      OffenderId,
-      TermId,
-      SAFE_CAST(LEFT(TermStartDate, 10) AS DATE) AS start_date,
-      SAFE_CAST(LEFT(TentativeParoleDate, 10) AS DATE) AS tentative_parole_date,
-      SAFE_CAST(LEFT(NextHearingDate, 10) AS DATE) AS next_parole_hearing_date,
-      SAFE_CAST(LEFT(InitialParoleHearingDate, 10) AS DATE) AS initial_parole_hearing_date,
-    FROM
-      `{project_id}.{us_ix_raw_data_up_to_date_dataset}.scl_Term_latest`
-    INNER JOIN
-      `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-    ON
-      pei.external_id = OffenderId
-      AND pei.state_code = 'US_IX'
-      AND pei.id_type = 'US_IX_DOC'
-)
 SELECT
-  cte.*,
-  LEAD(start_date, 1) OVER (PARTITION BY person_id ORDER BY start_date) as end_date,
+  pei.person_id,
+  pei.state_code,
+  OffenderId,
+  TermId,
+  SAFE_CAST(LEFT(TermStartDate, 10) AS DATE) AS start_date,
+  SAFE_CAST(LEFT(ReleaseDate, 10) AS DATE) AS end_date,
+  SAFE_CAST(LEFT(TentativeParoleDate, 10) AS DATE) AS tentative_parole_date,
+  SAFE_CAST(LEFT(NextHearingDate, 10) AS DATE) AS next_parole_hearing_date,
+  SAFE_CAST(LEFT(InitialParoleHearingDate, 10) AS DATE) AS initial_parole_hearing_date,
 FROM
-  cte
+  `{project_id}.{us_ix_raw_data_up_to_date_dataset}.scl_Term_latest`
+INNER JOIN
+  `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+ON
+  pei.external_id = OffenderId
+  AND pei.state_code = 'US_IX'
+  AND pei.id_type = 'US_IX_DOC'
 """
 
 US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
