@@ -464,7 +464,7 @@ SELECT
     TRUE AS meets_criteria,
     TO_JSON(STRUCT(start_date_plus_x_months AS {start_date_plus_x_months_name_in_reason_blob})) AS reason
 FROM cte
-WHERE cte.end_date >= start_date_plus_x_months"""
+WHERE cte.end_date > start_date_plus_x_months"""
 
 
 def spans_within_x_and_y_months_of_end_date(
