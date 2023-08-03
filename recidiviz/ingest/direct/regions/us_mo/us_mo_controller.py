@@ -54,4 +54,5 @@ class UsMoController(BaseDirectIngestController):
             "tak291_tak292_tak024_citations",
             "supervision_staff",
             "supervision_staff_role_periods",
+            "incarceration_incident",
         ]
