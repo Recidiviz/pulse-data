@@ -52,18 +52,6 @@ products:
         environment: staging
       - state_code: US_PA
         environment: production
-  - name: PO Report
-    description: Monthly Email Reports are sent regularly to parole and probation officers (line staff) to track and motivate progress towards improving client outcomes.
-    exports:
-      - PO_MONTHLY
-    states:
-      # TODO(#16465): Turn this back on in production
-      - state_code: US_IX
-        environment: staging
-      - state_code: US_PA
-        environment: staging
-      - state_code: US_MO
-        environment: staging
   - name: Product User Import
     description: Potential users of Polaris tools that we receive via ingest, to be imported into the Polaris Roster Postgres table
     exports:

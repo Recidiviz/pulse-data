@@ -22,7 +22,6 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 )
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
-    PO_REPORT_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -52,7 +51,7 @@ CASE_TRIAGE_FEEDBACK_ACTIONS_QUERY_TEMPLATE = """
     FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_action_taken` actions
     INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
         ON actions.user_id = recipients.segment_id
-    LEFT JOIN `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` district
+    LEFT JOIN `{project_id}.shared_metric_views.officer_supervision_district_association_materialized` district
         ON district.officer_external_id = recipients.officer_external_id
         AND district.state_code = recipients.state_code
         AND DATE_TRUNC(DATE(actions.timestamp), MONTH) = DATE(district.year, district.month, 1)
@@ -76,7 +75,6 @@ CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CASE_TRIAGE_FEEDBACK_ACTIONS_QUERY_TEMPLATE,
     description=CASE_TRIAGE_FEEDBACK_ACTIONS_VIEW_DESCRIPTION,
     case_triage_segment_dataset=CASE_TRIAGE_SEGMENT_DATASET,
-    po_report_dataset=PO_REPORT_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
 )

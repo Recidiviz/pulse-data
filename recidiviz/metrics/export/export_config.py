@@ -56,9 +56,6 @@ from recidiviz.calculator.query.state.views.outliers.outliers_views import (
 from recidiviz.calculator.query.state.views.overdue_discharge_alert.overdue_discharge_alert_data_views import (
     OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
-    PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
@@ -208,13 +205,6 @@ OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-outliers-etl-data"
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
 
 _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
-    # PO Report views
-    ExportViewCollectionConfig(
-        view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
-        output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
-        export_name="PO_MONTHLY",
-        export_override_state_codes=EXPORT_ATLAS_TO_ID,
-    ),
     # Overdue Discharge Report views
     ExportViewCollectionConfig(
         view_builders_to_export=[OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER],

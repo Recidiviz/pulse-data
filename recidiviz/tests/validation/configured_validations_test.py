@@ -26,9 +26,6 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.validation import views as views_module
 from recidiviz.validation.configured_validations import get_all_validations
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
-from recidiviz.validation.views.state.po_report_clients import (
-    PO_REPORT_CLIENTS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.prod_staging_comparison.incarceration_admission_external_prod_staging_comparison import (
     INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
@@ -106,8 +103,6 @@ class TestConfiguredValidations(unittest.TestCase):
             #  out of the validation_views dataset.
             and builder
             not in [
-                # Polaris
-                PO_REPORT_CLIENTS_VIEW_BUILDER,
                 # External validation data
                 INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
                 INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
