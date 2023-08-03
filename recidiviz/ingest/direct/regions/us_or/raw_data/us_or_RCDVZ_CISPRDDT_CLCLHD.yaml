@@ -9,6 +9,7 @@ columns:
   - name: RECORD_KEY
     description: |-
       TODO(#17148): Fill in with answer from OR
+    is_pii: True
   - name: EFFECTIVE_DATE
     field_type: datetime
     datetime_sql_parsers:
