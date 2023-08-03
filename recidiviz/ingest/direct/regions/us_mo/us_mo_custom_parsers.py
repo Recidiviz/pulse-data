@@ -167,3 +167,19 @@ def null_if_invalid_date(date: str) -> Optional[str]:
         if safe_parse_date_from_date_pieces(year_substr, month_substr, day_substr):
             return date
     return None
+
+
+def get_punishment_days(
+    months: str, days: str, hours: str, effective_date: str
+) -> Optional[str]:
+    if months or days or hours:
+        return str(
+            parse_days_from_duration_pieces(
+                years_str=None,
+                months_str=months,
+                days_str=days,
+                hours_str=hours,
+                start_dt_str=effective_date,
+            )
+        )
+    return None

@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationIncident` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - DOC_ID
+  - CYCLE_NO
+  - CDV_SEQ
+  - CDV_EVENT_DATE
+  - CDV_DATE_WRITTEN
+  - CDV_RULE
+  - CDV_DOC_LOCATION
+  - CDV_BUILDING
+  - DISP_DATE
+  - SANC_SEQ
+  - SANC_CODE
+  - SANC_BEGIN_DATE
+  - SANC_EXP_DATE
+  - SANC_MONTHS
+  - SANC_DAYS
+  - SANC_HOURS
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: DOC_ID
+          id_type: $literal("US_MO_DOC")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                - DOC_ID
+                - CYCLE_NO
+                - CDV_SEQ
+          incident_date: CDV_EVENT_DATE
+          facility: CDV_DOC_LOCATION
+          location_within_facility: CDV_BUILDING
+          # Incident type and outcome codes are mapped using https://doc.mo.gov/sites/doc/files/media/pdf/2020/03/Offender_Rulebook_REVISED_2019.pdf
+          # as reference. Incident type codes can be found in the first section; outcomes (i.e. sanctions) are in the second.
+          incident_type:
+            $enum_mapping:
+              $raw_text: CDV_RULE
+              $custom_parser: us_mo_custom_enum_parsers.parse_incarceration_incident_type
+          incarceration_incident_outcomes:
+            - StateIncarcerationIncidentOutcome:
+                external_id:
+                  $concat:
+                    $values:
+                      - DOC_ID
+                      - CYCLE_NO
+                      - CDV_SEQ
+                      - SANC_SEQ
+                date_effective: SANC_BEGIN_DATE
+                projected_end_date: SANC_EXP_DATE
+                report_date: CDV_DATE_WRITTEN
+                hearing_date: DISP_DATE
+                # Inferred by taking disposition dates from TAK237, which
+                # associates events with CDVs, rather than with specific sanctions. Since there can be multiple
+                # disposition dates connected to a CDV, and there isn't a way to link events to sanctions
+                # directly, each sanction pulls its hearing dates from the parent CDV, and there can be multiple.
+                punishment_length_days:
+                  $custom:
+                    $function: us_mo_custom_parsers.get_punishment_days
+                    $args:
+                      months: SANC_MONTHS
+                      days: SANC_DAYS
+                      hours: SANC_HOURS
+                      effective_date: SANC_BEGIN_DATE
+                outcome_type:
+                  $enum_mapping:
+                    $raw_text: SANC_CODE
+                    $mappings:
+                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                        - "A1" # Recommendation for Time Extension
+                        - "A2" # Referral for Conditional Release Extension
+                        - "C2" # Request for Transfer or Reevaluation of Reclassification Analysis
+                        - "C4" # Refer to a Program Review Committee
+                        - "C5" # Refer for a Possible Termination from a Mandatory Treatment or Reintegration or Confinement Program
+                        - "D5" # CONFISCATION
+                        - "D6" # PROPERTY IMPOUNDMENT
+                        - "D7" # PROGRAM SANCTIONS
+                        - "D8" # PROGRAM ATTENDANCE OR COMPLETION REQUIREMENT
+                        - "M1" # Abuse of Judicial Proceedings Sanctions:
+                          # Option 1: If the court order is issued prior to the offender’s first parole consideration hearing date,
+                          # the parole consideration hearing date will be delayed 60 days
+                      StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
+                        - "A3" # Referral for Time Credit Loss
+                      StateIncarcerationIncidentOutcomeType.TREATMENT:
+                        - "A4" # Referral to Treatment
+                      StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION:
+                        - "A5" # Request for Prosecution Consideration
+                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                        - "C3" # Removal from or Restriction from Consideration for Work Assignments, Work Release, etc.
+                        - "D2" # VISITING RESTRICTIONS
+                        - "D2A" # VISITING RESTRICTIONS: No visits
+                        - "D2B" # VISITING RESTRICTIONS: Modified visits
+                        - "D4" # ACTIVITY RESTRICTION
+                        - "D4A"
+                        - "D4B"
+                        - "D4C"
+                        - "D4D"
+                        - "D4E"
+                        - "D4F"
+                        - "D4G"
+                        - "M3A" # Abuse of Judicial Proceedings Sanctions: Non-contact Visiting for 90 days
+                        - "M3B" # Abuse of Judicial Proceedings Sanctions: Activity Restriction for 30 days
+                      StateIncarcerationIncidentOutcomeType.SOLITARY:
+                        - "D1" # DISCIPLINARY SEGREGATION ASSIGNMENTS
+                        - "C1" # Refer to the Administrative Segregation Committee
+                      StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                        - "D10" # EXTRA DUTY: Work assignment under the supervision of a staff member in addition to regular duties.
+                      StateIncarcerationIncidentOutcomeType.WARNING:
+                        - "D11" # WARNING/REPRIMAND: A statement to the offender to cease an unauthorized course of action.
+                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                        - "D3" # LIVING AREA RESTRICTION
+                      StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                        - "D9" # PAY FOR DAMAGES
+                        - "M3" # Abuse of Judicial Proceedings Sanctions: Financial penalty

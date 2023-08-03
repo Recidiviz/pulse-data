@@ -30,6 +30,9 @@ from more_itertools import one
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentType,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
@@ -1180,3 +1183,50 @@ def parse_incarceration_period_termination_reason(
         return StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
 
     return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
+
+
+INCARCERATION_INCIDENT_TYPE_TO_STR_MAPPINGS: Dict[
+    StateIncarcerationIncidentType, List[str]
+] = {
+    StateIncarcerationIncidentType.CONTRABAND: [
+        "3",  # DANGEROUS CONTRABAND
+        "13",  # POSSESSION OF MONEY OR LEGAL TENDER
+        "24",  # CONTRABAND
+    ],
+    StateIncarcerationIncidentType.DISORDERLY_CONDUCT: [
+        "6",  # RIOT
+        "9",  # ORGANIZED DISOBEDIENCE
+        "19",  # CREATING A DISTURBANCE
+        "20",  # DISOBEYING AN ORDER
+        "30",  # OUT OF BOUNDS
+        "34",  # UNAUTHORIZED ORGANIZATIONS
+    ],
+    StateIncarcerationIncidentType.ESCAPE: ["4"],  # ESCAPE
+    StateIncarcerationIncidentType.VIOLENCE: [
+        "1",  # MURDER OR MANSLAUGHTER
+        "2",  # ASSAULT
+        "5",  # HOSTAGE OR RESTRAINT
+        "7",  # FORCIBLE SEXUAL ABUSE
+        "10",  # MINOR ASSAULT
+        "12",  # THREATS
+        "25",  # FIGHTING
+    ],
+}
+
+STR_TO_INCARCERATION_INCIDENT_TYPE_MAPPINGS: Dict[
+    str, StateIncarcerationIncidentType
+] = invert_enum_to_str_mappings(INCARCERATION_INCIDENT_TYPE_TO_STR_MAPPINGS)
+
+
+def parse_incarceration_incident_type(raw_text: str) -> StateIncarcerationIncidentType:
+    """Parse incarceration incident type from raw text."""
+
+    major_rule = raw_text.split(".")[0]
+
+    if raw_text in ["11.1", "11.2", "11.3", "11.4", "11.9", "11.10", "16.2", "28.2"]:
+        return StateIncarcerationIncidentType.CONTRABAND
+
+    if major_rule in STR_TO_INCARCERATION_INCIDENT_TYPE_MAPPINGS:
+        return STR_TO_INCARCERATION_INCIDENT_TYPE_MAPPINGS[major_rule]
+
+    return StateIncarcerationIncidentType.INTERNAL_UNKNOWN
