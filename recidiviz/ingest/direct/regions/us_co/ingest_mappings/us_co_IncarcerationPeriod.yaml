@@ -95,6 +95,7 @@ output:
                   - "36" # New Charge/Short Term
                   - "37" # Released In Error
                   - "39" # Arrested and Placed in Jail
+                  - "50" # To Detainer/Warrant
                   - "51" # In State Supervision
                   - "52" # Out Of State Parole Supervision
                   - "53" # Parole Violator
