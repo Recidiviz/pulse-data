@@ -46,11 +46,15 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import print_entity_trees
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    print_entity_trees,
+)
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
     direct_ingest_fixture_path,
 )
+from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
 from recidiviz.utils import environment
 from recidiviz.utils.environment import (
     GCP_PROJECT_PRODUCTION,
@@ -170,6 +174,14 @@ class StateIngestViewParserTestBase:
             print_entity_trees(expected_output)
             print("============== ACTUAL ==============")
             print_entity_trees(parsed_output)
+
+            launch_entity_tree_html_diff_comparison(
+                found_root_entities=parsed_output,
+                expected_root_entities=expected_output,
+                field_index=CoreEntityFieldIndex(),
+                region_code=self.region_code(),
+                print_tree_structure_only=False,
+            )
 
         self.test.assertEqual(expected_output, parsed_output)
 
