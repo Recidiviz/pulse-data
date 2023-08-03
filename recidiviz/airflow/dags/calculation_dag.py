@@ -285,7 +285,7 @@ def build_dataflow_pipeline_task_group(
 
             config = pipeline_config.get()
             if ingest_instance == "SECONDARY":
-                config["job_name"] = f"{job_name}_{ingest_instance.lower()}"
+                config["job_name"] = f"{job_name}-{ingest_instance.lower()}"
 
             parameters: PipelineParameters = parameter_cls(
                 project=project_id,
