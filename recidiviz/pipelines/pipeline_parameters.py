@@ -160,7 +160,14 @@ class PipelineParameters:
         cls: Type[PipelineParametersT], argv: List[str], sandbox_pipeline: bool
     ) -> PipelineParametersT:
         args, _ = cls.parse_args(argv, sandbox_pipeline=sandbox_pipeline)
-        apache_beam_pipeline_options = PipelineOptions(argv)
+        apache_beam_pipeline_options = PipelineOptions(
+            argv,
+            dataflow_service_options=[
+                # Prevents VMs from accepting SSH keys that are stored in project metadata.
+                # This is an additional measure of security for disallowing remote access to our VM instance
+                "block_project_ssh_keys",
+            ],
+        )
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
         # Collect all parsed arguments and filter out the ones that are not set
         set_kwargs = {k: v for k, v in vars(args).items() if v is not None}
