@@ -27,8 +27,7 @@ from recidiviz.common.attr_mixins import BuildableAttrFieldType
 from recidiviz.common.constants.states import MAX_FIPS_CODE
 
 # All entity classes that have Normalized versions
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_deserialize import EntityT
+from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.pipelines.normalization.utils.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateCharge,

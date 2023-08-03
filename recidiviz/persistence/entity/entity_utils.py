@@ -46,13 +46,14 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entity.base_entity import (
     Entity,
+    EntityT,
     EnumEntity,
     ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
-from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
+from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.errors import PersistenceError
 from recidiviz.utils.log_helpers import make_log_output_path

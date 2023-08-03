@@ -33,11 +33,10 @@ from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
-    EntityT,
 )
 from recidiviz.persistence.entity.entity_utils import (
     get_all_enum_classes_in_module,

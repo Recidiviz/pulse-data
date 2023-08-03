@@ -38,11 +38,10 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
     IngestViewResultsParserDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
-    EntityT,
     entity_deserialize,
 )
 from recidiviz.tests.ingest.direct.ingest_mappings.fixtures.ingest_view_file_parser import (

@@ -18,7 +18,7 @@
 import datetime
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, Optional, Type, Union
 
 import attr
 
@@ -41,10 +41,9 @@ from recidiviz.common.str_field_utils import (
     parse_datetime,
     parse_int,
 )
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.utils.types import T
 
-EntityT = TypeVar("EntityT", bound=Entity)
 DeserializableEntityFieldValue = Optional[
     Union[
         str,
