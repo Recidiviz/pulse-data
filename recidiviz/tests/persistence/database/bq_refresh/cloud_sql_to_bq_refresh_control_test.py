@@ -123,21 +123,8 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
     def test_execute_cloud_sql_to_bq_refresh(
         self, mock_federated_bq: mock.MagicMock
     ) -> None:
-        def mock_acquire_lock(
-            lock_id: str,
-            schema_type: SchemaType,
-            ingest_instance: DirectIngestInstance,
-        ) -> None:
-            return None
-
-        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
-
-        def mock_can_proceed(
-            schema_type: SchemaType, ingest_instance: DirectIngestInstance
-        ) -> bool:
-            return True
-
-        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock_pass
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed_true
 
         def federated_bq_pass(
             schema_type: SchemaType,
@@ -195,21 +182,8 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
     def test_execute_cloud_sql_to_bq_refresh_federated_throws(
         self, mock_federated_bq: mock.MagicMock
     ) -> None:
-        def mock_acquire_lock(
-            lock_id: str,
-            schema_type: SchemaType,
-            ingest_instance: DirectIngestInstance,
-        ) -> None:
-            return None
-
-        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
-
-        def mock_can_proceed(
-            schema_type: SchemaType, ingest_instance: DirectIngestInstance
-        ) -> bool:
-            return True
-
-        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock_pass
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed_true
 
         def federated_bq_pass(
             schema_type: SchemaType,
@@ -235,21 +209,8 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
     def test_execute_cloud_sql_to_bq_refresh_bq_success_throws(
         self, mock_federated_bq: mock.MagicMock
     ) -> None:
-        def mock_acquire_lock(
-            lock_id: str,
-            schema_type: SchemaType,
-            ingest_instance: DirectIngestInstance,
-        ) -> None:
-            return None
-
-        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
-
-        def mock_can_proceed(
-            schema_type: SchemaType, ingest_instance: DirectIngestInstance
-        ) -> bool:
-            return True
-
-        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock_pass
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed_true
 
         def federated_bq_pass(
             schema_type: SchemaType,
@@ -286,14 +247,7 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
     def test_execute_cloud_sql_to_bq_refresh_lock_acquisition_timeout(
         self, mock_federated_bq: mock.MagicMock
     ) -> None:
-        def mock_acquire_lock(
-            lock_id: str,
-            schema_type: SchemaType,
-            ingest_instance: DirectIngestInstance,
-        ) -> None:
-            return None
-
-        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock_pass
 
         def mock_can_proceed(
             schema_type: SchemaType, ingest_instance: DirectIngestInstance
@@ -420,21 +374,8 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
         instance_in_func_call: DirectIngestInstance,
         mock_federated_bq: mock.MagicMock,
     ) -> None:
-        def mock_acquire_lock(
-            lock_id: str,
-            schema_type: SchemaType,
-            ingest_instance: DirectIngestInstance,
-        ) -> None:
-            return None
-
-        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock
-
-        def mock_can_proceed(
-            schema_type: SchemaType, ingest_instance: DirectIngestInstance
-        ) -> bool:
-            return True
-
-        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed
+        self.mock_lock_manager.acquire_lock.side_effect = mock_acquire_lock_pass
+        self.mock_lock_manager.can_proceed.side_effect = mock_can_proceed_true
 
         cloud_sql_to_bq_refresh_control.execute_cloud_sql_to_bq_refresh(
             schema_type=schema_called_with,
