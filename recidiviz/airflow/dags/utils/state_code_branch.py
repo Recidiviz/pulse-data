@@ -98,7 +98,7 @@ def create_state_code_branching(
 
     branch_start: BranchPythonOperator = get_selected_branch_ids()
 
-    @task(task_id="state_code_branch_end", trigger_rule=TriggerRule.NONE_SKIPPED)
+    @task(task_id="state_code_branch_end", trigger_rule=TriggerRule.ALL_DONE)
     def state_code_branch_end(dag_run: Optional[DagRun] = None, **kwargs: Any) -> Any:
         if not dag_run:
             raise ValueError(

@@ -284,9 +284,7 @@ class PipelineParameters:
         # The Flex template expects all parameter values to be strings, so cast all non-null values to strings.
         return {k: str(v) for k, v in parameters.items() if v is not None}
 
-    def update_datasets_with_sandbox_prefix(
-        self, sandbox_prefix: str
-    ) -> "PipelineParameters":
+    def update_with_sandbox_prefix(self, sandbox_prefix: str) -> "PipelineParameters":
         return attr.evolve(
             self,
             **{
@@ -296,6 +294,8 @@ class PipelineParameters:
                 )
                 for dataset_param_name in self.get_dataset_param_names()
             },
+            # Add -test suffix to avoid firing Pagerduty alerts
+            job_name=f"{sandbox_prefix}_{self.job_name}-test",
         )
 
     def template_gcs_path(self, project_id: str) -> str:
