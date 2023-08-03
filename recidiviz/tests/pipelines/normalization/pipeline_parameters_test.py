@@ -37,7 +37,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             output="test_output",
         )
 
@@ -56,7 +56,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
 
     def test_creation_no_output(self) -> None:
         pipeline_parameters = NormalizationPipelineParameters(
@@ -64,7 +64,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
         )
 
         expected_parameters = {
@@ -82,7 +82,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
 
     def test_update_with_sandbox_prefix(self) -> None:
         pipeline_parameters = NormalizationPipelineParameters(
@@ -90,7 +90,7 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             output="test_output",
             reference_view_input="test_view",
             state_data_input="test_input",
@@ -110,3 +110,4 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")

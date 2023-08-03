@@ -37,7 +37,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             metric_types="TEST_METRIC",
             output="test_output",
             calculation_month_count=36,
@@ -61,7 +61,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
 
     def test_creation_no_output(self) -> None:
         pipeline_parameters = MetricsPipelineParameters(
@@ -69,7 +69,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             metric_types="TEST_METRIC",
             calculation_month_count=36,
         )
@@ -92,7 +92,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
 
     def test_creation_without_calculation_month_count(self) -> None:
         pipeline_parameters = MetricsPipelineParameters(
@@ -100,7 +100,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             metric_types="TEST_METRIC",
             output="test_output",
         )
@@ -123,7 +123,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
 
     def test_creation_debug_params(self) -> None:
         pipeline_parameters = MetricsPipelineParameters(
@@ -131,7 +131,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             metric_types="TEST_METRIC",
             output="test_output",
             calculation_month_count=36,
@@ -158,7 +158,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
 
     def test_update_with_sandbox_prefix(self) -> None:
         pipeline_parameters = MetricsPipelineParameters(
@@ -166,7 +166,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             metric_types="TEST_METRIC",
             output="test_output",
             calculation_month_count=36,
@@ -191,3 +191,4 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
