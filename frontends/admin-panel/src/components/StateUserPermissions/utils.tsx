@@ -458,7 +458,8 @@ export const aggregateFormPermissionResults = (
       }
     : {};
   const featureVariantsToRemove =
-    formResults.featureVariant && !formResults.featureVariant.enabled
+    formResults.featureVariant?.name &&
+    formResults.featureVariant.enabled === false
       ? [formResults.featureVariant.name]
       : [];
   return { routes, featureVariantsToAdd, featureVariantsToRemove };
