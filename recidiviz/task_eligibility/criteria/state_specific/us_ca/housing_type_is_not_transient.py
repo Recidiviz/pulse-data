@@ -19,6 +19,9 @@ housing type (is not transient)
 """
 
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
@@ -44,25 +47,30 @@ _QUERY_TEMPLATE = f"""
 WITH sustainable_housing AS (
   SELECT 
     peid.person_id,
+    peid.state_code,
     CAST(sp.start_date AS DATE) AS start_date,
     CAST(sp.end_date AS DATE) AS end_date, 
+    sp.sustainable_housing
   FROM `{{project_id}}.{{analyst_dataset}}.us_ca_sustainable_housing_status_periods_materialized` sp
   LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
     ON peid.state_code = 'US_CA'
       AND sp.OffenderId = peid.external_id
   # Sustainable housing is defined as not homeless/transient.
-  WHERE sustainable_housing = 1
-)
+  WHERE sp.sustainable_housing = 1
+),
+
+{create_sub_sessions_with_attributes('sustainable_housing')}
 
 SELECT 
-  "US_CA" AS state_code,
+  state_code,
   person_id, 
   start_date,
   end_date,
-  TRUE AS meets_criteria,
+  LOGICAL_OR(TRUE) AS meets_criteria,
   TO_JSON(STRUCT('{{reason_string}}' AS current_housing)) AS reason
-FROM sustainable_housing
-WHERE start_date != {nonnull_end_date_clause('end_date')}
+FROM sub_sessions_with_attributes
+WHERE start_date < {nonnull_end_date_clause('end_date')}
+GROUP BY 1,2,3,4
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
