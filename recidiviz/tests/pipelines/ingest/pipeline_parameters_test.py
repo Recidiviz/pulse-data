@@ -166,7 +166,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             job_name="test_job",
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
-        ).update_datasets_with_sandbox_prefix("my_prefix")
+        ).update_with_sandbox_prefix("my_prefix")
 
         expected_parameters = {
             "state_code": "US_OZ",
@@ -191,7 +191,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
             ingest_instance="SECONDARY",
-        ).update_datasets_with_sandbox_prefix("my_prefix")
+        ).update_with_sandbox_prefix("my_prefix")
 
         expected_parameters = {
             "state_code": "US_OZ",

@@ -81,7 +81,7 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             job_name="test_job",
             output="test_output",
             reference_view_input="test_view",
-        ).update_datasets_with_sandbox_prefix("my_prefix")
+        ).update_with_sandbox_prefix("my_prefix")
 
         expected_parameters = {
             "state_code": "US_OZ",

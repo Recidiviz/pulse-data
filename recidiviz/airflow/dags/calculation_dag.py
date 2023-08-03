@@ -280,17 +280,21 @@ def build_dataflow_pipeline_task_group(
                 raise ValueError(
                     "dag_run not provided. This should be automatically set by Airflow."
                 )
+            ingest_instance = get_ingest_instance(dag_run)
+            sandbox_prefix = get_sandbox_prefix(task_instance)
+
+            config = pipeline_config.get()
+            if ingest_instance == "SECONDARY":
+                config["job_name"] = f"{job_name}_{ingest_instance.lower()}"
+
             parameters: PipelineParameters = parameter_cls(
                 project=project_id,
-                ingest_instance=get_ingest_instance(dag_run),
-                **pipeline_config.get(),  # type: ignore
+                ingest_instance=ingest_instance,
+                **config,  # type: ignore
             )
 
-            sandbox_prefix = get_sandbox_prefix(task_instance)
             if sandbox_prefix:
-                parameters = parameters.update_datasets_with_sandbox_prefix(
-                    sandbox_prefix
-                )
+                parameters = parameters.update_with_sandbox_prefix(sandbox_prefix)
 
             return parameters.flex_template_launch_body()
 

@@ -174,7 +174,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             state_data_input="test_input",
             normalized_input="normalized_input",
             person_filter_ids="123 12323 324",
-        ).update_datasets_with_sandbox_prefix("my_prefix")
+        ).update_with_sandbox_prefix("my_prefix")
 
         expected_parameters = {
             "state_code": "US_OZ",
