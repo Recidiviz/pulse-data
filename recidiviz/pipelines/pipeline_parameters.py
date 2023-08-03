@@ -295,7 +295,7 @@ class PipelineParameters:
                 for dataset_param_name in self.get_dataset_param_names()
             },
             # Add -test suffix to avoid firing Pagerduty alerts
-            job_name=f"{sandbox_prefix}_{self.job_name}-test",
+            job_name=f"{sandbox_prefix}-{self.job_name}-test",
         )
 
     def template_gcs_path(self, project_id: str) -> str:
