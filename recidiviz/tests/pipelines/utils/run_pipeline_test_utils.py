@@ -218,7 +218,7 @@ def default_arg_list_for_pipeline(
         "--state_code",
         state_code,
         "--job_name",
-        "test_job",
+        "test-job",
         "--pipeline",
         "pipeline",
     ]

@@ -29,7 +29,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
         )
@@ -48,7 +48,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
         self.assertIsNone(pipeline_parameters.service_account_email)
 
     def test_creation_all_fields_no_output(self) -> None:
@@ -57,7 +57,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
         )
 
         expected_parameters = {
@@ -74,7 +74,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
 
     def test_creation_all_fields_no_output_secondary(self) -> None:
         pipeline_parameters = IngestPipelineParameters(
@@ -82,7 +82,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             ingest_instance="SECONDARY",
         )
 
@@ -100,7 +100,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
-        self.assertEqual(pipeline_parameters.job_name, "test_job")
+        self.assertEqual(pipeline_parameters.job_name, "test-job")
 
     def test_creation_output_mismatch(self) -> None:
         with self.assertRaisesRegex(
@@ -111,7 +111,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 state_code="US_OZ",
                 pipeline="test_pipeline_name",
                 region="us-west1",
-                job_name="test_job",
+                job_name="test-job",
                 output="test_output",
             )
 
@@ -121,7 +121,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             service_account_email="some-test-account@recidiviz-staging.iam.gserviceaccount.com",
         )
         self.assertEqual(
@@ -135,7 +135,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             service_account_email="12345-compute@developer.gserviceaccount.com",
         )
         self.assertEqual(
@@ -153,7 +153,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 state_code="US_OZ",
                 pipeline="test_pipeline_name",
                 region="us-west1",
-                job_name="test_job",
+                job_name="test-job",
                 service_account_email="some-test-account@somerandomwebsite.com",
             )
 
@@ -163,7 +163,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
         ).update_with_sandbox_prefix("my_prefix")
@@ -180,6 +180,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
 
     def test_update_with_sandbox_prefix_secondary(self) -> None:
         pipeline_parameters = IngestPipelineParameters(
@@ -187,7 +188,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             state_code="US_OZ",
             pipeline="test_pipeline_name",
             region="us-west1",
-            job_name="test_job",
+            job_name="test-job",
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
             ingest_instance="SECONDARY",
@@ -205,3 +206,4 @@ class TestIngestPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+        self.assertEqual(pipeline_parameters.job_name, "my-prefix-test-job-test")
