@@ -28,6 +28,8 @@ from recidiviz.justice_counts.exceptions import JusticeCountsBulkUploadException
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 from recidiviz.utils.environment import in_gcp_staging
 
+UNSUBSCRIBE_GROUP_ID = 26272
+
 
 def send_confirmation_email(
     session: Session,
@@ -70,6 +72,7 @@ def send_confirmation_email(
                     subject=subject_str,
                     html_content=html,
                     disable_link_click=True,
+                    unsubscribe_group_id=UNSUBSCRIBE_GROUP_ID,
                 )
             except Exception as e:
                 logging.exception("Failed to send confirmation email: %s", e)

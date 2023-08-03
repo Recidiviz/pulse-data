@@ -78,6 +78,7 @@ class SendGridClientWrapper:
         disable_unsubscribe: Optional[bool] = False,
         reply_to_email: Optional[str] = None,
         reply_to_name: Optional[str] = None,
+        unsubscribe_group_id: Optional[int] = None,
     ) -> mail_helpers.Mail:
         """Creates the request body for the email that will be sent. Includes all required data to send a single email.
 
@@ -91,31 +92,36 @@ class SendGridClientWrapper:
             subject=subject,
             html_content=html_content,
         )
-        if reply_to_email:
+        if reply_to_email is not None:
             message.reply_to = mail_helpers.ReplyTo(reply_to_email, reply_to_name)
 
-        if cc_addresses:
+        if cc_addresses is not None:
             message.cc = [
                 mail_helpers.Cc(email=cc_email_address)
                 for cc_email_address in cc_addresses
             ]
 
-        if text_attachment_content and attachment_title:
+        if text_attachment_content is not None and attachment_title is not None:
             message.attachment = self._create_text_attachment(
                 text_attachment_content,
                 attachment_title,
             )
 
-        if disable_link_click or disable_unsubscribe:
+        if disable_link_click is True or disable_unsubscribe is True:
             args = {}
-            if disable_link_click:
+            if disable_link_click is True:
                 args["click_tracking"] = mail_helpers.ClickTracking(  # type: ignore[attr-defined]
                     enable=False,
                     enable_text=False,
                 )
-            if disable_unsubscribe:
+            if disable_unsubscribe is True:
                 args["subscription_tracking"] = mail_helpers.SubscriptionTracking(enable=False)  # type: ignore[attr-defined]
             message.tracking_settings = mail_helpers.TrackingSettings(**args)  # type: ignore[attr-defined]
+
+        if unsubscribe_group_id is not None:
+            message.asm = mail_helpers.Asm(  # type: ignore[attr-defined]
+                group_id=mail_helpers.GroupId(unsubscribe_group_id),  # type: ignore[attr-defined]
+            )
 
         return message
 
@@ -141,6 +147,7 @@ class SendGridClientWrapper:
         disable_unsubscribe: Optional[bool] = False,
         reply_to_email: Optional[str] = None,
         reply_to_name: Optional[str] = None,
+        unsubscribe_group_id: Optional[int] = None,
     ) -> bool:
         """Sends the email to the provided address by making a Twilio SendGrid API request.
 
@@ -161,12 +168,13 @@ class SendGridClientWrapper:
             disable_link_click: (Optional) Boolean to indicate if we want to disable link click tracking
             reply_to_email: (Optional) An alternate email address for recipients to reply to
             reply_to_name: (Optional) Name associated with the reply-to email
+            unsubscribe_group_id: (Optional) Integer representing a SendGrid Unsubscribe Group
 
         Returns:
             True if the message is sent successfully
             False if the response is not OK or an exception is thrown
         """
-        if redirect_address:
+        if redirect_address is not None:
             subject = f"[{to_email}] {subject}"
             to_email = redirect_address
 
@@ -183,6 +191,7 @@ class SendGridClientWrapper:
             disable_unsubscribe=disable_unsubscribe,
             reply_to_email=reply_to_email,
             reply_to_name=reply_to_name,
+            unsubscribe_group_id=unsubscribe_group_id,
         )
 
         try:
