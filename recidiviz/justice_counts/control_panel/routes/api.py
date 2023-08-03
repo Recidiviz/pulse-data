@@ -78,6 +78,7 @@ from recidiviz.utils.environment import (
     in_ci,
     in_development,
     in_gcp,
+    in_gcp_production,
     in_gcp_staging,
     in_test,
 )
@@ -115,6 +116,18 @@ def get_api_blueprint(
             environment = "staging"
 
         return jsonify({"csrf": generate_csrf(secret_key), "env": environment})
+
+    @api_blueprint.route("/env")
+    def env() -> Response:
+        environment = "unknown"
+        if in_gcp() is False:
+            environment = "local"
+        elif in_gcp_staging() is True:
+            environment = "staging"
+        elif in_gcp_production() is True:
+            environment = "production"
+
+        return jsonify({"env": environment})
 
     ### Agencies ###
 
