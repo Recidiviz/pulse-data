@@ -51,7 +51,7 @@ class UsTnController(BaseDirectIngestController):
             "DisciplinaryIncarcerationIncident",
             "CAFScoreAssessment",
             "Staff",
-            "StaffRolePeriods",
+            "StaffRoleLocationPeriods",
             "SentencesChargesAndCourtCases_v3",
         ]
 

@@ -26,11 +26,13 @@ VIEW_QUERY_TEMPLATE = """
 WITH first_reported_title AS(
     SELECT 
         StaffID, 
-        StaffTitle
+        StaffTitle,
+         SiteID, 
     FROM 
         (SELECT 
             StaffID, 
             StaffTitle,
+             SiteID, 
             ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY StatusDate, LastUpdateDate ASC) as SEQ
         FROM {Staff@ALL} s
         WHERE StaffID IS NOT NULL) s 
@@ -41,6 +43,7 @@ key_status_change_dates AS(
     SELECT
     DISTINCT StaffID, 
     'A' as Status, 
+     SiteID, 
     '1900-01-01' as StatusDate, 
     StaffTitle, 
     CAST('1900-01-01 00:00:00' AS DATETIME) as update_datetime
@@ -52,6 +55,7 @@ key_status_change_dates AS(
     SELECT 
         StaffID, 
         Status, 
+        SiteID, 
         StatusDate,
         StaffTitle, 
         update_datetime
@@ -68,6 +72,7 @@ create_unique_rows AS (
     SELECT 
         StaffID,
         Status,
+        SiteID, 
         StatusDate,
         StaffTitle,
         update_datetime,
@@ -79,6 +84,7 @@ construct_periods AS (
     SELECT 
         StaffID,
         Status,
+        SiteID, 
         StatusDate as Start_Date,
         StaffTitle, 
         LEAD(StatusDate) OVER person_sequence as End_Date,
@@ -89,6 +95,7 @@ construct_periods AS (
 SELECT 
     REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
     Status,
+    SiteID, 
     Start_Date,
     StaffTitle,
     End_Date,
@@ -99,7 +106,7 @@ WHERE Status = 'A' OR (Status = 'I' AND End_Date IS NOT NULL)
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
-    ingest_view_name="StaffRolePeriods",
+    ingest_view_name="StaffRoleLocationPeriods",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="StaffID, Start_Date",
 )
