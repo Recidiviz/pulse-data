@@ -40,6 +40,8 @@ interface SendFormData {
   emailAllowlist: string[];
 }
 
+type Option = { value: string; label: string };
+
 const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
   const [form] = Form.useForm();
   const [formData, setFormData] =
@@ -48,7 +50,7 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
   const [labeledBatchList, setLabeledBatchList] =
-    React.useState<string[] | undefined>(undefined);
+    React.useState<Option[] | undefined>(undefined);
 
   const onFinish = (values?: SendFormData | undefined) => {
     setFormData(values);
@@ -105,12 +107,14 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
     getBatchInfo();
   }, [stateInfo?.code, reportType, form]);
 
-  const labelBatchesInSelect = (batchInfo: BatchInfoType[]) => {
-    const labeledList: string[] = batchInfo.map((x) => {
-      if (x.sendResults.length > 0) {
-        return `${x.batchId} (Sent)`;
-      }
-      return `${x.batchId}`;
+  const labelBatchesInSelect = (batches: BatchInfoType[]) => {
+    const labeledList: Option[] = batches.map((batch) => {
+      return {
+        value: batch.batchId,
+        label: batch.sendResults.length
+          ? `${batch.batchId} (Sent)`
+          : batch.batchId,
+      };
     });
     setLabeledBatchList(labeledList);
   };
@@ -145,19 +149,12 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
                   label="Batch ID"
                   name="batchId"
                   rules={[{ required: true }]}
-                  initialValue={labeledBatchList[0]}
+                  initialValue={labeledBatchList[0].value}
                 >
-                  <Select
-                    placeholder={labeledBatchList[0]}
-                    defaultValue={labeledBatchList[0]}
-                  >
+                  <Select>
                     {labeledBatchList?.map((item) => (
-                      <Select.Option
-                        key={item}
-                        label={item}
-                        value={item.substring(0, 14)}
-                      >
-                        {item}
+                      <Select.Option key={item.value} {...item}>
+                        {item.label}
                       </Select.Option>
                     ))}
                   </Select>
