@@ -40,6 +40,9 @@ class Entity(CoreEntity):
         return entity_graph_eq(self, other)
 
 
+EntityT = TypeVar("EntityT", bound=Entity)
+
+
 @attr.s(eq=False, kw_only=True)
 class ExternalIdEntity(Entity):
     """An entity that encodes ONLY external id information. This id entity will always
@@ -54,6 +57,9 @@ class ExternalIdEntity(Entity):
         if cls is ExternalIdEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
+
+
+ExternalIdEntityT = TypeVar("ExternalIdEntityT", bound=ExternalIdEntity)
 
 
 @attr.s(eq=False, kw_only=True)
@@ -71,15 +77,15 @@ class HasExternalIdEntity(Entity):
         return super().__new__(cls)
 
 
-ExternalIdT = TypeVar("ExternalIdT", bound=ExternalIdEntity)
+HasExternalIdEntityT = TypeVar("HasExternalIdEntityT", bound=HasExternalIdEntity)
 
 
 @attr.s(eq=False, kw_only=True)
-class HasMultipleExternalIdsEntity(Generic[ExternalIdT], Entity):
+class HasMultipleExternalIdsEntity(Generic[ExternalIdEntityT], Entity):
     """An entity that has multiple associated external ids."""
 
     @abc.abstractmethod
-    def get_external_ids(self) -> List[ExternalIdT]:
+    def get_external_ids(self) -> List[ExternalIdEntityT]:
         """Returns the list of external id objects for this class."""
 
     @environment.test_only
@@ -103,6 +109,9 @@ class EnumEntity(Entity):
         if cls is HasExternalIdEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
+
+
+EnumEntityT = TypeVar("EnumEntityT", bound=EnumEntity)
 
 
 class RootEntity:

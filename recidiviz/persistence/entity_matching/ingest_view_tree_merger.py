@@ -21,8 +21,8 @@ on a single day* into as few trees as possible.
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
-from recidiviz.persistence.entity.base_entity import ExternalIdEntity
-from recidiviz.persistence.entity.entity_deserialize import Entity, EntityT
+from recidiviz.persistence.entity.base_entity import EntityT, ExternalIdEntity
+from recidiviz.persistence.entity.entity_deserialize import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,

@@ -53,11 +53,10 @@ from recidiviz.common.str_field_utils import NormalizedJSON
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     IngestViewResultsParserDelegate,
 )
-from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
+from recidiviz.persistence.entity.base_entity import Entity, EntityT, EnumEntity
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
-    EntityT,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
