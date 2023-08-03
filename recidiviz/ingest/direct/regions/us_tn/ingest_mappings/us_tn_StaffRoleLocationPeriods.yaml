@@ -7,6 +7,7 @@ input_columns:
   - StaffTitle
   - End_Date
   - StatusChangeOrder
+  - SiteID
 unused_columns:
   - Status
 output:
@@ -32,3 +33,16 @@ output:
             $enum_mapping:
               $raw_text: StaffTitle
               $custom_parser: us_tn_custom_enum_parsers.staff_role_subtype_from_staff_title
+    location_periods:
+      - StateStaffLocationPeriod:
+          external_id:
+            $concat:
+              $values:
+                - StaffID
+                - StatusChangeOrder
+          start_date: Start_Date
+          end_date: End_Date
+          location_external_id:
+            $concat:
+              $values:
+                - SiteID
