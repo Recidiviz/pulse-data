@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_CMSACN
+file_description: |-
+  This file contains Sactioned Condition information.
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+  - SANC_NUMBER
+  - SEQUENCE_NO
+columns:
+  - name: SANC_DATE
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    description: |-
+      Date of sanction.
+  - name: INCIDENT_DATE
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    description: |-
+      The date the alleged violation occured or started.
+  - name: RECORD_KEY
+    description: |-
+      A unique number generated for each person.
+    is_pii: True
+  - name: SANC_NUMBER
+    description: |-
+      Unique number for each sanction.
+  - name: CONDITION_CODE
+    description: |-
+      For a sanction given, this lists the secondary conditions cited. Primary condition is CONDCODE.
+  - name: SEQUENCE_NO
+    description: |-
+      Sequences the sanctioned condition records for an offender by order of entry into the computer system.
+  - name: CONTESTED
+    description: |-
+      Indicates whether the individual involved contested the alleged violation.
+  - name: SUPPORTED
+    description: |-
+      Indicates whether allegations were supported.
