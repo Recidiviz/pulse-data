@@ -32,7 +32,7 @@ python -m recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
     --end-date-bound 2019-08-17 --project-id recidiviz-staging \
     --ingest-instance PRIMARY \
     --dry-run True \
-    --skip-prompts False
+    --skip-prompts False \
     [--file-tag-filters docstars_contacts elite_offenders]
 
 """
