@@ -1339,9 +1339,15 @@ class StateSupervisionViolationResponse(
     )
 
 
+# TODO(#17856): Delete StateAgent once all usages deprecated
 @attr.s(eq=False, kw_only=True)
 class StateAgent(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models an agent working within a justice system."""
+
+    # Override validator on parent class - we don't care that StateAgent has
+    # nonnull external_ids - this entity will never be referenced in the new
+    # implementation of entity matching run in Ingest in Dataflow
+    external_id: str = attr.ib(validator=attr_validators.is_opt_str)
 
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
@@ -1733,8 +1739,6 @@ class StateStaffExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # State providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
-    external_id: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     #   - What
     id_type: str = attr.ib(validator=attr_validators.is_str)
@@ -1809,8 +1813,6 @@ class StateStaffRolePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # State providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
-    external_id: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     #   - When
     start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
@@ -1852,8 +1854,6 @@ class StateStaffSupervisorPeriod(HasExternalIdEntity, BuildableAttr, Defaultable
     # State providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
-    external_id: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     #   - When
     start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
@@ -1889,8 +1889,6 @@ class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAt
     # State providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
-    external_id: str = attr.ib(validator=attr_validators.is_str)
-
     # Attributes
     #   - When
     start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
@@ -1918,9 +1916,6 @@ class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, Defaultab
     # State Code
     # State providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Unique ID of staff
-    external_id: str = attr.ib(validator=attr_validators.is_str)
 
     # The specialized case type that the officer supervises
     state_staff_specialized_caseload_type: StateStaffSpecializedCaseloadType = attr.ib(

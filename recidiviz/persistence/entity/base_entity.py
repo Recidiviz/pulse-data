@@ -49,8 +49,8 @@ class ExternalIdEntity(Entity):
     be connected to a HasMultipleExternalIdsEntity.
     """
 
-    external_id: str = attr.ib(validator=attr_validators.is_str)
-    id_type: str = attr.ib(validator=attr_validators.is_str)
+    external_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    id_type: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     # Consider ExternalIdEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
@@ -68,7 +68,7 @@ class HasExternalIdEntity(Entity):
     information besides the id.
     """
 
-    external_id: Optional[str] = attr.ib(default=None)
+    external_id: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     # Consider HasExternalIdEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
