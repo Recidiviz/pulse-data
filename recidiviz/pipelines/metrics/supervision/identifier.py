@@ -101,7 +101,6 @@ from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate im
 )
 from recidiviz.pipelines.utils.supervision_period_utils import (
     identify_most_severe_case_type,
-    should_produce_supervision_event_for_period,
     supervising_location_info,
 )
 from recidiviz.pipelines.utils.supervision_type_identification import (
@@ -215,46 +214,43 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
         supervision_events.extend(projected_supervision_completion_events)
         for supervision_period in supervision_period_index.sorted_supervision_periods:
-            if should_produce_supervision_event_for_period(supervision_period):
-                supervision_events.extend(
-                    self._find_population_events_for_supervision_period(
-                        person=person,
-                        supervision_sentences=supervision_sentences,
-                        incarceration_sentences=incarceration_sentences,
-                        supervision_period=supervision_period,
-                        supervision_period_index=supervision_period_index,
-                        incarceration_period_index=incarceration_period_index,
-                        assessments=assessments,
-                        violation_responses_for_history=violation_responses_for_history,
-                        supervision_contacts=supervision_contacts,
-                        violation_delegate=violation_delegate,
-                        supervision_delegate=supervision_delegate,
-                    )
-                )
-
-                supervision_termination_event = (
-                    self._find_supervision_termination_event(
-                        supervision_period=supervision_period,
-                        supervision_period_index=supervision_period_index,
-                        incarceration_period_index=incarceration_period_index,
-                        assessments=assessments,
-                        violation_responses_for_history=violation_responses_for_history,
-                        violation_delegate=violation_delegate,
-                        supervision_delegate=supervision_delegate,
-                    )
-                )
-
-                if supervision_termination_event:
-                    supervision_events.append(supervision_termination_event)
-
-                supervision_start_event = self._find_supervision_start_event(
+            supervision_events.extend(
+                self._find_population_events_for_supervision_period(
+                    person=person,
+                    supervision_sentences=supervision_sentences,
+                    incarceration_sentences=incarceration_sentences,
                     supervision_period=supervision_period,
                     supervision_period_index=supervision_period_index,
                     incarceration_period_index=incarceration_period_index,
+                    assessments=assessments,
+                    violation_responses_for_history=violation_responses_for_history,
+                    supervision_contacts=supervision_contacts,
+                    violation_delegate=violation_delegate,
                     supervision_delegate=supervision_delegate,
                 )
-                if supervision_start_event:
-                    supervision_events.append(supervision_start_event)
+            )
+
+            supervision_termination_event = self._find_supervision_termination_event(
+                supervision_period=supervision_period,
+                supervision_period_index=supervision_period_index,
+                incarceration_period_index=incarceration_period_index,
+                assessments=assessments,
+                violation_responses_for_history=violation_responses_for_history,
+                violation_delegate=violation_delegate,
+                supervision_delegate=supervision_delegate,
+            )
+
+            if supervision_termination_event:
+                supervision_events.append(supervision_termination_event)
+
+            supervision_start_event = self._find_supervision_start_event(
+                supervision_period=supervision_period,
+                supervision_period_index=supervision_period_index,
+                incarceration_period_index=incarceration_period_index,
+                supervision_delegate=supervision_delegate,
+            )
+            if supervision_start_event:
+                supervision_events.append(supervision_start_event)
 
         if supervision_delegate.supervision_types_mutually_exclusive():
             supervision_events = self._convert_events_to_dual(supervision_events)
