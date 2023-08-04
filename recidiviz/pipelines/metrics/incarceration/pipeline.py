@@ -27,9 +27,6 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
@@ -85,7 +82,6 @@ class IncarcerationMetricsPipeline(MetricPipeline):
     def required_reference_tables(cls) -> List[str]:
         return [
             PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-            SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
         ]
 
     @classmethod

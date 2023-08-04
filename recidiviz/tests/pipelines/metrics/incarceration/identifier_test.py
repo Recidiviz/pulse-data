@@ -17,7 +17,7 @@
 """Tests for incarceration/identifier.py."""
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -147,18 +147,6 @@ _DEFAULT_IP_ID = 123
 _DEFAULT_SP_ID = 999
 _DEFAULT_SSVR_ID = 789
 
-_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
-    _DEFAULT_SP_ID: {
-        "agent_id": 000,
-        "agent_external_id": "XXX",
-        "supervision_period_id": _DEFAULT_SP_ID,
-    }
-}
-
-_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST = list(
-    _DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()
-)
-
 
 class TestFindIncarcerationEvents(unittest.TestCase):
     """Tests the find_incarceration_events function."""
@@ -179,7 +167,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         violation_responses: Optional[
             List[NormalizedStateSupervisionViolationResponse]
         ] = None,
-        supervision_period_to_agent_association: Optional[List[Dict[str, Any]]] = None,
         state_code_override: Optional[str] = None,
     ) -> List[IncarcerationEvent]:
         """Helper for testing the find_events function on the identifier."""
@@ -191,10 +178,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             StateAssessment.__name__: assessments or [],
             NormalizedStateSupervisionViolationResponse.base_class_name(): violation_responses
             or [],
-            "supervision_period_to_agent_association": (
-                supervision_period_to_agent_association
-                or _DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
-            ),
             "persons_to_recent_county_of_residence": _COUNTY_OF_RESIDENCE_ROWS,
         }
 

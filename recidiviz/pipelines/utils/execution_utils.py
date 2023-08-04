@@ -50,7 +50,7 @@ EntityClassName = str
 # eg. StateSupervisionSentence.StateCharge
 EntityRelationshipKey = str
 
-# The name of a reference table, e.g. supervision_period_to_agent_association
+# The name of a reference table, e.g. persons_to_recent_county_of_residence
 TableName = str
 
 # The unifying id that can be used to group related objects together (e.g. person_id)

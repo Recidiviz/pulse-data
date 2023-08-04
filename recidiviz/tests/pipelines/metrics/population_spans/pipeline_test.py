@@ -222,15 +222,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_period, {"sequence_num": 0})
         ]
 
-        supervision_period_to_agent_association = [
-            {
-                "state_code": "US_XX",
-                "person_id": fake_person_id,
-                "supervision_period_id": fake_supervision_period_id,
-                "agent_external_id": "OFFICER 1",
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -256,7 +247,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
-            "supervision_period_to_agent_association": supervision_period_to_agent_association,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         # Given the empty dictionaries, we ignore the overall type until we fill in data.
@@ -375,7 +365,6 @@ class TestClassifyResults(unittest.TestCase):
         person: entities.StatePerson,
         incarceration_periods: Optional[List[entities.StateIncarcerationPeriod]] = None,
         supervision_periods: Optional[List[entities.StateSupervisionPeriod]] = None,
-        sp_to_agent_kv: Optional[List[Dict[Any, Any]]] = None,
         supervision_locations_to_names_associations_kv: Optional[
             List[Dict[Any, Any]]
         ] = None,
@@ -388,7 +377,6 @@ class TestClassifyResults(unittest.TestCase):
             entities.StateSupervisionPeriod.__name__: supervision_periods
             if supervision_periods
             else [],
-            "supervision_period_to_agent_association": sp_to_agent_kv or [],
             "supervision_location_ids_to_names": supervision_locations_to_names_associations_kv
             or [],
         }
@@ -428,12 +416,6 @@ class TestClassifyResults(unittest.TestCase):
                 sequence_num=0,
             )
         )
-
-        supervision_period_agent_association_result = {
-            "person_id": self.fake_person_id,
-            "agent_external_id": "OFFICER 1",
-            "supervision_period_id": 2222,
-        }
 
         supervision_location_to_name_map = {
             "state_code": "US_XX",
@@ -483,7 +465,6 @@ class TestClassifyResults(unittest.TestCase):
             person=self.fake_person,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
-            sp_to_agent_kv=[supervision_period_agent_association_result],
             supervision_locations_to_names_associations_kv=[
                 supervision_location_to_name_map
             ],

@@ -209,16 +209,6 @@ class TestProgramPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation_response)
         ]
 
-        supervision_period_to_agent_data = [
-            {
-                "agent_id": 1010,
-                "person_id": fake_person_id,
-                "state_code": "US_XX",
-                "agent_external_id": "OFFICER0009",
-                "supervision_period_id": fake_supervision_period_id,
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -246,7 +236,6 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
@@ -415,16 +404,6 @@ class TestProgramPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation_response)
         ]
 
-        supervision_period_to_agent_data = [
-            {
-                "agent_id": 1010,
-                "person_id": fake_person_id,
-                "state_code": "US_XX",
-                "agent_external_id": "OFFICER0009",
-                "supervision_period_id": supervision_period.supervision_period_id,
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -452,7 +431,6 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
@@ -530,13 +508,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             )
         )
 
-        supervision_period_to_agent_map = {
-            "agent_id": 1010,
-            "person_id": fake_person_id,
-            "agent_external_id": "OFFICER0009",
-            "supervision_period_id": supervision_period.supervision_period_id,
-        }
-
         supervision_location_to_name_map = {
             "state_code": "US_XX",
             "level_1_supervision_location_external_id": "site",
@@ -548,9 +519,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             entities.StateProgramAssignment.__name__: [program_assignment],
             entities.StateAssessment.__name__: [assessment],
             entities.StateSupervisionPeriod.__name__: [supervision_period],
-            "supervision_period_to_agent_association": [
-                supervision_period_to_agent_map
-            ],
             "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
@@ -647,13 +615,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             )
         )
 
-        supervision_period_to_agent_map = {
-            "agent_id": 1010,
-            "person_id": fake_person_id,
-            "agent_external_id": "OFFICER0009",
-            "supervision_period_id": supervision_period.supervision_period_id,
-        }
-
         supervision_location_to_name_map = {
             "state_code": "US_XX",
             "level_1_supervision_location_external_id": "site",
@@ -665,9 +626,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             entities.StateProgramAssignment.__name__: [program_assignment],
             entities.StateAssessment.__name__: [assessment],
             entities.StateSupervisionPeriod.__name__: [supervision_period],
-            "supervision_period_to_agent_association": [
-                supervision_period_to_agent_map
-            ],
             "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
@@ -751,13 +709,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             )
         )
 
-        supervision_period_to_agent_map = {
-            "agent_id": 1010,
-            "person_id": fake_person_id,
-            "agent_external_id": "OFFICER0009",
-            "supervision_period_id": supervision_period.supervision_period_id,
-        }
-
         supervision_location_to_name_map = {
             "state_code": "US_XX",
             "level_1_supervision_location_external_id": "site",
@@ -769,9 +720,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             entities.StateProgramAssignment.__name__: [],
             entities.StateAssessment.__name__: [assessment],
             entities.StateSupervisionPeriod.__name__: [supervision_period],
-            "supervision_period_to_agent_association": [
-                supervision_period_to_agent_map
-            ],
             "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
@@ -828,13 +776,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             )
         )
 
-        supervision_period_to_agent_map = {
-            "agent_id": 1010,
-            "person_id": fake_person_id,
-            "agent_external_id": "OFFICER0009",
-            "supervision_period_id": supervision_period.supervision_period_id,
-        }
-
         supervision_location_to_name_map = {
             "state_code": "US_XX",
             "level_1_supervision_location_external_id": "site",
@@ -846,9 +787,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             entities.StateProgramAssignment.__name__: [program_assignment],
             entities.StateAssessment.__name__: [],
             entities.StateSupervisionPeriod.__name__: [supervision_period],
-            "supervision_period_to_agent_association": [
-                supervision_period_to_agent_map
-            ],
             "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
@@ -916,8 +854,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_period_to_agent_map = {"supervision_period_id": "fake_map"}
-
         supervision_location_to_name_map = {
             "state_code": "US_XX",
             "level_1_supervision_location_external_id": "site",
@@ -929,9 +865,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             entities.StateProgramAssignment.__name__: [program_assignment],
             entities.StateAssessment.__name__: [assessment],
             entities.StateSupervisionPeriod.__name__: [],
-            "supervision_period_to_agent_association": [
-                supervision_period_to_agent_map
-            ],
             "supervision_location_ids_to_names": [supervision_location_to_name_map],
         }
 
