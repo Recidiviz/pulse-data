@@ -92,10 +92,10 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.gender,
     FROM incarceration_population_cte pop
     LEFT JOIN `{project_id}.{reference_views_dataset}.location_metadata_materialized` us_ix_facilities
-        ON pop.state_code = ix_facilities.state_code
-        AND pop.compartment_location = ix_facilities.location_name
+        ON pop.state_code = us_ix_facilities.state_code
+        AND pop.compartment_location = us_ix_facilities.location_name
         AND pop.compartment_level_1 = 'INCARCERATION'
-        AND ix_facilities.location_type in ('STATE_PRISON', 'MEDICAL_FACILITY', 'COUNTY_JAIL')
+        AND us_ix_facilities.location_type in ('STATE_PRISON', 'MEDICAL_FACILITY', 'COUNTY_JAIL')
         AND pop.state_code = 'US_IX'
     # TODO(#16661): Remove this section once US_ID fully deprecated
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_incarceration_facilities` us_id_facilities
