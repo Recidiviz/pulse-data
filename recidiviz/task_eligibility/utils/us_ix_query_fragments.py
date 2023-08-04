@@ -17,10 +17,10 @@
 """
 Helper SQL queries for Idaho
 """
+from recidiviz.calculator.query.bq_utils import nonnull_start_date_clause
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
-from recidiviz.calculator.query.bq_utils import nonnull_start_date_clause
 
 
 def date_within_time_span(
@@ -67,6 +67,3 @@ def date_within_time_span(
     FROM
       critical_date_has_passed_spans
     """
-
-
-print(date_within_time_span(2555, "tentative_end_date"))
