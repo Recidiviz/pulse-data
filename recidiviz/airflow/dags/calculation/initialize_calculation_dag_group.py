@@ -16,12 +16,12 @@
 # =============================================================================
 """Handles queueing of calculation dags."""
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Set, Union
 
 from airflow.decorators import task, task_group
 from airflow.exceptions import TaskDeferred
-from airflow.models import DagRun, TaskInstance
+from airflow.models import DagRun
 from airflow.sensors.base import BaseSensorOperator
 from airflow.triggers.temporal import TimeDeltaTrigger
 from airflow.utils.context import Context
@@ -41,16 +41,10 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 
 
 INITIALIZE_DAG_GROUP_ID = "initialize_dag"
-UPDATE_PARAMETERS_TASK_ID = "verify_and_update_parameters"
-UPDATE_PARAMETERS_FULL_TASK_ID = (
-    f"{INITIALIZE_DAG_GROUP_ID}.{UPDATE_PARAMETERS_TASK_ID}"
-)
 
 
-@task(task_id=UPDATE_PARAMETERS_TASK_ID)
-def verify_and_update_parameters(
-    dag_run: Optional[DagRun] = None,
-) -> Dict[str, Optional[Union[str, bool]]]:
+@task
+def verify_parameters(dag_run: Optional[DagRun] = None) -> None:
     """Verifies that the required parameters are set in the dag_run configuration and
     returns additional parameters that can be referenced throughout the DAG run.
     """
@@ -80,7 +74,7 @@ def verify_and_update_parameters(
             f"[ingest_instance] not valid DirectIngestInstance: {ingest_instance}."
         )
 
-    sandbox_prefix: Optional[str] = None
+    sandbox_prefix: Optional[str] = get_sandbox_prefix(dag_run)
     if ingest_instance == "SECONDARY":
         state_code_filter = get_state_code_filter(dag_run)
         if not state_code_filter:
@@ -88,30 +82,15 @@ def verify_and_update_parameters(
                 "[state_code_filter] must be set in dag_run configuration for SECONDARY "
                 "ingest_instance"
             )
-        sandbox_prefix = f"{state_code_filter.lower()}_secondary_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
-        logging.info("Setting sandbox prefix to %s", sandbox_prefix)
-    return {
-        "sandbox_prefix": sandbox_prefix,
-        # TODO(#21079): We need this because we want positive confirmation that the
-        #  parameters have been set and can't yet test this in unittests. Remove the
-        #  "parameters_set" checks once we can confirm the parameters get set in the
-        #  correct task via a unittest.
-        "parameters_set": True,
-    }
+        if not sandbox_prefix:
+            raise ValueError(
+                "[sandbox_prefix] must be set in dag_run configuration for SECONDARY "
+                "ingest_instance"
+            )
 
 
-def get_sandbox_prefix(task_instance: TaskInstance) -> Optional[str]:
-    parameters_set = task_instance.xcom_pull(
-        task_ids=UPDATE_PARAMETERS_FULL_TASK_ID, key="parameters_set"
-    )
-    if not parameters_set:
-        raise ValueError(
-            f"Parameters not set in task id {UPDATE_PARAMETERS_FULL_TASK_ID}."
-        )
-
-    return task_instance.xcom_pull(
-        task_ids=UPDATE_PARAMETERS_FULL_TASK_ID, key="sandbox_prefix"
-    )
+def get_sandbox_prefix(dag_run: DagRun) -> Optional[str]:
+    return dag_run.conf.get("sandbox_prefix")
 
 
 def get_ingest_instance(dag_run: DagRun) -> str:
@@ -246,7 +225,7 @@ def initialize_calculation_dag_group() -> Any:
         task_id="wait_to_continue_or_cancel"
     )
     (
-        handle_params_check(verify_and_update_parameters())
+        handle_params_check(verify_parameters())
         >> wait_to_continue_or_cancel
         >> handle_queueing_result(wait_to_continue_or_cancel.output)
     )
