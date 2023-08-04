@@ -1,11 +1,11 @@
-                                                          execution_date                      state  state_change  session_id
-dag_id   conf                      task_id                                                                                   
-test_dag {"instance": "PRIMARY"}   parent_task 2023-07-06 12:00:00+00:00  TaskInstanceState.success          True           1
-                                   parent_task 2023-07-07 12:00:00+00:00  TaskInstanceState.success         False           1
-                                   parent_task 2023-07-08 12:00:00+00:00  TaskInstanceState.success         False           1
-         {"instance": "SECONDARY"} parent_task 2023-07-06 12:01:00+00:00  TaskInstanceState.success         False           0
-                                   parent_task 2023-07-07 12:01:00+00:00   TaskInstanceState.failed          True           1
-                                   parent_task 2023-07-08 12:01:00+00:00   TaskInstanceState.failed         False           1
-         {"instance": "TERTIARY"}  parent_task 2023-07-06 12:02:00+00:00  TaskInstanceState.success          True           1
-                                   parent_task 2023-07-07 12:02:00+00:00   TaskInstanceState.failed          True           2
-                                   parent_task 2023-07-08 12:02:00+00:00  TaskInstanceState.success          True           3
+                                                          execution_date                      state
+dag_id   conf                      task_id                                                         
+test_dag {"instance": "PRIMARY"}   parent_task 2023-07-06 12:00:00+00:00  TaskInstanceState.success
+                                   parent_task 2023-07-07 12:00:00+00:00  TaskInstanceState.success
+                                   parent_task 2023-07-08 12:00:00+00:00  TaskInstanceState.success
+         {"instance": "SECONDARY"} parent_task 2023-07-06 12:01:00+00:00  TaskInstanceState.success
+                                   parent_task 2023-07-07 12:01:00+00:00   TaskInstanceState.failed
+                                   parent_task 2023-07-08 12:01:00+00:00   TaskInstanceState.failed
+         {"instance": "TERTIARY"}  parent_task 2023-07-06 12:02:00+00:00  TaskInstanceState.success
+                                   parent_task 2023-07-07 12:02:00+00:00   TaskInstanceState.failed
+                                   parent_task 2023-07-08 12:02:00+00:00  TaskInstanceState.success

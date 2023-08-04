@@ -80,16 +80,21 @@ def build_incident_history(
         dag_ids=dag_ids, lookback=lookback, session=session
     )
 
+    # Slice DataFrame to failed, success before generating session ids based on state change
     dataframe = dataframe[
         (dataframe.state == TaskInstanceState.failed)
         | (dataframe.state == TaskInstanceState.success)
     ]
+    dataframe["state_change"] = dataframe.state != dataframe.state.shift(1)
+    dataframe["session_id"] = dataframe.groupby(level=dataframe.index.names)[
+        "state_change"
+    ].cumsum()
 
     # Map of unique incident IDs to incidents
     incidents: Dict[str, AirflowAlertingIncident] = {}
 
     # Loop over discrete dag members (dag_id, conf, task_id)
-    for discrete_dag in dataframe.index:
+    for discrete_dag in dataframe.index.unique():
         # Select all task runs for this discrete dag and copy slice into a new DataFrame
         task_runs = dataframe.loc[discrete_dag].copy()
         dag_id, conf, task_id = discrete_dag
@@ -253,8 +258,6 @@ def _build_task_instance_state_dataframe(
     df.state = df.state.apply(TaskInstanceState)
     df.execution_date = df.execution_date.dt.to_pydatetime()
     df = df.set_index(["dag_id", "conf", "task_id"]).sort_index()
-    df["state_change"] = df.state != df.state.shift(1)
-    df["session_id"] = df.groupby(level=df.index.names)["state_change"].cumsum()
 
     return df
 

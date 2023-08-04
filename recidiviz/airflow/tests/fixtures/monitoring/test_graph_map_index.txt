@@ -1,8 +1,8 @@
-                                     execution_date                      state  state_change  session_id
-dag_id   conf task_id                                                                                   
-test_dag {}   child_task  2023-07-06 00:00:00+00:00  TaskInstanceState.success          True           1
-              child_task  2023-07-07 00:00:00+00:00   TaskInstanceState.failed          True           2
-              child_task  2023-07-08 00:00:00+00:00   TaskInstanceState.failed         False           2
-              parent_task 2023-07-06 00:00:00+00:00  TaskInstanceState.success          True           1
-              parent_task 2023-07-07 00:00:00+00:00  TaskInstanceState.success         False           1
-              parent_task 2023-07-08 00:00:00+00:00  TaskInstanceState.success         False           1
+                                     execution_date                      state
+dag_id   conf task_id                                                         
+test_dag {}   child_task  2023-07-06 00:00:00+00:00  TaskInstanceState.success
+              child_task  2023-07-07 00:00:00+00:00   TaskInstanceState.failed
+              child_task  2023-07-08 00:00:00+00:00   TaskInstanceState.failed
+              parent_task 2023-07-06 00:00:00+00:00  TaskInstanceState.success
+              parent_task 2023-07-07 00:00:00+00:00  TaskInstanceState.success
+              parent_task 2023-07-08 00:00:00+00:00  TaskInstanceState.success
