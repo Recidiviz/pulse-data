@@ -36,7 +36,6 @@ SELECT
     staff.full_name,
     staff.email,
     attrs.supervision_district,
-    attrs.supervision_unit, 
     attrs.supervisor_staff_external_id AS supervisor_external_id,
     attrs.specialized_caseload_type AS specialized_caseload_type,
 FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` attrs

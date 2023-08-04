@@ -25,7 +25,6 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema.outliers.schema import (
     OutliersBase,
     SupervisionDistrict,
-    SupervisionUnit,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
@@ -125,24 +124,11 @@ class TestLoadLocalDb(TestCase):
             contents="US_XX,1,District 1",
             content_type="text/csv",
         )
-        fake_gcs.upload_from_string(
-            path=GcsfsFilePath.from_absolute_path(
-                f"gs://{bucket}/US_XX/supervision_units.csv"
-            ),
-            contents="US_XX,A,Unit A,1",
-            content_type="text/csv",
-        )
-
         import_outliers_from_gcs(
-            self.engine,
-            [SupervisionDistrict, SupervisionUnit],
-            bucket,
-            "US_XX",
-            fake_gcs,
+            self.engine, [SupervisionDistrict], bucket, "US_XX", fake_gcs
         )
 
         with SessionFactory.using_database(
             self.db_key, autocommit=False
         ) as read_session:
             self.assertTrue(len(read_session.query(SupervisionDistrict).all()) > 0)
-            self.assertTrue(len(read_session.query(SupervisionUnit).all()) > 0)
