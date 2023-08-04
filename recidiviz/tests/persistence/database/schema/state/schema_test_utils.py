@@ -82,7 +82,9 @@ def generate_incarceration_sentence(
     return schema.StateIncarcerationSentence(person=person, **args)
 
 
-def generate_incarceration_period(person, **kwargs) -> schema.StateIncarcerationPeriod:
+def generate_incarceration_period(
+    person: schema.StatePerson, **kwargs
+) -> schema.StateIncarcerationPeriod:
     args = {
         "state_code": _STATE_CODE,
         "incarceration_type": StateIncarcerationType.STATE_PRISON.value,
@@ -162,7 +164,9 @@ def generate_supervision_case_type_entry(
     return schema.StateSupervisionCaseTypeEntry(person=person, **args)
 
 
-def generate_supervision_period(person, **kwargs) -> schema.StateSupervisionPeriod:
+def generate_supervision_period(
+    person: schema.StatePerson, **kwargs
+) -> schema.StateSupervisionPeriod:
     args = {
         "state_code": _STATE_CODE,
     }
@@ -170,7 +174,9 @@ def generate_supervision_period(person, **kwargs) -> schema.StateSupervisionPeri
     return schema.StateSupervisionPeriod(person=person, **args)
 
 
-def generate_supervision_sentence(person, **kwargs) -> schema.StateSupervisionSentence:
+def generate_supervision_sentence(
+    person: schema.StatePerson, **kwargs
+) -> schema.StateSupervisionSentence:
     args = {
         "state_code": _STATE_CODE,
         "status": StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
@@ -179,7 +185,7 @@ def generate_supervision_sentence(person, **kwargs) -> schema.StateSupervisionSe
     return schema.StateSupervisionSentence(person=person, **args)
 
 
-def generate_charge(person, **kwargs) -> schema.StateCharge:
+def generate_charge(person: schema.StatePerson, **kwargs) -> schema.StateCharge:
     args = {
         "status": StateChargeStatus.PRESENT_WITHOUT_INFO.value,
         "state_code": _STATE_CODE,
@@ -188,7 +194,7 @@ def generate_charge(person, **kwargs) -> schema.StateCharge:
     return schema.StateCharge(person=person, **args)
 
 
-def generate_assessment(person, **kwargs) -> schema.StateAssessment:
+def generate_assessment(person: schema.StatePerson, **kwargs) -> schema.StateAssessment:
     args = {
         "state_code": _STATE_CODE,
     }
@@ -205,7 +211,9 @@ def generate_agent(**kwargs) -> schema.StateAgent:
     return schema.StateAgent(**args)
 
 
-def generate_early_discharge(person, **kwargs) -> schema.StateEarlyDischarge:
+def generate_early_discharge(
+    person: schema.StatePerson, **kwargs
+) -> schema.StateEarlyDischarge:
     args = {
         "state_code": _STATE_CODE,
     }
@@ -213,7 +221,9 @@ def generate_early_discharge(person, **kwargs) -> schema.StateEarlyDischarge:
     return schema.StateEarlyDischarge(person=person, **args)
 
 
-def generate_program_assignment(person, **kwargs) -> schema.StateProgramAssignment:
+def generate_program_assignment(
+    person: schema.StatePerson, **kwargs
+) -> schema.StateProgramAssignment:
     args = {
         "state_code": _STATE_CODE,
         "participation_status": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
@@ -222,7 +232,9 @@ def generate_program_assignment(person, **kwargs) -> schema.StateProgramAssignme
     return schema.StateProgramAssignment(person=person, **args)
 
 
-def generate_supervision_contact(person, **kwargs) -> schema.StateSupervisionContact:
+def generate_supervision_contact(
+    person: schema.StatePerson, **kwargs
+) -> schema.StateSupervisionContact:
     args = {
         "state_code": _STATE_CODE,
     }

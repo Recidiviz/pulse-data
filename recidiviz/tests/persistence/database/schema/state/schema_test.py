@@ -854,6 +854,7 @@ class TestStateSupervisionPeriod(unittest.TestCase):
         )
         db_supervision_period = generate_supervision_period(
             person=db_person,
+            external_id="sp1",
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -874,6 +875,7 @@ class TestStateSupervisionPeriod(unittest.TestCase):
         )
         db_supervision_period = generate_supervision_period(
             person=db_person,
+            external_id="sp1",
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -881,6 +883,7 @@ class TestStateSupervisionPeriod(unittest.TestCase):
         )
         db_supervision_period_2 = generate_supervision_period(
             person=db_person,
+            external_id="sp2",
             state_code=self.state_code,
             supervising_officer_staff_external_id=None,
             supervising_officer_staff_external_id_type=None,
@@ -901,6 +904,7 @@ class TestStateSupervisionPeriod(unittest.TestCase):
         )
         db_supervision_period = generate_supervision_period(
             person=db_person,
+            external_id="sp1",
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type=None,
@@ -928,6 +932,7 @@ class TestStateSupervisionPeriod(unittest.TestCase):
         )
         db_supervision_period = generate_supervision_period(
             person=db_person,
+            external_id="sp1",
             state_code=self.state_code,
             supervising_officer_staff_external_id=None,
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -986,6 +991,7 @@ class TestStateAssessment(unittest.TestCase):
         )
         db_state_assessment = generate_assessment(
             person=db_person,
+            external_id="a1",
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1006,6 +1012,7 @@ class TestStateAssessment(unittest.TestCase):
         )
         db_state_assessment = generate_assessment(
             person=db_person,
+            external_id="a1",
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1013,6 +1020,7 @@ class TestStateAssessment(unittest.TestCase):
         )
         db_state_assessment_2 = generate_assessment(
             person=db_person,
+            external_id="a2",
             state_code=self.state_code,
             conducting_staff_external_id=None,
             conducting_staff_external_id_type=None,
@@ -1033,6 +1041,7 @@ class TestStateAssessment(unittest.TestCase):
         )
         db_state_assessment = generate_assessment(
             person=db_person,
+            external_id="a1",
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type=None,
@@ -1060,6 +1069,7 @@ class TestStateAssessment(unittest.TestCase):
         )
         db_state_assessment = generate_assessment(
             person=db_person,
+            external_id="a1",
             state_code=self.state_code,
             conducting_staff_external_id=None,
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1118,6 +1128,7 @@ class TestStateSupervisionContact(unittest.TestCase):
         )
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
+            external_id="sc1",
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1138,6 +1149,7 @@ class TestStateSupervisionContact(unittest.TestCase):
         )
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
+            external_id="sc1",
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1145,6 +1157,7 @@ class TestStateSupervisionContact(unittest.TestCase):
         )
         db_state_supervision_contact_2 = generate_supervision_contact(
             person=db_person,
+            external_id="sc2",
             state_code=self.state_code,
             contacting_staff_external_id=None,
             contacting_staff_external_id_type=None,
@@ -1165,6 +1178,7 @@ class TestStateSupervisionContact(unittest.TestCase):
         )
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
+            external_id="sc1",
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type=None,
@@ -1192,6 +1206,7 @@ class TestStateSupervisionContact(unittest.TestCase):
         )
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
+            external_id="sc1",
             state_code=self.state_code,
             contacting_staff_external_id=None,
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1250,6 +1265,7 @@ class TestStateProgramAssignment(unittest.TestCase):
         )
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
+            external_id="pa1",
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1270,6 +1286,7 @@ class TestStateProgramAssignment(unittest.TestCase):
         )
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
+            external_id="pa1",
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1277,6 +1294,7 @@ class TestStateProgramAssignment(unittest.TestCase):
         )
         db_state_program_assignment_2 = generate_program_assignment(
             person=db_person,
+            external_id="pa2",
             state_code=self.state_code,
             referring_staff_external_id=None,
             referring_staff_external_id_type=None,
@@ -1296,6 +1314,7 @@ class TestStateProgramAssignment(unittest.TestCase):
         )
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
+            external_id="pa1",
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type=None,
@@ -1323,6 +1342,7 @@ class TestStateProgramAssignment(unittest.TestCase):
         )
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
+            external_id="pa1",
             state_code=self.state_code,
             referring_staff_external_id=None,
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
@@ -1382,6 +1402,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_assessment = generate_assessment(
             assessment_id=456,
+            external_id="a1",
             person=test_person,
             state_code=self.state_code,
             conducting_staff_external_id="1234",
@@ -1410,6 +1431,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_assessment = generate_assessment(
             assessment_id=456,
+            external_id="a1",
             person=test_person,
             state_code=self.state_code,
             conducting_staff_external_id=test_agent.external_id,
@@ -1429,6 +1451,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_assessment = schema.StateAssessment(
             assessment_id=456,
+            external_id="a1",
             person=test_person,
             state_code=self.state_code,
             conducting_staff_external_id="1234",
@@ -1457,6 +1480,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_assessment = generate_assessment(
             assessment_id=456,
+            external_id="a1",
             person=test_person,
             state_code=self.state_code,
             conducting_staff_external_id=None,
@@ -1485,6 +1509,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_supervision_period = generate_supervision_period(
             supervision_period_id=4444,
+            external_id="sp1",
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1514,6 +1539,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_supervision_period = generate_supervision_period(
             supervision_period_id=4444,
+            external_id="sp1",
             supervising_officer_staff_external_id=test_agent.external_id,
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1534,6 +1560,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_supervision_period = generate_supervision_period(
             supervision_period_id=4444,
+            external_id="sp1",
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1563,6 +1590,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_supervision_period = generate_supervision_period(
             supervision_period_id=4444,
+            external_id="sp1",
             supervising_officer_staff_external_id=None,
             supervising_officer_staff_external_id_type=None,
             state_code=self.state_code,
@@ -1592,6 +1620,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_supervision_contact = generate_supervision_contact(
             supervision_contact_id=4444,
+            external_id="sc1",
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1620,6 +1649,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_supervision_contact = generate_supervision_contact(
             supervision_contact_id=4444,
+            external_id="sc1",
             contacting_staff_external_id=test_agent.external_id,
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1639,6 +1669,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_supervision_contact = generate_supervision_contact(
             supervision_contact_id=4444,
+            external_id="sc1",
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1667,6 +1698,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_supervision_contact = generate_supervision_contact(
             supervision_contact_id=4444,
+            external_id="sc1",
             contacting_staff_external_id=None,
             contacting_staff_external_id_type=None,
             state_code=self.state_code,
@@ -1695,6 +1727,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_program_assignment = generate_program_assignment(
             program_assignment_id=4444,
+            external_id="pa1",
             referring_staff_external_id="1234",
             referring_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1724,6 +1757,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_program_assignment = generate_program_assignment(
             program_assignment_id=4444,
+            external_id="pa1",
             referring_staff_external_id=test_agent.external_id,
             referring_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1745,6 +1779,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_program_assignment = generate_program_assignment(
             program_assignment_id=4444,
+            external_id="pa1",
             referring_staff_external_id="1234",
             referring_staff_external_id_type="EXTERNAL_ID_TYPE",
             state_code=self.state_code,
@@ -1774,6 +1809,7 @@ class TestStateAgentExternalIdMatch(unittest.TestCase):
 
         test_program_assignment = generate_program_assignment(
             program_assignment_id=4444,
+            external_id="pa1",
             referring_staff_external_id=None,
             referring_staff_external_id_type=None,
             state_code=self.state_code,

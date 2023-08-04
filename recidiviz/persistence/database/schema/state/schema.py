@@ -1169,6 +1169,7 @@ class StateCharge(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateCharge"
@@ -1304,6 +1305,7 @@ class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateAssessment"
@@ -1400,6 +1402,7 @@ class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionSentence"
@@ -1520,6 +1523,7 @@ class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns)
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateIncarcerationSentence"
@@ -1670,6 +1674,7 @@ class StateIncarcerationPeriod(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateIncarcerationPeriod"
@@ -1800,6 +1805,7 @@ class StateSupervisionPeriod(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionPeriod"
@@ -1999,6 +2005,7 @@ class StateIncarcerationIncident(StateBase, _ReferencesStatePersonSharedColumns)
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateIncarcerationIncident"
@@ -2069,6 +2076,7 @@ class StateIncarcerationIncidentOutcome(StateBase, _ReferencesStatePersonSharedC
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE,
@@ -2202,7 +2210,7 @@ class StateSupervisionViolatedConditionEntry(
 
     condition = Column(
         state_supervision_violated_condition_type,
-        nullable=True,
+        nullable=False,
         comment="The specific condition of supervision which was violated.",
     )
 
@@ -2257,6 +2265,7 @@ class StateSupervisionViolation(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionViolation"
@@ -2321,8 +2330,8 @@ class StateSupervisionViolationResponseDecisionEntry(
     )
     decision = Column(
         state_supervision_violation_response_decision,
-        nullable=True,
-        comment="A specific decision that was made in response, if applicable.",
+        nullable=False,
+        comment="A specific decision that was made in response.",
     )
     decision_raw_text = Column(
         String(255),
@@ -2382,6 +2391,7 @@ class StateSupervisionViolationResponse(StateBase, _ReferencesStatePersonSharedC
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE,
@@ -2536,6 +2546,7 @@ class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateProgramAssignment"
@@ -2638,6 +2649,7 @@ class StateEarlyDischarge(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateEarlyDischarge"
@@ -2767,6 +2779,7 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionContact"
@@ -2881,6 +2894,7 @@ class StateEmploymentPeriod(StateBase, _ReferencesStatePersonSharedColumns):
 
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateEmploymentPeriod"
@@ -2978,6 +2992,7 @@ class StateDrugScreen(StateBase, _ReferencesStatePersonSharedColumns):
     )
     external_id = Column(
         String(255),
+        nullable=False,
         index=True,
         comment=StrictStringFormatter().format(
             EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateDrugScreen"
