@@ -155,7 +155,7 @@ class TestMetricInterface(TestCase):
                 "reporting_note": None,
                 "description": "The amount of funding for agency law enforcement activities.",
                 "disaggregated_by_supervision_subsystems": None,
-                "category": "Capacity and Cost",
+                "category": "Capacity and Costs",
                 "value": 100000,
                 "unit": "USD",
                 "label": "Funding",
