@@ -261,7 +261,6 @@ class TestFindProgramReferrals(unittest.TestCase):
             supervision_periods,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -303,7 +302,6 @@ class TestFindProgramReferrals(unittest.TestCase):
             supervision_periods,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -356,9 +354,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_assignment,
             assessments,
             supervision_periods,
-            UsXxSupervisionDelegate(
-                [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
-            ),
+            UsXxSupervisionDelegate([]),
         )
 
         assert program_assignment.program_id is not None
@@ -418,7 +414,6 @@ class TestFindProgramReferrals(unittest.TestCase):
             supervision_periods,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -488,7 +483,6 @@ class TestFindProgramReferrals(unittest.TestCase):
             supervision_periods,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -554,21 +548,12 @@ class TestFindProgramReferrals(unittest.TestCase):
         supervision_periods = [supervision_period]
 
         assert supervision_period.supervision_period_id is not None
-        supervision_period_agent_associations = {
-            supervision_period.supervision_period_id: {
-                "agent_id": 000,
-                "agent_external_id": "OFFICER10",
-                "supervision_period_id": supervision_period.supervision_period_id,
-            }
-        }
 
         program_referrals = self.identifier._find_program_referrals(
             program_assignment,
             assessments,
             supervision_periods,
-            UsXxSupervisionDelegate(
-                [], list(supervision_period_agent_associations.values())
-            ),
+            UsXxSupervisionDelegate([]),
         )
 
         assert program_assignment.program_id is not None
@@ -783,7 +768,6 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_periods=[supervision_period],
             supervision_delegate=UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -844,7 +828,6 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_periods=supervision_periods,
             supervision_delegate=UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 
@@ -915,7 +898,6 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             supervision_periods=supervision_periods,
             supervision_delegate=UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
         )
 

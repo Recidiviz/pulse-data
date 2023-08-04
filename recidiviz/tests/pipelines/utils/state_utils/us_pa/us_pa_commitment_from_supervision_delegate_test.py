@@ -244,9 +244,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period_index=incarceration_period_index,
             supervision_period_index=supervision_period_index,
             commitment_from_supervision_delegate=UsPaCommitmentFromSupervisionDelegate(),
-            supervision_delegate=UsPaSupervisionDelegate(
-                [], list(supervision_period_to_agent_associations.values())
-            ),
+            supervision_delegate=UsPaSupervisionDelegate([]),
         )
 
     def test_get_commitment_from_supervision_details_pvc(self) -> None:
@@ -305,11 +303,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype="PVC",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    supervision_period.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
@@ -401,11 +394,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=pre_commitment_sp.supervision_site,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    pre_commitment_sp.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_commitment_sp.supervision_level,
@@ -498,11 +486,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=pre_board_hold_sp.supervision_site,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    pre_board_hold_sp.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_board_hold_sp.supervision_level,

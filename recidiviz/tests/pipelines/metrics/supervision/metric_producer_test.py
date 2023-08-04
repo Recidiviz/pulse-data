@@ -1600,7 +1600,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervising_district_external_id="INTERSTATE PROBATION - 123",
             projected_end_date=None,
             supervision_out_of_state=UsIdSupervisionDelegate(
-                [], []
+                []
             ).is_supervision_location_out_of_state("INTERSTATE PROBATION - 123"),
         )
 
@@ -2008,7 +2008,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             return True
 
     def test_include_event_in_metric_out_of_state(self) -> None:
-        supervision_delegate = self.OutOfStateDelegate([], [])
+        supervision_delegate = self.OutOfStateDelegate([])
 
         event = SupervisionPopulationEvent(
             state_code="US_XX",

@@ -129,7 +129,6 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
     default_normalized_sp_index_for_tests,
 )
 from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
-    DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,
     STATE_DELEGATES_FOR_TESTS,
 )
 from recidiviz.utils.types import assert_type
@@ -1049,9 +1048,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    [], DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST
-                ),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             )
         )
 
@@ -1186,9 +1183,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
                 violation_delegate=UsXxViolationDelegate(),
-                supervision_delegate=UsXxSupervisionDelegate(
-                    [], DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST
-                ),
+                supervision_delegate=UsXxSupervisionDelegate([]),
             )
         )
 
@@ -1329,18 +1324,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
                 violation_delegate=UsMoViolationDelegate(),
-                supervision_delegate=UsMoSupervisionDelegate(
-                    [],
-                    [
-                        {
-                            "agent_id": 000,
-                            "agent_external_id": "XXX",
-                            "supervision_period_id": _DEFAULT_SP_ID,
-                            "agent_start_date": date(2008, 3, 5),
-                            "agent_end_date": date(2012, 12, 19),
-                        }
-                    ],
-                ),
+                supervision_delegate=UsMoSupervisionDelegate([]),
             )
         )
 
@@ -1425,9 +1409,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_responses=[ssvr],
             commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
             violation_delegate=UsNdViolationDelegate(),
-            supervision_delegate=UsNdSupervisionDelegate(
-                [], DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST
-            ),
+            supervision_delegate=UsNdSupervisionDelegate([]),
         )
 
         assert incarceration_period.admission_date is not None
@@ -1483,7 +1465,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         supervision_period_index = default_normalized_sp_index_for_tests()
 
         incarceration_delegate = incarceration_delegate or UsXxIncarcerationDelegate()
-        supervision_delegate = supervision_delegate or UsXxSupervisionDelegate([], [])
+        supervision_delegate = supervision_delegate or UsXxSupervisionDelegate([])
 
         # pylint: disable=protected-access
         return self.identifier._release_event_for_period(
@@ -1623,7 +1605,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
         incarceration_delegate = UsIdIncarcerationDelegate()
-        supervision_delegate = UsIdSupervisionDelegate([], [])
+        supervision_delegate = UsIdSupervisionDelegate([])
 
         incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period]
@@ -1687,7 +1669,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
         incarceration_delegate = UsMoIncarcerationDelegate()
-        supervision_delegate = UsMoSupervisionDelegate([], [])
+        supervision_delegate = UsMoSupervisionDelegate([])
 
         incarceration_period_index = default_normalized_ip_index_for_tests(
             incarceration_periods=[incarceration_period]
@@ -1771,7 +1753,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period_index,
             supervision_period_index,
             UsNdIncarcerationDelegate(),
-            UsNdSupervisionDelegate([], []),
+            UsNdSupervisionDelegate([]),
             {},
             _COUNTY_OF_RESIDENCE,
         )

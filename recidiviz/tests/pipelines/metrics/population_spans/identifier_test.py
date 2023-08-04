@@ -122,7 +122,6 @@ class TestFindPopulationSpans(unittest.TestCase):
             "StateSpecificSupervisionDelegate": supervision_delegate
             or UsXxSupervisionDelegate(
                 _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS,
-                _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION,
             ),
         }
 
@@ -957,7 +956,6 @@ class TestFindPopulationSpans(unittest.TestCase):
         spans = self._run_find_population_spans(
             supervision_delegate=self.TestsXxSupervisionDelegate(
                 _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS,
-                _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION,
             ),
             incarceration_periods=[],
             supervision_periods=[

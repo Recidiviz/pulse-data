@@ -72,10 +72,9 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
     """Unit tests for state_specific_supervision_delegate default function implementations."""
 
     def setUp(self) -> None:
-        self.supervision_delegate = UsXxSupervisionDelegate([], [])
+        self.supervision_delegate = UsXxSupervisionDelegate([])
         self.default_supervision_delegate = UsXxSupervisionDelegate(
             DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
         )
 
     def test_supervision_location_from_supervision_site(self) -> None:
