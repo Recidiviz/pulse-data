@@ -20,7 +20,10 @@ import {
   outliersSupervisorChartInputSchema,
 } from "../../server/generate/outliersSupervisorChart/types";
 import { targetStatusSchema } from "../../server/generate/schema/helpers";
-import { officersDataZeroMode } from "../SwarmedCircleGroup/fixtures";
+import {
+  officersDataNonZeroMode,
+  officersDataZeroMode,
+} from "../SwarmedCircleGroup/fixtures";
 
 export const fittingSupervisorData: OutliersSupervisorChartInput["data"] = {
   highlightedOfficers: [
@@ -87,4 +90,12 @@ overflowingSupervisorData.highlightedOfficers.push(
 export const overflowingSupervisorDataTransformed =
   outliersSupervisorChartInputSchema.shape.data.parse(
     overflowingSupervisorData
+  );
+
+export const cappedSwarmSupervisorData = structuredClone(fittingSupervisorData);
+cappedSwarmSupervisorData.otherOfficers = officersDataNonZeroMode;
+
+export const cappedSwarmSupervisorDataTransformed =
+  outliersSupervisorChartInputSchema.shape.data.parse(
+    cappedSwarmSupervisorData
   );

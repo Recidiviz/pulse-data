@@ -17,8 +17,6 @@
 
 import type { Preview } from "@storybook/react";
 import "@fontsource/public-sans/500.css";
-import { renderToStaticSvg } from '../src/components/utils'
-import React from 'react';
 
 
 const preview: Preview = {
@@ -31,11 +29,6 @@ const preview: Preview = {
       },
     },
   },
-  decorators: [
-    // simulate static, server-side rendering for all stories
-    (Story) => {
-      return <div dangerouslySetInnerHTML={{ __html: renderToStaticSvg(Story) }} />;
-    }]
 };
 
 export default preview;

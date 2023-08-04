@@ -18,6 +18,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
+  cappedSwarmSupervisorDataTransformed,
   fittingSupervisorDataTransformed,
   overflowingSupervisorDataTransformed,
 } from "./fixtures";
@@ -49,5 +50,13 @@ export const WithOverflowingHighlights: Story = {
   args: {
     width,
     data: overflowingSupervisorDataTransformed,
+  },
+};
+
+export const WithOverflowingSwarm: Story = {
+  render,
+  args: {
+    width,
+    data: cappedSwarmSupervisorDataTransformed,
   },
 };

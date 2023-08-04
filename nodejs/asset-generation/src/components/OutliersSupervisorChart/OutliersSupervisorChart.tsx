@@ -47,6 +47,7 @@ import {
 
 const formatExtent = format(".0%");
 const formatTarget = format(".1%");
+const PREFERRED_SWARM_ASPECT_RATIO = 0.5;
 
 function getValueExtent(data: ChartProps["data"]) {
   const allValues = [
@@ -122,12 +123,19 @@ export function OutliersSupervisorChart({ data, width }: ChartProps) {
 
   const highlightedRowsHeight = ROW_HEIGHT * data.highlightedOfficers.length;
 
+  const preferredHeight =
+    width * PREFERRED_SWARM_ASPECT_RATIO -
+    (CONTENT_AREA_TOP_OFFSET + CONTENT_AREA_BOTTOM_OFFSET);
+
   const { swarmPoints, swarmSpread } = calculateSwarm({
     data: data.otherOfficers,
     radius: SWARM_DOT_RADIUS,
     valueScale: xScale,
     // make sure the swarm is large enough to contain the highlights
     minSpread: highlightedRowsHeight,
+    // cap the chart height at a reasonable size, unless more space is needed to display highlights
+    maxSpread:
+      highlightedRowsHeight < preferredHeight ? preferredHeight : undefined,
   });
 
   const height = Math.ceil(
