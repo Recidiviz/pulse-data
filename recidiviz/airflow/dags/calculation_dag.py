@@ -23,7 +23,7 @@ from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Type, Union
 
 from airflow.decorators import dag, task
-from airflow.models import DagRun, TaskInstance
+from airflow.models import DagRun
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -88,9 +88,7 @@ def update_managed_views_operator(view_update_type: ManagedViewUpdateType) -> Ta
 
     group_id = f"update_managed_views_{view_update_type.value}"
 
-    def get_kubernetes_arguments(
-        dag_run: DagRun, _task_instance: TaskInstance
-    ) -> List[str]:
+    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
         additional_args = []
 
         sandbox_prefix = get_sandbox_prefix(dag_run)
@@ -115,9 +113,7 @@ def update_managed_views_operator(view_update_type: ManagedViewUpdateType) -> Ta
 
 
 def refresh_bq_dataset_operator(schema_type: str) -> TaskGroup:
-    def get_kubernetes_arguments(
-        dag_run: DagRun, _task_instance: TaskInstance
-    ) -> List[str]:
+    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
         additional_args = []
 
         sandbox_prefix = get_sandbox_prefix(dag_run)
@@ -139,9 +135,7 @@ def refresh_bq_dataset_operator(schema_type: str) -> TaskGroup:
 
 
 def execute_update_normalized_state() -> TaskGroup:
-    def get_kubernetes_arguments(
-        dag_run: DagRun, _task_instance: TaskInstance
-    ) -> List[str]:
+    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
         additional_args = []
 
         state_code_filter = get_state_code_filter(dag_run)
@@ -168,9 +162,7 @@ def execute_update_normalized_state() -> TaskGroup:
 
 
 def execute_validations_operator(state_code: str) -> TaskGroup:
-    def get_kubernetes_arguments(
-        dag_run: DagRun, _task_instance: TaskInstance
-    ) -> List[str]:
+    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
         additional_args = []
 
         sandbox_prefix = get_sandbox_prefix(dag_run)
@@ -196,9 +188,7 @@ def trigger_metric_view_data_operator(
 ) -> TaskGroup:
     state_code_component = f"_{state_code.lower()}" if state_code else ""
 
-    def get_kubernetes_arguments(
-        dag_run: DagRun, _task_instance: TaskInstance
-    ) -> List[str]:
+    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
         additional_args = []
 
         sandbox_prefix = get_sandbox_prefix(dag_run)

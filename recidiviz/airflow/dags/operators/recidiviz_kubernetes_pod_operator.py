@@ -39,7 +39,7 @@ _project_id = os.environ.get("GCP_PROJECT")
 
 def build_kubernetes_pod_task_group(
     group_id: str,
-    arguments: Union[Callable[[DagRun, TaskInstance], List[str]], List[str]],
+    arguments: Union[Callable[[DagRun], List[str]], List[str]],
     container_name: str,
     trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
 ) -> TaskGroup:
@@ -71,9 +71,7 @@ def build_kubernetes_pod_task_group(
                     "dag_run not provided. This should be automatically set by Airflow."
                 )
 
-            argv = (
-                arguments(dag_run, task_instance) if callable(arguments) else arguments
-            )
+            argv = arguments(dag_run) if callable(arguments) else arguments
             logging.info(
                 "Found arguments for task [%s]: %s",
                 task_instance.task_id,
