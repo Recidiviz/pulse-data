@@ -53,7 +53,6 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficerMetric,
     SupervisionOfficerSupervisor,
     SupervisionStateMetric,
-    SupervisionUnit,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -112,8 +111,6 @@ class TestOutliersQuerier(TestCase):
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         with SessionFactory.using_database(self.database_key) as session:
-            for unit in load_model_fixture(SupervisionUnit):
-                session.add(SupervisionUnit(**unit))
             for officer in load_model_fixture(SupervisionOfficer):
                 session.add(SupervisionOfficer(**officer))
             for metric in load_model_fixture(SupervisionStateMetric):

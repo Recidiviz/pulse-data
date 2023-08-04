@@ -68,7 +68,6 @@ us_pa_supervision_officer_supervisors AS (
         COALESCE(agent_roster.email_address, dm_product_view.email) AS email,
         supervisor_external_id,
         COALESCE(supervision_officer_supervisors.supervision_district, dm_product_view.supervision_district) AS supervision_district,
-        supervision_unit, 
     FROM supervision_officer_supervisors
     LEFT JOIN `{{project_id}}.{{outliers_dataset}}.supervision_district_managers_materialized` dm_product_view
     USING(external_id)
@@ -105,7 +104,6 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
         "email",
         "supervisor_external_id",
         "supervision_district",
-        "supervision_unit",
     ],
 )
 

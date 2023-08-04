@@ -202,7 +202,6 @@ class TestSchemaUtils(unittest.TestCase):
         outliers_table_names = [
             "supervision_directors",
             "supervision_districts",
-            "supervision_units",
             "supervision_officers",
             "supervision_officer_supervisors",
             "supervision_district_managers",

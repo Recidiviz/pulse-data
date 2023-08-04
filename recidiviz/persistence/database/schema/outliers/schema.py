@@ -44,32 +44,6 @@ class SupervisionDistrict(OutliersBase):
     name = Column(String, nullable=True)
 
 
-class SupervisionUnit(OutliersBase):
-    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_units`"""
-
-    __tablename__ = "supervision_units"
-
-    state_code = Column(String, primary_key=True, nullable=False)
-    external_id = Column(String, primary_key=True, nullable=False)
-    name = Column(String, nullable=True)
-    # Id of the supervision district the unit is a child of
-    supervision_district_id = Column(
-        String,
-        primary_key=True,
-        nullable=False,
-    )
-
-    __tableargs__ = (
-        ForeignKeyConstraint(
-            ["state_code", "supervision_district_id"],
-            [
-                "supervision_districts.state_code",
-                "supervision_districts.external_id",
-            ],
-        ),
-    )
-
-
 class PersonBase:
     """Base class that includes attributes that all person entities must define"""
 
@@ -88,11 +62,8 @@ class SupervisionOfficer(PersonBase, OutliersBase):
 
     __tablename__ = "supervision_officers"
 
-    # TODO(#21428): Remove unused location information once email copy is finalized
     # Id of the supervision district the officer is assigned to
     supervision_district = Column(String, nullable=True)
-    # Id of the supervision unit the officer is assigned to
-    supervision_unit = Column(String, nullable=True)
     # specialized caseload type, if applicable
     specialized_caseload_type = Column(String, nullable=True)
 
@@ -102,19 +73,14 @@ class SupervisionOfficerSupervisor(PersonBase, OutliersBase):
 
     __tablename__ = "supervision_officer_supervisors"
 
-    # TODO(#21428): Remove unused location information once email copy is finalized
     # Id of the supervision district the supervisor manages or has officers for
     supervision_district = Column(String, nullable=True)
-    # Id of the supervision unit the supervisor manages or has officers for
-    supervision_unit = Column(String, nullable=True)
 
 
 class SupervisionDistrictManager(OutliersBase):
     """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_district_managers`"""
 
     __tablename__ = "supervision_district_managers"
-
-    # TODO(#21428): Remove unused location information once email copy is finalized
 
     state_code = Column(String, primary_key=True, nullable=False)
     external_id = Column(String, primary_key=True, nullable=False)
