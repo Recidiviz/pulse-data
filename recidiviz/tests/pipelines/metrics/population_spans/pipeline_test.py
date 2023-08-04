@@ -473,7 +473,6 @@ class TestClassifyResults(unittest.TestCase):
                 supervising_district_external_id="site",
                 level_1_supervision_location_external_id="site",
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id="OFFICER 1",
                 custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             ),
         ]
@@ -611,7 +610,6 @@ class TestProduceMetrics(unittest.TestCase):
                 supervising_district_external_id="site",
                 level_1_supervision_location_external_id="site",
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id="OFFICER 1",
                 custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             ),
         ]

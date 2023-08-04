@@ -319,7 +319,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_score=31,
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
-                supervising_officer_external_id="143",
                 supervising_officer_staff_id=10000,
                 supervising_district_external_id="DISTRICT X",
                 projected_end_date=None,
@@ -333,7 +332,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_score=31,
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
-                supervising_officer_external_id="143",
                 supervising_officer_staff_id=10000,
                 supervising_district_external_id="DISTRICT X",
                 projected_end_date=None,
@@ -388,7 +386,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=False,
                 sentence_days_served=998,
-                supervising_officer_external_id="officer45",
                 supervising_officer_staff_id=10000,
                 supervising_district_external_id="district5",
             ),
@@ -464,7 +461,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=False,
                 incarcerated_during_sentence=True,
-                supervising_officer_external_id="officer45",
                 supervising_officer_staff_id=10000,
                 supervising_district_external_id="district5",
             ),
@@ -544,7 +540,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=False,
                 incarcerated_during_sentence=True,
-                supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
@@ -557,7 +552,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=False,
                 sentence_days_served=199,
-                supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
@@ -654,7 +648,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2020, 1, 30),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False,
-                supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
@@ -683,7 +676,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         expected_count = expected_metrics_count(supervision_events)
 
         self.assertEqual(expected_count, len(metrics))
-        assert any(metric.supervising_officer_external_id for metric in metrics)
 
     def test_produce_supervision_metrics_multiple_months(self) -> None:
         """Tests the produce_supervision_metrics function where the person was on supervision for multiple months."""
@@ -1276,7 +1268,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=False,
                 sentence_days_served=398,
-                supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
@@ -1371,7 +1362,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True,
-                supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),
@@ -1464,7 +1454,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True,
-                supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
                 supervising_officer_staff_id=10000,
             ),

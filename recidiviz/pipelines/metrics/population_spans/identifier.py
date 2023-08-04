@@ -282,7 +282,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     supervision_type=supervision_type,
                     case_type=case_type,
                     custodial_authority=supervision_period.custodial_authority,
-                    supervising_officer_external_id=supervising_officer_external_id,
                     supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
                     supervising_district_external_id=deprecated_supervising_district_external_id,
                     level_1_supervision_location_external_id=level_1_supervision_location,

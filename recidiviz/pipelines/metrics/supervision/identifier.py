@@ -455,7 +455,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     violation_history_id_array=violation_history.violation_history_id_array,
                     most_severe_response_decision=violation_history.most_severe_response_decision,
                     response_count=violation_history.response_count,
-                    supervising_officer_external_id=supervising_officer_external_id,
                     supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
                     supervising_district_external_id=deprecated_supervising_district_external_id,
                     level_1_supervision_location_external_id=level_1_supervision_location_external_id,
@@ -622,7 +621,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             case_type=identify_most_severe_case_type(supervision_period),
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-            supervising_officer_external_id=supervising_officer_external_id,
             supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
             supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,
@@ -779,7 +777,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 assessment_score_bucket=end_assessment_score_bucket,
                 termination_reason=supervision_period.termination_reason,
                 assessment_score_change=assessment_score_change,
-                supervising_officer_external_id=supervising_officer_external_id,
                 supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
                 supervising_district_external_id=deprecated_supervising_district_external_id,
                 level_1_supervision_location_external_id=level_1_supervision_location_external_id,
@@ -983,7 +980,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         )
 
         (
-            supervising_officer_external_id,
+            _,
             level_1_supervision_location_external_id,
             level_2_supervision_location_external_id,
         ) = supervising_officer_and_location_info(
@@ -1016,7 +1013,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             successful_completion=successful_completion,
             incarcerated_during_sentence=incarcerated_during_sentence,
             sentence_days_served=sentence_days_served,
-            supervising_officer_external_id=supervising_officer_external_id,
             supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
             supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,

@@ -652,7 +652,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 level_1_supervision_location_external_id="10",
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-                supervising_officer_external_id="OFFICER0009",
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
             IncarcerationReleaseEvent(
