@@ -30,6 +30,16 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+    AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+    DRUG_SCREENS,
+    INCARCERATION_STARTS,
+    INCARCERATION_STARTS_AND_INFERRED,
+    LSIR_ASSESSMENTS,
+    PAROLE_BOARD_HEARINGS,
+    SUPERVISION_STARTS,
+    VIOLATION_RESPONSES,
+    VIOLATIONS,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     METRIC_POPULATIONS_BY_TYPE,
@@ -52,10 +62,25 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLSqlReferenceType,
 )
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
-    get_metric_filter_parameter,
+    get_metric_explore_parameter,
+    get_metric_value_dimension,
     get_metric_value_measure,
     measure_for_metric,
 )
+
+_ALLOWED_METRIC_DENOMINATORS: List[AggregatedMetric] = [
+    AVG_DAILY_POPULATION,
+    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION,
+    *AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION,
+    DRUG_SCREENS,
+    LSIR_ASSESSMENTS,
+    INCARCERATION_STARTS_AND_INFERRED,
+    INCARCERATION_STARTS,
+    PAROLE_BOARD_HEARINGS,
+    SUPERVISION_STARTS,
+    VIOLATION_RESPONSES,
+    VIOLATIONS,
+]
 
 
 def get_lookml_views_for_metrics(
@@ -132,27 +157,62 @@ def get_lookml_views_for_metrics(
             days_in_period_source=LookMLSqlReferenceType.DIMENSION,
             # for now, always use supervision_state_aggregated_metrics.measure_type
             param_source_view="supervision_state_aggregated_metrics",
+            allow_custom_denominator=True,
         )
         for metric in metrics
     ]
-    metric_filter_parameter = get_metric_filter_parameter(
+    metric_filter_parameter = get_metric_explore_parameter(
         metrics,
-        population,
+        field_name="metric_filter",
         default_metric=AVG_DAILY_POPULATION,
+    ).extend(
+        additional_parameters=[
+            LookMLFieldParameter.label(
+                f"[{population.population_name_title}] Metric Filter"
+            ),
+            LookMLFieldParameter.description(
+                "Used to select one metric for a Look. Works across all levels of "
+                f"observation for the {population.population_type.value} population."
+            ),
+        ]
+    )
+    metric_denominator_filter_parameter = get_metric_explore_parameter(
+        [m for m in metrics if m in _ALLOWED_METRIC_DENOMINATORS],
+        field_name="metric_denominator_filter",
+        default_metric=AVG_DAILY_POPULATION,
+    ).extend(
+        additional_parameters=[
+            LookMLFieldParameter.label(
+                f"[{population.population_name_title}] Metric Denominator"
+            ),
+            LookMLFieldParameter.description(
+                "Used to select a denominator to normalize the metric if the `normalized` "
+                "measure type is selected. Default is average daily population."
+            ),
+        ]
     )
     metric_value_measure = get_metric_value_measure(
         f"{population.population_name_short}_{parent_name}_aggregated_metrics",
         metric_filter_parameter,
     )
+    metric_denominator_value_dimension = get_metric_value_dimension(
+        f"{population.population_name_short}_{parent_name}_aggregated_metrics",
+        metric_denominator_filter_parameter,
+        "metric_denominator_value",
+    ).extend(additional_parameters=[LookMLFieldParameter.hidden(is_hidden=True)])
     aggregated_metrics_view = LookMLView(
         view_name=f"{population.population_name_short}_aggregated_metrics_template",
         fields=[
             *index_dimensions_hidden,
             *metric_measures,
             metric_value_measure,
+            metric_denominator_value_dimension,
         ],
     )
-    included_fields: List[LookMLViewField] = [metric_filter_parameter]
+    included_fields: List[LookMLViewField] = [
+        metric_filter_parameter,
+        metric_denominator_filter_parameter,
+    ]
     # Only include the measure_type parameter for the supervision population
     if population.population_type is MetricPopulationType.SUPERVISION:
         included_fields = [measure_type_parameter] + included_fields
