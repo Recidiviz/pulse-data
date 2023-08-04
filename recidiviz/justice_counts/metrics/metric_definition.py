@@ -70,7 +70,7 @@ class IncludesExcludesSet:
 
 
 class MetricCategory(enum.Enum):
-    CAPACITY_AND_COST = "CAPACITY_AND_COST"
+    CAPACITY_AND_COST = "CAPACITY_AND_COSTS"
     OPERATIONS_AND_DYNAMICS = "OPERATIONS_AND_DYNAMICS"
     POPULATIONS = "POPULATIONS"
     PUBLIC_SAFETY = "PUBLIC_SAFETY"
@@ -148,7 +148,8 @@ class AggregatedDimension:
             to provide text boxes to describe additional data alements included in the
             agency's metric definition.
             - OTHER and UNKNOWN dimension members can have the 'additional context' context. This is
-             used in the UI to provide additional context text boxes for OTHER and UNKNOWN dimensions"""
+             used in the UI to provide additional context text boxes for OTHER and UNKNOWN dimensions
+        """
         dim_to_contexts: Dict[DimensionBase, List[Context]] = {}
         for member in self.dimension:  # type: ignore[attr-defined]
             context_lst = []
