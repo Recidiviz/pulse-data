@@ -19,6 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -72,7 +73,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.metric_source,
         pop.state_code,
         CASE
-            WHEN facilities.facility IS NULL THEN 'INCARCERATION_OUT_OF_STATE'
+            WHEN COALESCE(us_ix_facilities.location_name, us_id_facilities.facility) IS NULL THEN 'INCARCERATION_OUT_OF_STATE'
             ELSE pop.compartment_level_1
         END AS compartment_level_1,
         pop.compartment_level_2,
@@ -90,10 +91,18 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.prioritized_race_or_ethnicity,
         pop.gender,
     FROM incarceration_population_cte pop
-    LEFT JOIN `{project_id}.{static_reference_dataset}.state_incarceration_facilities` facilities
-        ON pop.state_code = facilities.state_code
-        AND pop.compartment_location = facilities.facility
+    LEFT JOIN `{project_id}.{reference_views_dataset}.location_metadata_materialized` us_ix_facilities
+        ON pop.state_code = ix_facilities.state_code
+        AND pop.compartment_location = ix_facilities.location_name
         AND pop.compartment_level_1 = 'INCARCERATION'
+        AND ix_facilities.location_type in ('STATE_PRISON', 'MEDICAL_FACILITY', 'COUNTY_JAIL')
+        AND pop.state_code = 'US_IX'
+    # TODO(#16661): Remove this section once US_ID fully deprecated
+    LEFT JOIN `{project_id}.{static_reference_dataset}.state_incarceration_facilities` us_id_facilities
+        ON pop.state_code = id_facilities.state_code
+        AND pop.compartment_location = id_facilities.facility
+        AND pop.compartment_level_1 = 'INCARCERATION'
+        AND pop.state_code = 'US_ID'
 """
 
 US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -102,6 +111,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER = SimpleBigQuer
     view_query_template=US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE,
     description=US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
 )
