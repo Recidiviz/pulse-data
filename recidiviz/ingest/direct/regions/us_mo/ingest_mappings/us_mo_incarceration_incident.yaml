@@ -56,10 +56,7 @@ output:
                 projected_end_date: SANC_EXP_DATE
                 report_date: CDV_DATE_WRITTEN
                 hearing_date: DISP_DATE
-                # Inferred by taking disposition dates from TAK237, which
-                # associates events with CDVs, rather than with specific sanctions. Since there can be multiple
-                # disposition dates connected to a CDV, and there isn't a way to link events to sanctions
-                # directly, each sanction pulls its hearing dates from the parent CDV, and there can be multiple.
+                # Inferred by taking the latest disposition date from TAK237.
                 punishment_length_days:
                   $custom:
                     $function: us_mo_custom_parsers.get_punishment_days

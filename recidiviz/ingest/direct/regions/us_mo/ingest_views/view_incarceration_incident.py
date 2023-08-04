@@ -45,15 +45,21 @@ SELECT
 FROM {LBAKRDTA_TAK233} cdv
 
 LEFT JOIN (
-    SELECT DISTINCT
-        IV_DOC,
-        IV_CYC,
-        IVCSEQ,
-        IVEDTE 
-    FROM {LBAKRDTA_TAK237} 
-    WHERE IVETYP = 'T'
-    -- Select dates corresponding to disposition events only
-    ) event 
+    SELECT * EXCEPT(disp_recency) 
+    FROM (
+        SELECT DISTINCT
+            IV_DOC,
+            IV_CYC,
+            IVCSEQ,
+            IVEDTE,
+            ROW_NUMBER() OVER (PARTITION BY IV_DOC,IV_CYC,IVCSEQ ORDER BY IVEDTE DESC) disp_recency
+        FROM {LBAKRDTA_TAK237}
+        WHERE IVETYP = 'T'
+        -- Select dates corresponding to disposition events only
+    ) event_dup_dates
+    WHERE disp_recency = 1
+    -- Select only the most recent disposition date
+) event 
 ON 
   cdv.IZ_DOC = event.IV_DOC
   AND cdv.IZ_CYC = event.IV_CYC
