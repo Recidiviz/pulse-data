@@ -71,7 +71,8 @@ SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_QUERY_TEMPLATE = f"""
         'RETURN_FROM_ABSCONSION',
         'SUSPENSION',
         'TRANSFER_WITHIN_STATE',
-        'TRANSFER_TO_OTHER_JURISDICTION')
+        'TRANSFER_TO_OTHER_JURISDICTION') 
+        AND sup_term.supervision_type != 'INVESTIGATION'
     -- Pick the judicial district code from the sentence that started the closest to
     -- the supervision termination date
     QUALIFY ROW_NUMBER() OVER (
