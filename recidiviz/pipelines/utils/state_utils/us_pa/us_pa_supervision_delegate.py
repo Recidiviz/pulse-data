@@ -30,6 +30,7 @@ from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.pipelines.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
@@ -64,8 +65,7 @@ class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
     # pylint: disable=unused-argument
     def supervision_period_in_supervision_population_in_non_excluded_date_range(
         self,
-        supervision_period: StateSupervisionPeriod,
-        supervising_officer_external_id: Optional[str],
+        supervision_period: NormalizedStateSupervisionPeriod,
     ) -> bool:
         """In US_PA, a supervision period only counts towards the supervision population
         if it is not a period indicating absconsion."""

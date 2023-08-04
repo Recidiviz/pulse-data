@@ -120,27 +120,12 @@ class TestGetCommitmentDetails(unittest.TestCase):
         incarceration_period: NormalizedStateIncarcerationPeriod,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
-        supervision_period_to_agent_associations: Optional[
-            Dict[int, Dict[Any, Any]]
-        ] = None,
-        supervision_locations_to_names: Optional[Dict[str, Dict[str, Any]]] = None,
         supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(
             DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-            list(DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()),
         ),
         commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate = UsXxCommitmentFromSupervisionDelegate(),
     ) -> CommitmentDetails:
         """Helper function for testing get_commitment_from_supervision_details."""
-        supervision_period_to_agent_associations = (
-            supervision_period_to_agent_associations
-            or DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
-        )
-        supervision_delegate.supervision_period_to_agent_associations = (
-            supervision_period_to_agent_associations
-        )
-        supervision_locations_to_names = (
-            supervision_locations_to_names or DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES
-        )
         incarceration_period_index = (
             incarceration_period_index
             or default_normalized_ip_index_for_tests(
@@ -192,11 +177,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    supervision_period.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
@@ -273,11 +253,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=overlapping_supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    overlapping_supervision_period.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=overlapping_supervision_period.supervision_level,
@@ -343,11 +318,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=terminated_supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    terminated_supervision_period.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=terminated_supervision_period.supervision_level,
@@ -392,7 +362,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=None,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=None,
                 supervising_officer_staff_id=None,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
@@ -434,11 +403,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    supervision_period.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
@@ -470,7 +434,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=None,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=None,
                 supervising_officer_staff_id=None,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=None,
@@ -527,7 +490,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         commitment_details = self._test_get_commitment_from_supervision_details(
             incarceration_period,
             supervision_delegate=UsPaSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST, []
+                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST
             ),
             supervision_periods=[supervision_period],
             incarceration_period_index=ip_index,
@@ -541,11 +504,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype="PVC",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    supervision_period.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
@@ -602,11 +560,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=pre_commitment_sp.supervision_site,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    pre_commitment_sp.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_commitment_sp.supervision_level,
@@ -681,11 +634,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype=None,
                 level_1_supervision_location_external_id=pre_commitment_sp.supervision_site,
                 level_2_supervision_location_external_id=None,
-                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    pre_commitment_sp.supervision_period_id, {}
-                ).get(
-                    "agent_external_id"
-                ),
                 supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_commitment_sp.supervision_level,

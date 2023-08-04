@@ -62,7 +62,7 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate i
 from recidiviz.pipelines.utils.supervision_period_utils import (
     filter_out_supervision_period_types_excluded_from_pre_admission_search,
     identify_most_severe_case_type,
-    supervising_officer_and_location_info,
+    supervising_location_info,
     supervision_periods_overlapping_with_date,
 )
 
@@ -74,7 +74,6 @@ CommitmentDetails = NamedTuple(
             StateSpecializedPurposeForIncarceration,
         ),
         ("purpose_for_incarceration_subtype", Optional[str]),
-        ("supervising_officer_external_id", Optional[str]),
         ("supervising_officer_staff_id", Optional[int]),
         ("level_1_supervision_location_external_id", Optional[str]),
         ("level_2_supervision_location_external_id", Optional[str]),
@@ -96,7 +95,6 @@ def get_commitment_from_supervision_details(
     """Identifies various attributes of the commitment to incarceration from
     supervision.
     """
-    supervising_officer_external_id = None
     level_1_supervision_location_external_id = None
     level_2_supervision_location_external_id = None
 
@@ -111,10 +109,9 @@ def get_commitment_from_supervision_details(
 
     if pre_commitment_supervision_period:
         (
-            supervising_officer_external_id,
             level_1_supervision_location_external_id,
             level_2_supervision_location_external_id,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             pre_commitment_supervision_period,
             supervision_delegate,
         )
@@ -175,7 +172,6 @@ def get_commitment_from_supervision_details(
     commitment_details_result = CommitmentDetails(
         purpose_for_incarceration=purpose_for_incarceration,
         purpose_for_incarceration_subtype=purpose_for_incarceration_subtype,
-        supervising_officer_external_id=supervising_officer_external_id,
         supervising_officer_staff_id=supervising_officer_staff_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,

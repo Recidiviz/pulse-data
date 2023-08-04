@@ -159,15 +159,14 @@ def filter_out_supervision_period_types_excluded_from_pre_admission_search(
     return filtered_periods
 
 
-def supervising_officer_and_location_info(
+def supervising_location_info(
     supervision_period: StateSupervisionPeriod,
     supervision_delegate: StateSpecificSupervisionDelegate,
-) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+) -> Tuple[Optional[str], Optional[str]]:
     """
-    Extracts supervising officer and location information associated with a
-    supervision_period in the given state.
+    Extracts supervision location information associated with a supervision_period in the given state.
 
-    Returns a tuple of supervising_officer_external_id and level 1/2 location information.
+    Returns a tuple of level 1/2 location information.
     """
     (
         level_1_supervision_location,
@@ -176,14 +175,7 @@ def supervising_officer_and_location_info(
         supervision_period.supervision_site
     )
 
-    supervising_officer_external_id = (
-        supervision_delegate.get_supervising_officer_external_id_for_supervision_period(
-            supervision_period
-        )
-    )
-
     return (
-        supervising_officer_external_id,
         level_1_supervision_location,
         level_2_supervision_location,
     )

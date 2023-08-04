@@ -33,7 +33,7 @@ class TestUsIxSupervisionDelegate(unittest.TestCase):
     """Unit tests for UsIxSupervisionDelegate"""
 
     def setUp(self) -> None:
-        self.supervision_delegate = UsIxSupervisionDelegate([], [])
+        self.supervision_delegate = UsIxSupervisionDelegate([])
 
     def test_supervision_period_is_out_of_state_with_identifier(self) -> None:
         self.assertTrue(

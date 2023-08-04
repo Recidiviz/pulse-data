@@ -61,7 +61,7 @@ from recidiviz.pipelines.utils.supervision_period_utils import (
     filter_out_supervision_period_types_excluded_from_pre_admission_search,
     get_post_incarceration_supervision_type,
     identify_most_severe_case_type,
-    supervising_officer_and_location_info,
+    supervising_location_info,
     supervision_periods_overlapping_with_date,
 )
 from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_utils import (
@@ -159,7 +159,7 @@ DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST = list(
 
 
 class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
-    """Tests the supervising_officer_and_location_info function."""
+    """Tests the supervising_location_info function."""
 
     def test_get_supervising_officer_and_location_info_from_supervision_period(
         self,
@@ -169,18 +169,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual("1", level_1_supervision_location)
         self.assertEqual("DISTRICT", level_2_supervision_location)
 
@@ -188,18 +185,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         self,
     ) -> None:
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual(None, level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
 
@@ -211,18 +205,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual(None, supervising_officer_external_id)
         self.assertEqual("1", level_1_supervision_location)
         self.assertEqual("DISTRICT", level_2_supervision_location)
 
@@ -236,18 +227,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsIdSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual("UNKNOWN", level_1_supervision_location)
         self.assertEqual("DISTRICT OFFICE 6, POCATELLO", level_2_supervision_location)
 
@@ -258,18 +246,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsIdSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual("DEPORTED", level_1_supervision_location)
         self.assertEqual("PAROLE COMMISSION OFFICE", level_2_supervision_location)
 
@@ -280,18 +265,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsIdSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual(None, level_1_supervision_location)
         self.assertEqual("DISTRICT OFFICE 4, BOISE", level_2_supervision_location)
 
@@ -302,18 +284,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsIdSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual(None, level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
 
@@ -327,31 +306,21 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsMoSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual("04C", level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
 
     def test_get_supervising_officer_and_location_info_from_supervision_period_us_nd(
         self,
     ) -> None:
-        supervision_period_agent_associations = {
-            111: {
-                "agent_id": 123,
-                "agent_external_id": "agent_external_id_1",
-                "supervision_period_id": 111,
-            }
-        }
 
         supervision_period = attr.evolve(
             DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
@@ -360,18 +329,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsNdSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                list(supervision_period_agent_associations.values()),
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual("1", level_1_supervision_location)
         self.assertEqual("Region 3", level_2_supervision_location)
 
@@ -385,18 +351,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsPaSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual("CO - CENTRAL OFFICE", level_1_supervision_location)
         self.assertEqual("CO", level_2_supervision_location)
 
@@ -407,18 +370,15 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         )
 
         (
-            supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = supervising_officer_and_location_info(
+        ) = supervising_location_info(
             supervision_period,
             UsPaSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             ),
         )
 
-        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual(None, level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
 
@@ -451,7 +411,6 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
         )
         self.supervision_delegate = UsXxSupervisionDelegate(
             DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_LIST,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
         )
 
     def test_get_post_incarceration_supervision_type(self) -> None:
@@ -539,7 +498,7 @@ class TestGetPostIncarcerationSupervisionType(unittest.TestCase):
                         second_supervision_period,
                     ]
                 ),
-                self.TestSupervisionDelegate([], []),
+                self.TestSupervisionDelegate([]),
             ),
         )
 

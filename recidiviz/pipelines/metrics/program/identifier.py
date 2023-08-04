@@ -55,7 +55,7 @@ from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate i
     StateSpecificSupervisionDelegate,
 )
 from recidiviz.pipelines.utils.supervision_period_utils import (
-    supervising_officer_and_location_info,
+    supervising_location_info,
     supervision_periods_overlapping_with_date,
 )
 
@@ -328,10 +328,9 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             for supervision_period in supervision_periods:
                 # Return one ProgramReferralEvent per supervision period
                 (
-                    _,
                     level_1_supervision_location_external_id,
                     level_2_supervision_location_external_id,
-                ) = supervising_officer_and_location_info(
+                ) = supervising_location_info(
                     supervision_period,
                     supervision_delegate,
                 )

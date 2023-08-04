@@ -37,6 +37,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.pipelines.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.execution_utils import list_of_dicts_to_dict_with_keys
@@ -51,16 +52,12 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
     def __init__(
         self,
         supervision_locations_to_names_list: List[Dict[str, Any]],
-        supervision_period_to_agent_list: List[Dict[str, Any]],
     ) -> None:
         self.level_1_supervision_location_info: Dict[
             str, Dict[str, Any]
         ] = list_of_dicts_to_dict_with_keys(
             supervision_locations_to_names_list,
             key="level_1_supervision_location_external_id",
-        )
-        self.supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
-            supervision_period_to_agent_list, key="supervision_period_id"
         )
 
     def supervision_types_mutually_exclusive(self) -> bool:
@@ -128,8 +125,7 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
 
     def supervision_period_in_supervision_population_in_non_excluded_date_range(
         self,
-        supervision_period: StateSupervisionPeriod,
-        supervising_officer_external_id: Optional[str],
+        supervision_period: NormalizedStateSupervisionPeriod,
     ) -> bool:
         """Returns False if there is state-specific information to indicate that the supervision period should not count
         towards the supervision population in the date range.
@@ -148,20 +144,6 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         Default behavior is to return 1, the index of the second assessment."""
         # TODO(#2782): Investigate whether to update this logic
         return 1
-
-    def get_supervising_officer_external_id_for_supervision_period(
-        self,
-        supervision_period: StateSupervisionPeriod,
-    ) -> Optional[str]:
-        """Retrieves the supervising officer associated with the supervision period."""
-        if not supervision_period.supervision_period_id:
-            raise ValueError("Unexpected null supervision period id")
-
-        agent_info = self.supervision_period_to_agent_associations.get(
-            supervision_period.supervision_period_id
-        )
-
-        return agent_info["agent_external_id"] if agent_info is not None else None
 
     @abc.abstractmethod
     def assessment_types_to_include_for_class(

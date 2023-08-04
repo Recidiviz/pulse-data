@@ -169,7 +169,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             self.metric_producer_supervision_delegate_patcher.start()
         )
         self.mock_metric_producer_supervision_delegate.return_value = (
-            UsXxSupervisionDelegate([], [])
+            UsXxSupervisionDelegate([])
         )
         self.pipeline_class = pipeline.SupervisionMetricsPipeline
 
@@ -1283,7 +1283,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ".state_calculation_config_manager._get_state_specific_supervision_delegate"
         )
         self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([], [])
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate([])
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 

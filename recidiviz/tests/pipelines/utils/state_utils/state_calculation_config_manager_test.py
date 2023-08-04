@@ -150,7 +150,6 @@ STATE_DELEGATES_FOR_TESTS: Dict[str, StateSpecificDelegate] = {
     "StateSpecificIncarcerationDelegate": UsXxIncarcerationDelegate(),
     "StateSpecificSupervisionDelegate": UsXxSupervisionDelegate(
         DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-        DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_LIST,
     ),
     "StateSpecificAssessmentNormalizationDelegate": UsXxAssessmentNormalizationDelegate(),
     "StateSpecificSentenceNormalizationDelegate": UsXxSentenceNormalizationDelegate(),

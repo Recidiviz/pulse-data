@@ -82,7 +82,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 assessments,
                 StateAssessmentClass.RISK,
-                self.LsirOnlySupervisionDelegate([], []),
+                self.LsirOnlySupervisionDelegate([]),
             )
         )
 
@@ -104,7 +104,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [assessment],
                 StateAssessmentClass.RISK,
-                self.LsirOnlySupervisionDelegate([], []),
+                self.LsirOnlySupervisionDelegate([]),
             )
         )
 
@@ -134,7 +134,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [assessment],
                 StateAssessmentClass.RISK,
-                self.NoRiskAssessmentSupervisionDelegate([], []),
+                self.NoRiskAssessmentSupervisionDelegate([]),
             )
         )
 
@@ -156,7 +156,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [assessment],
                 StateAssessmentClass.RISK,
-                UsXxSupervisionDelegate([], []),
+                UsXxSupervisionDelegate([]),
             )
         )
 
@@ -192,7 +192,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 assessments,
                 StateAssessmentClass.RISK,
-                UsIdSupervisionDelegate([], []),
+                UsIdSupervisionDelegate([]),
             )
         )
 
@@ -228,7 +228,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 assessments,
                 StateAssessmentClass.RISK,
-                UsNdSupervisionDelegate([], []),
+                UsNdSupervisionDelegate([]),
             )
         )
 
@@ -267,7 +267,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [lsir_assessment, oras_assessment],
                 StateAssessmentClass.RISK,
-                UsMoSupervisionDelegate([], []),
+                UsMoSupervisionDelegate([]),
             )
 
             self.assertEqual(most_recent_assessment, oras_assessment)
@@ -298,7 +298,7 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 date(2018, 4, 30),
                 [assessment_1, assessment_2],
                 StateAssessmentClass.RISK,
-                UsXxSupervisionDelegate([], []),
+                UsXxSupervisionDelegate([]),
             )
         )
 

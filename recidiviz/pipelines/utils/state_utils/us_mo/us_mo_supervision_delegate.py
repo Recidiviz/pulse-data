@@ -16,15 +16,15 @@
 # =============================================================================
 """US_MO implementation of the supervision delegate"""
 # pylint: disable=unused-argument
-from datetime import date
 from typing import List, Optional
 
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
-from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.pipelines.normalization.utils.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -40,44 +40,13 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
 
     def supervision_period_in_supervision_population_in_non_excluded_date_range(
         self,
-        supervision_period: StateSupervisionPeriod,
-        supervising_officer_external_id: Optional[str],
+        supervision_period: NormalizedStateSupervisionPeriod,
     ) -> bool:
         """In US_MO, a supervision period should have an active PO to also be included to the
         supervision population.
         """
-        return supervising_officer_external_id is not None
 
-    def get_supervising_officer_external_id_for_supervision_period(
-        self,
-        supervision_period: StateSupervisionPeriod,
-    ) -> Optional[str]:
-        """In US_MO, because supervision periods may not necessarily have persisted
-        supervision period ids, we do a date-range based mapping back to original
-        ingested periods."""
-        most_recent_agent_association = None
-        for agent_dict in self.supervision_period_to_agent_associations.values():
-            start_date: Optional[date] = agent_dict["agent_start_date"]
-            end_date: Optional[date] = agent_dict["agent_end_date"]
-
-            if not start_date:
-                continue
-
-            if DateRangeDiff(
-                supervision_period.duration,
-                DateRange.from_maybe_open_range(start_date, end_date),
-            ).overlapping_range:
-                if most_recent_agent_association is None or (
-                    start_date > most_recent_agent_association["agent_start_date"]
-                ):
-                    most_recent_agent_association = agent_dict
-                continue
-
-        return (
-            most_recent_agent_association["agent_external_id"]
-            if most_recent_agent_association
-            else None
-        )
+        return supervision_period.supervising_officer_staff_id is not None
 
     def assessment_types_to_include_for_class(
         self, assessment_class: StateAssessmentClass
