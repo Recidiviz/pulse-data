@@ -87,9 +87,9 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             ValueError,
             (
                 r"Attempting to merge updates for root entity with external ids "
-                r"\[StateStaffExternalId\(state_code='US_XX', external_id='ID_2', "
+                r"\[StateStaffExternalId\(external_id='ID_2', state_code='US_XX', "
                 r"id_type='ID_TYPE_1'.*\)\] into entity with non-overlapping external "
-                r"ids \[StateStaffExternalId\(state_code='US_XX', external_id='ID_1', "
+                r"ids \[StateStaffExternalId\(external_id='ID_1', state_code='US_XX', "
                 r"id_type='ID_TYPE_1'.*\)\]."
             ),
         ):
@@ -111,9 +111,9 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             ValueError,
             (
                 r"Attempting to merge updates for root entity with external ids "
-                r"\[StateStaffExternalId\(state_code='US_XX', external_id='ID_1', "
+                r"\[StateStaffExternalId\(external_id='ID_1', state_code='US_XX', "
                 r"id_type='ID_TYPE_2'.*\)\] into entity with non-overlapping external "
-                r"ids \[StateStaffExternalId\(state_code='US_XX', external_id='ID_1', "
+                r"ids \[StateStaffExternalId\(external_id='ID_1', state_code='US_XX', "
                 r"id_type='ID_TYPE_1'.*\)\]."
             ),
         ):
