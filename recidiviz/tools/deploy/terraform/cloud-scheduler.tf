@@ -78,7 +78,7 @@ resource "google_cloud_scheduler_job" "delete_empty_bq_datasets" {
   }
 
   http_target {
-    uri         = "https://${var.project_id}.appspot.com/calculation_data_storage_manager/delete_empty_datasets"
+    uri         = "https://${var.project_id}.appspot.com/calculation_data_storage_manager/delete_empty_or_temp_datasets"
     http_method = "GET"
 
     oidc_token {

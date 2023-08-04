@@ -23,11 +23,15 @@ Example usage (run from `pipenv shell`):
 python -m recidiviz.tools.delete_temp_bq_tables --project-id recidiviz-staging --dry-run
 """
 import argparse
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
+
 import pytz
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.pipelines.calculation_data_storage_manager import (
+    TEMP_DATASET_PREFIXES_TO_CLEAN_UP,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -52,7 +56,12 @@ def main(dry_run: bool) -> None:
     client = BigQueryClientImpl()
     datasets = list(client.list_datasets())
     candidate_deletable_datasets = [
-        d for d in datasets if d.dataset_id.startswith("temp_dataset_")
+        d
+        for d in datasets
+        if any(
+            d.dataset_id.startswith(prefix)
+            for prefix in TEMP_DATASET_PREFIXES_TO_CLEAN_UP
+        )
     ]
 
     cutoff_date = (datetime.now() - timedelta(days=1)).replace(tzinfo=pytz.UTC)

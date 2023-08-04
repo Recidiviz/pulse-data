@@ -239,8 +239,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     # pylint: disable=protected-access
     @freeze_time("2020-01-02 00:00")
-    def test_delete_empty_datasets(self) -> None:
-        """Test that _delete_empty_datasets deletes a dataset if it has no tables in it."""
+    def test_delete_empty_or_temp_datasets(self) -> None:
+        """Test that _delete_empty_or_temp_datasets deletes a dataset if it has no tables in it."""
         empty_dataset = MockDataset(
             self.mock_view_dataset_name,
             datetime.datetime(2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
@@ -253,15 +253,15 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.get_dataset.return_value = empty_dataset
         self.mock_client.dataset_is_empty.return_value = True
 
-        calculation_data_storage_manager._delete_empty_datasets()
+        calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
         self.mock_client.delete_dataset.assert_called_with(self.mock_dataset)
 
     # pylint: disable=protected-access
     @freeze_time("2020-01-02 00:00")
-    def test_delete_empty_datasets_dataset_not_empty(self) -> None:
-        """Test that _delete_empty_datasets does not delete a dataset if it has tables in it."""
+    def test_delete_empty_or_temp_datasets_dataset_not_empty(self) -> None:
+        """Test that _delete_empty_or_temp_datasets does not delete a dataset if it has tables in it."""
         non_empty_dataset = MockDataset(
             self.mock_view_dataset_name,
             datetime.datetime(2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
@@ -274,15 +274,15 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.get_dataset.return_value = non_empty_dataset
         self.mock_client.dataset_is_empty.return_value = False
 
-        calculation_data_storage_manager._delete_empty_datasets()
+        calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
         self.mock_client.delete_dataset.assert_not_called()
 
     # pylint: disable=protected-access
     @freeze_time("2020-01-02 00:30")
-    def test_delete_empty_datasets_new_dataset(self) -> None:
-        """Test that _delete_empty_datasets deletes a dataset if it has no tables in it."""
+    def test_delete_empty_or_temp_datasets_new_dataset(self) -> None:
+        """Test that _delete_empty_or_temp_datasets deletes a dataset if it has no tables in it."""
         # Created 30 minutes ago, should not be deleted
         new_dataset = MockDataset(
             self.mock_view_dataset_name,
@@ -296,15 +296,15 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.get_dataset.return_value = new_dataset
         self.mock_client.dataset_is_empty.return_value = False
 
-        calculation_data_storage_manager._delete_empty_datasets()
+        calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
         self.mock_client.delete_dataset.assert_not_called()
 
     # pylint: disable=protected-access
     @freeze_time("2020-01-03 00:30")
-    def test_delete_empty_datasets_terraform_managed_dataset(self) -> None:
-        """Test that _delete_empty_datasets does not delete an empty dataset if it has a label identifying it as a
+    def test_delete_empty_or_temp_datasets_terraform_managed_dataset(self) -> None:
+        """Test that _delete_empty_or_temp_datasets does not delete an empty dataset if it has a label identifying it as a
         Terraform managed dataset."""
         terraform_managed_dataset = MockDataset(
             dataset_id=self.mock_view_dataset_name,
@@ -321,15 +321,17 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.get_dataset.return_value = terraform_managed_dataset
         self.mock_client.dataset_is_empty.return_value = True
 
-        calculation_data_storage_manager._delete_empty_datasets()
+        calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
         self.mock_client.delete_dataset.assert_not_called()
 
     # pylint: disable=protected-access
     @freeze_time("2020-01-03 00:30")
-    def test_delete_empty_datasets_terraform_managed_dataset_and_not(self) -> None:
-        """Test that _delete_empty_datasets does not delete an empty dataset if it has a
+    def test_delete_empty_or_temp_datasets_terraform_managed_dataset_and_not(
+        self,
+    ) -> None:
+        """Test that _delete_empty_or_temp_datasets does not delete an empty dataset if it has a
         label identifying it as a Terraform managed dataset, but that the other
         datasets do get deleted."""
         terraform_managed_dataset = MockDataset(
@@ -370,18 +372,81 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         ]
         self.mock_client.dataset_is_empty.return_value = True
 
-        calculation_data_storage_manager._delete_empty_datasets()
+        calculation_data_storage_manager._delete_empty_or_temp_datasets()
 
         self.mock_client.list_datasets.assert_called()
         self.mock_client.delete_dataset.assert_called_with(empty_dataset_ref)
 
+    # pylint: disable=protected-access
+    @freeze_time("2020-01-03 00:30")
+    def test_delete_empty_or_temp_datasets_beam_created_datasets(self) -> None:
+        """Test that _delete_empty_or_temp_datasets deletes a non-empty dataset if it was created
+        by a Beam pipeline more than 24 hours ago."""
+        beam_created_dataset_1 = MockDataset(
+            dataset_id="beam_temp_dataset_12345678",
+            created=datetime.datetime(
+                2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
+            ),
+        )
+        beam_created_dataset_2 = MockDataset(
+            dataset_id="bq_read_all_23465",
+            created=datetime.datetime(
+                2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
+            ),
+        )
+
+        should_not_be_deleted_dataset = MockDataset(
+            dataset_id="beam_temp_dataset_384767847",
+            created=datetime.datetime(
+                2020, 1, 3, 0, 0, 0, tzinfo=datetime.timezone.utc
+            ),
+        )
+        datasets = [
+            beam_created_dataset_1,
+            beam_created_dataset_2,
+            should_not_be_deleted_dataset,
+        ]
+        self.mock_client.get_dataset.side_effect = datasets
+        self.mock_client.dataset_ref_for_id.side_effect = [
+            bigquery.dataset.DatasetReference(self.project_id, dataset.dataset_id)
+            for dataset in datasets
+        ]
+        self.mock_client.list_datasets.return_value = [
+            bigquery.dataset.DatasetListItem(
+                {
+                    "datasetReference": {
+                        "projectId": self.project_id,
+                        "datasetId": dataset.dataset_id,
+                    }
+                }
+            )
+            for dataset in datasets
+        ]
+
+        calculation_data_storage_manager._delete_empty_or_temp_datasets()
+
+        self.mock_client.list_datasets.assert_called()
+        self.mock_client.delete_dataset.assert_has_calls(
+            [
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, dataset.dataset_id
+                    ),
+                    delete_contents=True,
+                )
+                for dataset in datasets[:2]
+            ]
+        )
+
     @patch(
-        "recidiviz.pipelines.calculation_data_storage_manager._delete_empty_datasets"
+        "recidiviz.pipelines.calculation_data_storage_manager._delete_empty_or_temp_datasets"
     )
-    def test_delete_empty_datasets_endpoint(self, mock_delete: mock.MagicMock) -> None:
-        """Tests that the delete_empty_datasets function is called when the /delete_empty_datasets endpoint is hit."""
+    def test_delete_empty_or_temp_datasets_endpoint(
+        self, mock_delete: mock.MagicMock
+    ) -> None:
+        """Tests that the delete_empty_or_temp_datasets function is called when the /delete_empty_or_temp_datasets endpoint is hit."""
         headers = {"X-Appengine-Cron": "test-cron"}
-        response = self.client.get("/delete_empty_datasets", headers=headers)
+        response = self.client.get("/delete_empty_or_temp_datasets", headers=headers)
 
         self.assertEqual(200, response.status_code)
         mock_delete.assert_called()

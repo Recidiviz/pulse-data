@@ -66,10 +66,19 @@ from recidiviz.utils.environment import gcp_only
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
-# Datasets must be at least 2 hours old to be deleted
-DATASET_DELETION_MIN_SECONDS = 2 * 60 * 60
+# Empty datasets must be at least 2 hours old to be deleted
+EMPTY_DATASET_DELETION_MIN_SECONDS = 2 * 60 * 60
+
+# Datasets that contain temporary contents we want to clean up must be at least 24 hours old to be deleted
+NON_EMPTY_TEMP_DATASET_DELETION_MIN_SECONDS = 24 * 60 * 60
 
 DATASET_MANAGED_BY_TERRAFORM_KEY = "managed_by_terraform"
+
+TEMP_DATASET_PREFIXES_TO_CLEAN_UP = [
+    "beam_temp_dataset_",
+    "temp_dataset_",
+    "bq_read_all_",
+]
 
 calculation_data_storage_manager_blueprint = flask.Blueprint(
     "calculation_data_storage_manager", __name__
@@ -85,11 +94,11 @@ def prune_old_dataflow_data() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@calculation_data_storage_manager_blueprint.route("/delete_empty_datasets")
+@calculation_data_storage_manager_blueprint.route("/delete_empty_or_temp_datasets")
 @requires_gae_auth
-def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
-    """Calls the _delete_empty_datasets function."""
-    _delete_empty_datasets()
+def delete_empty_or_temp_datasets() -> Tuple[str, HTTPStatus]:
+    """Calls the _delete_empty_or_temp_datasets function."""
+    _delete_empty_or_temp_datasets()
 
     return "", HTTPStatus.OK
 
@@ -138,7 +147,7 @@ def execute_update_normalized_state_dataset(
     )
 
 
-def _delete_empty_datasets() -> None:
+def _delete_empty_or_temp_datasets() -> None:
     """Deletes all empty datasets in BigQuery."""
     bq_client = BigQueryClientImpl()
     datasets = bq_client.list_datasets()
@@ -176,8 +185,20 @@ def _delete_empty_datasets() -> None:
         ).total_seconds()
 
         if (
+            any(
+                dataset_resource.dataset_id.startswith(prefix)
+                for prefix in TEMP_DATASET_PREFIXES_TO_CLEAN_UP
+            )
+            and dataset_age_seconds > NON_EMPTY_TEMP_DATASET_DELETION_MIN_SECONDS
+        ):
+            logging.info(
+                "Dataset %s is a dataset created by Beam and not updated in a while. Deleting...",
+                dataset_ref.dataset_id,
+            )
+            bq_client.delete_dataset(dataset_ref, delete_contents=True)
+        elif (
             bq_client.dataset_is_empty(dataset_ref)
-            and dataset_age_seconds > DATASET_DELETION_MIN_SECONDS
+            and dataset_age_seconds > EMPTY_DATASET_DELETION_MIN_SECONDS
         ):
             logging.info(
                 "Dataset %s is empty and was not created very recently. Deleting...",
