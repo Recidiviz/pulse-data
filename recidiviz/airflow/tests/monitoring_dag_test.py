@@ -191,6 +191,60 @@ class TestMonitoringDag(AirflowIntegrationTest):
                 monitoring_fixtures.read_fixture("test_graph_task_up_for_retry.txt"),
             )
 
+    def test_graph_task_upstream_failed(self) -> None:
+        """
+        Given a task has consecutively failed, but its upstream task failed in between
+
+                    2023-07-09 2023-07-10 2023-07-11
+        parent_task 🟥         🟧         🟥
+
+        Assert that an incident is only reported once
+        """
+        print("starting test")
+        with Session(bind=self.engine) as session:
+            july_ninth = dummy_dag_run(test_dag, "2023-07-09 12:00")
+            july_ninth_ti = dummy_ti(parent_task, july_ninth, "failed")
+
+            july_tenth = dummy_dag_run(test_dag, "2023-07-10 12:00")
+            july_tenth_ti = dummy_ti(parent_task, july_tenth, "upstream_failed")
+
+            july_eleventh = dummy_dag_run(test_dag, "2023-07-11 12:00")
+            july_eleventh_ti = dummy_ti(parent_task, july_eleventh, "failed")
+
+            session.add_all(
+                [
+                    july_ninth,
+                    july_ninth_ti,
+                    july_tenth,
+                    july_tenth_ti,
+                    july_eleventh,
+                    july_eleventh_ti,
+                ]
+            )
+
+            df = _build_task_instance_state_dataframe(
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
+            )
+
+            self.assertEqual(
+                df.to_string(),
+                monitoring_fixtures.read_fixture("test_graph_task_upstream_failed.txt"),
+            )
+
+            incidents = build_incident_history(
+                dag_ids=[test_dag.dag_id],
+                lookback=TEST_START_DATE_LOOKBACK,
+                session=session,
+            )
+            incident_key = "test_dag.parent_task, started: 2023-07-09 12:00 UTC"
+            self.assertListEqual(list(incidents.keys()), [incident_key])
+            self.assertEqual(
+                incidents[incident_key].failed_execution_dates,
+                [july_ninth.execution_date, july_eleventh.execution_date],
+            )
+
     def test_graph_config_idempotency(self) -> None:
         """
         Given a DAG which utilizes configuration parameters that should be treated as distinct sets of runs
