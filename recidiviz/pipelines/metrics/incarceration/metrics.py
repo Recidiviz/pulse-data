@@ -204,11 +204,6 @@ If a person was admitted to Facility X on 2021-01-01 for a `REVOCATION` from par
     # Raw text of the level of supervision
     supervision_level_raw_text: Optional[str] = attr.ib(default=None)
 
-    # TODO(#20891): delete supervising_officer_external_id
-    # External ID of the officer who was supervising the person described by this
-    # metric.
-    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
-
     # StateStaff id of officer who was supervising the person described by this metric
     supervising_officer_staff_id: Optional[int] = attr.ib(default=None)
 

@@ -178,9 +178,5 @@ This metric is derived from the `StateSupervisionPeriod` entities, which store i
     # Custodial Authority
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
-    # TODO(#20891): delete supervising_officer_external_id
-    # External ID of the officer who is supervising the person during this span of time
-    supervising_officer_external_id: Optional[str] = attr.ib(default=None)
-
     # StateStaff id of officer who was supervising the person described by this metric
     supervising_officer_staff_id: Optional[int] = attr.ib(default=None)

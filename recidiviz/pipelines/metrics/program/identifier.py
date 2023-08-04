@@ -328,7 +328,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             for supervision_period in supervision_periods:
                 # Return one ProgramReferralEvent per supervision period
                 (
-                    supervising_officer_external_id,
+                    _,
                     level_1_supervision_location_external_id,
                     level_2_supervision_location_external_id,
                 ) = supervising_officer_and_location_info(
@@ -351,7 +351,6 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                         assessment_type=assessment_type,
                         assessment_score_bucket=assessment_score_bucket,
                         supervision_type=supervision_period.supervision_type,
-                        supervising_officer_external_id=supervising_officer_external_id,
                         supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
                         supervising_district_external_id=deprecated_supervising_district_external_id,
                         level_1_supervision_location_external_id=level_1_supervision_location_external_id,

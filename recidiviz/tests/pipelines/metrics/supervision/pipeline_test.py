@@ -1208,7 +1208,6 @@ class TestClassifyEvents(unittest.TestCase):
                 supervision_period,
                 event_date=date(2015, 5, 31),
                 supervision_type=supervision_type,
-                supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
                 successful_completion=True,
@@ -1226,7 +1225,6 @@ class TestClassifyEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_level=assessment.assessment_level,
                 assessment_type=assessment.assessment_type,
-                supervising_officer_external_id="OFFICER0009",
                 level_1_supervision_location_external_id="10",
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
             )
@@ -1236,7 +1234,6 @@ class TestClassifyEvents(unittest.TestCase):
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_type,
-                supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
                 in_supervision_population_on_date=True,
@@ -1246,7 +1243,6 @@ class TestClassifyEvents(unittest.TestCase):
         expected_events.append(
             identifier_test.create_start_event_from_period(
                 supervision_period,
-                supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
             )
         )

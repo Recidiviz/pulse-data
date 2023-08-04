@@ -54,7 +54,6 @@ class TestProgramEvent(unittest.TestCase):
         assessment_type = StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
         assessment_level = None
         participation_status = StateProgramAssignmentParticipationStatus.IN_PROGRESS
-        supervising_officer_external_id = "OFFICER211"
         supervising_district_external_id = "DISTRICT 100"
 
         program_event = ProgramReferralEvent(
@@ -66,7 +65,6 @@ class TestProgramEvent(unittest.TestCase):
             assessment_score=assessment_score,
             assessment_type=assessment_type,
             assessment_level=assessment_level,
-            supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id,
         )
 
@@ -77,10 +75,6 @@ class TestProgramEvent(unittest.TestCase):
         assert program_event.assessment_score == assessment_score
         assert program_event.assessment_type == assessment_type
         assert program_event.participation_status == participation_status
-        assert (
-            program_event.supervising_officer_external_id
-            == supervising_officer_external_id
-        )
         assert (
             program_event.supervising_district_external_id
             == supervising_district_external_id
@@ -103,7 +97,6 @@ class TestProgramEvent(unittest.TestCase):
         event_date = date(2000, 11, 10)
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         participation_status = StateProgramAssignmentParticipationStatus.IN_PROGRESS
-        supervising_officer_external_id = "OFFICER211"
         supervising_district_external_id = "DISTRICT 100"
 
         program_event = ProgramReferralEvent(
@@ -112,7 +105,6 @@ class TestProgramEvent(unittest.TestCase):
             program_id=program_id,
             supervision_type=supervision_type,
             participation_status=participation_status,
-            supervising_officer_external_id=supervising_officer_external_id,
             supervising_district_external_id=supervising_district_external_id,
         )
 

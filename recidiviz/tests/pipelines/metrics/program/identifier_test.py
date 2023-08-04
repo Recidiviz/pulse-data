@@ -181,7 +181,6 @@ class TestFindProgramEvents(unittest.TestCase):
                 assessment_score=assessment.assessment_score,
                 assessment_type=assessment.assessment_type,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="XXX",
                 supervising_district_external_id="OFFICE_1",
                 level_1_supervision_location_external_id="OFFICE_1",
                 level_2_supervision_location_external_id=None,
@@ -279,7 +278,6 @@ class TestFindProgramReferrals(unittest.TestCase):
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                     assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                     supervision_type=supervision_period.supervision_type,
-                    supervising_officer_external_id="XXX",
                     supervising_district_external_id="OFFICE_1",
                     level_1_supervision_location_external_id="OFFICE_1",
                 )
@@ -586,7 +584,6 @@ class TestFindProgramReferrals(unittest.TestCase):
                     assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                     assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
                     supervision_type=supervision_period.supervision_type,
-                    supervising_officer_external_id="OFFICER10",
                     supervising_district_external_id="DISTRICT8",
                     level_1_supervision_location_external_id="DISTRICT8",
                     level_2_supervision_location_external_id=None,

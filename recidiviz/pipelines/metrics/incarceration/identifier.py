@@ -477,7 +477,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             response_count=violation_history.response_count,
             violation_history_description=violation_history.violation_history_description,
             violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
-            supervising_officer_external_id=commitment_details.supervising_officer_external_id,
             supervising_officer_staff_id=commitment_details.supervising_officer_staff_id,
             supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=(

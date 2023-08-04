@@ -306,7 +306,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=supervision_type,
                 sentence_days_served=(completion_date - effective_date).days,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                supervising_officer_external_id="OFFICER0009",
                 successful_completion=True,
                 incarcerated_during_sentence=False,
             ),
@@ -315,12 +314,10 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=supervision_type,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -334,7 +331,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -386,13 +382,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events = [
             create_start_event_from_period(
                 supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_type,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -407,7 +401,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -473,7 +466,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -482,7 +474,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -499,7 +490,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -513,7 +503,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=second_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id=None,
             )
         )
 
@@ -582,7 +571,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_type,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -591,7 +579,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -607,7 +594,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -692,7 +678,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_type,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -701,7 +686,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -718,7 +702,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -945,7 +928,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -954,7 +936,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -971,7 +952,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1069,11 +1049,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -1087,7 +1065,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1167,7 +1144,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 in_incarceration_population_on_date=True,
                 supervision_type=first_supervision_type,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -1176,7 +1152,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -1196,7 +1171,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1296,7 +1270,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=first_supervision_type,
                 in_incarceration_population_on_date=False,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -1305,7 +1278,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -1319,7 +1291,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 first_supervision_type,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1392,7 +1363,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_type,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -1401,7 +1371,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -1418,7 +1387,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=first_supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1496,7 +1464,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_type,
-                supervising_officer_external_id="XXX",
                 supervising_district_external_id="X",
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
@@ -1504,7 +1471,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 supervision_period,
-                supervising_officer_external_id="XXX",
                 supervising_district_external_id="X",
                 level_1_supervision_location_external_id="X",
             ),
@@ -1514,7 +1480,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             expected_population_events(
                 supervision_period,
                 supervision_type,
-                supervising_officer_external_id="XXX",
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
                 case_compliances=_generate_case_compliances(
@@ -1613,11 +1578,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=supervision_type,
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -1632,7 +1595,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=supervision_period,
                 ),
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1649,7 +1611,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1665,7 +1626,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1781,7 +1741,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -1790,7 +1749,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -1807,7 +1765,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1824,7 +1781,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_incarceration_period.release_date,
                     supervision_period=first_supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1840,7 +1796,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=second_incarceration_period.release_date,
                     supervision_period=first_supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -1933,12 +1888,10 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_type=supervision_type,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -1952,7 +1905,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2041,7 +1993,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 first_supervision_period,
                 supervision_type=first_supervision_type,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_termination_event_from_period(
                 second_supervision_period,
@@ -2050,7 +2001,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             ),
             create_start_event_from_period(
                 first_supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 second_supervision_period,
@@ -2067,7 +2017,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=first_supervision_period.start_date,
                     supervision_period=first_supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2144,11 +2093,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_period,
                 supervision_type=supervision_type,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -2161,7 +2108,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2354,7 +2300,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
-                supervising_officer_external_id="XXX",
             ),
             create_termination_event_from_period(
                 supervision_period,
@@ -2362,7 +2307,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
-                supervising_officer_external_id="XXX",
                 in_supervision_population_on_date=True,
             ),
         ]
@@ -2377,7 +2321,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 assessment_score_bucket=StateAssessmentLevel.HIGH.value,
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
-                supervising_officer_external_id="XXX",
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -2627,7 +2570,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         expected_events: List[SupervisionEvent] = [
             create_start_event_from_period(
                 supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -2642,7 +2584,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     supervision_period=supervision_period,
                     end_date_override=date(2019, 9, 3),
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2719,11 +2660,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             create_termination_event_from_period(
                 supervision_period,
                 in_incarceration_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -2737,7 +2676,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     start_date=supervision_period.start_date,
                     supervision_period=supervision_period,
                 ),
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2855,11 +2793,9 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=2,
                 in_supervision_population_on_date=True,
-                supervising_officer_external_id="OFFICER0009",
             ),
             create_start_event_from_period(
                 supervision_period,
-                supervising_officer_external_id="OFFICER0009",
             ),
         ]
 
@@ -2868,7 +2804,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_period,
                 supervision_type,
                 end_date=violation_report_1.response_date,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2886,7 +2821,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 violation_history_id_array="123455",
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2904,7 +2838,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 violation_history_id_array="32663,123455",
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=2,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -2918,7 +2851,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 violation_history_id_array="32663",
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
-                supervising_officer_external_id="OFFICER0009",
             )
         )
 
@@ -4542,7 +4474,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     supervision_type=supervision_type,
                     successful_completion=True,
                     incarcerated_during_sentence=False,
-                    supervising_officer_external_id="AGENTX",
                     supervising_district_external_id="DISTRICTX",
                     level_1_supervision_location_external_id="DISTRICTX",
                     sentence_days_served=(
@@ -4619,7 +4550,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                         supervision_sentence_completion_date
                         - supervision_sentence_effective_date
                     ).days,
-                    supervising_officer_external_id=None,
                     supervising_district_external_id=None,
                 )
             ],
@@ -6464,7 +6394,6 @@ def expected_population_events(
         StateSupervisionViolationResponseDecision
     ] = None,
     response_count: Optional[int] = 0,
-    supervising_officer_external_id: Optional[str] = None,
     level_1_supervision_location_external_id: Optional[str] = None,
     level_2_supervision_location_external_id: Optional[str] = None,
     case_compliances: Optional[Dict[date, SupervisionCaseCompliance]] = None,
@@ -6544,7 +6473,6 @@ def expected_population_events(
                 violation_history_id_array=violation_history_id_array,
                 most_severe_response_decision=most_severe_response_decision,
                 response_count=response_count,
-                supervising_officer_external_id=supervising_officer_external_id,
                 supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
                 supervising_district_external_id=(
                     level_2_supervision_location_external_id
@@ -6993,7 +6921,7 @@ def create_start_event_from_period(
     """Creates the SupervisionStartEvent we expect to be created from the given
     period."""
     (
-        supervising_officer_external_id,
+        _,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
     ) = supervising_officer_and_location_info(
@@ -7017,7 +6945,6 @@ def create_start_event_from_period(
         event_date=period.start_date,
         supervision_type=period.supervision_type,
         supervision_level_raw_text=period.supervision_level_raw_text,
-        supervising_officer_external_id=supervising_officer_external_id,
         supervising_officer_staff_id=period.supervising_officer_staff_id,
         supervising_district_external_id=deprecated_supervising_district_external_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
@@ -7043,7 +6970,7 @@ def create_termination_event_from_period(
     """Creates the SupervisionTerminationEvent we expect to be created from the given
     period."""
     (
-        supervising_officer_external_id,
+        _,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
     ) = supervising_officer_and_location_info(
@@ -7075,7 +7002,6 @@ def create_termination_event_from_period(
         supervision_level=period.supervision_level,
         supervision_level_raw_text=period.supervision_level_raw_text,
         supervising_district_external_id=deprecated_supervising_district_external_id,
-        supervising_officer_external_id=supervising_officer_external_id,
         supervising_officer_staff_id=period.supervising_officer_staff_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,

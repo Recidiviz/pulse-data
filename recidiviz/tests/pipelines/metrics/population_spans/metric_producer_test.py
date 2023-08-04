@@ -369,7 +369,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             supervision_level_raw_text="DIVERSION",
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            supervising_officer_external_id="OFFICER 1",
             supervising_officer_staff_id=10000,
         )
 
@@ -397,7 +396,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2000, 7, 12),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -424,7 +422,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             supervision_level_raw_text="MEDIUM",
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            supervising_officer_external_id="OFFICER 1",
             supervising_officer_staff_id=10000,
         )
 
@@ -452,7 +449,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2000, 8, 31),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -474,7 +470,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2000, 8, 31),
                     end_date_exclusive=date(2001, 8, 31),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -496,7 +491,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2001, 8, 31),
                     end_date_exclusive=date(2002, 1, 2),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -525,7 +519,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             supervision_level_raw_text="MEDIUM",
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            supervising_officer_external_id="OFFICER 1",
             supervising_officer_staff_id=10000,
         )
 
@@ -552,7 +545,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2000, 3, 12),
                     end_date_exclusive=date(2002, 7, 2),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -579,7 +571,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             supervision_level_raw_text="MEDIUM",
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            supervising_officer_external_id="OFFICER 1",
             supervising_officer_staff_id=10000,
         )
 
@@ -607,7 +598,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2019, 3, 12),
                     end_date_exclusive=date(2019, 8, 31),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -629,7 +619,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2019, 8, 31),
                     end_date_exclusive=None,
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -665,7 +654,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             supervision_level_raw_text="MEDIUM",
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            supervising_officer_external_id="OFFICER 1",
             supervising_officer_staff_id=10000,
         )
 
@@ -744,7 +732,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2017, 3, 2),
                     end_date_exclusive=date(2017, 8, 31),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -766,7 +753,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2017, 8, 31),
                     end_date_exclusive=date(2018, 8, 31),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -788,7 +774,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2018, 8, 31),
                     end_date_exclusive=date(2019, 8, 31),
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
@@ -810,7 +795,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     start_date_inclusive=date(2019, 8, 31),
                     end_date_exclusive=None,
                     included_in_state_population=True,
-                    supervising_officer_external_id="OFFICER 1",
                     supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",

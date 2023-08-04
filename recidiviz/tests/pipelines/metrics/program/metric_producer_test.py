@@ -137,7 +137,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
-                supervising_officer_external_id="OFFICERZ",
                 supervising_officer_staff_id=10000,
                 supervising_district_external_id="135",
             ),
@@ -194,7 +193,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
-                supervising_officer_external_id="OFFICERZ",
                 supervising_district_external_id="135",
             ),
             ProgramParticipationEvent(
@@ -250,7 +248,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
-                supervising_officer_external_id="OFFICERZ",
                 supervising_district_external_id="135",
             ),
             ProgramReferralEvent(
@@ -260,7 +257,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
-                supervising_officer_external_id="OFFICERZ",
                 supervising_district_external_id="135",
             ),
             ProgramParticipationEvent(
