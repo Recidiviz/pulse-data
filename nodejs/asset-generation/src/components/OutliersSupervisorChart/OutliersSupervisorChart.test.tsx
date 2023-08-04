@@ -20,6 +20,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { convertSvgToPng } from "../../server/generate/convertSvgToPng";
 import { renderToStaticSvg } from "../utils";
 import {
+  cappedSwarmSupervisorDataTransformed,
   fittingSupervisorDataTransformed,
   noPrevRateSupervisorDataTransformed,
   overflowingSupervisorDataTransformed,
@@ -34,19 +35,20 @@ describe.each([
   {
     label: "highlights that fit within swarm height",
     data: fittingSupervisorDataTransformed,
-    expectedHeight: 213,
   },
   {
     label: "highlights overflowing swarm height",
     data: overflowingSupervisorDataTransformed,
-    expectedHeight: 279,
   },
   {
     label: "highlights with missing prevRate",
     data: noPrevRateSupervisorDataTransformed,
-    expectedHeight: 213,
   },
-])("data with $label", ({ data, expectedHeight }) => {
+  {
+    label: "swarm overflowing max height",
+    data: cappedSwarmSupervisorDataTransformed,
+  },
+])("data with $label", ({ data }) => {
   function TestComponent() {
     return <OutliersSupervisorChart data={data} width={570} />;
   }

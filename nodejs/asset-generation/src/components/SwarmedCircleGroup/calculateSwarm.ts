@@ -28,6 +28,7 @@ type SwarmInput<D> = {
   radius: number;
   spread?: number;
   minSpread?: number;
+  maxSpread?: number;
 };
 
 export type SwarmPoint<D> = {
@@ -158,6 +159,9 @@ function handleOverflowingCircles<D>(swarmSpread: number, radius: number) {
  *   without distorting the values
  *
  * These axes can be used interchangeably as x or y values.
+ *
+ * Both minSpread and maxSpread can be passed to constrain the size of the swarm,
+ * but if maxSpread < minSpread it will be ignored.
  */
 export function calculateSwarm<D = unknown>({
   data,
@@ -165,6 +169,7 @@ export function calculateSwarm<D = unknown>({
   radius,
   spread,
   minSpread,
+  maxSpread,
 }: SwarmInput<D>): SwarmedData<D> {
   const swarmPoints: SwarmPoint<D>[] = data
     .map(initializeSwarm(valueScale))
@@ -172,7 +177,7 @@ export function calculateSwarm<D = unknown>({
     .sort(sortSwarm)
     .reduce(calculatePlacements(radius), []);
 
-  const swarmSpread = Math.max(
+  let swarmSpread = Math.max(
     spread ??
       // if fixed spread is not provided, calculate the size needed to fit all points
       2 *
@@ -192,6 +197,10 @@ export function calculateSwarm<D = unknown>({
           )),
     minSpread ?? 0
   );
+
+  if (maxSpread && maxSpread > (minSpread ?? 0)) {
+    swarmSpread = Math.min(swarmSpread, maxSpread);
+  }
 
   return {
     swarmSpread,
