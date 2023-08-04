@@ -37,10 +37,14 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = """
       year, month, date_of_supervision,
       supervision_type,
       district,
-      supervising_officer_external_id AS officer_external_id,
+      staff.external_id AS officer_external_id,
       prioritized_race_or_ethnicity as race_or_ethnicity,
       gender, {age_bucket}, assessment_score_bucket,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` pop
+    LEFT JOIN
+        `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+    ON
+        pop.supervising_officer_staff_id = staff.staff_id
     LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` a
     ON a.state_code = pop.state_code AND
     a.person_id = pop.person_id AND

@@ -84,7 +84,12 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
         df.*,
         sessions_supervision.start_date AS latest_supervision_start_date,
         sessions_incarceration.start_date AS latest_incarceration_start_date,
+        staff.external_id AS supervising_officer_external_id,
       FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` df
+      LEFT JOIN
+        `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+      ON
+        df.supervising_officer_staff_id = staff.staff_id
       -- The next two subqueries use compartment_level_0 sessions to get the latest supervision and latest incarceration start dates
       LEFT JOIN (
         SELECT *

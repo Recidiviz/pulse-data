@@ -189,7 +189,7 @@ def generate_metric_export_configs(
         assessment_type,
         specialized_purpose_for_incarceration,
         purpose_for_incarceration_subtype,
-        supervising_officer_external_id,
+        staff.external_id AS supervising_officer_external_id,
         level_1_supervision_location_external_id AS supervising_district_external_id,
         age,
         prioritized_race_or_ethnicity,
@@ -205,7 +205,11 @@ def generate_metric_export_configs(
         case_type,
         admission_date
       FROM
-        `{project_id}.dataflow_metrics_materialized.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population`
+        `{{project_id}}.dataflow_metrics_materialized.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population` metrics
+      LEFT JOIN
+        `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+      ON
+        metrics.supervising_officer_staff_id = staff.staff_id
       WHERE
         state_code = '{state_code.upper()}'
         AND Date(year, month, 1) >= Date({start_date.year}, {start_date.month}, 1)

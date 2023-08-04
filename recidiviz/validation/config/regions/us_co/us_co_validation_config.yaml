@@ -2,7 +2,7 @@
 
 region_code: US_CO
 exclusions:
-  - validation_name: dataflow_metrics_supervising_officer_external_id_all_null
+  - validation_name: dataflow_metrics_supervising_officer_staff_id_all_null
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: There is no supervision data in CO so all supervising officer external id should be null.
 max_allowed_error_overrides:

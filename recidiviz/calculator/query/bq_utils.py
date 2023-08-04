@@ -141,11 +141,17 @@ def filter_out_absconsions(
             termination_date IS NULL
             AND IFNULL(admission_reason, '') != 'ABSCONSION'
         )
-        SELECT *
+        SELECT
+            metric.*,
+            staff.external_id AS supervising_officer_external_id,
         FROM `{{project_id}}.{{materialized_metrics_dataset}}.{dataflow_metric_table}` metric
+        LEFT JOIN
+            `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+        ON
+            metric.supervising_officer_staff_id = staff.staff_id
         INNER JOIN latest_periods lp
         USING (person_id, state_code)
-        WHERE supervising_officer_external_id IS NOT NULL
+        WHERE staff.external_id IS NOT NULL
             AND supervision_level IS NOT NULL
             {include_state_pop_string}
     """

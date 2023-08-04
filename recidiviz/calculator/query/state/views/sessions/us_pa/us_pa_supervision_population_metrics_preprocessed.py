@@ -59,11 +59,15 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         CAST(NULL AS STRING) AS housing_unit,
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
-        supervising_officer_external_id,
+        staff.external_id AS supervising_officer_external_id,
         case_type,
         prioritized_race_or_ethnicity,
         gender,
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` s
+    LEFT JOIN
+        `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+    ON
+        s.supervising_officer_staff_id = staff.staff_id
     WHERE state_code = 'US_PA'
         
     UNION ALL  

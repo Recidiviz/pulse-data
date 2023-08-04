@@ -45,7 +45,7 @@ SELECT
     state_code as region_code,
     person_id,
     admission_date,
-    COUNT(DISTINCT(supervising_officer_external_id)) as num_officers,
+    COUNT(DISTINCT(supervising_officer_staff_id)) as num_officers,
     COUNT(DISTINCT(level_1_supervision_location_external_id)) as num_level_1,
     COUNT(DISTINCT(level_2_supervision_location_external_id)) as num_level_2
 FROM `{project_id}.{metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`

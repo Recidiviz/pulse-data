@@ -24,7 +24,7 @@ US_MO_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
             case_type,
             caseload.state_code,
             caseload.person_id,
-            caseload.supervising_officer_external_id,
+            staff.external_id AS supervising_officer_external_id,
             caseload.supervising_district_external_id,
             caseload.date_of_supervision,
             person_external_id,
@@ -37,6 +37,10 @@ US_MO_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
             MAX(supervision_sentence.projected_completion_date) AS probation_max_completion_date,
             MAX(incarceration_sentence.projected_max_release_date) AS parole_max_completion_date,
           FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` caseload
+          LEFT JOIN
+            `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+          ON
+            caseload.supervising_officer_staff_id = staff.staff_id
           LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_sentence` supervision_sentence
             ON caseload.person_id = supervision_sentence.person_id AND supervision_sentence.status = 'SERVING'
           LEFT JOIN `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` incarceration_sentence

@@ -69,13 +69,13 @@ sanitized_internal_metrics AS (
         -- TODO(#3830): Check back in with ID to see if they have rectified their historical data. If so, we can remove
         --  this case.
         -- US_ID - All low supervision unit POs had inconsistent data before July 2020.
-        WHEN state_code IN ('US_ID')
-            AND supervising_officer_external_id IN ('REGARCIA', 'CAMCDONA', 'SLADUKE', 'COLIMSUP') 
+        WHEN state_code IN ('US_ID', 'US_IX')
+            AND staff.external_id IN ('REGARCIA', 'CAMCDONA', 'SLADUKE', 'COLIMSUP') 
             AND date_of_supervision < '2020-07-01' THEN 'LSU'
         WHEN state_code IN ('US_IX')
-            AND supervising_officer_external_id IN ('3057', '9128', '3183', '3200') 
+            AND staff.external_id IN ('3057', '9128', '3183', '3200') 
             AND date_of_supervision < '2020-07-01' THEN 'LSU'
-        ELSE supervising_officer_external_id
+        ELSE staff.external_id
       END AS supervising_officer_external_id,
       CASE
         WHEN state_code = 'US_IX' and (supervision_level_raw_text like 'LOW SUPERVISION UNIT%' or supervision_level_raw_text like 'LOW SUPERVSN UNIT%') THEN 'LIMITED SUPERVISION'
@@ -87,6 +87,10 @@ sanitized_internal_metrics AS (
         ELSE level_2_supervision_location_external_id
       END AS supervising_district_external_id,
   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` dataflow
+  LEFT JOIN
+    `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+  ON
+    dataflow.supervising_officer_staff_id = staff.staff_id
   INNER JOIN dates_per_region dates
       ON dataflow.state_code = dates.region_code
       AND dates.date_of_supervision BETWEEN dataflow.start_date_inclusive AND {non_null_end_date}
@@ -106,7 +110,7 @@ sanitized_internal_metrics AS (
       AND included_in_state_population
   QUALIFY ROW_NUMBER() OVER (
       PARTITION BY state_code, date_of_supervision, person_external_id
-      ORDER BY supervising_officer_external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC
+      ORDER BY staff.external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC
   ) = 1
 )
 SELECT

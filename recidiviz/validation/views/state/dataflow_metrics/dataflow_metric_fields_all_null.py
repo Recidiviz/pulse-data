@@ -27,7 +27,7 @@ from recidiviz.validation.views.utils.dataflow_metric_validation_utils import (
     validation_query_for_metric_views_with_all_invalid_fields,
 )
 
-FIELDS = ["supervising_officer_external_id"]
+FIELDS = ["supervising_officer_staff_id"]
 
 VALIDATION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SimpleBigQueryViewBuilder(

@@ -24,7 +24,7 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         caseload.state_code,
         case_type,
         caseload.person_id,
-        caseload.supervising_officer_external_id,
+        staff.external_id AS supervising_officer_external_id,
         caseload.supervising_district_external_id,
         caseload.date_of_supervision,
         person_external_id,
@@ -33,6 +33,10 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         MAX(COALESCE(incarceration_sentence.is_life,false)) as is_life,
         MAX(supervision_sentence.projected_completion_date) AS max_parole_to_date,
       FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` caseload
+      LEFT JOIN
+        `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+      ON
+        caseload.supervising_officer_staff_id = staff.staff_id
       -- The projected completion date is pulled from this table because it needs to correspond to the PAROLE_TO date, 
       -- which is ingested into supervision sentence. Using dataflow metrics would mean we are sometimes using PAROLE_TO 
       -- and sometimes the sentence expiration date from state_incarceration_sentence

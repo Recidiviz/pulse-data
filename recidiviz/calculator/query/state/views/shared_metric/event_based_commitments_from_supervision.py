@@ -38,15 +38,19 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_QUERY_TEMPLATE = """
       person_id, state_code, year, month,
       supervision_type,
       IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
-      supervising_officer_external_id AS officer_external_id,
+      staff.external_id AS officer_external_id,
       most_severe_violation_type,
       admission_date,
       prioritized_race_or_ethnicity as race_or_ethnicity,
       gender,
       age
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` metrics,
     {district_dimension},
     {supervision_type_dimension}
+    LEFT JOIN
+        `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+    ON
+        metrics.supervising_officer_staff_id = staff.staff_id
     WHERE {thirty_six_month_filter}
     """
 
