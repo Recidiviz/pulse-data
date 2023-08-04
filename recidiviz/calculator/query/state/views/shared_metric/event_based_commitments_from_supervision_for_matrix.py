@@ -55,12 +55,16 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
             case_type,
             IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
-            supervising_officer_external_id AS external_id,
+            staff.external_id,
             {state_specific_most_recent_officer_recommendation},
             {state_specific_recommended_for_revocation},
             violation_history_description AS violation_record,
             violation_type_frequency_counter
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` metrics
+        LEFT JOIN
+            `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+        ON
+            metrics.supervising_officer_staff_id = staff.staff_id
         WHERE {state_specific_admission_type_inclusion_filter}
     )
     

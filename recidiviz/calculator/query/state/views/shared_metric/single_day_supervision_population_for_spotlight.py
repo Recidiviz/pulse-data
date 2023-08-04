@@ -42,7 +42,7 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       pop.person_external_id,
       pop.case_type,
       {state_specific_supervision_type_groupings},
-      pop.supervising_officer_external_id,
+      staff.external_id AS supervising_officer_external_id,
       pop.prioritized_race_or_ethnicity,
       e.projected_completion_date_max AS projected_end_date,
       IFNULL(pop.gender, 'EXTERNAL_UNKNOWN') as gender,
@@ -53,6 +53,10 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       CURRENT_DATE('US/Eastern') AS date_of_supervision,
     FROM
       `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` pop
+    LEFT JOIN
+        `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+    ON
+        pop.supervising_officer_staff_id = staff.staff_id
     LEFT JOIN `{project_id}.{sessions_dataset}.supervision_projected_completion_date_spans_materialized` e
         ON pop.state_code = e.state_code
         AND pop.person_id = e.person_id

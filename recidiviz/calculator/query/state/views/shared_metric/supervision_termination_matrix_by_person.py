@@ -48,9 +48,13 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             -- once the FE is using the officer_full_name field for names
             REPLACE(IFNULL(agent.agent_external_id_with_full_name, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
             REPLACE(COALESCE(agent.full_name, 'UNKNOWN'), ',', '') AS officer_full_name,
-            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` metric
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` metric
+        LEFT JOIN
+            `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+        ON
+            metric.supervising_officer_staff_id = staff.staff_id
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
-        ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.external_id 
+        ON metric.state_code = agent.state_code AND staff.external_id = agent.external_id 
     ), terminations_matrix AS (
         SELECT
             state_code,

@@ -55,9 +55,17 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
         {{vitals_state_specific_district_id}},
         {{vitals_state_specific_district_name}}
    FROM (
-      SELECT * FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` 
+      SELECT
+        metrics.*,
+        staff.external_id AS supervising_officer_external_id,
+      FROM
+        `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_span_metrics_materialized` metrics
+      LEFT JOIN
+        `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+      ON
+        metrics.supervising_officer_staff_id = staff.staff_id
       WHERE included_in_state_population
-    ) sup_pop
+   ) sup_pop
    LEFT JOIN us_id_ix_roster 
       ON sup_pop.state_code = us_id_ix_roster.state_code
       AND sup_pop.supervising_officer_external_id = us_id_ix_roster.supervising_officer_external_id 

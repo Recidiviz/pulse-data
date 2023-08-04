@@ -144,6 +144,7 @@ supervision_start_dates AS (
     * EXCEPT(person_id, state_code, start_date),
     e.projected_completion_date_max AS projected_end_date,
     IF (sessions_start_date IS NOT NULL, sessions_start_date, latest_periods.start_date) AS supervision_start_date,
+    staff.external_id AS supervising_officer_external_id,
   FROM
     `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_metrics_materialized` pop
   LEFT JOIN
@@ -177,6 +178,10 @@ supervision_start_dates AS (
         AND CURRENT_DATE('US/Eastern') 
             BETWEEN e.start_date
             AND COALESCE(DATE_SUB(e.end_date, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
+  LEFT JOIN
+    `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+  ON
+    pop.supervising_officer_staff_id = staff.staff_id
   WHERE pop.included_in_state_population
     AND pop.end_date_exclusive IS NULL
 ),

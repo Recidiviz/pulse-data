@@ -23,13 +23,17 @@ US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         case_type,
         caseload.person_id,
         caseload.state_code,
-        caseload.supervising_officer_external_id,
+        staff.external_id AS supervising_officer_external_id,
         caseload.supervising_district_external_id,
         caseload.date_of_supervision,
         person_external_id,
         supervision_level,
         incarceration_sentence.is_life,
       FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` caseload
+      LEFT JOIN
+        `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+      ON
+        caseload.supervising_officer_staff_id = staff.staff_id
       LEFT JOIN `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` incarceration_sentence
         ON caseload.person_id = incarceration_sentence.person_id 
       WHERE caseload.state_code = 'US_PA' AND caseload.included_in_state_population

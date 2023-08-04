@@ -60,11 +60,15 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
               OVER (PARTITION BY metric.state_code, person_id
                     ORDER BY date_of_supervision, supervision_type, supervision_level, case_type,
                          level_1_supervision_location_external_id, level_2_supervision_location_external_id,
-                         supervising_officer_external_id
+                         staff.external_id
                     ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS supervision_type,
-            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` metric
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` metric
+        LEFT JOIN
+            `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
+        ON
+            metric.supervising_officer_staff_id = staff.staff_id
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
-        ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.external_id 
+        ON metric.state_code = agent.state_code AND staff.external_id = agent.external_id 
     ), supervision_matrix AS (
         SELECT
             state_code,
