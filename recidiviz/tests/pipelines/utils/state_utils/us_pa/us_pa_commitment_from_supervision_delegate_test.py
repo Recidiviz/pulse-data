@@ -18,7 +18,7 @@
 
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -68,24 +68,6 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 _DEFAULT_SUPERVISION_PERIOD_ID_2 = 888
 _DEFAULT_SUPERVISION_PERIOD_ID_3 = 777
-
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS: Dict[int, Dict[Any, Any]] = {
-    _DEFAULT_SUPERVISION_PERIOD_ID: {
-        "agent_id": 123,
-        "agent_external_id": "YYY",
-        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
-    },
-    _DEFAULT_SUPERVISION_PERIOD_ID_2: {
-        "agent_id": 000,
-        "agent_external_id": "XXX",
-        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID_2,
-    },
-    _DEFAULT_SUPERVISION_PERIOD_ID_3: {
-        "agent_id": 999,
-        "agent_external_id": "ZZZ",
-        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID_3,
-    },
-}
 
 STATE_CODE = "US_PA"
 
@@ -218,15 +200,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
         incarceration_period: NormalizedStateIncarcerationPeriod,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
-        supervision_period_to_agent_associations: Optional[
-            Dict[int, Dict[Any, Any]]
-        ] = None,
     ) -> CommitmentDetails:
         """Helper function for testing get_commitment_from_supervision_details."""
-        supervision_period_to_agent_associations = (
-            supervision_period_to_agent_associations
-            or DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
-        )
         incarceration_period_index = (
             incarceration_period_index
             or default_normalized_ip_index_for_tests(

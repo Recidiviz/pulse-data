@@ -134,19 +134,6 @@ DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE: StateSupervisionPeriod = (
     )
 )
 
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
-    111: {
-        "agent_id": 123,
-        "agent_external_id": "agent_external_id_1",
-        "supervision_period_id": 111,
-        "agent_start_date": date(2017, 3, 5),
-        "agent_end_date": date(2017, 5, 9),
-    }
-}
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST = list(
-    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()
-)
-
 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES = {
     "1": {
         "level_1_supervision_location_external_id": "1",

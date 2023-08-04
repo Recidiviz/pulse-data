@@ -801,7 +801,6 @@ def filter_results(
 def check_field_exists_in_table(table_name: str, field_name: str) -> None:
     if table_name in {
         # These are tables read by pipelines that are not in the sqlalchemy schema - skip this check
-        "supervision_period_to_agent_association",
         "us_mo_sentence_statuses",
         "persons_to_recent_county_of_residence",
         "state_race_ethnicity_population_counts",

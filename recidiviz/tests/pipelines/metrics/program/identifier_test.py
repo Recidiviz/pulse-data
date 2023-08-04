@@ -65,13 +65,6 @@ from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manage
 )
 
 _STATE_CODE = "US_XX"
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
-    999: {"agent_id": 000, "agent_external_id": "XXX", "supervision_period_id": 999}
-}
-
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST = list(
-    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()
-)
 
 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS = {
     "level 1": {
@@ -106,7 +99,6 @@ class TestFindProgramEvents(unittest.TestCase):
             NormalizedStateProgramAssignment.base_class_name(): program_assignments,
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods,
             NormalizedStateAssessment.base_class_name(): assessments,
-            "supervision_period_to_agent_association": DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         }
         if not state_code_override:
             required_delegates = STATE_DELEGATES_FOR_TESTS

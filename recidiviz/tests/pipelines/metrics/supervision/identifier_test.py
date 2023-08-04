@@ -140,14 +140,6 @@ _STATE_CODE = "US_XX"
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 _DEFAULT_SSVR_ID = 999
 
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
-    999: {"agent_id": 000, "agent_external_id": "XXX", "supervision_period_id": 999}
-}
-
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST = list(
-    DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()
-)
-
 DEFAULT_LEVEL_1_SUPERVISION_LOCATION = "level_1"
 DEFAULT_LEVEL_2_SUPERVISION_LOCATION = "level_2"
 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS = {
@@ -182,7 +174,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         assessments: List[NormalizedStateAssessment],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
-        supervision_period_to_agent_association: Optional[List[Dict[str, Any]]] = None,
         us_mo_sentence_statuses: Optional[List[Dict[str, Any]]] = None,
         state_code_override: Optional[str] = None,
     ) -> List[SupervisionEvent]:
@@ -197,8 +188,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             NormalizedStateAssessment.base_class_name(): assessments,
             StateSupervisionContact.__name__: supervision_contacts,
             NormalizedStateSupervisionViolationResponse.base_class_name(): violation_responses,
-            "supervision_period_to_agent_association": supervision_period_to_agent_association
-            or DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             "us_mo_sentence_statuses": us_mo_sentence_statuses or [],
         }
@@ -340,7 +329,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -410,7 +398,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -512,7 +499,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -616,7 +602,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -724,7 +709,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -857,7 +841,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -957,7 +940,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1079,7 +1061,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1191,7 +1172,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1292,7 +1272,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1380,7 +1359,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1518,7 +1496,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1700,7 +1677,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1797,7 +1773,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1922,7 +1897,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2000,7 +1974,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2111,7 +2084,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             state_code_override="US_ID",
         )
 
@@ -2166,7 +2138,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             state_code_override="US_PA",
         )
 
@@ -2272,15 +2243,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            [
-                {
-                    "agent_id": 000,
-                    "agent_external_id": None,
-                    "supervision_period_id": supervision_period.supervision_period_id,
-                    "agent_start_date": supervision_period_start_date,
-                    "agent_end_date": supervision_period_termination_date,
-                }
-            ],
             [
                 {
                     "sentence_external_id": supervision_sentence.external_id,
@@ -2395,7 +2357,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             state_code_override="US_ID",
         )
 
@@ -2470,7 +2431,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2562,7 +2522,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_reports,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2737,7 +2696,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             [],
             violation_reports,
             supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)

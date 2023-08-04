@@ -22,9 +22,6 @@ from typing import Dict, List, Type, Union
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
-    SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
@@ -62,7 +59,7 @@ class ProgramMetricsPipeline(MetricPipeline):
 
     @classmethod
     def required_reference_tables(cls) -> List[str]:
-        return [SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME]
+        return []
 
     @classmethod
     def required_state_based_reference_tables(cls) -> List[str]:

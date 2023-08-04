@@ -70,10 +70,6 @@ _DEFAULT_IP_ID = 123
 
 _DEFAULT_SP_ID = 234
 
-_DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION = [
-    {"supervision_period_id": _DEFAULT_SP_ID, "agent_external_id": "TODDB"}
-]
-
 _DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS = [
     {
         "state_code": "US_XX",

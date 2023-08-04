@@ -17,7 +17,7 @@
 """Tests functions in the commitment_from_supervision_utils file."""
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -85,19 +85,6 @@ from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 _DEFAULT_SUPERVISION_PERIOD_ID_2 = 888
-
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS: Dict[int, Dict[Any, Any]] = {
-    _DEFAULT_SUPERVISION_PERIOD_ID: {
-        "agent_id": 123,
-        "agent_external_id": "YYY",
-        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
-    },
-    _DEFAULT_SUPERVISION_PERIOD_ID_2: {
-        "agent_id": 000,
-        "agent_external_id": "XXX",
-        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID_2,
-    },
-}
 
 DEFAULT_LEVEL_1_SUPERVISION_LOCATION_EXTERNAL_ID = "level 1"
 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES = {

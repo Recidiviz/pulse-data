@@ -314,18 +314,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        supervision_period_to_agent_data = [
-            {
-                "state_code": state_code,
-                "agent_id": 1010,
-                "person_id": fake_person_id,
-                "agent_external_id": "OFFICER0009",
-                "supervision_period_id": supervision_period.supervision_period_id,
-                "agent_start_date": supervision_period.start_date,
-                "agent_end_date": supervision_period.termination_date,
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": state_code,
@@ -355,7 +343,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateAssessment.__tablename__: assessment_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
-            "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)
@@ -491,16 +478,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        supervision_period_to_agent_data = [
-            {
-                "state_code": "US_XX",
-                "agent_id": 1010,
-                "person_id": fake_person_id,
-                "agent_external_id": "OFFICER0009",
-                "supervision_period_id": None,
-            }
-        ]
-
         state_race_ethnicity_population_count_data = [
             {
                 "state_code": "US_XX",
@@ -523,7 +500,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StatePerson.__tablename__: persons_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
-            "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
         data_dict.update(data_dict_overrides)

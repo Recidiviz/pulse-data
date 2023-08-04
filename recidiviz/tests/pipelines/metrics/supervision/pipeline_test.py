@@ -349,18 +349,6 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         supervision_contact_data = [normalized_database_base_dict(supervision_contact)]
 
-        supervision_period_to_agent_data = [
-            {
-                "state_code": state_code,
-                "agent_id": 1010,
-                "person_id": fake_person_id,
-                "agent_external_id": "OFFICER0009",
-                "supervision_period_id": fake_supervision_period_id,
-                "agent_start_date": supervision_period.start_date,
-                "agent_end_date": supervision_period.termination_date,
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -457,7 +445,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
-            "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
@@ -760,16 +747,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         ]
 
-        supervision_period_to_agent_data = [
-            {
-                "state_code": "US_XX",
-                "agent_id": 1010,
-                "person_id": fake_person_id,
-                "agent_external_id": "OFFICER0009",
-                "supervision_period_id": supervision_period.supervision_period_id,
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -799,7 +776,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
@@ -992,16 +968,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         ]
 
-        supervision_period_to_agent_data = [
-            {
-                "state_code": "US_XX",
-                "agent_id": 1010,
-                "person_id": supervision_period__1.person_id,
-                "agent_external_id": "OFFICER0009",
-                "supervision_period_id": supervision_period__1.supervision_period_id,
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -1030,7 +996,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
@@ -1081,7 +1046,6 @@ class TestClassifyEvents(unittest.TestCase):
         ] = None,
         assessments: Optional[List[entities.StateAssessment]] = None,
         supervision_contacts: Optional[List[entities.StateSupervisionContact]] = None,
-        supervision_period_to_agent_association: Optional[List[Dict[Any, Any]]] = None,
         supervision_location_to_names_association: Optional[
             List[Dict[Any, Any]]
         ] = None,
@@ -1107,8 +1071,6 @@ class TestClassifyEvents(unittest.TestCase):
             entities.StateSupervisionContact.__name__: supervision_contacts
             if supervision_contacts
             else [],
-            "supervision_period_to_agent_association": supervision_period_to_agent_association
-            or [],
             "supervision_location_ids_to_names": supervision_location_to_names_association
             or [],
         }
@@ -1185,13 +1147,6 @@ class TestClassifyEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        supervision_period_to_agent_map = {
-            "agent_id": 1010,
-            "person_id": fake_person_id,
-            "agent_external_id": "OFFICER0009",
-            "supervision_period_id": supervision_period.supervision_period_id,
-        }
-
         person_entities = self.load_person_entities_dict(
             person=fake_person,
             supervision_periods=[supervision_period],
@@ -1199,7 +1154,6 @@ class TestClassifyEvents(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             incarceration_sentences=[incarceration_sentence],
             supervision_sentences=[supervision_sentence],
-            supervision_period_to_agent_association=[supervision_period_to_agent_map],
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
