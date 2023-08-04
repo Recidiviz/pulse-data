@@ -99,8 +99,8 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         AND pop.state_code = 'US_IX'
     # TODO(#16661): Remove this section once US_ID fully deprecated
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_incarceration_facilities` us_id_facilities
-        ON pop.state_code = id_facilities.state_code
-        AND pop.compartment_location = id_facilities.facility
+        ON pop.state_code = us_id_facilities.state_code
+        AND pop.compartment_location = us_id_facilities.facility
         AND pop.compartment_level_1 = 'INCARCERATION'
         AND pop.state_code = 'US_ID'
 """
