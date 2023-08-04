@@ -336,7 +336,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         if not callable(arguments):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture["test_update_all_managed_views_endpoint"],
         )
 
@@ -367,7 +367,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture[
                 "test_update_all_managed_views_endpoint_sandbox_prefix"
             ],
@@ -400,7 +400,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture[
                 "test_update_managed_views_endpoint_reference_views_only"
             ],
@@ -448,7 +448,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture["test_refresh_bq_dataset_task"],
         )
 
@@ -482,7 +482,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture["test_refresh_bq_dataset_task_secondary"],
         )
 
@@ -529,7 +529,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture["test_validations_task"],
         )
 
@@ -563,7 +563,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture["test_validations_task_secondary"],
         )
 
@@ -609,7 +609,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture["test_trigger_metric_view_data_operator"],
         )
 
@@ -644,7 +644,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture[
                 "test_trigger_metric_view_data_operator_sandbox_prefix"
             ],
@@ -681,7 +681,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
 
         self.assertEqual(
-            arguments(MagicMock(), MagicMock()),
+            arguments(MagicMock()),
             self.entrypoint_args_fixture[
                 "test_trigger_metric_view_data_operator_state_code"
             ],
