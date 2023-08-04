@@ -108,10 +108,10 @@ class UsNdSupervisionNormalizationDelegate(
                 # admission reason should be COURT_SENTENCE.
                 return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
             if (
-                most_recent_previous_period.supervising_officer
-                and supervision_period.supervising_officer
-                and most_recent_previous_period.supervising_officer
-                != supervision_period.supervising_officer
+                most_recent_previous_period.supervising_officer_staff_external_id
+                and supervision_period.supervising_officer_staff_external_id
+                and most_recent_previous_period.supervising_officer_staff_external_id
+                != supervision_period.supervising_officer_staff_external_id
             ):
                 # If the supervision officer changed between the previous and current
                 # supervision period, the admission reason should be TRANSFER_WITHIN_STATE.
