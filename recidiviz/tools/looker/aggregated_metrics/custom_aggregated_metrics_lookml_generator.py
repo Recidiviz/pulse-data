@@ -27,7 +27,6 @@ import os
 from typing import List
 
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    METRIC_POPULATIONS_BY_TYPE,
     METRICS_BY_POPULATION_TYPE,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
@@ -61,7 +60,7 @@ from recidiviz.looker.lookml_view_field_parameter import (
 )
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
-    get_metric_filter_parameter,
+    get_metric_explore_parameter,
     get_metric_value_measure,
     measure_for_metric,
 )
@@ -464,8 +463,13 @@ def _generate_custom_metrics_view(metrics: List[AggregatedMetric]) -> LookMLView
     USING
         (state_code, unit_of_analysis, all_attributes, period, start_date, end_date)
 """
-    metric_filter_parameter = get_metric_filter_parameter(
-        metrics, METRIC_POPULATIONS_BY_TYPE[MetricPopulationType.SUPERVISION]
+    metric_filter_parameter = get_metric_explore_parameter(
+        metrics, "metric_filter"
+    ).extend(
+        additional_parameters=[
+            LookMLFieldParameter.label("Metric Filter"),
+            LookMLFieldParameter.description("Used to select one metric for a Look."),
+        ]
     )
     metric_value_measure = get_metric_value_measure(
         "custom_metrics", metric_filter_parameter

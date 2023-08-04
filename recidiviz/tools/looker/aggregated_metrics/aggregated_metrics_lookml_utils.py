@@ -33,14 +33,12 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     MiscAggregatedMetric,
     SumSpanDaysMetric,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulation,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
 from recidiviz.looker import lookml_view_field_parameter
 from recidiviz.looker.lookml_view_field import (
+    DimensionLookMLViewField,
     LookMLFieldParameter,
     MeasureLookMLViewField,
     ParameterLookMLViewField,
@@ -96,12 +94,22 @@ def _generate_lookml_measure_fragment(
 
 
 def _generate_lookml_measure_fragment_normalized(
-    metric: AggregatedMetric, days_in_period_clause: str
+    metric: AggregatedMetric,
+    days_in_period_clause: str,
+    allow_custom_denominator: bool,
 ) -> Optional[str]:
     """
     Returns the appropriate formula for aggregated a metric over multiple time periods
-    and converting to a normalized rate
+    and converting to a normalized rate. If `allow_custom_denominator` is true, permit
+    injection of user-selected metric as denominator for DailyAvgSpanCount and EventCount metrics
+    if measure_type is normalized.
     """
+
+    custom_denominator = (
+        "${metric_denominator_value}"
+        if allow_custom_denominator
+        else "${TABLE}.avg_daily_population"
+    )
 
     if isinstance(
         metric,
@@ -114,7 +122,7 @@ def _generate_lookml_measure_fragment_normalized(
         return f"SUM(${{TABLE}}.{metric.name}) / SUM(${{TABLE}}.assignments)"
     if isinstance(metric, (DailyAvgSpanCountMetric, EventCountMetric)):
         return (
-            f"SUM(${{TABLE}}.{metric.name} * {days_in_period_clause} / ${{TABLE}}.avg_daily_population) / "
+            f"SUM(SAFE_DIVIDE(${{TABLE}}.{metric.name} * {days_in_period_clause}, {custom_denominator})) / "
             f"SUM({days_in_period_clause})"
         )
     if isinstance(metric, SumSpanDaysMetric):
@@ -129,6 +137,7 @@ def measure_for_metric(
     metric: AggregatedMetric,
     days_in_period_source: LookMLSqlReferenceType,
     param_source_view: Optional[str] = None,
+    allow_custom_denominator: bool = False,
 ) -> MeasureLookMLViewField:
     """
     Returns a LookML measure for the specified metric, with SQL required to aggregate the metric
@@ -147,7 +156,7 @@ def measure_for_metric(
     # TODO(#18172): Add the option to take a unit-level average.
     param_source_view_str = f"{param_source_view}." if param_source_view else ""
     sql = f"""{{% if {param_source_view_str}measure_type._parameter_value == "normalized" %}}
-        {_generate_lookml_measure_fragment_normalized(metric, days_in_period_clause)}
+        {_generate_lookml_measure_fragment_normalized(metric, days_in_period_clause, allow_custom_denominator)}
         {{% else %}}
         {_generate_lookml_measure_fragment(metric, days_in_period_clause)}
         {{% endif %}}"""
@@ -163,9 +172,9 @@ def measure_for_metric(
     )
 
 
-def get_metric_filter_parameter(
+def get_metric_explore_parameter(
     metrics: List[AggregatedMetric],
-    population: MetricPopulation,
+    field_name: str = "metric_filter",
     aggregation_level: Optional[MetricUnitOfAnalysis] = None,
     default_metric: Optional[AggregatedMetric] = None,
 ) -> ParameterLookMLViewField:
@@ -180,15 +189,8 @@ def get_metric_filter_parameter(
     default_value = metrics[0].name if default_metric is None else default_metric.name
 
     return ParameterLookMLViewField(
-        field_name="metric_filter",
+        field_name=field_name,
         parameters=[
-            LookMLFieldParameter.label(
-                f"[{population.population_name_title}] Metric Filter"
-            ),
-            LookMLFieldParameter.description(
-                "Used to select one metric for a Look. Works across all levels of "
-                f"observation for the {population.population_type.value} population."
-            ),
             LookMLFieldParameter.view_label("Metric Menu"),
             *additional_params,
             LookMLFieldParameter.type(LookMLFieldType.UNQUOTED),
@@ -233,7 +235,50 @@ def get_metric_value_measure(
         field_name="metric_value",
         parameters=[
             LookMLFieldParameter.description(
-                f"Takes the value associated with the metric chosen using `{metric_filter_parameter.field_name}`"
+                f"Takes the measure value associated with the metric chosen using `{metric_filter_parameter.field_name}`"
+            ),
+            *additional_params,
+            LookMLFieldParameter.type(LookMLFieldType.NUMBER),
+            LookMLFieldParameter.view_label(view_label_parameter.text),
+            LookMLFieldParameter.sql(sql_value),
+        ],
+    )
+
+
+def get_metric_value_dimension(
+    view_name: str,
+    metric_filter_parameter: ParameterLookMLViewField,
+    field_name: str = "metric_dimension",
+    aggregation_level: Optional[MetricUnitOfAnalysis] = None,
+) -> DimensionLookMLViewField:
+    """
+    Returns a dimension LookML field that uses liquid to return the metric dimension selected via a metric menu filter.
+    """
+    view_label_parameter = one(
+        p
+        for p in metric_filter_parameter.parameters
+        if isinstance(p, lookml_view_field_parameter.FieldParameterViewLabel)
+    )
+
+    allowed_values = [
+        param.value_param for param in metric_filter_parameter.allowed_values()
+    ]
+    sql_value = ParameterizedValue(
+        parameter_name=f"{view_name}.{metric_filter_parameter.field_name}",
+        parameter_options=allowed_values,
+        value_builder=lambda s: "${TABLE}." + s,
+        indentation_level=3,
+    )
+    additional_params = (
+        [LookMLFieldParameter.group_label(aggregation_level.pretty_name)]
+        if aggregation_level
+        else []
+    )
+    return DimensionLookMLViewField(
+        field_name=field_name,
+        parameters=[
+            LookMLFieldParameter.description(
+                f"Takes the dimension value associated with the metric chosen using `{metric_filter_parameter.field_name}`"
             ),
             *additional_params,
             LookMLFieldParameter.type(LookMLFieldType.NUMBER),
