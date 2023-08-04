@@ -138,14 +138,15 @@ def execute_update_normalized_state() -> TaskGroup:
     def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
         additional_args = []
 
-        state_code_filter = get_state_code_filter(dag_run)
-
-        if state_code_filter:
-            additional_args.append(f"--state_code_filter={state_code_filter}")
-
         sandbox_prefix = get_sandbox_prefix(dag_run)
         if sandbox_prefix:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
+
+            # Only include a state filter for sandbox runs to make sure PRIMARY runs for a specific state doesn't
+            # filter out other states from the normalized_state dataset.
+            state_code_filter = get_state_code_filter(dag_run)
+            if state_code_filter:
+                additional_args.append(f"--state_code_filter={state_code_filter}")
 
         return [
             "--entrypoint=UpdateNormalizedStateEntrypoint",
