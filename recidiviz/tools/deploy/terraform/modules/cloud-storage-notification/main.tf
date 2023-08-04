@@ -37,6 +37,27 @@ variable "suffix" {
   default = ""
 }
 
+// Maps to `retry_policy.minimum_backoff` in the `google_pubsub_subscription` resource.
+// https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/pubsub_subscription#minimum_backoff
+variable "minimum_backoff" {
+  type    = string
+  default = "10s"
+}
+
+// Maps to `retry_policy.maximum_backoff` in the `google_pubsub_subscription` resource.
+// https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/pubsub_subscription#maximum_backoff
+variable "maximum_backoff" {
+  type    = string
+  default = "600s"
+}
+
+# Defaults to 7 days
+# See https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/pubsub_subscription#message_retention_duration
+variable "message_retention_duration" {
+  type    = string
+  default = "604800s"
+}
+
 locals {
   notification_name = "storage-notification-${var.bucket_name}${var.suffix != "" ? "-${var.suffix}" : ""}"
 }
@@ -84,5 +105,12 @@ resource "google_pubsub_subscription" "subscription" {
     # When ttl is the empty string, the subscription never expires.
     ttl = ""
   }
+
+  retry_policy {
+    minimum_backoff = var.minimum_backoff
+    maximum_backoff = var.maximum_backoff
+  }
+
+  message_retention_duration = var.message_retention_duration
 
 }
