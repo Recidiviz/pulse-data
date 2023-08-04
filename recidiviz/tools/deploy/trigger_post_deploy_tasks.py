@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,35 +16,15 @@
 # =============================================================================
 """Triggers the post-deploy tasks."""
 import argparse
-import json
 import logging
 import sys
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import pubsub_helper
+from recidiviz.tools.deploy.trigger_dag_helpers import trigger_calculation_dag_pubsub
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-
-def main(
-    ingest_instance: DirectIngestInstance,
-    state_code_filter: Optional[StateCode],
-) -> None:
-    """Sends a message to the PubSub topic to trigger the post-deploy CloudSQL to BQ
-    refresh, which then will trigger the calculation DAG on completion."""
-
-    logging.info("Triggering the historical DAG.")
-    pubsub_helper.publish_message_to_topic(
-        topic="v1.calculator.trigger_calculation_pipelines",
-        message=json.dumps(
-            {
-                "state_code_filter": state_code_filter,
-                "ingest_instance": ingest_instance.value,
-            }
-        ),
-    )
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -73,5 +53,6 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        main(DirectIngestInstance.PRIMARY, known_args.state_code_filter)
-        # TODO(#20506): Add ingest instance to argument once instances fully implemented in DAG.
+        trigger_calculation_dag_pubsub(
+            DirectIngestInstance.PRIMARY, known_args.state_code_filter
+        )

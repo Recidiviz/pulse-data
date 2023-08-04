@@ -89,11 +89,11 @@ def update_managed_views_operator(view_update_type: ManagedViewUpdateType) -> Ta
     group_id = f"update_managed_views_{view_update_type.value}"
 
     def get_kubernetes_arguments(
-        _dag_run: DagRun, task_instance: TaskInstance
+        dag_run: DagRun, _task_instance: TaskInstance
     ) -> List[str]:
         additional_args = []
 
-        sandbox_prefix = get_sandbox_prefix(task_instance)
+        sandbox_prefix = get_sandbox_prefix(dag_run)
         if sandbox_prefix:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
@@ -116,11 +116,11 @@ def update_managed_views_operator(view_update_type: ManagedViewUpdateType) -> Ta
 
 def refresh_bq_dataset_operator(schema_type: str) -> TaskGroup:
     def get_kubernetes_arguments(
-        dag_run: DagRun, task_instance: TaskInstance
+        dag_run: DagRun, _task_instance: TaskInstance
     ) -> List[str]:
         additional_args = []
 
-        sandbox_prefix = get_sandbox_prefix(task_instance)
+        sandbox_prefix = get_sandbox_prefix(dag_run)
         if sandbox_prefix:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
@@ -140,7 +140,7 @@ def refresh_bq_dataset_operator(schema_type: str) -> TaskGroup:
 
 def execute_update_normalized_state() -> TaskGroup:
     def get_kubernetes_arguments(
-        dag_run: DagRun, task_instance: TaskInstance
+        dag_run: DagRun, _task_instance: TaskInstance
     ) -> List[str]:
         additional_args = []
 
@@ -149,7 +149,7 @@ def execute_update_normalized_state() -> TaskGroup:
         if state_code_filter:
             additional_args.append(f"--state_code_filter={state_code_filter}")
 
-        sandbox_prefix = get_sandbox_prefix(task_instance)
+        sandbox_prefix = get_sandbox_prefix(dag_run)
         if sandbox_prefix:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
@@ -169,11 +169,11 @@ def execute_update_normalized_state() -> TaskGroup:
 
 def execute_validations_operator(state_code: str) -> TaskGroup:
     def get_kubernetes_arguments(
-        dag_run: DagRun, task_instance: TaskInstance
+        dag_run: DagRun, _task_instance: TaskInstance
     ) -> List[str]:
         additional_args = []
 
-        sandbox_prefix = get_sandbox_prefix(task_instance)
+        sandbox_prefix = get_sandbox_prefix(dag_run)
         if sandbox_prefix:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
@@ -197,11 +197,11 @@ def trigger_metric_view_data_operator(
     state_code_component = f"_{state_code.lower()}" if state_code else ""
 
     def get_kubernetes_arguments(
-        _dag_run: DagRun, task_instance: TaskInstance
+        dag_run: DagRun, _task_instance: TaskInstance
     ) -> List[str]:
         additional_args = []
 
-        sandbox_prefix = get_sandbox_prefix(task_instance)
+        sandbox_prefix = get_sandbox_prefix(dag_run)
         if sandbox_prefix:
             additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
 
@@ -270,18 +270,13 @@ def build_dataflow_pipeline_task_group(
         @task(task_id="create_flex_template")
         def create_flex_template(
             dag_run: Optional[DagRun] = None,
-            task_instance: Optional[TaskInstance] = None,
         ) -> Dict[str, Union[str, int, bool]]:
-            if not task_instance:
-                raise ValueError(
-                    "task_instance not provided. This should be automatically set by Airflow."
-                )
             if not dag_run:
                 raise ValueError(
                     "dag_run not provided. This should be automatically set by Airflow."
                 )
             ingest_instance = get_ingest_instance(dag_run)
-            sandbox_prefix = get_sandbox_prefix(task_instance)
+            sandbox_prefix = get_sandbox_prefix(dag_run)
 
             config = pipeline_config.get()
             if ingest_instance == "SECONDARY":
