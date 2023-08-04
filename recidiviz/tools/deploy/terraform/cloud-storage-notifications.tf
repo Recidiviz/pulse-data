@@ -1,10 +1,13 @@
 module "dashboard_data" {
   source = "./modules/cloud-storage-notification"
 
-  bucket_name           = module.dashboard-event-level-data.name
-  push_endpoint         = "${google_cloud_run_service.application-data-import.status.0.url}/import/trigger_pathways"
-  service_account_email = google_service_account.application_data_import_cloud_run.email
-  filter                = "NOT hasPrefix(attributes.objectId, \"staging/\")"
+  bucket_name                = module.dashboard-event-level-data.name
+  push_endpoint              = "${google_cloud_run_service.application-data-import.status.0.url}/import/trigger_pathways"
+  service_account_email      = google_service_account.application_data_import_cloud_run.email
+  filter                     = "NOT hasPrefix(attributes.objectId, \"staging/\")"
+  minimum_backoff            = "180s"
+  maximum_backoff            = "600s"
+  message_retention_duration = "86400s"
 }
 moved {
   from = module.dashboard_data[0]
@@ -84,10 +87,13 @@ module "handle_workflows_firestore_etl" {
 module "handle_outliers_etl" {
   source = "./modules/cloud-storage-notification"
 
-  bucket_name           = module.outliers-etl-data.name
-  push_endpoint         = "${google_cloud_run_service.application-data-import.status.0.url}/import/trigger_outliers"
-  service_account_email = google_service_account.application_data_import_cloud_run.email
-  filter                = "NOT hasPrefix(attributes.objectId, \"staging/\")"
+  bucket_name                = module.outliers-etl-data.name
+  push_endpoint              = "${google_cloud_run_service.application-data-import.status.0.url}/import/trigger_outliers"
+  service_account_email      = google_service_account.application_data_import_cloud_run.email
+  filter                     = "NOT hasPrefix(attributes.objectId, \"staging/\") AND NOT hasPrefix(attributes.objectId, \"sandbox/\")"
+  minimum_backoff            = "180s"
+  maximum_backoff            = "600s"
+  message_retention_duration = "86400s"
 }
 
 locals {
