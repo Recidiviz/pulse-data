@@ -47,22 +47,14 @@ US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_DESCRIPTION = """
 
 US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_QUERY_TEMPLATE = f"""
 WITH compas_recommended_preprocessed AS (
-# TODO(#20530) deprecate this view in favor of moving this logic further upstream in ingest process
-/* This CTE translates COMPAS scores to the recommended supervision level and partitions by person_id to determine
-the most recent COMPAS score for each client */ 
 SELECT 
-    *,
-    CASE 
-        WHEN assessment_level_raw_text  = 'LOW/LOW' THEN 'MINIMUM'
-        WHEN assessment_level_raw_text IN ('LOW/MEDIUM', 'MEDIUM/LOW', 'MEDIUM/MEDIUM', 'MEDIUM/HIGH', 'HIGH/MEDIUM', 'HIGH/LOW', 'LOW/HIGH') THEN 'MEDIUM'
-        WHEN assessment_level_raw_text = 'HIGH/HIGH' THEN 'MAXIMUM'
-        ELSE NULL
-        END AS recommended_supervision_level 
+    state_code,
+    person_id,
+    IF(assessment_level = 'MEDIUM_HIGH', 'MEDIUM', assessment_level) AS recommended_supervision_level 
 FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sc
 WHERE state_code = "US_MI" 
 QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment_date DESC, assessment_id)=1
 ),
-
 three_progress_notes AS (
   SELECT 
     plan_detail_id,
