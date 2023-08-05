@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helper SQL fragments that import raw tables. This is currently used for ME only, but 
-it can be expanded to other states. 
+"""Helper SQL fragments that import raw tables for ME
 """
 
 from typing import Optional

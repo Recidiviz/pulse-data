@@ -36,7 +36,7 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     one_criteria_away_from_eligibility,
     x_time_away_from_eligibility,
 )
-from recidiviz.task_eligibility.utils.raw_table_import import (
+from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
     cis_201_case_plan_case_notes,
     cis_204_notes_cte,
