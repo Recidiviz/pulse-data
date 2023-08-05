@@ -34,6 +34,7 @@ _CRITERIA_NAME = "US_MI_NOT_SERVING_INELIGIBLE_OFFENSES_FOR_EARLY_DISCHARGE_FROM
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 someone is not serving on parole for any offense requiring registration under the Sex Offenders Registration Act
+or an offense resulting in death, serious bodily injury, or an offense involving the discharge of a firearm
 """
 _QUERY_TEMPLATE = f"""
  SELECT
@@ -48,8 +49,10 @@ _QUERY_TEMPLATE = f"""
     --exclude probation sentences for DUAL clients
     AND sent.sentence_type = "INCARCERATION" 
     --only include sentence spans with offenses that require registration
-    AND sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
+    AND (sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
             WHERE CAST(requires_so_registration AS BOOL))
+        OR sent.statute IN ("750.316A", "750.321A", "750.84", "257.9044")
+        )
     GROUP BY 1, 2, 3, 4, 5
     """
 
