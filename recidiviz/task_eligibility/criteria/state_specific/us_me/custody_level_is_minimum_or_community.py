@@ -21,7 +21,7 @@ which residents have a custody level of "Minimum" or "Community".
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.raw_table_import import (
+from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     cis_112_custody_level_criteria,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

@@ -39,7 +39,7 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     json_to_array_cte,
     one_criteria_away_from_eligibility,
 )
-from recidiviz.task_eligibility.utils.raw_table_import import (
+from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     cis_204_notes_cte,
     cis_408_violations_notes_cte,
     cis_425_program_enrollment_notes,
