@@ -36,13 +36,12 @@ _CRITERIA_NAME = (
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone's supervision level is
 minimum low OR
-minimum in person w/ an initial assessment score of medium/minimum"""
+minimum in person w/ an initial assessment score of medium or minimum"""
 
 _QUERY_TEMPLATE = f"""
 WITH supervision_level_sessions_with_assessments AS (
-/* This cte sets the initial assessment level raw text value for a continuous period of 
+/* This cte sets the initial assessment level value for a continuous period of 
 supervision */
-# TODO(#20530) refactor to use assessment level instead of assessment level raw text
   SELECT DISTINCT
     sls.state_code,
     sls.person_id,
@@ -50,9 +49,9 @@ supervision */
     sls.end_date_exclusive AS end_date,
     sls.date_gap_id,
     sls.supervision_level_raw_text,
-    FIRST_VALUE(assessment_level_raw_text) 
+    FIRST_VALUE(assessment_level) 
             OVER(PARTITION BY sls.person_id, sls.date_gap_id ORDER BY sap.assessment_date) 
-                AS initial_assessment_level_raw_text,
+                AS initial_assessment_level,
   FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized` sls
   LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
     ON sls.state_code = sap.state_code
@@ -70,19 +69,19 @@ eligible combination of supervision and initial assessment level */
     start_date,
     end_date,
     COALESCE((is_minimum_low OR
-        (is_minimum_in_person AND initial_assessment_level_raw_text != 'HIGH/HIGH')), FALSE) AS meets_criteria,
+        (is_minimum_in_person AND initial_assessment_level != 'MAXIMUM')), FALSE) AS meets_criteria,
     map.description,
-    initial_assessment_level_raw_text
-  FROM supervision_level_sessions_with_assessments
-  /* Using regex to match digits in supervision_level_sessions_with_assessments.supervision_level_raw_text
+    initial_assessment_level
+  FROM supervision_level_sessions_with_assessments sl
+  /* Using regex to match digits in sl.supervision_level_raw_text
    so imputed values with the form d*##IMPUTED are correctly joined */
   LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
-  ON REGEXP_EXTRACT(supervision_level_sessions_with_assessments.supervision_level_raw_text, r'(\\d+)') = \
+  ON REGEXP_EXTRACT(sl.supervision_level_raw_text, r'(\\d+)') = \
   map.supervision_level_raw_text
 )
-SELECT * EXCEPT (description, initial_assessment_level_raw_text),
+SELECT * EXCEPT (description, initial_assessment_level),
     TO_JSON(STRUCT(description AS supervision_level_raw_text, 
-                    COALESCE(initial_assessment_level_raw_text, "Not needed") AS initial_assessment_level_raw_text)) AS reason,
+                    COALESCE(initial_assessment_level, "Not needed") AS initial_assessment_level)) AS reason,
 FROM eligibility_spans
 """
 

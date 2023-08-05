@@ -39,17 +39,9 @@ US_MI_SUPERVISION_LEVEL_DOWNGRADE_RECORD_DESCRIPTION = """
     """
 US_MI_SUPERVISION_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
 WITH compas_recommended_preprocessed AS (
-# TODO(#20530) deprecate this view in favor of moving this logic further upstream in ingest process
-/* This CTE translates COMPAS scores to the recommended supervision level and partitions by person_id to determine
-the most recent COMPAS score for each client */ 
 SELECT 
     person_id,
-    CASE 
-        WHEN assessment_level_raw_text  = 'LOW/LOW' THEN 'MINIMUM'
-        WHEN assessment_level_raw_text IN ('LOW/MEDIUM', 'MEDIUM/LOW', 'MEDIUM/MEDIUM') THEN 'MEDIUM'
-        WHEN assessment_level_raw_text IN ('HIGH/HIGH', 'MEDIUM/HIGH', 'HIGH/MEDIUM', 'HIGH/LOW', 'LOW/HIGH') THEN 'MAXIMUM'
-        ELSE NULL
-        END AS recommended_supervision_level 
+    IF(assessment_level = 'MEDIUM_HIGH', 'MEDIUM', assessment_level) AS recommended_supervision_level 
 FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sc
 WHERE state_code = "US_MI" 
 QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment_date DESC, assessment_id)=1
@@ -62,7 +54,7 @@ SELECT
     reasons,
 FROM `{{project_id}}.{{task_eligibility_dataset}}.supervision_level_downgrade_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-ON tes.state_code = pei.state_code 
+    ON tes.state_code = pei.state_code 
     AND tes.person_id = pei.person_id
     AND pei.id_type = "US_MI_DOC"
 --left join since a client might not have assessment data, if that's the case, they should be recommended for MEDIUM

@@ -61,7 +61,7 @@ WITH supervision_starts_with_assessments AS (
     sss.session_id_start,
     sss.session_id_end,
     sss.supervision_super_session_id,
-    assessment_level_raw_text,
+    assessment_level,
   FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` sss
   LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
     ON sss.state_code = sap.state_code
@@ -104,10 +104,10 @@ Only sentence spans that overlap with the beginning of the supervision super ses
     ss.session_id_end,
     ss.supervision_super_session_id,
     CASE 
-        WHEN (assessment_level_raw_text IN ('HIGH/MEDIUM', 'MEDIUM/HIGH', 'HIGH/LOW', 'LOW/HIGH', 'HIGH/HIGH')
+        WHEN (assessment_level IN ('MEDIUM_HIGH', 'MAXIMUM')
                 AND is_sex_offense) THEN 'a_priority'
         WHEN (COALESCE(qualifying_statute, FALSE) 
-                AND assessment_level_raw_text IN ('LOW/LOW', 'LOW/MEDIUM', 'MEDIUM/LOW', 'MEDIUM/MEDIUM')
+                AND assessment_level IN ('MINIMUM', 'MEDIUM')
                 AND is_sex_offense) THEN 'a_priority'
         ELSE 'z_default' 
         END AS priority_level

@@ -43,7 +43,7 @@ WITH supervision_and_assessments AS (
         DATE_ADD(score_end_date, INTERVAL 1 DAY) AS end_date, 
         NULL AS supervision_level, 
         --set INTERNAL_UNKNOWN assessment levels to NULL so that they will be COALESCED to `MEDIUM/MEDIUM` 
-        IF(assessment_level_raw_text = 'INTERNAL_UNKNOWN', NULL, assessment_level_raw_text) AS assessment_level,
+        IF(assessment_level = 'INTERNAL_UNKNOWN', NULL, assessment_level) AS assessment_level,
         assessment_date,
       FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
       WHERE state_code = "US_MI"
@@ -72,7 +72,7 @@ WITH supervision_and_assessments AS (
                 --if there is no COMPAS level, default to MEDIUM/MEDIUM assessment score 
                 -- since assessment and supervision levels are non-overlapping, MAX() choose the non null 
                 -- value for each span
-                COALESCE(MAX(assessment_level), 'MEDIUM/MEDIUM') AS assessment_level,
+                COALESCE(MAX(assessment_level), 'MEDIUM') AS assessment_level,
                 MAX(assessment_date) AS assessment_date,
                 MAX(supervision_level) AS supervision_level
         FROM sub_sessions_with_attributes
@@ -81,15 +81,15 @@ WITH supervision_and_assessments AS (
     state_specific_mapping AS (
         SELECT *,
             CASE 
-                WHEN assessment_level = 'LOW/LOW' 
+                WHEN assessment_level = 'MINIMUM' 
                     AND supervision_level NOT IN ('MINIMUM', 'LIMITED', 'UNSUPERVISED')
                     AND supervision_level IS NOT NULL 
                     THEN TRUE
-                WHEN assessment_level IN ('LOW/MEDIUM', 'MEDIUM/LOW', 'MEDIUM/MEDIUM')
+                WHEN assessment_level IN ('MEDIUM')
                     AND supervision_level NOT IN ('MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
                     AND supervision_level IS NOT NULL 
                     THEN TRUE
-                WHEN assessment_level IN ('HIGH/HIGH','HIGH/MEDIUM', 'MEDIUM/HIGH', 'HIGH/LOW', 'LOW/HIGH')
+                WHEN assessment_level IN ('MAXIMUM', 'MEDIUM_HIGH')
                     AND supervision_level NOT IN ('MAXIMUM','MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
                     AND supervision_level IS NOT NULL
                     THEN TRUE

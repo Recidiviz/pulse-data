@@ -35,63 +35,37 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = (
 
 ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
 WITH state_assessment AS (
-    SELECT
-        *
-    FROM (
-        SELECT 
-            person_id,
-            assessment_id,
-            state_code,
-            assessment_date,
-            assessment_type,
-            CASE
-                WHEN assessment_type LIKE "ORAS%" THEN "ORAS"
-                ELSE assessment_type END AS assessment_type_short,
-            assessment_class,
-            assessment_score,
-            assessment_level,
-            assessment_level_raw_text,
-            assessment_score_bucket,
-            assessment_metadata,
-            sequence_num
-        FROM
-            `{project_id}.{normalized_state_dataset}.state_assessment`
-         WHERE
-            -- for US_MI, identify COMPAS scales that determine risk level
-            (state_code = "US_MI" AND assessment_class_raw_text IN ("7/8", "72/73", "8042/8043", "8138/8139"))
-            -- keep only relevant assessment types
-            OR (
-                state_code != "US_MI"
-                AND (
-                    assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA")
-                    OR assessment_type LIKE "ORAS%"
-                )
-            )
-        # TODO(#20530) deprecate this view in favor of moving this logic further upstream in ingest process
-        UNION ALL
-        
-        -- For Michigan, COMPAS data is preprocessed to combine VFO/NVFO scales to create 
-        -- the assessment_level_raw_text field
-        SELECT 
-            person_id,
-            assessment_id,
-            state_code,
-            assessment_date,
-            assessment_type,
-            assessment_type AS assessment_type_short,
-            assessment_class,
-            assessment_score,
-            assessment_level,
-            assessment_level_raw_text,
-            assessment_score_bucket,
-            NULL AS assessment_metadata,
-            sequence_num
-        FROM
-            `{project_id}.{sessions_dataset}.us_mi_state_assessment_preprocessed_materialized`
-    )
+    SELECT 
+        person_id,
+        assessment_id,
+        state_code,
+        assessment_date,
+        assessment_type,
+        CASE
+            WHEN assessment_type LIKE "ORAS%" THEN "ORAS"
+            ELSE assessment_type END AS assessment_type_short,
+        assessment_class,
+        assessment_score,
+        assessment_level,
+        assessment_level_raw_text,
+        assessment_score_bucket,
+        assessment_metadata,
+        sequence_num
+    FROM
+        `{project_id}.{normalized_state_dataset}.state_assessment`
     WHERE
-        assessment_date IS NOT NULL
-        -- keep only assessments with scores or levels
+    -- for US_MI, identify COMPAS scales that determine risk level
+        (state_code = "US_MI" AND assessment_class_raw_text IN ("7/8", "72/73", "8042/8043", "8138/8139"))
+        -- keep only relevant assessment types
+        OR (
+            state_code != "US_MI"
+            AND (
+                assessment_type IN ("LSIR", "STRONG_R", "CAF", "CSRA")
+                OR assessment_type LIKE "ORAS%"
+            )
+        )
+        AND assessment_date IS NOT NULL
+    -- keep only assessments with scores or levels
         AND (
             assessment_score IS NOT NULL
             OR assessment_level IS NOT NULL
@@ -102,7 +76,7 @@ WITH state_assessment AS (
             PARTITION BY person_id, assessment_type_short, assessment_date
             ORDER BY sequence_num DESC
         ) = 1
-)
+    )
 
 SELECT
     person_id,
@@ -134,7 +108,6 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE,
     description=ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
