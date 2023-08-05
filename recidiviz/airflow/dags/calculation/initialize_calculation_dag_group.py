@@ -17,7 +17,7 @@
 """Handles queueing of calculation dags."""
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, List, Optional, Set
 
 from airflow.decorators import task, task_group
 from airflow.exceptions import TaskDeferred
@@ -44,7 +44,7 @@ INITIALIZE_DAG_GROUP_ID = "initialize_dag"
 
 
 @task
-def verify_parameters(dag_run: Optional[DagRun] = None) -> None:
+def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     """Verifies that the required parameters are set in the dag_run configuration and
     returns additional parameters that can be referenced throughout the DAG run.
     """
@@ -87,6 +87,7 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> None:
                 "[sandbox_prefix] must be set in dag_run configuration for SECONDARY "
                 "ingest_instance"
             )
+    return True
 
 
 def get_sandbox_prefix(dag_run: DagRun) -> Optional[str]:
@@ -103,16 +104,15 @@ def get_state_code_filter(dag_run: DagRun) -> Optional[str]:
 
 @task.short_circuit(trigger_rule=TriggerRule.ALL_DONE)
 def handle_params_check(
-    variables: Optional[Dict[str, Optional[Union[str, bool]]]],
+    variables_verified: bool,
 ) -> bool:
     """Returns True if the DAG should continue, otherwise short circuits."""
-    if variables is None:
+    if not variables_verified:
         logging.info(
-            "Found null has_valid_params, indicating that the params check task sensor "
+            "variables_verified did not return true, indicating that the params check task sensor "
             "failed (crashed) - do not continue."
         )
         return False
-    logging.info("Found properly set variables [%s]", variables)
     return True
 
 
