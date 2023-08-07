@@ -17,6 +17,7 @@
 """Preprocessed view of fines/fees exemptions in TN"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -71,7 +72,7 @@ US_TN_EXEMPTIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
         USING
             (AccountSAK)
         -- Remove 1% of spans where end_date (original) is <= start_date. This is much less common (0.2%) for recent data
-        WHERE CAST(SPLIT(EndDate,' ')[OFFSET(0)] AS DATE) > CAST(SPLIT(StartDate,' ')[OFFSET(0)] AS DATE)
+        WHERE {nonnull_end_date_exclusive_clause("CAST(SPLIT(EndDate,' ')[OFFSET(0)] AS DATE)")} > CAST(SPLIT(StartDate,' ')[OFFSET(0)] AS DATE)
     ),
     /*
         There are some people with the same FeeItemID during overlapping spans of time (~15%). Often this is explained 

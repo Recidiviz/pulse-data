@@ -105,6 +105,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_full_term_
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_supervision_level_downgrade_record import (
     US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_to_compliant_reporting_record import (
+    US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
+)
 
 FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENT_RECORD_VIEW_BUILDER,
@@ -136,4 +139,5 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
     US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
     US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER,
+    US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
 ]

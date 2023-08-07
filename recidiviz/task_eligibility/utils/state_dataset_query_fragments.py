@@ -17,6 +17,7 @@
 """Helper SQL fragments that do standard queries against tables in the
 normalized_state dataset.
 """
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -162,20 +163,25 @@ def get_current_offenses() -> str:
     Returns: CTE that pulls information on currently active sentences
     """
 
-    return """
+    return f"""
     SELECT
           s.person_id,
           s.state_code,
           s.start_date,
           sentences.county_code AS conviction_county,
           JSON_EXTRACT_SCALAR(sentences.sentence_metadata, '$.CASE_NUMBER') AS docket_number,
-          sentences.description AS offense
+          sentences.description AS offense,
+          sentences.judicial_district,
+          sentences.date_imposed AS sentence_start_date,
+          sentences.status,
+          sentences.projected_completion_date_max AS expiration_date,
       FROM (
         SELECT *
-        FROM `{project_id}.{sessions_dataset}.sentence_spans_materialized`
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date DESC) = 1
+        FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`
+        WHERE CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
       ) s,
       UNNEST(sentences_preprocessed_id_array_actual_completion) as sentences_preprocessed_id
-      LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sentences
+      INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
         USING(person_id, state_code, sentences_preprocessed_id)
+      WHERE sentences_preprocessed_id in UNNEST(sentences_preprocessed_id_array_projected_completion)
     """
