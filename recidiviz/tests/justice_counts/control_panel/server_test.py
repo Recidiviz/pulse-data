@@ -963,9 +963,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_get_all_agencies_metadata(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         agency_G = self.test_schema_objects.test_agency_G
-        report_published = self.test_schema_objects.test_report_monthly_prisons
+        report_published = self.test_schema_objects.get_report_for_agency(
+            agency=agency_G
+        )
         report_published.status = schema.ReportStatus.PUBLISHED
-        report_2_published = self.test_schema_objects.test_report_monthly_prisons
+        report_2_published = self.test_schema_objects.get_report_for_agency(
+            agency=agency_G
+        )
         report_2_published.status = schema.ReportStatus.PUBLISHED
         report_2_published.date_range_start = datetime.date.fromisoformat("2022-07-01")
         report_2_published.date_range_end = datetime.date.fromisoformat("2022-08-01")
@@ -1007,10 +1011,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         agencies = result["agencies"]
         agency_id = agencies[0]["id"]
         agency_name = agencies[0]["name"]
-        number_of_published_metrics = agencies[0]["number_of_published_metrics"]
+        number_of_published_records = agencies[0]["number_of_published_records"]
         self.assertEqual(agency_id, agency_G.id)
         self.assertEqual(agency_name, agency_G.name)
-        self.assertEqual(number_of_published_metrics, 2)
+        self.assertEqual(number_of_published_records, 2)
 
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A

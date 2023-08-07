@@ -1965,37 +1965,15 @@ def get_api_blueprint(
                 include_datapoints=False,
                 published_only=True,
             )
-            report_ids_to_agency_id = {
-                report.id: report.source_id for report in reports
-            }
 
-            datapoints = DatapointInterface.get_datapoints_by_report_ids(
-                session=current_session,
-                report_ids=list(report_ids_to_agency_id.keys()),
-                include_contexts=False,
-            )
-            agency_id_to_datapoints: dict[str, set[str]] = {
-                id: set() for id in all_agencies_ids
-            }
-
-            for datapoint in datapoints:
-                if (
-                    datapoint.dimension_identifier_to_member is None
-                    and datapoint.value is not None
-                ):
-                    current_dp_agency_id = report_ids_to_agency_id[datapoint.report_id]
-                    agency_id_to_datapoints[current_dp_agency_id].add(
-                        datapoint.metric_definition_key
-                    )
-
-            agency_id_to_published_metrics = {
-                key: len(val) for (key, val) in agency_id_to_datapoints.items()
-            }
+            agency_id_to_num_published_reports: Dict[int, int] = defaultdict(int)
+            for report in reports:
+                agency_id_to_num_published_reports[report.source_id] += 1
 
             for agency in all_agencies_metadata:
-                agency["number_of_published_metrics"] = agency_id_to_published_metrics[
-                    agency["id"]
-                ]
+                agency[
+                    "number_of_published_records"
+                ] = agency_id_to_num_published_reports[agency["id"]]
 
             return jsonify(
                 {
