@@ -1657,12 +1657,9 @@ def get_api_blueprint(
             and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
         )
 
-    @api_blueprint.route("/template", methods=["GET"])
+    @api_blueprint.route("/template/<system>", methods=["GET"])
     @auth_decorator
-    def get_bulk_upload_template() -> response.Response:
-        request_json = assert_type(request.json, dict)
-        system = request_json.get("system")
-
+    def get_bulk_upload_template(system: str) -> response.Response:
         if system is None:
             return make_response(
                 "No system was provided in the request body.",
