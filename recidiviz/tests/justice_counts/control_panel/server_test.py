@@ -2347,9 +2347,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
 
     def test_get_bulk_upload_template(self) -> None:
+        system = "LAW_ENFORCEMENT"
         download_response = self.client.get(
-            "/api/template",
-            json={"system": "LAW_ENFORCEMENT"},
+            f"/api/template/{system}",
         )
         # File name will be in the CONTENT-DISPOSITION header of the response
         self.assertTrue(
