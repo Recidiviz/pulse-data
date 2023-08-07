@@ -93,7 +93,7 @@ _QUERY_TEMPLATE = f"""
         start_date,
         end_date,
         meets_criteria,
-        TO_JSON(STRUCT(latest_high_sanction_date AS latest_high_sanction)) AS reason
+        TO_JSON(STRUCT(latest_high_sanction_date AS latest_high_sanction_date)) AS reason
     FROM sessionized_cte
 """
 

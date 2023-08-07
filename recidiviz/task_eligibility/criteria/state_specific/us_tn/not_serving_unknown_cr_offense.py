@@ -60,7 +60,11 @@ _QUERY_TEMPLATE = """
         AND (is_isc_maybe_assaultive OR is_isc_maybe_ineligible OR is_missing_offense_desc)
         -- This line restricts additionally to sentences that have not yet passed their projected completion date, filtering out 
         -- sentences who have passed that date but may have a null completion date
-        AND sentences_preprocessed_id in UNNEST(sentences_preprocessed_id_array_projected_completion)
+        AND (sentences_preprocessed_id in UNNEST(sentences_preprocessed_id_array_projected_completion)
+            -- ~2% of sentences in TN have an Active status even when the projected_completion_date_max is in the past
+            -- This inclusion also considers those sentences, as long as there's no completion date
+            OR status_raw_text = "AC"
+            )
     GROUP BY 1,2,3,4
 """
 

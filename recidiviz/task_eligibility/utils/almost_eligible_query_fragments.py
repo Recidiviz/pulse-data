@@ -47,6 +47,8 @@ def one_criteria_away_from_eligibility(
     criteria_condition: Optional[str] = None,
     field_name_in_reasons_blob: Optional[str] = None,
     cte_table: str = "json_to_array_cte",
+    nested: bool = False,
+    criteria_name_nested: Optional[str] = None,
 ) -> str:
     """Helper method that returns a query where individuals
     with only one ineligible criteria (criteria_name) are
@@ -63,7 +65,10 @@ def one_criteria_away_from_eligibility(
             if criteria_condition = '< 100', only clients with a 'criteria_name' of less
             than 100 will be surfaced as almost eligible.
         field_name_in_reasons_blob (str): Field name where the value is stored in the
-        reasons column of the eligibility spans.
+            reasons column of the eligibility spans.
+        nested (bool): If true, it means the criteria being referenced has a nested "sub-criteria"
+            that needs to be access
+        criteria_name_nested (str): If nested is True, the name of the nested sub-criteria needs to be provided
     """
 
     criteria_value_query_fragment = ""
@@ -74,14 +79,32 @@ def one_criteria_away_from_eligibility(
     #   the value for us as a column (criteria_value_query_fragment) and we filter
     #   based off this column and the criteria_condition
     if criteria_condition is not None:
-        criteria_value_query_fragment = f"""
-        CAST( 
-            ARRAY(
-                SELECT JSON_VALUE(x.reason.{field_name_in_reasons_blob})
-                FROM UNNEST(array_reasons) AS x
-                WHERE STRING(x.criteria_name) = '{criteria_name}'
-            )[OFFSET(0)] AS FLOAT64) AS criteria_value
-        """
+        if nested:
+            criteria_value_query_fragment_inside = f"""
+                JSON_QUERY_ARRAY((
+                    SELECT x.reason
+                    FROM UNNEST(array_reasons) AS x
+                    WHERE STRING(x.criteria_name) = '{criteria_name}'
+                  ))
+            """
+
+            criteria_value_query_fragment = f"""
+                 CAST( 
+                    ARRAY(
+                        SELECT JSON_VALUE(x.reason.{field_name_in_reasons_blob})
+                        FROM UNNEST({criteria_value_query_fragment_inside}) AS x
+                        WHERE STRING(x.criteria_name) = '{criteria_name_nested}' 
+                    )[OFFSET(0)] AS FLOAT64) AS criteria_value
+            """
+        else:
+            criteria_value_query_fragment = f"""
+            CAST( 
+                ARRAY(
+                    SELECT JSON_VALUE(x.reason.{field_name_in_reasons_blob})
+                    FROM UNNEST(array_reasons) AS x
+                    WHERE STRING(x.criteria_name) = '{criteria_name}'
+                )[OFFSET(0)] AS FLOAT64) AS criteria_value
+            """
 
         criteria_value_where_clause = f"""
         WHERE criteria_value {criteria_condition}

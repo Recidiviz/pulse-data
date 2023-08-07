@@ -44,7 +44,32 @@ _QUERY_TEMPLATE = """
         person_id,
         start_date,
         end_date,
-        NOT is_eligible AS meets_criteria,
+        /* This purpose of this criteria is to be the inverse of transfer_to_compliant_reporting_no_discretion. When
+        combined with the "required" criteria in the transfer_to_compliant_reporting_with_discretion view, this allows
+        us to identify people who are almost eligible (1 criteria away) AND may require some discretion.
+        
+        There is added complexity in the determination of people who are overdue or coming up for full term discharge.
+        If someone fails to meet the SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_90_DAYS criteria, 
+        but also fails to meet HAS_ACTIVE_SENTENCE or US_TN_NO_ZERO_TOLERANCE_CODES_SPANS, 
+        then they will show up as is_eligible = FALSE in transfer_to_compliant_reporting_no_discretion and
+        is_eligible = TRUE in transfer_to_compliant_reporting_with_discretion. This is what we want, because
+         we don't actually think they are overdue or coming up for discharge. Thus, they can then be considered eligible 
+        for compliant reporting (with discretion, since failing to meet HAS_ACTIVE_SENTENCE or 
+        US_TN_NO_ZERO_TOLERANCE_CODES_SPANS also suggests missing sentencing info that could be relevant).
+        
+        However, if someone fails to meet the SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_90_DAYS criteria,
+        but meets both HAS_ACTIVE_SENTENCE AND US_TN_NO_ZERO_TOLERANCE_CODES_SPANS, then they will also show up as
+        is_eligible = FALSE in transfer_to_compliant_reporting_no_discretion, which is correct because we think they are
+        actually overdue for discharge/upcoming discharge. In that case, we also want is_eligible = FALSE in 
+        transfer_to_compliant_reporting_with_discretion, which is why we make the exception below.
+        
+        */
+        
+        CASE WHEN "SUPERVISION_NOT_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_90_DAYS" IN UNNEST(ineligible_criteria) 
+             AND "HAS_ACTIVE_SENTENCE" NOT IN UNNEST(ineligible_criteria) 
+             AND "US_TN_NO_ZERO_TOLERANCE_CODES_SPANS" NOT IN UNNEST(ineligible_criteria) 
+        THEN FALSE
+        ELSE NOT is_eligible END AS meets_criteria,
         TO_JSON(STRUCT( (ineligible_criteria) AS ineligible_criteria )) AS reason
     FROM `{project_id}.{task_eligibility_dataset}.transfer_to_compliant_reporting_no_discretion_materialized` tes
     WHERE

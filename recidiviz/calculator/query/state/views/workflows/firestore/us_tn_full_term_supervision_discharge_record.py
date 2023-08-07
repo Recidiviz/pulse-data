@@ -23,14 +23,14 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
+    us_tn_get_current_offense_information,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
-)
-from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    get_current_offenses,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -44,22 +44,7 @@ US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_DESCRIPTION = """
     """
 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
 WITH latest_sentences AS (
-  SELECT person_id,
-         ARRAY_AGG(docket_number IGNORE NULLS) AS docket_numbers,
-         ARRAY_AGG(offense IGNORE NULLS) AS offenses,
-         ARRAY_AGG(DISTINCT
-                CASE WHEN Decode is not null then CONCAT(conviction_county, ' - ', Decode)
-                    ELSE conviction_county END
-                ) AS conviction_counties,
-  FROM 
-    ({get_current_offenses()})
-  LEFT JOIN (
-            SELECT *
-            FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CodesDescription_latest`
-            WHERE CodesTableID = 'TDPD130'
-        ) codes
-  ON conviction_county = codes.Code
-  GROUP BY 1
+  {us_tn_get_current_offense_information()}
 ),
 latest_system_session AS ( # get latest system session date to bring in relevant codes only for this time on supervision
   SELECT person_id,
@@ -294,9 +279,9 @@ sidebar_contact_notes_array AS (
 ),
 sex_offenses AS (
   SELECT person_id,
-          ARRAY_AGG(offenses2) AS sex_offenses
+          ARRAY_AGG(offenses) AS sex_offenses
   FROM latest_sentences,
-  UNNEST(offenses) as offenses2
+  UNNEST(current_offenses) as offenses
   LEFT JOIN (
     SELECT DISTINCT
           OffenseDescription,
@@ -308,12 +293,12 @@ sex_offenses AS (
                    ORDER BY CASE WHEN SexOffenderFlag = 'Y' THEN 0 ELSE 1 END) AS SexOffenderFlag
             FROM  `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.OffenderStatute_latest`
   ) statute
-  ON offenses2 = statute.OffenseDescription
+  ON offenses = statute.OffenseDescription
   WHERE SexOffenderFlag = 'Y' OR
       (
         SexOffenderFlag IS NULL
         AND (
-          offenses2 LIKE '%SEX%' OR offenses2 LIKE '%RAPE%'
+          offenses LIKE '%SEX%' OR offenses LIKE '%RAPE%'
         )
       )
   GROUP BY 1
@@ -341,7 +326,7 @@ tes_cte AS (
          spe.latest_spe AS form_information_latest_spe,
          vrr.latest_vrr AS form_information_latest_vrr,
          fee.latest_fee AS form_information_latest_fee,
-         latest_sentences.offenses AS form_information_offenses,
+         latest_sentences.current_offenses AS form_information_offenses,
          latest_sentences.docket_numbers AS form_information_docket_numbers,
          latest_sentences.conviction_counties AS form_information_conviction_counties,
          stg.STGID AS form_information_gang_affiliation_id,
