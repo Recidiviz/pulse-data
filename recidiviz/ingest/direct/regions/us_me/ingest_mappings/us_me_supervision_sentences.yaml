@@ -173,21 +173,17 @@ output:
                           $given_names: First_Name
                           $surname: Last_Name
     task_deadlines:
-      - $conditional:
-          - $if:
-              $not_null: Term_Comm_Rel_Date
-            $then:
-              StateTaskDeadline:
-                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
-                eligible_date: Term_Comm_Rel_Date
-                update_datetime:
-                  $env: results_update_datetime
-                task_metadata:
-                  $json_dict:
-                    external_id:
-                      $concat:
-                        $values:
-                          - Client_Id
-                          - Term_Id
-                          - Court_Order_Id
-                    sentence_type: $literal("SUPERVISION")
+      - StateTaskDeadline:
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
+          eligible_date: Term_Comm_Rel_Date
+          update_datetime:
+            $env: results_update_datetime
+          task_metadata:
+            $json_dict:
+              external_id:
+                $concat:
+                  $values:
+                    - Client_Id
+                    - Term_Id
+                    - Court_Order_Id
+              sentence_type: $literal("SUPERVISION")
