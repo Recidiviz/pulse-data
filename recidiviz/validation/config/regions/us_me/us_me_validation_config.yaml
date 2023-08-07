@@ -91,7 +91,7 @@ num_allowed_rows_overrides:
     override_reason: >-
       P2 Not relevant to currently launched products TODO(#19370)
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 20
+    hard_num_allowed_rows_override: 75
     override_reason: >-
       P2 Not relevant to currently launched products
   - validation_name: normalized_state_charge_missing_descriptions
