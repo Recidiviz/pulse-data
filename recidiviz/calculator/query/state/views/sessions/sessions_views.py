@@ -81,6 +81,9 @@ from recidiviz.calculator.query.state.views.sessions.consecutive_sentences_prepr
 from recidiviz.calculator.query.state.views.sessions.custody_level_dedup_priority import (
     CUSTODY_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.custody_level_raw_text_sessions import (
+    CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.custody_level_sessions import (
     CUSTODY_LEVEL_SESSIONS_VIEW_BUILDER,
 )
@@ -372,4 +375,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
     US_TN_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
     CUSTODY_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
+    CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
 ]
