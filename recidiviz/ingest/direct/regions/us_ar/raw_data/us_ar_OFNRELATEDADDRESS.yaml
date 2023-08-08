@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: OFNRELATEDADDRESS
+file_description: |-
+  Offender Related Address
+data_classification: source
+encoding: WINDOWS-1252
+separator: ‡
+primary_key_cols:
+  - OFFENDERID
+  - ADDREFFECTIVEDATE
+  - ADDRESSTYPE
+# TODO(#23025): Encode join relationships
+columns:
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    is_pii: True
+  - name: ADDREFFECTIVEDATE
+    description: |-
+      Address effective date
+    field_type: datetime
+  - name: ADDRESSTYPE
+    description: |-
+      Address type
+    known_values:
+      - value: A
+        description: SOCNA Mailing
+      - value: B
+        description: SOCNA Physical
+      - value: C
+        description: Conversion
+      - value: D
+        description: SOCNA School/College
+      - value: E
+        description: ACIC Employment
+      - value: M
+        description: Mailing
+      - value: "N"
+        description: Planned (after release)
+      - value: O
+        description: Planned (after ISC Transfer)
+      - value: P
+        description: Physical (Home)
+      - value: S
+        description: School/College
+      - value: T
+        description: Temporary
+  - name: ADDRESSID
+    description: |-
+      Address ID
+  - name: ADDRENDDATE
+    description: |-
+      Address end date
+    field_type: datetime
+  - name: OFFICERCONTROLNUM
+    description: |-
+      Officer control number
+    is_pii: True
+  - name: ADDRVERIFYDATE
+    description: |-
+      Address verification date
+    field_type: datetime
+  - name: OFNADDRCOMMENTS
+    description: |-
+      Address comments
+    is_pii: True
+  - name: TRAVELDIRECTIONS
+    description: |-
+      Travel directions
+    is_pii: True
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+  - name: ADDRESSVERIFYINGAGENCY
+    description: |-
+      Address verifying agency
+  - name: ADDRESSVERIFYINGNAME
+    description: |-
+      Address verifying name
+    is_pii: True
+  - name: OFFNISHOMELESS
+    description: |-
+      Homeless flag
+    known_values:
+      - value: "N"
+        description: "No"
+      - value: "Y"
+        description: "Yes"
