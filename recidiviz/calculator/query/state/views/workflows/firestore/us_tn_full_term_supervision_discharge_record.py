@@ -72,8 +72,9 @@ relevant_codes AS (
   */ 
   SELECT person_id,
          contact_date,
-         ARRAY_AGG(DISTINCT contact.ContactNoteType IGNORE NULLS) AS contact_type,
-         ARRAY_AGG(DISTINCT comment.Comment IGNORE NULLS) AS contact_comment
+         ARRAY_AGG(DISTINCT contact.ContactNoteType IGNORE NULLS) AS contact_type_array,
+         STRING_AGG(DISTINCT contact.ContactNoteType, ", ") AS contact_type,
+         STRING_AGG(DISTINCT comment.Comment, ", ") AS contact_comment
   FROM
     (
         SELECT * EXCEPT(ContactNoteDateTime),
@@ -117,8 +118,8 @@ sex_offense_pse_code AS ( #latest PSE code
       contact_comment
     ) AS latest_pse
   FROM relevant_codes,
-  UNNEST(contact_type) AS contact_type
-  WHERE contact_type LIKE '%PSE%'
+  UNNEST(contact_type_array) AS contact_type_array
+  WHERE contact_type_array LIKE '%PSE%'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 new_offense_codes AS ( #latest PSE code
@@ -133,8 +134,8 @@ new_offense_codes AS ( #latest PSE code
         )
         ) AS new_offenses
   FROM relevant_codes,
-  UNNEST(contact_type) AS contact_type
-  WHERE contact_type IN ('NCAC','NCAF')
+  UNNEST(contact_type_array) AS contact_type_array
+  WHERE contact_type_array IN ('NCAC','NCAF')
   GROUP BY 1
 ),
 emp_code AS ( #latest EMP code
@@ -146,8 +147,8 @@ emp_code AS ( #latest EMP code
       contact_comment
     ) AS latest_emp
   FROM relevant_codes,
-  UNNEST(contact_type) AS contact_type
-  WHERE contact_type LIKE '%EMP%'
+  UNNEST(contact_type_array) AS contact_type_array
+  WHERE contact_type_array LIKE '%EMP%'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 spe_code AS ( #latest SPE code
@@ -159,8 +160,8 @@ spe_code AS ( #latest SPE code
       contact_comment
     ) AS latest_spe
   FROM relevant_codes,
-  UNNEST(contact_type) AS contact_type
-  WHERE contact_type IN ("SPEC","SPET")
+  UNNEST(contact_type_array) AS contact_type_array
+  WHERE contact_type_array IN ("SPEC","SPET")
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 vrr_code AS ( #latest SPE code
@@ -171,8 +172,8 @@ vrr_code AS ( #latest SPE code
       contact_type
     ) AS latest_vrr
   FROM relevant_codes,
-  UNNEST(contact_type) AS contact_type
-  WHERE contact_type LIKE 'VRR%'
+  UNNEST(contact_type_array) AS contact_type_array
+  WHERE contact_type_array LIKE 'VRR%'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 fee_code AS ( #latest SPE code
@@ -184,8 +185,8 @@ fee_code AS ( #latest SPE code
       contact_comment
     ) AS latest_fee
   FROM relevant_codes,
-  UNNEST(contact_type) AS contact_type
-  WHERE contact_type LIKE 'FEE%'
+  UNNEST(contact_type_array) AS contact_type_array
+  WHERE contact_type_array LIKE 'FEE%'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 tepe_code AS ( # latest TEPE code
@@ -193,8 +194,8 @@ tepe_code AS ( # latest TEPE code
     person_id,
     contact_date AS latest_tepe,
   FROM relevant_codes,
-  UNNEST(contact_type) AS contact_type
-  WHERE contact_type = 'TEPE'
+  UNNEST(contact_type_array) AS contact_type_array
+  WHERE contact_type_array = 'TEPE'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 alc_history_codes AS (
@@ -208,8 +209,8 @@ alc_history_codes AS (
                 )
             ) AS alc_history
     FROM relevant_codes,
-    UNNEST(contact_type) AS contact_type
-    WHERE contact_type IN ('DRUP') OR contact_type LIKE "%FSW%"
+    UNNEST(contact_type_array) AS contact_type_array
+    WHERE contact_type_array IN ('DRUP') OR contact_type_array LIKE "%FSW%"
     GROUP BY 1
 ),
 sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed in sidebar
@@ -219,9 +220,9 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
           contact_comment AS note_body,
           "REVOCATION HEARINGS" AS criteria,
     FROM relevant_codes,
-    UNNEST(contact_type) AS contact_type
-    WHERE contact_type IN ('VRPT','VWAR','COHC','AARP')
-          OR contact_type LIKE "%ABS%"
+    UNNEST(contact_type_array) AS contact_type_array
+    WHERE contact_type_array IN ('VRPT','VWAR','COHC','AARP')
+          OR contact_type_array LIKE "%ABS%"
 
     UNION ALL
 
@@ -231,8 +232,8 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
             contact_comment AS note_body,
             "ALCOHOL DRUG HISTORY" AS criteria,
     FROM relevant_codes,
-    UNNEST(contact_type) AS contact_type
-    WHERE contact_type IN ('DRUP') OR contact_type LIKE "%FSW%"
+    UNNEST(contact_type_array) AS contact_type_array
+    WHERE contact_type_array IN ('DRUP') OR contact_type_array LIKE "%FSW%"
     
     UNION ALL
 
@@ -242,8 +243,8 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
             contact_comment AS note_body,
             "ALCOHOL DRUG HISTORY - NEGATIVE SCREENS" AS criteria,
     FROM relevant_codes,
-    UNNEST(contact_type) AS contact_type
-    WHERE contact_type IN ('DRUN','DRUM','DRUX')
+    UNNEST(contact_type_array) AS contact_type_array
+    WHERE contact_type_array IN ('DRUN','DRUM','DRUX')
 
     UNION ALL
 
@@ -255,8 +256,8 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
     FROM (
       SELECT person_id, contact_type, contact_date, contact_comment
       FROM relevant_codes,
-      UNNEST(contact_type) AS contact_type
-      WHERE contact_type IN ("FAC1","FAC2")
+      UNNEST(contact_type_array) AS contact_type_array
+      WHERE contact_type_array IN ("FAC1","FAC2")
       -- Keep latest FAC1 and latest FAC2
       QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, contact_type ORDER BY contact_date DESC) = 1
     )
