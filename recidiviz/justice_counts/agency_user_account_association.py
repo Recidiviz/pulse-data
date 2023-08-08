@@ -21,6 +21,7 @@ from typing import Dict, List
 
 from auth0.exceptions import Auth0Error
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.sql.expression import true
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -381,9 +382,11 @@ class AgencyUserAccountAssociationInterface:
         )
 
     @staticmethod
-    def get_user_emails_by_agency_id(session: Session, agency_id: int) -> List[str]:
+    def get_subscribed_user_emails_by_agency_id(
+        session: Session, agency_id: int
+    ) -> List[str]:
 
-        user_email_tuples = (
+        subscribed_user_email_tuples = (
             session.query(schema.UserAccount.email)
             .join(
                 schema.AgencyUserAccountAssociation,
@@ -392,9 +395,12 @@ class AgencyUserAccountAssociationInterface:
             )
             .filter(
                 schema.AgencyUserAccountAssociation.agency_id == agency_id,
+                schema.AgencyUserAccountAssociation.subscribed == true(),
             )
             .all()
         )
 
-        user_emails = [user_email_tuple[0] for user_email_tuple in user_email_tuples]
-        return user_emails
+        subscribed_user_emails = [
+            user_email_tuple[0] for user_email_tuple in subscribed_user_email_tuples
+        ]
+        return subscribed_user_emails

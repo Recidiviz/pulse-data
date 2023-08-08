@@ -35,6 +35,9 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_user_account_association import (
+    AgencyUserAccountAssociationInterface,
+)
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
@@ -2898,3 +2901,41 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
                 jurisdictions,
             )
+
+    def test_get_subscribed_user_emails_by_agency_id(self) -> None:
+        agency = self.test_schema_objects.test_agency_A
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_user_B,
+                self.test_schema_objects.test_user_C,
+                agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                    subscribed=True,
+                ),
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_B,
+                    agency=self.test_schema_objects.test_agency_A,
+                    subscribed=False,
+                ),
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_C,
+                    agency=self.test_schema_objects.test_agency_A,
+                    subscribed=None,
+                ),
+            ]
+        )
+        self.session.commit()
+
+        self.test_schema_objects.test_user_A.email = "testA@email.com"
+        self.test_schema_objects.test_user_B.email = "testB@email.com"
+        self.test_schema_objects.test_user_C.email = "testC@email.com"
+
+        subscribed_user_emails = AgencyUserAccountAssociationInterface.get_subscribed_user_emails_by_agency_id(
+            session=self.session,
+            agency_id=agency.id,
+        )
+
+        self.assertEqual(subscribed_user_emails, ["testA@email.com"])

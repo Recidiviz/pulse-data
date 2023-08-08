@@ -45,12 +45,14 @@ def send_confirmation_email(
     notifying that their upload has either succeeded or failed. We do so by using the
     SendGridClientWrapper.
 
-    Emails are sent to all users associated with the given agency (except for CSG users).
+    Emails are sent to subscribed users associated with the given agency (except for CSG users).
     """
     send_grid_client = SendGridClientWrapper(key_type="justice_counts")
 
-    user_emails = AgencyUserAccountAssociationInterface.get_user_emails_by_agency_id(
-        session=session, agency_id=int(agency_id)
+    subscribed_user_emails = (
+        AgencyUserAccountAssociationInterface.get_subscribed_user_emails_by_agency_id(
+            session=session, agency_id=int(agency_id)
+        )
     )
     subject_str, html = _email_builder(
         success=success,
@@ -62,7 +64,7 @@ def send_confirmation_email(
 
     # Send confirmation email to all users that belong to the agency
     # except for CSG users
-    for user_email in user_emails:
+    for user_email in subscribed_user_emails:
         if "@csg.org" not in user_email:
             try:
                 send_grid_client.send_message(
