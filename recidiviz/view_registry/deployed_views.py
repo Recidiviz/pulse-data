@@ -154,6 +154,8 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "task_eligibility_spans_us_me",
     "task_eligibility_spans_us_mi",
     "task_eligibility_spans_us_mo",
+    "us_ar_raw_data_up_to_date_views",
+    "us_ar_raw_data_up_to_date_views_secondary",
     "us_ca_raw_data_up_to_date_views",
     "us_ca_raw_data_up_to_date_views_secondary",
     "us_co_raw_data_up_to_date_views",

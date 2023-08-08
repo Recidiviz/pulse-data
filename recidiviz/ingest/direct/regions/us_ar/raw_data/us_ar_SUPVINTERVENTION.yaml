@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: SUPVINTERVENTION
+file_description: |-
+  Supervision intervention
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - INTERVENTIONDATE
+  - INTERVENTIONTIME
+# TODO(#23025): Encode join relationships
+columns:
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    is_pii: True
+  - name: INTERVENTIONDATE
+    description: |-
+      Intervention date
+    field_type: datetime
+  - name: INTERVENTIONTIME
+    description: |-
+      Intervention time
+  - name: INTERVENTIONTYPE
+    description: |-
+      Intervention type
+  - name: PPOFFICE
+    description: |-
+      PP Office
+  - name: PPOFFICERID
+    description: |-
+      PP Officer ID
+    is_pii: True
+  - name: INTERVENTIONCOMMENTS
+    description: |-
+      Intervention comments
+    is_pii: True
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+  - name: INTERVENTIONSTATUS
+    description: |-
+      Intervention status
+  - name: INTERVENTIONSTATUSDATE
+    description: |-
+      Intervention status date
+    field_type: datetime
+encoding: cp1252
+separator: "‡"

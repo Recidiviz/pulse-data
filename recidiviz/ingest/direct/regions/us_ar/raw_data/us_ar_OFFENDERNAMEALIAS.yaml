@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: OFFENDERNAMEALIAS
+file_description: |-
+  Offender Name or Alias
+data_classification: source
+encoding: WINDOWS-1252
+separator: ‡
+primary_key_cols:
+  - OFFENDERID
+  - OFFNNAMETYPE
+  - COMMITMENTPREFIX
+  - UOFFNLASTNAME
+  - UOFFNFIRSTNAME
+  - UOFFNMIDDLENAME
+  - UOFFNNAMESUFFIX
+# TODO(#23025): Encode join relationships
+columns:
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    is_pii: True
+  - name: OFFNNAMETYPE
+    description: |-
+      Name type
+  - name: OFFNLASTNAME
+    description: |-
+      Last name
+    is_pii: True
+  - name: OFFNFIRSTNAME
+    description: |-
+      First name
+    is_pii: True
+  - name: OFFNMIDDLENAME
+    description: |-
+      Middle name
+    is_pii: True
+  - name: OFFNNAMESUFFIX
+    description: |-
+      Name suffix
+    is_pii: True
+  - name: COMMITMENTPREFIX
+    description: |-
+      Commitment prefix
+  - name: OFFNSOUNDEXCODE
+    description: |-
+      Soundex code
+  - name: CURRENTCOMMNAME
+    description: |-
+      Flag for for current commitment name
+    is_pii: True
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+  - name: CURRENTCOMMDOCNAME
+    description: |-
+      Flag for current DOC commitment name
+  - name: UOFFNLASTNAME
+    description: |-
+      Unknown
+    is_pii: True
+  - name: UOFFNFIRSTNAME
+    description: |-
+      Unknown
+    is_pii: True
+  - name: UOFFNMIDDLENAME
+    description: |-
+      Unknown
+  - name: UOFFNNAMESUFFIX
+    description: |-
+      Unknown
+    is_pii: True

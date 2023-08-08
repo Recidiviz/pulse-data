@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: INTERVENTTYPE
+file_description: |-
+  Intervention type
+data_classification: source
+# OFFENSESEQ is listed as a primary key in the metadata, but isn't in our version of the table.
+# Assuming that no_valid_primary_keys is True until we receive more information.
+primary_key_cols: []
+# TODO(#23025): Encode join relationships
+columns:
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    is_pii: True
+  - name: INTERVENTIONDATE
+    description: |-
+      Intervention date
+    field_type: datetime
+  - name: INTERVENTIONTIME
+    description: |-
+      Intervention time
+  - name: INTERVENTIONTYPE
+    description: |-
+      Intervention type
+  - name: INTERVENTIONCOMPLETEBYDATE
+    description: |-
+      Intervention completed by date
+    field_type: datetime
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+encoding: cp1252
+separator: "‡"

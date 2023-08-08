@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: OFFENDERPROFILE
+file_description: |-
+  Offender Profile
+data_classification: source
+encoding: UTF-8
+separator: ‡
+primary_key_cols:
+  - OFFENDERID
+# TODO(#23025): Encode join relationships
+columns:
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    is_pii: True
+  - name: OFFNBIRTHDATE
+    description: |-
+      Offender DOB
+    field_type: datetime
+    is_pii: True
+  - name: OFFNRACE
+    description: |-
+      Race
+  - name: OFFNSEX
+    description: |-
+      Sex
+  - name: OFFNCITYBORN
+    description: |-
+      City of birth
+  - name: OFFNSTATEBORN
+    description: |-
+      State of birth
+  - name: OFFNARKCOUNTYBORN
+    description: |-
+      AR county of birth
+  - name: OFFNCOUNTRYBORN
+    description: |-
+      Country of birth
+  - name: OFFNETHNICGROUP
+    description: |-
+      Ethnicity
+  - name: OFFNEMAILADDR
+    description: |-
+      Email address
+    is_pii: True
+  - name: OFFENDERSTATUS
+    description: |-
+      Offender status
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+  - name: JUSTICEXCHANGENOTIFICATION
+    description: |-
+      Justice exchange notification
+  - name: JUSTICEXCHGNOTIFYDATE
+    description: |-
+      Justice exchange notify date
+    field_type: datetime
+  - name: SEXOFFNRISKLEVEL
+    description: |-
+      Sex offender risk level
+  - name: LASTVORDATE
+    description: |-
+      Unknown
+    field_type: datetime
+  - name: OFFNRACE2
+    description: |-
+      Secondary race
