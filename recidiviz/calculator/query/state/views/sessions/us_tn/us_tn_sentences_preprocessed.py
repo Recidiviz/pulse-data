@@ -225,7 +225,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         dedup.completion_date,
         sen.status,
         sen.status_raw_text,
-        dedup.parole_eligibility_date,
+        -- TODO(#23069): Remove this when parole eligibility date in TN is hydrated
+        COALESCE(dedup.parole_eligibility_date,dedup.projected_completion_date_max),
         dedup.projected_completion_date_min,
         dedup.projected_completion_date_max,
         raw.release_eligibility_range_percent,
