@@ -90,6 +90,8 @@ def create_app(config: Optional[Config] = None) -> Flask:
             integrations=[FlaskIntegration()],
             traces_sample_rate=1.0,
             environment=get_gcp_environment(),
+            # profile 10% of transactions
+            profiles_sample_rate=0.1,
         )
 
     app = Flask(__name__, static_folder=static_folder)
