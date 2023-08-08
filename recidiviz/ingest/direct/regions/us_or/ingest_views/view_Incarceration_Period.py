@@ -49,7 +49,8 @@ transfers AS (
     FROM {RCDVZ_PRDDTA_OP011P}
     ) t
     WHERE seq = 1
-    AND (MOVE_OUT_DATE IS NOT NULL OR OPEN IS NULL)
+    AND (MOVE_OUT_DATE IS NOT NULL OR OPEN IS NULL) # cleans out random open periods while keeping intentionally open ones
+    AND (MOVE_IN_DATE < MOVE_OUT_DATE OR OPEN IS NULL) # removes bad data with reverse periods (but need to keep actually open periods)
 ), 
 high_level_transfers AS (
   SELECT
