@@ -274,6 +274,11 @@ class AgencyUserAccountAssociation(JusticeCountsBase):
     # Tracks progress during guidance/onboarding flow
     guidance_progress = Column(JSONB, nullable=True)
 
+    # A boolean to indicate whether or not the user is subscribed to email confirmations
+    # for Automated Bulk Upload feature. Emails are sent via SendGrid, and users can
+    # opt-out (unsubscribe) via SenGrid unsubscribe link within emails
+    subscribed = Column(Boolean, nullable=True, default=False)
+
     agency = relationship("Agency", back_populates="user_account_assocs")
     user_account = relationship("UserAccount", back_populates="agency_assocs")
 
