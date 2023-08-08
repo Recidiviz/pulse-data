@@ -36,6 +36,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         client_last_name,
         date_today,
         tdoc_id,
+        tdoc_id AS external_id,
         compliant_reporting_eligible,
         physical_address,
         current_employer,

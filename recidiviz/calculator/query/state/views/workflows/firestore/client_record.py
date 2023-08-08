@@ -76,21 +76,21 @@ client_record_fields = [
     "email_address",
     "supervision_start_date",
     "expiration_date",
-    "current_balance",
-    "last_payment_amount",
-    "last_payment_date",
-    "special_conditions",
-    "board_conditions",
     "district",
     "current_employers",
+    "all_eligible_opportunities",
+    "milestones",
+    "current_balance",
+    "last_payment_date",
+    "last_payment_amount",
+    "special_conditions",
+    "board_conditions",
 ]
 
 WORKFLOWS_CONFIGS_WITH_CLIENTS = [
     config
     for config in WORKFLOWS_OPPORTUNITY_CONFIGS
     if config.person_record_type == PersonRecordType.CLIENT
-    # TODO(#18193): Remove conditional for TN once migration to TES is completed
-    and config.state_code != StateCode.US_TN
 ]
 
 WORKFLOWS_SUPERVISION_STATES = [
@@ -130,16 +130,33 @@ def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
 
 CLIENT_RECORD_QUERY_TEMPLATE = f"""
     WITH 
+        # TODO(#22265) - Deprecate TN specific template
         {US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE},
         {get_eligibility_ctes(WORKFLOWS_CONFIGS_WITH_CLIENTS)},
-        {full_client_record()}
-    SELECT *,
-         {{new_fields}},
-        {PSEUDONYMIZED_ID} AS pseudonymized_id FROM tn_clients
-    UNION ALL
-    SELECT *,
-        {{new_fields}}, 
-        {PSEUDONYMIZED_ID} AS pseudonymized_id FROM clients
+        {full_client_record()},
+        # TODO(#22265) - Clean this up to not require TN specific logic 
+        tn_clients_wrangle AS (
+            SELECT *, 
+            FROM tn_clients standards
+            FULL OUTER JOIN (
+                SELECT {{new_fields}},  
+                FROM clients
+                WHERE state_code = "US_TN"
+            ) all_tn
+            ON
+                standards.person_external_id = all_tn.person_external_id_new
+                AND standards.state_code = all_tn.state_code_new
+        )
+        
+        SELECT *,
+            {PSEUDONYMIZED_ID} AS pseudonymized_id FROM tn_clients_wrangle            
+        
+        UNION ALL
+            
+        SELECT *,
+            {{new_fields}}, 
+            {PSEUDONYMIZED_ID} AS pseudonymized_id FROM clients
+            WHERE state_code != "US_TN"
 """
 
 
@@ -148,8 +165,8 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=CLIENT_RECORD_VIEW_NAME,
     view_query_template=CLIENT_RECORD_QUERY_TEMPLATE,
     description=CLIENT_RECORD_DESCRIPTION,
-    analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     dataflow_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,

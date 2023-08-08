@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """CTE Logic that is shared across US_TN Workflows queries."""
-
 from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
     client_specific_fines_fees_balance,
 )
@@ -35,8 +34,8 @@ def us_tn_fines_fees_info() -> str:
         FROM ({client_specific_fines_fees_balance(unpaid_balance_field="compartment_level_0_unpaid_balance")}) ff
         INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             USING (person_id)
-        WHERE ff.state_code = "US_TN"
-            AND fee_type = "SUPERVISION_FEES"
+        -- This line helps specify which fee_type we're getting in TN
+        WHERE ff.state_code != "US_TN" OR fee_type = "SUPERVISION_FEES"
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_external_id, state_code ORDER BY start_date DESC) = 1
     ),
     """
@@ -65,7 +64,25 @@ def us_tn_get_current_offense_information() -> str:
             ) codes
       ON off.conviction_county = codes.Code
       GROUP BY 1
+      """
 
 
-    
+def us_tn_supervision_type() -> str:
+    return """
+    # See Case Type for these mappings https://app.gitbook.com/o/-MS0FZPVqDyJ1aem018G/s/-MRvK9sMirb5JcYHAkjo-887967055/state-ingest-catalog/us_tn/raw_data/assignedstaff
+    SELECT person_id,
+           CASE SPLIT(supervision_type_raw_text,'-')[SAFE_OFFSET(2)]
+                WHEN "PPO" THEN "PROBATION"
+                WHEN "TNP" THEN "PAROLE"
+                WHEN "DIV" THEN "DIVERSION"
+                WHEN "ISC" THEN "ISC FROM OTHER JURISDICTION"
+                WHEN "DET" THEN "DETERMINATE RLSE PROBATIONER"
+                WHEN "MIS" THEN "MISDEMEANOR PROBATIONER"
+                WHEN "SAI" THEN "SPECIAL ALT INCARCERATION UNIT"
+            ELSE NULL END AS supervision_type,                   
+    FROM 
+        `{project_id}.{normalized_state_dataset}.state_supervision_period`
+    WHERE
+        state_code = "US_TN"
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date DESC) = 1
     """
