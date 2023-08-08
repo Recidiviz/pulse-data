@@ -72,6 +72,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                 {
                     "pseudonymizedId": "p300",
                     "personExternalId": "300",
+                    "displayId": "d300",
                     "stateCode": "US_MO",
                     "personName": {
                         "givenNames": "Stassi",
@@ -101,6 +102,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                 {
                     "pseudonymizedId": "p301",
                     "personExternalId": "301",
+                    "displayId": "d301",
                     "stateCode": "US_ME",
                     "personName": {
                         "givenNames": "Kristen",
@@ -134,6 +136,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                 {
                     "pseudonymizedId": "p302",
                     "personExternalId": "302",
+                    "displayId": "d302",
                     "stateCode": "US_ME",
                     "personName": {
                         "givenNames": "Jax",
@@ -166,6 +169,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                 {
                     "pseudonymizedId": "p303",
                     "personExternalId": "303",
+                    "displayId": "d303",
                     "stateCode": "US_TN",
                     "personName": {
                         "givenNames": "James",

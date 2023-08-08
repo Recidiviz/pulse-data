@@ -177,6 +177,26 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
     ),
     """
 
+_CLIENT_RECORD_DISPLAY_IDS_CTE = """
+    display_ids AS (
+        # In most cases, the client ID we display to users is person_external_id, but some
+        # states may want to display a different ID that isn't suitable as a pei 
+        SELECT
+            state_code,
+            person_external_id,
+            CASE state_code
+                WHEN "US_CA" THEN ca_pp.Cdcno
+                ELSE person_external_id
+                END
+                AS display_id
+        FROM `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+        LEFT JOIN `{project_id}.{us_ca_raw_data_up_to_date_dataset}.PersonParole_latest` ca_pp
+            ON person_external_id=ca_pp.OffenderId
+        WHERE
+            state_code IN ({workflows_supervision_states})
+    ),
+"""
+
 _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
     phone_numbers AS (
         # TODO(#14676): Pull from state_person.phone_number once hydrated
@@ -578,6 +598,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           sc.state_code,
           sc.person_id,
           sc.person_external_id,
+          did.display_id,
           sp.full_name as person_name,
           sp.current_address as address,
           CAST(ph.phone_number AS INT64) AS phone_number,
@@ -600,6 +621,9 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         INNER JOIN supervision_super_sessions ss USING(person_id)
         INNER JOIN include_clients USING(person_id)
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp USING(person_id)
+        LEFT JOIN display_ids did
+            ON sc.state_code = did.state_code
+            AND sc.person_external_id = did.person_external_id
         LEFT JOIN phone_numbers ph
             -- join on state_code / person_external_id instead of person_id alone because state data
             -- may have multiple external_ids for a given person_id, and by this point in the
@@ -624,6 +648,7 @@ _CLIENTS_CTE = """
         # Values set to NULL are not applicable for this state
         SELECT
             person_external_id,
+            display_id,
             c.state_code,
             person_name,
             officer_id,
@@ -667,6 +692,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_SUPERVISION_CTE}
     {_CLIENT_RECORD_SUPERVISION_LEVEL_CTE}
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
+    {_CLIENT_RECORD_DISPLAY_IDS_CTE}
     {_CLIENT_RECORD_PHONE_NUMBERS_CTE}
     {_CLIENT_RECORD_FINES_FEES_INFO_CTE}
     {_CLIENT_RECORD_LAST_PAYMENT_INFO_CTE}

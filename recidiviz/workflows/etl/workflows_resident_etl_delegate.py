@@ -36,6 +36,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
         new_document = {
             "pseudonymizedId": data["pseudonymized_id"],
             "personExternalId": data["person_external_id"],
+            "displayId": data["display_id"],
             "stateCode": data["state_code"],
             "personName": {
                 snake_to_camel(k): person_name_case(v)

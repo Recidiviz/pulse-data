@@ -65,6 +65,7 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         # Values set to NULL are not applicable for this state
         SELECT
             person_external_id,
+            person_external_id as display_id,
             "US_TN" AS state_code,
             person_name,
             officer_id,

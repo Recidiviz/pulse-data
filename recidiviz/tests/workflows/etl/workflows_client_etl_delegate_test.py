@@ -79,6 +79,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "officerId": "100",
                     "personExternalId": "200",
                     "pseudonymizedId": "p200",
+                    "displayId": "d200",
                     "personName": {
                         "givenNames": "Matilda",
                         "middleNames": "",
@@ -138,6 +139,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 {
                     "personExternalId": "201",
                     "pseudonymizedId": "p201",
+                    "displayId": "d201",
                     "stateCode": "US_TN",
                     "personName": {
                         "givenNames": "Harry",
@@ -170,6 +172,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 {
                     "personExternalId": "202",
                     "pseudonymizedId": "p202",
+                    "displayId": "d202",
                     "personName": {
                         "givenNames": "Third",
                         "middleNames": "Persons",
@@ -225,6 +228,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 {
                     "personExternalId": "203",
                     "pseudonymizedId": "p203",
+                    "displayId": "d203",
                     "stateCode": "US_ND",
                     "address": "456 Fake st., Faketown, ND 12345",
                     "phoneNumber": "8889997777",
@@ -254,6 +258,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 {
                     "personExternalId": "204",
                     "pseudonymizedId": "p204",
+                    "displayId": "d204",
                     "stateCode": "US_ID",
                     "address": "456 Fake st., Faketown, ID 12345",
                     "expirationDate": "2022-02-28",
@@ -283,6 +288,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 {
                     "personExternalId": "205",
                     "pseudonymizedId": "p205",
+                    "displayId": "d205",
                     "personName": {
                         "givenNames": "Sixth",
                         "middleNames": "Persons",
@@ -338,6 +344,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 {
                     "personExternalId": "206",
                     "pseudonymizedId": "p206",
+                    "displayId": "d206",
                     "personName": {
                         "givenNames": "Seventh",
                         "middleNames": "Persons",
