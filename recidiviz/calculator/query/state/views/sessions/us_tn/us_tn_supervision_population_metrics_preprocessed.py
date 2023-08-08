@@ -54,6 +54,7 @@ US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         END AS correctional_level,
         supervision_level_raw_text AS correctional_level_raw_text,
         CAST(NULL AS STRING) AS housing_unit,
+        CAST(NULL AS STRING) AS housing_unit_category,
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         staff.external_id AS supervising_officer_external_id,

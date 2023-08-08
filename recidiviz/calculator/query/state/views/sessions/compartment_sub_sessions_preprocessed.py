@@ -37,10 +37,10 @@ from dataflow sessions. This view does the following:
 MO_DATA_GAP_DAYS = "10"
 
 COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
-    WITH session_attributes_unnested AS 
+    WITH session_attributes_unnested AS
     (
     SELECT DISTINCT
-        person_id, 
+        person_id,
         dataflow_session_id,
         state_code,
         start_date,
@@ -60,6 +60,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         session_attributes.correctional_level AS correctional_level,
         session_attributes.correctional_level_raw_text AS correctional_level_raw_text,
         session_attributes.housing_unit AS housing_unit,
+        session_attributes.housing_unit_category AS housing_unit_category,
         session_attributes.housing_unit_type AS housing_unit_type,
         session_attributes.housing_unit_type_raw_text AS housing_unit_type_raw_text,
         session_attributes.case_type,
@@ -93,6 +94,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         correctional_level,
         correctional_level_raw_text,
         housing_unit,
+        housing_unit_category,
         housing_unit_type,
         housing_unit_type_raw_text,
         case_type,
@@ -100,19 +102,19 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         gender,
         metric_source,
         last_day_of_data,
-    FROM 
+    FROM
         (
-        SELECT 
+        SELECT
             *,
-        COUNT(DISTINCT(CASE WHEN compartment_level_2 IN ('PAROLE', 'PROBATION') 
+        COUNT(DISTINCT(CASE WHEN compartment_level_2 IN ('PAROLE', 'PROBATION')
             THEN compartment_level_2 END)) OVER(PARTITION BY person_id, state_code, dataflow_session_id, compartment_level_1) AS cnt,
         FROM session_attributes_unnested
         )
     )
     ,
-    dedup_compartment_cte AS 
+    dedup_compartment_cte AS
     (
-    SELECT 
+    SELECT
         cte.person_id,
         cte.dataflow_session_id,
         cte.state_code,
@@ -131,6 +133,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         cte.correctional_level,
         cte.correctional_level_raw_text,
         cte.housing_unit,
+        cte.housing_unit_category,
         cte.housing_unit_type,
         cte.housing_unit_type_raw_text,
         cte.case_type,
@@ -147,8 +150,8 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` sl_dedup
         ON cte.correctional_level = sl_dedup.correctional_level
     WHERE TRUE
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, dataflow_session_id 
-        ORDER BY COALESCE(cl1_dedup.priority, 999), 
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, dataflow_session_id
+        ORDER BY COALESCE(cl1_dedup.priority, 999),
                 COALESCE(cl2_dedup.priority, 999),
                 COALESCE(correctional_level_priority, 999),
                 NULLIF(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') NULLS LAST,
@@ -156,6 +159,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
                 NULLIF(case_type, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(correctional_level_raw_text, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(housing_unit, 'EXTERNAL_UNKNOWN') NULLS LAST,
+                NULLIF(housing_unit_category, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(housing_unit_type, 'EXTERNAL_UNKNOWN') NULLS LAST,
                 NULLIF(housing_unit_type_raw_text, 'EXTERNAL_UNKNOWN') NULLS LAST
 
@@ -165,14 +169,14 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
      ,
     session_gaps_cte AS
     /*
-    Take dataflow_sessions output and fill gaps between sessions. At this point these are identified with a 
+    Take dataflow_sessions output and fill gaps between sessions. At this point these are identified with a
     metric_source value of "INFERRED" but the compartment values are not specified yet. Once dataflow metrics are joined
     logic is implemented to determine what compartment the gap should represent. This gives full session coverage for
     each person from the start of their first session to the last day for which we have data. Session attribute values
     are also not specified but created as empty strings to allow for a later union with dataflow metrics.
     */
     (
-    SELECT 
+    SELECT
         person_id,
         CAST(NULL AS INT64) AS dataflow_session_id,
         state_code,
@@ -191,6 +195,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS correctional_level_raw_text,
         CAST(NULL AS STRING) AS housing_unit,
+        CAST(NULL AS STRING) AS housing_unit_category,
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS case_type,
@@ -201,7 +206,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         MIN(last_day_of_data) OVER(PARTITION BY state_code) AS last_day_of_data
     FROM
         (
-        SELECT 
+        SELECT
             person_id,
             dataflow_session_id,
             state_code,
@@ -216,8 +221,8 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         )
     /*
     This where clause ensures that these new release records are only created when there is a gap in sessions.
-    The release record start date will be greater than the release record end date when constructed from continuous 
-    sessions, and will therefore be excluded. In cases where there is a currently active session, no release record will 
+    The release record start date will be greater than the release record end date when constructed from continuous
+    sessions, and will therefore be excluded. In cases where there is a currently active session, no release record will
     be created because the release record start date will be null.
     */
     WHERE COALESCE(end_date_exclusive, '9999-01-01') > start_date
@@ -234,24 +239,24 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT * FROM session_gaps_cte
     )
     ,
-    sessions_with_start_end_bool AS 
+    sessions_with_start_end_bool AS
     (
-    SELECT 
+    SELECT
         *,
-        COALESCE(LAG(CONCAT(compartment_level_1,compartment_level_2)) OVER(PARTITION BY person_id ORDER BY start_date),'') 
+        COALESCE(LAG(CONCAT(compartment_level_1,compartment_level_2)) OVER(PARTITION BY person_id ORDER BY start_date),'')
             != COALESCE(CONCAT(compartment_level_1,compartment_level_2),'') AS first_sub_session,
-        COALESCE(LEAD(CONCAT(compartment_level_1,compartment_level_2)) OVER(PARTITION BY person_id ORDER BY start_date),'') 
+        COALESCE(LEAD(CONCAT(compartment_level_1,compartment_level_2)) OVER(PARTITION BY person_id ORDER BY start_date),'')
             != COALESCE(CONCAT(compartment_level_1,compartment_level_2),'') AS last_sub_session,
     FROM session_full_coverage_cte
     )
     ,
     sessions_joined_with_dataflow AS
     /*
-    Join the sessions_aggregated cte to dataflow metrics to get start and end reasons. Also calculate inflow and 
+    Join the sessions_aggregated cte to dataflow metrics to get start and end reasons. Also calculate inflow and
     outflow compartments. This is all information needed to categorize gaps into compartments.
     */
     (
-    SELECT 
+    SELECT
         sessions.*,
         starts.start_reason,
         starts.start_sub_reason,
@@ -287,7 +292,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
     ,
     sessions_with_inferred_compartments AS
     /*
-    The subquery uses start reasons, end reasons, inflows and outflows to categorize people into compartments. 
+    The subquery uses start reasons, end reasons, inflows and outflows to categorize people into compartments.
     Additional compartments include "LIBERTY", "ABSCONSION", "DEATH", "ERRONEOUS_RELEASE", "PENDING_CUSTODY",
     "PENDING_SUPERVISION", "SUSPENSION", "INCARCERATION - OUT_OF_STATE", and "SUPERVISION - OUT_OF_STATE". The
     "ABSCONSION" compartment type is also applied to non-inferred sessions that have "ABSCONSION" as the start reason.
@@ -296,7 +301,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
     compartment gets dropped downstream as it will always (barring data issues) be an active compartment with no outflows.
     */
     (
-    SELECT 
+    SELECT
         person_id,
         dataflow_session_id,
         state_code,
@@ -340,6 +345,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         correctional_level,
         correctional_level_raw_text,
         housing_unit,
+        housing_unit_category,
         housing_unit_type,
         housing_unit_type_raw_text,
         case_type,
@@ -356,20 +362,20 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         first_sub_session,
         last_sub_session,
         session_id_prelim,
-        
+
         /*
         The following field is calculated to tells us which sub-sessions are actually impacted by the inference. This is
-        used so that we can enforce that any recategorization of a sub-session compartment is applied to all 
+        used so that we can enforce that any recategorization of a sub-session compartment is applied to all
         sub-sessions that are adjacent and with the same original compartment type
         */
-        COALESCE(inferred_release OR inferred_escape 
-            OR start_reason = 'ABSCONSION' AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") NOT IN ("BENCH_WARRANT", "ABSCONSION") 
-            OR inferred_death OR inferred_erroneous OR inferred_pending_custody OR inferred_pending_supervision 
-            OR inferred_oos OR inferred_suspension OR inferred_missing_data OR inferred_mo_release 
+        COALESCE(inferred_release OR inferred_escape
+            OR start_reason = 'ABSCONSION' AND COALESCE(compartment_level_2, "INTERNAL_UNKNOWN") NOT IN ("BENCH_WARRANT", "ABSCONSION")
+            OR inferred_death OR inferred_erroneous OR inferred_pending_custody OR inferred_pending_supervision
+            OR inferred_oos OR inferred_suspension OR inferred_missing_data OR inferred_mo_release
             OR inferred_mo_suspension OR inferred_mo_pending_custody, FALSE) AS is_inferred_compartment,
-    FROM 
+    FROM
         (
-        SELECT 
+        SELECT
             *,
             /*
             The following field is used in conjunction with the `is_inferred_compartment` field to enforce that
@@ -383,18 +389,18 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
                         'RELEASED_FROM_ERRONEOUS_ADMISSION', 'RELEASED_FROM_TEMPORARY_CUSTODY',
                         'TEMPORARY_RELEASE', 'VACATED'
                     )  AS inferred_release,
-            metric_source = 'INFERRED' 
+            metric_source = 'INFERRED'
                 AND (prev_end_reason IN ('ABSCONSION','ESCAPE')
                      OR next_start_reason IN ('RETURN_FROM_ABSCONSION','RETURN_FROM_ESCAPE')
                      OR (next_start_reason = 'REVOCATION' AND next_start_sub_reason = 'ABSCONDED')
                     ) AS inferred_escape,
-            metric_source = 'INFERRED' 
+            metric_source = 'INFERRED'
                 AND prev_end_reason = 'DEATH' AS inferred_death,
             metric_source = 'INFERRED'
                 AND (prev_end_reason = 'RELEASED_IN_ERROR' OR next_start_reason = 'RETURN_FROM_ERRONEOUS_RELEASE') AS inferred_erroneous,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'SUPERVISION'
-                AND (prev_end_reason in ('REVOCATION', 'ADMITTED_TO_INCARCERATION') 
+                AND (prev_end_reason in ('REVOCATION', 'ADMITTED_TO_INCARCERATION')
                     OR (next_start_reason IN ('REVOCATION', 'SANCTION_ADMISSION'))) AS inferred_pending_custody,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'INCARCERATION'
@@ -407,7 +413,7 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
                 AND inflow_from_level_1 = outflow_to_level_1 AND inflow_from_level_2 = outflow_to_level_2
                 AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
                 AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER', 'STATUS_CHANGE')
-                AND (state_code != 'US_MO' OR DATE_DIFF(next_start_date, prev_end_date_exclusive, DAY) < {mo_data_gap_days}) AS inferred_missing_data, 
+                AND (state_code != 'US_MO' OR DATE_DIFF(next_start_date, prev_end_date_exclusive, DAY) < {mo_data_gap_days}) AS inferred_missing_data,
             metric_source = 'INFERRED'
                 AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
                 AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
@@ -425,14 +431,14 @@ COMPARTMENT_SUB_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = """
         )
     )
     /*
-    In situations where we overwrite an original compartment value due to inference, ensure that all adjacent 
+    In situations where we overwrite an original compartment value due to inference, ensure that all adjacent
     sub-sessions with the same original compartment value also take on this recategorized value.
     */
     SELECT
         * EXCEPT(compartment_level_1, compartment_level_2, session_id_prelim, is_inferred_compartment),
-        FIRST_VALUE(compartment_level_1) 
+        FIRST_VALUE(compartment_level_1)
             OVER(PARTITION BY person_id, session_id_prelim ORDER BY IF(is_inferred_compartment,0,1)) AS compartment_level_1,
-        FIRST_VALUE(compartment_level_2) 
+        FIRST_VALUE(compartment_level_2)
             OVER(PARTITION BY person_id, session_id_prelim ORDER BY IF(is_inferred_compartment,0,1)) AS compartment_level_2
     FROM sessions_with_inferred_compartments
 """

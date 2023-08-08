@@ -86,6 +86,8 @@ Compartment sessions differs from other sessionized views in that the edges shou
 |	correctional_level_end	|	A person's custody level (for incarceration sessions) or supervision level (for supervision sessions) as of the end of the session	|
 |	housing_unit_start	|	Housing unit at the start of an incarceration session	|
 |	housing_unit_end	|	Housing unit at the end of an incarceration session	|
+|	housing_unit_category_start	|	Housing unit category at the start of an incarceration session	|
+|	housing_unit_category_end	|	Housing unit category at the end of an incarceration session	|
 |	housing_unit_type_start	|	Housing unit type at the start of an incarceration session	|
 |	housing_unit_type_end	|	Housing unit type at the end of an incarceration session	|
 |	age_start	|	Age at start of session	|
@@ -106,18 +108,18 @@ Compartment sessions differs from other sessionized views in that the edges shou
 At a high-level, the following steps are taken to generate `compartment_sessions`
 
 1. Aggregate dataflow sessions to compartment sessions
-    
+
     1. Uses the `compartment_level_1` and `compartment_level_2` fields to identify when these values change and creates a new `session_id` every time they do within a `person_id`
 
 2. Join to dataflow start/end reasons
-    
-    1. Session start dates are joined to `compartment_session_start_reasons_materialized` and session end dates are joined to `compartment_session_end_reasons_materialized`. These views already handle deduplication in cases where there is more than one event on a given person/day. 
+
+    1. Session start dates are joined to `compartment_session_start_reasons_materialized` and session end dates are joined to `compartment_session_end_reasons_materialized`. These views already handle deduplication in cases where there is more than one event on a given person/day.
 
 3. Use start/end reasons to infer compartment values when there are gaps in population data
-    
-    1. There are two categories of sessions compartment inference worth distinguishing: 
-        
-        1. **Cases that lead to further aggregation**. This is occurs when we have a gap in data with identical compartment values for the periods surrounding that gap. If this occurs _and_ there are no matching dataflow events that indicate a transition, we assume that this is missing data and that this gap should take on the compartment values of its neighboring sessions. When this occurs, those adjacent sessions will then be re-aggregated into one larger compartment session. The `session_days_inferred` can be used to identify compartment sessions that have some portion of its time inferred by this methodology 
+
+    1. There are two categories of sessions compartment inference worth distinguishing:
+
+        1. **Cases that lead to further aggregation**. This is occurs when we have a gap in data with identical compartment values for the periods surrounding that gap. If this occurs _and_ there are no matching dataflow events that indicate a transition, we assume that this is missing data and that this gap should take on the compartment values of its neighboring sessions. When this occurs, those adjacent sessions will then be re-aggregated into one larger compartment session. The `session_days_inferred` can be used to identify compartment sessions that have some portion of its time inferred by this methodology
         2. **Cases that take on an inferred compartment value**. This refers to cases where the session gap gets a new compartment value (not equal to one of our population metric-derived values) based on the dataflow start/end reasons. The most common and straightforward example of this is the `RELEASE` compartment. This occurs when we have a gap in the data where the preceding session end reason is one that would indicate the person leaving the system (`SENTENCE_SERVED`, `COMMUTED`, `DISCHARGE`, `EXPIRATION`, `PARDONED`). The full set of inferred compartment values is listed below along with the criteria used to determine compartment values.
             1. `LIBERTY` - preceding end reason indicates transition to liberty
             2. `PENDING_CUSTODY` - preceding end reason of is a supervision session ending in revocation or the subsequent start reason indicates a revocation or sanction admission
@@ -126,14 +128,14 @@ At a high-level, the following steps are taken to generate `compartment_sessions
             5. `ERRONEOUS_RELEASE` - previous end reason or subsequent start reason indicate erroneous release
             6. `INCARCERATION_OUT_OF_STATE` - previous end reason indicates an incarceration transfer out of state
             7. `INTERNAL_UNKNOWN` - the value given to any gap between sessions that does not meet one of the above criteria
-            
+
 4. Use transitions and corresponding look-up table to infer start/end reasons in cases where there is no dataflow event that joins to the transition
     1. Transitions that eligible for inferred start/end reasons are maintained in `static_reference_tables.session_inferred_start_reasons_materialized` and `static_reference_tables.session_inferred_end_reasons_materialized`. The non-materialized view version of these tables maintain a live connection with the Google Sheet "Compartment Session Inferred Transition Reasons" which is located in the DADS shared folder. Materialized versions are then created by running the SQL script `update_static_reference_inferred_start_end_reasons.sql`, which is located with the rest of the sessions views.
     2. The inferred transition look-up tables specify compartment level 1 and level 2 values and corresponding transition compartments (inflows for start reasons and outflows for end reasons). Cases where this transition is observed without the valid specified start/end reason will take on the value specified in this table. The field `original_start_reason` indicates in what cases the original value gets overwritten. This can be specified as "ALL" (any start reason / end reason gets overwritten); a specific start / end reason (only transitions with that value will be overwritten); or left blank (only cases where the start/end reason is missing will it be inferred).
 
 4. Join back to dataflow sessions and other demographic tables to get session characteristics
-    
-    1. Lastly, the re-aggregated compartment sessions are joined back to other views to add additional session characteristics 
+
+    1. Lastly, the re-aggregated compartment sessions are joined back to other views to add additional session characteristics
 """
 
 COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
@@ -144,20 +146,20 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     values in sub-sessions and intentionally pulls attributes in a slightly different manner depending on whether we
     want the value that is true at the time of compartment session start versus the first non-null value that overlaps
     with the compartment session.
-    
+
     All of these are done using the approach of constructing an ARRAY, specifying whether NULLS are included or not,
-    ordering those values by the sub_session_id, and then taking the value that represents either the first or last 
+    ordering those values by the sub_session_id, and then taking the value that represents either the first or last
     value in a compartment session. This approach is taken because of the finding that using ANY_VALUE as part of a
     GROUP BY was not including / excluding NULLS as we would expect. For all of the attributes, the start versus end
     values are determined based on whether the sub_session_id is sorted ascending or descending.
-    
+
     The differentiation between RESPECT NULLS and IGNORE NULLS when the arrays are constructed is used to specify
     whether we want to take the first non-null value in cases where the attribute is not present at time of compartment
     session start. This is applied to the following 5 fields: `compartment_location`, `supervising_officer_external_id`,
      `correctional_level`, `case_type`, and `assessment_score`.
-     
+
     Additionally, there are two attributes (`prioritized_race_or_ethnicity` and `gender`) that do not have start/end
-    values and therefore are aggregated with ANY_VALUE.    
+    values and therefore are aggregated with ANY_VALUE.
     */
     (
     SELECT
@@ -197,6 +199,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ARRAY_AGG(correctional_level IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS correctional_level_end,
         ARRAY_AGG(housing_unit IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_start,
         ARRAY_AGG(housing_unit IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_end,
+        ARRAY_AGG(housing_unit_category IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_category_start,
+        ARRAY_AGG(housing_unit_category IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_category_end,
         ARRAY_AGG(housing_unit_type IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_type_start,
         ARRAY_AGG(housing_unit_type IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_type_end,
         ARRAY_AGG(case_type IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS case_type_start,
@@ -210,13 +214,13 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         -- TODO(#17265): Consider removing this logic following investigation of unknown assessment scores
         NULLIF(ARRAY_AGG(assessment_score IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)],-999) AS assessment_score_start,
         NULLIF(ARRAY_AGG(assessment_score IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)],-999) AS assessment_score_end,
-        SUM(CASE WHEN metric_source = 'INFERRED' 
+        SUM(CASE WHEN metric_source = 'INFERRED'
             THEN DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive,INTERVAL 1 DAY), last_day_of_data), start_date, DAY) + 1 ELSE 0 END) AS session_days_inferred,
         SUM(DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), last_day_of_data), start_date, DAY)+1) AS session_length_days,
     FROM `{project_id}.{sessions_dataset}.compartment_sub_sessions_materialized`
     GROUP BY 1,2,3,4,5,6,7
     )
-    SELECT 
+    SELECT
         person_id,
         session_id,
         sub_session_id_start,
@@ -232,8 +236,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         session_length_days,
         session_days_inferred,
         /*
-        Calculate start and end reasons by taking the one in the look-up table if it exists. Otherwise use the original. 
-        Also calculate boolean flags to identify whether the start/end reason is inferred. 
+        Calculate start and end reasons by taking the one in the look-up table if it exists. Otherwise use the original.
+        Also calculate boolean flags to identify whether the start/end reason is inferred.
         */
         COALESCE(inferred_start.start_reason, sessions.start_reason) start_reason,
         sessions.start_sub_reason,
@@ -249,7 +253,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         sessions.outflow_to_level_1,
         sessions.outflow_to_level_2,
         age_start,
-        age_end,     
+        age_end,
         gender,
         prioritized_race_or_ethnicity,
         assessment_score_start,
@@ -270,6 +274,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         correctional_level_end,
         housing_unit_start,
         housing_unit_end,
+        housing_unit_category_start,
+        housing_unit_category_end,
         housing_unit_type_start,
         housing_unit_type_end,
         case_type_start,
@@ -299,7 +305,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     FROM sessions_aggregated sessions
     -- TODO(#8129): Productionalize start/end reason inference tables
     LEFT JOIN `{project_id}.{static_reference_tables_dataset}.session_inferred_start_reasons_materialized` inferred_start
-        ON sessions.compartment_level_1 = inferred_start.compartment_level_1 
+        ON sessions.compartment_level_1 = inferred_start.compartment_level_1
         AND sessions.compartment_level_2 = inferred_start.compartment_level_2
         AND COALESCE(sessions.inflow_from_level_1, 'NONE') = COALESCE(inferred_start.inflow_from_level_1, 'NONE')
         AND COALESCE(sessions.inflow_from_level_2, 'NONE') = COALESCE(inferred_start.inflow_from_level_2, 'NONE')
@@ -312,12 +318,12 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         AND (inferred_start.original_start_reason = 'ALL'
             OR COALESCE(inferred_start.original_start_reason,'NONE') = COALESCE(sessions.start_reason,'NONE'))
     LEFT JOIN `{project_id}.{static_reference_tables_dataset}.session_inferred_end_reasons_materialized` inferred_end
-        ON sessions.compartment_level_1 = inferred_end.compartment_level_1 
+        ON sessions.compartment_level_1 = inferred_end.compartment_level_1
         AND sessions.compartment_level_2 = inferred_end.compartment_level_2
-        AND sessions.outflow_to_level_1 = inferred_end.outflow_to_level_1 
-        AND sessions.outflow_to_level_2 = inferred_end.outflow_to_level_2 
+        AND sessions.outflow_to_level_1 = inferred_end.outflow_to_level_1
+        AND sessions.outflow_to_level_2 = inferred_end.outflow_to_level_2
         AND sessions.state_code = inferred_end.state_code
-        AND inferred_end.is_inferred_end_reason = 1 
+        AND inferred_end.is_inferred_end_reason = 1
         -- Don't join or consider inferred if the session transition already has the correct reason
         AND COALESCE(inferred_end.end_reason, 'NONE') != COALESCE(sessions.end_reason, 'NONE')
         -- Needs to match the specified reason or can have "ALL" specified to overwrite any reason. If left blank

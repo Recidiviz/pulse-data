@@ -59,6 +59,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         correctional_level,
         correctional_level_raw_text,
         housing_unit,
+        housing_unit_category,
         housing_unit_type,
         housing_unit_type_raw_text,
         case_type,
@@ -78,9 +79,9 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         person_id,
         state_code,
         start_date,
-        --Null out the last end date in age sessions because we don't want a new sub-session to be created after a 
+        --Null out the last end date in age sessions because we don't want a new sub-session to be created after a
         --person leaves the system
-        IF(MAX(end_date_exclusive) OVER(PARTITION BY person_id) = end_date_exclusive, NULL, end_date_exclusive) 
+        IF(MAX(end_date_exclusive) OVER(PARTITION BY person_id) = end_date_exclusive, NULL, end_date_exclusive)
             AS end_date_exclusive,
         CAST(NULL AS INT64) AS dataflow_session_id,
         CAST(NULL AS STRING) AS compartment_level_1,
@@ -97,6 +98,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS correctional_level_raw_text,
         CAST(NULL AS STRING) AS housing_unit,
+        CAST(NULL AS STRING) AS housing_unit_category,
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS case_type,
@@ -132,6 +134,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS correctional_level_raw_text,
         CAST(NULL AS STRING) AS housing_unit,
+        CAST(NULL AS STRING) AS housing_unit_category,
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS case_type,
@@ -153,7 +156,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
     ,
     sub_sessions_with_attributes_dedup AS
     /*
-    Sub-session deduplication is done such that we take the non-null value for the new attributes (assessment score and 
+    Sub-session deduplication is done such that we take the non-null value for the new attributes (assessment score and
     age) and choose the sub-session sourced from compartment_sub_sessions_preprocessed for all of the other attributes
     */
     (
@@ -176,6 +179,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         correctional_level,
         correctional_level_raw_text,
         housing_unit,
+        housing_unit_category,
         housing_unit_type,
         housing_unit_type_raw_text,
         case_type,
@@ -185,19 +189,19 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         assessment_score,
         start_date,
         CASE WHEN DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) < last_day_of_data THEN end_date_exclusive END AS end_date_exclusive,
-        last_day_of_data,   
+        last_day_of_data,
         earliest_start_date,
         start_reason,
         start_sub_reason,
         end_reason,
     FROM
         (
-        SELECT 
+        SELECT
             * EXCEPT(age, assessment_score),
             -- This takes the non-null age and assessment score value for each sub-session
-            FIRST_VALUE(age) OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive 
+            FIRST_VALUE(age) OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive
                 ORDER BY IF(age IS NULL,1,0)) AS age,
-            FIRST_VALUE(assessment_score) OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive 
+            FIRST_VALUE(assessment_score) OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive
                 ORDER BY IF(assessment_score IS NULL,1,0)) AS assessment_score,
         FROM sub_sessions_with_attributes
         )
@@ -208,7 +212,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
     /*
     Create sub-session and session ids
     */
-    SELECT     
+    SELECT
         person_id,
         state_code,
         ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date) AS sub_session_id,
@@ -219,9 +223,9 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         end_date_exclusive,
         compartment_level_1,
         compartment_level_2,
-        --This logic converts the end date to inclusive, coalesces with the last day of data (also inclusive), 
+        --This logic converts the end date to inclusive, coalesces with the last day of data (also inclusive),
         --takes the date difference, and then adds 1 day.
-        DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), last_day_of_data), start_date, DAY)+1 
+        DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), last_day_of_data), start_date, DAY)+1
             AS session_length_days,
         supervising_officer_external_id,
         compartment_location,
@@ -235,6 +239,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         correctional_level,
         correctional_level_raw_text,
         housing_unit,
+        housing_unit_category,
         housing_unit_type,
         housing_unit_type_raw_text,
         case_type,
@@ -251,10 +256,10 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         COALESCE(LAG(compartment_level_1) OVER w, 'LIBERTY') AS inflow_from_level_1,
         COALESCE(LAG(compartment_level_2) OVER w, 'LIBERTY_FIRST_TIME_IN_SYSTEM') AS inflow_from_level_2,
         LEAD(compartment_level_1) OVER w AS outflow_to_level_1,
-        LEAD(compartment_level_2) OVER w AS outflow_to_level_2    
-    FROM 
+        LEAD(compartment_level_2) OVER w AS outflow_to_level_2
+    FROM
         (
-        SELECT 
+        SELECT
             *,
             COALESCE(LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date),'') != COALESCE(compartment_level_1,'') AS new_compartment_level_1,
             COALESCE(LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY start_date),'') != COALESCE(compartment_level_2,'') AS new_compartment_level_2
