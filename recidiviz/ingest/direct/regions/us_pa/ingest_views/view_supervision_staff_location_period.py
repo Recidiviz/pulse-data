@@ -24,11 +24,14 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT ORG_ID, Employ_Num, 
--- Including all agents who are present in the roster, irrespective of start date
--- TODO(#21909): Update all start_date fields in this view to match start_date in the role_periods view.
-DATE('1900-01-01') AS start_date, 
-NULL as end_date
+WITH base AS (
+SELECT 
+    ORG_ID, 
+    Employ_Num, 
+    -- Including all agents who are present in the roster, irrespective of start date
+    -- TODO(#21909): Update all start_date fields in this view to match start_date in the role_periods view.
+    '1900-01-01' AS start_date, 
+    NULL as end_date
 FROM {RECIDIVIZ_REFERENCE_agent_districts}
 
 UNION ALL
@@ -36,10 +39,30 @@ UNION ALL
 SELECT 
     LPAD(district_id, 2, '0') AS district_id,
     ext_id, 
-    DATE('1900-01-01') AS start_date, 
+    '1900-01-01' AS start_date, 
     NULL as end_date
 FROM {RECIDIVIZ_REFERENCE_field_supervisor_list} 
 WHERE role IN ('District Director','Deputy District Director')
+AND ext_id NOT IN (SELECT DISTINCT Employ_Num FROM {RECIDIVIZ_REFERENCE_agent_districts})
+),
+cntc_base AS (
+SELECT DISTINCT
+    FIRST_VALUE(PRL_AGNT_ORG_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS district_id,
+    PRL_AGNT_EMPL_NO,
+    FIRST_VALUE(START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS start_date,
+    NULL AS end_date
+FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}
+WHERE PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv')
+AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT Employ_Num FROM base)
+AND PRL_AGNT_ORG_NAME IS NOT NULL
+)
+
+SELECT * FROM base 
+UNION ALL
+-- rank to include only most recent locations from contacts get included
+SELECT district_id, PRL_AGNT_EMPL_NO,start_date,end_date 
+FROM  cntc_base 
+
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
