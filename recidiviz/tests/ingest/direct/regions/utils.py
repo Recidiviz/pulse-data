@@ -35,6 +35,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodCustodyLevel,
+    StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
@@ -220,6 +221,7 @@ def add_incarceration_period_to_person(
     specialized_purpose_for_incarceration_raw_text: Optional[str] = None,
     custody_level: Optional[StateIncarcerationPeriodCustodyLevel] = None,
     custody_level_raw_text: Optional[str] = None,
+    housing_unit_category: Optional[StateIncarcerationPeriodHousingUnitCategory] = None,
     housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = None,
     housing_unit_type_raw_text: Optional[str] = None,
 ) -> None:
@@ -246,6 +248,7 @@ def add_incarceration_period_to_person(
         specialized_purpose_for_incarceration_raw_text=specialized_purpose_for_incarceration_raw_text,
         custody_level=custody_level,
         custody_level_raw_text=custody_level_raw_text,
+        housing_unit_category=housing_unit_category,
         housing_unit_type=housing_unit_type,
         housing_unit_type_raw_text=housing_unit_type_raw_text,
     )

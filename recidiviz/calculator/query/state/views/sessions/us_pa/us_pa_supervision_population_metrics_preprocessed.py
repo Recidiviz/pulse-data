@@ -39,7 +39,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = """PA State
 
 US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
     -- TODO(#15613): Remove PA community confinement recategorization when hydrated in population metrics
-    WITH overlapping_periods_cte AS 
+    WITH overlapping_periods_cte AS
     (
     SELECT
         person_id,
@@ -57,6 +57,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         supervision_level AS correctional_level,
         supervision_level_raw_text AS correctional_level_raw_text,
         CAST(NULL AS STRING) AS housing_unit,
+        CAST(NULL AS STRING) AS housing_unit_category,
         CAST(NULL AS STRING) AS housing_unit_type,
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         staff.external_id AS supervising_officer_external_id,
@@ -69,9 +70,9 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
     ON
         s.supervising_officer_staff_id = staff.staff_id
     WHERE state_code = 'US_PA'
-        
-    UNION ALL  
-    
+
+    UNION ALL
+
     SELECT
         person_id,
         start_date_inclusive AS start_date,
@@ -79,7 +80,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         CAST(NULL AS STRING) AS metric_source,
         state_code,
         CAST(NULL AS STRING) AS compartment_level_1,
-        CAST(NULL AS STRING) AS compartment_level_2, 
+        CAST(NULL AS STRING) AS compartment_level_2,
         CAST(NULL AS STRING) AS compartment_location,
         facility,
         CAST(NULL AS STRING) AS supervision_office,
@@ -87,6 +88,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS correctional_level_raw_text,
         housing_unit,
+        housing_unit_category,
         housing_unit_type,
         housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
@@ -94,7 +96,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         CAST(NULL AS STRING) AS prioritized_race_or_ethnicity,
         CAST(NULL AS STRING) AS gender,
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized` s
-    WHERE state_code = 'US_PA' 
+    WHERE state_code = 'US_PA'
         AND NOT included_in_state_population
         AND REGEXP_CONTAINS(facility, "^[123]\\d\\d\\D*")
     )
@@ -103,14 +105,14 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
                                          end_date_field_name='end_date_exclusive')}
     ,
     sub_sessions_with_attributes_dedup AS
-    (    
-    SELECT 
+    (
+    SELECT
         * EXCEPT(compartment_level_2, facility),
         IF(is_ccc_overlap, 'COMMUNITY_CONFINEMENT', compartment_level_2) AS compartment_level_2,
         IF(is_ccc_overlap, ccc_facility, NULL) AS facility,
-    FROM 
+    FROM
         (
-        SELECT 
+        SELECT
             *,
             -- If we have a duplicate with a NULL value for metric_source it is a CCC overlap because this field is only NULL for the CCC sessions.
             LOGICAL_OR(metric_source IS NULL) OVER(PARTITION BY person_id, state_code, start_date, end_date_exclusive)
@@ -122,7 +124,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
     -- Drop rows representing time on CCC from the incarceration metric as the supervision metric row is now recategorized
     WHERE metric_source IS NOT NULL
     )
-    SELECT 
+    SELECT
         person_id,
         start_date,
         {revert_nonnull_end_date_clause('end_date_exclusive')} AS end_date_exclusive,
@@ -137,6 +139,7 @@ US_PA_SUPERVISION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = rf"""
         correctional_level,
         correctional_level_raw_text,
         housing_unit,
+        housing_unit_category,
         housing_unit_type,
         housing_unit_type_raw_text,
         supervising_officer_external_id,

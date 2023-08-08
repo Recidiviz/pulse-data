@@ -39,7 +39,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         SELECT
             person_id,
             start_date_inclusive AS start_date,
-            end_date_exclusive,                   
+            end_date_exclusive,
             metric_type AS metric_source,
             state_code,
             IF(included_in_state_population, 'INCARCERATION', 'INCARCERATION_NOT_INCLUDED_IN_STATE') AS compartment_level_1,
@@ -51,6 +51,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             custody_level AS correctional_level,
             custody_level_raw_text AS correctional_level_raw_text,
             housing_unit,
+            housing_unit_category,
             housing_unit_type,
             housing_unit_type_raw_text,
             CAST(NULL AS STRING) AS supervising_officer_external_id,
@@ -69,7 +70,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.metric_source,
         pop.state_code,
         pop.compartment_level_1,
-        IF(facilities.facility IS NULL, pop.compartment_level_2, 'COMMUNITY_CONFINEMENT') 
+        IF(facilities.facility IS NULL, pop.compartment_level_2, 'COMMUNITY_CONFINEMENT')
             AS compartment_level_2,
         pop.compartment_location,
         pop.facility,
@@ -78,6 +79,7 @@ US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.correctional_level,
         pop.correctional_level_raw_text,
         pop.housing_unit,
+        pop.housing_unit_category,
         pop.housing_unit_type,
         pop.housing_unit_type_raw_text,
         pop.supervising_officer_external_id,

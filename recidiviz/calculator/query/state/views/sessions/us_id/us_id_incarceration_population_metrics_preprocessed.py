@@ -37,17 +37,17 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_DESCRIPTION = (
 US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
     -- TODO(#15610): Remove preprocessing file when out of state facilities are flagged in sessions
     WITH incarceration_population_cte AS (
-        SELECT 
+        SELECT
             person_id,
             start_date_inclusive AS start_date,
-            end_date_exclusive,                   
+            end_date_exclusive,
             metric_type AS metric_source,
             state_code,
             IF(included_in_state_population, 'INCARCERATION', 'INCARCERATION_NOT_INCLUDED_IN_STATE') AS compartment_level_1,
             /* TODO(#6126): Investigate ID missing reason for incarceration */
-            CASE 
-                WHEN purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON') 
-                    THEN purpose_for_incarceration 
+            CASE
+                WHEN purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON')
+                    THEN purpose_for_incarceration
                 ELSE COALESCE(purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
             COALESCE(facility,'EXTERNAL_UNKNOWN') AS compartment_location,
             COALESCE(facility,'EXTERNAL_UNKNOWN') AS facility,
@@ -56,6 +56,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             custody_level AS correctional_level,
             custody_level_raw_text AS correctional_level_raw_text,
             housing_unit,
+            housing_unit_category,
             housing_unit_type,
             housing_unit_type_raw_text,
             CAST(NULL AS STRING) AS supervising_officer_external_id,
@@ -84,6 +85,7 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.correctional_level,
         pop.correctional_level_raw_text,
         pop.housing_unit,
+        pop.housing_unit_category,
         pop.housing_unit_type,
         pop.housing_unit_type_raw_text,
         pop.supervising_officer_external_id,
