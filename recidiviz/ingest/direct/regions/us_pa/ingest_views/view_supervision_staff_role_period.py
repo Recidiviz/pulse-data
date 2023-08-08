@@ -34,7 +34,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-
 WITH officer_start_dates AS (
 -- pull earliest dates from relagenthistory, assume all these people are still employed
     SELECT 
@@ -56,7 +55,7 @@ supervisor_start_dates AS (
     GROUP BY 1
 ),
 all_periods AS (
-SELECT 
+SELECT DISTINCT
     officer_start_dates.Employ_Num,
     supervisor_start_dates.start_date as sup_start,
      -- if agent has been a supervisor AND an officer, use start date of most recent role
@@ -71,54 +70,51 @@ JOIN supervisor_start_dates
 USING(Employ_Num)
 ),
 periods_with_subtypes AS (
-SELECT 
+SELECT DISTINCT
     Employ_Num, 
     start_date,
-    CAST(end_date AS STRING) AS end_date,
+    end_date,
     CASE 
         WHEN start_date = all_periods.sup_start THEN 'SUPERVISION_OFFICER_SUPERVISOR'
         WHEN start_date IS NULL THEN 'INTERNAL_UNKNOWN'
         ELSE 'SUPERVISION_OFFICER'
     END AS role_subtype,
-    1 AS period_seq_num
 FROM all_periods
 WHERE start_date IS NOT NULL -- excludes people who appear in roster but never in case history
 ),
 cntc_base AS (
 -- include officers who only appear in supervision contacts data, not any roster
-SELECT
-  DISTINCT PRL_AGNT_EMPL_NO as Employ_Num,
-  FIRST_VALUE(cntc.START_DATE) OVER (
-    PARTITION BY PRL_AGNT_EMPL_NO, PRL_AGNT_JOB_CLASSIFCTN 
-    ORDER BY CREATED_DATE
-    ) AS start_date,
-  LEAD(START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS end_date,
-  -- we cannot know whether these agents are still actively employed, so we assume they are.
-  -- End dates are only dates that they changed positions.
-  LAST_VALUE(UPPER(PRL_AGNT_JOB_CLASSIFCTN)) OVER (
-    PARTITION BY PRL_AGNT_EMPL_NO,PRL_AGNT_JOB_CLASSIFCTN 
-    ORDER BY CREATED_DATE
-    ) AS role_subtype
-FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY} cntc
-WHERE PRL_AGNT_EMPL_NO NOT IN (
-    SELECT DISTINCT Employ_Num
-    FROM periods_with_subtypes
-)
-AND PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv')
+SELECT Employ_Num, start_date, end_date, role_subtype 
+FROM (
+    SELECT DISTINCT
+        PRL_AGNT_EMPL_NO as Employ_Num,
+        START_DATE AS start_date,
+        NULL AS end_date,
+        -- we cannot know whether these agents are still actively employed, so we assume they are.
+        UPPER(PRL_AGNT_JOB_CLASSIFCTN) AS role_subtype,
+        ROW_NUMBER() OVER (PARTITION BY PRL_AGNT_EMPL_NO, PRL_AGNT_JOB_CLASSIFCTN ORDER BY START_DATE) as rn
+    FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY} cntc
+    WHERE PRL_AGNT_EMPL_NO NOT IN (
+        SELECT DISTINCT Employ_Num
+        FROM periods_with_subtypes
+        )
+    AND PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv')
+    ) cntc_with_row_num
+WHERE rn = 1
 ),
 complete_base AS (
-SELECT
+SELECT DISTINCT
     Employ_Num,
     start_date,
     end_date,
     role_subtype,
-    period_seq_num,
+    1 as period_seq_num
 FROM periods_with_subtypes 
 
 UNION ALL 
 
-SELECT 
-    *, 
+SELECT DISTINCT
+    *,
     ROW_NUMBER() OVER (
         PARTITION BY cntc_base.Employ_Num 
         ORDER BY cntc_base.start_date
@@ -126,7 +122,7 @@ SELECT
     FROM cntc_base
 )
 
-SELECT 
+SELECT DISTINCT
     COALESCE(complete_base.Employ_Num, sup.ext_id) AS Employ_Num, 
     COALESCE(complete_base.start_date, '1900-01-01') AS start_date,
     complete_base.end_date,

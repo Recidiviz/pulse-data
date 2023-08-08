@@ -35,7 +35,7 @@ SELECT
     attrs.state_code,
     staff.full_name,
     staff.email,
-    attrs.supervision_district,
+    COALESCE(attrs.supervision_district,attrs.supervision_district_inferred) AS supervision_district,
     attrs.supervisor_staff_external_id AS supervisor_external_id,
     attrs.specialized_caseload_type AS specialized_caseload_type,
 FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` attrs

@@ -157,3 +157,38 @@ def last_name_parser(full_name: str) -> str:
             last_name = full_name
         return last_name
     return ""
+
+
+def supervision_district_mapper(district: str) -> str:
+    """A temporary solution to populate the supervision districts of officers
+    who will be included in the first PA Outliers report."""
+    if district != "":
+        if district.isnumeric():
+            # An actual supervision district code
+            return district
+        if district in ("PB Dauphin Gen Unt", "PB Dauphin Gen Unt 2"):
+            return "6103"
+        if district in (
+            "PB Chester Gen Unt 5",
+            "PB Chester Gen Unt 1",
+            "PB SCI Chester",
+        ):
+            return "5200"
+        if district in (
+            "PB Northeast Gen Unt 1",
+            "PB Northeast Gen Unt 2",
+            "PB Northeast Gen Unt 3",
+            "PB Northeast Gen Unt 4",
+            "PB Northeast Gen Unt 5",
+        ):
+            return "5110"
+        if district in ("PB Pittsburgh Prep Unt", "PB Pittsburgh Instl Unt"):
+            return "7100"
+        if district == "PB Harrisburg Instl Unt":
+            return "6100"
+        if district == "PB Philadelphia D O":
+            return "5100"
+        if district == "PB North Shore Gen Unt":
+            return "7111"
+        return district
+    return district

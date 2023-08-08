@@ -18,4 +18,8 @@ output:
           external_id: Employ_Num
           start_date: start_date
           end_date: end_date
-          location_external_id: ORG_ID
+          location_external_id:
+            $custom:
+              $function: us_pa_custom_parsers.supervision_district_mapper
+              $args:
+                district: ORG_ID
