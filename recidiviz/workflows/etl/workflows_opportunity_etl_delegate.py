@@ -40,7 +40,7 @@ CRITERIA_TO_DEPREFIX: List[str] = [
     "SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL",
 ]
 
-# TODO(#18193): Remove conditional for CR once migration to TES is completed because it currently has its own delegate
+# TODO(#22265): Remove conditional for CR once migration to TES is completed because it currently has its own delegate
 WORKFLOWS_CONFIGS_WITHOUT_US_TN_CR = [
     config
     for config in WORKFLOWS_OPPORTUNITY_CONFIGS

@@ -20,7 +20,7 @@ from recidiviz.calculator.query.bq_utils import columns_to_array
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     # We want to ensure only clients included in the latest file are included in our tool
-    # TODO(#18193): Deprecate this TN-specific template once complete
+    # TODO(#22265): Deprecate this TN-specific template once complete
     include_tn_clients AS (
         SELECT DISTINCT 
             external_id,
@@ -56,7 +56,7 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         SELECT
             *,
             CASE WHEN cr.compliant_reporting_eligible IS NOT NULL AND cr.remaining_criteria_needed <= 1 THEN "compliantReporting" ELSE null END AS opportunity_name,
-        FROM `{{project_id}}.{{analyst_views_dataset}}.us_tn_compliant_reporting_logic_materialized` cr
+        FROM `{{project_id}}.{{analyst_dataset}}.us_tn_compliant_reporting_logic_materialized` cr
         INNER JOIN 
             include_tn_clients
         ON person_external_id = external_id
@@ -77,17 +77,18 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             earliest_supervision_start_date_in_latest_system AS supervision_start_date,
             COALESCE(tn_expiration_eligibility.expiration_date, 
                      tn_compliant_reporting_eligibility.expiration_date) AS expiration_date,
-            current_balance,
-            last_payment_amount,
-            last_payment_date,
-            special_conditions_on_current_sentences AS special_conditions,
-            board_conditions,
             district,
             CAST(NULL AS ARRAY<STRUCT<name STRING, address STRING, start_date DATE>>) AS current_employers,
             {columns_to_array(["tn_supervision_level_downgrade_eligibility.opportunity_name",
                                "tn_compliant_reporting_eligibility.opportunity_name",
                                "tn_expiration_eligibility.opportunity_name"])} AS all_eligible_opportunities,
             CAST(NULL AS ARRAY<STRUCT<type STRING, text STRING>>) as milestones,
+            current_balance,
+            last_payment_date,
+            last_payment_amount,
+            special_conditions_on_current_sentences AS special_conditions,
+            board_conditions,
+            
         FROM tn_compliant_reporting_eligibility
         LEFT JOIN 
             tn_supervision_level_downgrade_eligibility USING (person_external_id)

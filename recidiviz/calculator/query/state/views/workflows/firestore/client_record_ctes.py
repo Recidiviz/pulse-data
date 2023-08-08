@@ -26,6 +26,10 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
     us_id_latest_phone_number,
 )
+from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
+    us_tn_fines_fees_info,
+    us_tn_supervision_type,
+)
 from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
     compartment_level_1_super_sessions_without_me_sccp,
 )
@@ -57,7 +61,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           sessions.person_id,
           sessions.state_code,
           pei.person_external_id,
-          sessions.compartment_level_2 AS supervision_type,
+          COALESCE(tn_supervision_type.supervision_type, sessions.compartment_level_2) AS supervision_type,
             -- Pull the officer ID from compartment_sessions instead of supervision_officer_sessions
             -- to make sure we choose the officer that aligns with other compartment session attributes.
           #   There are officers with more than one legitimate external id. We are merging these ids and
@@ -101,6 +105,10 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         LEFT JOIN ca_person_parole_imputed_badges ca_pp
             ON pei.person_external_id = ca_pp.OffenderId
             AND sessions.state_code = "US_CA"
+        LEFT JOIN (
+            {us_tn_supervision_type()}
+        ) tn_supervision_type
+            ON sessions.person_id = tn_supervision_type.person_id
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
@@ -210,6 +218,97 @@ _CLIENT_RECORD_EMAIL_ADDRESSES_CTE = """
             USING (person_id)
         WHERE
             sp.state_code IN ({workflows_supervision_states})
+    ),
+"""
+
+_CLIENT_RECORD_FINES_FEES_INFO_CTE = f"""
+    {us_tn_fines_fees_info()}
+"""
+
+_CLIENT_RECORD_LAST_PAYMENT_INFO_CTE = """
+    fines_fees_payment_info AS (
+        SELECT 
+               pp.state_code,
+               pei.person_external_id,
+               pp.payment_date AS last_payment_date,
+               pp.payment_amount AS last_payment_amount,
+        FROM `{project_id}.{analyst_dataset}.payments_preprocessed_materialized` pp
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+            USING (person_id)
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY payment_date DESC) = 1
+    ),
+"""
+
+_CLIENT_RECORD_SPECIAL_CONDITIONS_CTE = """
+    special_conditions AS (
+        SELECT 
+            pei.state_code,
+            pei.person_external_id,
+            ARRAY_AGG(conditions IGNORE NULLS) AS special_conditions_on_current_sentences
+        FROM (
+            SELECT person_id, conditions
+            FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
+            WHERE COALESCE(completion_date, projected_completion_date) >= CURRENT_DATE('US/Eastern')
+            
+            UNION ALL
+            
+            SELECT person_id, conditions
+            FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
+            WHERE COALESCE(completion_date, projected_max_release_date) >= CURRENT_DATE('US/Eastern')
+        )
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+            USING (person_id)
+        GROUP BY
+            1,2
+    ),
+"""
+
+_CLIENT_RECORD_BOARD_CONDITIONS_CTE = """
+    board_conditions AS (
+        /* TN BoardAction data is unique on person, hearing date, hearing type, and staff ID. For our purposes, we keep 
+     conditions where "final decision" is yes, and keep all distinct parole conditions on a given person/day
+     Then we keep all relevant hearings that happen in someone's latest system session, and keep all codes since then */
+        WITH latest_system_start AS (
+            SELECT 
+                person_external_id,
+                ss.state_code,
+                start_date AS latest_system_session_start_date
+            FROM `{project_id}.{sessions_dataset}.system_sessions_materialized` ss
+            INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+                USING (person_id)
+            WHERE ss.state_code = 'US_TN' 
+            QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY session_id_end DESC) = 1
+        ),
+        unpivot_board_conditions AS (
+            SELECT person_external_id, hearing_date, condition, Decode AS condition_description
+            FROM (
+                SELECT DISTINCT OffenderID AS person_external_id, 
+                       CAST(HearingDate AS DATE) AS hearing_date, 
+                       ParoleCondition1, 
+                       ParoleCondition2, 
+                       ParoleCondition3, 
+                       ParoleCondition4, 
+                       ParoleCondition5
+                FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.BoardAction_latest`
+                WHERE FinalDecision = 'Y'
+            )
+            UNPIVOT(condition for c in (ParoleCondition1, ParoleCondition2, ParoleCondition3, ParoleCondition4, ParoleCondition5))
+            LEFT JOIN (
+                SELECT *
+                FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.CodesDescription_latest`
+                WHERE CodesTableID = 'TDPD030'
+            ) codes 
+                ON condition = codes.Code
+        )
+        SELECT
+            bc.person_external_id,
+            ls.state_code, 
+            ARRAY_AGG(STRUCT(condition, condition_description)) AS board_conditions
+        FROM latest_system_start ls
+        INNER JOIN unpivot_board_conditions bc
+            ON ls.person_external_id = bc.person_external_id
+            AND bc.hearing_date >= COALESCE(ls.latest_system_session_start_date,'1900-01-01')
+        GROUP BY 1,2
     ),
 """
 
@@ -442,8 +541,6 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
 _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
     # For states where each transfer is a full historical transfer, we want to ensure only clients included
     # in the latest file are included in our tool
-    # TODO(#18193): This currently doesn't matter for TN because of a TN-specific template that will eventually be 
-    # deprecated
     include_clients AS (
         SELECT DISTINCT 
             person_id,
@@ -495,6 +592,9 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
             PARTITION BY sc.person_id
             ORDER BY sc.expiration_date DESC
           ) AS expiration_date,
+          ff.current_balance,
+          pp.last_payment_date,
+          pp.last_payment_amount,
         FROM supervision_cases sc 
         INNER JOIN supervision_level_start sl USING(person_id)
         INNER JOIN supervision_super_sessions ss USING(person_id)
@@ -509,6 +609,13 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         LEFT JOIN email_addresses ea
             ON sc.state_code = ea.state_code
             AND sc.person_external_id = ea.person_external_id
+        LEFT JOIN fines_fees_balance_info ff
+            ON sc.state_code = ff.state_code
+            AND sc.person_external_id = ff.person_external_id
+        LEFT JOIN fines_fees_payment_info pp
+            ON sc.state_code = pp.state_code
+            AND sc.person_external_id = pp.person_external_id
+        
     ),
     """
 
@@ -528,19 +635,27 @@ _CLIENTS_CTE = """
             email_address,
             supervision_start_date,
             expiration_date,
-            NULL AS current_balance,
-            NULL AS last_payment_amount,
-            CAST(NULL AS DATE) AS last_payment_date,
-            CAST(NULL AS ARRAY<string>) AS special_conditions,
-            CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
             district,
             ei.current_employers,
             opportunities_aggregated.all_eligible_opportunities,
-            milestones
+            milestones,
+            current_balance,
+            last_payment_date,
+            last_payment_amount,
+            spc.special_conditions_on_current_sentences AS special_conditions,
+            bc.board_conditions,
         FROM join_clients c
-        LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
-        LEFT JOIN employment_info ei USING (person_id)
-        LEFT JOIN milestones mi  ON mi.state_code = c.state_code and mi.person_id = c.person_id
+        LEFT JOIN opportunities_aggregated 
+            USING (state_code, person_external_id)
+        LEFT JOIN special_conditions spc
+            USING (state_code, person_external_id)
+        LEFT JOIN board_conditions bc
+            USING (state_code, person_external_id)
+        LEFT JOIN employment_info ei 
+            USING (person_id)
+        LEFT JOIN milestones mi 
+            ON mi.state_code = c.state_code 
+            and mi.person_id = c.person_id
         # TODO(#17138): Remove this condition if we are no longer missing person details post-ATLAS
         WHERE person_name IS NOT NULL
     )
@@ -553,6 +668,10 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_SUPERVISION_LEVEL_CTE}
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
     {_CLIENT_RECORD_PHONE_NUMBERS_CTE}
+    {_CLIENT_RECORD_FINES_FEES_INFO_CTE}
+    {_CLIENT_RECORD_LAST_PAYMENT_INFO_CTE}
+    {_CLIENT_RECORD_SPECIAL_CONDITIONS_CTE}
+    {_CLIENT_RECORD_BOARD_CONDITIONS_CTE}
     {_CLIENT_RECORD_EMAIL_ADDRESSES_CTE}
     {_CLIENT_RECORD_EMPLOYMENT_INFO_CTE}
     {_CLIENT_RECORD_MILESTONES_CTE}
