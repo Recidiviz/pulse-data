@@ -32,6 +32,9 @@ from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
+    create_or_update_dataflow_sandbox,
+)
 from recidiviz.tools.deploy.trigger_post_deploy_tasks import (
     trigger_calculation_dag_pubsub,
 )
@@ -79,6 +82,15 @@ def main(
     if ingest_instance == DirectIngestInstance.SECONDARY and not sandbox_prefix:
         sandbox_prefix = f"{state_code.value.lower()}_{ingest_instance.value.lower()}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         logging.info("Setting sandbox prefix to: %s", sandbox_prefix)
+
+    if sandbox_prefix:
+        create_or_update_dataflow_sandbox(
+            sandbox_dataset_prefix=sandbox_prefix,
+            datasets_to_create=["normalization"],
+            allow_overwrite=True,
+            state_code_filter=state_code,
+            ingest_instance_filter=ingest_instance,
+        )
 
     trigger_calculation_dag_pubsub(ingest_instance, state_code, sandbox_prefix)
 
