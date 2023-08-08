@@ -38,9 +38,16 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
     CURRENT_ROOT = "."
 
     def _matches(self, path: str) -> bool:
-        """File names must match ADH_{TABLE_NAME}.zip"""
-        matches_overall_path = re.match(r"ADH\_[A-Z_]+(104A)?.zip", path)
-        return matches_overall_path is not None
+        """File names must match ADH_{TABLE_NAME}.zip or ATG_{TABLE}_YYYYMMDD.zip"""
+        # Expected format for files from MI's old systems (OMNI and COMPAS)
+        OMNI_match_string = r"ADH\_[A-Z_]+(104A)?.zip"
+        # Expected format for files from MI's new system (COMS)
+        COMS_match_string = r"ATG\_[A-Z_]+(\d{8})?.zip"
+
+        return (
+            re.match(OMNI_match_string, path) is not None
+            or re.match(COMS_match_string, path) is not None
+        )
 
     def root_directory(self, _: List[str]) -> str:
         """The US_MI server is set to use the root directory for any files that have
@@ -66,21 +73,33 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
         if is_zipfile(zipbytes):
             with ZipFile(zipbytes, "r") as z:
                 content_filename = one(z.namelist())
-                matches_content_path = re.match(
+                # Expected format for files from MI's old systems (OMNI and COMPAS)
+                matches_OMNI_content_path = re.match(
                     r"ADH\_[A-Z_]+\_(104A\_)?(\d{8}).csv", content_filename
                 )
-                if not matches_content_path:
+                # Expected format for files from MI's new system (COMS)
+                matches_COMS_content_path = re.match(
+                    r"COMS\_[A-Za-z_]+.txt", content_filename
+                )
+                if not matches_OMNI_content_path and not matches_COMS_content_path:
                     raise ValueError(
                         f"Unexpected content file name in zip file: {content_filename}"
                     )
-                date_portion = matches_content_path.group(2)
-                _ = datetime.strptime(date_portion, "%m%d%Y")
-                # For MI, the date is attached to the end of the zip file name, so
-                # we will strip out the date when uploading the file to GCS
-                new_file_name = re.sub(r"\_\d{8}", "", content_filename)
+                if matches_OMNI_content_path is not None:
+                    date_portion = matches_OMNI_content_path.group(2)
+                    _ = datetime.strptime(date_portion, "%m%d%Y")
+                    # For files from OMNI, the date is attached to the end of the zip file name, so
+                    # we will strip out the date when uploading the file to GCS
+                    new_file_name = re.sub(r"\_\d{8}", "", content_filename)
+                if matches_COMS_content_path is not None:
+                    # For files from COMS, the date will not be attached to the end of the file name,
+                    # so no need to strip anything off and we can use the file name directly
+                    new_file_name = content_filename
+
                 new_path = GcsfsFilePath.from_directory_and_file_name(
                     directory, new_file_name
                 )
+
                 gcsfs.upload_from_contents_handle_stream(
                     path=new_path,
                     contents_handle=ZipFileContentsHandle(content_filename, z),
