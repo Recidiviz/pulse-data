@@ -55,8 +55,7 @@ class TestEntityValidations(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"^Found \[<class 'recidiviz.persistence.entity.state.entities.StateStaff'>\] with id \[None\] missing an "
-            r"external_id:",
+            r"^Found \[StateStaff\] with id \[None\] missing an external_id:",
         ):
             for entity in entities:
                 validate_root_entity(entity)
@@ -82,7 +81,7 @@ class TestEntityValidations(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Duplicate external id types for \[<class 'recidiviz.persistence.entity.state.entities.StateStaff'>\] with id "
+            r"Duplicate external id types for \[StateStaff\] with id "
             r"\[None\]: US_XX_EMPLOYEE",
         ):
             for entity in entities:
@@ -109,7 +108,7 @@ class TestEntityValidations(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Duplicate external id types for \[<class 'recidiviz.persistence.entity.state.entities.StateStaff'>\] with id "
+            r"Duplicate external id types for \[StateStaff\] with id "
             r"\[None\]: US_XX_EMPLOYEE",
         ):
             for entity in entities:
@@ -137,8 +136,7 @@ class TestEntityValidations(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"^Found \[<class 'recidiviz.persistence.entity.state.entities.StatePerson'>\] with id \[None\] missing an "
-            r"external_id:",
+            r"^Found \[StatePerson\] with id \[None\] missing an external_id:",
         ):
             for entity in entities:
                 validate_root_entity(entity)
@@ -164,7 +162,7 @@ class TestEntityValidations(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Duplicate external id types for \[<class 'recidiviz.persistence.entity.state.entities.StatePerson'>\] with id "
+            r"Duplicate external id types for \[StatePerson\] with id "
             r"\[None\]: US_XX_EMPLOYEE",
         ):
             for entity in entities:
@@ -191,7 +189,7 @@ class TestEntityValidations(unittest.TestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"Duplicate external id types for \[<class 'recidiviz.persistence.entity.state.entities.StatePerson'>\] with id "
+            r"Duplicate external id types for \[StatePerson\] with id "
             r"\[None\]: US_XX_EMPLOYEE",
         ):
             for entity in entities:
