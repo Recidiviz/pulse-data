@@ -232,7 +232,7 @@ def create_or_update_normalized_state_sandbox(
     )
 
 
-def _create_or_update_dataflow_sandbox(
+def create_or_update_dataflow_sandbox(
     sandbox_dataset_prefix: str,
     datasets_to_create: List[str],
     allow_overwrite: bool,
@@ -352,7 +352,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     with local_project_id_override(args.project_id):
-        _create_or_update_dataflow_sandbox(
+        create_or_update_dataflow_sandbox(
             args.sandbox_dataset_prefix,
             args.datasets_to_create,
             args.allow_overwrite,
