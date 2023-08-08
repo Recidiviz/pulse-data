@@ -65,6 +65,7 @@ PSEUDONYMIZED_ID = """
 
 client_record_fields = [
     "person_external_id",
+    "display_id",
     "state_code",
     "person_name",
     "officer_id",

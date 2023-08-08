@@ -254,6 +254,7 @@ _RESIDENTS_CTE = """
     residents AS (
         SELECT
             person_external_id,
+            person_external_id as display_id,
             state_code,
             person_name,
             person_id,
