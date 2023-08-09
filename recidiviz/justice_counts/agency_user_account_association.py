@@ -366,6 +366,7 @@ class AgencyUserAccountAssociationInterface:
                     agency_id=child_agency.id,
                     user_account_id=user_assoc.user_account_id,
                     role=user_assoc.role,
+                    subscribed=user_assoc.subscribed,
                 )
                 session.merge(new_assoc)
 
