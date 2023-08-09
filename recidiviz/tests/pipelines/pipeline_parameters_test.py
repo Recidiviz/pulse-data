@@ -79,12 +79,14 @@ class TestValidPipelineParameters(unittest.TestCase):
             d: dict[str, Any] = pipeline.get()
             IngestPipelineParameters(project=self.PROJECT_ID, **d)
 
-    def test_valid_get_dataset_param_names(self) -> None:
+    def test_valid_get_sandboxable_dataset_param_names(self) -> None:
         for pipeline_params_subclass in PipelineParameters.__subclasses__():
-            for param_name in pipeline_params_subclass.get_dataset_param_names():
+            for (
+                param_name
+            ) in pipeline_params_subclass.get_sandboxable_dataset_param_names():
                 self.assertTrue(
                     hasattr(pipeline_params_subclass, param_name),
-                    f"Found invalid param name returned from get_dataset_param_names() "
+                    f"Found invalid param name returned from get_sandboxable_dataset_param_names() "
                     f"for class [{pipeline_params_subclass.__class__}]: {param_name}."
                     f"That field does not exist on that class.",
                 )

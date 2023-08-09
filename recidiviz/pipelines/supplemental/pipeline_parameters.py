@@ -35,5 +35,5 @@ class SupplementalPipelineParameters(PipelineParameters):
         return SUPPLEMENTAL_DATA_DATASET
 
     @classmethod
-    def get_dataset_param_names(cls) -> List[str]:
-        return super().get_dataset_param_names()
+    def get_sandboxable_dataset_param_names(cls) -> List[str]:
+        return super().get_sandboxable_dataset_param_names()

@@ -94,9 +94,8 @@ class IngestPipelineParameters(PipelineParameters):
             )
 
     @classmethod
-    def get_dataset_param_names(cls) -> List[str]:
+    def get_sandboxable_dataset_param_names(cls) -> List[str]:
         return [
-            *super().get_dataset_param_names(),
-            "raw_data_table_input",
+            *super().get_sandboxable_dataset_param_names(),
             "ingest_view_results_output",
         ]
