@@ -54,15 +54,7 @@ for use in the {level_name}_metrics table.
 WITH
 -- define population
 sample AS (
-    SELECT
-        person_id,
-        start_date,
-        -- TODO(#14675): remove the DATE_ADD when session end_dates are exclusive
-        DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date_exclusive,
-    FROM
-        `{{project_id}}.sessions.compartment_sessions_materialized`
-    WHERE
-        {population.get_conditions_query_string()}
+    {population.get_population_query()}
 )
 -- client assignments to {level_name}
 , assign AS (
