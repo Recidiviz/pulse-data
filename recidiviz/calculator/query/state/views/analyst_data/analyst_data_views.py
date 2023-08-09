@@ -120,6 +120,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_early_disch
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_parole_dates_spans_preprocessing import (
     US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_detainer_spans import (
+    US_IX_DETAINER_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_day_0_early_discharge import (
     US_ME_DAY_0_EARLY_DISCHARGE_VIEW_BUILDER,
 )
@@ -311,6 +314,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
     US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER,
+    US_IX_DETAINER_SPANS_VIEW_BUILDER,
     US_ME_DAY_0_EARLY_DISCHARGE_VIEW_BUILDER,
     US_ME_DAY_0_SCCP_VIEW_BUILDER,
     US_ME_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,

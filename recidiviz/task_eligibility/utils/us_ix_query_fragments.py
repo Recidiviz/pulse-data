@@ -17,10 +17,16 @@
 """
 Helper SQL queries for Idaho
 """
+from typing import List
 from recidiviz.calculator.query.bq_utils import nonnull_start_date_clause
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+
+_DETAINER_TYPE_LST = ["23", "32"]
 
 
 def date_within_time_span(
@@ -66,4 +72,43 @@ def date_within_time_span(
       TO_JSON(STRUCT(critical_date AS {critical_date_column})) AS reason,
     FROM
       critical_date_has_passed_spans
+    """
+
+
+def detainer_span(types_to_include_lst: List[str]) -> str:
+    """
+    Retrieves detainer spans information based on the specified detainer type IDs.
+
+    Args:
+        types_to_include_lst (List[str]): A list of detainer type IDs to include in the query.
+
+    Returns:
+        str: SQL query string for retrieving detainer spans with the specified detainer types.
+
+    Example:
+        types_to_include = ['73', '23']
+        query = detainer_span(types_to_include)
+    """
+    reformatted_types_to_include_lst = "('" + "', '".join(types_to_include_lst) + "')"
+    return f"""
+    WITH
+      detainer_cte AS (
+          SELECT
+            *
+          FROM
+            `{{project_id}}.{{analyst_dataset}}.us_ix_detainer_spans_materialized`
+          WHERE DetainerTypeId IN {reformatted_types_to_include_lst}),
+          {create_sub_sessions_with_attributes('detainer_cte')}
+    SELECT
+      state_code,
+      person_id,
+      start_date,
+      end_date,
+      False as meets_criteria,
+      TO_JSON(STRUCT(start_date AS latest_detainer_start_date,
+          DetainerTypeDesc AS latest_detainer_type,
+          DetainerStatusDesc AS latest_detainer_status)) AS reason,
+    FROM
+      sub_sessions_with_attributes
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date ORDER BY start_date DESC)=1
     """
