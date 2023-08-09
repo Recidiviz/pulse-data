@@ -30,9 +30,11 @@ python -m recidiviz.tools.justice_counts.update_user_subscription \
 import argparse
 import logging
 
+from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
+from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -99,8 +101,15 @@ def update_user_subscription(
             )
 
             if len(associations) == 0:
+                agency = AgencyInterface.get_agency_by_id(
+                    session=session, agency_id=agency_id
+                )
+                user = UserAccountInterface.get_user_by_id(
+                    session=session, user_account_id=user_account_id
+                )
                 assoc = schema.AgencyUserAccountAssociation(
-                    user_id=user_account_id, agency_id=agency_id
+                    agency=agency,
+                    user_account=user,
                 )
                 logging.info("User is not a member of the agency; adding them.")
             else:
