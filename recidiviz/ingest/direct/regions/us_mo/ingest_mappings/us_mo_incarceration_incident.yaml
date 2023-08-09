@@ -82,6 +82,14 @@ output:
                         - "M1" # Abuse of Judicial Proceedings Sanctions:
                           # Option 1: If the court order is issued prior to the offender’s first parole consideration hearing date,
                           # the parole consideration hearing date will be delayed 60 days
+                        - "M2" # Abuse of Judicial Proceedings Sanctions:
+                          # Option 2: : If the court order is issued after the first parole consideration hearing date,
+                          # the warden or designee will advise the offender finance office to determine the
+                          # amount equal to 50% of the offender’s average daily balance of the 12 months preceding the date of the conduct violation,
+                          # using all days the offender’s account had a positive balance; however, in no instance
+                          # shall the balance of an offender’s account be reduced to an amount less than $10.00.
+                          # The amount due may be deducted from any compensation payable or later paid to the offender, or from other property
+                          # belonging to the offender in the custody and control of the department.
                       StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
                         - "A3" # Referral for Time Credit Loss
                       StateIncarcerationIncidentOutcomeType.TREATMENT:
