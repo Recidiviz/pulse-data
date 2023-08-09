@@ -73,7 +73,7 @@ SELECT
     'SUPERVISION_LOCATION' AS location_type,
     TO_JSON(
       STRUCT(
-        IF(Org_Name LIKE '%UNIT%' OR Org_Name LIKE "% UNT%", Org_cd, NULL) 
+        IF(Org_Name LIKE '%UNIT%' OR Org_Name LIKE "% UNT%", Org_Name, NULL) 
             AS {LocationMetadataKey.SUPERVISION_UNIT_ID.value},
         IF(Org_Name LIKE '%UNIT%' OR Org_Name LIKE "% UNT%", Org_Name, NULL) 
             AS {LocationMetadataKey.SUPERVISION_UNIT_NAME.value},
