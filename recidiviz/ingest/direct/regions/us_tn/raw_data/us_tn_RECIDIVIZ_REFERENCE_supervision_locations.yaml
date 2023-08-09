@@ -22,3 +22,5 @@ columns:
   - name: division
     description: |-
       The division a supervision district is in.
+separator: ","
+encoding: UTF-8
