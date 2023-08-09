@@ -32,7 +32,7 @@ REIDENTIFIED_DASHBOARD_USERS_VIEW_DESCRIPTION = (
 
 REIDENTIFIED_DASHBOARD_USERS_QUERY_TEMPLATE = """
 SELECT
-    staff.state_code,
+    IF(users.state_code = "US_ID", "US_IX", users.state_code) as state_code,
     users.user_hash AS user_id,
     -- Not all users have entries in staff_record so fill in information from the roster for them
     COALESCE(staff.id, users.external_id) AS user_external_id,
