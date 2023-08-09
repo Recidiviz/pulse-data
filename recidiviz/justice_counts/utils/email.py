@@ -110,7 +110,7 @@ def _email_builder(
         subject_str = "Publisher: Automated Bulk Upload Failure"
         html = f"""<p>An error was encountered while uploading the {filename} file to Publisher.</p>"""
 
-    if metric_key_to_errors is not None:
+    if metric_key_to_errors is not None and len(metric_key_to_errors) != 0:
         errors_warnings_url = f"https://{domain}.justice-counts.org/agency/{agency_id}/upload/{spreadsheet_id}/errors-warnings"
         html += f"""<p>Your file contained some formatting and data issues. Please review the relevant <a href="{errors_warnings_url}">warnings</a> to understand if further action is required.</p>"""
 
