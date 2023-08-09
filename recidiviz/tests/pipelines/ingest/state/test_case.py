@@ -47,7 +47,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
+    ADDITIONAL_SCHEMA_COLUMNS,
     LOWER_BOUND_DATETIME_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
@@ -203,6 +205,22 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
                 LOWER_BOUND_DATETIME_COL_NAME,
             ],
         ).to_dict("records")
+
+    def get_expected_root_entities(
+        self, *, ingest_view_name: str, test_name: str
+    ) -> List[Entity]:
+        rows = list(
+            self.get_expected_ingest_view_results(
+                ingest_view_name=ingest_view_name, test_name=test_name
+            )
+        )
+        for row in rows:
+            for column in ADDITIONAL_SCHEMA_COLUMNS:
+                row.pop(column.name)
+        return self.ingest_view_manifest_collector.manifest_parser.parse(
+            ingest_view_name=ingest_view_name,
+            contents_iterator=iter(rows),
+        )
 
     def create_fake_bq_read_source_constructor(
         self,

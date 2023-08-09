@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - COL1
+  - COL4
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: COL1
+          id_type: $literal("US_DD_ID_TYPE")
+      - StatePersonExternalId:
+          external_id: COL4
+          id_type: $literal("US_DD_ID_ANOTHER_TYPE")

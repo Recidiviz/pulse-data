@@ -17,7 +17,7 @@
 """The ingest pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details
 on how to launch a local run."""
 from datetime import datetime
-from typing import Type
+from typing import Any, Dict, Tuple, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
@@ -34,13 +34,22 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.pipeline_parameters import (
     IngestPipelineParameters,
     MaterializationMethod,
 )
+from recidiviz.pipelines.ingest.state.cluster_root_external_ids import (
+    ClusterRootExternalIds,
+)
+from recidiviz.pipelines.ingest.state.constants import ExternalIdCluster, IngestViewName
+from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
+)
+from recidiviz.pipelines.ingest.state.get_root_external_ids import (
+    GetRootExternalIdClusterEdges,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
@@ -79,6 +88,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             region,
             ingest_manifest_collector.launchable_ingest_views(),
         )
+        root_entities_per_upperbound_date_per_view: Dict[
+            IngestViewName, beam.PCollection[Tuple[datetime, RootEntity]]
+        ] = {}
         for ingest_view in ingest_manifest_collector.launchable_ingest_views():
             raw_data_tables = [
                 raw_data_dependency.raw_file_config.file_tag
@@ -87,17 +99,15 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 ).raw_table_dependency_configs
             ]
 
-            ingest_view_results = (
-                p
-                | f"Materialize {ingest_view} results"
-                >> GenerateIngestViewResults(
-                    project_id=self.pipeline_parameters.project,
-                    state_code=self.pipeline_parameters.state_code,
-                    ingest_view_name=ingest_view,
-                    raw_data_tables=raw_data_tables,
-                    ingest_instance=ingest_instance,
-                    materialization_method=materialization_method,
-                )
+            ingest_view_results: beam.PCollection[
+                Dict[str, Any]
+            ] = p | f"Materialize {ingest_view} results" >> GenerateIngestViewResults(
+                project_id=self.pipeline_parameters.project,
+                state_code=self.pipeline_parameters.state_code,
+                ingest_view_name=ingest_view,
+                raw_data_tables=raw_data_tables,
+                ingest_instance=ingest_instance,
+                materialization_method=materialization_method,
             )
 
             _ = (
@@ -109,3 +119,33 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
                 )
             )
+
+            root_entities_per_upperbound_date_per_view[ingest_view] = (
+                ingest_view_results
+                | f"Generate {ingest_view} entities."
+                >> GenerateEntities(
+                    state_code=self.pipeline_parameters.state_code,
+                    ingest_instance=ingest_instance,
+                    ingest_view_name=ingest_view,
+                )
+            )
+
+            # TODO(#22064) Merge entity trees within the same ingest view, date and external ID.
+
+        all_root_entities: beam.PCollection[RootEntity] = (
+            root_entities_per_upperbound_date_per_view.values()
+            | beam.Flatten()
+            | beam.Values()  # pylint: disable=no-value-for-parameter
+        )
+
+        # pylint: disable=unused-variable
+        root_entity_external_ids_to_primary_keys: beam.PCollection[
+            ExternalIdCluster
+        ] = (
+            all_root_entities
+            | beam.ParDo(GetRootExternalIdClusterEdges())
+            | ClusterRootExternalIds()
+            # TODO(#22064) Generate primary keys for the clusters.
+        )
+
+        # TODO(#22064) Merge entity trees across ingest views, with external IDs to primary keys.

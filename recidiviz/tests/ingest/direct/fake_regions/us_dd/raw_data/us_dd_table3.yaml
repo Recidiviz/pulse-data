@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: table3
+file_description: |-
+  table3 file description
+data_classification: source
+primary_key_cols:
+  - COL1
+columns:
+  - name: COL1
+    description: |-
+      column 1 description
+  - name: COL4
+    description: |-
+      column 4 description
