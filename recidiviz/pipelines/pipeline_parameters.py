@@ -142,8 +142,8 @@ class PipelineParameters:
 
     @classmethod
     @abc.abstractmethod
-    def get_dataset_param_names(cls) -> List[str]:
-        """Returns a list of dataset parameter names that will be used in the pipeline."""
+    def get_sandboxable_dataset_param_names(cls) -> List[str]:
+        """Returns a list of dataset parameter names that will be used in the pipeline and can take sandbox prefixes."""
         return ["output", "reference_view_input"]
 
     @property
@@ -301,7 +301,7 @@ class PipelineParameters:
                     sandbox_prefix,
                     getattr(self, dataset_param_name),
                 )
-                for dataset_param_name in self.get_dataset_param_names()
+                for dataset_param_name in self.get_sandboxable_dataset_param_names()
             },
             # Add -test suffix to avoid firing Pagerduty alerts
             job_name=f"{converted_sandbox_prefix}-{self.job_name}-test",

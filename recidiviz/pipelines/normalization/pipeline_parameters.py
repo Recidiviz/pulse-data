@@ -56,9 +56,9 @@ class NormalizationPipelineParameters(PipelineParameters):
         return normalized_state_dataset_for_state_code(StateCode(self.state_code))
 
     @classmethod
-    def get_dataset_param_names(cls) -> List[str]:
+    def get_sandboxable_dataset_param_names(cls) -> List[str]:
         return [
-            *super().get_dataset_param_names(),
+            *super().get_sandboxable_dataset_param_names(),
             "state_data_input",
             "normalized_input",
         ]

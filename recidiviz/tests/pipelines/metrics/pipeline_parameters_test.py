@@ -182,7 +182,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "state_data_input": "my_prefix_test_input",
             "reference_view_input": "my_prefix_test_view",
             "normalized_input": "my_prefix_normalized_input",
-            "static_reference_input": f"my_prefix_{STATIC_REFERENCE_TABLES_DATASET}",
+            "static_reference_input": STATIC_REFERENCE_TABLES_DATASET,
             "metric_types": "TEST_METRIC",
             "person_filter_ids": "123 12323 324",
             "calculation_month_count": "36",
