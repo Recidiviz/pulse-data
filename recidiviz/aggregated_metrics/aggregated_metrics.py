@@ -75,7 +75,7 @@ def generate_aggregated_metrics_view_builder(
 #### Population Definition: {population_name.title()}
 
 ```
-{population.get_conditions_query_string()}
+{population.get_population_query()}
 ```
 
 #### Aggregation Level Definition: {level_name.title()}
