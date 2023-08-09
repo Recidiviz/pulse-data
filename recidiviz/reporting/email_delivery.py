@@ -171,20 +171,43 @@ def deliver(
             else additional_cc_addresses
         )
 
-        sent_successfully = sendgrid.send_message(
-            to_email=recipient_email_address,
-            from_email=from_email_address,
-            from_email_name=from_email_name,
-            subject=subject,
-            html_content=html_files[recipient_email_address],
-            attachment_title=attachment_title,
-            redirect_address=redirect_address,
-            cc_addresses=all_cc_addresses if all_cc_addresses else None,
-            text_attachment_content=attachment_files.get(recipient_email_address),
-            reply_to_email=reply_to_address,
-            reply_to_name=reply_to_name,
-            disable_unsubscribe=True,
-        )
+        try:
+            utils.validate_email_address(recipient_email_address)
+        except ValueError:
+            logging.error(
+                "Invalid recipient email address: %s", recipient_email_address
+            )
+            failed_email_sends.append(recipient_email_address)
+            continue
+        except Exception as e:
+            logging.error(
+                "Error on validate_email_address for [%s]: %s",
+                recipient_email_address,
+                e,
+            )
+            failed_email_sends.append(recipient_email_address)
+            continue
+
+        try:
+            sent_successfully = sendgrid.send_message(
+                to_email=recipient_email_address,
+                from_email=from_email_address,
+                from_email_name=from_email_name,
+                subject=subject,
+                html_content=html_files[recipient_email_address],
+                attachment_title=attachment_title,
+                redirect_address=redirect_address,
+                cc_addresses=all_cc_addresses if all_cc_addresses else None,
+                text_attachment_content=attachment_files.get(recipient_email_address),
+                reply_to_email=reply_to_address,
+                reply_to_name=reply_to_name,
+                disable_unsubscribe=True,
+            )
+        except Exception as e:
+            logging.error(
+                "Exception on send_message for %s: %s", recipient_email_address, e
+            )
+            sent_successfully = False
 
         if sent_successfully:
             succeeded_email_sends.append(recipient_email_address)

@@ -122,6 +122,36 @@ class EmailDeliveryTest(TestCase):
         self.assertEqual(len(result.successes), 0)
         self.assertEqual(len(result.failures), 1)
 
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    def test_deliver_returns_fail_count_for_invalid_email(
+        self, mock_load_files_from_storage: MagicMock
+    ) -> None:
+        """Given a batch_id, test that the deliver returns the fail_count value when it fails for invalid email"""
+        self.utils_patcher.stop()  # Don't mock validate_email_adddress()
+        mock_load_files_from_storage.return_value = {"''": "<html><body></html>"}
+        result = email_delivery.deliver(
+            self.batch,
+            self.report_date,
+        )
+
+        self.assertEqual(len(result.successes), 0)
+        self.assertEqual(len(result.failures), 1)
+
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    def test_deliver_returns_fail_count_for_send_exception(
+        self, mock_load_files_from_storage: MagicMock
+    ) -> None:
+        """Given a batch_id, test that the deliver returns the fail_count value when it fails for Exception on send"""
+        mock_load_files_from_storage.return_value = {"''": "<html><body></html>"}
+        self.mock_sendgrid_client.send_message.side_effect = Exception
+        result = email_delivery.deliver(
+            self.batch,
+            self.report_date,
+        )
+
+        self.assertEqual(len(result.successes), 0)
+        self.assertEqual(len(result.failures), 1)
+
     @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
     @patch(
         "recidiviz.reporting.email_delivery.load_files_from_storage",
@@ -201,6 +231,24 @@ class EmailDeliveryTest(TestCase):
             text_attachment_content=self.mock_files[self.to_address],
             disable_unsubscribe=True,
         )
+
+    @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
+    def test_deliver_invalid_email_does_not_call_send(
+        self, mock_load_files_from_storage: MagicMock
+    ) -> None:
+        """Given a batch_id, test that the SendGridClientWrapper send_message is not called because
+        the email from the loaded files is an empty string, which is invalid.
+        """
+        self.utils_patcher.stop()
+
+        mock_load_files_from_storage.return_value = {"''": "<html><body></html>"}
+        with self.assertLogs(level="INFO"):
+            email_delivery.deliver(
+                self.batch,
+                self.report_date,
+            )
+
+        self.mock_sendgrid_client.send_message.assert_not_called()
 
     @patch("recidiviz.reporting.email_delivery.load_files_from_storage")
     @patch(
