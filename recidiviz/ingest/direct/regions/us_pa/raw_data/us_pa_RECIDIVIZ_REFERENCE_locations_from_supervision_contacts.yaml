@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_locations_from_supervision_contacts
+file_description: |-
+  Hand-generated reference file containing supervision locations included in dbo_PRS_FACT_PAROLEE_CNTC_SUMRY
+  raw data. To be included in us_pa_location_metadata so officers and supervisors pulled
+  from supervision contacts will have entries in the location metadata reference table.
+data_classification: source
+primary_key_cols:
+  - Org_Name
+columns:
+  - name: Org_Name
+    description: The human-readable name of the supervision site.
+  - name: level_1_supervision_location_external_id
+    description: |-
+      The ID of the supervision suboffice (sometimes comprised of multiple units).
+      Will be an empty string when the supervision site is a supervision district or region.
+  - name: level_1_supervision_location_name
+    description: |-
+      The human-readable name of the supervision suboffice.
+      Will be an empty string when the supervision site is a supervision district or region.
+  - name: level_2_supervision_location_external_id
+    description: |-
+      The ID of the supervision district.
+      Will be an empty string when the supervision site is a region.
+  - name: level_2_supervision_location_name
+    description: |-
+      The human-readable name of the supervision district.
+      Will be an empty string when the supervision site is a region.
+  - name: level_3_supervision_location_external_id
+    description: The ID of the supervision region.
+  - name: level_3_supervision_location_name
+    description: The human-readable name of the supervision region.
