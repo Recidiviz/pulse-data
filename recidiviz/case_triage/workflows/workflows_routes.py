@@ -104,7 +104,10 @@ def create_workflows_api_blueprint() -> Blueprint:
     """Creates the API blueprint for Workflows"""
     workflows_api = Blueprint("workflows", __name__)
     proxy_endpoint = "workflows.proxy"
-    webhook_endpoint = "workflows.handle_twilio_status"
+    webhook_endpoints = [
+        "workflows.handle_twilio_status",
+        "workflows.handle_twilio_incoming_message",
+    ]
 
     handle_authorization = build_authorization_handler(
         on_successful_authorization, "dashboard_auth0"
@@ -118,7 +121,7 @@ def create_workflows_api_blueprint() -> Blueprint:
     def validate_request() -> None:
         if request.method == "OPTIONS":
             return
-        if request.endpoint == webhook_endpoint:
+        if request.endpoint in webhook_endpoints:
             logging.info("Twilio webhook endpoint request origin: [%s]", request.origin)
 
             signature = request.headers["X-Twilio-Signature"]
@@ -134,7 +137,7 @@ def create_workflows_api_blueprint() -> Blueprint:
 
     @workflows_api.before_request
     def validate_cors() -> Optional[Response]:
-        if request.endpoint in [proxy_endpoint, webhook_endpoint]:
+        if request.endpoint in [proxy_endpoint] + webhook_endpoints:
             # Proxy or webhook requests will generally be sent from a developer's machine or Twilio server
             # and not a browser, so there is no origin to check against.
             return None
@@ -525,9 +528,6 @@ def create_workflows_api_blueprint() -> Blueprint:
         message_sid = get_str_param_value(
             "MessageSid", request.values, preserve_case=True
         )
-        opt_out_type = get_str_param_value(
-            "OptOutType", request.values, preserve_case=True
-        )
         error_code = get_str_param_value(
             "ErrorCode", request.values, preserve_case=True
         )
@@ -557,20 +557,6 @@ def create_workflows_api_blueprint() -> Blueprint:
                     error_message=error_message,
                 )
 
-            # This endpoint will be hit multiple times per message, so check here if this is a new
-            # opt out type from what we already have in Firestore.
-            # Opt out types are: STOP, START, and HELP
-            # Error code is always 21610 for opt out status updates
-            if opt_out_type and opt_out_type != milestonesMessage.get("optOutType"):
-                logging.info(
-                    "Updating Segment logs with opt out type for doc: [%s]",
-                    doc.reference.path,
-                )
-                segment_client.track_milestones_message_opt_out(
-                    user_hash=milestonesMessage.get("userHash", ""),
-                    opt_out_type=opt_out_type,
-                )
-
             logging.info(
                 "Updating Twilio message status for doc: [%s]", doc.reference.path
             )
@@ -584,9 +570,6 @@ def create_workflows_api_blueprint() -> Blueprint:
             if error_code:
                 doc_update["errors"] = [error_message]
                 doc_update["errorCode"] = error_code
-
-            if opt_out_type:
-                doc_update["optOutType"] = opt_out_type
 
             firestore_client.set_document(
                 doc.reference.path,
@@ -608,6 +591,51 @@ def create_workflows_api_blueprint() -> Blueprint:
                 )
         except FlaskException as error:
             return make_response(str(error.description), error.status_code)
+
+        return make_response(jsonify(), HTTPStatus.NO_CONTENT)
+
+    @workflows_api.post("/webhook/twilio_incoming_message")
+    def handle_twilio_incoming_message() -> Response:
+        opt_out_type = get_str_param_value(
+            "OptOutType", request.values, preserve_case=True
+        )
+        recipient = get_str_param_value("From", request.values, preserve_case=True)
+
+        if opt_out_type and recipient:
+            segment_client = WorkflowsSegmentClient()
+            firestore_client = FirestoreClientImpl()
+            milestones_messages_ref = firestore_client.get_collection_group(
+                collection_path="milestonesMessages"
+            )
+            # recipient phone numbers are prefixed with +1 in the request, but do not contain that prefix in Firestore
+            query = milestones_messages_ref.where("recipient", "==", recipient[2:])
+            client_updates_docs = query.get()
+
+            for doc in client_updates_docs:
+                milestonesMessage = doc.to_dict()
+
+                # This endpoint may be hit multiple times per recipient, so check here if this is a new
+                # opt out type from what we already have in Firestore.
+                # Opt out types are: STOP, START, and HELP
+                if opt_out_type and opt_out_type != milestonesMessage.get("optOutType"):
+                    logging.info(
+                        "Updating Segment logs with opt out type for doc: [%s]",
+                        doc.reference.path,
+                    )
+                    segment_client.track_milestones_message_opt_out(
+                        user_hash=milestonesMessage.get("userHash", ""),
+                        opt_out_type=opt_out_type,
+                    )
+
+                doc_update = {
+                    "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                    "optOutType": opt_out_type,
+                }
+                firestore_client.set_document(
+                    doc.reference.path,
+                    doc_update,
+                    merge=True,
+                )
 
         return make_response(jsonify(), HTTPStatus.NO_CONTENT)
 

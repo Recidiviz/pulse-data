@@ -67,12 +67,14 @@ def get_workflows_consolidated_status(status: Optional[str]) -> str:
 # These are the error codes from Twilio that are sent to the status webhook
 # if there is an error with our account (vs a receiver or carrier error)
 # https://docs.google.com/spreadsheets/d/1xGgbc86Lmnk0uL3e7n2XZAnF4U-vTD3Z6-pfKZCM2q8/edit#gid=0
-TWILIO_CRITICAL_ERROR_CODES = {"30001", "30002", "30007", "30010"}
+TWILIO_CRITICAL_ERROR_CODES = {"30001", "30002", "30007", "30010", "30032"}
 
 
-def get_workflows_texting_error_message(error_code: Optional[str]) -> str:
+def get_workflows_texting_error_message(error_code: Optional[str]) -> Optional[str]:
     # Most common Twillio error code descriptions:
     # https://www.twilio.com/docs/sms/troubleshooting/debugging-tools#error-codes
+    if error_code is None:
+        return None
     if error_code in ["30002"]:
         return "The message could not be delivered at this time. Consider congratulating the client in person or through some other way."
     if error_code in ["30003"]:
