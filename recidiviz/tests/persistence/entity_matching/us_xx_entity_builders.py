@@ -22,16 +22,19 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
+    StateAssessment,
     StateCharge,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
     StateIncarcerationSentence,
     StatePerson,
+    StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
     StateStaff,
     StateStaffExternalId,
     StateStaffRolePeriod,
+    StateSupervisionSentence,
 )
 
 _STATE_CODE = StateCode.US_XX.value
@@ -57,10 +60,18 @@ def make_person_race(**kwargs: Any) -> StatePersonRace:
     return StatePersonRace.new_with_defaults(state_code=_STATE_CODE, **kwargs)
 
 
+def make_person_ethnicity(**kwargs: Any) -> StatePersonEthnicity:
+    return StatePersonEthnicity.new_with_defaults(state_code=_STATE_CODE, **kwargs)
+
+
 def make_incarceration_incident(**kwargs: Any) -> StateIncarcerationIncident:
     return StateIncarcerationIncident.new_with_defaults(
         state_code=_STATE_CODE, **kwargs
     )
+
+
+def make_assessment(**kwargs: Any) -> StateAssessment:
+    return StateAssessment.new_with_defaults(state_code=_STATE_CODE, **kwargs)
 
 
 def make_staff_role_period(**kwargs: Any) -> StateStaffRolePeriod:
@@ -70,14 +81,21 @@ def make_staff_role_period(**kwargs: Any) -> StateStaffRolePeriod:
 def make_incarceration_sentence(**kwargs: Any) -> StateIncarcerationSentence:
     return StateIncarcerationSentence.new_with_defaults(
         state_code=_STATE_CODE,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        **kwargs,
+        **{"status": StateSentenceStatus.PRESENT_WITHOUT_INFO, **kwargs},
+    )
+
+
+def make_supervision_sentence(**kwargs: Any) -> StateSupervisionSentence:
+    return StateSupervisionSentence.new_with_defaults(
+        state_code=_STATE_CODE,
+        **{"status": StateSentenceStatus.PRESENT_WITHOUT_INFO, **kwargs},
     )
 
 
 def make_state_charge(**kwargs: Any) -> StateCharge:
     return StateCharge.new_with_defaults(
-        state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO, **kwargs
+        state_code=_STATE_CODE,
+        **{"status": StateChargeStatus.PRESENT_WITHOUT_INFO, **kwargs},
     )
 
 

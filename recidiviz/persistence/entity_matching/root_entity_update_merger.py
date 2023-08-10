@@ -17,11 +17,35 @@
 """Class responsible for merging a root entity tree with new / updated child entities
 into an existing version of that root entity.
 """
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from enum import Enum
+from typing import List, Optional, Set
+
+from more_itertools import one
+
+from recidiviz.persistence.entity.base_entity import (
+    Entity,
+    EntityT,
+    EnumEntity,
+    EnumEntityT,
+    ExternalIdEntity,
+    ExternalIdEntityT,
+    HasExternalIdEntity,
+    HasExternalIdEntityT,
+    RootEntity,
+)
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    EntityFieldType,
+    get_all_entities_from_tree,
+    is_reference_only_entity,
+)
+from recidiviz.persistence.entity.state.entities import StatePersonAlias
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
-    root_entity_external_id_keys,
+    enum_entity_key,
+    external_id_key,
 )
 from recidiviz.persistence.persistence_utils import RootEntityT
+from recidiviz.utils.types import assert_type
 
 
 class RootEntityUpdateMerger:
@@ -33,26 +57,232 @@ class RootEntityUpdateMerger:
         self.field_index = field_index
 
     def merge_root_entity_trees(
-        self, old_root_entity: RootEntityT, root_entity_updates: RootEntityT
+        self, old_root_entity: Optional[RootEntityT], root_entity_updates: RootEntityT
     ) -> RootEntityT:
-        if not self._can_merge_root_entity_trees(old_root_entity, root_entity_updates):
-            raise ValueError(
-                f"Attempting to merge updates for root entity with external ids "
-                f"{root_entity_updates.external_ids} into entity with non-overlapping "
-                f"external ids {old_root_entity.external_ids}."
+        self._check_root_entity_meets_prerequisites(root_entity_updates)
+        if old_root_entity:
+            self._check_root_entity_meets_prerequisites(old_root_entity)
+            result = self._merge_matched_entities(old_root_entity, root_entity_updates)
+        else:
+            result = root_entity_updates
+
+        # TODO(#20936): Merge multi-parent entities (i.e. StateCharge)
+
+        # TODO(#20936): Should back edges get set here (e.g. person field on
+        #  StateSupervisionPeriod)?
+        return result
+
+    def _check_root_entity_meets_prerequisites(self, root_entity: RootEntityT) -> None:
+        """Checks that root entity trees do not have any fields set that should not
+        yet be set by this point in processing.
+        """
+        for e in get_all_entities_from_tree(root_entity, field_index=self.field_index):
+            if back_edge_fields := self.field_index.get_fields_with_non_empty_values(
+                e, EntityFieldType.BACK_EDGE
+            ):
+                raise ValueError(
+                    f"Found set back edges on [{type(e).__name__}] entity: "
+                    f"{back_edge_fields}. Back edge fields should not be set at this "
+                    f"point."
+                )
+            if primary_key := e.get_field(e.get_primary_key_column_name()):
+                raise ValueError(
+                    f"Found set primary key on [{type(e).__name__}] entity: "
+                    f"{primary_key}. Primary key fields should not be set at this "
+                    f"point."
+                )
+
+    def _merge_matched_entities(
+        self, old_entity: EntityT, new_or_updated_entity: EntityT
+    ) -> EntityT:
+        """Given two versions of an entity with the same external_id, recursively merges
+        two entity trees, applying updates to already existing entities where
+        applicable.
+        """
+        for child_field in self.field_index.get_all_core_entity_fields(
+            old_entity, EntityFieldType.FORWARD_EDGE
+        ):
+            old_children = old_entity.get_field(child_field)
+            new_or_updated_children = new_or_updated_entity.get_field(child_field)
+            if not old_children and not new_or_updated_children:
+                continue
+
+            child_cls = one(
+                {e.__class__ for e in old_children + new_or_updated_children}
             )
 
-        # TODO(#20936): Update to actually merge and return the merged entity.
-        return root_entity_updates
+            if not new_or_updated_children:
+                all_children = old_children
+            elif issubclass(child_cls, EnumEntity):
+                all_children = self._merge_enum_entity_children(
+                    old_children, new_or_updated_children
+                )
+            elif issubclass(child_cls, ExternalIdEntity):
+                all_children = self._merge_external_id_entity_children(
+                    old_children, new_or_updated_children
+                )
+            elif issubclass(child_cls, HasExternalIdEntity):
+                all_children = self._merge_has_external_id_entity_children(
+                    old_children, new_or_updated_children
+                )
+            # TODO(#20936): Update so this doesn't special-case StateAlias
+            # TODO(#20936): Update so this properly handles StateTaskDeadline.
+            elif issubclass(child_cls, StatePersonAlias):
+                all_children = self._merge_state_person_alias_children(
+                    old_children, new_or_updated_children
+                )
+            else:
+                raise ValueError(
+                    f"Unexpected child class type [{child_cls}] for field "
+                    f"[{child_field}]"
+                )
+
+            old_entity.set_field(child_field, all_children)
+
+        if is_reference_only_entity(new_or_updated_entity, self.field_index):
+            # At this point, the external_ids between old_entity and
+            # new_or_updated_entity are the same, but new_or_updated_entity only has
+            # the external_id field set, so we keep old_entity.
+            return old_entity
+
+        for child_field in self._flat_fields_to_merge(new_or_updated_entity):
+            old_entity.set_field(
+                child_field, new_or_updated_entity.get_field(child_field)
+            )
+
+        return old_entity
+
+    def _merge_enum_entity_children(
+        self,
+        old_children: List[EnumEntityT],
+        new_or_updated_children: List[EnumEntityT],
+    ) -> List[EnumEntityT]:
+        """Given two lists of EnumEntity of the same type, returns a merged single list
+        that applies updates.
+        """
+        new_keys = {
+            enum_entity_key(e, self.field_index) for e in new_or_updated_children
+        }
+
+        return [
+            *new_or_updated_children,
+            *[
+                e
+                for e in old_children
+                # If the key matches a key in the new children, that means this old
+                # EnumEntity is identical, and we exclude it to avoid duplicates.
+                if enum_entity_key(e, self.field_index) not in new_keys
+            ],
+        ]
 
     @staticmethod
-    def _can_merge_root_entity_trees(
-        old_root_entity: RootEntityT, new_state: RootEntityT
-    ) -> bool:
-        """Determines whether two entity trees have overlapping external ids and can
-        be merged.
-        """
-        previous_external_ids = root_entity_external_id_keys(old_root_entity)
-        new_external_ids = root_entity_external_id_keys(new_state)
+    def _merge_state_person_alias_children(
+        old_children: List[StatePersonAlias],
+        new_or_updated_children: List[StatePersonAlias],
+    ) -> List[StatePersonAlias]:
+        def state_person_alias_key(alias: StatePersonAlias) -> str:
+            return f"{type(alias)}#{alias.full_name}|{alias.alias_type}"
 
-        return bool(previous_external_ids.intersection(new_external_ids))
+        new_keys = {state_person_alias_key(e) for e in new_or_updated_children}
+
+        return [
+            *new_or_updated_children,
+            *[
+                e
+                for e in old_children
+                # If the key matches a key in the new children, that means this old
+                # StatePersonAlias is identical, and we exclude it to avoid duplicates.
+                if state_person_alias_key(e) not in new_keys
+            ],
+        ]
+
+    def _merge_has_external_id_entity_children(
+        self,
+        old_children: List[HasExternalIdEntityT],
+        new_or_updated_children: List[HasExternalIdEntityT],
+    ) -> List[HasExternalIdEntityT]:
+        """Given two lists of HasExternalIdEntity of the same type, returns a merged
+        single list that applies updates.
+        """
+        for e in old_children + new_or_updated_children:
+            if not e.external_id:
+                raise ValueError(
+                    f"Found null external_id for [{e.__class__.__name__}] entity [{e}]."
+                )
+
+        old_by_external_id = {assert_type(e.external_id, str): e for e in old_children}
+        new_by_external_id = {
+            assert_type(e.external_id, str): e for e in new_or_updated_children
+        }
+
+        matching_ids = set(old_by_external_id).intersection(set(new_by_external_id))
+
+        merged_children = [
+            *[e for e in old_children if e.external_id not in matching_ids],
+            *[e for e in new_or_updated_children if e.external_id not in matching_ids],
+        ]
+        for external_id in matching_ids:
+            merged_children.append(
+                self._merge_matched_entities(
+                    old_by_external_id[external_id], new_by_external_id[external_id]
+                )
+            )
+        return merged_children
+
+    @staticmethod
+    def _merge_external_id_entity_children(
+        old_children: List[ExternalIdEntityT],
+        new_or_updated_children: List[ExternalIdEntityT],
+    ) -> List[ExternalIdEntityT]:
+        """Given two lists of ExternalIdEntity of the same type, returns a merged single
+        list that applies updates.
+        """
+        old_keys = {external_id_key(e) for e in old_children}
+        return [
+            *old_children,
+            # Add any new external ids that are not already in the old list
+            *[e for e in new_or_updated_children if external_id_key(e) not in old_keys],
+        ]
+
+    def _flat_fields_to_merge(self, new_or_updated_entity: Entity) -> Set[str]:
+        """Returns the names of the fields on the new/updated entity which contain
+        data that should be merged onto the old version of this entity, if there is
+        a match.
+        """
+        all_fields = self.field_index.get_all_core_entity_fields(
+            new_or_updated_entity, EntityFieldType.FLAT_FIELD
+        )
+
+        if not issubclass(new_or_updated_entity.__class__, RootEntity):
+            return all_fields
+
+        # For root entities, we expect to potentially see updates from multiple
+        # different sources, with some fields being hydrated by one source and some
+        # fields being hydrated by another source. We don't want to completely overwrite
+        # all the flat fields based on one data source if that source does not hydrate
+        # all the fields. For example, source 1 may hydrate staff email, but source 2
+        # might hydrate full name. We want to pick the most hydrated version of each
+        # field.
+        fields_to_update = {
+            f for f in all_fields if new_or_updated_entity.get_field(f) is not None
+        }
+
+        default_enum_value_fields = {
+            field_name
+            for field_name in fields_to_update
+            if new_or_updated_entity.is_default_enum(field_name)
+        }
+
+        fields_to_update -= default_enum_value_fields
+
+        # If an enum field is updated, always update the corresponding raw text field
+        # (and vice versa), even if one of the values is null.
+        new_fields = set()
+        for field_name in all_fields:
+            if isinstance(new_or_updated_entity.get_field(field_name), Enum):
+                new_fields.add(f"{field_name}{EnumEntity.RAW_TEXT_FIELD_SUFFIX}")
+            if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
+                new_fields.add(field_name[: -len(EnumEntity.RAW_TEXT_FIELD_SUFFIX)])
+        fields_to_update.update(new_fields)
+
+        return fields_to_update

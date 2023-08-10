@@ -15,20 +15,65 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the RootEntityUpdateMerger class."""
+import datetime
 import unittest
 
 import attr
 
+from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
+    StateAssessmentLevel,
+    StateAssessmentType,
+)
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_person import StateRace
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_sentence import (
+    StateSupervisionSentenceSupervisionType,
+)
+from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )
+from recidiviz.tests.ingest.direct.regions.region_direct_ingest_controller_test_case import (
+    launch_entity_tree_html_diff_comparison,
+)
+from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+    generate_full_graph_state_person,
+)
 from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
+    make_assessment,
+    make_incarceration_sentence,
     make_person,
     make_person_external_id,
+    make_person_race,
     make_staff,
     make_staff_external_id,
+    make_state_charge,
+    make_supervision_sentence,
 )
+from recidiviz.utils.environment import in_ci
+
+_FULL_NAME_1 = '{"given_names": "FIRST1", "middle_names": "", "name_suffix": "", "surname": "LAST1"}'
+
+_ASSESSMENT_1 = make_assessment(
+    external_id="A",
+    assessment_class=StateAssessmentClass.RISK,
+    assessment_type=StateAssessmentType.LSIR,
+    assessment_date=datetime.date(2022, 1, 1),
+    assessment_score=10,
+)
+_ASSESSMENT_2 = make_assessment(
+    external_id="B",
+    assessment_type=StateAssessmentType.LSIR,
+    assessment_date=datetime.date(2022, 2, 2),
+    assessment_score=20,
+)
+
+_EXTERNAL_ID_ENTITY_1 = make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+_EXTERNAL_ID_ENTITY_2 = make_person_external_id(external_id="ID_2", id_type="ID_TYPE_2")
+_EXTERNAL_ID_ENTITY_3 = make_person_external_id(external_id="ID_3", id_type="ID_TYPE_3")
 
 
 class TestRootEntityUpdateMerger(unittest.TestCase):
@@ -37,16 +82,208 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
     def setUp(self) -> None:
         self.merger = RootEntityUpdateMerger(CoreEntityFieldIndex())
 
-    def test_merge_people_exact_match(self) -> None:
-        previous_root_entity = make_person(
-            external_ids=[
-                make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+    def assert_expected_matches_result(
+        self, *, expected_result: RootEntity, result: RootEntity, debug: bool = False
+    ) -> None:
+        if debug:
+            if in_ci():
+                self.fail("The |debug| flag should only be used for local debugging.")
+
+            launch_entity_tree_html_diff_comparison(
+                found_root_entities=[result],
+                expected_root_entities=[expected_result],
+                field_index=self.merger.field_index,
+            )
+
+        self.assertEqual(expected_result, result)
+
+    def test_throws_primary_keys_set_root_entity(self) -> None:
+        root_entity_with_primary_key = make_person(
+            # Primary key should not be set when we get to root entity merging.
+            person_id=123,
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+        )
+
+        # Test primary key set on new root entity
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found set primary key on \[StatePerson\] entity: 123. Primary key fields "
+            r"should not be set at this point.",
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=None,
+                root_entity_updates=root_entity_with_primary_key,
+            )
+
+        root_entity_without_primary_key = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+        )
+
+        # Test primary key set on old root entity
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found set primary key on \[StatePerson\] entity: 123. Primary key fields "
+            r"should not be set at this point.",
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=root_entity_with_primary_key,
+                root_entity_updates=root_entity_without_primary_key,
+            )
+
+    def test_throws_primary_keys_set_child_entity(self) -> None:
+        charge = make_state_charge(
+            # Primary key should not be set when we get to root entity merging.
+            charge_id=123,
+            external_id="CHARGE_A",
+            ncic_code="3599",
+        )
+        incarceration_sentence = make_incarceration_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            min_length_days=365,
+            max_length_days=365 * 2,
+            charges=[attr.evolve(charge)],
+        )
+        root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+        )
+
+        # Test primary key set on new child entity
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found set primary key on \[StateCharge\] entity: 123. Primary key fields "
+            r"should not be set at this point.",
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=None,
+                root_entity_updates=root_entity,
+            )
+
+        root_entity_without_primary_key = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[
+                attr.evolve(
+                    incarceration_sentence,
+                    charges=[attr.evolve(charge, charge_id=None)],
+                )
             ],
         )
-        entity_updates = make_person(
-            external_ids=[
-                make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+
+        # Test primary key set on old root entity
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found set primary key on \[StateCharge\] entity: 123. Primary key fields "
+            r"should not be set at this point.",
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=root_entity,
+                root_entity_updates=root_entity_without_primary_key,
+            )
+
+    def test_throws_backedges_to_root_set(self) -> None:
+        incarceration_sentence = make_incarceration_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            min_length_days=365,
+            max_length_days=365 * 2,
+        )
+        root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[incarceration_sentence],
+        )
+        # Set person backedge
+        incarceration_sentence.person = root_entity
+
+        # Test primary key set on new child entity
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found set back edges on \[StateIncarcerationSentence\] entity: "
+            r"\{'person'\}. Back edge fields should not be set at this point.",
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=None,
+                root_entity_updates=root_entity,
+            )
+
+        root_entity_without_backedge = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[attr.evolve(incarceration_sentence, person=None)],
+        )
+
+        # Test primary key set on old root entity
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found set back edges on \[StateIncarcerationSentence\] entity: "
+            r"\{'person'\}. Back edge fields should not be set at this point.",
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=root_entity,
+                root_entity_updates=root_entity_without_backedge,
+            )
+
+    def test_throws_non_root_backedges_set(self) -> None:
+        charge = make_state_charge(
+            external_id="CHARGE_A",
+            ncic_code="3599",
+        )
+        incarceration_sentence = make_incarceration_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            min_length_days=365,
+            max_length_days=365 * 2,
+            charges=[charge],
+        )
+        # Backedge set on charge
+        charge.incarceration_sentences = [incarceration_sentence]
+        root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+        )
+
+        # Test primary key set on new child entity
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found set back edges on \[StateCharge\] entity: "
+            r"\{'incarceration_sentences'\}. Back edge fields should not be set at "
+            r"this point.",
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=None,
+                root_entity_updates=root_entity,
+            )
+
+        root_entity_without_backedge = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[
+                attr.evolve(
+                    incarceration_sentence,
+                    charges=[attr.evolve(charge, incarceration_sentences=[])],
+                )
             ],
+        )
+
+        # Test primary key set on old root entity
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found set back edges on \[StateCharge\] entity: "
+            r"\{'incarceration_sentences'\}. Back edge fields should not be set at "
+            r"this point.",
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=root_entity,
+                root_entity_updates=root_entity_without_backedge,
+            )
+
+    def test_merge_people_exact_match(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
         )
 
         # Expect no change since there is no new info in the updates
@@ -57,7 +294,152 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             root_entity_updates=entity_updates,
         )
 
-        self.assertEqual(expected_result, result)
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_complex_exact_match(self) -> None:
+        previous_root_entity = generate_full_graph_state_person(
+            set_back_edges=False,
+            include_person_back_edges=False,
+            set_ids=False,
+            include_agents=False,
+        )
+        entity_updates = generate_full_graph_state_person(
+            set_back_edges=False,
+            include_person_back_edges=False,
+            set_ids=False,
+            include_agents=False,
+        )
+
+        # Expect no change since there is no new info in the updates
+        expected_result = attr.evolve(previous_root_entity)
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_complex_multiple_differences(self) -> None:
+        # Arrange
+        previous_root_entity = generate_full_graph_state_person(
+            set_back_edges=False,
+            include_person_back_edges=False,
+            set_ids=False,
+            include_agents=False,
+        )
+
+        previous_root_entity.incarceration_periods = []
+        previous_root_entity.assessments = []
+        # TODO(#20936): Un-comment this line once multi-parent merging is
+        #  implemented.
+        # previous_root_entity.incarceration_sentences[0].charges = []
+
+        entity_updates = generate_full_graph_state_person(
+            set_back_edges=False,
+            include_person_back_edges=False,
+            set_ids=False,
+            include_agents=False,
+        )
+
+        entity_updates.supervision_contacts = []
+        new_response_date = datetime.date.today()
+        entity_updates.supervision_violations[0].supervision_violation_responses[
+            0
+        ].response_date = new_response_date
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert
+        # Expect the full tree to be hydrated because new and old hydrated different
+        # parts.
+        expected_result = generate_full_graph_state_person(
+            set_back_edges=False,
+            include_person_back_edges=False,
+            set_ids=False,
+            include_agents=False,
+        )
+        # The only thing that should be updated is the new response date
+        expected_result.supervision_violations[0].supervision_violation_responses[
+            0
+        ].response_date = new_response_date
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_different_enum_entities(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            races=[
+                make_person_race(race=StateRace.BLACK, race_raw_text="B"),
+                make_person_race(race=StateRace.WHITE, race_raw_text="W"),
+            ],
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            races=[make_person_race(race=StateRace.ASIAN, race_raw_text="A")],
+        )
+
+        # Expect no change since there is no new info in the updates
+        expected_result = attr.evolve(
+            previous_root_entity,
+            races=[
+                make_person_race(race=StateRace.BLACK, race_raw_text="B"),
+                make_person_race(race=StateRace.WHITE, race_raw_text="W"),
+                make_person_race(race=StateRace.ASIAN, race_raw_text="A"),
+            ],
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_different_enum_entities_different_raw_text(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            races=[
+                make_person_race(race=StateRace.BLACK, race_raw_text="B"),
+            ],
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            races=[
+                make_person_race(race=StateRace.BLACK, race_raw_text="BLA"),
+            ],
+        )
+
+        # Expect no change since there is no new info in the updates
+        expected_result = attr.evolve(
+            previous_root_entity,
+            races=[
+                # Because each enum entity has different raw text, we keep both
+                make_person_race(race=StateRace.BLACK, race_raw_text="B"),
+                make_person_race(race=StateRace.BLACK, race_raw_text="BLA"),
+            ],
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
 
     def test_merge_staff_exact_match(self) -> None:
         previous_root_entity = make_staff(
@@ -79,53 +461,369 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             root_entity_updates=entity_updates,
         )
 
-        self.assertEqual(expected_result, result)
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
 
-    def test_merge_tree_no_match(self) -> None:
-        # Test no match same type different id
-        with self.assertRaisesRegex(
-            ValueError,
-            (
-                r"Attempting to merge updates for root entity with external ids "
-                r"\[StateStaffExternalId\(external_id='ID_2', state_code='US_XX', "
-                r"id_type='ID_TYPE_1'.*\)\] into entity with non-overlapping external "
-                r"ids \[StateStaffExternalId\(external_id='ID_1', state_code='US_XX', "
-                r"id_type='ID_TYPE_1'.*\)\]."
-            ),
-        ):
-            _ = self.merger.merge_root_entity_trees(
-                old_root_entity=make_staff(
-                    external_ids=[
-                        make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                    ],
-                ),
-                root_entity_updates=make_staff(
-                    external_ids=[
-                        make_staff_external_id(external_id="ID_2", id_type="ID_TYPE_1")
-                    ],
-                ),
+    def test_match_complex_root_entity_merging(self) -> None:
+        # Arrange
+        staff_1 = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+            ],
+        )
+
+        staff_2 = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_3", id_type="ID_TYPE_1"),
+            ],
+        )
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=staff_1,
+            root_entity_updates=staff_2,
+        )
+
+        # Assert
+        expected_result = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_3", id_type="ID_TYPE_1"),
+            ],
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+        # Arrange 2
+        staff_3 = make_staff(
+            external_ids=[
+                # NOTE: ORDER HERE MATTERS FOR THIS ONE ONLY
+                make_staff_external_id(external_id="ID_3", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+            ],
+        )
+
+        # Act 2
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=result,
+            root_entity_updates=staff_3,
+        )
+
+        # Assert 2
+        expected_result = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_3", id_type="ID_TYPE_1"),
+            ],
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+        # Arrange 3
+        staff_4 = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_4", id_type="ID_TYPE_2"),
+            ],
+        )
+
+        # Act 3
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=result,
+            root_entity_updates=staff_4,
+        )
+
+        # Assert 3
+        expected_result = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_2", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_3", id_type="ID_TYPE_1"),
+                make_staff_external_id(external_id="ID_4", id_type="ID_TYPE_2"),
+            ],
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_new_external_id(self) -> None:
+        previous_root_entity = make_person(
+            full_name=_FULL_NAME_1,
+            external_ids=[_EXTERNAL_ID_ENTITY_1, _EXTERNAL_ID_ENTITY_2],
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1, _EXTERNAL_ID_ENTITY_3],
+        )
+
+        expected_result = make_person(
+            full_name=_FULL_NAME_1,
+            external_ids=[
+                _EXTERNAL_ID_ENTITY_1,
+                _EXTERNAL_ID_ENTITY_2,
+                _EXTERNAL_ID_ENTITY_3,
+            ],
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_new_child(self) -> None:
+        # Arrange 1
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+        )
+
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            assessments=[attr.evolve(_ASSESSMENT_1)],
+        )
+
+        # Act 1 - Merge one new child entity onto person
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert 1
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            assessments=[attr.evolve(_ASSESSMENT_1)],
+        )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+        # Arrange 2
+        old_root_entity = expected_result
+
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            assessments=[attr.evolve(_ASSESSMENT_2)],
+        )
+
+        # Act 2 - Merge a second new child entity onto person
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=old_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert 2
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            assessments=[attr.evolve(_ASSESSMENT_1), attr.evolve(_ASSESSMENT_2)],
+        )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_updated_child(self) -> None:
+        # Arrange
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            assessments=[attr.evolve(_ASSESSMENT_1)],
+        )
+
+        updated_assessment_1 = make_assessment(
+            external_id=_ASSESSMENT_1.external_id,
+            assessment_type=StateAssessmentType.COMPAS,
+            assessment_type_raw_text="COMP",
+            assessment_date=datetime.date(2022, 1, 1),
+            assessment_score=10,
+            assessment_level=StateAssessmentLevel.MEDIUM,
+        )
+
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            assessments=[updated_assessment_1],
+        )
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            assessments=[attr.evolve(updated_assessment_1)],
+        )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_updated_grandchild(self) -> None:
+        # Arrange
+        charge = make_state_charge(external_id="CHARGE_A", ncic_code="3599")
+        incarceration_sentence = make_incarceration_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            min_length_days=365,
+            max_length_days=365 * 2,
+            charges=[attr.evolve(charge)],
+        )
+        assessment = make_assessment(external_id="a1")
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+            assessments=[attr.evolve(assessment)],
+        )
+
+        updated_charge = attr.evolve(charge, ncic_code="9999")
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[
+                attr.evolve(incarceration_sentence, charges=[updated_charge])
+            ],
+        )
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert
+        # The charge should have been updated, assessments remain unchanged
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[
+                attr.evolve(
+                    incarceration_sentence, charges=[attr.evolve(updated_charge)]
+                )
+            ],
+            assessments=[attr.evolve(assessment)],
+        )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_multi_parent_charge_on_update(self) -> None:
+        # Arrange
+        charge = make_state_charge(external_id="CHARGE_A", ncic_code="3599")
+        incarceration_sentence = make_incarceration_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            min_length_days=365,
+            max_length_days=365 * 2,
+            charges=[attr.evolve(charge)],
+        )
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+        )
+
+        supervision_sentence = make_supervision_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            min_length_days=90,
+            max_length_days=365,
+            # Separate, updated copy of charge also attached to this supervision
+            # sentence
+            charges=[attr.evolve(charge, description="Charge description")],
+        )
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            supervision_sentences=[attr.evolve(supervision_sentence)],
+        )
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert
+        expected_charge = attr.evolve(charge, description="Charge description")
+
+        # Both the incarceration and supervision sentence should reference the same
+        # charge.
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[
+                attr.evolve(incarceration_sentence, charges=[expected_charge])
+            ],
+            supervision_sentences=[
+                attr.evolve(supervision_sentence, charges=[expected_charge])
+            ],
+        )
+
+        # TODO(#20936): Test should no longer fail once multi-parent merging is
+        #  implemented.
+        with self.assertRaises(AssertionError):
+            self.assert_expected_matches_result(
+                expected_result=expected_result, result=result
             )
 
-        # Test no match same id different type
-        with self.assertRaisesRegex(
-            ValueError,
-            (
-                r"Attempting to merge updates for root entity with external ids "
-                r"\[StateStaffExternalId\(external_id='ID_1', state_code='US_XX', "
-                r"id_type='ID_TYPE_2'.*\)\] into entity with non-overlapping external "
-                r"ids \[StateStaffExternalId\(external_id='ID_1', state_code='US_XX', "
-                r"id_type='ID_TYPE_1'.*\)\]."
-            ),
-        ):
-            _ = self.merger.merge_root_entity_trees(
-                old_root_entity=make_staff(
-                    external_ids=[
-                        make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
-                    ],
-                ),
-                root_entity_updates=make_staff(
-                    external_ids=[
-                        make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_2")
-                    ],
-                ),
+    def test_merge_multi_parent_charge_both_parents_new(self) -> None:
+        # Arrange
+        charge = make_state_charge(external_id="CHARGE_A", ncic_code="3599")
+        incarceration_sentence = make_incarceration_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            min_length_days=365,
+            max_length_days=365 * 2,
+            charges=[attr.evolve(charge)],
+        )
+        supervision_sentence = make_supervision_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            min_length_days=90,
+            max_length_days=365,
+            # Separate copy of charge also attached to this sentence (mimics output of
+            # ingest view parser).
+            charges=[attr.evolve(charge)],
+        )
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+            supervision_sentences=[attr.evolve(supervision_sentence)],
+        )
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=None,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert
+        expected_charge = attr.evolve(charge, description="Charge description")
+
+        # Both the incarceration and supervision sentence should reference the same
+        # charge.
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[
+                attr.evolve(incarceration_sentence, charges=[expected_charge])
+            ],
+            supervision_sentences=[
+                attr.evolve(supervision_sentence, charges=[expected_charge])
+            ],
+        )
+
+        # TODO(#20936): Test should no longer fail once multi-parent merging is
+        #  implemented.
+        with self.assertRaises(AssertionError):
+            self.assert_expected_matches_result(
+                expected_result=expected_result, result=result
             )

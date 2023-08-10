@@ -33,12 +33,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
-from recidiviz.common.constants.state import external_id_types
-from recidiviz.common.constants.states import (
-    PLAYGROUND_STATE_INFO,
-    STATE_CODE_PATTERN,
-    StateCode,
-)
+from recidiviz.common.constants.states import PLAYGROUND_STATE_INFO, StateCode
 from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.ingest.direct import direct_ingest_regions, regions, templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
@@ -83,6 +78,9 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
     FakeDirectIngestInstanceStatusManager,
+)
+from recidiviz.tests.common.constants.state.external_id_types_test import (
+    get_external_id_types,
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 from recidiviz.utils import environment, metadata
@@ -277,11 +275,7 @@ class DirectIngestRegionDirStructureBase:
             if region.is_ingest_launched_in_env() is not None:
                 self.test.assertTrue(raw_file_manager.raw_file_configs)
             config_file_tags = set()
-            possible_external_ids = [
-                getattr(external_id_types, v)
-                for v in dir(external_id_types)
-                if re.match(STATE_CODE_PATTERN, v)
-            ]
+            possible_external_id_types = get_external_id_types()
             for config in raw_file_manager.raw_file_configs.values():
                 self.test.assertTrue(
                     config.file_tag not in config_file_tags,
@@ -310,7 +304,9 @@ class DirectIngestRegionDirStructureBase:
                         continue
 
                     # Check that the external id type, if there is one, is a constant
-                    self.test.assertIn(column.external_id_type, possible_external_ids)
+                    self.test.assertIn(
+                        column.external_id_type, possible_external_id_types
+                    )
 
                     if column.external_id_type not in external_id_type_categories:
                         external_id_type_categories[
