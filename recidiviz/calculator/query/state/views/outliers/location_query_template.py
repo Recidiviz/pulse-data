@@ -37,8 +37,8 @@ def location_query_template(
     )
     
     SELECT 
-        DISTINCT {location}_id AS external_id, 
-        {location}_name AS name,
+        DISTINCT UPPER(TRIM({location}_id)) AS external_id, 
+        UPPER(TRIM({location}_name)) AS name,
         state_code, {f"{parent_id}," if parent_id != "state_code" else ""}
     FROM location_metadata
     WHERE {location}_id IS NOT NULL
