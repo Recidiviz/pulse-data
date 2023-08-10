@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 """Utils for creating candidate population view builders"""
 from typing import List
 
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -45,15 +46,33 @@ def state_agnostic_candidate_population_query(
         [f"AND {filter_str}" for filter_str in additional_filters]
     )
     return f"""
-SELECT DISTINCT
-    state_code,
-    person_id,
-    start_date,
-    end_date_exclusive AS end_date,
-FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
-WHERE compartment_level_1 IN ('{compartment_level_1_string}')
-AND metric_source != "INFERRED" 
-    {filter_string}
+    WITH facility_mapping AS (
+        SELECT ss.* EXCEPT(facility),
+            IFNULL(name_map.aggregating_location_id, ss.facility) AS facility,
+        FROM (
+            SELECT * EXCEPT(facility),
+                    UPPER(facility) AS facility,
+            FROM 
+                `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+            ) ss
+        LEFT JOIN (
+            SELECT * EXCEPT(location_id), 
+                    location_id AS facility
+            FROM 
+                `{{project_id}}.{{dashboard_views_dataset}}.pathways_incarceration_location_name_map_materialized`
+            ) name_map
+        USING(state_code, facility)
+    )
+    SELECT 
+        DISTINCT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+    FROM facility_mapping
+    WHERE compartment_level_1 IN ('{compartment_level_1_string}')
+    AND metric_source != "INFERRED" 
+        {filter_string}
  """
 
 
@@ -75,4 +94,5 @@ def state_agnostic_candidate_population_view_builder(
         population_spans_query_template=query_template,
         description=description,
         sessions_dataset=SESSIONS_DATASET,
+        dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
     )
