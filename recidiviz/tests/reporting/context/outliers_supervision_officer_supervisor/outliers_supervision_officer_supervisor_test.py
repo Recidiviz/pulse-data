@@ -30,6 +30,7 @@ from recidiviz.outliers.constants import (
 from recidiviz.outliers.querier.querier import OfficerSupervisorReportData
 from recidiviz.outliers.types import OutliersConfig, TargetStatusStrategy
 from recidiviz.reporting.asset_generation.types import AssetResponseBase
+from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context import (
     OutliersSupervisionOfficerSupervisorContext,
 )
@@ -47,7 +48,6 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.types i
     MetricHighlightDetail,
     MultipleMetricHighlight,
 )
-from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
 from recidiviz.reporting.recipient import Recipient
 
 

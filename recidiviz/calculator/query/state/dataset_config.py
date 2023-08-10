@@ -65,9 +65,6 @@ COVID_DASHBOARD_DATASET: str = "covid_public_data"
 # Where the tables used to populate the COVID dashboard views live
 COVID_DASHBOARD_REFERENCE_DATASET: str = "covid_public_data_reference_tables"
 
-# Where the views for the Overdue Discharge alert live
-OVERDUE_DISCHARGE_ALERT_DATASET: str = "overdue_discharge_alert"
-
 LINESTAFF_DATA_VALIDATION: str = "linestaff_data_validation"
 
 # Where the views for the public dashboard live

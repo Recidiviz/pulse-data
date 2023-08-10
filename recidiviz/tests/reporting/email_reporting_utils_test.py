@@ -25,7 +25,7 @@ import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
+from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.reporting.email_reporting_handler import EmailReportingHandler
 from recidiviz.reporting.email_sent_metadata import EmailSentMetadata
 
@@ -42,7 +42,7 @@ class EmailReportingUtilsTests(TestCase):
         self.batch = Batch(
             state_code=StateCode.US_XX,
             batch_id="batch-1",
-            report_type=ReportType.POMonthlyReport,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
 
     def tearDown(self) -> None:
@@ -93,21 +93,6 @@ class EmailReportingUtilsTests(TestCase):
     def test_get_email_content_bucket_name_html(self) -> None:
         expected = f"{_MOCK_PROJECT_ID}-report-html"
         actual = self.eru.get_email_content_bucket_name()
-        self.assertEqual(expected, actual)
-
-    @patch("recidiviz.utils.secrets.get_secret")
-    def test_get_static_image_path(self, mock_secret: MagicMock) -> None:
-        expected = "123.456.7.8"
-        test_secrets = {"po_report_cdn_static_IP": expected}
-        mock_secret.side_effect = test_secrets.get
-
-        expected = "http://123.456.7.8/top_opportunities/static"
-        actual = self.eru.get_static_image_path(ReportType.TopOpportunities)
-        self.assertEqual(expected, actual)
-
-    def test_get_data_filename(self) -> None:
-        expected = "po_monthly_report/US_XX/po_monthly_report_data.json"
-        actual = self.eru.get_data_filename(self.batch)
         self.assertEqual(expected, actual)
 
     def test_get_data_archive_filename(self) -> None:
@@ -201,21 +186,13 @@ class TestGCSEmails(TestCase):
             self.fs.update_metadata(path=path, new_metadata={"batchId": batch_id})
             self.fs.upload_from_string(
                 path=path,
-                contents=json.dumps({"report_type": ReportType.POMonthlyReport.value}),
+                contents=json.dumps(
+                    {
+                        "report_type": ReportType.OutliersSupervisionOfficerSupervisor.value
+                    }
+                ),
                 content_type="text/json",
             )
-
-        # different report type for US_ID
-        batch_id = "20210701202023"
-        path = GcsfsFilePath.from_absolute_path(
-            f"gs://{self.BUCKET_NAME}/{self.STATE_CODE_STR}/{batch_id}/metadata.json"
-        )
-        self.fs.update_metadata(path=path, new_metadata={"batchId": batch_id})
-        self.fs.upload_from_string(
-            path=path,
-            contents=json.dumps({"report_type": ReportType.TopOpportunities.value}),
-            content_type="text/json",
-        )
 
         # staging, US_PA bucket
         batch_id = "20210701202027"
@@ -225,7 +202,9 @@ class TestGCSEmails(TestCase):
         self.fs.update_metadata(path=path, new_metadata={"batchId": batch_id})
         self.fs.upload_from_string(
             path=path,
-            contents=json.dumps({"report_type": ReportType.POMonthlyReport.value}),
+            contents=json.dumps(
+                {"report_type": ReportType.OutliersSupervisionOfficerSupervisor.value}
+            ),
             content_type="text/json",
         )
 
@@ -238,7 +217,9 @@ class TestGCSEmails(TestCase):
         self.fs.update_metadata(path=path, new_metadata={"batchId": batch_id})
         self.fs.upload_from_string(
             path=path,
-            contents=json.dumps({"report_type": ReportType.POMonthlyReport.value}),
+            contents=json.dumps(
+                {"report_type": ReportType.OutliersSupervisionOfficerSupervisor.value}
+            ),
             content_type="text/text",
         )
 
@@ -248,7 +229,7 @@ class TestGCSEmails(TestCase):
         self._upload_fake_email_buckets()
         batch_info = self.email_handler.get_batch_info(
             state_code=StateCode(self.STATE_CODE_STR),
-            report_type=ReportType.POMonthlyReport,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
         batch_ids = [batch["batchId"] for batch in batch_info]
         self.assertEqual(
@@ -256,19 +237,12 @@ class TestGCSEmails(TestCase):
             batch_ids,
         )
 
-        # properly filtered by report
-        batch_info = self.email_handler.get_batch_info(
-            state_code=StateCode(self.STATE_CODE_STR),
-            report_type=ReportType.TopOpportunities,
-        )
-        batch_ids = [batch["batchId"] for batch in batch_info]
-        self.assertEqual(["20210701202023"], batch_ids)
-
     def test_get_batch_ids_invalid_state(self) -> None:
         """Given an invalid state code, should have an empty list"""
         self._upload_fake_email_buckets()
         batch_info = self.email_handler.get_batch_info(
-            state_code=StateCode.US_XX, report_type=ReportType.POMonthlyReport
+            state_code=StateCode.US_XX,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
         self.assertEqual(0, len(batch_info))
 
@@ -276,7 +250,8 @@ class TestGCSEmails(TestCase):
         """Given valid arguments, should pick correct state and given a list of only one batch id"""
         self._upload_fake_email_buckets()
         batch_info = self.email_handler.get_batch_info(
-            state_code=StateCode.US_PA, report_type=ReportType.POMonthlyReport
+            state_code=StateCode.US_PA,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
         batch_ids = [batch["batchId"] for batch in batch_info]
         self.assertEqual(["20210701202027"], batch_ids)
@@ -288,7 +263,7 @@ class TestGCSEmails(TestCase):
         self._upload_fake_email_buckets()
         batch_info = self.email_handler.get_batch_info(
             state_code=StateCode(self.STATE_CODE_STR),
-            report_type=ReportType.POMonthlyReport,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
 
         first_sent_timestamp = datetime.datetime.now()
@@ -299,7 +274,7 @@ class TestGCSEmails(TestCase):
             batch = Batch(
                 state_code=StateCode(self.STATE_CODE_STR),
                 batch_id=batch_id,
-                report_type=ReportType.POMonthlyReport,
+                report_type=ReportType.OutliersSupervisionOfficerSupervisor,
             )
             email_sent_metadata = EmailSentMetadata.build_from_gcs(batch, self.fs)
             email_sent_metadata.add_new_email_send_result(
@@ -312,7 +287,7 @@ class TestGCSEmails(TestCase):
         # get batch_info again to test
         batch_info = self.email_handler.get_batch_info(
             state_code=StateCode(self.STATE_CODE_STR),
-            report_type=ReportType.POMonthlyReport,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
         self.assertEqual(
             [
@@ -353,7 +328,7 @@ class TestGCSEmails(TestCase):
         batch = Batch(
             state_code=StateCode(self.STATE_CODE_STR),
             batch_id="20210701202022",
-            report_type=ReportType.POMonthlyReport,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
 
         # sending a batch for the second time
@@ -374,7 +349,7 @@ class TestGCSEmails(TestCase):
         # get batch_info again to test
         batch_info = self.email_handler.get_batch_info(
             state_code=StateCode(self.STATE_CODE_STR),
-            report_type=ReportType.POMonthlyReport,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
         self.assertEqual(
             [

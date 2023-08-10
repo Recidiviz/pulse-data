@@ -26,6 +26,7 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
 )
 from recidiviz.outliers.types import OfficerSupervisorReportData
+from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval import (
     retrieve_data_for_outliers_supervision_officer_supervisor,
 )
@@ -36,7 +37,6 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixture
     other_officers_fixture_adverse,
     target_fixture_adverse,
 )
-from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
 from recidiviz.reporting.data_retrieval import start
 
 

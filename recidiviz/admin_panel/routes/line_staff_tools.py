@@ -43,9 +43,8 @@ from recidiviz.common.date import is_date_str
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.reporting import data_retrieval, email_delivery
-from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
+from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.email_reporting_handler import (
-    EmailMetadataReportDateError,
     EmailReportingHandler,
     InvalidReportTypeError,
 )
@@ -99,8 +98,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             report_type = ReportType(data.get("reportType"))
             if report_type not in [
                 ReportType.OutliersSupervisionOfficerSupervisor,
-                ReportType.POMonthlyReport,
-                ReportType.OverdueDischargeAlert,
             ]:
                 raise ValueError(f"{report_type.value} is not a valid ReportType")
 
@@ -233,13 +230,8 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             logging.error(msg)
             return msg, HTTPStatus.BAD_REQUEST
 
-        batch = Batch(state_code=state_code, batch_id=batch_id, report_type=report_type)
-
-        # TODO(#7790): Support more email types.
         try:
             if report_type not in [
-                ReportType.POMonthlyReport,
-                ReportType.OverdueDischargeAlert,
                 ReportType.OutliersSupervisionOfficerSupervisor,
             ]:
                 raise InvalidReportTypeError(
@@ -249,12 +241,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             logging.error(error)
             return str(error), HTTPStatus.NOT_IMPLEMENTED
 
-        try:
-            report_date = get_email_handler().generate_report_date(batch)
-        except EmailMetadataReportDateError as error:
-            logging.error(error)
-            return str(error), HTTPStatus.BAD_REQUEST
-
         batch = Batch(batch_id=batch_id, state_code=state_code, report_type=report_type)
         result = email_delivery.deliver(
             batch=batch,
@@ -262,7 +248,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             cc_addresses=cc_addresses,
             subject_override=subject_override,
             email_allowlist=email_allowlist,
-            report_date=report_date,
         )
 
         redirect_text = (

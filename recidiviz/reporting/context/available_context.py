@@ -16,18 +16,11 @@
 # =============================================================================
 
 """Utilities for selecting from available report contexts."""
+from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context import (
     OutliersSupervisionOfficerSupervisorContext,
 )
-from recidiviz.reporting.context.overdue_discharge_alert.context import (
-    OverdueDischargeAlertContext,
-)
-from recidiviz.reporting.context.po_monthly_report.constants import ReportType
-from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.context.report_context import ReportContext
-from recidiviz.reporting.context.top_opportunities.context import (
-    TopOpportunitiesReportContext,
-)
 from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
 
@@ -40,12 +33,6 @@ def get_report_context(batch: Batch, recipient: Recipient) -> ReportContext:
         batch: Batch object containing information representing this report
         recipient: The retrieved data for this recipient
     """
-    if batch.report_type == ReportType.POMonthlyReport:
-        return PoMonthlyReportContext(batch, recipient)
-    if batch.report_type == ReportType.TopOpportunities:
-        return TopOpportunitiesReportContext(batch, recipient)
-    if batch.report_type == ReportType.OverdueDischargeAlert:
-        return OverdueDischargeAlertContext(batch, recipient)
     if batch.report_type == ReportType.OutliersSupervisionOfficerSupervisor:
         return OutliersSupervisionOfficerSupervisorContext(batch, recipient)
 

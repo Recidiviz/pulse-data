@@ -26,6 +26,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.outliers.constants import INCARCERATION_STARTS_TECHNICAL_VIOLATION
 from recidiviz.outliers.types import OfficerSupervisorReportData, OutliersConfig
+from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
     SUBJECT_LINE_KEY,
@@ -36,7 +37,6 @@ from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.fixtures import (
     metric_fixtures,
 )
-from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.email_generation import generate
 from recidiviz.reporting.email_reporting_utils import Batch

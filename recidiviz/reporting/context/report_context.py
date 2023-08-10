@@ -25,11 +25,7 @@ from typing import Any, Dict, List
 from bs4 import BeautifulSoup
 from jinja2 import Environment, FileSystemLoader, Template
 
-from recidiviz.reporting.context.po_monthly_report.constants import (
-    BRAND_STYLES,
-    Batch,
-    ReportType,
-)
+from recidiviz.reporting.constants import BRAND_STYLES, Batch, ReportType
 from recidiviz.reporting.recipient import Recipient
 
 

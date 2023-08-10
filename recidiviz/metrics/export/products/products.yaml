@@ -42,16 +42,6 @@ products:
         environment: production
       - state_code: US_TN
         environment: production
-  - name: Overdue Discharge Alert
-    description: Email reports sent to parole and probation officers to motivate progress toward discharging clients from supervision
-    exports:
-      - OVERDUE_DISCHARGE
-    states:
-      # TODO(#16465): Turn this back on in production
-      - state_code: US_IX
-        environment: staging
-      - state_code: US_PA
-        environment: production
   - name: Product User Import
     description: Potential users of Polaris tools that we receive via ingest, to be imported into the Polaris Roster Postgres table
     exports:

@@ -28,21 +28,17 @@ and conform to the following:
 import json
 import logging
 import re
-from datetime import date, datetime
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
+from recidiviz.reporting.constants import DEFAULT_EMAIL_SUBJECT, Batch, ReportType
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
     SUBJECT_LINE_KEY,
-)
-from recidiviz.reporting.context.po_monthly_report.constants import (
-    DEFAULT_EMAIL_SUBJECT,
-    Batch,
-    ReportType,
 )
 from recidiviz.reporting.email_sent_metadata import EmailSentMetadata
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
@@ -50,7 +46,6 @@ from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 def deliver(
     batch: Batch,
-    report_date: date,
     redirect_address: Optional[str] = None,
     cc_addresses: Optional[List[str]] = None,
     subject_override: Optional[str] = None,
@@ -65,7 +60,6 @@ def deliver(
 
     Args:
         batch: The batch of emails we're sending for
-        report_date: The date of the report (ex. 2021, 5, 31)
         redirect_address: (optional) An email address to which all emails will be sent
         cc_addresses: (optional) A list of email addressed to include on the cc line
         subject_override: (optional) The subject line to override to.
@@ -122,10 +116,6 @@ def deliver(
     succeeded_email_sends: List[str] = []
     failed_email_sends: List[str] = []
     sendgrid = SendGridClientWrapper()
-    report_date_str = report_date.strftime("%Y-%m")
-    attachment_title = (
-        f"{report_date_str} Recidiviz Monthly Report - Client Details.txt"
-    )
 
     for recipient_email_address in html_files:
         additional_cc_addresses = []
@@ -195,7 +185,6 @@ def deliver(
                 from_email_name=from_email_name,
                 subject=subject,
                 html_content=html_files[recipient_email_address],
-                attachment_title=attachment_title,
                 redirect_address=redirect_address,
                 cc_addresses=all_cc_addresses if all_cc_addresses else None,
                 text_attachment_content=attachment_files.get(recipient_email_address),
@@ -315,9 +304,7 @@ def get_file_metadata(file_path: GcsfsFilePath) -> Optional[Dict[str, str]]:
 
 
 def get_sender_info(report_type: ReportType) -> Tuple[str, str, str, str]:
-    if report_type == ReportType.POMonthlyReport:
-        from_email_name = "Recidiviz Reports"
-    elif report_type == ReportType.OutliersSupervisionOfficerSupervisor:
+    if report_type == ReportType.OutliersSupervisionOfficerSupervisor:
         from_email_name = "Recidiviz Alerts"
     else:
         logging.error("Unsupported report type: %s", report_type.value)

@@ -23,7 +23,7 @@ import re
 from typing import Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
+from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.utils import environment, metadata, secrets
 
 _PO_REPORT_CDN_STATIC_IP_KEY = "po_report_cdn_static_IP"
