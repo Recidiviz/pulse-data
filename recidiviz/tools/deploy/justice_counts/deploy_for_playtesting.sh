@@ -92,7 +92,6 @@ echo "Building Docker image off of ${BACKEND_BRANCH} in pulse-data and ${FRONTEN
 run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
     --backend-branch "${BACKEND_BRANCH}" \
     --frontend-branch-or-sha "${FRONTEND_BRANCH}" \
-    --frontend-app "${FRONTEND_APP}" \
     --subdirectory "${SUBDIRECTORY}"
 
 # Look up the pulse-data commit sha used in the Docker build

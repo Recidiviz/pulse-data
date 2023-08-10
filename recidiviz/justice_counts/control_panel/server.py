@@ -69,10 +69,12 @@ def create_app(config: Optional[Config] = None) -> Flask:
     # This API actually powers two different frontends: Publisher and Agency Dashboards,
     # both of which live in the justice-counts GH repo but are pulled into the same
     # Docker image as the backend during deployment (see Dockerfile.justice-counts).
+    # We choose which one to serve based on the FRONTEND_APP_DIR environment variable.
+    frontend_app_dir = os.getenv("FRONTEND_APP_DIR")
     static_folder = os.path.abspath(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
-            "../../../frontends/justice-counts/build/",
+            f"../../../frontends/justice-counts/{frontend_app_dir}/build/",
         )
     )
 
