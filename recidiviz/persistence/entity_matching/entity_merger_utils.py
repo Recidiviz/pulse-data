@@ -17,9 +17,53 @@
 """Utils to help with entity merging."""
 from typing import Set
 
+from more_itertools import one
+
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attr_field_type_for_field_name,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
+    _raw_text_field_name,
+)
+from recidiviz.persistence.entity.base_entity import EnumEntity, ExternalIdEntity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    EntityFieldType,
+)
 from recidiviz.persistence.persistence_utils import RootEntityT
 
 
 def root_entity_external_id_keys(root_entity: RootEntityT) -> Set[str]:
     """Generates a set of unique string keys for a root entity's external id objects."""
-    return {f"{type(e)}#{e.external_id}|{e.id_type}" for e in root_entity.external_ids}
+    return {external_id_key(e) for e in root_entity.external_ids}
+
+
+def external_id_key(external_id_entity: ExternalIdEntity) -> str:
+    """Generates a unique string key for an ExternalIdEntity. If two root
+    entities each have an ExternaIdEntity with the same key, the root entities
+    should be merged into one.
+    """
+    e = external_id_entity
+    return f"{type(e).__name__}##{e.id_type}|{e.external_id}"
+
+
+def enum_entity_key(enum_entity: EnumEntity, field_index: CoreEntityFieldIndex) -> str:
+    """Generates a unique string key for an EnumEntity. All EnumEntity with the same
+    entity key that are attached to the same parent should be considered duplicates and
+    merged into one.
+    """
+    fields = field_index.get_all_core_entity_fields(
+        enum_entity, EntityFieldType.FLAT_FIELD
+    )
+    enum_field_name = one(
+        f
+        for f in fields
+        if attr_field_type_for_field_name(enum_entity.__class__, f)
+        is BuildableAttrFieldType.ENUM
+    )
+    raw_text_field_name = _raw_text_field_name(enum_field_name)
+
+    enum_value = enum_entity.get_field(enum_field_name)
+    raw_text_value = enum_entity.get_field(raw_text_field_name)
+    return f"{type(enum_entity).__name__}##{enum_value}|{raw_text_value}"

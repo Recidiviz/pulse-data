@@ -18,26 +18,43 @@
 
 import re
 import unittest
+from typing import List
 
 from recidiviz.common.constants.state import external_id_types
-from recidiviz.common.constants.states import STATE_CODE_PATTERN
+
+
+def get_external_id_types() -> List[str]:
+    return [
+        var_name
+        for var_name in dir(external_id_types)
+        # Skip built-in variables
+        if not var_name.startswith("__")
+    ]
 
 
 class ExternalIdTypeTest(unittest.TestCase):
     """Tests reasonableness of all the external ids"""
 
     def test_starts_with_us_xx(self) -> None:
-        for var_name in dir(external_id_types):
-            if var_name.startswith("__"):
-                # Skip built-in variables
-                continue
-
-            if not re.match(STATE_CODE_PATTERN, var_name):
+        for var_name in get_external_id_types():
+            if not re.match(r"^US_[A-Z]{2}", var_name):
                 raise ValueError(
                     f"Found variable in external_id_types.py that does not start"
                     f" with a state code in US_XX format: {var_name}"
                 )
 
+    def test_only_letters_and_underscores_in_names(self) -> None:
+        for var_name in get_external_id_types():
+            var_value = getattr(external_id_types, var_name)
+            if not re.match(r"^[A-Z_]+$", var_value):
+                raise ValueError(
+                    f"Found type [{var_value}] in external_id_types.py that does not "
+                    f"match expected pattern - name should only have capital letters"
+                    f"and underscores."
+                )
+
+    def test_variable_name_matches_value(self) -> None:
+        for var_name in get_external_id_types():
             var_value = getattr(external_id_types, var_name)
 
             # Handle legacy case where variable name and value don't match
