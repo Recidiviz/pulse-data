@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-: "Script to deploy the Justice Counts application to production.
+: "Script to deploy both Justice Counts apps (Publisher and Agency Dashboard) to production.
 Performs the following actions:
-1) Moves the Docker image with the specified version tags in recidiviz-staging to recidiviz-123.
+1) Moves the Docker image with the specified version in recidiviz-staging to recidiviz-123.
 2) Runs migrations on recidiviz-123 to the commit that this Docker image was built on.
-3) Deploys a new Cloud Run revision and allocates 100% traffic.
+3) Deploys new Cloud Run revisions and allocates 100% traffic.
 
 Example usage:
-./recidiviz/tools/deploy/justice_counts/deploy_to_prod.sh -b v1.0.0 -f v1.1.0 -a publisher
+./recidiviz/tools/deploy/justice_counts/deploy_to_prod.sh -v v1.0.0
 "
 
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
@@ -16,70 +16,35 @@ source "${BASH_SOURCE_DIR}/../../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
-PROJECT_ID='recidiviz-123'
-# The GCP project where the Cloud Run app lives might be different
-# from the one where the other infra lives
-CLOUD_RUN_PROJECT_ID=''
-BACKEND_VERSION=''
-FRONTEND_VERSION=''
-FRONTEND_APP=''
-CLOUD_RUN_SERVICE=''
+PROJECT_ID="recidiviz-123"
+PUBLISHER_CLOUD_RUN_PROJECT_ID='recidiviz-123'
+PUBLISHER_CLOUD_RUN_SERVICE="justice-counts-web"
+DASHBOARD_CLOUD_RUN_PROJECT_ID='justice-counts-production'
+DASHBOARD_CLOUD_RUN_SERVICE="agency-dashboard-web"
+VERSION=''
 
 function print_usage {
-    echo_error "usage: $0 -b BACKEND_VERSION -f FRONTEND_VERSION -a FRONTEND_APP"
-    echo_error "  -b: Version of backend to deploy (e.g. v1.0.0)."
-    echo_error "  -f: Version of frontend to deploy (e.g. v.1.1.0)."
-    echo_error "  -a: Frontend app to deploy (either publisher or agency-dashboard)."
+    echo_error "usage: $0 -v VERSION"
+    echo_error "  -v: Version of backend + frontend to deploy (e.g. v1.0.0)."
     run_cmd exit 1
 }
 
-while getopts "b:f:a:" flag; do
+while getopts "v:" flag; do
   case "${flag}" in
-    b) BACKEND_VERSION="$OPTARG" ;;
-    f) FRONTEND_VERSION="$OPTARG" ;;
-    a) FRONTEND_APP="$OPTARG" ;;
+    v) VERSION="$OPTARG" ;;
     *) print_usage
        run_cmd exit 1 ;;
   esac
 done
 
-if [[ -z ${BACKEND_VERSION} ]]; then
-    echo_error "Missing/empty backend version argument"
+if [[ -z ${VERSION} ]]; then
+    echo_error "Missing/empty version argument"
     print_usage
     run_cmd exit 1
 fi
 
-if [[ -z ${FRONTEND_VERSION} ]]; then
-    echo_error "Missing/empty frontend version argument"
-    print_usage
-    run_cmd exit 1
-fi
-
-if [[ -z ${FRONTEND_APP} ]]; then
-    echo_error "Missing/empty frontend app argument"
-    print_usage
-    run_cmd exit 1
-fi
-
-if [[ ! ${BACKEND_VERSION} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo_error "Invalid backend version - must be of the format vX.Y.Z"
-    run_cmd exit 1
-fi
-
-if [[ ! ${FRONTEND_VERSION} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo_error "Invalid frontend version - must be of the format vX.Y.Z"
-    run_cmd exit 1
-fi
-
-
-if [[ ${FRONTEND_APP} == 'publisher' ]]; then
-    CLOUD_RUN_PROJECT_ID='recidiviz-123'
-    CLOUD_RUN_SERVICE="justice-counts-web"
-elif [[ ${FRONTEND_APP} == 'agency-dashboard' ]]; then
-    CLOUD_RUN_PROJECT_ID='justice-counts-production'
-    CLOUD_RUN_SERVICE="agency-dashboard-web"
-else
-    echo_error "Invalid frontend application - must be either publisher or agency-dashboard"
+if [[ ! ${VERSION} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo_error "Invalid version - must be of the format vX.Y.Z"
     run_cmd exit 1
 fi
 
@@ -89,16 +54,15 @@ run_cmd check_running_in_pipenv_shell
 echo "Checking for clean git status..."
 run_cmd verify_clean_git_status
 
-BACKEND_TAG=jc.${FRONTEND_APP}.${BACKEND_VERSION} 
-FRONTEND_TAG=${FRONTEND_APP}.${FRONTEND_VERSION}
-STAGING_IMAGE_BASE="us.gcr.io/recidiviz-staging/justice-counts/${FRONTEND_APP}"
-PROD_IMAGE_BASE="us.gcr.io/${PROJECT_ID}/justice-counts/${FRONTEND_APP}"
+TAG=jc.${VERSION} 
+STAGING_IMAGE_BASE="us.gcr.io/recidiviz-staging/justice-counts"
+PROD_IMAGE_BASE="us.gcr.io/recidiviz-123/justice-counts"
 
 # Find the Docker image on staging with the specified backend and frontend tags.
-STAGING_IMAGE_JSON=$(gcloud container images list-tags --filter="tags:${BACKEND_TAG} AND tags:${FRONTEND_TAG}" "${STAGING_IMAGE_BASE}" --format=json)
+STAGING_IMAGE_JSON=$(gcloud container images list-tags --filter="tags:${TAG}" "${STAGING_IMAGE_BASE}" --format=json)
 
 if [[ ${STAGING_IMAGE_JSON}  == "[]" ]]; then
-    echo_error "No Docker images found in ${STAGING_IMAGE_BASE} with tags ${BACKEND_TAG} and ${FRONTEND_TAG}"
+    echo_error "No Docker images found in ${STAGING_IMAGE_BASE} with tag ${TAG}"
     run_cmd exit 1
 fi
 
@@ -108,11 +72,10 @@ RECIDIVIZ_DATA_COMMIT_HASH=$(jq -r '.[0].tags[0]' <<< "${STAGING_IMAGE_JSON}")
 
 STAGING_IMAGE_URL="${STAGING_IMAGE_BASE}@${STAGING_IMAGE_DIGEST}"
 PROD_IMAGE_URL="${PROD_IMAGE_BASE}:latest"
-PROD_IMAGE_FRONTEND_TAG="${PROD_IMAGE_BASE}:${FRONTEND_TAG}"
-PROD_IMAGE_BACKEND_TAG="${PROD_IMAGE_BASE}:${BACKEND_TAG}"
+PROD_IMAGE_TAG="${PROD_IMAGE_BASE}:${TAG}"
 
-echo "Moving Docker image ${STAGING_IMAGE_URL} to ${PROJECT_ID} and tagging with latest, ${PROD_IMAGE_FRONTEND_TAG}, and ${PROD_IMAGE_BACKEND_TAG}..."
-run_cmd gcloud -q container images add-tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}" "${PROD_IMAGE_FRONTEND_TAG}" "${PROD_IMAGE_BACKEND_TAG}"
+echo "Moving Docker image ${STAGING_IMAGE_URL} to ${PROJECT_ID} and tagging with latest and ${PROD_IMAGE_TAG}..."
+run_cmd gcloud -q container images add-tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}" "${PROD_IMAGE_TAG}"
 
 echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"
@@ -125,15 +88,22 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
     --project-id "${PROJECT_ID}" \
     --skip-db-name-check \
 
+# Deploy both Publisher and Agency Dashboard
 # This will deploy and also allocate traffic to the latest revision. 
 # Unlike in the deploy_to_staging script, we don't have to allocate traffic separately, 
 # because we currently never use the --no-traffic arg when deploying to prod.
-echo "Deploying new Cloud Run revision with image ${PROD_IMAGE_URL}..."
-run_cmd gcloud -q run deploy "${CLOUD_RUN_SERVICE}" \
-    --project "${CLOUD_RUN_PROJECT_ID}" \
+echo "Deploying new Publisher Cloud Run revision with image ${PROD_IMAGE_URL}..."
+run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
+    --project "${PUBLISHER_CLOUD_RUN_PROJECT_ID}" \
+    --image "${PROD_IMAGE_URL}" \
+    --region "us-central1" 
+
+echo "Deploying new Agency Dashboard Cloud Run revision with image ${PROD_IMAGE_URL}..."
+run_cmd gcloud -q run deploy "${DASHBOARD_CLOUD_RUN_SERVICE}" \
+    --project "${DASHBOARD_CLOUD_RUN_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
     --region "us-central1" 
 
 # TODO(#16325): Automatically create a new release in the justice-counts repo.
 
-echo "Deploy of ${FRONTEND_APP} to ${PROJECT_ID} succeeded."
+echo "Production deploy of Publisher and Agency Dashboard succeeded."

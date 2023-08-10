@@ -15,26 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script to run one of two Justice Counts Cloud Build Triggers (either Build-JC-Publisher or Build-JC-Agency-Dashboard).
-Generally meant to be called from the Justice Counts deploy_to_staging script.
+Script to run the Build-JC Cloud Build Trigger, which builds a Docker image
+containing both Publisher and Agency Dashboard. Generally meant to be called 
+from the Justice Counts deploy_to_staging script.
 You need to specify:
-- name of the JC app you're deploying (either Publisher or Agency Dashboard)
 - version of the backend code to use (either the name of a branch or tag)
 - version of the frontend code to use (either the name of a branch or tag)
 - subdirectory in which to place the built Docker image
 
 Example usage (run from `pipenv shell`):
 python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
-    --backend-branch main \
-    --frontend-branch main \
-    --frontend-app agency-dashboard \
-    --subdirectory justice-counts/agency-dashboard
-
-python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
     --backend-tag jc.publisher.v1.0.0 \
     --frontend-tag publisher.v1.0.0 \
-    --frontend-app publisher \
-    --subdirectory justice-counts/publisher
+    --subdirectory justice-counts
+
+python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
+    --backend-branch main \
+    --frontend-branch testing-out \
+    --subdirectory justice-counts/playtesting
 """
 import argparse
 import logging
@@ -47,9 +45,7 @@ import google.cloud.devtools.cloudbuild_v1 as cloudbuild_v1
 from recidiviz.utils.metadata import local_project_id_override
 
 PROJECT_ID = "recidiviz-staging"
-
-PUBLISHER_CLOUD_BUILD_TRIGGER = "Build-JC-Publisher"
-AGENCY_DASHBOARD_CLOUD_BUILD_TRIGGER = "Build-JC-Agency-Dashboard"
+CLOUD_BUILD_TRIGGER = "Build-JC"
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -76,12 +72,6 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--frontend-app",
-        help="Name of the frontend app to deploy. Must be either `publisher` or `agency_dashboard`.",
-        choices=["publisher", "agency-dashboard"],
-        required=True,
-    )
-    parser.add_argument(
         "--subdirectory",
         help="Name of the subdirectory in Container Registry in which to place the built image.",
         required=True,
@@ -94,10 +84,9 @@ def main(
     backend_branch: Optional[str],
     frontend_tag: Optional[str],
     frontend_branch_or_sha: Optional[str],
-    frontend_app: str,
     subdirectory: str,
 ) -> None:
-    """Run the Justice Counts Build-JC-Docker-Image Cloud Build Trigger."""
+    """Run the Justice Counts Build-JC Cloud Build Trigger."""
     if frontend_branch_or_sha:
         frontend_url = f"https://github.com/Recidiviz/justice-counts/archive/{frontend_branch_or_sha}.tar.gz"
     elif frontend_tag:
@@ -125,24 +114,15 @@ def main(
             "Must specify either the `backend_branch` or `backend_tag` argument."
         )
 
-    if frontend_app == "publisher":
-        trigger_id = PUBLISHER_CLOUD_BUILD_TRIGGER
-    elif frontend_app == "agency-dashboard":
-        trigger_id = AGENCY_DASHBOARD_CLOUD_BUILD_TRIGGER
-    else:
-        raise ValueError(
-            "Invalid value for `frontend_app` -- must be either `publisher` or `agency-dashboard`."
-        )
-
     request = cloudbuild_v1.RunBuildTriggerRequest(
         project_id=PROJECT_ID,
-        trigger_id=trigger_id,
+        trigger_id=CLOUD_BUILD_TRIGGER,
         source=repo_source,
     )
 
     logging.info(
         "Submitting request to Cloud Build Trigger %s in %s with the substitutions %s...",
-        trigger_id,
+        CLOUD_BUILD_TRIGGER,
         PROJECT_ID,
         substitutions,
     )
@@ -162,6 +142,5 @@ if __name__ == "__main__":
             backend_branch=args.backend_branch,
             frontend_tag=args.frontend_tag,
             frontend_branch_or_sha=args.frontend_branch_or_sha,
-            frontend_app=args.frontend_app,
             subdirectory=args.subdirectory,
         )
