@@ -1657,12 +1657,17 @@ def get_api_blueprint(
             and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
         )
 
-    @api_blueprint.route("/template/<system>", methods=["GET"])
+    @api_blueprint.route("/template/<agency_id>/<system>", methods=["GET"])
     @auth_decorator
-    def get_bulk_upload_template(system: str) -> response.Response:
+    def get_bulk_upload_template(agency_id: str, system: str) -> response.Response:
         if system is None:
             return make_response(
                 "No system was provided in the request body.",
+                500,
+            )
+        if agency_id is None:
+            return make_response(
+                "No agency ID was provided in the request.",
                 500,
             )
 
@@ -1670,7 +1675,12 @@ def get_api_blueprint(
 
         with tempfile.TemporaryDirectory() as tempbulkdir:
             file_path = os.path.join(tempbulkdir, str(system) + ".xlsx")
-            generate_bulk_upload_template(system_enum, file_path)
+            agency = AgencyInterface.get_agency_by_id(
+                agency_id=int(agency_id), session=current_session
+            )
+            generate_bulk_upload_template(
+                system_enum, file_path, current_session, agency
+            )
             try:
                 return send_file(file_path, as_attachment=True)
             except Exception as e:

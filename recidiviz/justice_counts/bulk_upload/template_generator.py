@@ -24,15 +24,30 @@ import datetime
 from typing import Any, Dict
 
 import pandas as pd
+from sqlalchemy.orm import Session
 
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_METRICFILES,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
-def generate_bulk_upload_template(system: schema.System, file_path: str) -> None:
+def generate_bulk_upload_template(
+    system: schema.System,
+    file_path: str,
+    session: Session,
+    agency: schema.Agency,
+) -> None:
     """Generates a Bulk Upload template for a particular agency."""
+
+    MetricInterface_objs = DatapointInterface.get_metric_settings_by_agency(
+        session,
+        agency,
+    )
+    metric_key_to_enabled_status = {
+        metric.key: metric.is_metric_enabled for metric in MetricInterface_objs
+    }
     metricfiles = SYSTEM_TO_METRICFILES[system]
     filename_to_rows = {}
 
@@ -40,6 +55,9 @@ def generate_bulk_upload_template(system: schema.System, file_path: str) -> None
     last_year = this_year - 1
 
     for metricfile in metricfiles:  # pylint: disable=too-many-nested-blocks
+        enabled_status = metric_key_to_enabled_status.get(metricfile.definition.key)
+        if enabled_status is False:
+            continue
         rows = []
         if (
             metricfile.definition.reporting_frequency
@@ -49,7 +67,6 @@ def generate_bulk_upload_template(system: schema.System, file_path: str) -> None
                 for s in [s.name for s in schema.System.supervision_subsystems()] + [
                     "ALL"
                 ]:
-
                     for year in [last_year, this_year]:
                         row = {"year": str(year), "system": s, "value": ""}
                         rows.append(row)
@@ -62,7 +79,6 @@ def generate_bulk_upload_template(system: schema.System, file_path: str) -> None
                 for s in [s.name for s in schema.System.supervision_subsystems()] + [
                     "ALL"
                 ]:
-
                     for year in [last_year, this_year]:
                         for month in range(1, 13):
                             row = {
@@ -73,7 +89,6 @@ def generate_bulk_upload_template(system: schema.System, file_path: str) -> None
                             }
                             rows.append(row)
             else:
-
                 for year in [last_year, this_year]:
                     for month in range(1, 13):
                         row = {"year": str(year), "month": str(month), "value": ""}

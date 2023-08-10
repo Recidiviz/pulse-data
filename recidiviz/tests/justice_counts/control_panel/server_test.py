@@ -2353,17 +2353,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 False,
             )
 
-    def test_get_bulk_upload_template(self) -> None:
-        system = "LAW_ENFORCEMENT"
-        download_response = self.client.get(
-            f"/api/template/{system}",
-        )
-        # File name will be in the CONTENT-DISPOSITION header of the response
-        self.assertTrue(
-            "LAW_ENFORCEMENT.xlsx" in download_response.headers["Content-Disposition"]
-        )
-        self.assertEqual(download_response.status_code, 200)
-
     def test_get_datapoints_by_agency_id(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         report = self.test_schema_objects.test_report_monthly

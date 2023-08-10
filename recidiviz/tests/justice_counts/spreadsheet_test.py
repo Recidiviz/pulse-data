@@ -16,11 +16,19 @@
 # =============================================================================
 """This class implements tests for the Justice Counts SpreadsheetInterface."""
 import datetime
+import os
+import tempfile
 from pathlib import Path
 
 import pandas as pd
 from freezegun import freeze_time
 
+from recidiviz.justice_counts.bulk_upload.template_generator import (
+    generate_bulk_upload_template,
+)
+from recidiviz.justice_counts.metricfiles.metricfile_registry import (
+    SYSTEM_TO_METRICFILES,
+)
 from recidiviz.justice_counts.metrics import supervision
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
@@ -28,6 +36,7 @@ from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.persistence.database.schema.justice_counts.schema import Agency
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import create_excel_file
 from recidiviz.tests.justice_counts.utils.utils import (
@@ -252,3 +261,37 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     self.assertEqual(
                         metric_key_to_json[definition.key]["enabled"], None
                     )
+
+    def test_template_generator(self) -> None:
+        # Testing that a spreadsheet will not include sheets for metric(s) that have been disabled
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add_all(
+                [
+                    self.test_schema_objects.test_user_A,
+                    self.test_schema_objects.test_agency_G,
+                ]
+            )
+            session.commit()
+            agency = session.query(Agency).one()
+            agency_datapoints = self.test_schema_objects.get_test_agency_datapoints(
+                agency_id=agency.id
+            )
+            session.add_all(agency_datapoints)
+            session.commit()
+            system = "PRISONS"
+            system_enum = schema.System.PRISONS
+            metricfiles = SYSTEM_TO_METRICFILES[system_enum]
+            all_sheet_names_set = [
+                metricfile.canonical_filename for metricfile in metricfiles
+            ]
+
+            with tempfile.TemporaryDirectory() as tempbulkdir:
+                file_path = os.path.join(tempbulkdir, str(system) + ".xlsx")
+                generate_bulk_upload_template(system_enum, file_path, session, agency)
+                xls = pd.ExcelFile(file_path)
+                sheet_names_set = xls.sheet_names
+                for sheet_name in all_sheet_names_set:
+                    if sheet_name in ("funding", "funding_by_type"):
+                        self.assertFalse(sheet_name in sheet_names_set)
+                    else:
+                        self.assertTrue(sheet_name in sheet_names_set)
