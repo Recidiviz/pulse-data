@@ -278,6 +278,15 @@ export const getPermissionsTableColumns = (
       },
     },
     {
+      title: "District",
+      dataIndex: "district",
+      width: 250,
+      key: "district",
+      render: (text: string, record) => {
+        return formatText(text, record);
+      },
+    },
+    {
       title: "Routes",
       dataIndex: "routes",
       key: "routes",
