@@ -905,9 +905,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_twilio_validator: MagicMock,
         mock_firestore: MagicMock,
     ) -> None:
-        account_sid = "XYZ"
         doc = MagicMock()
-        doc.to_dict.return_value = {"message_sid": "ABC", "userHash": "test-123"}
+        doc.to_dict.return_value = {"recipient": "5555555555", "userHash": "test-123"}
         doc.reference.path = (
             "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023"
         )
@@ -918,16 +917,13 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         opt_out_type = "STOP"
         response = self.test_client.post(
-            "/workflows/webhook/twilio_status",
+            "/workflows/webhook/twilio_incoming_message",
             headers={
                 "Origin": "http://localhost:5000",
                 "X-Twilio-Signature": "1234567a",
             },
             data={
-                "MessageSid": "ABC",
-                "MessageStatus": "failed",
-                "AccountSid": account_sid,
-                "ErrorCode": "21610",
+                "From": "+15555555555",
                 "OptOutType": opt_out_type,
             },
         )
@@ -935,13 +931,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_firestore.return_value.set_document.assert_called_once_with(
             "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023",
             {
-                "status": "FAILURE",
-                "errors": [
-                    "The message could not be delivered because the recipient has opted out of receiving messages from this number. Consider congratulating the client in person or through some other way."
-                ],
                 "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
-                "rawStatus": "failed",
-                "errorCode": "21610",
                 "optOutType": opt_out_type,
             },
             merge=True,
@@ -950,6 +940,91 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_segment_client.return_value.track_milestones_message_opt_out.assert_called_with(
             user_hash="test-123", opt_out_type=opt_out_type
         )
+
+    @freeze_time("2023-01-01 01:23:45")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
+    )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
+    def test_twilio_status_segment_update_opt_out_changed(
+        self,
+        mock_segment_client: MagicMock,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        doc = MagicMock()
+        doc.to_dict.return_value = {
+            "recipient": "5555555555",
+            "userHash": "test-123",
+            "optOutType": "START",
+        }
+        doc.reference.path = (
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023"
+        )
+        mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
+        mock_twilio_validator.return_value = True
+
+        opt_out_type = "STOP"
+        response = self.test_client.post(
+            "/workflows/webhook/twilio_incoming_message",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            data={
+                "From": "+15555555555",
+                "OptOutType": opt_out_type,
+            },
+        )
+        self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
+        mock_firestore.return_value.set_document.assert_called_once_with(
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/milestones_01_2023",
+            {
+                "lastUpdated": datetime.datetime.now(datetime.timezone.utc),
+                "optOutType": opt_out_type,
+            },
+            merge=True,
+        )
+
+        mock_segment_client.return_value.track_milestones_message_opt_out.assert_called_with(
+            user_hash="test-123", opt_out_type=opt_out_type
+        )
+
+    @freeze_time("2023-01-01 01:23:45")
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
+    )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
+    def test_twilio_status_segment_update_opt_out_recipient_not_found(
+        self,
+        mock_segment_client: MagicMock,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = (
+            []
+        )
+        mock_twilio_validator.return_value = True
+
+        opt_out_type = "STOP"
+        response = self.test_client.post(
+            "/workflows/webhook/twilio_incoming_message",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            data={
+                "From": "+12222222222",
+                "OptOutType": opt_out_type,
+            },
+        )
+        self.assertEqual(HTTPStatus.NO_CONTENT, response.status_code)
+        mock_firestore.return_value.set_document.assert_not_called()
+        mock_segment_client.return_value.track_milestones_message_opt_out.assert_not_called()
 
     @freeze_time("2023-01-01 01:23:45")
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
@@ -1103,7 +1178,49 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
     )
     @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
-    def test_handle_twilio_status_segment_tracks_new_status(
+    def test_handle_twilio_status_segment_tracks_new_success_status(
+        self,
+        mock_segment_client: MagicMock,
+        mock_twilio_validator: MagicMock,
+        mock_firestore: MagicMock,
+    ) -> None:
+        account_sid = "XYZ"
+        doc = MagicMock()
+        doc.to_dict.return_value = {"message_sid": "ABC", "userHash": "test-123"}
+        doc.reference.path = (
+            "clientUpdatesV2/us_ca_flinstone/milestonesMessages/01_2023"
+        )
+        mock_firestore.return_value.get_collection_group.return_value.where.return_value.get.return_value = [
+            doc
+        ]
+        mock_twilio_validator.return_value = True
+
+        self.test_client.post(
+            "/workflows/webhook/twilio_status",
+            headers={
+                "Origin": "http://localhost:5000",
+                "X-Twilio-Signature": "1234567a",
+            },
+            data={
+                "MessageSid": "ABC",
+                "MessageStatus": "delivered",
+                "AccountSid": account_sid,
+            },
+        )
+        mock_segment_client.return_value.track_milestones_message_status.assert_called_with(
+            user_hash="test-123",
+            twilioRawStatus="delivered",
+            status="SUCCESS",
+            error_code=None,
+            error_message=None,
+        )
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsTwilioValidator.validate"
+    )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.WorkflowsSegmentClient")
+    def test_handle_twilio_status_segment_tracks_new_failed_status(
         self,
         mock_segment_client: MagicMock,
         mock_twilio_validator: MagicMock,
