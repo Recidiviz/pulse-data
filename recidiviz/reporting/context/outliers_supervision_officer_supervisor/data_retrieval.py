@@ -21,7 +21,7 @@ from typing import Dict
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import OfficerSupervisorReportData
-from recidiviz.reporting.context.po_monthly_report.constants import Batch
+from recidiviz.reporting.constants import Batch
 
 
 def retrieve_data_for_outliers_supervision_officer_supervisor(

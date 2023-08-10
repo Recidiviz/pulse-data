@@ -24,7 +24,7 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import (
     Batch,
     gcsfs_path_for_batch_metadata,
@@ -82,7 +82,7 @@ class EmailReportingHandler:
         Args:
             batch: the batch identifier
         Returns:
-            ReportType that is in the ReportType enum class in /po_monthly_report/constants.py
+            ReportType that is in the ReportType enum class in /reporting/constants.py
         """
         email_metadata = self.read_batch_metadata(batch=batch)
         report_type = ReportType(email_metadata.get("report_type"))

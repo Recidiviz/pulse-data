@@ -53,9 +53,6 @@ from recidiviz.calculator.query.state.views.impact.impact_dashboard_views import
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     OUTLIERS_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.overdue_discharge_alert.overdue_discharge_alert_data_views import (
-    OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
@@ -191,10 +188,6 @@ DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI = (
 )
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
 JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-justice-counts-data"
-OVERDUE_DISCHARGE_ALERT_OUTPUT_DIRECTORY_URI = (
-    "gs://{project_id}-report-data/overdue_discharge_alert"
-)
-PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
 PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-product-user-import"
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
@@ -205,15 +198,6 @@ OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-outliers-etl-data"
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
 
 _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
-    # Overdue Discharge Report views
-    ExportViewCollectionConfig(
-        view_builders_to_export=[OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER],
-        output_directory_uri_template=OVERDUE_DISCHARGE_ALERT_OUTPUT_DIRECTORY_URI,
-        export_name="OVERDUE_DISCHARGE",
-        # This view has no entries for US_ID in staging (as of 2022-11-03)
-        allow_empty=True,
-        export_override_state_codes=EXPORT_ATLAS_TO_ID,
-    ),
     # Ingest metadata views for admin panel
     ExportViewCollectionConfig(
         view_builders_to_export=INGEST_METADATA_BUILDERS,

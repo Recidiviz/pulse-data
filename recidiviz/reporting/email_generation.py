@@ -29,11 +29,11 @@ from google.cloud import pubsub_v1
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.reporting.constants import Batch
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.constants import (
     ADDITIONAL_EMAIL_ADDRESSES_KEY,
     SUBJECT_LINE_KEY,
 )
-from recidiviz.reporting.context.po_monthly_report.constants import Batch
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
 

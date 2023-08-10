@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,3 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Include constants for use by email reports."""
+from enum import Enum
+
+import attr
+
+from recidiviz.common.constants.states import StateCode
+
+DEFAULT_EMAIL_SUBJECT = "Your monthly Recidiviz report"
+
+
+class ReportType(Enum):
+    OutliersSupervisionOfficerSupervisor = "outliers_supervision_officer_supervisor"
+
+
+@attr.s(auto_attribs=True)
+class Batch:
+    state_code: StateCode
+    report_type: ReportType
+    batch_id: str
+
+
+BRAND_STYLES = {
+    "fonts": {
+        "serif": "font-family: 'Libre Baskerville', Garamond, serif; line-height: 1.33; letter-spacing: -0.03em;",
+        "sans_serif": "font-family: 'Libre Franklin', sans-serif; line-height: 1.33; letter-spacing: -0.01em;",
+    },
+}

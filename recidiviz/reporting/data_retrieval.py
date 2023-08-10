@@ -31,11 +31,11 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.reporting import email_generation
+from recidiviz.reporting.constants import Batch, ReportType
 from recidiviz.reporting.context.available_context import get_report_context
 from recidiviz.reporting.context.outliers_supervision_officer_supervisor.data_retrieval import (
     retrieve_data_for_outliers_supervision_officer_supervisor,
 )
-from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
 from recidiviz.reporting.email_reporting_utils import gcsfs_path_for_batch_metadata
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
@@ -156,8 +156,6 @@ def start(
             )
         else:
             succeeded_email_addresses.append(recipient.email_address)
-            metadata["review_year"] = recipient.data["review_year"]
-            metadata["review_month"] = recipient.data["review_month"]
 
     _write_batch_metadata(
         batch=batch,
@@ -173,10 +171,6 @@ def retrieve_data(
 ) -> List[Recipient]:
     """Retrieves the data for email generation of the given report type for the given state.
 
-    For POMonthlyReport and OverdueDischargeAlert, get the data from Cloud Storage and return it in a list of
-    dictionaries. Saves the data file into an archive bucket on completion, so that we have the ability to
-    troubleshoot or re-generate a previous batch of emails later on.
-
     For OutliersSupervisionOfficerSupervisor, get the data from the CloudSql instance.
 
     Args:
@@ -189,18 +183,6 @@ def retrieve_data(
         Non-recoverable errors that should stop execution. Attempts to catch and handle errors that are recoverable.
         Provides logging for debug purposes whenever possible.
     """
-    if batch.report_type == ReportType.POMonthlyReport:
-        report_json = _retrieve_report_json(batch)
-        _create_report_json_archive(batch, report_json)
-
-        return _retrieve_data_for_po_monthly_report(report_json)
-
-    if batch.report_type == ReportType.OverdueDischargeAlert:
-        report_json = _retrieve_report_json(batch)
-        _create_report_json_archive(batch, report_json)
-
-        return _retrieve_data_for_overdue_discharge_alert(report_json)
-
     if batch.report_type == ReportType.OutliersSupervisionOfficerSupervisor:
         outliers_config = OUTLIERS_CONFIGS_BY_STATE[batch.state_code]
         # Get data from querier
@@ -216,8 +198,6 @@ def retrieve_data(
         results_by_supervisor_str = json.dumps(results_by_supervisor_json)
         _create_report_json_archive(batch, results_by_supervisor_str)
 
-        date = utils.get_date_from_batch_id(batch)
-
         return [
             Recipient(
                 email_address=supervisor_info.recipient_email_address,
@@ -225,8 +205,6 @@ def retrieve_data(
                 data={
                     "report": supervisor_info,
                     "config": outliers_config,
-                    "review_month": date.month,
-                    "review_year": date.year,
                 },
                 additional_email_addresses=supervisor_info.additional_recipients,
             )
@@ -234,21 +212,6 @@ def retrieve_data(
         ]
 
     raise ValueError("unexpected report type for retrieving data")
-
-
-def _retrieve_report_json(batch: Batch) -> str:
-    data_bucket = utils.get_data_storage_bucket_name()
-    data_filename = ""
-    gcs_file_system = GcsfsFactory.build()
-    try:
-        data_filename = utils.get_data_filename(batch)
-        path = GcsfsFilePath.from_absolute_path(f"gs://{data_bucket}/{data_filename}")
-        file_contents = gcs_file_system.download_as_string(path)
-    except BaseException:
-        logging.info("Unable to load data file %s/%s", data_bucket, data_filename)
-        raise
-
-    return file_contents
 
 
 def _create_report_json_archive(batch: Batch, report_json: str) -> None:
@@ -281,23 +244,6 @@ def _json_lines(json_file: str) -> Generator[Dict[str, Any], None, None]:
                 type(err).__name__,
                 err,
             )
-
-
-def _retrieve_data_for_po_monthly_report(report_json: str) -> List[Recipient]:
-    """Post-processes the monthly report data into `Recipient`s"""
-
-    recipients: List[Recipient] = [
-        Recipient.from_report_json(item) for item in _json_lines(report_json)
-    ]
-
-    logging.info("Retrieved %s recipients", len(recipients))
-
-    return recipients
-
-
-def _retrieve_data_for_overdue_discharge_alert(report_json: str) -> List[Recipient]:
-    """Post-processes the overdue discharge alert into `Recipient`s"""
-    return [Recipient.from_report_json(item) for item in _json_lines(report_json)]
 
 
 def _write_batch_metadata(

@@ -25,7 +25,7 @@ import attr
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import (
     Batch,
     gcsfs_path_for_batch_metadata,
@@ -58,7 +58,7 @@ class TestEmailSentMetadata(TestCase):
         self.batch = Batch(
             batch_id="20210701202021",
             state_code=self.STATE_CODE,
-            report_type=ReportType.POMonthlyReport,
+            report_type=ReportType.OutliersSupervisionOfficerSupervisor,
         )
 
     def tearDown(self) -> None:
