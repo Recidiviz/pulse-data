@@ -356,9 +356,14 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         recipient_external_id = g.api_data["recipient_external_id"]
         recipient_phone_number = g.api_data["recipient_phone_number"]
-        # TODO(#21749): [Workflows][Twilio] Ensure sender id matches auth token
         sender_id = g.api_data["sender_id"]
         message = g.api_data["message"]
+
+        if sender_id != g.authenticated_user_email:
+            return jsonify_response(
+                "sender_id does not match authenticated user",
+                HTTPStatus.UNAUTHORIZED,
+            )
 
         if not in_gcp_production() and not allowed_twilio_dev_recipient(
             recipient_phone_number

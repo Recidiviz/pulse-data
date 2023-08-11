@@ -54,6 +54,9 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
     """
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     user_state_code = app_metadata["state_code"].upper()
+    g.authenticated_user_email = claims.get(
+        f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
+    )
 
     if user_state_code == "RECIDIVIZ":
         return

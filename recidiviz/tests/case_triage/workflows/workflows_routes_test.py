@@ -76,6 +76,7 @@ class WorkflowsBlueprintTestCase(TestCase):
     @staticmethod
     def auth_side_effect(
         state_code: str,
+        email_address: str = "test_user@somestate.gov",
         successful_authorization_handler: Callable = on_successful_authorization,
     ) -> Callable:
         return lambda: successful_authorization_handler(
@@ -83,7 +84,7 @@ class WorkflowsBlueprintTestCase(TestCase):
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata": {
                     "state_code": f"{state_code.lower()}"
                 },
-                f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address": "test_user@recidiviz.org",
+                f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address": email_address,
             }
         )
 
@@ -112,7 +113,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_proxy_defaults(self, mock_get_secret: MagicMock) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "recidiviz", on_successful_authorization_recidiviz_only
+            "recidiviz",
+            "test_user@recidiviz.org",
+            on_successful_authorization_recidiviz_only,
         )
 
         mock_get_secret.return_value = self.fake_url
@@ -141,7 +144,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_proxy(self, mock_get_secret: MagicMock) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "recidiviz", on_successful_authorization_recidiviz_only
+            "recidiviz",
+            "test_user@recidiviz.org",
+            on_successful_authorization_recidiviz_only,
         )
 
         mock_get_secret.return_value = self.fake_url
@@ -174,7 +179,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_proxy_missing_secret(self, mock_get_secret: MagicMock) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "recidiviz", on_successful_authorization_recidiviz_only
+            "recidiviz",
+            "test_user@recidiviz.org",
+            on_successful_authorization_recidiviz_only,
         )
 
         mock_get_secret.return_value = None
@@ -187,7 +194,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
     def test_proxy_not_authorized(self) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_id", on_successful_authorization_recidiviz_only
+            "us_id",
+            "test_user@recidiviz.org",
+            on_successful_authorization_recidiviz_only,
         )
 
         response = self.test_client.post(
@@ -496,7 +505,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_firestore: MagicMock,
         mock_uuid: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ca", STAFF_EMAIL
+        )
         mock_uuid.return_value = "MY UUID"
 
         request_body = {
@@ -572,7 +583,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_task_manager: MagicMock,
         mock_firestore: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ca", STAFF_EMAIL
+        )
         mock_task_manager.return_value.create_task.side_effect = Exception
 
         request_body = {
@@ -611,13 +624,39 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self,
         mock_allowed_recipient: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_ca")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ca", STAFF_EMAIL
+        )
         mock_allowed_recipient.return_value = False
 
         request_body = {
             "recipientExternalId": PERSON_EXTERNAL_ID,
             "senderId": STAFF_EMAIL,
             "message": "You're all I've ever wanted and my arms are open wide",
+            "recipientPhoneNumber": "5153338822",
+            "userHash": USER_HASH,
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_CA/enqueue_sms_request",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
+
+    def test_enqueue_sms_request_verifies_sender_id(
+        self,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_ca", "NOT STAFF"
+        )
+
+        request_body = {
+            "recipientExternalId": PERSON_EXTERNAL_ID,
+            "senderId": STAFF_EMAIL,
+            "message": "It's me, a very real staff member",
             "recipientPhoneNumber": "5153338822",
             "userHash": USER_HASH,
         }
