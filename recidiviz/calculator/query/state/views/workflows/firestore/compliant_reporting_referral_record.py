@@ -156,8 +156,11 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         special_conditions_programming_victim_impact_completion_date,
         IFNULL(special_conditions_programming_fsw, 0)=1 AS special_conditions_programming_fsw,
         IFNULL(special_conditions_programming_fsw_current, 0)=1 AS special_conditions_programming_fsw_current,
-        special_conditions_programming_fsw_completion_date
-    FROM `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_referral_materialized`
+        special_conditions_programming_fsw_completion_date,
+        n.* EXCEPT (state_code, external_id)
+    FROM `{project_id}.{analyst_dataset}.us_tn_compliant_reporting_referral_materialized` o
+    LEFT JOIN `{project_id}.{workflows_dataset}.us_tn_transfer_to_compliant_reporting_record_materialized` n
+        ON o.tdoc_id = n.external_id
     WHERE compliant_reporting_eligible IS NOT NULL
     AND remaining_criteria_needed <= 1
 """
@@ -168,6 +171,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE,
     description=COMPLIANT_REPORTING_REFERRAL_RECORD_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     should_materialize=True,
 )
 
