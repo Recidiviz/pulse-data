@@ -23,51 +23,99 @@ import {
 } from "../constants";
 import FeatureVariantFormItem from "./FeatureVariantFormItem";
 import PermissionSelect from "./PermissionSelect";
+import { Route, StateUserPermissionsResponse } from "../../types";
 
 const Note = styled.div`
   color: grey;
   padding-bottom: 5px;
 `;
 
+/**
+ * Returns a value to use as the placeholder for the route dropdown, or undefined to show no
+ * placeholder.
+ *
+ * If all selected users have the same value for the permission for the route (where "false" and
+ * "undefined" are equivalent), use that value. Hide the placeholder if there are no selected users
+ * or if the selected users have more than one distinct value for the permission for the route.
+ */
+const routePlaceholder = (
+  routeName: Route,
+  selectedUsers?: StateUserPermissionsResponse[]
+) => {
+  if (!selectedUsers) return undefined;
+
+  const values = selectedUsers
+    .map((u) => !!u.routes[routeName])
+    .filter((v, i, a) => a.indexOf(v) === i);
+  if (values.length > 1) return undefined;
+  return values[0].toString();
+};
+
 export const CustomPermissionsPanel = ({
   hidePermissions,
   form,
+  selectedUsers,
 }: {
   hidePermissions: boolean;
   form: FormInstance;
+  selectedUsers?: StateUserPermissionsResponse[];
 }): JSX.Element => (
   <>
     <h3>Custom Permissions</h3>
 
     <h4>Workflows:</h4>
-    {Object.entries(WORKFLOWS_PERMISSIONS_LABELS).map(([name, label]) => {
+    {(
+      Object.entries(WORKFLOWS_PERMISSIONS_LABELS) as [
+        keyof typeof WORKFLOWS_PERMISSIONS_LABELS,
+        string
+      ][]
+    ).map(([name, label]) => {
       return (
         <PermissionSelect
           permission={{ name, label }}
           key={name}
           disabled={hidePermissions}
+          placeholder={
+            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
+          }
         />
       );
     })}
 
     <h4>Vitals (Operations):</h4>
-    {Object.entries(VITALS_PERMISSIONS_LABELS).map(([name, label]) => {
+    {(
+      Object.entries(VITALS_PERMISSIONS_LABELS) as [
+        keyof typeof VITALS_PERMISSIONS_LABELS,
+        string
+      ][]
+    ).map(([name, label]) => {
       return (
         <PermissionSelect
           permission={{ name, label }}
           key={name}
           disabled={hidePermissions}
+          placeholder={
+            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
+          }
         />
       );
     })}
 
     <h4>Pathways Pages:</h4>
-    {Object.entries(PATHWAYS_PERMISSIONS_LABELS).map(([name, label]) => {
+    {(
+      Object.entries(PATHWAYS_PERMISSIONS_LABELS) as [
+        keyof typeof PATHWAYS_PERMISSIONS_LABELS,
+        string
+      ][]
+    ).map(([name, label]) => {
       return (
         <PermissionSelect
           permission={{ name, label }}
           key={name}
           disabled={hidePermissions}
+          placeholder={
+            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
+          }
         />
       );
     })}

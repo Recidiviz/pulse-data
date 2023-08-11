@@ -178,6 +178,7 @@ export const filterData =
     colData
       .map((item) => formatter(item))
       .filter((v, i, a) => a.indexOf(v) === i)
+      .sort()
       .map((item) => ({
         text: item,
         value: item,
@@ -232,6 +233,7 @@ export const getPermissionsTableColumns = (
       dataIndex: "firstName",
       key: "firstName",
       width: 200,
+      ...getColumnSearchProps("firstName"),
       render: (text, record) => {
         return formatText(text, record);
       },
@@ -240,6 +242,7 @@ export const getPermissionsTableColumns = (
       title: "Last Name",
       dataIndex: "lastName",
       key: "lastName",
+      ...getColumnSearchProps("lastName"),
       width: 200,
       render: (text, record) => {
         return formatText(text, record);

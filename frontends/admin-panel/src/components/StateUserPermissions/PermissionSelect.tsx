@@ -24,9 +24,11 @@ type Permission = {
 export const PermissionSelect = ({
   permission,
   disabled,
+  placeholder,
 }: {
   permission: Permission;
   disabled: boolean;
+  placeholder?: string;
 }): JSX.Element => {
   const permissionOptions = [
     {
@@ -52,6 +54,7 @@ export const PermissionSelect = ({
         }}
         options={permissionOptions}
         disabled={disabled}
+        placeholder={placeholder}
       />
     </Form.Item>
   );
