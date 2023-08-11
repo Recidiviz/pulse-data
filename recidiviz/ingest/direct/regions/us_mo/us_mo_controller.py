@@ -55,4 +55,5 @@ class UsMoController(BaseDirectIngestController):
             "supervision_staff",
             "supervision_staff_role_periods",
             "incarceration_incident",
+            "program_assignment",
         ]
