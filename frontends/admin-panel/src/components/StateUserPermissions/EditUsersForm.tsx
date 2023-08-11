@@ -89,6 +89,8 @@ export const EditUserForm = ({
 
   const selectedEmails = selectedUsers.map((u) => u.emailAddress);
 
+  const singleUserEdit = selectedEmails.length === 1;
+
   return (
     <DraggableModal
       visible={editVisible}
@@ -131,19 +133,30 @@ export const EditUserForm = ({
               return { value: r, label: r };
             })}
             disabled={rolesForState.length === 0 || stateCodes.length > 1}
+            placeholder={singleUserEdit ? selectedUsers[0].role : undefined}
           />
         </Form.Item>
         <Form.Item name="externalId" label="External ID" labelCol={{ span: 5 }}>
-          <Input disabled={selectedEmails.length > 1} />
+          <Input disabled={!singleUserEdit} />
         </Form.Item>
         <Form.Item name="district" label="District" labelCol={{ span: 5 }}>
-          <Input />
+          <Input
+            placeholder={selectedUsers.map((u) => u.district).join(", ")}
+          />
         </Form.Item>
         <Form.Item name="firstName" label="First Name" labelCol={{ span: 5 }}>
-          <Input disabled={selectedEmails.length > 1} />
+          <Input
+            disabled={!singleUserEdit}
+            placeholder={
+              singleUserEdit ? selectedUsers[0].firstName : undefined
+            }
+          />
         </Form.Item>
         <Form.Item name="lastName" label="Last Name" labelCol={{ span: 5 }}>
-          <Input disabled={selectedEmails.length > 1} />
+          <Input
+            disabled={!singleUserEdit}
+            placeholder={singleUserEdit ? selectedUsers[0].lastName : undefined}
+          />
         </Form.Item>
         <hr />
         <Form.Item
@@ -156,7 +169,11 @@ export const EditUserForm = ({
             <Option value={false}>Delete custom permissions</Option>
           </Select>
         </Form.Item>
-        <CustomPermissionsPanel hidePermissions={hidePermissions} form={form} />
+        <CustomPermissionsPanel
+          hidePermissions={hidePermissions}
+          form={form}
+          selectedUsers={selectedUsers}
+        />
       </Form>
     </DraggableModal>
   );
