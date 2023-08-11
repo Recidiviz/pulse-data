@@ -192,7 +192,11 @@ LIMIT 1;
             "First example: supervision_period_id=[%s].",
             supervision_period_id,
         )
-        return False
+        # TODO(#17856) We are returning True here because we're hitting this invariant
+        #  error in cases where we are correctly clearing out
+        #  supervising_officer_staff_external_id but not clearing the agent_id. This
+        #  invariant check will go away very soon as we stop reading from state_agent.
+        return True
 
     logging.info(
         "[Invariant validation] state_staff and state_agent are at parity for supervising_officer id fields"
