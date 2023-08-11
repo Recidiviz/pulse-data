@@ -52,53 +52,54 @@ WITH term_wdur_cte AS (
 -- Calculate duration of term
     SELECT
         *,
-        DATE_DIFF(end_date, start_date, DAY) AS term_duration_days,
+        -- Difference between the very first intake date (from county jail) and
+        --  the maximum expected release date.
+        DATE_DIFF(end_date_max,
+                  start_date_from_county_jail, 
+                  DAY) AS term_duration_days_original_sentence,
+        DATE_DIFF(end_date,
+                  start_date, 
+                  DAY) AS term_duration_days,
     FROM (
             SELECT
-            * EXCEPT (start_date),
+            * EXCEPT (start_date_from_county_jail),
             -- if we don't have intake_date, we assume the end_date of previous term
             COALESCE(
-                start_date,
+                start_date_from_county_jail,
                 LAG(end_date) OVER (PARTITION BY person_id ORDER BY end_date)
-                ) AS start_date,
+                ) AS start_date_from_county_jail,
             FROM `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized`)
     ),
 term_crit_date AS (
 -- Calculate critical date
-    SELECT
-        * EXCEPT(term_duration_days),
-        CASE
-            WHEN term_duration_days/365 > 5
-                THEN DATE_ADD(
-                    start_date,
-                    INTERVAL SAFE_CAST(ROUND(term_duration_days*2/3) AS INT64) DAY)
-            ELSE DATE_ADD(
-                start_date,
-                INTERVAL SAFE_CAST(ROUND(term_duration_days*1/2) AS INT64) DAY)
-        END critical_date,
-        IF(term_duration_days/365 > 5, '2/3', '1/2') AS x_portion_served,
-    FROM term_wdur_cte
-),
-
-term_crit_date_plus_real AS(
-    SELECT
+    SELECT 
         * EXCEPT (critical_date),
         critical_date AS real_eligible_date,
         -- folks can start their paperwork 3 months before their eligibility date
         DATE_SUB(critical_date, INTERVAL 3 MONTH) AS critical_date,
-    FROM term_crit_date
+    FROM (
+        SELECT
+            * EXCEPT(term_duration_days, term_duration_days_original_sentence),
+            CASE
+                WHEN term_duration_days_original_sentence/365 > 5
+                    THEN DATE_ADD(
+                        start_date,
+                        INTERVAL SAFE_CAST(ROUND(term_duration_days*2/3) AS INT64) DAY)
+                ELSE DATE_ADD(
+                    start_date,
+                    INTERVAL SAFE_CAST(ROUND(term_duration_days*1/2) AS INT64) DAY)
+            END critical_date,
+            IF(term_duration_days_original_sentence/365 > 5, '2/3', '1/2') AS x_portion_served,
+        FROM term_wdur_cte
+    )
 ),
 
-{create_sub_sessions_with_attributes('term_crit_date_plus_real')},
+{create_sub_sessions_with_attributes('term_crit_date AS')},
 critical_date_spans AS (
     {cis_319_after_csswa()}
 ),
-save_x_portion_served AS (
-    SELECT
-        DISTINCT person_id, state_code, critical_date, real_eligible_date, x_portion_served
-    FROM critical_date_spans
-),
-{critical_date_has_passed_spans_cte()}
+
+{critical_date_has_passed_spans_cte(attributes = ['x_portion_served', 'real_eligible_date'])}
 
 SELECT
     cd.state_code,
@@ -112,13 +113,9 @@ SELECT
         NULL,
         cd.end_date) AS end_date,                       
     cd.critical_date_has_passed AS meets_criteria,
-    TO_JSON(STRUCT(xps.real_eligible_date AS eligible_date,
-                   xps.x_portion_served AS x_portion_served)) AS reason,
+    TO_JSON(STRUCT(cd.real_eligible_date AS eligible_date,
+                   cd.x_portion_served AS x_portion_served)) AS reason,
 FROM critical_date_has_passed_spans cd
-LEFT JOIN save_x_portion_served xps
-    ON  xps.person_id = cd.person_id
-        AND xps.state_code = cd.state_code
-        ANd xps.critical_date = cd.critical_date
 WHERE {nonnull_start_date_clause('cd.start_date')} != {nonnull_end_date_clause('cd.end_date')}
 """
 

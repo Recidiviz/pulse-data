@@ -53,7 +53,7 @@ PROGRAM_ENROLLMENT_NOTE_TX_REGEX = "|".join(
 
 def cis_319_after_csswa(table: str = "sub_sessions_with_attributes") -> str:
     """
-    CIS_319 table after create_sub_sessions_with_attributes.
+    Clean CIS_319 table after create_sub_sessions_with_attributes.
 
     Helper method to drop repeated subsessions:
      - Prioritize dropping status = 'Completed'

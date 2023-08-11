@@ -76,6 +76,7 @@ WITH revocations AS (
         Cis_100_Client_Id,
         COALESCE(admission_date, {revert_nonnull_start_date_clause('start_date')}) AS start_date,
         {revert_nonnull_end_date_clause('end_date')} AS end_date,
+        {revert_nonnull_end_date_clause('end_date_max')} AS end_date_max,
         t.Cis_1200_Term_Status_Cd AS status,
         term_id,
     FROM (
@@ -84,7 +85,8 @@ WITH revocations AS (
             SELECT
                 *,
                 {nonnull_start_date_clause('DATE(SAFE_CAST(intake_date AS DATETIME))')} AS start_date,
-                {nonnull_end_date_clause('DATE(SAFE_CAST(Curr_Cust_Rel_Date AS DATETIME))')} AS end_date,  
+                {nonnull_end_date_clause('DATE(SAFE_CAST(Curr_Cust_Rel_Date AS DATETIME))')} AS end_date, 
+                {nonnull_end_date_clause('DATE(SAFE_CAST(Max_Cust_Rel_Date AS DATETIME))')} AS end_date_max,
                 -- TODO(#16175) should ingest the expected release date sometime soon
             FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_319_TERM_latest`
             -- TODO(#17653) INNER JOIN drops a handful of people who don't have `person_id` values
@@ -106,8 +108,10 @@ WITH revocations AS (
 SELECT 
   t.state_code,
   t.person_id,
-  DATE_SUB(t.start_date, INTERVAL IFNULL(county.days_spent_in_county, 0) DAY) AS start_date,
-  t.end_date, 
+  DATE_SUB(t.start_date, INTERVAL IFNULL(county.days_spent_in_county, 0) DAY) AS start_date_from_county_jail,
+  t.start_date,
+  t.end_date,
+  t.end_date_max, 
   t.status,
   t.term_id,
 FROM term_cte t
