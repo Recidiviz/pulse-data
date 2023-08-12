@@ -22,11 +22,12 @@ locally to create sandbox Dataflow datasets.
 """
 import datetime
 from concurrent import futures
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import attr
 from google.cloud import bigquery
 
+from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClientImpl,
@@ -84,12 +85,19 @@ from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_cl
 
 def update_dataflow_metric_tables_schemas(
     dataflow_metrics_dataset_id: str = DATAFLOW_METRICS_DATASET,
+    sandbox_dataset_prefix: Optional[str] = None,
 ) -> None:
     """For each table that stores Dataflow metric output in the
     |dataflow_metrics_dataset_id|, ensures that all attributes on the corresponding
     metric are present in the table in BigQuery. If no |dataflow_metrics_dataset_id| is
     provided, defaults to the DATAFLOW_METRICS_DATASET."""
     bq_client = BigQueryClientImpl()
+
+    if sandbox_dataset_prefix:
+        dataflow_metrics_dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
+            sandbox_dataset_prefix, dataflow_metrics_dataset_id
+        )
+
     dataflow_metrics_dataset_ref = bq_client.dataset_ref_for_id(
         dataflow_metrics_dataset_id
     )
@@ -199,7 +207,9 @@ def update_normalized_table_schemas_in_dataset(
     return normalized_table_ids
 
 
-def update_state_specific_normalized_state_schemas() -> None:
+def update_state_specific_normalized_state_schemas(
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> None:
     """Updates the tables for each state-specific dataset that stores Dataflow
     normalized state entity output to match expected schemas."""
     for state_code in get_normalization_pipeline_enabled_states():
@@ -207,14 +217,29 @@ def update_state_specific_normalized_state_schemas() -> None:
             state_code
         )
 
+        if sandbox_dataset_prefix:
+            normalized_state_dataset_id = (
+                BigQueryAddressOverrides.format_sandbox_dataset(
+                    sandbox_dataset_prefix, normalized_state_dataset_id
+                )
+            )
+
         update_normalized_table_schemas_in_dataset(normalized_state_dataset_id)
 
 
-def update_normalized_state_schema() -> None:
+def update_normalized_state_schema(
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> None:
     """Updates each table in the normalized_state dataset to match expected schemas."""
     bq_client = BigQueryClientImpl()
 
     normalized_state_dataset_id = dataset_config.NORMALIZED_STATE_DATASET
+
+    if sandbox_dataset_prefix:
+        normalized_state_dataset_id = BigQueryAddressOverrides.format_sandbox_dataset(
+            sandbox_dataset_prefix, normalized_state_dataset_id
+        )
+
     normalized_state_dataset_ref = bq_client.dataset_ref_for_id(
         normalized_state_dataset_id
     )
@@ -245,10 +270,18 @@ def update_normalized_state_schema() -> None:
 
 def update_supplemental_dataset_schemas(
     supplemental_metrics_dataset_id: str = SUPPLEMENTAL_DATA_DATASET,
+    sandbox_dataset_prefix: Optional[str] = None,
 ) -> None:
     """For each table in the supplemental data dataset, ensures that all attributes on
     the corresponding supplemental dataset are present in the table in BigQuery."""
     bq_client = BigQueryClientImpl()
+
+    if sandbox_dataset_prefix:
+        supplemental_metrics_dataset_id = (
+            BigQueryAddressOverrides.format_sandbox_dataset(
+                sandbox_dataset_prefix, supplemental_metrics_dataset_id
+            )
+        )
 
     supplemental_metrics_dataset_ref = bq_client.dataset_ref_for_id(
         supplemental_metrics_dataset_id
@@ -278,14 +311,18 @@ def update_supplemental_dataset_schemas(
             )
 
 
-def update_state_specific_ingest_state_schemas() -> None:
+def update_state_specific_ingest_state_schemas(
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> None:
     """Updates the tables for each state-specific dataset that stores Dataflow
     state entity output to match expected schemas."""
     for state_code in get_ingest_pipeline_enabled_states():
         for ingest_instance in DirectIngestInstance:
             update_bq_dataset_to_match_sqlalchemy_schema(
                 schema_type=SchemaType.STATE,
-                dataset_id=state_dataset_for_state_code(state_code, ingest_instance),
+                dataset_id=state_dataset_for_state_code(
+                    state_code, ingest_instance, sandbox_dataset_prefix
+                ),
             )
 
 
@@ -347,13 +384,15 @@ def update_state_specific_ingest_view_result_schema(
                 )
 
 
-def update_state_specific_ingest_view_results_schemas() -> None:
+def update_state_specific_ingest_view_results_schemas(
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> None:
     """Updates the datasets for ingest view results to match expected schemas."""
     for state_code in get_ingest_pipeline_enabled_states():
         for ingest_instance in DirectIngestInstance:
             update_state_specific_ingest_view_result_schema(
                 ingest_view_materialization_results_dataflow_dataset(
-                    state_code, ingest_instance
+                    state_code, ingest_instance, sandbox_dataset_prefix
                 ),
                 state_code,
                 ingest_instance,

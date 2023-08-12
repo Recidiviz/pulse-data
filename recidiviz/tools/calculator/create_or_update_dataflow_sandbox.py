@@ -232,7 +232,8 @@ def create_or_update_normalized_state_sandbox(
     )
 
 
-def create_or_update_dataflow_sandbox(
+# TODO(#23142): Merge underlying dataset creation logic with functions in update_big_query_table_schemas.py
+def _create_or_update_dataflow_sandbox(
     sandbox_dataset_prefix: str,
     datasets_to_create: List[str],
     allow_overwrite: bool,
@@ -352,7 +353,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     with local_project_id_override(args.project_id):
-        create_or_update_dataflow_sandbox(
+        _create_or_update_dataflow_sandbox(
             args.sandbox_dataset_prefix,
             args.datasets_to_create,
             args.allow_overwrite,

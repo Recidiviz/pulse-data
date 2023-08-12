@@ -17,6 +17,7 @@
 """Utilizes library functions from recidiviz.pipelines.dataflow_output_table_manager.py
 to update dataflow, supplemental, and state-specific schemas if necessary"""
 import functools
+from typing import Optional
 
 from recidiviz.pipelines.dataflow_output_table_manager import (
     update_dataflow_metric_tables_schemas,
@@ -29,33 +30,48 @@ from recidiviz.pipelines.dataflow_output_table_manager import (
 from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
 
 
-def update_dataflow_output_schemas() -> None:
+def update_dataflow_output_schemas(
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> None:
+    """Updates dataflow output schemas if necessary"""
     prompt_retry_on_ex = functools.partial(
         interactive_prompt_retry_on_exception,
         accepted_response_override="yes",
         exit_on_cancel=False,
     )
     prompt_retry_on_ex(
-        fn=update_dataflow_metric_tables_schemas,
+        fn=lambda: update_dataflow_metric_tables_schemas(
+            sandbox_dataset_prefix=sandbox_dataset_prefix
+        ),
         input_text="update dataflow metric tables schemas raised an exception - retry?",
     )
     prompt_retry_on_ex(
-        fn=update_supplemental_dataset_schemas,
+        fn=lambda: update_supplemental_dataset_schemas(
+            sandbox_dataset_prefix=sandbox_dataset_prefix
+        ),
         input_text="update supplemental dataset schemas raised an exception - retry?",
     )
     prompt_retry_on_ex(
-        fn=update_state_specific_normalized_state_schemas,
+        fn=lambda: update_state_specific_normalized_state_schemas(
+            sandbox_dataset_prefix=sandbox_dataset_prefix
+        ),
         input_text="update state specific normalized state schemas raised an exception - retry?",
     )
     prompt_retry_on_ex(
-        fn=update_normalized_state_schema,
+        fn=lambda: update_normalized_state_schema(
+            sandbox_dataset_prefix=sandbox_dataset_prefix
+        ),
         input_text="update normalized state schema raised an exception - retry?",
     )
     prompt_retry_on_ex(
-        fn=update_state_specific_ingest_state_schemas,
+        fn=lambda: update_state_specific_ingest_state_schemas(
+            sandbox_dataset_prefix=sandbox_dataset_prefix
+        ),
         input_text="update state specific ingest state schemas raised an exception - retry?",
     )
     prompt_retry_on_ex(
-        fn=update_state_specific_ingest_view_results_schemas,
+        fn=lambda: update_state_specific_ingest_view_results_schemas(
+            sandbox_dataset_prefix=sandbox_dataset_prefix
+        ),
         input_text="update state specific ingest view results schemas raised an exception - retry?",
     )
