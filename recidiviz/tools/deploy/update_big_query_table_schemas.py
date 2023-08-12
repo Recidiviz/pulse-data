@@ -19,6 +19,7 @@ Update BigQuery table schemas during deployment
 """
 import argparse
 import logging
+from typing import Optional
 
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
     update_bq_dataset_to_match_sqlalchemy_schema,
@@ -39,13 +40,15 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 def _update_cloud_sql_bq_refresh_output_schema(
-    schema_type: SchemaType, export_config: CloudSqlToBQConfig
+    schema_type: SchemaType,
+    export_config: CloudSqlToBQConfig,
+    dataset_override_prefix: Optional[str] = None,
 ) -> None:
     interactive_prompt_retry_on_exception(
         fn=lambda: update_bq_dataset_to_match_sqlalchemy_schema(
             schema_type=schema_type,
             dataset_id=export_config.unioned_multi_region_dataset(
-                dataset_override_prefix=None
+                dataset_override_prefix=dataset_override_prefix
             ),
         ),
         input_text="failed while updating big query table schemas - retry?",
@@ -54,11 +57,15 @@ def _update_cloud_sql_bq_refresh_output_schema(
     )
 
 
-def update_cloud_sql_bq_refresh_output_schemas() -> None:
+def update_cloud_sql_bq_refresh_output_schemas(
+    dataset_override_prefix: Optional[str] = None,
+) -> None:
     for s in SchemaType:
         if CloudSqlToBQConfig.is_valid_schema_type(s):
             _update_cloud_sql_bq_refresh_output_schema(
-                s, CloudSqlToBQConfig.for_schema_type(s)
+                schema_type=s,
+                export_config=CloudSqlToBQConfig.for_schema_type(s),
+                dataset_override_prefix=dataset_override_prefix,
             )
 
 

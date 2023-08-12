@@ -24,6 +24,7 @@ from google.cloud import bigquery
 from mock import patch
 from mock.mock import Mock
 
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
@@ -130,6 +131,22 @@ class DataflowMetricTableManagerTest(unittest.TestCase):
         dataflow_output_table_manager.update_dataflow_metric_tables_schemas()
 
         self.mock_client.create_table_with_schema.assert_called()
+
+    def test_update_dataflow_metric_tables_schemas_create_table_with_prefix(
+        self,
+    ) -> None:
+        """Test that update_dataflow_metric_tables_schemas calls the client to create a new table with a dataset prefix."""
+        self.mock_client.table_exists.return_value = False
+
+        dataflow_output_table_manager.update_dataflow_metric_tables_schemas(
+            dataflow_metrics_dataset_id=self.fake_dataflow_metrics_dataset,
+            sandbox_dataset_prefix="my_prefix",
+        )
+
+        self.mock_client.create_table_with_schema.assert_called()
+        self.mock_client.dataset_ref_for_id.assert_called_with(
+            f"my_prefix_{self.fake_dataflow_metrics_dataset}"
+        )
 
     def test_dataflow_metric_table_config_consistency(self) -> None:
         """Asserts that the mapping from RecidivizMetric to table in BigQuery matches
@@ -244,6 +261,40 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
             any_order=True,
         )
 
+    @mock.patch(
+        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
+        FAKE_PIPELINE_CONFIG_YAML_PATH,
+    )
+    def test_update_state_specific_normalized_state_schemas_adds_dataset_prefix(
+        self,
+    ) -> None:
+        def mock_dataset_ref_for_id(
+            dataset_id: str,
+        ) -> bigquery.dataset.DatasetReference:
+            return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
+
+        self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
+
+        dataflow_output_table_manager.update_state_specific_normalized_state_schemas(
+            sandbox_dataset_prefix="my_prefix"
+        )
+
+        self.mock_client.create_dataset_if_necessary.assert_has_calls(
+            [
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "my_prefix_us_xx_normalized_state"
+                    )
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "my_prefix_us_yy_normalized_state"
+                    )
+                ),
+            ],
+            any_order=True,
+        )
+
     def test_update_normalized_table_schemas_in_dataset_create_table(self) -> None:
         """Test that update_normalized_table_schemas_in_dataset calls the client to
         create a new table when the table does not yet exist."""
@@ -304,6 +355,31 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
 
         dataflow_output_table_manager.update_normalized_state_schema()
 
+    @mock.patch(
+        "recidiviz.pipelines.dataflow_output_table_manager"
+        ".update_normalized_table_schemas_in_dataset"
+    )
+    def test_update_normalized_state_schema_adds_dataset_prefix(
+        self, mock_update_norm_schemas: mock.MagicMock
+    ) -> None:
+        self.fake_fs.upload_from_string(
+            path=self.fake_config_path,
+            contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
+            content_type="text/yaml",
+        )
+
+        mock_update_norm_schemas.return_value = [
+            "state_incarceration_period",
+            "state_supervision_period",
+        ]
+
+        dataflow_output_table_manager.update_normalized_state_schema(
+            sandbox_dataset_prefix="my_prefix"
+        )
+        self.mock_client.dataset_ref_for_id.assert_called_with(
+            f"my_prefix_{dataset_config.NORMALIZED_STATE_DATASET}"
+        )
+
 
 class SupplementalDatasetTableManagerTest(unittest.TestCase):
     """Tests for dataflow_output_table_manager.py."""
@@ -363,6 +439,22 @@ class SupplementalDatasetTableManagerTest(unittest.TestCase):
 
         self.mock_client.update_schema.assert_called()
         self.mock_client.create_table_with_schema.assert_not_called()
+
+    def test_update_supplemental_data_schemas_create_table_with_prefix(self) -> None:
+        """Test that update_supplemental_dataset_schemas calls the client to create a
+        new table with a dataset prefix."""
+        self.mock_client.table_exists.return_value = False
+
+        dataflow_output_table_manager.update_supplemental_dataset_schemas(
+            supplemental_metrics_dataset_id="supplemental_metrics_dataset",
+            sandbox_dataset_prefix="my_prefix",
+        )
+
+        self.mock_client.dataset_ref_for_id.assert_called_with(
+            "my_prefix_supplemental_metrics_dataset"
+        )
+        self.mock_client.create_table_with_schema.assert_called()
+        self.mock_client.update_schema.assert_not_called()
 
 
 class IngestDatasetTableManagerTest(unittest.TestCase):
@@ -459,6 +551,56 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "us_yy_dataflow_ingest_view_results_secondary"
+                    )
+                ),
+            ],
+            any_order=True,
+        )
+
+    @mock.patch(
+        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
+        FAKE_PIPELINE_CONFIG_YAML_PATH,
+    )
+    def test_update_state_specific_ingest_view_results_datasets_with_dataset_prefix(
+        self,
+    ) -> None:
+        def mock_dataset_ref_for_id(
+            dataset_id: str,
+        ) -> bigquery.dataset.DatasetReference:
+            return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
+
+        self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
+
+        self.mock_direct_ingest_controller.view_collector.return_value = mock.ANY
+
+        dataflow_output_table_manager.update_state_specific_ingest_view_results_schemas(
+            sandbox_dataset_prefix="my_prefix"
+        )
+
+        self.mock_client.create_dataset_if_necessary.assert_has_calls(
+            [
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id,
+                        "my_prefix_us_xx_dataflow_ingest_view_results_primary",
+                    )
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id,
+                        "my_prefix_us_xx_dataflow_ingest_view_results_secondary",
+                    )
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id,
+                        "my_prefix_us_yy_dataflow_ingest_view_results_primary",
+                    )
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id,
+                        "my_prefix_us_yy_dataflow_ingest_view_results_secondary",
                     )
                 ),
             ],

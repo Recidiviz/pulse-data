@@ -32,11 +32,17 @@ from typing import Optional
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.calculator.create_or_update_dataflow_sandbox import (
-    create_or_update_dataflow_sandbox,
-)
 from recidiviz.tools.deploy.trigger_post_deploy_tasks import (
     trigger_calculation_dag_pubsub,
+)
+from recidiviz.tools.deploy.update_big_query_table_schemas import (
+    update_cloud_sql_bq_refresh_output_schemas,
+)
+from recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas import (
+    update_dataflow_output_schemas,
+)
+from recidiviz.tools.deploy.update_raw_data_table_schemas import (
+    update_all_raw_data_table_schemas,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -83,14 +89,11 @@ def main(
         sandbox_prefix = f"{state_code.value.lower()}_{ingest_instance.value.lower()}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         logging.info("Setting sandbox prefix to: %s", sandbox_prefix)
 
-    if sandbox_prefix:
-        create_or_update_dataflow_sandbox(
-            sandbox_dataset_prefix=sandbox_prefix,
-            datasets_to_create=["normalization"],
-            allow_overwrite=True,
-            state_code_filter=state_code,
-            ingest_instance_filter=ingest_instance,
-        )
+    if ingest_instance == DirectIngestInstance.PRIMARY:
+        update_all_raw_data_table_schemas()
+
+    update_cloud_sql_bq_refresh_output_schemas(sandbox_prefix)
+    update_dataflow_output_schemas(sandbox_prefix)
 
     trigger_calculation_dag_pubsub(ingest_instance, state_code, sandbox_prefix)
 
