@@ -23,25 +23,6 @@ products:
         environment: production
       - state_code: US_PA
         environment: production
-  - name: Dashboard User Restrictions
-    description: User restrictions for the UP dashboard, including Lantern and Case Triage.
-    exports:
-      - DASHBOARD_USER_RESTRICTIONS
-    states:
-      - state_code: US_CO
-        environment: production
-      - state_code: US_ID
-        environment: production
-      - state_code: US_ME
-        environment: production
-      - state_code: US_MI
-        environment: production
-      - state_code: US_MO
-        environment: production
-      - state_code: US_ND
-        environment: production
-      - state_code: US_TN
-        environment: production
   - name: Product User Import
     description: Potential users of Polaris tools that we receive via ingest, to be imported into the Polaris Roster Postgres table
     exports:
