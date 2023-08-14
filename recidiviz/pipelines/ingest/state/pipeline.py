@@ -22,6 +22,7 @@ from typing import Any, Dict, Tuple, Type
 import apache_beam as beam
 from apache_beam import Pipeline
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -43,11 +44,16 @@ from recidiviz.pipelines.ingest.pipeline_parameters import (
 from recidiviz.pipelines.ingest.state.cluster_root_external_ids import (
     ClusterRootExternalIds,
 )
-from recidiviz.pipelines.ingest.state.constants import ExternalIdCluster, IngestViewName
+from recidiviz.pipelines.ingest.state.constants import (
+    ExternalIdKey,
+    IngestViewName,
+    PrimaryKey,
+)
 from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
+from recidiviz.pipelines.ingest.state.generate_primary_keys import generate_primary_key
 from recidiviz.pipelines.ingest.state.get_root_external_ids import (
     GetRootExternalIdClusterEdges,
 )
@@ -140,12 +146,21 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
 
         # pylint: disable=unused-variable
         root_entity_external_ids_to_primary_keys: beam.PCollection[
-            ExternalIdCluster
+            Tuple[ExternalIdKey, PrimaryKey]
         ] = (
             all_root_entities
             | beam.ParDo(GetRootExternalIdClusterEdges())
             | ClusterRootExternalIds()
-            # TODO(#22064) Generate primary keys for the clusters.
+            | "Generate primary keys for root entities"
+            >> beam.MapTuple(
+                lambda root_external_id, cluster: (
+                    root_external_id,
+                    generate_primary_key(
+                        cluster,
+                        state_code=StateCode(self.pipeline_parameters.state_code),
+                    ),
+                )
+            )
         )
 
         # TODO(#22064) Merge entity trees across ingest views, with external IDs to primary keys.

@@ -333,7 +333,7 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
             region_code="US_XX",
         )
         expected_query = (
-            f"SELECT (99000000000000 + {self.fake_table_complex_schema.name}.column1) AS column1,"
+            f"SELECT (90000000000000 + {self.fake_table_complex_schema.name}.column1) AS column1,"
             f"{self.fake_table_complex_schema.name}.state_code,"
             f"ARRAY_REPLACE({self.fake_table_complex_schema.name}.column2, NULL, '') "
             f"as column2,"
@@ -353,8 +353,8 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
             region_code="US_XX",
         )
         expected_query = (
-            f"SELECT (99000000000000 + {self.fake_association_table.name}.column1_simple) AS column1_simple,"
-            f"(99000000000000 + {self.fake_association_table.name}.column1_complex) AS column1_complex,"
+            f"SELECT (90000000000000 + {self.fake_association_table.name}.column1_simple) AS column1_simple,"
+            f"(90000000000000 + {self.fake_association_table.name}.column1_complex) AS column1_complex,"
             f"{self.fake_state_table.name}.state_code AS state_code "
             f"FROM {self.fake_association_table.name} "
             f"JOIN {self.fake_state_table.name} ON {self.fake_state_table.name}.column1 = "
