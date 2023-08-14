@@ -4,6 +4,10 @@ file_description: |-
   This table includes data from the COMS system about decisions made after someone is reported to have violated their parole terms.  This table is active starting 8/14/2023 and should only hold
   parole violation decisions that are relevant from 8/14/2023 onwards.
 data_classification: source
+separator: †
+custom_line_terminator: ‡
+encoding: WINDOWS-1252
+always_historical_export: False
 primary_key_cols:
   - Parole_Violation_Decision_Id
 columns:

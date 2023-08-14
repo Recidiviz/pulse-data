@@ -4,6 +4,10 @@ file_description: |-
   This table includes data from the COMS system about the assignment of supervision agents to JII on supervision.  This table is active starting 8/14/2023 and should only hold
   supervision assignment information that was relevant from 8/14/2023 onwards.
 data_classification: source
+separator: †
+custom_line_terminator: ‡
+encoding: WINDOWS-1252
+always_historical_export: False
 primary_key_cols:
   - Case_Manager_Id
 columns:

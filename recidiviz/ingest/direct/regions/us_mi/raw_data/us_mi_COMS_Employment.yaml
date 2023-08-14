@@ -4,6 +4,10 @@ file_description: |-
   This table includes data from the COMS system about JII employment information.  This table is active starting 8/14/2023 and should only hold
   employment information for JII employments that occur from 8/14/2023 onwards.
 data_classification: source
+separator: †
+custom_line_terminator: ‡
+encoding: WINDOWS-1252
+always_historical_export: False
 primary_key_cols:
   - Employment_Id
 columns:
@@ -20,11 +24,6 @@ columns:
     description: Job Type
   - name: Job_Title
     description: Job Title
-  - name: Supervisor_Name
-    description: Supervisor Name
-    is_pii: True
-  - name: Shift_Hours
-    description: Shift Hours
   - name: Employment_Start_Date
     description: Employment Start Date
     field_type: datetime
