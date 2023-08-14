@@ -16,7 +16,7 @@
 # =============================================================================
 """Implements tests for Pathways authorization."""
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from unittest import TestCase, mock
 from unittest.mock import MagicMock
 
@@ -55,12 +55,17 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
             return on_successful_authorization(claims, offline_mode=offline_mode)
 
     @classmethod
-    def process_claims(cls, path: str, user_state_code: str) -> None:
+    def process_claims(
+        cls, path: str, user_state_code: str, allowed_states: Optional[list[str]] = None
+    ) -> None:
+        if allowed_states is None:
+            allowed_states = []
         return cls._process_claims(
             path,
             {
                 "https://recidiviz-test/app_metadata": {
-                    "state_code": user_state_code,
+                    "stateCode": user_state_code,
+                    "allowedStates": allowed_states,
                     "routes": {
                         "system_prison": True,
                         "system_prisonToSupervision": False,
@@ -80,12 +85,62 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
         "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states",
         return_value=["US_CA", "US_OR"],
     )
-    def test_on_successful_authorization(self, _mock_enabled_states: MagicMock) -> None:
-        # Recidiviz users can access a pathways enabled state
+    def test_recidiviz_auth(self, _mock_enabled_states: MagicMock) -> None:
+        # Recidiviz users can access a pathways enabled state if they have the state in allowed_states
         self.assertIsNone(
-            self.process_claims(f"/US_CA/{self.endpoint}", user_state_code="recidiviz")
+            self.process_claims(
+                f"/US_CA/{self.endpoint}",
+                user_state_code="recidiviz",
+                allowed_states=["US_CA"],
+            )
         )
 
+        # Recidiviz users cannot access a state that does not have pathways enabled
+        with self.assertRaises(FlaskException) as assertion:
+            self.process_claims(
+                f"/US_WY/{self.endpoint}",
+                user_state_code="recidiviz",
+                allowed_states=["US_WY"],
+            )
+            self.assertEqual(assertion.exception.code, "pathways_not_enabled")
+
+        # Recidiviz users cannot access a pathways enabled state that is not in their list of allowed_states
+        with self.assertRaises(FlaskException) as assertion:
+            self.process_claims(
+                f"/US_OR/{self.endpoint}",
+                user_state_code="recidiviz",
+                allowed_states=["US_CA"],
+            )
+            self.assertEqual(assertion.exception.code, "recidiviz_user_not_authorized")
+
+        # Recidiviz users can access any endpoint if the state is in allowed_states
+        self.assertIsNone(
+            self.process_claims(
+                "/US_CA/LibertyToPrisonTransitions",
+                user_state_code="recidiviz",
+                allowed_states=["US_CA"],
+            )
+        )
+        self.assertIsNone(
+            self.process_claims(
+                "/US_CA/PrisonToSupervisionTransitions",
+                user_state_code="recidiviz",
+                allowed_states=["US_CA"],
+            )
+        )
+        self.assertIsNone(
+            self.process_claims(
+                "/US_CA/SupervisionPopulationOverTimeCount",
+                user_state_code="recidiviz",
+                allowed_states=["US_CA"],
+            )
+        )
+
+    @mock.patch(
+        "recidiviz.case_triage.pathways.pathways_authorization.get_pathways_enabled_states",
+        return_value=["US_CA", "US_OR"],
+    )
+    def test_on_successful_authorization(self, _mock_enabled_states: MagicMock) -> None:
         # State users can access their own pathways enabled state
         self.assertIsNone(
             self.process_claims(f"/US_CA/{self.endpoint}", user_state_code="US_CA")
@@ -98,10 +153,6 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
         # Other state users who do not have pathways enabled cannot access other states
         with self.assertRaises(AuthorizationError):
             self.process_claims(f"/US_CA/{self.endpoint}", user_state_code="US_WY")
-
-        # Recidiviz users cannot access a state that does not have pathways enabled
-        with self.assertRaises(FlaskException):
-            self.process_claims(f"/US_WY/{self.endpoint}", user_state_code="recidiviz")
 
         # Other users cannot access a state that does not have pathways enabled
         with self.assertRaises(FlaskException):
@@ -137,23 +188,6 @@ class PathwaysAuthorizationClaimsTestCase(TestCase):
         self.assertIsNone(
             self.process_claims(
                 "/US_CA/SupervisionToLibertyTransitions", user_state_code="US_CA"
-            )
-        )
-
-        # Recidiviz users can access any endpoint
-        self.assertIsNone(
-            self.process_claims(
-                "/US_CA/LibertyToPrisonTransitions", user_state_code="recidiviz"
-            )
-        )
-        self.assertIsNone(
-            self.process_claims(
-                "/US_CA/PrisonToSupervisionTransitions", user_state_code="recidiviz"
-            )
-        )
-        self.assertIsNone(
-            self.process_claims(
-                "/US_CA/SupervisionPopulationOverTimeCount", user_state_code="recidiviz"
             )
         )
 

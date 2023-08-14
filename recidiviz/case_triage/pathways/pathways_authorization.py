@@ -36,7 +36,7 @@ def on_successful_authorization(
     claims: Dict[str, Any], offline_mode: Optional[bool] = False
 ) -> None:
     """No-ops if either:
-    1. A recidiviz user is requesting a pathways enabled state
+    1. A recidiviz user is requesting a pathways enabled state and the state is in their list of allowedStates
     2. A state user is requesting their own pathways enabled state
     Otherwise, raises an AuthorizationError
     """
@@ -48,7 +48,7 @@ def on_successful_authorization(
             status_code=HTTPStatus.BAD_REQUEST,
         )
 
-    requested_state = request.view_args["state"]
+    requested_state = request.view_args["state"].upper()
 
     if not StateCode.is_state_code(requested_state):
         raise FlaskException(
@@ -76,9 +76,16 @@ def on_successful_authorization(
         )
 
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
-    user_state_code = app_metadata["state_code"].upper()
+    user_state_code = app_metadata["stateCode"].upper()
+    recidiviz_allowed_states = app_metadata.get("allowedStates", [])
 
     if user_state_code == "RECIDIVIZ":
+        if requested_state not in recidiviz_allowed_states:
+            raise FlaskException(
+                code="recidiviz_user_not_authorized",
+                description="Recidiviz user does not have authorization for this state",
+                status_code=HTTPStatus.UNAUTHORIZED,
+            )
         return
 
     state_allowed = user_state_code == requested_state or (
