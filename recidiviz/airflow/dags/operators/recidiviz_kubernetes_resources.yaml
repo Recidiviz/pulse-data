@@ -1,0 +1,29 @@
+# Configuration for determining pod resource sizing
+# If many configurations match, the configuration that is closer to the end of the list is given priority
+# https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+# entrypoint: (str, required)
+# args: (dict[str, any], optional)
+# resources: (dict[str, any], required)
+#   requests:
+#     cpu:
+#     memory:
+#   limits:
+#     cpu:
+#     memory:
+- entrypoint: MetricViewExportEntrypoint
+  resources:
+    requests:
+      cpu: 2000m
+      memory: 1.5Gi
+    limits:
+      cpu: 2000m
+      memory: 2.5Gi
+
+- entrypoint: BigQueryRefreshEntrypoint
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 0.5Gi
+    limits:
+      cpu: 2000m
+      memory: 1Gi

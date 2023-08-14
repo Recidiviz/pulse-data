@@ -230,6 +230,7 @@ def remove_queued_up_dags(dag_run: Optional[DagRun] = None) -> None:
     schedule=None,
     catchup=False,
     max_active_runs=1,
+    render_template_as_native_obj=True,
 )
 def sftp_dag() -> None:
     """This executes operations to handle files downloaded from SFTP servers."""
