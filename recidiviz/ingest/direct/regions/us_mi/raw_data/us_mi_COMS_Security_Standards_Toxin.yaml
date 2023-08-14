@@ -4,6 +4,10 @@ file_description: |-
   This table includes data from the COMS system about toxin screens.  This table is active starting 8/14/2023 and should only hold
   toxin screen information for JII employments that occur from 8/14/2023 onwards.
 data_classification: source
+separator: †
+custom_line_terminator: ‡
+encoding: WINDOWS-1252
+always_historical_export: False
 primary_key_cols:
   - Security_Standards_Toxin_Id
 columns:
@@ -42,6 +46,8 @@ columns:
   - name: Retest_By
     description: Figure out what is entered in this field TODO(#23037)
     is_pii: True # Confirm whether this is someone's ID or name TODO(#23037)
+  - name: Retest_Outdoor_Vendor
+    description: Figure out what is entered in this field TODO(#23037)
   - name: Retest_Sent_Date
     description: Date sample for a retest was sent
     field_type: datetime

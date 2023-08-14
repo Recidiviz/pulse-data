@@ -4,6 +4,10 @@ file_description: |-
   This table includes data from the COMS system about the supervision activities scheduled for each JII on supervision.  This table is active starting 8/14/2023 and should only hold
   supervision activity information that was relevant from 8/14/2023 onwards.
 data_classification: source
+separator: †
+custom_line_terminator: ‡
+encoding: WINDOWS-1252
+always_historical_export: False
 primary_key_cols:
   - Supervision_Schedule_Activity_Id
 columns:
