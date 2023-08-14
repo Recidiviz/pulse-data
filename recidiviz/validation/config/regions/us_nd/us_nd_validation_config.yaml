@@ -15,10 +15,13 @@ max_allowed_error_overrides:
       likely will not be able to do better. We're also already checking facility accuracy over the whole population with
       incarceration_population_person_level_external_comparison_matching_people validation.
   - validation_name: client_record_archive_duplicate_person_ids
-    hard_max_allowed_error_override: 0.001
+    hard_max_allowed_error_override: 0.0024
     override_reason:
-      TODO(#15057) - Known issue where additional deduping is required. It affects
-      literally one person so even this threshold is pretty generous
+      There was a period of time in September '22 where we exported multiple rows in the
+      client_record for a handful of people who had multiple distinct officer_ids or
+      expiration_dates. Because the impact/engagement metrics only look at distinct person/external
+      ids, there is no known practical effect of having multiple entries for the same person with
+      the same person and external id.
   - validation_name: client_record_duplicate_person_external_ids
     hard_max_allowed_error_override: 0.005
     override_reason:
