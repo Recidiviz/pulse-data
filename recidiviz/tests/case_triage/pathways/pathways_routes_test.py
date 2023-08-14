@@ -86,6 +86,23 @@ class PathwaysBlueprintTestCase(TestCase):
         self.auth_patcher.stop()
         self.redis_patcher.stop()
 
+    @staticmethod
+    def auth_side_effect(
+        state_code: str,
+        allowed_states: Optional[list[str]] = None,
+    ) -> Callable:
+        if allowed_states is None:
+            allowed_states = []
+
+        return lambda: on_successful_authorization(
+            {
+                f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata": {
+                    "stateCode": f"{state_code.lower()}",
+                    "allowedStates": allowed_states,
+                },
+            }
+        )
+
 
 @pytest.mark.uses_db
 class TestPathwaysMetrics(PathwaysBlueprintTestCase):
@@ -101,14 +118,8 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.mock_authorization_handler.side_effect = (
-            lambda: on_successful_authorization(
-                {
-                    f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata": {
-                        "state_code": "recidiviz"
-                    }
-                }
-            )
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="recidiviz", allowed_states=["US_TN"]
         )
 
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
@@ -156,6 +167,19 @@ class TestPathwaysMetrics(PathwaysBlueprintTestCase):
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
+        )
+
+    def test_metrics_unauthorized_recidiviz_users(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="recidiviz", allowed_states=[]
+        )
+        response = self.test_client.get(
+            self.count_by_dimension_metric_path,
+            headers={"Origin": "http://localhost:3000"},
+            query_string={"group": Dimension.AGE_GROUP.value},
+        )
+        self.assertEqual(
+            HTTPStatus.UNAUTHORIZED, response.status_code, response.get_json()
         )
 
     def test_metrics_invalid_params(self) -> None:

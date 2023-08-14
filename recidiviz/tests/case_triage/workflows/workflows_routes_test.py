@@ -77,12 +77,17 @@ class WorkflowsBlueprintTestCase(TestCase):
     def auth_side_effect(
         state_code: str,
         email_address: str = "test_user@somestate.gov",
+        allowed_states: Optional[list[str]] = None,
         successful_authorization_handler: Callable = on_successful_authorization,
     ) -> Callable:
+        if allowed_states is None:
+            allowed_states = []
+
         return lambda: successful_authorization_handler(
             {
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata": {
-                    "state_code": f"{state_code.lower()}"
+                    "stateCode": f"{state_code.lower()}",
+                    "allowedStates": allowed_states,
                 },
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address": email_address,
             }
@@ -115,6 +120,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "recidiviz",
             "test_user@recidiviz.org",
+            ["US_TN"],
             on_successful_authorization_recidiviz_only,
         )
 
@@ -146,6 +152,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "recidiviz",
             "test_user@recidiviz.org",
+            ["US_TN"],
             on_successful_authorization_recidiviz_only,
         )
 
@@ -181,6 +188,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "recidiviz",
             "test_user@recidiviz.org",
+            ["US_TN"],
             on_successful_authorization_recidiviz_only,
         )
 
@@ -196,6 +204,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             "us_id",
             "test_user@recidiviz.org",
+            [],
             on_successful_authorization_recidiviz_only,
         )
 
@@ -210,7 +219,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         )
 
     def test_init(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("recidiviz")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz", allowed_states=["US_TN"]
+        )
 
         response = self.test_client.get(
             "/workflows/US_TN/init", headers={"Origin": "http://localhost:3000"}
@@ -225,7 +236,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
     def test_insert_tepe_contact_note_passthrough(self) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("recidiviz")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz", allowed_states=["US_TN"]
+        )
 
         response = self.test_client.post(
             "/workflows/external_request/US_TN/insert_tepe_contact_note",
@@ -718,7 +731,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_twilio_messages: MagicMock,
         mock_firestore: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("recidiviz")
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz", allowed_states=["US_CA"]
+        )
 
         response = self.test_client.post(
             "/workflows/external_request/us_ca/send_sms_request",
@@ -735,6 +750,24 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_firestore.return_value.set_document.assert_called()
         mock_twilio_messages.assert_called()
         mock_get_secret.assert_called()
+
+    def test_send_sms_request_unauthorized_from_recidiviz_user(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz", allowed_states=["US_TN"]
+        )
+
+        response = self.test_client.post(
+            "/workflows/external_request/us_ca/send_sms_request",
+            headers={"Origin": "http://localhost:3000"},
+            json={
+                "message": "Message!",
+                "recipient": "+12223334444",
+                "recipient_external_id": PERSON_EXTERNAL_ID,
+                "client_firestore_id": "us_ca_123",
+            },
+        )
+        assert_type(response.get_json(), dict)
+        self.assertEqual(HTTPStatus.UNAUTHORIZED, response.status_code)
 
     def test_send_sms_request_invalid_state_code(self) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("CA")

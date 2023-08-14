@@ -29,7 +29,7 @@ from recidiviz.utils.flask_exception import FlaskException
 def on_successful_authorization_recidiviz_only(claims: Dict[str, Any]) -> None:
     """Only allows users whose state code is RECIDIVIZ"""
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
-    user_state_code = app_metadata["state_code"].upper()
+    user_state_code = app_metadata["stateCode"].upper()
     g.authenticated_user_email = claims.get(
         f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
     )
@@ -48,18 +48,16 @@ def on_successful_authorization_recidiviz_only(claims: Dict[str, Any]) -> None:
 def on_successful_authorization(claims: Dict[str, Any]) -> None:
     """
     No-ops if:
-    1. A recidiviz user is requesting a workflows enabled state
+    1. A recidiviz user is requesting a workflows enabled state and is authorized for that state
     2. A state user is making an external system request for their own state
     Otherwise, raises an AuthorizationError
     """
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
-    user_state_code = app_metadata["state_code"].upper()
+    user_state_code = app_metadata["stateCode"].upper()
     g.authenticated_user_email = claims.get(
         f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
     )
-
-    if user_state_code == "RECIDIVIZ":
-        return
+    recidiviz_allowed_states = app_metadata.get("allowedStates", [])
 
     if not request.view_args or "state" not in request.view_args:
         raise FlaskException(
@@ -68,8 +66,17 @@ def on_successful_authorization(claims: Dict[str, Any]) -> None:
             status_code=HTTPStatus.BAD_REQUEST,
         )
 
-    requested_state = request.view_args["state"].upper()
     enabled_states = get_workflows_external_request_enabled_states()
+    requested_state = request.view_args["state"].upper()
+
+    if user_state_code == "RECIDIVIZ":
+        if requested_state not in recidiviz_allowed_states:
+            raise FlaskException(
+                code="recidiviz_user_not_authorized",
+                description="Recidiviz user does not have authorization for this state",
+                status_code=HTTPStatus.UNAUTHORIZED,
+            )
+        return
 
     if not StateCode.is_state_code(requested_state):
         raise FlaskException(
