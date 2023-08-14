@@ -144,7 +144,7 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo, reportType }) => {
                 onFinish(values);
               }}
             >
-              {labeledBatchList ? (
+              {labeledBatchList && labeledBatchList.length > 0 ? (
                 <Form.Item
                   label="Batch ID"
                   name="batchId"
