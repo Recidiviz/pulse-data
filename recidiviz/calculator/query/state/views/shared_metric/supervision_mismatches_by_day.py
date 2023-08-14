@@ -38,7 +38,10 @@ SELECT
     IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
     IFNULL(level_2_supervision_location_external_id, 'UNKNOWN') as level_2_supervision_location_external_id,
     recommended_supervision_downgrade_level
-FROM `{project_id}.{shared_metric_views_dataset}.supervision_case_compliance_metrics_materialized` compliance,
+FROM `{project_id}.{shared_metric_views_dataset}.supervision_case_compliance_metrics_materialized` compliance
+-- Only count metrics of people who were active officers in the time period we care about
+INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_officers_and_districts_materialized` officers
+    USING (state_code, supervising_officer_external_id),
 UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
 UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
 UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
@@ -53,6 +56,7 @@ SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_MISMATCHES_BY_DAY_DESCRIPTION,
     should_materialize=True,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
+    vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
 )
 
 if __name__ == "__main__":

@@ -255,6 +255,14 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.agent_external_id_to_full_name` agent
         ON vitals_metrics.state_code = agent.state_code
         AND vitals_metrics.supervising_officer_external_id = agent.external_id
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sid
+        ON vitals_metrics.state_code = sid.state_code
+        AND vitals_metrics.supervising_officer_external_id = sid.external_id
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_role_period` rp
+        ON vitals_metrics.state_code = rp.state_code
+        AND sid.staff_id = rp.staff_id
+    -- Filter out users who are not currently active POs
+    WHERE (rp.role_type = "SUPERVISION_OFFICER" AND rp.end_date IS NULL) OR vitals_metrics.supervising_officer_external_id = 'ALL'
 """
 
 VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -266,6 +274,7 @@ VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

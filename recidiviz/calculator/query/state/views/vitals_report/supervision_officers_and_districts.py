@@ -16,6 +16,7 @@
 # =============================================================================
 """Supervision officer to district mapping"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
@@ -72,6 +73,12 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
    LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names_materialized` locations
         ON sup_pop.state_code = locations.state_code
         AND {{vitals_state_specific_join_with_supervision_location_ids}}
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sid
+        ON sup_pop.state_code = sid.state_code
+        AND sup_pop.supervising_officer_external_id = sid.external_id
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_role_period` rp
+        ON sid.state_code = rp.state_code
+        AND sid.staff_id = rp.staff_id
    
    WHERE COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern')) > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
         AND sup_pop.state_code in {enabled_states}
@@ -80,7 +87,11 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
                 AND us_id_ix_roster.supervising_district_external_id = sup_pop.level_2_supervision_location_external_id
                 AND sup_pop.state_code IN ('US_ID', 'US_IX'))
             OR (us_id_ix_roster.supervising_officer_external_id IS NULL AND sup_pop.state_code NOT IN ('US_ID', 'US_IX'))
-        )
+        ) 
+        -- Only include people who were active during the span of time we're looking at
+        AND rp.role_type = 'SUPERVISION_OFFICER'
+        AND rp.start_date < {nonnull_end_date_exclusive_clause('sup_pop.end_date_exclusive')}
+        AND {nonnull_end_date_exclusive_clause('rp.end_date')} > sup_pop.start_date_inclusive
    GROUP BY 1,2,3,4,5
 """
 
@@ -91,6 +102,7 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SUPERVISION_OFFICERS_AND_DISTRICTS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     vitals_state_specific_district_id=state_specific_query_strings.vitals_state_specific_district_id(
         "sup_pop"
     ),
