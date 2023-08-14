@@ -63,6 +63,7 @@ except (AirflowNotFoundException, KeyError) as e:
     schedule="@hourly",
     catchup=False,
     max_active_runs=1,
+    render_template_as_native_obj=True,
 )
 def create_monitoring_dag() -> None:
     build_kubernetes_pod_task_group(

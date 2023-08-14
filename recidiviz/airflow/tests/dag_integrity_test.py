@@ -53,6 +53,15 @@ class TestDagIntegrity(unittest.TestCase):
             f"There should be no DAG failures. Got: {dag_bag.import_errors}",
         )
 
+    def test_render_template_as_native(self) -> None:
+        """
+        Verify all DAGs utilize the native template rendering used in our Kubernetes pod operators
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        self.assertNotEqual(len(dag_bag.dags), 0)
+        for dag in dag_bag.dags.values():
+            self.assertTrue(dag.render_template_as_native_obj)
+
     def test_correct_dag(self) -> None:
         """
         Verify that the DAGs discovered have the correct name

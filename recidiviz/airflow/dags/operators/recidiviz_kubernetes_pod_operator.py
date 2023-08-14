@@ -17,9 +17,11 @@
 """
 A factory function for building KubernetesPodOperators that run our appengine image
 """
+# Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
+# pylint: disable=W0104 pointless-statement
 import logging
 import os
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from airflow.decorators import task
 from airflow.models import DagRun, TaskInstance
@@ -35,6 +37,35 @@ from recidiviz.airflow.dags.utils.environment import (
 from recidiviz.utils.environment import RECIDIVIZ_ENV, get_environment_for_project
 
 _project_id = os.environ.get("GCP_PROJECT")
+
+
+class RecidivizKubernetesPodOperator(KubernetesPodOperator):
+    """KubernetesPodOperator with some defaults"""
+
+    def __init__(self, **kwargs: Any) -> None:
+        env_vars = kwargs.pop("env_vars", [])
+        super().__init__(
+            namespace="composer-user-workloads",
+            image=os.getenv("RECIDIVIZ_APP_ENGINE_IMAGE"),
+            image_pull_policy="Always",
+            # This config is provided by Cloud Composer
+            config_file="/home/airflow/composer_kube_config",
+            env_vars=[
+                k8s.V1EnvVar(name="NAMESPACE", value="composer-user-workloads"),
+                # TODO(census-instrumentation/opencensus-python#796)
+                k8s.V1EnvVar(
+                    name=COMPOSER_ENVIRONMENT, value=get_composer_environment()
+                ),
+                k8s.V1EnvVar(
+                    name=RECIDIVIZ_ENV,
+                    value=get_environment_for_project(_project_id).value
+                    # TODO(#22516): Remove testing clause
+                    if _project_id and _project_id != "recidiviz-testing" else "",
+                ),
+                *env_vars,
+            ],
+            **kwargs,
+        )
 
 
 def build_kubernetes_pod_task_group(
@@ -57,11 +88,11 @@ def build_kubernetes_pod_task_group(
 
     with TaskGroup(group_id) as task_group:
 
-        @task(trigger_rule=trigger_rule)
+        @task(trigger_rule=trigger_rule, multiple_outputs=True)
         def set_kubernetes_arguments(
             dag_run: Optional[DagRun] = None,
             task_instance: Optional[TaskInstance] = None,
-        ) -> List[str]:
+        ) -> Dict[str, List[str]]:
             if not task_instance:
                 raise ValueError(
                     "task_instance not provided. This should be automatically set by Airflow."
@@ -77,42 +108,52 @@ def build_kubernetes_pod_task_group(
                 task_instance.task_id,
                 " ".join(argv),
             )
-            return [
-                "run",
-                "python",
-                "-m",
-                "recidiviz.entrypoints.entrypoint_executor",
-                *argv,
-            ]
 
-        namespace = "composer-user-workloads"
-        KubernetesPodOperator(
-            task_id="execute_entrypoint_operator",
-            namespace=namespace,
-            image=os.getenv("RECIDIVIZ_APP_ENGINE_IMAGE"),
-            image_pull_policy="Always",
-            # This config is provided by Cloud Composer
-            config_file="/home/airflow/composer_kube_config",
-            cmds=[
-                "pipenv",
-            ],
-            arguments=set_kubernetes_arguments(),
+            return {
+                "resource_allocation_command": [
+                    "run",
+                    "python",
+                    "-m",
+                    "recidiviz.entrypoints.entrypoint_resources",
+                    *argv,
+                ],
+                "entrypoint_execution_command": [
+                    "run",
+                    "python",
+                    "-m",
+                    "recidiviz.entrypoints.entrypoint_executor",
+                    *argv,
+                ],
+            }
+
+        kubernetes_arguments = set_kubernetes_arguments()
+
+        set_kubernetes_resources = RecidivizKubernetesPodOperator(
+            task_id="set_kubernetes_resources",
+            cmds=["pipenv"],
+            arguments=kubernetes_arguments["resource_allocation_command"],
             env_vars=[
                 # TODO(census-instrumentation/opencensus-python#796)
-                k8s.V1EnvVar(
-                    name=COMPOSER_ENVIRONMENT, value=get_composer_environment()
-                ),
                 k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name),
-                k8s.V1EnvVar(name="NAMESPACE", value=namespace),
-                k8s.V1EnvVar(
-                    name=RECIDIVIZ_ENV,
-                    value=get_environment_for_project(_project_id).value
-                    # TODO(#22516): Remove testing clause
-                    if _project_id and _project_id != "recidiviz-testing" else "",
-                ),
             ],
-            container_resources=k8s.V1ResourceRequirements(
-                requests={"cpu": "2000m", "memory": "1Gi"}
-            ),
+            do_xcom_push=True,
         )
+
+        execute_entrypoint_operator = RecidivizKubernetesPodOperator(
+            task_id="execute_entrypoint_operator",
+            cmds=["pipenv"],
+            arguments=kubernetes_arguments["entrypoint_execution_command"],
+            container_resources=k8s.V1ResourceRequirements(
+                # Airflow turns these string values into Python dictionaries when rendering, disabling typing warnings
+                limits=f"{{{{ task_instance.xcom_pull(task_ids='{set_kubernetes_resources.task_id}')['limits'] }}}}",  # type: ignore[arg-type]
+                requests=f"{{{{ task_instance.xcom_pull(task_ids='{set_kubernetes_resources.task_id}')['requests'] }}}}",  # type: ignore[arg-type]
+            ),
+            env_vars=[
+                # TODO(census-instrumentation/opencensus-python#796)
+                k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name),
+            ],
+        )
+
+        (set_kubernetes_resources >> execute_entrypoint_operator)
+
     return task_group

@@ -394,6 +394,7 @@ def metric_export_branches_by_state_code(
     default_args=DEFAULT_ARGS,
     schedule=None,
     catchup=False,
+    render_template_as_native_obj=True,
 )
 def create_calculation_dag() -> None:
     """This represents the overall execution of our calculation pipelines.

@@ -17,7 +17,7 @@
 from typing import Dict, Optional
 
 class V1ResourceRequirements:
-    def __init__(self, requests: Dict[str, str]) -> None: ...
+    def __init__(self, limits: Dict[str, str], requests: Dict[str, str]) -> None: ...
 
 class V1EnvVar:
     name: str
