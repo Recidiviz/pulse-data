@@ -24,3 +24,5 @@ ExternalIdType = str
 ExternalIdKey = Tuple[str, str]
 ExternalIdClusterEdge = Tuple[ExternalIdKey, Optional[ExternalIdKey]]
 ExternalIdCluster = Tuple[ExternalIdKey, Set[ExternalIdKey]]
+
+PrimaryKey = int

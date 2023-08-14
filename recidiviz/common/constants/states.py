@@ -46,9 +46,10 @@ class _SharedStateCode(enum.Enum):
     def get_state(self) -> us.states.State:
         return self._state_info_map()[self.value]
 
-    def get_state_fips_mask(self) -> int:
+    def get_state_fips_mask(self, places: int = 12) -> int:
         # The FIPS code is always a two-digit code for states
-        return int(self.get_state().fips) * pow(10, 12)
+        # Places indicates how many zeros are trailing the fips code
+        return int(self.get_state().fips) * pow(10, places)
 
     @classmethod
     @abstractmethod
@@ -219,7 +220,7 @@ TEST_STATE_CODE_DATAFLOW = "US_DD"
 TEST_STATE_INFO = {
     TEST_STATE_CODE: us.states.State(
         **{
-            "fips": "99",
+            "fips": "90",
             "name": "Test State",
             "abbr": "XX",
             "is_territory": False,
