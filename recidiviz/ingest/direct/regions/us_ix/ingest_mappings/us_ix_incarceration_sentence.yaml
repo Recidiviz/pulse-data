@@ -125,37 +125,29 @@ output:
               relationships: relationships
               term_PED: DpedApprovedDate
     task_deadlines:
-      - $conditional:
-          - $if:
-              $not_null: SegmentPED
-            $then:
-              StateTaskDeadline:
-                task_type: $literal_enum(StateTaskType.TRANSFER_TO_SUPERVISION_FROM_INCARCERATION)
-                eligible_date: SegmentPED
-                update_datetime:
-                  $env: results_update_datetime
-                task_metadata:
-                  $json_dict:
-                    external_id:
-                      $concat:
-                        $values:
-                          - OffenderId
-                          - SentenceId
-                    sentence_type: $literal("INCARCERATION")
-      - $conditional:
-          - $if:
-              $not_null: $variable(proj_completion_date_var)
-            $then:
-              StateTaskDeadline:
-                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
-                eligible_date: $variable(proj_completion_date_var)
-                update_datetime:
-                  $env: results_update_datetime
-                task_metadata:
-                  $json_dict:
-                    external_id:
-                      $concat:
-                        $values:
-                          - OffenderId
-                          - SentenceId
-                    sentence_type: $literal("INCARCERATION")
+      - StateTaskDeadline:
+          task_type: $literal_enum(StateTaskType.TRANSFER_TO_SUPERVISION_FROM_INCARCERATION)
+          eligible_date: SegmentPED
+          update_datetime:
+            $env: results_update_datetime
+          task_metadata:
+            $json_dict:
+              external_id:
+                $concat:
+                  $values:
+                    - OffenderId
+                    - SentenceId
+              sentence_type: $literal("INCARCERATION")
+      - StateTaskDeadline:
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+          eligible_date: $variable(proj_completion_date_var)
+          update_datetime:
+            $env: results_update_datetime
+          task_metadata:
+            $json_dict:
+              external_id:
+                $concat:
+                  $values:
+                    - OffenderId
+                    - SentenceId
+              sentence_type: $literal("INCARCERATION")
