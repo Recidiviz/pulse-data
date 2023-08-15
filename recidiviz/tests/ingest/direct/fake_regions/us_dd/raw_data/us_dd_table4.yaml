@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: table4
+file_description: |-
+  table4 file description
+data_classification: source
+primary_key_cols:
+  - extid
+  - inc_id
+columns:
+  - name: extid
+    description: |-
+      external id description
+  - name: inc_id
+    description: |-
+      incarceration id description
+  - name: start_date
+    description: |-
+      start date description
+    field_type: datetime
+  - name: end_date
+    description: |-
+      end date description
+    field_type: datetime

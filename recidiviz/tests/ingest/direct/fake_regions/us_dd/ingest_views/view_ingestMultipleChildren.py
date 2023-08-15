@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A sample ingest view that illustrates linking of external Ids to other external Ids."""
+"""A sample ingest view that illustrates multiple children entities for a root entity."""
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -23,18 +23,18 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 SELECT
-    t1.COL1,
-    t3.COL4
-FROM {table1} t1
-JOIN {table3} t3
-ON t1.COL1 = t3.COL1
+    extid,
+    inc_id,
+    start_date,
+    end_date
+FROM {table4} t4
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_dd",
-    ingest_view_name="ingestMultipleRootExternalIds",
+    ingest_view_name="ingestMultipleChildren",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="COL1",
+    order_by_cols="extid, inc_id",
 )
 
 if __name__ == "__main__":

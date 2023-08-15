@@ -41,6 +41,11 @@ from recidiviz.pipelines.ingest.pipeline_parameters import (
     IngestPipelineParameters,
     MaterializationMethod,
 )
+from recidiviz.pipelines.ingest.state.associate_with_primary_keys import (
+    MERGED_ROOT_ENTITIES_WITH_DATES,
+    PRIMARY_KEYS,
+    AssociateRootEntitiesWithPrimaryKeys,
+)
 from recidiviz.pipelines.ingest.state.cluster_root_external_ids import (
     ClusterRootExternalIds,
 )
@@ -56,6 +61,9 @@ from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
 from recidiviz.pipelines.ingest.state.generate_primary_keys import generate_primary_key
 from recidiviz.pipelines.ingest.state.get_root_external_ids import (
     GetRootExternalIdClusterEdges,
+)
+from recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees import (
+    MergeIngestViewRootEntityTrees,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
@@ -94,8 +102,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             region,
             ingest_manifest_collector.launchable_ingest_views(),
         )
-        root_entities_per_upperbound_date_per_view: Dict[
-            IngestViewName, beam.PCollection[Tuple[datetime, RootEntity]]
+        merged_root_entities_with_dates_per_ingest_view: Dict[
+            IngestViewName,
+            beam.PCollection[Tuple[ExternalIdKey, Tuple[datetime, RootEntity]]],
         ] = {}
         for ingest_view in ingest_manifest_collector.launchable_ingest_views():
             raw_data_tables = [
@@ -126,7 +135,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 )
             )
 
-            root_entities_per_upperbound_date_per_view[ingest_view] = (
+            merged_root_entities_with_dates_per_ingest_view[ingest_view] = (
                 ingest_view_results
                 | f"Generate {ingest_view} entities."
                 >> GenerateEntities(
@@ -134,17 +143,21 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     ingest_instance=ingest_instance,
                     ingest_view_name=ingest_view,
                 )
+                | f"Merge {ingest_view} entities using IngestViewTreeMerger within same date and external ID."
+                >> MergeIngestViewRootEntityTrees(ingest_view_name=ingest_view)
             )
 
-            # TODO(#22064) Merge entity trees within the same ingest view, date and external ID.
+        merged_root_entities_with_dates: beam.PCollection[
+            Tuple[ExternalIdKey, Tuple[datetime, RootEntity]]
+        ] = (merged_root_entities_with_dates_per_ingest_view.values() | beam.Flatten())
 
+        # pylint: disable=no-value-for-parameter
         all_root_entities: beam.PCollection[RootEntity] = (
-            root_entities_per_upperbound_date_per_view.values()
-            | beam.Flatten()
-            | beam.Values()  # pylint: disable=no-value-for-parameter
+            merged_root_entities_with_dates
+            | "Remove all of the external ids" >> beam.Values()
+            | "Remove all of the dates" >> beam.Values()
         )
 
-        # pylint: disable=unused-variable
         root_entity_external_ids_to_primary_keys: beam.PCollection[
             Tuple[ExternalIdKey, PrimaryKey]
         ] = (
@@ -163,4 +176,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             )
         )
 
-        # TODO(#22064) Merge entity trees across ingest views, with external IDs to primary keys.
+        _ = {
+            PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
+            MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+        } | AssociateRootEntitiesWithPrimaryKeys()

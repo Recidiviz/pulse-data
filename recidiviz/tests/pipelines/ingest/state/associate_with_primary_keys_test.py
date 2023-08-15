@@ -1,0 +1,256 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Testing the AssociateRootEntitiesWithPrimaryKeys PTransform."""
+from datetime import datetime
+
+import apache_beam as beam
+from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
+from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
+
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import (
+    StatePerson,
+    StatePersonExternalId,
+)
+from recidiviz.pipelines.ingest.state import pipeline
+from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
+
+
+class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
+    """Tests the AssociateRootEntitiesWithPrimaryKeys PTransform."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        apache_beam_pipeline_options = PipelineOptions()
+        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
+        self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+
+        self.external_id_1 = ("ID1", "TYPE1")
+        self.external_id_2 = ("ID2", "TYPE2")
+        self.external_id_3 = ("ID3", "TYPE1")
+
+        self.person12 = StatePerson(
+            state_code=self.region_code.upper(),
+            external_ids=[
+                StatePersonExternalId(
+                    state_code=self.region_code.upper(),
+                    external_id=self.external_id_1[0],
+                    id_type=self.external_id_1[1],
+                ),
+                StatePersonExternalId(
+                    state_code=self.region_code.upper(),
+                    external_id=self.external_id_2[0],
+                    id_type=self.external_id_2[1],
+                ),
+            ],
+        )
+        self.person3 = StatePerson(
+            state_code=self.region_code.upper(),
+            external_ids=[
+                StatePersonExternalId(
+                    state_code=self.region_code.upper(),
+                    external_id=self.external_id_3[0],
+                    id_type=self.external_id_3[1],
+                )
+            ],
+        )
+
+        self.date1 = datetime(2020, 1, 1)
+        self.date2 = datetime(2020, 1, 2)
+        self.date3 = datetime(2020, 1, 3)
+
+        self.primary_key_12 = pipeline.generate_primary_key(
+            {self.external_id_1, self.external_id_2},
+            StateCode(self.region_code.upper()),
+        )
+        self.primary_key_3 = pipeline.generate_primary_key(
+            {self.external_id_3}, StateCode(self.region_code.upper())
+        )
+
+    def test_associate_root_entities_with_primary_keys(self) -> None:
+        expected_output = [(self.primary_key_3, {self.date1: [self.person3]})]
+        primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
+            [(self.external_id_3, self.primary_key_3)]
+        )
+        merged_root_entities_with_dates = (
+            self.test_pipeline
+            | "Create date root entity tuples"
+            >> beam.Create([(self.external_id_3, (self.date1, self.person3))])
+        )
+        output = {
+            pipeline.PRIMARY_KEYS: primary_keys,
+            pipeline.MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+        } | pipeline.AssociateRootEntitiesWithPrimaryKeys()
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    def test_associate_root_entities_with_primary_keys_multiple_external_ids(
+        self,
+    ) -> None:
+        # We expect duplication of the persons here because 1) the local runner is likely
+        # operating differently than the parallel worker runners in the Dataflow environment
+        # and 2) this will be handled properly by entity matching later on.
+        expected_output = [
+            (
+                self.primary_key_12,
+                {
+                    self.date1: [self.person12, self.person12],
+                },
+            )
+        ]
+        primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
+            [
+                (self.external_id_1, self.primary_key_12),
+                (self.external_id_2, self.primary_key_12),
+            ]
+        )
+        merged_root_entities_with_dates = (
+            self.test_pipeline
+            | "Create date root entity tuples"
+            >> beam.Create(
+                [
+                    (self.external_id_1, (self.date1, self.person12)),
+                    (self.external_id_2, (self.date1, self.person12)),
+                ]
+            )
+        )
+        output = {
+            pipeline.PRIMARY_KEYS: primary_keys,
+            pipeline.MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+        } | pipeline.AssociateRootEntitiesWithPrimaryKeys()
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    def test_associate_root_entities_with_primary_keys_multiple_dates(self) -> None:
+        expected_output = [
+            (
+                self.primary_key_3,
+                {self.date1: [self.person3], self.date2: [self.person3]},
+            )
+        ]
+        primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
+            [(self.external_id_3, self.primary_key_3)]
+        )
+        merged_root_entities_with_dates = (
+            self.test_pipeline
+            | "Create date root entity tuples"
+            >> beam.Create(
+                [
+                    (self.external_id_3, (self.date1, self.person3)),
+                    (self.external_id_3, (self.date2, self.person3)),
+                ]
+            )
+        )
+        output = {
+            pipeline.PRIMARY_KEYS: primary_keys,
+            pipeline.MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+        } | pipeline.AssociateRootEntitiesWithPrimaryKeys()
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    def test_associate_root_entities_with_primary_keys_multiple_dates_multiple_external_ids(
+        self,
+    ) -> None:
+        # We expect duplication of the persons here because 1) the local runner is likely
+        # operating differently than the parallel worker runners in the Dataflow environment
+        # and 2) this will be handled properly by entity matching later on.
+        expected_output = [
+            (
+                self.primary_key_12,
+                {
+                    self.date1: [self.person12, self.person12],
+                    self.date2: [self.person12, self.person12],
+                },
+            )
+        ]
+        primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
+            [
+                (self.external_id_1, self.primary_key_12),
+                (self.external_id_2, self.primary_key_12),
+            ]
+        )
+        merged_root_entities_with_dates = (
+            self.test_pipeline
+            | "Create date root entity tuples"
+            >> beam.Create(
+                [
+                    (self.external_id_1, (self.date1, self.person12)),
+                    (self.external_id_2, (self.date1, self.person12)),
+                    (self.external_id_1, (self.date2, self.person12)),
+                    (self.external_id_2, (self.date2, self.person12)),
+                ]
+            )
+        )
+        output = {
+            pipeline.PRIMARY_KEYS: primary_keys,
+            pipeline.MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+        } | pipeline.AssociateRootEntitiesWithPrimaryKeys()
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    def test_associate_root_entities_with_primary_keys_all_combinations(self) -> None:
+        # We expect duplication of the persons here because 1) the local runner is likely
+        # operating differently than the parallel worker runners in the Dataflow environment
+        # and 2) this will be handled properly by entity matching later on.
+        expected_output = [
+            (
+                self.primary_key_12,
+                {
+                    self.date1: [self.person12, self.person12],
+                    self.date2: [self.person12, self.person12],
+                    self.date3: [self.person12, self.person12],
+                },
+            ),
+            (
+                self.primary_key_3,
+                {
+                    self.date1: [self.person3],
+                    self.date2: [self.person3],
+                    self.date3: [self.person3],
+                },
+            ),
+        ]
+        primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
+            [
+                (self.external_id_1, self.primary_key_12),
+                (self.external_id_2, self.primary_key_12),
+                (self.external_id_3, self.primary_key_3),
+            ]
+        )
+        merged_root_entities_with_dates = (
+            self.test_pipeline
+            | "Create date root entity tuples"
+            >> beam.Create(
+                [
+                    (self.external_id_1, (self.date1, self.person12)),
+                    (self.external_id_2, (self.date1, self.person12)),
+                    (self.external_id_3, (self.date1, self.person3)),
+                    (self.external_id_1, (self.date2, self.person12)),
+                    (self.external_id_2, (self.date2, self.person12)),
+                    (self.external_id_3, (self.date2, self.person3)),
+                    (self.external_id_1, (self.date3, self.person12)),
+                    (self.external_id_2, (self.date3, self.person12)),
+                    (self.external_id_3, (self.date3, self.person3)),
+                ]
+            )
+        )
+        output = {
+            pipeline.PRIMARY_KEYS: primary_keys,
+            pipeline.MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+        } | pipeline.AssociateRootEntitiesWithPrimaryKeys()
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()

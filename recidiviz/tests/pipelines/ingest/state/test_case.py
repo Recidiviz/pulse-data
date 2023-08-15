@@ -18,10 +18,12 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 
 from apache_beam.testing.util import BeamAssertException
+from dateutil import parser
 from mock import patch
+from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
@@ -221,6 +223,32 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             ingest_view_name=ingest_view_name,
             contents_iterator=iter(rows),
         )
+
+    def get_expected_root_entities_with_upperbound_dates(
+        self, *, ingest_view_name: str, test_name: str
+    ) -> List[Tuple[datetime, Entity]]:
+        rows = list(
+            self.get_expected_ingest_view_results(
+                ingest_view_name=ingest_view_name, test_name=test_name
+            )
+        )
+        results: List[Tuple[datetime, Entity]] = []
+        for row in rows:
+            upper_bound_date = parser.isoparse(row[UPPER_BOUND_DATETIME_COL_NAME])
+            for column in ADDITIONAL_SCHEMA_COLUMNS:
+                row.pop(column.name)
+            results.append(
+                (
+                    upper_bound_date,
+                    one(
+                        self.ingest_view_manifest_collector.manifest_parser.parse(
+                            ingest_view_name=ingest_view_name,
+                            contents_iterator=iter([row]),
+                        )
+                    ),
+                )
+            )
+        return results
 
     def create_fake_bq_read_source_constructor(
         self,
