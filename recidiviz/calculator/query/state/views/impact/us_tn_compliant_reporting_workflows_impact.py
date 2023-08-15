@@ -58,7 +58,7 @@ joined_query AS (
         -- since `start_date` is currently always the first of the month,
         -- month "0" is not always fully treated. By starting with person-level
         -- data we can ensure that `start_date` lines up perfectly with `variant_date`
-        DATE_DIFF(variant_date, start_date, MONTH) AS months_since_treatment,
+        DATE_DIFF(start_date, variant_date, MONTH) AS months_since_treatment,
         avg_daily_population,
         avg_population_limited_supervision_level,
     FROM
