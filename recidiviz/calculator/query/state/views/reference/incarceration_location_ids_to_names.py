@@ -104,22 +104,6 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 level_1_incarceration_location_external_id AS level_1_incarceration_location_alias
         FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_incarceration_location_names_map_latest`
     ),
-    tn_location_names AS (
-        SELECT
-            DISTINCT
-                'US_TN' AS state_code,
-                'NOT_APPLICABLE' AS level_3_incarceration_location_external_id,
-                'NOT_APPLICABLE' AS level_3_incarceration_location_name,
-                facility_code,
-                INITCAP(facility_name),
-                level_1_incarceration_location_external_id,
-                INITCAP(level_1_incarceration_location_external_id) AS level_1_incarceration_location_name,
-                level_1_incarceration_location_external_id AS level_1_incarceration_location_alias
-        FROM `{project_id}.{external_reference_dataset}.us_tn_incarceration_facility_map`
-        LEFT OUTER JOIN
-            `{project_id}.{external_reference_dataset}.us_tn_incarceration_facility_names`
-        ON level_2_incarceration_location_external_id = facility_code
-    ),
     mi_location_names AS (
         SELECT
             DISTINCT
@@ -189,9 +173,6 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     UNION ALL
     # TODO(#19317): Delete this clause / logic when IX incarceration locations added to location_metadata
     SELECT * FROM ix_location_names
-    UNION ALL
-    # TODO(#19318): Delete this clause / logic when TN incarceration locations added to location_metadata
-    SELECT * FROM tn_location_names
     UNION ALL
     # TODO(#19316): Delete this clause / logic when MI incarceration locations added to location_metadata
     SELECT * FROM mi_location_names

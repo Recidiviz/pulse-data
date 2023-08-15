@@ -94,30 +94,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         FROM
             `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
     ),
-    tn_location_names AS (
-        SELECT
-            DISTINCT 'US_TN' AS state_code,
-            division AS level_3_supervision_location_external_id,
-            CASE
-                WHEN division = 'NOT_APPLICABLE' THEN division
-                WHEN division = 'INTERNAL_UNKNOWN' THEN division
-                ELSE INITCAP(division)
-            END AS level_3_supervision_location_name,
-            district AS level_2_supervision_location_external_id,
-            CASE
-                WHEN district = 'NOT_APPLICABLE' THEN district
-                WHEN district = 'INTERNAL_UNKNOWN' THEN district
-                ELSE IF(CONTAINS_SUBSTR(district, ','),
-                    CONCAT('Districts ',
-                        SUBSTR(district, 0, STRPOS(district, ',') - 1),
-                        ' and ',
-                        SUBSTR(district, STRPOS(district, ',') + 1)),
-                    CONCAT('District ', district))
-            END AS level_2_supervision_location_name,
-            site_code AS level_1_supervision_location_external_id,
-            site_name AS level_1_supervision_location_name
-        FROM `{project_id}.{external_reference_dataset}.us_tn_supervision_locations`
-    ),
     id_location_names AS (
         SELECT
             DISTINCT
@@ -163,9 +139,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     # TODO(#19340): Delete this clause / logic when MO supervision locations added to location_metadata
     SELECT * FROM mo_location_names
     UNION ALL
-    # TODO(#19318): Delete this clause / logic when TN supervision locations added to location_metadata
-    SELECT * FROM tn_location_names
-    UNION ALL
     SELECT * FROM id_location_names
     UNION ALL
     # TODO(#19317): Delete this clause / logic when IX supervision locations added to location_metadata
@@ -193,7 +166,7 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_office_id') AS level_1_supervision_location_external_id,
         JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_office_name') AS level_1_supervision_location_name
     FROM `{project_id}.{reference_views_dataset}.location_metadata_materialized`
-    WHERE location_type = 'SUPERVISION_LOCATION';
+    WHERE location_type = 'SUPERVISION_LOCATION' and JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_office_id') IS NOT NULL;
     """
 
 SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
