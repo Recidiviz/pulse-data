@@ -96,8 +96,8 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.incarceration_projected_completion_date_spans_materialized` t
           ON ic.person_id = t.person_id
               AND ic.state_code = t.state_code
-              AND CURRENT_DATE('US/Eastern') >= t.start_date
-              AND t.end_date IS NULL
+              AND CURRENT_DATE('US/Eastern') 
+                BETWEEN t.start_date AND {nonnull_end_date_clause('t.end_date_exclusive')} 
         WHERE ic.state_code NOT IN ("US_ME", "US_MO")
         WINDOW w as (PARTITION BY ic.person_id)
     ),
@@ -154,7 +154,7 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = f"""
             person_id,
             custody_level,
         FROM `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
-        WHERE state_code="US_TN"
+        WHERE state_code NOT IN ("US_ME", "US_MO")
         AND CURRENT_DATE('US/Eastern') 
             BETWEEN start_date AND {nonnull_end_date_clause('end_date_exclusive')} 
     ),
