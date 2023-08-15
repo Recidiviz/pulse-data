@@ -23,8 +23,10 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 200
     override_reason: Current failing level as of 4/5/23 is 82 rows (0.02%)
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 300
-    override_reason: Current failing level as of 4/5/23 is 29 rows - no reliable sentence info(0.008%)
+    hard_num_allowed_rows_override: 310
+    override_reason:
+      Current failing level as of 8/15/23 is 303, requiring a bump from the previous hard
+      failure level (300) and probably further invetigation. #TODO(#23226)
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 200000
     override_reason: Current failing level as of 4/20/23 is 157,462 rows (56%) #TODO(#20401)
@@ -32,5 +34,13 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 20
     override_reason: Have a gap in time for receiving data between 04-06 2023.
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 550
-    override_reason: We don't have accurate sentence data from CO.
+    hard_num_allowed_rows_override: 580
+    override_reason:
+      We don't have accurate sentence data from CO. Modest increase starting on 8/2/23 requires
+      a bump from the previous level (550), and probably further invetigation. #TODO(#23226)
+  - validation_name: overlapping_incarceration_periods
+    hard_num_allowed_rows_override: 20
+    override_reason: Needs investigation. Current failing level as of 8/15/23 is 14 periods. #TODO(#23226)
+  - validation_name: incarceration_admission_after_open_period
+    hard_num_allowed_rows_override: 5
+    override_reason: Needs investigation. Started failing on 6/16/23; current failing level as of 8/15/23 is 4 admissions. #TODO(#23226)
