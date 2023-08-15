@@ -16,11 +16,22 @@
 # =============================================================================
 """Unit tests to test validations for ingested entities."""
 import unittest
+from datetime import date, datetime
 
+import sqlalchemy
+
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_utils import (
+    get_database_entity_by_table_name,
+)
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.state import entities as entities_schema
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
     StateStaffExternalId,
+    StateTaskDeadline,
 )
 from recidiviz.pipelines.ingest.state.validator import validate_root_entity
 
@@ -194,3 +205,139 @@ class TestEntityValidations(unittest.TestCase):
         ):
             for entity in entities:
                 validate_root_entity(entity)
+
+    def test_entity_tree_unique_constraints_simple_valid(self) -> None:
+        person = state_entities.StatePerson(
+            state_code="US_XX",
+            person_id=3111,
+            external_ids=[
+                StatePersonExternalId(
+                    person_external_id_id=11114,
+                    state_code="US_XX",
+                    external_id="4001",
+                    id_type="PERSON",
+                ),
+            ],
+        )
+
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=1,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=3,
+                state_code="US_XX",
+                task_type=StateTaskType.INTERNAL_UNKNOWN,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+
+        validate_root_entity(person)
+
+    def test_entity_tree_unique_constraints_simple_invalid(self) -> None:
+        person = state_entities.StatePerson(
+            state_code="US_XX",
+            person_id=3111,
+            external_ids=[
+                StatePersonExternalId(
+                    person_external_id_id=11114,
+                    state_code="US_XX",
+                    external_id="4001",
+                    id_type="PERSON",
+                ),
+            ],
+        )
+
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=1,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=2,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=3,
+                state_code="US_XX",
+                task_type=StateTaskType.INTERNAL_UNKNOWN,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",
+        ):
+            validate_root_entity(person)
+
+
+class TestUniqueConstraintValid(unittest.TestCase):
+    """Test that unique constraints specified on entities are valid"""
+
+    def test_valid_field_columns_in_entities(self) -> None:
+        all_entities = get_all_entity_classes_in_module(entities_schema)
+        for entity in all_entities:
+            constraints = entity.global_unique_constraints()
+            entity_attrs = [a.name for a in entity.__dict__["__attrs_attrs__"]]
+            for constraint in constraints:
+                for column_name in constraint.fields:
+                    self.assertTrue(column_name in entity_attrs)
+
+    def test_valid_field_columns_in_schema(self) -> None:
+        all_entities = get_all_entity_classes_in_module(entities_schema)
+        for entity in all_entities:
+            constraints = entity.global_unique_constraints()
+            schema_entity = get_database_entity_by_table_name(
+                schema, entity.get_entity_name()
+            )
+            for constraint in constraints:
+                for column_name in constraint.fields:
+                    self.assertTrue(hasattr(schema_entity, column_name))
+
+    def test_equal_schema_uniqueness_constraint(self) -> None:
+        all_entities = get_all_entity_classes_in_module(entities_schema)
+        for entity in all_entities:
+            constraints = (
+                entity.global_unique_constraints()
+                + entity.entity_tree_unique_constraints()
+            )
+            schema_entity = get_database_entity_by_table_name(
+                schema, entity.get_entity_name()
+            )
+            constraint_names = [constraint.name for constraint in constraints]
+            schema_constraint_names = [
+                arg.name
+                for arg in schema_entity.__table_args__
+                if isinstance(arg, sqlalchemy.UniqueConstraint)
+            ]
+            self.assertListEqual(constraint_names, schema_constraint_names)

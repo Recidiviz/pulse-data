@@ -125,6 +125,7 @@ from recidiviz.persistence.entity.base_entity import (
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
     RootEntity,
+    UniqueConstraint,
 )
 
 # **** Entity Types for convenience *****:
@@ -168,6 +169,19 @@ class StatePersonExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="person_external_ids_unique_within_type_and_region",
+                fields=[
+                    "state_code",
+                    "id_type",
+                    "external_id",
+                ],
+            )
+        ]
 
 
 @attr.s(eq=False, kw_only=True)
@@ -466,6 +480,15 @@ class StateCharge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
         factory=list, validator=attr_validators.is_list
     )
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="charge_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
@@ -733,6 +756,15 @@ class StateIncarcerationSentence(HasExternalIdEntity, BuildableAttr, Defaultable
         factory=list, validator=attr_validators.is_list
     )
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="incarceration_sentence_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateIncarcerationPeriod(
@@ -866,6 +898,15 @@ class StateIncarcerationPeriod(
     @property
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.release_date
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="incarceration_period_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1071,6 +1112,15 @@ class StateIncarcerationIncident(HasExternalIdEntity, BuildableAttr, Defaultable
         "StateIncarcerationIncidentOutcome"
     ] = attr.ib(factory=list, validator=attr_validators.is_list)
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="incarceration_incident_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateIncarcerationIncidentOutcome(
@@ -1127,6 +1177,15 @@ class StateIncarcerationIncidentOutcome(
     incarceration_incident: Optional["StateIncarcerationIncident"] = attr.ib(
         default=None
     )
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="incarceration_incident_outcome_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1240,6 +1299,15 @@ class StateSupervisionViolation(HasExternalIdEntity, BuildableAttr, DefaultableA
         "StateSupervisionViolationResponse"
     ] = attr.ib(factory=list, validator=attr_validators.is_list)
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="supervision_violation_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionViolationResponseDecisionEntry(
@@ -1337,6 +1405,15 @@ class StateSupervisionViolationResponse(
     decision_agents: List["StateAgent"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="supervision_violation_response_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
 
 
 # TODO(#17856): Delete StateAgent once all usages deprecated
@@ -1437,6 +1514,15 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
     person: Optional["StatePerson"] = attr.ib(default=None)
     referring_agent: Optional["StateAgent"] = attr.ib(default=None)
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="program_assignment_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateEarlyDischarge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
@@ -1503,6 +1589,15 @@ class StateEarlyDischarge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None
     )
     supervision_sentence: Optional["StateSupervisionSentence"] = attr.ib(default=None)
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="early_discharge_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1582,6 +1677,15 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
     person: Optional["StatePerson"] = attr.ib(default=None)
     contacted_agent: Optional["StateAgent"] = attr.ib(default=None)
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="supervision_contact_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateEmploymentPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
@@ -1640,6 +1744,15 @@ class StateEmploymentPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr)
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="employment_period_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
@@ -1683,6 +1796,15 @@ class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="state_drug_screen_external_ids_unique_within_state",
+                fields=["state_code", "external_id"],
+            )
+        ]
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1730,6 +1852,20 @@ class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
 
+    @classmethod
+    def entity_tree_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="state_task_deadline_unique_per_person_update_date_type",
+                fields=[
+                    "state_code",
+                    "task_type",
+                    "task_subtype",
+                    "update_datetime",
+                ],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateStaffExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
@@ -1751,6 +1887,15 @@ class StateStaffExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     staff: Optional["StateStaff"] = attr.ib(default=None)
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_external_ids_unique_within_type_and_region",
+                fields=["state_code", "id_type", "external_id"],
+            )
+        ]
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1843,6 +1988,15 @@ class StateStaffRolePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     staff: Optional["StateStaff"] = attr.ib(default=None)
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_role_periods_unique_within_region",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateStaffSupervisorPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
@@ -1878,6 +2032,15 @@ class StateStaffSupervisorPeriod(HasExternalIdEntity, BuildableAttr, Defaultable
     # Cross-entity relationships
     staff: Optional["StateStaff"] = attr.ib(default=None)
 
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_supervisor_periods_unique_within_region",
+                fields=["state_code", "external_id"],
+            )
+        ]
+
 
 @attr.s(eq=False, kw_only=True)
 class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
@@ -1907,6 +2070,15 @@ class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAt
 
     # Cross-entity relationships
     staff: Optional["StateStaff"] = attr.ib(default=None)
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        return [
+            UniqueConstraint(
+                name="staff_location_periods_unique_within_region",
+                fields=["state_code", "external_id"],
+            )
+        ]
 
 
 @attr.s(eq=False, kw_only=True)
