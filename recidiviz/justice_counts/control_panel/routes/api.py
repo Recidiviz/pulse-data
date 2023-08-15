@@ -1473,8 +1473,6 @@ def get_api_blueprint(
                 filename=new_file_name,
             )
 
-            current_session.commit()
-
             ingested_spreadsheet_json = _get_ingest_spreadsheet_json(
                 agency=agency,
                 agency_id=agency_id,
@@ -1489,6 +1487,7 @@ def get_api_blueprint(
             )
 
             if in_ci() or in_test():
+                current_session.commit()
                 return jsonify(ingested_spreadsheet_json)
 
             # Save ingested spreadsheet json to GCP bucket if not in test/ci
@@ -1496,6 +1495,8 @@ def get_api_blueprint(
                 ingested_spreadsheet_json=ingested_spreadsheet_json,
                 spreadsheet=spreadsheet,
             )
+
+            current_session.commit()
             return jsonify(ingested_spreadsheet_json)
         except Exception as e:
             raise _get_error(error=e) from e
