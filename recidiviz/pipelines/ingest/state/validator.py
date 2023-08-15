@@ -16,6 +16,9 @@
 # =============================================================================
 """Utility classes for validating state entities and entity trees."""
 
+from collections import defaultdict
+from typing import Any, Dict, List, Set, Tuple, Type
+
 from recidiviz.persistence.database_invariant_validator.state.state_person_invariant_validators import (
     state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_person,
 )
@@ -23,6 +26,10 @@ from recidiviz.persistence.database_invariant_validator.state.state_staff_invari
     state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_staff,
 )
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_all_entities_from_tree,
+)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.persistence_utils import RootEntityT
 
@@ -62,6 +69,28 @@ def validate_root_entity(root_entity: RootEntityT) -> RootEntityT:
                 )
 
             external_id_types.add(external_id.id_type)
+
+    field_index = CoreEntityFieldIndex()
+    child_entities = get_all_entities_from_tree(root_entity, field_index=field_index)
+
+    entities_by_cls: Dict[Type[Entity], List[Entity]] = defaultdict(list)
+    for child in child_entities:
+        entities_by_cls[type(child)].append(child)
+
+    for entity_cls, entities_of_type in entities_by_cls.items():
+        for constraint in entity_cls.entity_tree_unique_constraints():
+            seen_tuples: Set[Tuple[Any, ...]] = set()
+            for entity in entities_of_type:
+                value_tup = tuple(getattr(entity, field) for field in constraint.fields)
+                if value_tup not in seen_tuples:
+                    seen_tuples.add(value_tup)
+                    continue
+
+                error_msg = f"More than one {entity.get_entity_name()} entity found for root entity [{root_entity.get_class_id_name()} {root_entity.get_id()}] with "
+                for i, field in enumerate(constraint.fields):
+                    error_msg += f"{field}={value_tup[i]}, "
+                error_msg += f"first entity found: [{entity.get_class_id_name()} {entity.get_id()}]"
+                raise ValueError(error_msg)
 
     return root_entity
 

@@ -26,6 +26,12 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.utils import environment
 
 
+@attr.define
+class UniqueConstraint:
+    name: str
+    fields: List[str]
+
+
 @attr.s(eq=False)
 class Entity(CoreEntity):
     """Base class for all entity types."""
@@ -38,6 +44,17 @@ class Entity(CoreEntity):
 
     def __eq__(self, other):
         return entity_graph_eq(self, other)
+
+    @classmethod
+    def global_unique_constraints(cls) -> List[UniqueConstraint]:
+        """Returns unique constraints applied across all entities."""
+        return []
+
+    @classmethod
+    def entity_tree_unique_constraints(cls) -> List[UniqueConstraint]:
+        """Unique constraints applied only on a per root entity level
+        (comparing for uniqueness only among a root entity and it's child entities)."""
+        return []
 
 
 EntityT = TypeVar("EntityT", bound=Entity)
