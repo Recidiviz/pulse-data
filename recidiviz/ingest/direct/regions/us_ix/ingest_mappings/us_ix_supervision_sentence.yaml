@@ -116,20 +116,16 @@ output:
                     - OffenseSortingOrder
               relationships: relationships
     task_deadlines:
-      - $conditional:
-          - $if:
-              $not_null: EndDate
-            $then:
-              StateTaskDeadline:
-                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
-                eligible_date: EndDate
-                update_datetime:
-                  $env: results_update_datetime
-                task_metadata:
-                  $json_dict:
-                    external_id:
-                      $concat:
-                        $values:
-                          - OffenderId # Enforced to never be null in query
-                          - SentenceId # Never null in scl_Sentence table
-                    sentence_type: $literal("SUPERVISION")
+      - StateTaskDeadline:
+          task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
+          eligible_date: EndDate
+          update_datetime:
+            $env: results_update_datetime
+          task_metadata:
+            $json_dict:
+              external_id:
+                $concat:
+                  $values:
+                    - OffenderId # Enforced to never be null in query
+                    - SentenceId # Never null in scl_Sentence table
+              sentence_type: $literal("SUPERVISION")
