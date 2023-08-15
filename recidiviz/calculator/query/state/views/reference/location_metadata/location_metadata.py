@@ -80,7 +80,6 @@ When filling out the `supervision_*` fields in `location_metadata`, please hydra
 """
 
 # TODO(#19319): Hydrate US_ME location metadata in this view
-# TODO(#19318): Hydrate US_TN location metadata in this view
 # TODO(#19316): Hydrate US_MI location metadata in this view
 # TODO(#19317): Hydrate US_IX location metadata in this view
 LOCATION_METADATA_QUERY_TEMPLATE = """
@@ -96,6 +95,11 @@ UNION ALL
 
 SELECT state_code, location_external_id, location_name, location_type, location_metadata
 FROM `{project_id}.{reference_views_dataset}.us_pa_location_metadata_materialized`
+
+UNION ALL
+
+SELECT state_code, location_external_id, location_name, location_type, location_metadata
+FROM `{project_id}.{reference_views_dataset}.us_tn_location_metadata_materialized`
 """
 
 LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(

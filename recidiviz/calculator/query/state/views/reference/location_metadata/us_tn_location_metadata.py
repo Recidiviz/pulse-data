@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.location
     LocationMetadataKey,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -40,47 +41,55 @@ SELECT
     SiteID AS location_external_id,
     SiteName AS location_name,
     CASE 
-        WHEN SiteType IN ('CV', 'TC', 'AP', 'PC') THEN 'ADMINISTRATIVE' 
+        WHEN SiteType IN ('CV', 'AP', 'PC', 'OA') THEN 'ADMINISTRATIVE' 
         WHEN SiteType IN ('CA') THEN 'CITY_COUNTY' 
         WHEN SiteType IN ('JA') THEN 'COUNTY_JAIL' 
         WHEN SiteType IN ('CK') THEN 'COURT' 
         WHEN SiteType IN ('DA') THEN 'LAW_ENFORCEMENT'
-        WHEN SiteType IN ('OA') THEN 'OUT_OF_STATE'
         WHEN SiteType IN ('BP') THEN 'PAROLE_VIOLATOR_FACILITY'   
         WHEN SiteType IN ('BC', 'YC') THEN 'RESIDENTIAL_PROGRAM' 
         WHEN SiteType IN ('IJ', 'IN', 'DI', 'PS') THEN 'STATE_PRISON' 
-        WHEN SiteType IN ('CC', 'PA', 'PR', 'PX', 'EI') THEN 'SUPERVISION_LOCATION' 
+        WHEN SiteType IN ('CC', 'PA', 'PR', 'PX', 'EI', 'TC') THEN 'SUPERVISION_LOCATION' 
      END AS location_type,
-    # TODO(#23114) - Add additional metadata information when required for supervision or facilities staff
-    CASE WHEN SiteType IN ('CC', 'PA', 'PR', 'PX', 'EI') THEN
-        TO_JSON(
-          STRUCT(
-            ref.site_code AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
-            ref.site_name AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
-            CASE
-                WHEN ref.district = 'NOT_APPLICABLE' THEN ref.district
-                WHEN ref.district = 'INTERNAL_UNKNOWN' THEN ref.district
-                ELSE IF(CONTAINS_SUBSTR(ref.district, ','),
-                    CONCAT('Districts ',
-                        SUBSTR(ref.district, 0, STRPOS(ref.district, ',') - 1),
-                        ' and ',
-                        SUBSTR(ref.district, STRPOS(ref.district, ',') + 1)),
-                    CONCAT('District ', ref.district)) END AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
-              CASE
-                WHEN ref.district = 'NOT_APPLICABLE' THEN ref.district
-                WHEN ref.district = 'INTERNAL_UNKNOWN' THEN ref.district
-                ELSE IF(CONTAINS_SUBSTR(ref.district, ','),
-                    CONCAT('Districts ',
-                        SUBSTR(ref.district, 0, STRPOS(ref.district, ',') - 1),
-                        ' and ',
-                        SUBSTR(ref.district, STRPOS(ref.district, ',') + 1)),
-                    CONCAT('District ', ref.district)) END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
-            INITCAP(ref.division) AS {LocationMetadataKey.SUPERVISION_REGION_ID.value},
-            INITCAP(ref.division) AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
-          )
+    # TODO(#23114) - Revisit SiteType mappings and Add additional metadata information when required for supervision or facilities staff
+    CASE 
+        # SiteType codes for all locations mapped to SUPERVISION_LOCATION
+        WHEN SiteType IN ('CC', 'PA', 'PR', 'PX', 'EI', 'TC') AND sup_ref.site_code IS NOT NULL THEN 
+            TO_JSON(
+              STRUCT(
+                sup_ref.site_code AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
+                sup_ref.site_name AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
+                sup_ref.district AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+                  CASE
+                    WHEN sup_ref.district = 'NOT_APPLICABLE' THEN sup_ref.district
+                    WHEN sup_ref.district = 'INTERNAL_UNKNOWN' THEN sup_ref.district
+                    ELSE IF(CONTAINS_SUBSTR(sup_ref.district, ','),
+                        CONCAT('Districts ',
+                            SUBSTR(sup_ref.district, 0, STRPOS(sup_ref.district, ',') - 1),
+                            ' and ',
+                            SUBSTR(sup_ref.district, STRPOS(sup_ref.district, ',') + 1)),
+                        CONCAT('District ', sup_ref.district)) END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+                UPPER(sup_ref.division) AS {LocationMetadataKey.SUPERVISION_REGION_ID.value},
+                IF(sup_ref.division IN ('NOT_APPLICABLE','INTERNAL_UNKNOWN'), sup_ref.division, INITCAP(sup_ref.division)) AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
+              )
+            )
+        # SiteType codes for all locations mapped to 'STATE_PRISON', 'COUNTY_JAIL', 'FEDERAL_PRISON', 'RESIDENTIAL_PROGRAM', 'OUT_OF_STATE'
+        WHEN SiteType IN ('JA','IJ', 'IN', 'DI', 'PS', 'BC', 'YC') THEN 
+            TO_JSON(
+              STRUCT(
+                IF(Status = 'I','INACTIVE',COALESCE(inc_ref.level_2_incarceration_location_external_id,SiteID)) AS {LocationMetadataKey.FACILITY_GROUP_EXTERNAL_ID.value},
+                CASE 
+                    WHEN Status = 'I' THEN 'Inactive'
+                    WHEN inc_ref.level_2_incarceration_location_external_id = 'CJ' THEN 'County Jail'
+                    WHEN inc_ref.level_2_incarceration_location_external_id = 'WH' THEN 'Workhouse'
+                    WHEN inc_ref.level_2_incarceration_location_external_id = 'GENERAL' THEN 'General'
+                    ELSE COALESCE(inc_ref.level_2_incarceration_location_external_id,SiteID) END AS {LocationMetadataKey.FACILITY_GROUP_NAME.value},
+                SiteID AS {LocationMetadataKey.LOCATION_ACRONYM.value}
+            )
         ) ELSE NULL END AS location_metadata
 FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Site_latest` site
-LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_supervision_locations_latest` ref ON site_code = SiteID
+LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_supervision_locations_latest` sup_ref ON site_code = SiteID
+LEFT JOIN `{{project_id}}.{{external_reference_dataset}}.us_tn_incarceration_facility_map` inc_ref ON level_1_incarceration_location_external_id = SiteID 
 WHERE SiteID IS NOT NULL
 """
 
@@ -92,6 +101,7 @@ US_TN_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
+    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     should_materialize=True,
 )
 
