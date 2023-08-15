@@ -29,6 +29,19 @@ if [[ ! ${GIT_VERSION_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     run_cmd exit 1
 fi
 
+
+read -r -a VERSION_PARTS < <(parse_version "${GIT_VERSION_TAG}")
+MAJOR_VERSION="${VERSION_PARTS[1]}"
+MINOR_VERSION="${VERSION_PARTS[2]}"
+CHANGES_SINCE_TAG=$(git log "tags/${GIT_VERSION_TAG}..releases/v${MAJOR_VERSION}.${MINOR_VERSION}-rc" --oneline)
+if [ -n "${CHANGES_SINCE_TAG}" ]; then
+  echo "There are newly-added commits in the release branch that will not be deployed in ${GIT_VERSION_TAG}:"
+  echo "${CHANGES_SINCE_TAG}" | indent_output
+  echo "Folks may be expecting the above changes to go out in this production deploy (did we miss a cherry-pick?)."
+  script_prompt  "Would you like to continue deploying ${GIT_VERSION_TAG}?"
+fi
+
+
 LAST_DEPLOYED_GIT_VERSION_TAG=$(last_deployed_version_tag recidiviz-123) || exit_on_fail
 if ! version_less_than "${LAST_DEPLOYED_GIT_VERSION_TAG}" "${GIT_VERSION_TAG}"; then
     echo_error "Deploy version [$GIT_VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
