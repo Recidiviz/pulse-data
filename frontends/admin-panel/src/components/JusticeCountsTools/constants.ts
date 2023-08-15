@@ -123,6 +123,7 @@ export enum StateCode {
   us_ok = "Oklahoma",
   us_or = "Oregon",
   us_pa = "Pennsylvania",
+  us_pr = "Puerto Rico",
   us_ri = "Rhode Island",
   us_sc = "South Carolina",
   us_sd = "South Dakota",

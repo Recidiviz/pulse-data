@@ -40,7 +40,7 @@ class TestStates(unittest.TestCase):
 
         # There are 53 states because we include US_DC, as well as a playground region
         # US_OZ and an alternate ingest code for US_ID (US_IX).
-        self.assertEqual(53, len(states.StateCode))
+        self.assertEqual(54, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
         self.assertEqual("US_WY", list(states.StateCode)[-3].value)
         self.assertEqual("US_OZ", list(states.StateCode)[-2].value)
@@ -52,7 +52,7 @@ class TestStates(unittest.TestCase):
 
         # There are 58 states because we are in tests, so we add US_DD, US_LL,
         # US_WW, US_XX, and US_YY as valid values.
-        self.assertEqual(58, len(states.StateCode))
+        self.assertEqual(59, len(states.StateCode))
         self.assertEqual("US_AK", list(states.StateCode)[0].value)
         self.assertEqual("US_WY", list(states.StateCode)[-8].value)
         self.assertEqual("US_OZ", list(states.StateCode)[-7].value)
@@ -72,7 +72,7 @@ class TestStates(unittest.TestCase):
 
         valid_states = ["us_wa", "US_MD", "us_ma"]
         # US_XX is not a valid state_code outside of tests
-        invalid_states = ["us_gu", "US_PR", "UX_CA", "us_xx", "US_XX"]
+        invalid_states = ["us_gu", "UX_CA", "us_xx", "US_XX"]
 
         for state_code in valid_states:
             self.assertTrue(states.StateCode.is_state_code(state_code))
