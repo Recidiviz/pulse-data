@@ -19,7 +19,10 @@
 
 from typing import Optional
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    date_diff_in_full_months,
+    nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -198,9 +201,7 @@ def cis_425_program_enrollment_notes(
         str: SQL query
     """
 
-    return f"""
-    -- Program enrollment data as notes
-    SELECT 
+    return f"""SELECT
         mp.CIS_100_CLIENT_ID AS external_id,
         {criteria} AS criteria,
         {note_title} AS note_title,
@@ -317,8 +318,7 @@ def cis_201_case_plan_case_notes() -> str:
         str: Query that surfaces case plan goals for incarcerated individuals in ME.
     """
 
-    _FINAL_SELECT = """
-    SELECT  
+    _FINAL_SELECT = """SELECT
         Cis_200_Cis_100_Client_Id AS external_id,
         "Case Plan Goals" AS criteria,
         CONCAT(Domain_Goal_Desc,' - ', Goal_Status_Desc) AS note_title,
@@ -330,8 +330,8 @@ def cis_201_case_plan_case_notes() -> str:
     FROM
     """
 
-    return f"""
-    {_FINAL_SELECT} (SELECT 
+    return f"""{_FINAL_SELECT} (
+            SELECT 
                 *
             FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_201_GOALS_latest` gl
             INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2012_GOAL_STATUS_TYPE_latest` gs
@@ -340,5 +340,44 @@ def cis_201_case_plan_case_notes() -> str:
                 ON gl.Cis_2010_Goal_Type_Cd = gt.Goal_Type_Cd
             INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2011_DOMAIN_GOAL_TYPE_latest` dg
                 ON gl.Cis_2011_Dmn_Goal_Cd = dg.Domain_Goal_Cd
-            WHERE gs.Goal_Status_Cd IN ('1','2')) 
+            WHERE gs.Goal_Status_Cd IN ('1','2')
+            ) 
     """
+
+
+def me_time_left_in_sentence_in_categories() -> str:
+    """
+    Returns:
+        str: Query that surfaces the time left in sentence in categories for ME.
+    """
+
+    return f"""
+        SELECT
+        *,
+        CASE 
+            WHEN month_diff <= 36 AND month_diff >= 6 THEN "3y to 6mo"
+            WHEN month_diff < 6 AND day_diff >= 30 THEN "6mo to 30days"
+            WHEN day_diff < 30 THEN "30days or less"
+        END AS time_left
+        FROM (
+            -- Grab the day difference between today and the expected release date
+            SELECT 
+                *,
+                {date_diff_in_full_months(date_column= 'expected_release_date', time_zone = 'US/Eastern')} AS month_diff,
+                DATE_DIFF(expected_release_date, CURRENT_DATE('US/Eastern'), DAY) day_diff
+            FROM (
+                -- Grab the expected release date
+                SELECT 
+                    state_code, 
+                    person_id,
+                    MAX(end_date) AS expected_release_date,
+                FROM `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` 
+                WHERE CURRENT_DATE('US/Eastern') < end_date
+                -- Only keep active terms
+                AND status = '1'
+                GROUP BY 1,2
+            )
+        )
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id`
+            USING(person_id)
+        """

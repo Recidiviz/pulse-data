@@ -18,7 +18,10 @@
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
     join_current_task_eligibility_spans_with_external_id,
@@ -40,10 +43,25 @@ from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     cis_201_case_plan_case_notes,
     cis_204_notes_cte,
     cis_425_program_enrollment_notes,
+    me_time_left_in_sentence_in_categories,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_FURLOUGH_NOTE_TX_REGEX = "|".join(
+    [
+        "FURLOUGH",
+        "FURLOW",
+        "FURLOUG",
+        "FURLOGH",
+        "FURLLOUGH",
+        "FURLOH",
+        "FURLOUGGH",
+        "FURLOUH",
+        "FURLOUHG",
+        "FURLOOGH",
+    ]
+)
 US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_NAME = "us_me_furlough_release_form_record"
 
 US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_DESCRIPTION = """
@@ -80,6 +98,46 @@ case_notes_cte AS (
 
     -- Case Plan Goals
     {cis_201_case_plan_case_notes()}
+
+    UNION ALL 
+
+    -- Furlough-release related notes
+    {cis_204_notes_cte("Notes: Furlough")}
+    WHERE 
+        REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{_FURLOUGH_NOTE_TX_REGEX}') 
+        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{_FURLOUGH_NOTE_TX_REGEX}')
+    GROUP BY 1,2,3,4,5
+
+    UNION ALL
+    -- Furlough pass frequency
+    SELECT 
+        external_id,
+        "Furlough frequency" AS criteria,
+        "Passes" AS note_title,
+        CASE time_left
+            WHEN "3y to 6mo" THEN "One pass a week. This person is between 3 years and 6 months away from expected release date."
+            WHEN "6mo to 30days" THEN "Two passes a week. This person is less than 6 months away from expected release date."
+            WHEN "30days or less" THEN "Two passes a week. This person is less than 6 months away from expected release date."
+        END AS note_body,
+        SAFE_CAST(NULL AS DATE) AS event_date,
+    FROM ({me_time_left_in_sentence_in_categories()}
+    )
+
+    UNION ALL
+    
+    -- Furlough leave frequency
+    SELECT 
+        external_id,
+        "Furlough frequency" AS criteria,
+        "Leaves" AS note_title,
+        CASE time_left
+            WHEN "3y to 6mo" THEN "One leave every 60 days. This person is between 3 years and 6 months away from expected release date."
+            WHEN "6mo to 30days" THEN "One leave per month. This person is between 6 months and 30 days away from expected release date."
+            WHEN "30days or less" THEN "Two leaves. This person is less than 30 days away from expected release date."
+        END AS note_body,
+        SAFE_CAST(NULL AS DATE) AS event_date,
+    FROM ({me_time_left_in_sentence_in_categories()}
+    )
 ), 
 
 {json_to_array_cte('current_incarceration_pop_cte')}, 
@@ -116,6 +174,7 @@ US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ME
     ),
+    analyst_dataset=ANALYST_VIEWS_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),

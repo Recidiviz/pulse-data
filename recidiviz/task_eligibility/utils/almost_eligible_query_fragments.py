@@ -125,8 +125,7 @@ def one_criteria_away_from_eligibility(
             '{criteria_name}' IN UNNEST(ineligible_criteria) 
             AND ARRAY_LENGTH(ineligible_criteria) = 1
 )
-{criteria_value_where_clause}
-"""
+{criteria_value_where_clause}"""
 
 
 def x_time_away_from_eligibility(

@@ -218,7 +218,8 @@ def get_binned_time_period_months(
 ) -> str:
     """Given a SQL expression that resolves to a date, assigns it to a bin representing
     various non-overlapping periods, looking back as far as the past 5 years.
-    Will be NULL if the date is more than 5 years before the current date, or in the future."""
+    Will be NULL if the date is more than 5 years before the current date, or in the future.
+    """
 
     return f"""CASE
         {special_case_expr}
@@ -232,7 +233,8 @@ def get_binned_time_period_months(
 
 def get_person_full_name(name_expr: str) -> str:
     """Given a SQL expression that will resolve to a standard Recidiviz full_name JSON object,
-    returns an expression that transforms it into a string in the format "Last, First"."""
+    returns an expression that transforms it into a string in the format "Last, First".
+    """
 
     return f"""IF(
         {name_expr} IS NOT NULL, 
@@ -268,7 +270,8 @@ def create_buckets_with_cap(bucket_expr: str, max_value: int) -> str:
 
 def convert_days_to_years(day_expr: str) -> str:
     """Given a sql expression that resolves to a number of days, returns an expression
-    that transforms it into an approximate number of years, rounding up to the nearest whole number."""
+    that transforms it into an approximate number of years, rounding up to the nearest whole number.
+    """
 
     # 365.256 days in a year
     return f"CAST(CEILING({day_expr}/365.256) AS INT64)"
@@ -368,3 +371,21 @@ def join_on_columns_fragment(columns: Iterable[str], table1: str, table2: str) -
     """Returns a string fragment that can be used in an "ON" join statement for columns shared between table1 and table2"""
     join_fragments = [f"{table1}.{col} = {table2}.{col}" for col in columns]
     return "\nAND ".join(join_fragments)
+
+
+def date_diff_in_full_months(
+    date_column: str,
+    time_zone: str = "US/Pacific",
+) -> str:
+    """Returns a string fragment to calculate the number of full months between a date
+            and the current date.
+
+    Args:
+        date_column (str): The name of the date column to calculate the difference from.
+        time_zone (str, optional): The time zone to use for the current date.
+            Defaults to "US/Pacific".
+    """
+
+    return f"""  DATE_DIFF({date_column}, CURRENT_DATE('{time_zone}'), MONTH)
+          - IF(EXTRACT(DAY FROM CURRENT_DATE('{time_zone}')) > EXTRACT(DAY FROM {date_column}), 
+                1, 0)"""
