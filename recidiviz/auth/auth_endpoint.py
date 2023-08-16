@@ -43,7 +43,6 @@ from recidiviz.calculator.query.state.views.reference.dashboard_user_restriction
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
 )
-from recidiviz.case_triage.ops_routes import CASE_TRIAGE_DB_OPERATIONS_QUEUE
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
@@ -83,6 +82,8 @@ from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
 
 auth_endpoint_blueprint = Blueprint("auth_endpoint_blueprint", __name__)
+
+CASE_TRIAGE_DB_OPERATIONS_QUEUE = "case-triage-db-operations-queue"
 
 
 @auth_endpoint_blueprint.route(
