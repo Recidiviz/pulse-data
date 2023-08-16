@@ -23,6 +23,27 @@ columns:
   - name: Create_Date
     description: Figure out what this means TODO(#23037)
     field_type: datetime
+  # There are 10 unexpected columns in the middle of the sample file
+  - name: Unknown_1
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_2
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_3
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_4
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_5
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_6
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_7
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_8
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_9
+    description: Figure out what column this is TODO(#23037)
+  - name: Unknown_10
+    description: Figure out what column this is TODO(#23037)
   - name: PV_Specialist_Decision_Needed
     description: Flag for whether a PV Specialist was needed to weigh in on this decision
   - name: PV_Specialist_Decision_Date
