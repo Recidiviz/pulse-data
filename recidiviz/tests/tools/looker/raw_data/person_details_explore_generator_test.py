@@ -18,6 +18,7 @@
 
 import unittest
 from types import ModuleType
+from typing import List
 
 import attr
 from freezegun import freeze_time
@@ -37,16 +38,22 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
 from recidiviz.tests.tools.looker.raw_data.person_details_generator_test_utils import (
     PersonDetailsLookMLGeneratorTest,
 )
-from recidiviz.tools.looker.raw_data import person_details_explore_generator
+from recidiviz.tools.looker.raw_data import (
+    person_details_explore_generator,
+    person_details_view_generator,
+)
 from recidiviz.tools.looker.raw_data.person_details_explore_generator import (
-    _get_table_relationship_edges,
     generate_lookml_explores,
+    get_table_relationship_edges,
+)
+from recidiviz.tools.looker.raw_data.person_details_view_generator import (
+    _generate_state_raw_data_views,
 )
 
 
 class RawDataTreeEdgesTest(unittest.TestCase):
     """
-    Tests for the function _get_table_relationship_edges,
+    Tests for the function get_table_relationship_edges,
     which aims to return a list of edges in the table relationship tree.
     """
 
@@ -100,7 +107,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
 
     def test_no_relationships(self) -> None:
         # Primary person table has no relationships
-        no_relationships = _get_table_relationship_edges(
+        no_relationships = get_table_relationship_edges(
             self.primary_person_table_config,
             {"myFile": self.primary_person_table_config},
         )
@@ -119,7 +126,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             table_relationships=[self.sparse_relationship.invert()],
         )
         third_table = attr.evolve(self.sparse_config, file_tag="myFile3")
-        one_relationship = _get_table_relationship_edges(
+        one_relationship = get_table_relationship_edges(
             primary_table,
             {
                 "myFile": primary_table,
@@ -173,7 +180,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             file_tag="myFile4",
             table_relationships=[file2_file4_edge.invert()],
         )
-        relationships = _get_table_relationship_edges(
+        relationships = get_table_relationship_edges(
             file1,
             {"myFile": file1, "myFile2": file2, "myFile3": file3, "myFile4": file4},
         )
@@ -187,7 +194,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             file_tag="myFile2",
             table_relationships=[file1_file2_edge.invert(), file2_file4_edge],
         )
-        relationships = _get_table_relationship_edges(
+        relationships = get_table_relationship_edges(
             file1,
             {"myFile": file1, "myFile2": file2, "myFile3": file3, "myFile4": file4},
         )
@@ -231,7 +238,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             file_tag="myFile3",
             table_relationships=[file1_file3_edge.invert()],
         )
-        relationships = _get_table_relationship_edges(
+        relationships = get_table_relationship_edges(
             file1, {"myFile": file1, "myFile2": file2, "myFile3": file3}
         )
         self.assertEqual(relationships, [file1_file2_edge, file2_file3_edge])
@@ -253,7 +260,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             self.primary_person_table_config,
             table_relationships=[self_join],
         )
-        no_relationships = _get_table_relationship_edges(
+        no_relationships = get_table_relationship_edges(
             primary_table,
             {
                 "myFile": primary_table,
@@ -266,12 +273,13 @@ class LookMLExploreTest(PersonDetailsLookMLGeneratorTest):
     """Tests LookML explore generation functions"""
 
     @classmethod
-    def generator_module(cls) -> ModuleType:
-        return person_details_explore_generator
+    def generator_modules(cls) -> List[ModuleType]:
+        return [person_details_view_generator, person_details_explore_generator]
 
     @freeze_time("2000-06-30")
     def test_generate_lookml_explores(self) -> None:
+        all_views = _generate_state_raw_data_views()
         self.generate_files(
-            function_to_test=generate_lookml_explores,
+            function_to_test=lambda s: generate_lookml_explores(s, all_views),
             filename_filter=".explore.lkml",
         )

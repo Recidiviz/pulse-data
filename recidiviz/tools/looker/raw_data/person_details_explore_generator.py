@@ -27,6 +27,12 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
     RawTableRelationshipInfo,
 )
+from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
+    ColumnEqualityJoinBooleanClause,
+    ColumnFilterJoinBooleanClause,
+    JoinBooleanClause,
+    JoinColumn,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -38,10 +44,11 @@ from recidiviz.looker.lookml_explore_parameter import (
     LookMLExploreParameter,
     LookMLJoinParameter,
 )
+from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 
 
-def _get_table_relationship_edges(
+def get_table_relationship_edges(
     primary_person_table: DirectIngestRawFileConfig,
     all_tables: Dict[str, DirectIngestRawFileConfig],
 ) -> List[RawTableRelationshipInfo]:
@@ -76,7 +83,9 @@ def _get_table_relationship_edges(
 
 
 def _generate_base_explore(
-    state_code: StateCode, primary_person_table_name: str
+    state_code: StateCode,
+    primary_person_table_name: str,
+    views_by_file_tag: Dict[str, LookMLView],
 ) -> LookMLExplore:
     """
     Return an Explore for the given state code that has basic information:
@@ -87,6 +96,7 @@ def _generate_base_explore(
     state_abbrev = state_code.value.lower()
     explore_name = f"{state_abbrev}_raw_data_template"
     state_name = state_code.get_state().name
+    view_name = views_by_file_tag[primary_person_table_name].view_name
     return LookMLExplore(
         explore_name=explore_name,
         parameters=[
@@ -94,31 +104,54 @@ def _generate_base_explore(
                 f"Data pertaining to an individual in {state_name}"
             ),
             LookMLExploreParameter.group_label("Raw State Data"),
+            LookMLExploreParameter.label(f"{state_abbrev.upper()} Raw Data"),
         ],
         extension_required=True,
-        view_name=primary_person_table_name,
+        view_name=view_name,
+        view_label=view_name,
     )
+
+
+def _join_clause_to_lookml(
+    join_clause: JoinBooleanClause, views_by_file_tag: Dict[str, LookMLView]
+) -> str:
+    def column_lookml(col: JoinColumn) -> str:
+        return f"${{{views_by_file_tag[col.file_tag].view_name}.{col.column}}}"
+
+    if isinstance(join_clause, ColumnEqualityJoinBooleanClause):
+        return f"{column_lookml(join_clause.column_1)} = {column_lookml(join_clause.column_2)}"
+    if isinstance(join_clause, ColumnFilterJoinBooleanClause):
+        return f"{column_lookml(join_clause.column)} = {join_clause.filter_value}"
+    raise ValueError(f"Unexpected JoinBooleanClause type: {type(join_clause)}")
 
 
 def _build_join_parameter(
     relationship: RawTableRelationshipInfo,
+    views_by_file_tag: Dict[str, LookMLView],
 ) -> ExploreParameterJoin:
     """
     Convert the provided RawTableRelationshipInfo into an ExploreParameterJoin
     """
-    sql_on = LookMLJoinParameter.sql_on(relationship.join_lookml())
+    sql_on_text = " AND ".join(
+        _join_clause_to_lookml(j, views_by_file_tag) for j in relationship.join_clauses
+    )
+    sql_on = LookMLJoinParameter.sql_on(sql_on_text)
+
     join_type = LookMLJoinParameter.type(JoinType.FULL_OUTER)
     join_cardinality = LookMLJoinParameter.relationship(
         JoinCardinality[relationship.cardinality.value]
     )
-
+    view_name = views_by_file_tag[relationship.foreign_table].view_name
+    view_label = LookMLJoinParameter.view_label(view_name)
     return ExploreParameterJoin(
-        view_name=relationship.foreign_table,
-        join_params=[sql_on, join_type, join_cardinality],
+        view_name=view_name,
+        join_params=[sql_on, join_type, join_cardinality, view_label],
     )
 
 
-def _generate_all_state_explores() -> Dict[StateCode, LookMLExplore]:
+def _generate_all_state_explores(
+    all_views: Dict[StateCode, Dict[str, LookMLView]]
+) -> Dict[StateCode, LookMLExplore]:
     """
     Return a dictionary where keys are StateCodes for states with raw data
     and a primary person table defined, and values are a LookMLExplore for each state
@@ -127,17 +160,28 @@ def _generate_all_state_explores() -> Dict[StateCode, LookMLExplore]:
     for state_code in get_existing_direct_ingest_states():
         region_config = DirectIngestRegionRawFileConfig(region_code=state_code.value)
         if primary_person_table := region_config.get_primary_person_table():
-            explore = _generate_base_explore(state_code, primary_person_table.file_tag)
-            join_info = _get_table_relationship_edges(
+            views_by_file_tag = all_views[state_code]
+            relationship_edges = get_table_relationship_edges(
                 primary_person_table, region_config.raw_file_configs
             )
-            join_parameters = map(_build_join_parameter, join_info)
+            # If there are no relationships defined, we should not make an explore
+            if not relationship_edges:
+                continue
+            join_parameters = [
+                _build_join_parameter(relationship, views_by_file_tag)
+                for relationship in relationship_edges
+            ]
+            explore = _generate_base_explore(
+                state_code, primary_person_table.file_tag, views_by_file_tag
+            )
             explore.parameters.extend(join_parameters)
             explores[state_code] = explore
     return explores
 
 
-def generate_lookml_explores(looker_dir: str) -> None:
+def generate_lookml_explores(
+    looker_dir: str, all_views: Dict[StateCode, Dict[str, LookMLView]]
+) -> Dict[StateCode, LookMLExplore]:
     """Produce LookML Explore files for all states, writing up-to-date
     .explore.lkml files in looker_dir/explores/raw_data/
 
@@ -147,6 +191,8 @@ def generate_lookml_explores(looker_dir: str) -> None:
     explore_dir = os.path.join(looker_dir, "explores", "raw_data")
     remove_lookml_files_from(explore_dir)
 
-    for state_code, explore in _generate_all_state_explores().items():
+    all_state_explores = _generate_all_state_explores(all_views)
+    for state_code, explore in all_state_explores.items():
         state_dir = os.path.join(explore_dir, state_code.value.lower())
         explore.write(state_dir, source_script_path=__file__)
+    return all_state_explores

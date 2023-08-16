@@ -57,6 +57,7 @@ class LookMLExploreTest(unittest.TestCase):
         expected = """explore: test_explore {
 
   view_name: test_view_name
+  view_label: "test_view_name"
 
 }"""
         self.assertEqual(explore, expected)

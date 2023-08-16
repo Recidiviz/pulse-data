@@ -19,11 +19,22 @@ for raw data tables and writing them to files.
 
 Run the following to write files to the specified directory DIR:
 python -m recidiviz.tools.looker.raw_data.person_details_lookml_writer --looker_repo_root [DIR]
+
+If you are running this for new states, you will also have to add the following lines
+into the `models/recidiviz-123.model.lkml` and `models/recidiviz-staging.model.lkml`
+files inside the Looker directory for every new state added:
+
+explore: us_xx_raw_data {
+  extends: [us_xx_raw_data_template]
+}
 """
 
 import argparse
 import os
 
+from recidiviz.tools.looker.raw_data.person_details_dashboard_generator import (
+    generate_lookml_dashboards,
+)
 from recidiviz.tools.looker.raw_data.person_details_explore_generator import (
     generate_lookml_explores,
 )
@@ -57,9 +68,9 @@ def write_lookml_files(looker_dir: str) -> None:
         f"Warning: .lkml files will be deleted/overwritten in {looker_dir}\nProceed?"
     ):
         return
-    # TODO(#21939): Generate dashboards here
-    generate_lookml_views(looker_dir)
-    generate_lookml_explores(looker_dir)
+    all_state_views = generate_lookml_views(looker_dir)
+    all_state_explores = generate_lookml_explores(looker_dir, all_state_views)
+    generate_lookml_dashboards(looker_dir, all_state_views, all_state_explores)
 
 
 if __name__ == "__main__":

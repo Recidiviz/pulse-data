@@ -21,7 +21,7 @@ import os
 import tempfile
 import unittest
 from types import ModuleType
-from typing import Callable
+from typing import Any, Callable, List
 from unittest.mock import patch
 
 from recidiviz.common.constants.states import StateCode
@@ -38,16 +38,19 @@ class PersonDetailsLookMLGeneratorTest(unittest.TestCase):
 
     @classmethod
     @abc.abstractmethod
-    def generator_module(cls) -> ModuleType:
-        pass
+    def generator_modules(cls) -> List[ModuleType]:
+        """Return a list of modules to patch out"""
 
     def setUp(self) -> None:
         # Only generate LookML files for US_LL
-        self.get_states_patcher = patch(
-            f"{self.generator_module().__name__}.get_existing_direct_ingest_states",
-            return_value=[StateCode.US_LL],
-        )
-        self.mock_get_states = self.get_states_patcher.start()
+        self.get_states_patchers = [
+            patch(
+                f"{module.__name__}.get_existing_direct_ingest_states",
+                return_value=[StateCode.US_LL],
+            )
+            for module in self.generator_modules()
+            if "get_existing_direct_ingest_states" in dir(module)
+        ]
 
         # Use fake regions for states
         def mock_config_constructor(
@@ -58,20 +61,26 @@ class PersonDetailsLookMLGeneratorTest(unittest.TestCase):
                 region_module=fake_regions,
             )
 
-        self.region_config_patcher = patch(
-            f"{self.generator_module().__name__}.DirectIngestRegionRawFileConfig",
-            side_effect=mock_config_constructor,
-        )
-        self.mock_region_config = self.region_config_patcher.start()
+        self.region_config_patchers = [
+            patch(
+                f"{module.__name__}.DirectIngestRegionRawFileConfig",
+                side_effect=mock_config_constructor,
+            )
+            for module in self.generator_modules()
+            if "DirectIngestRegionRawFileConfig" in dir(module)
+        ]
+
+        for patcher in self.get_states_patchers + self.region_config_patchers:
+            patcher.start()
 
     def tearDown(self) -> None:
-        self.get_states_patcher.stop()
-        self.region_config_patcher.stop()
+        for patcher in self.get_states_patchers + self.region_config_patchers:
+            patcher.stop()
 
     def generate_files(
         self,
         *,
-        function_to_test: Callable[[str], None],
+        function_to_test: Callable[[str], Any],
         filename_filter: str,
     ) -> None:
         """

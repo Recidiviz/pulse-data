@@ -20,7 +20,7 @@ from typing import List, Optional
 import attr
 
 from recidiviz.looker.lookml_utils import write_lookml_file
-from recidiviz.looker.lookml_view_field import LookMLViewField
+from recidiviz.looker.lookml_view_field import DimensionLookMLViewField, LookMLViewField
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -47,6 +47,28 @@ class LookMLView:
         field_names = [field.field_name for field in self.fields]
         if len(set(field_names)) != len(field_names):
             raise ValueError(f"Duplicate field names found in {field_names}")
+
+    def qualified_name_for_field(self, field_name: str) -> str:
+        """Return a string with the format view_name.field_name
+        or raises an error if the field is not in this view"""
+        if not any(field.field_name == field_name for field in self.fields):
+            raise ValueError(
+                f"Field name {field_name} does not exist in {self.view_name}"
+            )
+
+        return f"{self.view_name}.{field_name}"
+
+    def qualified_dimension_names(self) -> List[str]:
+        """Return a list of qualified names for all dimensions in this view
+        -- not including dimension groups"""
+        return [
+            self.qualified_name_for_field(field.field_name)
+            for field in self.fields
+            if isinstance(
+                field,
+                DimensionLookMLViewField,
+            )
+        ]
 
     def build(self) -> str:
         """Builds string defining a standalone LookML view file"""

@@ -43,7 +43,17 @@ class LookMLExplore:
     )
     extension_required: bool = attr.field(default=False)
     view_name: Optional[str] = attr.field(default=None)
+    view_label: Optional[str] = attr.field(default=None)
     extended_explores: List[str] = attr.field(factory=list)
+
+    @property
+    def non_template_name(self) -> str:
+        """Returns this LookMLExplore's name with `_template` removed
+        if the name ends with that string, otherwise the name itself."""
+        suffix = "_template"
+        if self.explore_name.endswith(suffix):
+            return self.explore_name[: -len(suffix)]
+        return self.explore_name
 
     def build(self) -> str:
         """Returns string containing contents of this LookML explore file"""
@@ -60,7 +70,10 @@ class LookMLExplore:
 
         view_name_clause = ""
         if self.view_name:
-            view_name_clause = f"\n  view_name: {self.view_name}\n"
+            label = self.view_label or self.view_name
+            view_name_clause = (
+                f'\n  view_name: {self.view_name}\n  view_label: "{label}"\n'
+            )
 
         parameters = "".join(f"\n  {param.build()}" for param in self.parameters)
 

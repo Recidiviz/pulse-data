@@ -31,6 +31,12 @@ class LookMLWriterTest(unittest.TestCase):
     """Tests raw data LookML generation script"""
 
     @patch(
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_dashboards"
+    )
+    @patch(
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_explores"
+    )
+    @patch(
         "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_views"
     )
     @patch(
@@ -40,6 +46,8 @@ class LookMLWriterTest(unittest.TestCase):
         self,
         mock_prompt: Mock,
         mock_generate_views: Mock,
+        mock_generate_explores: Mock,
+        mock_generate_dashboards: Mock,
     ) -> None:
         # Attempt to generate files into a wrong directory,
         # check that the user was prompted and files are not removed
@@ -49,7 +57,15 @@ class LookMLWriterTest(unittest.TestCase):
             write_lookml_files(not_looker_dir)
             mock_prompt.assert_called()
             mock_generate_views.assert_not_called()
+            mock_generate_explores.assert_not_called()
+            mock_generate_dashboards.assert_not_called()
 
+    @patch(
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_dashboards"
+    )
+    @patch(
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_explores"
+    )
     @patch(
         "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_views"
     )
@@ -60,6 +76,8 @@ class LookMLWriterTest(unittest.TestCase):
         self,
         mock_prompt: Mock,
         mock_generate_views: Mock,
+        mock_generate_explores: Mock,
+        mock_generate_dashboards: Mock,
     ) -> None:
         # Attempt to generate files into a wrong directory,
         # check that the user was prompted and we continue when they say to
@@ -69,7 +87,15 @@ class LookMLWriterTest(unittest.TestCase):
             write_lookml_files(not_looker_dir)
             mock_prompt.assert_called()
             mock_generate_views.assert_called()
+            mock_generate_explores.assert_called()
+            mock_generate_dashboards.assert_called()
 
+    @patch(
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_dashboards"
+    )
+    @patch(
+        "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_explores"
+    )
     @patch(
         "recidiviz.tools.looker.raw_data.person_details_lookml_writer.generate_lookml_views"
     )
@@ -80,6 +106,8 @@ class LookMLWriterTest(unittest.TestCase):
         self,
         mock_prompt: Mock,
         mock_generate_views: Mock,
+        mock_generate_explores: Mock,
+        mock_generate_dashboards: Mock,
     ) -> None:
         # Attempt to generate files into the correct directory,
         # check that the user was not prompted, files are removed and generated
@@ -87,4 +115,7 @@ class LookMLWriterTest(unittest.TestCase):
             looker_dir = os.path.join(tmp_dir, "looker")
             write_lookml_files(looker_dir)
             mock_prompt.assert_not_called()
+
             mock_generate_views.assert_called()
+            mock_generate_explores.assert_called()
+            mock_generate_dashboards.assert_called()
