@@ -209,5 +209,5 @@ columns:
     field_type: datetime
     description: >-
       The date the most recent suspension was ended.
-  - name: SUPVEVNTDATE # Added 2023-07-19
+  - name: LastCCRDate # Added 2023-08-14, formerly SUPVEVNTDATE added 2023-07-19
     field_type: datetime
