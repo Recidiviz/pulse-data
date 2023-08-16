@@ -66,15 +66,13 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
     """Interface for state-specific decisions involved in normalization
     supervision periods for calculations."""
 
-    # TODO(#12028): Delete this when TN ingest rerun has eliminated the bad
-    #  periods with dates of 9999-12-31.
-    def drop_bad_unmodified_periods(
-        self, supervision_periods: List[StateSupervisionPeriod]
+    def drop_bad_periods(
+        self, sorted_supervision_periods: List[StateSupervisionPeriod]
     ) -> List[StateSupervisionPeriod]:
         """States may have specific logic to drop periods that should be fully ignored
         before the rest of supervision period normalization proceeds.
         """
-        return supervision_periods
+        return sorted_supervision_periods
 
     def supervision_level_override(
         self,
@@ -223,8 +221,8 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
 
             # TODO(#12028): Delete this when TN ingest rerun has eliminated the bad
             #  periods with dates of 9999-12-31.
-            mid_processing_periods = self.delegate.drop_bad_unmodified_periods(
-                mid_processing_periods
+            mid_processing_periods = self.delegate.drop_bad_periods(
+                standard_date_sort_for_supervision_periods(mid_processing_periods)
             )
 
             # Drop periods that have neither a start nor end date
