@@ -45,6 +45,11 @@ from recidiviz.task_eligibility.utils.us_me_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_WORK_RELEASE_NOTE_TX_REGEX = "|".join(
+    [
+        r"WORK[-\s]?RELEASE",
+    ]
+)
 US_ME_COMPLETE_WORK_RELEASE_RECORD_VIEW_NAME = "us_me_work_release_form_record"
 
 US_ME_COMPLETE_WORK_RELEASE_RECORD_DESCRIPTION = """
@@ -80,6 +85,15 @@ case_notes_cte AS (
 
     -- Case Plan Goals
     {cis_201_case_plan_case_notes()}
+
+    UNION ALL
+
+    -- Work-release related notes
+    {cis_204_notes_cte("Notes: Work release")}
+    WHERE 
+        REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{_WORK_RELEASE_NOTE_TX_REGEX}') 
+        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{_WORK_RELEASE_NOTE_TX_REGEX}')
+    GROUP BY 1,2,3,4,5  
 ), 
 
 {json_to_array_cte('current_incarceration_pop_cte')}, 
