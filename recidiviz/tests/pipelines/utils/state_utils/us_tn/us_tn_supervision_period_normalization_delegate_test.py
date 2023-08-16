@@ -38,35 +38,6 @@ class TestUsTnSupervisionNormalizationDelegate(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate = UsTnSupervisionNormalizationDelegate()
 
-    # TODO(#12028): Delete this when TN ingest rerun has eliminated the bad
-    #  periods with dates of 9999-12-31.
-    def test_drop_9999_12_31_periods(self) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code=StateCode.US_TN.value,
-            external_id="sp1",
-            start_date=date(2010, 1, 1),
-            termination_date=None,
-        )
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code=StateCode.US_TN.value,
-            external_id="sp2",
-            start_date=date(2010, 1, 1),
-            termination_date=date(9999, 12, 31),
-        )
-        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
-            state_code=StateCode.US_TN.value,
-            external_id="sp3",
-            start_date=date(2010, 1, 1),
-            termination_date=date(2020, 12, 31),
-        )
-
-        self.assertEqual(
-            [supervision_period, supervision_period_3],
-            self.delegate.drop_bad_unmodified_periods(
-                [supervision_period, supervision_period_2, supervision_period_3]
-            ),
-        )
-
     def test_supervision_level_override_with_external_unknown_within_31_days(
         self,
     ) -> None:
