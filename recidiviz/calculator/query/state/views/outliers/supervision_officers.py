@@ -44,7 +44,14 @@ us_ix_additional_officers AS (
 )
 
 SELECT 
-    {{columns}}
+    state_code,
+    external_id,
+    staff_id,
+    full_name,
+    email,
+    supervisor_external_id,
+    LPAD(supervision_district,2,'0') AS supervision_district,
+    specialized_caseload_type,
 FROM supervision_officers
 
 UNION ALL

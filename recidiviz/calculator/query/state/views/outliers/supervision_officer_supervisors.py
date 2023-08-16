@@ -45,7 +45,15 @@ us_pa_additional_supervisors AS (
     FROM `{{project_id}}.{{reference_views_dataset}}.us_pa_officer_supervisors_materialized`
 )
 
-SELECT  {{columns}} FROM supervision_officer_supervisors
+SELECT 
+    state_code,
+    external_id,
+    staff_id,
+    full_name,
+    email,
+    supervisor_external_id,
+    LPAD(supervision_district, 2, '0') AS supervision_district
+FROM supervision_officer_supervisors
 
 UNION ALL
 
@@ -55,7 +63,9 @@ FROM us_ix_additional_supervisors
 
 UNION ALL 
 
-SELECT  {{columns}} FROM us_pa_additional_supervisors
+SELECT 
+    {{columns}} 
+FROM us_pa_additional_supervisors
 
 """
 
