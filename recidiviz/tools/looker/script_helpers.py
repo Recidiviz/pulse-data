@@ -26,5 +26,5 @@ def remove_lookml_files_from(directory: str) -> None:
     """
     for path, _, filenames in os.walk(directory):
         for file in filenames:
-            if file.endswith(".lkml"):
+            if file.endswith(".lkml") or file.endswith(".lookml"):
                 os.remove(os.path.join(path, file))

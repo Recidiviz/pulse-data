@@ -162,7 +162,8 @@ class FieldParameterDescription(LookMLFieldParameter):
 
     @property
     def value_text(self) -> str:
-        return f'"{self.text}"'
+        escaped_text = self.text.replace('"', '\\"')
+        return f'"{escaped_text}"'
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return True

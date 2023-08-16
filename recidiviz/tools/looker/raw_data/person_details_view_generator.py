@@ -18,6 +18,7 @@
 Used inside person_details_lookml_writer
 """
 
+import itertools
 import os
 from collections import defaultdict
 from typing import Dict, List
@@ -61,35 +62,37 @@ from recidiviz.looker.lookml_view_field_parameter import (
 )
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.looker.parameterized_value import ParameterizedValue
+from recidiviz.tools.looker.raw_data.person_details_explore_generator import (
+    get_table_relationship_edges,
+)
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
 from recidiviz.utils.string import StrictStringFormatter
 
 RAW_DATA_OPTION = "raw_data"
 RAW_DATA_UP_TO_DATE_VIEWS_OPTION = "raw_data_up_to_date_views"
-SHARED_FIELDS_NAME = "state_raw_data_shared_fields"
+SHARED_FIELDS_NAME = "raw_data_shared_fields"
+VIEW_TYPE_PARAM_NAME = "view_type"
 
 
-def _generate_shared_fields_view() -> LookMLView:
-    """Produce state_raw_data_shared_fields.view.lkml,
+def _view_name(state_code: StateCode, file_tag: str) -> str:
+    """Return the view name corresponding to the given state code and file.
+    The view name is prefixed with the state code to avoid conflicts when
+    the same file tag is shared between different states."""
+    state_code_abbrev = state_code.value.lower()
+    return f"{state_code_abbrev}_{file_tag}"
+
+
+def _generate_shared_fields_view(
+    state_code: StateCode, primary_person_view_name: str
+) -> LookMLView:
+    """Produce us_XX_raw_data_shared_fields.view.lkml,
     which contains configuration/dimensions shared among all raw data views
+    for the provided state
 
     Return: The LookMLView object corresponding to the file
     """
-
-    view_type_param = ParameterLookMLViewField(
-        field_name="view_type",
-        parameters=[
-            LookMLFieldParameter.type(LookMLFieldType.UNQUOTED),
-            LookMLFieldParameter.description(
-                "Used to select whether the view has the most recent version (raw data up to date views) or all data"
-            ),
-            LookMLFieldParameter.allowed_value("Raw Data", RAW_DATA_OPTION),
-            LookMLFieldParameter.allowed_value(
-                "Raw Data Up To Date Views", RAW_DATA_UP_TO_DATE_VIEWS_OPTION
-            ),
-            LookMLFieldParameter.default_value(RAW_DATA_UP_TO_DATE_VIEWS_OPTION),
-        ],
-    )
+    # Get the name of the primary table for this state
+    parameter_name = f"{primary_person_view_name}.{VIEW_TYPE_PARAM_NAME}"
 
     # Dimensions
     file_id_sql_options = {
@@ -97,7 +100,7 @@ def _generate_shared_fields_view() -> LookMLView:
         RAW_DATA_UP_TO_DATE_VIEWS_OPTION: "NULL",
     }
     file_id_sql = ParameterizedValue(
-        parameter_name="view_type",
+        parameter_name=parameter_name,
         parameter_options=list(file_id_sql_options.keys()),
         value_builder=lambda s: file_id_sql_options[s],
         indentation_level=3,
@@ -116,7 +119,7 @@ def _generate_shared_fields_view() -> LookMLView:
         RAW_DATA_UP_TO_DATE_VIEWS_OPTION: "NULL",
     }
     is_deleted_sql = ParameterizedValue(
-        parameter_name="view_type",
+        parameter_name=parameter_name,
         parameter_options=list(is_deleted_sql_options.keys()),
         value_builder=lambda s: is_deleted_sql_options[s],
         indentation_level=3,
@@ -135,7 +138,7 @@ def _generate_shared_fields_view() -> LookMLView:
         RAW_DATA_UP_TO_DATE_VIEWS_OPTION: "NULL",
     }
     update_datetime_sql = ParameterizedValue(
-        parameter_name="view_type",
+        parameter_name=parameter_name,
         parameter_options=list(is_deleted_sql_options.keys()),
         value_builder=lambda s: update_datetime_options[s],
         indentation_level=3,
@@ -147,7 +150,6 @@ def _generate_shared_fields_view() -> LookMLView:
             LookMLFieldParameter.type(LookMLFieldType.TIME),
             LookMLFieldParameter.timeframes(
                 [
-                    LookMLTimeframesOption.RAW,
                     LookMLTimeframesOption.TIME,
                     LookMLTimeframesOption.DATE,
                     LookMLTimeframesOption.WEEK,
@@ -162,10 +164,9 @@ def _generate_shared_fields_view() -> LookMLView:
     )
 
     view = LookMLView(
-        view_name=SHARED_FIELDS_NAME,
+        view_name=_view_name(state_code, SHARED_FIELDS_NAME),
         extension_required=True,
         fields=[
-            view_type_param,
             file_id_dimension,
             is_deleted_dimension,
             update_datetime_dimension_group,
@@ -262,7 +263,6 @@ def _get_datetime_dimension_group(col: RawTableColumnInfo) -> LookMLViewField:
             LookMLFieldParameter.type(LookMLFieldType.TIME),
             LookMLFieldParameter.timeframes(
                 [
-                    LookMLTimeframesOption.RAW,
                     LookMLTimeframesOption.TIME,
                     LookMLTimeframesOption.DATE,
                     LookMLTimeframesOption.WEEK,
@@ -278,7 +278,9 @@ def _get_datetime_dimension_group(col: RawTableColumnInfo) -> LookMLViewField:
 
 
 def _generate_raw_file_view(
-    state_code: StateCode, config: DirectIngestRawFileConfig
+    state_code: StateCode,
+    config: DirectIngestRawFileConfig,
+    primary_person_view_name: str,
 ) -> LookMLView:
     """
     Return a single LookMLView object representing the provided raw file config.
@@ -305,7 +307,7 @@ def _generate_raw_file_view(
         raise ValueError(f"Unexpected raw data table type: {option}")
 
     parameterized_table_value = ParameterizedValue(
-        parameter_name="view_type",
+        parameter_name=f"{primary_person_view_name}.{VIEW_TYPE_PARAM_NAME}",
         parameter_options=[RAW_DATA_OPTION, RAW_DATA_UP_TO_DATE_VIEWS_OPTION],
         value_builder=get_table_id,
         indentation_level=2,
@@ -314,16 +316,28 @@ def _generate_raw_file_view(
 
     # Add a primary key dimension concatenating all the primary key columns with file id,
     # or all the columns if there aren't any primary key columns
-    cols_to_concat = config.primary_key_cols or [col.name for col in config.columns]
+    if config.primary_key_cols:
+        cols_to_concat = [
+            _label_name_for_column(col)
+            for col in config.columns
+            if col.name in config.primary_key_cols
+        ]
+        drill_fields_cols = cols_to_concat
+    else:
+        cols_to_concat = [_label_name_for_column(col) for col in config.columns]
+        drill_fields_cols = []
     all_primary_keys = [FILE_ID_COL_NAME] + cols_to_concat
-    primary_key_string = ", ".join([f"${{{col}}}" for col in all_primary_keys])
+    primary_key_string = ", ".join(
+        [f'IFNULL(CAST(${{{col}}} AS STRING), "")' for col in all_primary_keys]
+    )
     primary_key_sql = f"CONCAT({primary_key_string})"
 
+    shared_fields_name = _view_name(state_code, SHARED_FIELDS_NAME)
     view = LookMLView(
-        view_name=config.file_tag,
+        view_name=_view_name(state_code, config.file_tag),
         table=source_table,
-        included_paths=[f"../{SHARED_FIELDS_NAME}.view"],
-        extended_views=[SHARED_FIELDS_NAME],
+        included_paths=[f"{shared_fields_name}.view"],
+        extended_views=[shared_fields_name],
         fields=[
             *_get_dimensions_for_raw_file_view(config, primary_key_sql),
             MeasureLookMLViewField(
@@ -331,7 +345,7 @@ def _generate_raw_file_view(
                 parameters=[
                     LookMLFieldParameter.type(LookMLFieldType.COUNT),
                     LookMLFieldParameter.drill_fields(
-                        [FILE_ID_COL_NAME, *config.primary_key_cols]
+                        [FILE_ID_COL_NAME, *drill_fields_cols]
                     ),
                 ],
             ),
@@ -341,23 +355,72 @@ def _generate_raw_file_view(
     return view
 
 
-def _generate_state_raw_data_views() -> Dict[StateCode, List[LookMLView]]:
+def _generate_view_type_param() -> LookMLViewField:
+    """
+    Return a 'view_type' parameter for use in the LookMLView corresponding
+    to the primary person table for a certain state.
+    """
+    return ParameterLookMLViewField(
+        field_name=VIEW_TYPE_PARAM_NAME,
+        parameters=[
+            LookMLFieldParameter.type(LookMLFieldType.UNQUOTED),
+            LookMLFieldParameter.description(
+                "Used to select whether the view has the most recent version (raw data up to date views) or all data"
+            ),
+            LookMLFieldParameter.view_label("Cross Table Filters"),
+            LookMLFieldParameter.allowed_value("Raw Data", RAW_DATA_OPTION),
+            LookMLFieldParameter.allowed_value(
+                "Raw Data Up To Date Views", RAW_DATA_UP_TO_DATE_VIEWS_OPTION
+            ),
+            LookMLFieldParameter.default_value(RAW_DATA_UP_TO_DATE_VIEWS_OPTION),
+        ],
+    )
+
+
+def _generate_state_raw_data_views() -> Dict[StateCode, Dict[str, LookMLView]]:
     """
     Return a dictionary mapping all of the StateCodes for states with raw data
-    to a list of LookMLViews corresponding to every raw data file in that State
+    to a dictionary from file tags to LookMLViews corresponding to those
+    raw data files in that State, one view for every file that will be included
+    in the raw data explore for that State
     """
-    views: Dict[StateCode, List[LookMLView]] = defaultdict(list)
+    views: Dict[StateCode, Dict[str, LookMLView]] = defaultdict(dict)
     for state_code in get_existing_direct_ingest_states():
         region_config = DirectIngestRegionRawFileConfig(region_code=state_code.value)
-        for raw_file_config in region_config.raw_file_configs.values():
-            if raw_file_config.columns:
-                views[state_code].append(
-                    _generate_raw_file_view(state_code, raw_file_config)
+        if primary_person_table := region_config.get_primary_person_table():
+            primary_person_view_name = _view_name(
+                state_code, primary_person_table.file_tag
+            )
+
+            # Generate the shared view for this state
+            shared_fields_view = _generate_shared_fields_view(
+                state_code, primary_person_view_name
+            )
+            views[state_code][shared_fields_view.view_name] = shared_fields_view
+
+            # Generate a view for every raw file that will be included in the explore
+            all_tables = region_config.raw_file_configs
+            explore_edges = get_table_relationship_edges(
+                primary_person_table, all_tables
+            )
+            files_in_explore = set(
+                itertools.chain.from_iterable(
+                    (edge.foreign_table, edge.file_tag) for edge in explore_edges
                 )
+            )
+            for file_tag in files_in_explore:
+                raw_file_config = all_tables[file_tag]
+                view = _generate_raw_file_view(
+                    state_code, raw_file_config, primary_person_view_name
+                )
+                # Place the view type parameter in the primary person table's view
+                if file_tag == primary_person_table.file_tag:
+                    view.fields.append(_generate_view_type_param())
+                views[state_code][file_tag] = view
     return views
 
 
-def generate_lookml_views(looker_dir: str) -> None:
+def generate_lookml_views(looker_dir: str) -> Dict[StateCode, Dict[str, LookMLView]]:
     """Produce LookML View files for a given state, writing up-to-date
     .view.lkml files in looker_dir/views/raw_data/
 
@@ -366,10 +429,11 @@ def generate_lookml_views(looker_dir: str) -> None:
 
     view_dir = os.path.join(looker_dir, "views", "raw_data")
     remove_lookml_files_from(view_dir)
-    shared_fields_view = _generate_shared_fields_view()
-    shared_fields_view.write(view_dir, source_script_path=__file__)
 
-    for state_code, raw_file_views in _generate_state_raw_data_views().items():
+    all_state_views = _generate_state_raw_data_views()
+    for state_code, views_by_file_tag in _generate_state_raw_data_views().items():
         state_dir = os.path.join(view_dir, state_code.value.lower())
-        for view in raw_file_views:
+        for view in views_by_file_tag.values():
             view.write(state_dir, source_script_path=__file__)
+
+    return all_state_views

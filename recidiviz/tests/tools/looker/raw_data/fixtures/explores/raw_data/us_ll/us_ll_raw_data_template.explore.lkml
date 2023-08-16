@@ -4,20 +4,38 @@
 explore: us_ll_raw_data_template {
   extension: required
 
-  view_name: basicData
+  view_name: us_ll_basicData
+  view_label: "us_ll_basicData"
 
   description: "Data pertaining to an individual in Test State"
   group_label: "Raw State Data"
-  join: manyPrimaryKeys {
-    sql_on: ${basicData.COL1} = ${manyPrimaryKeys.col_name_1a};;
+  label: "US_LL Raw Data"
+  join: us_ll_manyPrimaryKeys {
+    sql_on: ${us_ll_basicData.COL1} = ${us_ll_manyPrimaryKeys.col_name_1a};;
     type: full_outer
     relationship: one_to_one
+    view_label: "us_ll_manyPrimaryKeys"
   }
 
-  join: datetimeNoParsers {
-    sql_on: ${basicData.COL1} = ${datetimeNoParsers.COL1};;
+  join: us_ll_datetimeNoParsers {
+    sql_on: ${us_ll_basicData.COL1} = ${us_ll_datetimeNoParsers.COL1};;
     type: full_outer
     relationship: many_to_many
+    view_label: "us_ll_datetimeNoParsers"
+  }
+
+  join: us_ll_noPrimaryKeys {
+    sql_on: ${us_ll_basicData.COL1} = ${us_ll_noPrimaryKeys.col_name_1a};;
+    type: full_outer
+    relationship: many_to_one
+    view_label: "us_ll_noPrimaryKeys"
+  }
+
+  join: us_ll_customDatetimeSql {
+    sql_on: ${us_ll_basicData.COL1} = ${us_ll_customDatetimeSql.COL1};;
+    type: full_outer
+    relationship: one_to_many
+    view_label: "us_ll_customDatetimeSql"
   }
 
 }

@@ -363,6 +363,12 @@ class DirectIngestRawFileConfig:
     def has_primary_external_id_col(self) -> bool:
         return any(column.is_primary_for_external_id_type for column in self.columns)
 
+    def get_primary_external_id_cols(self) -> List[RawTableColumnInfo]:
+        """Return a list of all the columns that are primary for some external id type"""
+        return [
+            column for column in self.columns if column.is_primary_for_external_id_type
+        ]
+
     def _validate_primary_keys(self) -> None:
         """Confirm that the primary key configuration is valid for this config. If this
         check passes, it does NOT mean that the table is sufficently documented for use

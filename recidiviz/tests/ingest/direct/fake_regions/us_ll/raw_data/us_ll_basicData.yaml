@@ -24,3 +24,11 @@ table_relationships:
     cardinality: MANY_TO_MANY
     join_logic:
       - basicData.COL1 = datetimeNoParsers.COL1
+  - foreign_table: noPrimaryKeys
+    cardinality: MANY_TO_ONE
+    join_logic:
+      - basicData.COL1 = noPrimaryKeys.col_name_1a
+  - foreign_table: customDatetimeSql
+    cardinality: ONE_TO_MANY
+    join_logic:
+      - basicData.COL1 = customDatetimeSql.COL1

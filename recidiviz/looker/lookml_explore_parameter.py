@@ -65,6 +65,10 @@ class LookMLExploreParameter:
         return ExploreParameterGroupLabel(text=group_label)
 
     @classmethod
+    def label(cls, label: str) -> "LookMLExploreParameter":
+        return ExploreParameterLabel(text=label)
+
+    @classmethod
     def join(
         cls, join_name: str, join_params: List["LookMLJoinParameter"]
     ) -> "LookMLExploreParameter":
@@ -106,6 +110,23 @@ class ExploreParameterGroupLabel(LookMLExploreParameter):
         return f'"{self.text}"'
 
 
+@attr.define
+class ExploreParameterLabel(LookMLExploreParameter):
+    """Generates a `label` field parameter
+    (see https://cloud.google.com/looker/docs/reference/param-explore-label).
+    """
+
+    text: str
+
+    @property
+    def key(self) -> str:
+        return "label"
+
+    @property
+    def value_text(self) -> str:
+        return f'"{self.text}"'
+
+
 # JOIN PARAMETERS
 @attr.define
 class LookMLJoinParameter(LookMLExploreParameter):
@@ -138,6 +159,10 @@ class LookMLJoinParameter(LookMLExploreParameter):
     @classmethod
     def sql_on(cls, sql_text: str) -> "LookMLJoinParameter":
         return JoinParameterSqlOn(sql_text)
+
+    @classmethod
+    def view_label(cls, label: str) -> "LookMLJoinParameter":
+        return JoinParameterViewLabel(label)
 
 
 @attr.define
@@ -212,6 +237,24 @@ class JoinParameterType(LookMLJoinParameter):
     @property
     def value_text(self) -> str:
         return self.join_type.value
+
+
+@attr.define
+class JoinParameterViewLabel(LookMLJoinParameter):
+    """
+    Generates a `view_label` parameter inside a `join` parameter in an explore
+    (see https://cloud.google.com/looker/docs/reference/param-explore-join-view-label)
+    """
+
+    label_text: str
+
+    @property
+    def key(self) -> str:
+        return "view_label"
+
+    @property
+    def value_text(self) -> str:
+        return f'"{self.label_text}"'
 
 
 @attr.define
