@@ -62,16 +62,6 @@ module "import_ingested_product_users" {
   filter        = "NOT hasPrefix(attributes.objectId, \"staging/\")"
 }
 
-module "handle_new_case_triage_etl" {
-  source = "./modules/cloud-storage-notification"
-
-  bucket_name           = module.case-triage-data.name
-  push_endpoint         = "${local.app_engine_url}/case_triage_ops/handle_gcs_imports"
-  service_account_email = data.google_app_engine_default_service_account.default.email
-  # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
-  oidc_audience = local.app_engine_iap_client
-}
-
 module "handle_workflows_firestore_etl" {
   source = "./modules/cloud-storage-notification"
 
