@@ -211,6 +211,8 @@ output:
                   - "V3" # From ICC
                   - "V4" # From Other Jurisdiction
                   - "V5" # From ISP-I
+                StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN:
+                  - "A6" # Unknown. TODO(#23268): Identify what this REASONFORMOVEMENT should be mapped to.
           admission_reason:
             $enum_mapping:
               $raw_text: start_code
