@@ -118,6 +118,12 @@ class TimeRangeUploader:
             existing_datapoints_dict=self.existing_datapoints_dict,
             agency=self.agency,
         )
+
+        if existing_report is None:
+            # If a report was created and no errors were thrown while adding data,
+            # set it to draft mode.
+            report.status = schema.ReportStatus.DRAFT
+
         return report, datapoint_json_list
 
     def _get_report_metric_for_time_range(
