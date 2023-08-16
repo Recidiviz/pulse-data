@@ -42,7 +42,7 @@ US_PA_OFFICER_SUPERVISORS_QUERY_TEMPLATE = """
     CASE 
     -- One of these supervisors has an associated district, the other two required a workaround 
         WHEN TO_HEX(SHA256(officers.supervisor_external_id)) = 'ea63b7323e3b7f5a77b6fdb86bf45c35203035028187134e63e93fd5ee28f7d3'
-        THEN officers.supervision_district
+        THEN LPAD(officers.supervision_district, 2, '0')
         ELSE '01'
     END AS supervision_district
   FROM `{project_id}.{outliers_views_dataset}.supervision_officers_materialized` officers
