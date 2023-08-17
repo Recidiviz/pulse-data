@@ -40,6 +40,21 @@ def get_month_delta(start_date: datetime.date, end_date: datetime.date) -> int:
     return calendar_unit_date_diff(start_date, end_date, "months")
 
 
+def add_time_unit_to_date(
+    start_date: datetime.date, time_unit: str, num_time_unit: int
+) -> datetime.date:
+    """
+    Adds a specified time unit to a datetime
+    """
+    if time_unit in ["years", "months", "days"]:
+        date_output = start_date + relativedelta(
+            dt1=None, dt2=None, **{time_unit: num_time_unit}
+        )
+    else:
+        raise ValueError("`time_unit` must be one of 'years','months','days'")
+    return date_output
+
+
 # function to plot "seaweed" style survival curves using date cohorts on a timeline
 def plot_timeline_cohort_survival_curves(
     data: pd.DataFrame,
@@ -243,6 +258,226 @@ def plot_timeline_cohort_survival_curves(
     plt.show()
 
 
+def gen_cohort_days_at_status_df(
+    cohort_df: pd.DataFrame,
+    status_df: pd.DataFrame,
+    cohort_date_field: str,
+    status_start_date_field: str,
+    status_end_date_field: str,
+    join_field: Optional[Union[str, List[str]]] = "person_id",
+    time_index: Iterable[int] = (0, 6, 12, 18, 24, 36),
+    time_unit: str = "months",
+    last_day_of_data: Optional[datetime.datetime] = None,
+    cohort_attribute_col: Optional[Union[str, List[str]]] = None,
+    status_attribute_col: Optional[Union[str, List[str]]] = None,
+) -> pd.DataFrame:
+    # TODO(#23152): Consolidate cohort time at status and cohort event rate functions
+    # TODO(#23153): Add warning to cohort functions when full cohort is not used in every time index calculation
+    """
+    Returns a dataframe indexed by the original columns with values for `days_at_status`
+    calculated across time indices.
+    Params:
+    ------
+    cohort_df: pandas DataFrame
+        Dataframe of all cohort starts that will be evaluated as having subsequent days
+        spent at a given status. Must have a field indicating the cohort start date as well
+        as a id field that joins the individual to the events in `status_df`. This dataframe
+        can have any other cohort attributes included as well, which will flow through to the
+        output.
+
+    status_df: pandas DataFrame
+        Dataframe of all statuses that will be evaluated against cohort start. Must have a
+        field indicating the status start date and status end date, as well as an id field
+        that joins to the individual in `cohort_df`. This dataframe can have any other status
+        attributes as well, which will flow through to the output.
+
+    cohort_date_field: string
+        Field name in `cohort_df` that indicates the cohort start date.
+
+    status_start_date_field: string
+        Field name in `status_df` that indicates the status start date.
+
+    status_end_date_field: string
+        Field name in `status_df` that indicates the status end date.
+
+    join_field: Optional[Union[str, List[str]]]
+        Field name (or list of field names) in both `cohort_df` and `status_df` joins
+        these two tables together when dates are compared.
+
+    time_index: list
+        List of integers that specify the time units from cohort start that the days at
+        status metric will be evaluated against. These can represent days, months or years.
+
+    time_unit: str
+        Unit of time that the `time_index` represents. Can be "years", "months", or
+        "days"
+
+    last_day_of_data: str
+        Day representing the last day of available data. If none is provided, the max
+        status start/end date is used. This is used to ensure that days at status calculations only use
+        cohort starts that have had the full amount of time to mature.
+
+    cohort_attribute_col: Optional[Union[str, List[str]]]
+        Single field or list of fields in `cohort_df` that represent attributes of the cohort
+        that the days at status metrics should be disaggregated by. If no list is specified, the
+        metrics are calculated across all cohort starts.
+
+     status_attribute_col: Optional[Union[str, List[str]]]
+        Single field or list of fields in `status_df` that represent attributes of the status
+        that the days at status metrics should be disaggregated by. If no list is specified, the
+        the metrics are calculated across all statuses.
+    """
+    if isinstance(join_field, str):
+        join_field_list = [join_field]
+    elif isinstance(join_field, list):
+        join_field_list = join_field
+    else:
+        raise ValueError("`join_field` not a string or list of strings.")
+
+    # handle attribute columns which can be a list, a string, or None
+    if not cohort_attribute_col:
+        cohort_attribute_col_list = []
+    elif isinstance(cohort_attribute_col, str):
+        cohort_attribute_col_list = [cohort_attribute_col]
+    else:
+        cohort_attribute_col_list = cohort_attribute_col
+
+    if not status_attribute_col:
+        status_attribute_col_list = []
+    elif isinstance(status_attribute_col, str):
+        status_attribute_col_list = [status_attribute_col]
+    else:
+        status_attribute_col_list = status_attribute_col
+
+    # Check that all necessary columns are present in cohort_df
+    for var in [cohort_date_field] + join_field_list + cohort_attribute_col_list:
+        if var not in cohort_df.columns:
+            raise AttributeError(f"Column {var} can not be found in `cohort_df`.")
+
+    # Check that all necessary columns are present in status_df
+    for var in (
+        [status_start_date_field, status_end_date_field]
+        + join_field_list
+        + status_attribute_col_list
+    ):
+        if var not in status_df.columns:
+            raise AttributeError(f"Column {var} can not be found in `status_df`.")
+
+    # Convert date fields
+    cohort_df[cohort_date_field] = pd.to_datetime(
+        cohort_df[cohort_date_field], errors="coerce"
+    ).dt.date
+    status_df[status_start_date_field] = pd.to_datetime(
+        status_df[status_start_date_field], errors="coerce"
+    ).dt.date
+    status_df[status_end_date_field] = pd.to_datetime(
+        status_df[status_end_date_field], errors="coerce"
+    ).dt.date
+
+    # Set the last day of data to be the max status date if not specified. Print the date
+    # let user know, just to make sure this assumption seems correct. This is used to
+    # determine which subset of the cohort starts are eligible for each calculation
+    if not last_day_of_data:
+        last_day_of_data = pd.to_datetime(
+            status_df[[status_start_date_field, status_end_date_field]].max(1).max(0)
+        )
+        if not isinstance(last_day_of_data, datetime.datetime):
+            raise ValueError(
+                "Could not format `status_start_date_field` or `status_end_date_field` as a datetime object."
+            )
+        print(
+            f"Last day of data not specified. Assuming to be {last_day_of_data.date()} "
+            f"based on status dates"
+        )
+
+    # create a dataframe with the specified time units
+    cohort_index_field = f"cohort_{time_unit}"
+    time_df = pd.Series(time_index, name=cohort_index_field).to_frame()
+
+    time_to_mature_field = f"{time_unit}_to_mature"
+
+    # Use the date differencing function to calculate time that the cohort has to mature
+    # (based on the last day of data) as well as time between the cohort start and the
+    # event. Note that the time to event field has one time unit added to it while the
+    # time to mature field does not. This is consistent with methodology we use in
+    # Looker. If a person starts on '2021-01-01' and has a subsequent event on
+    # '2021-02-15' the month difference output would be 1 month since 1 full month has
+    # passed, but the event occurred within 2 full months. Therefore we add 1 to this
+    # output since we want the event rate to represent the number of events that
+    # occurred within that number of months. And if the last day of available data was
+    # '2021-03-15', the month date difference output would be 2, and for that field we
+    # keep as is because we want that person to be eligible for 1-month and 2-month
+    # calculations, but not 3-month since 3 full months have not passed
+    cohort_df[time_to_mature_field] = cohort_df.apply(
+        lambda x: calendar_unit_date_diff(
+            x[cohort_date_field], last_day_of_data.strftime("%Y-%m-%d"), time_unit
+        ),
+        1,
+    )
+
+    # Unnest the cohort_df by the the time index series and then subset for those cohort
+    # starts that have matured by the time index
+    cohort_start_x_evaluation_months = pd.merge(cohort_df, time_df, how="cross")
+
+    cohort_start_x_evaluation_months = cohort_start_x_evaluation_months[
+        cohort_start_x_evaluation_months[time_to_mature_field]
+        >= cohort_start_x_evaluation_months[cohort_index_field]
+    ]
+
+    # Create a field for the "cohort_evaluation_date" which is the cohort start date + the time index.
+    # This represents the date at which we will look to see how many days have been at a given status
+    # by that point
+    cohort_start_x_evaluation_months[
+        "cohort_eval_date"
+    ] = cohort_start_x_evaluation_months.apply(
+        lambda x: add_time_unit_to_date(
+            x[cohort_date_field], time_unit, x[cohort_index_field]
+        ),
+        axis=1,
+    )
+
+    # Merge the unnested cohort starts to the statuses
+    cohort_x_status = pd.merge(
+        cohort_start_x_evaluation_months, status_df, on=join_field_list, how="left"
+    )
+
+    # In order to calculate the "days at status" for a given cohort start at a given time index, we need to calculate
+    # the length of the intersection between the status span and the cohort start / cohort evaluation date span. This is
+    # subtracting the max of the cohort date field and `status_start_date` from the min of the `cohort_eval_date` and
+    # `status_end_date`. When there is no intersection, this value will be negative, and the values are therefore
+    # clipped at 0 to represent 0 days of overlap.
+
+    cohort_x_status["days_at_status"] = (
+        (
+            (
+                cohort_x_status[["cohort_eval_date", status_end_date_field]]
+                .fillna(pd.Timestamp.max.date())
+                .min(1)
+            )
+            - (
+                cohort_x_status[[cohort_date_field, status_start_date_field]]
+                .fillna(pd.Timestamp.max.date())
+                .max(1)
+            )
+        ).dt.days
+    ).clip(lower=0)
+
+    # Aggregate across status spans and calculate the total number of days that a person / cohort start has a given
+    # status at each time index
+    cohort_days_at_status = (
+        cohort_x_status.groupby(
+            join_field_list
+            + [cohort_date_field, cohort_index_field, "cohort_eval_date"]
+            + cohort_attribute_col_list
+            + status_attribute_col_list
+        )["days_at_status"]
+        .sum()
+        .reset_index()
+    )
+
+    return cohort_days_at_status
+
+
 def gen_cohort_time_to_first_event(
     cohort_df: pd.DataFrame,
     event_df: pd.DataFrame,
@@ -361,6 +596,7 @@ def gen_aggregated_cohort_event_df(
     cohort_attribute_col: Optional[Union[str, List[str]]] = None,
     event_attribute_col: Optional[Union[str, List[str]]] = None,
 ) -> pd.DataFrame:
+    # TODO(#23153): Add warning to cohort functions when full cohort is not used in every time index calculation
     """
     Returns an dataframe aggregated by cohort time index as well as any cohort or event
     attributes and calculates the cohort size at that time index, the number of events
