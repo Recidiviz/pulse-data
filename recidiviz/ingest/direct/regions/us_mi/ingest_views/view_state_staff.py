@@ -23,7 +23,25 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH compas AS (
+WITH
+corrected_adh_shuser AS (
+  SELECT 
+    RecId,
+    FirstName,
+    MiddleInitial,
+    LastName,
+    DateUpdated,
+    DateCreated,
+    (NULLIF(LOWER(Email), 'no_email@michigan.gov')) AS Email
+  FROM {ADH_SHUSER}
+),
+corrected_adh_employee_additional_info AS (
+  SELECT
+    employee_id,
+    NULLIF(LOWER(email_address), 'no_email@michigan.gov') AS email_address
+  FROM {ADH_EMPLOYEE_ADDITIONAL_INFO}
+),
+compas AS (
 SELECT * FROM (
   SELECT
     COALESCE(RecIds, s.RecId) as RecIds,
@@ -37,17 +55,16 @@ SELECT * FROM (
     SELECT DISTINCT
       STRING_AGG(DISTINCT RecId, ',') as RecIds,
       LOWER(Email) AS lower_Email
-    FROM {ADH_SHUSER} s
+    FROM corrected_adh_shuser s
     WHERE Email is not NULL
     GROUP BY LOWER(Email)
   ) compas_ids
-  RIGHT JOIN {ADH_SHUSER} s
+  RIGHT JOIN corrected_adh_shuser s
   ON compas_ids.lower_Email = LOWER(s.Email)
   -- Pick the most recent row
 ) compas_row
- WHERE row_num = 1
+WHERE row_num = 1
 ),
-
 
 omni_base AS (
   SELECT DISTINCT
@@ -58,7 +75,7 @@ omni_base AS (
     LOWER(email_address) AS email_address,
     e.last_update_date,
   FROM {ADH_EMPLOYEE} e
-  LEFT JOIN {ADH_EMPLOYEE_ADDITIONAL_INFO} ea
+  LEFT JOIN corrected_adh_employee_additional_info ea
   ON e.employee_id = ea.employee_id 
 ),
 
