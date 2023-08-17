@@ -38,14 +38,14 @@ const Note = styled.div`
  * "undefined" are equivalent), use that value. Hide the placeholder if there are no selected users
  * or if the selected users have more than one distinct value for the permission for the route.
  */
-const routePlaceholder = (
+export const routePlaceholder = (
   routeName: Route,
   selectedUsers?: StateUserPermissionsResponse[]
-) => {
+): string | undefined => {
   if (!selectedUsers) return undefined;
 
   const values = selectedUsers
-    .map((u) => !!u.routes[routeName])
+    .map((u) => !!u.routes?.[routeName])
     .filter((v, i, a) => a.indexOf(v) === i);
   if (values.length > 1) return undefined;
   return values[0].toString();

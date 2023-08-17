@@ -79,14 +79,14 @@ export interface StateUserPermissionsResponse {
   stateCode: string;
   allowedSupervisionLocationIds: string;
   allowedSupervisionLocationLevel: string;
-  routes: Partial<Routes>;
+  routes: Partial<Routes> | null;
   blocked: boolean;
   firstName: string;
   lastName: string;
   externalId: string;
   role: string;
   district: string;
-  featureVariants: Partial<FeatureVariants>;
+  featureVariants: Partial<FeatureVariants> | null;
   userHash: string;
 }
 
