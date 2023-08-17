@@ -30,12 +30,15 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import DirectIngestSchemaType
 
-GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_"
-STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
-    f"{GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX}STATE_"
+INGEST_PROCESS_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_"
+# Ingest process running that writes to Postgres STATE tables and should block other
+# processes that read from Postgres STATE tables.
+# TODO(#20930): Delete this lock once ingest in Dataflow is shipped.
+STATE_EXTRACT_AND_MERGE_INGEST_PROCESS_RUNNING_LOCK_PREFIX = (
+    f"{INGEST_PROCESS_RUNNING_LOCK_PREFIX}STATE_"
 )
-RAW_FILE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
-    f"{GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX}RAW_FILE_"
+RAW_FILE_IMPORT_INGEST_PROCESS_RUNNING_LOCK_PREFIX = (
+    f"{INGEST_PROCESS_RUNNING_LOCK_PREFIX}RAW_FILE_"
 )
 
 
@@ -141,14 +144,14 @@ class DirectIngestRegionLockManager:
 
     def _ingest_lock_name_for_instance(self) -> str:
         return (
-            STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            STATE_EXTRACT_AND_MERGE_INGEST_PROCESS_RUNNING_LOCK_PREFIX
             + self.region_code.upper()
             + f"_{self.ingest_instance.name}"
         )
 
     def _ingest_lock_name_for_raw_file(self, raw_file_tag: str) -> str:
         return (
-            RAW_FILE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            RAW_FILE_IMPORT_INGEST_PROCESS_RUNNING_LOCK_PREFIX
             + self.region_code.upper()
             + f"_{self.ingest_instance.name}"
             + f"_{raw_file_tag}"
