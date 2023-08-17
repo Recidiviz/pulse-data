@@ -23,8 +23,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockManager,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
-    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
-    STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
+    STATE_EXTRACT_AND_MERGE_INGEST_PROCESS_RUNNING_LOCK_PREFIX,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
@@ -108,15 +107,18 @@ class CloudSqlToBQLockManager:
                 return False
 
             blocking_ingest_lock_prefix = (
-                STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+                STATE_EXTRACT_AND_MERGE_INGEST_PROCESS_RUNNING_LOCK_PREFIX
             )
             return self.lock_manager.no_active_locks_with_prefix(
                 blocking_ingest_lock_prefix, ingest_instance.value
             )
 
         if schema_type == SchemaType.OPERATIONS:
-            # The operations export yields for all types of ingest
-            blocking_ingest_lock_prefix = GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+            # The operations export yields for any ingest extract and merge process since
+            # those read from / write to Postgres.
+            blocking_ingest_lock_prefix = (
+                STATE_EXTRACT_AND_MERGE_INGEST_PROCESS_RUNNING_LOCK_PREFIX
+            )
             return self.lock_manager.no_active_locks_with_prefix(
                 blocking_ingest_lock_prefix, ingest_instance.value
             )

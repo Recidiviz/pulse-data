@@ -347,3 +347,47 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
                 schema_type=SchemaType.STATE,
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
+
+    def test_acquire_operations_cannot_proceed_state_ingest_locks_active(self) -> None:
+        with self.state_ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
+            for schema_type in SchemaType:
+                self.lock_manager.acquire_lock(
+                    lock_id="lock1",
+                    schema_type=schema_type,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                )
+            self.assertFalse(
+                self.lock_manager.can_proceed(
+                    SchemaType.OPERATIONS, DirectIngestInstance.PRIMARY
+                )
+            )
+
+        # Acquiring the same operations export lock again does not crash
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.OPERATIONS,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+
+    def test_acquire_operations_can_proceed_raw_file_import_lock_active(self) -> None:
+        with self.state_ingest_lock_manager.using_raw_file_lock(
+            raw_file_tag="my_tag", expiration_in_seconds=10
+        ):
+            for schema_type in SchemaType:
+                self.lock_manager.acquire_lock(
+                    lock_id="lock1",
+                    schema_type=schema_type,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                )
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.OPERATIONS, DirectIngestInstance.PRIMARY
+                )
+            )
+
+        # Acquiring the same operations export lock again does not crash
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.OPERATIONS,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
