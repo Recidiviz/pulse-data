@@ -151,11 +151,6 @@ eligible_and_almost_eligible AS (
     -- ALMOST ELIGIBLE (haven't served 1/2 of sentence): folks without this condition
     --          may request a furlough, but not for family purposes
     {one_criteria_away_from_eligibility('US_ME_SERVED_HALF_OF_SENTENCE')}
-
-    UNION ALL 
-
-    -- ALMOST ELIGIBLE (missing the right custody_level)
-    {one_criteria_away_from_eligibility('US_ME_CUSTODY_LEVEL_IS_COMMUNITY')}
 ),
 
 array_case_notes_cte AS (
