@@ -185,9 +185,9 @@ const StateUserPermissionsView = (): JSX.Element => {
           aggregateFormPermissionResults(rest);
 
         // update user's custom permissions
-        const newRoutes = updatePermissionsObject(row.routes, routes, []);
+        const newRoutes = updatePermissionsObject(row.routes ?? {}, routes, []);
         const newFeatureVariants = updatePermissionsObject(
-          row.featureVariants,
+          row.featureVariants ?? {},
           featureVariantsToAdd,
           featureVariantsToRemove
         );

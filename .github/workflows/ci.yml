@@ -134,6 +134,9 @@ jobs:
       - name: Yarn lint (admin panel)
         working-directory: ./frontends/admin-panel/
         run: yarn lint --max-warnings=0
+      - name: Yarn test (admin panel)
+        working-directory: ./frontends/admin-panel/
+        run: yarn test
 
   asset-generation-tests:
     name: Asset Generation Service tests
