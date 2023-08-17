@@ -100,7 +100,7 @@ class RootEntityUpdateMerger:
         applicable.
         """
         for child_field in self.field_index.get_all_core_entity_fields(
-            old_entity, EntityFieldType.FORWARD_EDGE
+            type(old_entity), EntityFieldType.FORWARD_EDGE
         ):
             old_children = old_entity.get_field(child_field)
             new_or_updated_children = new_or_updated_entity.get_field(child_field)
@@ -250,7 +250,7 @@ class RootEntityUpdateMerger:
         a match.
         """
         all_fields = self.field_index.get_all_core_entity_fields(
-            new_or_updated_entity, EntityFieldType.FLAT_FIELD
+            type(new_or_updated_entity), EntityFieldType.FLAT_FIELD
         )
 
         if not issubclass(new_or_updated_entity.__class__, RootEntity):

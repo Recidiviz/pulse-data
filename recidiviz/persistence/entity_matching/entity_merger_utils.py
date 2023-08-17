@@ -54,12 +54,12 @@ def enum_entity_key(enum_entity: EnumEntity, field_index: CoreEntityFieldIndex) 
     merged into one.
     """
     fields = field_index.get_all_core_entity_fields(
-        enum_entity, EntityFieldType.FLAT_FIELD
+        type(enum_entity), EntityFieldType.FLAT_FIELD
     )
     enum_field_name = one(
         f
         for f in fields
-        if attr_field_type_for_field_name(enum_entity.__class__, f)
+        if attr_field_type_for_field_name(type(enum_entity), f)
         is BuildableAttrFieldType.ENUM
     )
     raw_text_field_name = _raw_text_field_name(enum_field_name)

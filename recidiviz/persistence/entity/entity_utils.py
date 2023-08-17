@@ -114,30 +114,30 @@ class SchemaEdgeDirectionChecker:
             _state_direction_checker = cls(_STATE_CLASS_HIERARCHY, state_entities)
         return _state_direction_checker
 
-    def is_back_edge(self, from_obj, to_field_name) -> bool:
-        """Given an object and a field name on that object, returns whether
-        traversing from the obj to an object in that field would be traveling
+    def is_back_edge(self, from_cls: Type[CoreEntity], to_field_name: str) -> bool:
+        """Given an entity type and a field name on that entity type, returns whether
+        traversing from the class to an object in that field would be traveling
         along a 'back edge' in the object graph. A back edge is an edge that
         might introduce a cycle in the graph.
         Without back edges, the object graph should have no cycles.
 
         Args:
-            from_obj: An object that is the origin of this edge
-            to_field_name: A string field name for the field on from_obj
+            from_cls: The class that is the origin of this edge
+            to_field_name: A string field name for the field on from_cls
                 containing the destination object of this edge
         Returns:
-            True if a graph edge travelling from from_src_obj to an object in
+            True if a graph edge travelling from from_cls to an object in
                 to_field_name is a back edge, i.e. it travels in a direction
                 opposite to the class hierarchy.
         """
-        from_class_name = from_obj.__class__.__name__
+        from_class_name = from_cls.__name__
 
-        if isinstance(from_obj, DatabaseEntity):
-            to_class_name = from_obj.get_relationship_property_class_name(to_field_name)
-        elif isinstance(from_obj, Entity):
-            to_class_name = get_non_flat_property_class_name(from_obj, to_field_name)
+        if issubclass(from_cls, DatabaseEntity):
+            to_class_name = from_cls.get_relationship_property_class_name(to_field_name)
+        elif issubclass(from_cls, Entity):
+            to_class_name = get_non_flat_property_class_name(from_cls, to_field_name)
         else:
-            raise ValueError(f"Unexpected type [{type(from_obj)}]")
+            raise ValueError(f"Unexpected type [{from_cls}]")
 
         if to_class_name is None:
             return False
@@ -337,14 +337,16 @@ class CoreEntityFieldIndex:
         self, entity: CoreEntity, entity_field_type: EntityFieldType
     ) -> Set[str]:
         """Returns a set of field_names that correspond to any non-empty (nonnull or
-        non-empty list) fields on the provided |entity| class that match the provided
+        non-empty list) fields on the provided |entity| that match the provided
         |entity_field_type|.
 
         Note: This function is relatively slow for Entity type entities and should not
         be called in a tight loop.
         """
         result = set()
-        for field_name in self.get_all_core_entity_fields(entity, entity_field_type):
+        for field_name in self.get_all_core_entity_fields(
+            type(entity), entity_field_type
+        ):
             v = entity.get_field(field_name)
             if isinstance(v, list):
                 if v:
@@ -354,50 +356,54 @@ class CoreEntityFieldIndex:
         return result
 
     def get_all_core_entity_fields(
-        self, entity: CoreEntity, entity_field_type: EntityFieldType
+        self, entity_cls: Type[CoreEntity], entity_field_type: EntityFieldType
     ) -> Set[str]:
         """Returns a set of field_names that correspond to any fields (non-empty or
         otherwise) on the provided DatabaseEntity |entity| class that match the provided
         |entity_field_type|. Fields are included whether or not the values are non-empty
         on the provided object.
 
-        This function is caches the results for subsequent calls.
+        This function caches the results for subsequent calls.
         """
-        entity_name = entity.get_entity_name()
+        entity_name = entity_cls.get_entity_name()
 
-        if isinstance(entity, DatabaseEntity):
+        if issubclass(entity_cls, DatabaseEntity):
             if not self.database_entity_fields_by_field_type[entity_name][
                 entity_field_type
             ]:
                 self.database_entity_fields_by_field_type[entity_name][
                     entity_field_type
-                ] = self._get_all_database_entity_fields_slow(entity, entity_field_type)
+                ] = self._get_all_database_entity_fields_slow(
+                    entity_cls, entity_field_type
+                )
             return self.database_entity_fields_by_field_type[entity_name][
                 entity_field_type
             ]
 
-        if isinstance(entity, Entity):
+        if issubclass(entity_cls, Entity):
             if not self.entity_fields_by_field_type[entity_name][entity_field_type]:
                 self.entity_fields_by_field_type[entity_name][
                     entity_field_type
-                ] = self._get_entity_fields_with_type_slow(entity, entity_field_type)
+                ] = self._get_entity_fields_with_type_slow(
+                    entity_cls, entity_field_type
+                )
             return self.entity_fields_by_field_type[entity_name][entity_field_type]
 
-        raise ValueError(f"Unexpected entity type: {type(entity)}")
+        raise ValueError(f"Unexpected entity type: {entity_cls}")
 
     def _get_all_database_entity_fields_slow(
         self,
-        entity: DatabaseEntity,
+        entity_cls: Type[DatabaseEntity],
         entity_field_type: EntityFieldType,
     ) -> Set[str]:
         """Returns a set of field_names that correspond to any fields (non-empty or
-        otherwise) on the provided DatabaseEntity |entity| that match the provided
+        otherwise) on the provided DatabaseEntity type |entity| that match the provided
         |entity_field_type|.
 
         This function is relatively slow and the results should be cached across
         repeated calls.
         """
-        entity_name = entity.get_entity_name()
+        entity_name = entity_cls.get_entity_name()
         direction_checker = self._direction_checker(entity_name)
 
         back_edges = set()
@@ -405,16 +411,16 @@ class CoreEntityFieldIndex:
         flat_fields = set()
         foreign_keys = set()
 
-        for relationship_field_name in entity.get_relationship_property_names():
-            if direction_checker.is_back_edge(entity, relationship_field_name):
+        for relationship_field_name in entity_cls.get_relationship_property_names():
+            if direction_checker.is_back_edge(entity_cls, relationship_field_name):
                 back_edges.add(relationship_field_name)
             else:
                 forward_edges.add(relationship_field_name)
 
-        for foreign_key_name in entity.get_foreign_key_names():
+        for foreign_key_name in entity_cls.get_foreign_key_names():
             foreign_keys.add(foreign_key_name)
 
-        for column_field_name in entity.get_column_property_names():
+        for column_field_name in entity_cls.get_column_property_names():
             if column_field_name not in foreign_keys:
                 flat_fields.add(column_field_name)
 
@@ -429,31 +435,30 @@ class CoreEntityFieldIndex:
         if entity_field_type is EntityFieldType.ALL:
             return flat_fields | foreign_keys | forward_edges | back_edges
         raise ValueError(
-            f"Unrecognized EntityFieldType [{entity_field_type}] on entity [{entity}]"
+            f"Unrecognized EntityFieldType [{entity_field_type}] on entity type [{entity_cls}]"
         )
 
     def _get_entity_fields_with_type_slow(
-        self, entity: Entity, entity_field_type: EntityFieldType
+        self, entity_cls: Type[Entity], entity_field_type: EntityFieldType
     ) -> Set[str]:
         """Returns a set of field_names that correspond to any fields (non-empty or
-        otherwise) on the provided Entity |entity| that match the provided
+        otherwise) on the provided Entity type |entity| that match the provided
         |entity_field_type|.
 
         This function is relatively slow and the results should be cached across
         repeated calls.
         """
-        entity_name = entity.get_entity_name()
+        entity_name = entity_cls.get_entity_name()
         direction_checker = self._direction_checker(entity_name)
 
         back_edges = set()
         forward_edges = set()
         flat_fields = set()
-        for field, attribute in attr.fields_dict(entity.__class__).items():  # type: ignore[arg-type]
+        for field, attribute in attr.fields_dict(entity_cls).items():
             # TODO(#1908): Update traversal logic if relationship fields can be
             # different types aside from Entity and List
             if is_forward_ref(attribute) or is_list(attribute):
-                is_back_edge = direction_checker.is_back_edge(entity, field)
-                if is_back_edge:
+                if direction_checker.is_back_edge(entity_cls, field):
                     back_edges.add(field)
                 else:
                     forward_edges.add(field)
@@ -471,7 +476,7 @@ class CoreEntityFieldIndex:
         if entity_field_type is EntityFieldType.ALL:
             return flat_fields | forward_edges | back_edges
         raise ValueError(
-            f"Unrecognized EntityFieldType {entity_field_type} on entity [{entity}]"
+            f"Unrecognized EntityFieldType {entity_field_type} on entity [{entity_cls}]"
         )
 
 
@@ -495,7 +500,7 @@ def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> boo
             return False
         return True
 
-    set_flat_fields = get_explicilty_set_flat_fields(entity, field_index)
+    set_flat_fields = get_explicitly_set_flat_fields(entity, field_index)
     return not bool(set_flat_fields)
 
 
@@ -507,7 +512,7 @@ def is_reference_only_entity(
     purposes. Concretely, this means the object has an external_id but no other set
     fields (aside from default values).
     """
-    set_flat_fields = get_explicilty_set_flat_fields(entity, field_index)
+    set_flat_fields = get_explicitly_set_flat_fields(entity, field_index)
     if isinstance(entity, (state_schema.StatePerson, state_entities.StatePerson)):
         if set_flat_fields or any([entity.races, entity.aliases, entity.ethnicities]):
             return False
@@ -521,7 +526,7 @@ def is_reference_only_entity(
     return set_flat_fields == {"external_id"}
 
 
-def get_explicilty_set_flat_fields(
+def get_explicitly_set_flat_fields(
     entity: CoreEntity, field_index: CoreEntityFieldIndex
 ) -> Set[str]:
     """Returns the set of field names for fields on the entity that have been set with
@@ -878,18 +883,19 @@ def is_standalone_entity(entity: DatabaseEntity) -> bool:
     return "person_id" not in entity.__class__.get_column_property_names()
 
 
-def get_non_flat_property_class_name(obj: Entity, property_name: str) -> Optional[str]:
+def get_non_flat_property_class_name(
+    entity_cls: Type[Entity], property_name: str
+) -> Optional[str]:
     """Returns the class name of the property with |property_name| on obj, or
     None if the property is a flat field.
     """
-    if not isinstance(obj, Entity):
-        raise TypeError(f"Unexpected type [{type(obj)}]")
+    if not issubclass(entity_cls, Entity):
+        raise TypeError(f"Unexpected type [{entity_cls}]")
 
-    if _is_property_flat_field(obj, property_name):
+    if _is_property_flat_field(entity_cls, property_name):
         return None
 
-    parent_cls = obj.__class__
-    attribute = attr.fields_dict(parent_cls).get(property_name)  # type: ignore[arg-type]
+    attribute = attr.fields_dict(entity_cls).get(property_name)  # type: ignore[arg-type]
     if not attribute:
         return None
 
@@ -897,7 +903,7 @@ def get_non_flat_property_class_name(obj: Entity, property_name: str) -> Optiona
 
     if not property_class_name:
         raise ValueError(
-            f"Non-flat field [{property_name}] on class [{obj.__class__}] should "
+            f"Non-flat field [{property_name}] on class [{entity_cls}] should "
             f"either correspond to list or union. Found: [{property_class_name}]"
         )
     return property_class_name
@@ -905,18 +911,18 @@ def get_non_flat_property_class_name(obj: Entity, property_name: str) -> Optiona
 
 # TODO(#1886): We should not consider objects which are not ForwardRefs, but are properly typed to an entity cls
 #  as a flat field
-def _is_property_flat_field(obj: Entity, property_name: str) -> bool:
+def _is_property_flat_field(entity_cls: Type[Entity], property_name: str) -> bool:
     """Returns true if the attribute corresponding to |property_name| on the
     given object is a flat field (not a List, attr class, or ForwardRef)."""
 
-    if not isinstance(obj, Entity):
-        raise TypeError(f"Unexpected type [{type(obj)}]")
+    if not issubclass(entity_cls, Entity):
+        raise TypeError(f"Unexpected type [{entity_cls}]")
 
-    attribute = attr.fields_dict(obj.__class__).get(property_name)  # type: ignore[arg-type]
+    attribute = attr.fields_dict(entity_cls).get(property_name)  # type: ignore[arg-type]
 
     if not attribute:
         raise ValueError(
-            f"Unexpected None attribute for property_name [{property_name}] on obj [{obj}]"
+            f"Unexpected None attribute for property_name [{property_name}] on class [{entity_cls}]"
         )
 
     return is_flat_field(attribute)
