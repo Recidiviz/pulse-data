@@ -152,7 +152,7 @@ def convert_entity_trees_to_normalized_versions(
 
         # Set all flat fields and unique fields to normalized class first on the builder
         flat_fields = field_index.get_all_core_entity_fields(
-            base_entity, EntityFieldType.FLAT_FIELD
+            type(base_entity), EntityFieldType.FLAT_FIELD
         )
         unique_fields = fields_unique_to_normalized_class(normalized_base_entity_class)
         fields_to_set_or_traverse = flat_fields | unique_fields
@@ -170,7 +170,7 @@ def convert_entity_trees_to_normalized_versions(
 
         # Find all of the relationships
         forward_fields = field_index.get_all_core_entity_fields(
-            base_entity, EntityFieldType.FORWARD_EDGE
+            type(base_entity), EntityFieldType.FORWARD_EDGE
         )
         for field in forward_fields:
             related_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
@@ -303,7 +303,7 @@ def convert_entities_to_normalized_dicts(
         entity_cls_name = entity_cls.__name__
 
         forward_fields = field_index.get_all_core_entity_fields(
-            entity, EntityFieldType.FORWARD_EDGE
+            type(entity), EntityFieldType.FORWARD_EDGE
         )
         for field in forward_fields:
             related_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
@@ -360,7 +360,7 @@ def convert_entities_to_normalized_dicts(
         )
 
         forward_relationship_fields = field_index.get_all_core_entity_fields(
-            schema_entity, EntityFieldType.FORWARD_EDGE
+            type(schema_entity), EntityFieldType.FORWARD_EDGE
         )
 
         # Collect the tagged entity dicts for all related classes that

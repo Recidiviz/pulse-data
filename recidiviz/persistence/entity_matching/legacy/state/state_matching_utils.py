@@ -33,7 +33,7 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     SchemaEdgeDirectionChecker,
-    get_explicilty_set_flat_fields,
+    get_explicitly_set_flat_fields,
     is_placeholder,
     is_reference_only_entity,
 )
@@ -372,10 +372,10 @@ def merge_flat_fields(
 
     if can_atomically_merge_entity(new_entity, field_index):
         fields = field_index.get_all_core_entity_fields(
-            new_entity, EntityFieldType.FLAT_FIELD
+            type(new_entity), EntityFieldType.FLAT_FIELD
         )
     else:
-        fields = get_explicilty_set_flat_fields(new_entity, field_index)
+        fields = get_explicitly_set_flat_fields(new_entity, field_index)
 
         # If an enum field is updated, always update the corresponding raw text field
         # (and vice versa), even if one of the values is null.

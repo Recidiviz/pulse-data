@@ -238,7 +238,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
             dst_builder = entity_cls.builder()
         else:
-            raise DatabaseConversionError(f"Unable to convert class [{src.__class__}]")
+            raise DatabaseConversionError(f"Unable to convert class [{type(src)}]")
 
         for field, attribute in attr.fields_dict(entity_cls).items():  # type: ignore[arg-type]
             v = getattr(src, field)
@@ -255,7 +255,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                         f"Found null direction checker for entity [{entity_cls}] with "
                         f"relationship field [{field}]"
                     )
-                is_backedge = self._direction_checker.is_back_edge(src, field)
+                is_backedge = self._direction_checker.is_back_edge(type(src), field)
                 if is_backedge and not populate_back_edges:
                     continue
                 values = []
@@ -275,7 +275,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
                         f"Found null direction checker for entity [{entity_cls}] with "
                         f"relationship field [{field}]"
                     )
-                is_backedge = self._direction_checker.is_back_edge(src, field)
+                is_backedge = self._direction_checker.is_back_edge(type(src), field)
                 if is_backedge and not populate_back_edges:
                     continue
                 next_src = v
