@@ -91,6 +91,7 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestSftpRemoteFileMetadata",
             "DirectIngestSftpIngestReadyFileMetadata",
             "DirectIngestInstanceStatus",
+            "DirectIngestDataflowRawTableUpperBounds",
         ]
 
         expected_qualified_names = _prefix_module_name(
@@ -198,6 +199,7 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_sftp_ingest_ready_file_metadata",
             "direct_ingest_raw_file_metadata",
             "direct_ingest_instance_status",
+            "direct_ingest_dataflow_raw_table_upper_bounds",
         ]
         outliers_table_names = [
             "supervision_directors",
