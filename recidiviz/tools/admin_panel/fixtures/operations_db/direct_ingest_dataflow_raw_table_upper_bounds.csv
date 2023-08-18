@@ -1,0 +1,1 @@
+ingest_run_id,region_code,ingest_instance,raw_data_file_tag,watermark_datetime,discovery_time,completion_time,is_invalidated
