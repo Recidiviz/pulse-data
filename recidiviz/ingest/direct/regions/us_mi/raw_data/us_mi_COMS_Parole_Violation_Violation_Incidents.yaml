@@ -8,18 +8,18 @@ custom_line_terminator: ‡
 encoding: WINDOWS-1252
 always_historical_export: False
 primary_key_cols:
+  - Parole_Violation_Violation_Incident_Id
   - Parole_Violation_Id
-  - Violation_Incident_Id
 columns:
+  - name: Parole_Violation_Violation_Incident_Id
+    description: COMS system generated ID for a violation incident record (links with COMS_Violation_Incidents)
   - name: Parole_Violation_Id
-    description: COMS system generated ID for a parle violation record (links with COMS_Parole_Violations)
+    description: COMS system generated ID for a parole violation record (links with COMS_Parole_Violations)
   - name: Offender_Number
     description: MDOC assigned person ID for JII in the MDOC system.  This is their publically searchable JII id (same as offender_number in the OMNI system).
     is_pii: True
     field_type: person_external_id
     external_id_type: US_MI_DOC
-  - name: Violation_Incident_Id
-    description: COMS system generated ID for a violation incident record (links with COMS_Violation_Incidents)
   - name: Entered_Date
     description: Date linking record entered into COMS
     field_type: datetime
