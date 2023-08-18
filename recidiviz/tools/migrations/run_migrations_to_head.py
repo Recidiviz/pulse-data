@@ -39,6 +39,7 @@ from typing import Optional
 
 import alembic.config
 
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.migrations.migration_helpers import (
     EngineIteratorDelegate,
@@ -47,7 +48,12 @@ from recidiviz.tools.migrations.migration_helpers import (
 )
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -77,7 +83,12 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--project-id",
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        choices=[
+            GCP_PROJECT_STAGING,
+            GCP_PROJECT_PRODUCTION,
+            GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+            GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+        ],
         help="Used to select which GCP project in which to run this script.",
         required=True,
     )
@@ -101,6 +112,7 @@ def main(
     dry_run: bool,
     skip_db_name_check: bool,
     confirm_hash: Optional[str] = None,
+    secret_prefix_override: Optional[str] = None,
 ) -> None:
     """
     Invokes the main code path for running migrations.
@@ -118,8 +130,7 @@ def main(
 
     # Run migrations
     for database_key, _engine in EngineIteratorDelegate.iterate_and_connect_to_engines(
-        schema_type,
-        dry_run=dry_run,
+        schema_type, dry_run=dry_run, secret_prefix_override=secret_prefix_override
     ):
         try:
             logging.info(
@@ -138,9 +149,23 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
     args = create_parser().parse_args()
+
+    # We have two sets of Justice Counts DB instances -- one original set in the
+    # Recidiviz GCP projects and one new set in the Justice Counts GCP projects.
+    # The secrets for the original instance are prefixed with `justice_counts`,
+    # and the secrets for the new instance are prefixed with `justice_counts_v2`.
+    # TODO(#23253): Remove when Publisher is migrated to JC GCP project.
+    secret_prefix = None
+    if args.project_id in [
+        GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+        GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    ]:
+        secret_prefix = JUSTICE_COUNTS_DB_SECRET_PREFIX
+
     with local_project_id_override(args.project_id), cloudsql_proxy_control.connection(
         schema_type=args.database,
         prompt=not args.skip_db_name_check,
+        secret_prefix_override=secret_prefix,
     ):
         main(
             schema_type=args.database,
@@ -148,4 +173,5 @@ if __name__ == "__main__":
             dry_run=args.dry_run,
             skip_db_name_check=args.skip_db_name_check,
             confirm_hash=args.confirm_hash,
+            secret_prefix_override=secret_prefix,
         )

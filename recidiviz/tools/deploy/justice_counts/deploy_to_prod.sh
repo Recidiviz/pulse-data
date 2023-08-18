@@ -16,10 +16,9 @@ source "${BASH_SOURCE_DIR}/../../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
-PROJECT_ID="recidiviz-123"
-PUBLISHER_CLOUD_RUN_PROJECT_ID='recidiviz-123'
+RECIDIVIZ_PROJECT_ID='recidiviz-123'
+JUSTICE_COUNTS_PROJECT_ID='justice-counts-production'
 PUBLISHER_CLOUD_RUN_SERVICE="justice-counts-web"
-DASHBOARD_CLOUD_RUN_PROJECT_ID='justice-counts-production'
 DASHBOARD_CLOUD_RUN_SERVICE="agency-dashboard-web"
 VERSION=''
 
@@ -74,18 +73,18 @@ STAGING_IMAGE_URL="${STAGING_IMAGE_BASE}@${STAGING_IMAGE_DIGEST}"
 PROD_IMAGE_URL="${PROD_IMAGE_BASE}:latest"
 PROD_IMAGE_TAG="${PROD_IMAGE_BASE}:${TAG}"
 
-echo "Moving Docker image ${STAGING_IMAGE_URL} to ${PROJECT_ID} and tagging with latest and ${PROD_IMAGE_TAG}..."
+echo "Moving Docker image ${STAGING_IMAGE_URL} to ${RECIDIVIZ_PROJECT_ID} and tagging with latest and ${PROD_IMAGE_TAG}..."
 run_cmd gcloud -q container images add-tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}" "${PROD_IMAGE_TAG}"
 
 echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"
 run_cmd git checkout "${RECIDIVIZ_DATA_COMMIT_HASH}"
 
-echo "Running migrations to head on ${PROJECT_ID}..."
+echo "Running migrations to head on ${JUSTICE_COUNTS_PROJECT_ID}..."
 # note: don't use run_cmd here because it messes up confirmation prompts
 python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JUSTICE_COUNTS \
-    --project-id "${PROJECT_ID}" \
+    --project-id "${JUSTICE_COUNTS_PROJECT_ID}" \
     --skip-db-name-check \
 
 # Deploy both Publisher and Agency Dashboard
@@ -94,13 +93,13 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 # because we currently never use the --no-traffic arg when deploying to prod.
 echo "Deploying new Publisher Cloud Run revision with image ${PROD_IMAGE_URL}..."
 run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
-    --project "${PUBLISHER_CLOUD_RUN_PROJECT_ID}" \
+    --project "${RECIDIVIZ_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
     --region "us-central1" 
 
 echo "Deploying new Agency Dashboard Cloud Run revision with image ${PROD_IMAGE_URL}..."
 run_cmd gcloud -q run deploy "${DASHBOARD_CLOUD_RUN_SERVICE}" \
-    --project "${DASHBOARD_CLOUD_RUN_PROJECT_ID}" \
+    --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
     --region "us-central1" 
 

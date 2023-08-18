@@ -18,10 +18,9 @@ source "${BASH_SOURCE_DIR}/../../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
-PROJECT_ID="recidiviz-staging"
-PUBLISHER_CLOUD_RUN_PROJECT_ID='recidiviz-staging'
+RECIDIVIZ_PROJECT_ID='recidiviz-staging'
+JUSTICE_COUNTS_PROJECT_ID='justice-counts-staging'
 PUBLISHER_CLOUD_RUN_SERVICE="justice-counts-web"
-DASHBOARD_CLOUD_RUN_PROJECT_ID='justice-counts-staging'
 DASHBOARD_CLOUD_RUN_SERVICE="agency-dashboard-web"
 VERSION=''
 
@@ -52,7 +51,7 @@ run_cmd verify_clean_git_status
 
 # This is where Cloud Build will put the new Docker image
 SUBDIRECTORY=justice-counts
-REMOTE_IMAGE_BASE=us.gcr.io/${PROJECT_ID}/${SUBDIRECTORY}
+REMOTE_IMAGE_BASE=us.gcr.io/${RECIDIVIZ_PROJECT_ID}/${SUBDIRECTORY}
 
 # Step 1: Determine most recent commit sha of Justice Counts repo
 
@@ -94,11 +93,11 @@ echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"
 run_cmd git checkout "${RECIDIVIZ_DATA_COMMIT_HASH}"
 
-echo "Running migrations to head on ${PROJECT_ID}..."
+echo "Running migrations to head on ${JUSTICE_COUNTS_PROJECT_ID}..."
 # note: don't use run_cmd here because it messes up confirmation prompts
 python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JUSTICE_COUNTS \
-    --project-id "${PROJECT_ID}" \
+    --project-id "${JUSTICE_COUNTS_PROJECT_ID}" \
     --skip-db-name-check
 
 # Step 6a: Deploy image with 'latest' tag to Publisher Cloud Run and update traffic
@@ -108,13 +107,13 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 
 echo "Deploying new Publisher Cloud Run revision with image ${LATEST_DOCKER_TAG}..."
 run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
-    --project "${PUBLISHER_CLOUD_RUN_PROJECT_ID}" \
+    --project "${RECIDIVIZ_PROJECT_ID}" \
     --image "${LATEST_DOCKER_TAG}" \
     --region "us-central1" \
 
 echo "Directing 100% of traffic to new revision..."
 run_cmd gcloud -q run services update-traffic "${PUBLISHER_CLOUD_RUN_SERVICE}" \
-    --project "${PUBLISHER_CLOUD_RUN_PROJECT_ID}" \
+    --project "${RECIDIVIZ_PROJECT_ID}" \
     --to-latest \
     --region "us-central1"
 
@@ -122,13 +121,13 @@ run_cmd gcloud -q run services update-traffic "${PUBLISHER_CLOUD_RUN_SERVICE}" \
 
 echo "Deploying new Agency Dashboard Cloud Run revision with image ${LATEST_DOCKER_TAG}..."
 run_cmd gcloud -q run deploy "${DASHBOARD_CLOUD_RUN_SERVICE}" \
-    --project "${DASHBOARD_CLOUD_RUN_PROJECT_ID}" \
+    --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --image "${LATEST_DOCKER_TAG}" \
     --region "us-central1" \
 
 echo "Directing 100% of traffic to new revision..."
 run_cmd gcloud -q run services update-traffic "${DASHBOARD_CLOUD_RUN_SERVICE}" \
-    --project "${DASHBOARD_CLOUD_RUN_PROJECT_ID}" \
+    --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --to-latest \
     --region "us-central1"
 

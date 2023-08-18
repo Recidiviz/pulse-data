@@ -83,12 +83,18 @@ class EngineIteratorDelegate(abc.ABC):
 
     @abc.abstractmethod
     def setup_engine(
-        self, database_key: SQLAlchemyDatabaseKey
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
     ) -> dict[str, Optional[str]]:
         ...
 
     @abc.abstractmethod
-    def get_engine(self, database_key: SQLAlchemyDatabaseKey) -> Engine:
+    def get_engine(
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
+    ) -> Engine:
         ...
 
     @abc.abstractmethod
@@ -99,6 +105,7 @@ class EngineIteratorDelegate(abc.ABC):
     def iterate_and_connect_to_engines(
         schema_type: SchemaType,
         dry_run: Optional[bool] = False,
+        secret_prefix_override: Optional[str] = None,
     ) -> Generator[Tuple[SQLAlchemyDatabaseKey, Engine], None, None]:
         delegate: EngineIteratorDelegate
 
@@ -108,7 +115,9 @@ class EngineIteratorDelegate(abc.ABC):
             delegate = CloudSQLProxyEngineIteratorDelegate()
 
         yield from iterate_and_connect_to_engines(
-            schema_type=schema_type, delegate=delegate
+            schema_type=schema_type,
+            delegate=delegate,
+            secret_prefix_override=secret_prefix_override,
         )
 
 
@@ -119,16 +128,23 @@ class CloudSQLProxyEngineIteratorDelegate(EngineIteratorDelegate):
         pass
 
     def setup_engine(
-        self, database_key: SQLAlchemyDatabaseKey
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
     ) -> dict[str, Optional[str]]:
         return SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
             database_key=database_key,
             using_proxy=True,
+            secret_prefix_override=secret_prefix_override,
         )
 
-    def get_engine(self, database_key: SQLAlchemyDatabaseKey) -> Engine:
+    def get_engine(
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
+    ) -> Engine:
         return SQLAlchemyEngineManager.get_engine_for_database_with_proxy(
-            database_key=database_key,
+            database_key=database_key, secret_prefix_override=secret_prefix_override
         )
 
     def teardown_engine(self, database_key: SQLAlchemyDatabaseKey) -> None:
@@ -152,7 +168,9 @@ class DryRunEngineIteratorDelegate(EngineIteratorDelegate):
         logging.info("Creating a dry-run...")
 
     def setup_engine(
-        self, database_key: SQLAlchemyDatabaseKey
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
     ) -> dict[str, Optional[str]]:
         overridden_env_vars = (
             local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
@@ -160,7 +178,11 @@ class DryRunEngineIteratorDelegate(EngineIteratorDelegate):
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         return overridden_env_vars
 
-    def get_engine(self, database_key: SQLAlchemyDatabaseKey) -> Engine:
+    def get_engine(
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
+    ) -> Engine:
         return SQLAlchemyEngineManager.init_engine_for_postgres_instance(
             database_key=database_key,
             db_url=local_persistence_helpers.postgres_db_url_from_env_vars(),
@@ -187,16 +209,21 @@ def iterate_and_connect_to_engines(
     schema_type: SchemaType,
     *,
     delegate: EngineIteratorDelegate,
+    secret_prefix_override: Optional[str] = None,
 ) -> Generator[Tuple[SQLAlchemyDatabaseKey, Engine], None, None]:
     """Returns an iterator that contains a `database_key` and corresponding `engine`.
     The engine is torn down after iteration"""
     delegate.setup()
 
     for database_key in delegate.get_database_keys(schema_type):
-        overridden_env_vars = delegate.setup_engine(database_key)
+        overridden_env_vars = delegate.setup_engine(
+            database_key, secret_prefix_override=secret_prefix_override
+        )
 
         try:
-            yield database_key, delegate.get_engine(database_key)
+            yield database_key, delegate.get_engine(
+                database_key=database_key, secret_prefix_override=secret_prefix_override
+            )
         finally:
             local_postgres_helpers.restore_local_env_vars(overridden_env_vars)
 
