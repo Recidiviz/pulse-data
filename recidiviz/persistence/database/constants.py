@@ -30,4 +30,4 @@ SQLALCHEMY_DB_PASSWORD = "SQLALCHEMY_DB_PASSWORD"
 # the Recidiviz GCP project will have one set of secrets that point to the
 # original JC instance, and the JC GCP projects will have one set of secrets
 # that point to the new JC instance.
-JUSTICE_COUNTS_DB_SECRET_PREFIX = "justice_counts_v2"
+JUSTICE_COUNTS_DB_SECRET_PREFIX = "justice_counts_v2"  # nosec
