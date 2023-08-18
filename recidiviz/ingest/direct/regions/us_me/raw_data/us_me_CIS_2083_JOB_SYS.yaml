@@ -3,7 +3,8 @@ file_tag: CIS_2083_JOB_SYS
 file_description: |-
   TODO(#23225): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - JOB_SYS_CD
 columns:
   - name: JOB_SYS_CD
     description: |-
