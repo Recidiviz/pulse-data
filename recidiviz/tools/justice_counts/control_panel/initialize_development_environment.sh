@@ -27,10 +27,10 @@ SEGMENT_KEY=$(get_secret recidiviz-staging justice_counts_segment_key)
 write_to_file "$SEGMENT_KEY" recidiviz/local/gsm/justice_counts_segment_key
 
 # Database secrets
-write_to_file 'justice_counts' recidiviz/local/gsm/justice_counts_cloudsql_instance_id
-write_to_file 'localhost' recidiviz/local/gsm/justice_counts_db_host
-write_to_file 'justice_counts_user' recidiviz/local/gsm/justice_counts_db_user
-write_to_file 'example' recidiviz/local/gsm/justice_counts_db_password
-write_to_file '5432' recidiviz/local/gsm/justice_counts_db_port
+write_to_file 'justice_counts' recidiviz/local/gsm/justice_counts_v2_cloudsql_instance_id
+write_to_file 'localhost' recidiviz/local/gsm/justice_counts_v2_db_host
+write_to_file 'justice_counts_user' recidiviz/local/gsm/justice_counts_v2_db_user
+write_to_file 'example' recidiviz/local/gsm/justice_counts_v2_db_password
+write_to_file '5432' recidiviz/local/gsm/justice_counts_v2_db_port
 
 write_to_file "$(python -c 'import uuid; print(uuid.uuid4().hex)')" recidiviz/local/gsm/justice_counts_secret_key

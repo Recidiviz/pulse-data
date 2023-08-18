@@ -40,9 +40,13 @@ class GCPEnvironment(Enum):
 
 GCP_PROJECT_STAGING = "recidiviz-staging"
 GCP_PROJECT_PRODUCTION = "recidiviz-123"
+GCP_PROJECT_JUSTICE_COUNTS_STAGING = "justice-counts-staging"
+GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION = "justice-counts-production"
 
 
 GCP_ENVIRONMENTS = {env.value for env in GCPEnvironment}
+
+# Data platform projects only
 GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 
 RECIDIVIZ_ENV = "RECIDIVIZ_ENV"

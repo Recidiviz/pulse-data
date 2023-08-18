@@ -536,3 +536,30 @@ class SQLAlchemyEngineManagerTest(TestCase):
         # Assert
         self.assertEqual(region, "us-central1")
         mock_secrets.assert_called_with("operations_v2_cloudsql_instance_id")
+
+    @patch("recidiviz.utils.secrets.get_secret")
+    def testGetPostgresUrlWithSecretPrefix(self, mock_secrets: mock.MagicMock) -> None:
+        # get_secret(justice_counts_v2_db_user) will return justice_counts_v2_db_user_value
+        mock_secrets.side_effect = lambda key: f"{key}_value"
+
+        # Since we are specifying secret_prefix_override, we will use this prefix to
+        # determine the names of the secrets in which the instance URL user, password,
+        # etc are stored. (Without this override, we would determine the names of the
+        # secrets based on the SchemaType.)
+        url = SQLAlchemyEngineManager.get_server_postgres_instance_url(
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
+            secret_prefix_override="justice_counts_v2",
+        )
+
+        self.assertEqual(
+            url.username,
+            "justice_counts_v2_db_user_value",
+        )
+        self.assertEqual(
+            url.password,
+            "justice_counts_v2_db_password_value",
+        )
+        self.assertEqual(
+            url.query["host"],
+            "/cloudsql/justice_counts_v2_cloudsql_instance_id_value",
+        )

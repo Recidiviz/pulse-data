@@ -211,8 +211,13 @@ class SQLAlchemyEngineManager:
         return host
 
     @classmethod
-    def _get_db_password(cls, *, database_key: SQLAlchemyDatabaseKey) -> str:
-        secret_key = f"{cls._secret_manager_prefix(database_key)}_db_password"
+    def _get_db_password(
+        cls,
+        *,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str],
+    ) -> str:
+        secret_key = f"{secret_prefix_override or cls._secret_manager_prefix(database_key)}_db_password"
         password = secrets.get_secret(secret_key)
         if password is None:
             raise ValueError(
@@ -241,20 +246,30 @@ class SQLAlchemyEngineManager:
         return user
 
     @classmethod
-    def _get_db_user(cls, *, database_key: SQLAlchemyDatabaseKey) -> str:
-        secret_key = f"{cls._secret_manager_prefix(database_key)}_db_user"
+    def _get_db_user(
+        cls,
+        *,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str],
+    ) -> str:
+        secret_key = f"{secret_prefix_override or cls._secret_manager_prefix(database_key)}_db_user"
         user = secrets.get_secret(secret_key)
         if user is None:
             raise ValueError(f"Unable to retrieve database user for key [{secret_key}]")
         return user
 
     @classmethod
-    def _get_cloudsql_instance_id_key(cls, schema_type: SchemaType) -> str:
-        secret_manager_prefix = cls._secret_manager_prefix_for_type(schema_type)
-        return f"{secret_manager_prefix}_cloudsql_instance_id"
+    def _get_cloudsql_instance_id_key(
+        cls,
+        schema_type: SchemaType,
+        secret_prefix_override: Optional[str],
+    ) -> str:
+        return f"{secret_prefix_override or cls._secret_manager_prefix_for_type(schema_type)}_cloudsql_instance_id"
 
     @classmethod
-    def get_full_cloudsql_instance_id(cls, schema_type: SchemaType) -> str:
+    def get_full_cloudsql_instance_id(
+        cls, schema_type: SchemaType, secret_prefix_override: Optional[str] = None
+    ) -> str:
         """Rerturns the full instance id stored in secrets with the form
         project_id:region:instance_id.
 
@@ -262,7 +277,9 @@ class SQLAlchemyEngineManager:
             recidiviz-staging:us-east1:dev-state-data
         """
 
-        instance_id_key = cls._get_cloudsql_instance_id_key(schema_type)
+        instance_id_key = cls._get_cloudsql_instance_id_key(
+            schema_type=schema_type, secret_prefix_override=secret_prefix_override
+        )
         instance_id_full = secrets.get_secret(instance_id_key)
 
         if instance_id_full is None:
@@ -325,6 +342,7 @@ class SQLAlchemyEngineManager:
         database_key: SQLAlchemyDatabaseKey,
         readonly_user: bool = False,
         using_proxy: bool = False,
+        secret_prefix_override: Optional[str] = None,
     ) -> Dict[str, Optional[str]]:
         """Updates the appropriate env vars for SQLAlchemy to talk to the postgres instance associated with the schema.
 
@@ -357,26 +375,45 @@ class SQLAlchemyEngineManager:
                 database_key=database_key
             )
         else:
-            os.environ[SQLALCHEMY_DB_USER] = cls._get_db_user(database_key=database_key)
+            os.environ[SQLALCHEMY_DB_USER] = cls._get_db_user(
+                database_key=database_key, secret_prefix_override=secret_prefix_override
+            )
             os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_password(
-                database_key=database_key
+                database_key=database_key, secret_prefix_override=secret_prefix_override
             )
 
         return original_values
 
     @classmethod
     def get_server_postgres_instance_url(
-        cls, *, database_key: SQLAlchemyDatabaseKey
+        cls,
+        *,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
     ) -> URL:
+        """Returns the Cloud SQL instance URL for a given database key.
+
+        The host, user, password, etc. used to determine the instance URL are stored
+        in GCP secrets.  If `secret_prefix_override` is not specified,  we determine the prefix
+        for these secrets based on the database schema. However, it is possible that the
+        same database schema may live in more than one instance. In this case, use the
+        `secret_prefix_override` argument to override this logic.
+        """
         schema_type = database_key.schema_type
-        instance_id_key = cls._get_cloudsql_instance_id_key(schema_type)
+        instance_id_key = cls._get_cloudsql_instance_id_key(
+            schema_type=schema_type, secret_prefix_override=secret_prefix_override
+        )
         if instance_id_key is None:
             raise ValueError(
                 f"Instance id is not configured for schema type [{schema_type}]"
             )
 
-        db_user = cls._get_db_user(database_key=database_key)
-        db_password = cls._get_db_password(database_key=database_key)
+        db_user = cls._get_db_user(
+            database_key=database_key, secret_prefix_override=secret_prefix_override
+        )
+        db_password = cls._get_db_password(
+            database_key=database_key, secret_prefix_override=secret_prefix_override
+        )
         db_port = cls._get_db_port()
         cloudsql_instance_id = secrets.get_secret(instance_id_key)
         db_name = database_key.db_name
@@ -395,12 +432,19 @@ class SQLAlchemyEngineManager:
     @classmethod
     @environment.local_only
     def get_engine_for_database_with_proxy(
-        cls, *, database_key: SQLAlchemyDatabaseKey
+        cls,
+        *,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
     ) -> Engine:
         """Returns an engine configured to connect to the Cloud SQL Proxy.
         Used when running migrations via run_all_migrations_using_proxy.sh"""
-        db_user = cls._get_db_user(database_key=database_key)
-        db_password = cls._get_db_password(database_key=database_key)
+        db_user = cls._get_db_user(
+            database_key=database_key, secret_prefix_override=secret_prefix_override
+        )
+        db_password = cls._get_db_password(
+            database_key=database_key, secret_prefix_override=secret_prefix_override
+        )
         db_name = database_key.db_name
         url = URL.create(
             drivername="postgresql",
