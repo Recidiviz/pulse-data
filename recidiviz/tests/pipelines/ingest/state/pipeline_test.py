@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the state ingest pipeline."""
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable
 
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -42,7 +42,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
     def run_test_pipeline(
         self,
-        ingest_view_results: Dict[str, List[Dict[str, Any]]],
+        ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
     ) -> None:
         """Runs a test version of the state ingest pipeline."""
         project = BQ_EMULATOR_PROJECT_ID

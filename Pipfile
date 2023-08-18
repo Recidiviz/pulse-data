@@ -4,12 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
-# TODO(#4287): Unpin once the latest version of google-api-core supports protobuf
-#  version >= 3.18.0 (might be resolved by upgrading other google libraries > 2.0.0).
-mypy-protobuf = "<3.0.0"
+mypy-protobuf = "*"
 "autopep8" = "*"
 mock = "*"
 pytest = "*"
+# TODO(#23317): pytest-xdist changed its parallelization method after this result
+# This resulted in our ModuleCollectorMixin encountering a condition where some modules were collected twice
+pytest-xdist = "2.5.0"
 pylint = "*"
 pytest-cov = "*"
 mypy = "*"
@@ -17,7 +18,7 @@ bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
 # If this version is bumped then the beam version in recidiviz/pipelines/Dockerfile.pipelines must be as well.
-apache-beam = {extras = ["gcp", "test"],version = "==2.41.0"}
+apache-beam = {extras = ["gcp", "test"],version = "==2.49.0"}
 fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
@@ -37,10 +38,7 @@ gspread = "*"
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.
 black = {extras = ["jupyter"],version = "==22.3.0"}
 pre-commit = "*"
-# TODO(#4287): Unpin/remove explicit dependency once the latest version of
-#  google-api-core supports protobuf version >= 3.18.0 (might be resolved by upgrading
-#  other google libraries > 2.0.0). Version proto-plus==1.19.7 requires protobuf >= 3.19.0.
-proto-plus = "==1.19.6"
+proto-plus = "*"
 pygtrie = "*"
 rope = "*"
 "ruamel.yaml" = "*"
@@ -104,6 +102,8 @@ ydata-profiling = "*"
 # end recidiviz-research dependencies
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
+# TODO(#23318): Newer Cython versions encounter a crash when compiling apache-beam
+Cython = "==0.29.36"
 
 [packages]
 callee = "*"
@@ -147,9 +147,8 @@ flask-smorest = "*"
 iteration-utilities = "*"
 "pypdf2" = "*"
 pyyaml = "*"
-# TODO(#4287): Upgrade google-cloud-* to 2.0.0 now that we have removed apache-airflow from our Pipfile
-google-cloud-datastore = "<2.0.0"
-google-cloud-tasks = "<2.0.0"
+google-cloud-datastore = "*"
+google-cloud-tasks = "*"
 google-cloud-pubsub = "*"
 google-cloud-monitoring = "*"
 pyjwt = "*"
@@ -157,8 +156,8 @@ cssselect = "*"
 grpcio = "*"
 gunicorn = "*"
 gevent = ">=20.5.1"
-google-cloud-logging = "<2.0.0"
-google-cloud-trace = "<2.0.0"
+google-cloud-logging = "*"
+google-cloud-trace = "*"
 wrapt = "*"
 attrs = "*"
 requests = "*"
@@ -166,9 +165,7 @@ pytz = "*"
 # TODO(#9732): Upgrade to 4.0 introduces dateparsing errors to ingest controller tests
 tzlocal = "<4.0"
 python-dateutil = "*"
-# TODO(#4287): Versions >= 2.11.0 create dependency issues on pipenv lock. We should
-#   revisit upgrade when we've updated all google-cloud* libraries to >= 2.0.0.
-google-api-core = "<2.11.0"
+google-api-core = "*"
 # If the protobuf version changes be sure to update the pinned version in dataflow_setup.py
 protobuf = "*"
 "psycopg2" = "*"
@@ -185,9 +182,9 @@ deepdiff = "*"
 yq = "*"
 oauth2client = "*" #TODO(#2922): Remove deprecated oauth2client dependency
 google-cloud-storage = ">=2.0.0"
-google-cloud-firestore = "<2.0.0"
+google-cloud-firestore = "*"
 progress="*"
-google-cloud-secret-manager = "<2.0.0"
+google-cloud-secret-manager = "*"
 pandas-gbq = "*"
 google-cloud-bigquery-storage = "*"
 guppy3 = "*"
@@ -219,10 +216,7 @@ tqdm = "*"
 types-tqdm = "*"
 linearmodels = "*"
 jsonschema = "*"
-# TODO(#4287): Unpin/remove explicit dependency once the latest version of
-#  google-api-core supports protobuf version >= 3.18.0 (might be resolved by upgrading
-#  other google libraries > 2.0.0). Version proto-plus==1.19.7 requires protobuf >= 3.19.0.
-proto-plus = "==1.19.6"
+proto-plus = "*"
 nltk = "*"
 thefuzz = "*"
 # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
@@ -241,6 +235,8 @@ twilio = "*"
 twilio-stubs = "*"
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
+# TODO(#23318): Newer Cython versions encounter a crash when compiling apache-beam
+Cython = "==0.29.36"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!

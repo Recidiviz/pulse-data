@@ -2240,8 +2240,11 @@ class BigQueryClientImpl(BigQueryClient):
             requested_run_time = timestamp_pb2.Timestamp()
             requested_run_time.FromDatetime(datetime.datetime.now(tz=pytz.UTC))
             response = transfer_client.start_manual_transfer_runs(
-                StartManualTransferRunsRequest(
-                    parent=transfer_config.name, requested_run_time=requested_run_time
+                request=StartManualTransferRunsRequest(
+                    {
+                        "parent": f"projects/{self.project_id}",
+                        "requested_run_time": requested_run_time,
+                    }
                 )
             )
 
@@ -2284,7 +2287,8 @@ class BigQueryClientImpl(BigQueryClient):
                     logging.info("Transfer run succeeded")
 
                     run = transfer_client.get_transfer_run(
-                        name=run.name, timeout=DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC
+                        request={"name": run.name},
+                        timeout=DEFAULT_GET_TRANSFER_RUN_TIMEOUT_SEC,
                     )
 
                     if run.state != TransferState.SUCCEEDED:
@@ -2312,7 +2316,9 @@ class BigQueryClientImpl(BigQueryClient):
                 time.sleep(CROSS_REGION_COPY_STATUS_ATTEMPT_SLEEP_TIME_SEC)
         finally:
             logging.info("Deleting transfer config [%s]", transfer_config.name)
-            transfer_client.delete_transfer_config(name=transfer_config.name)
+            transfer_client.delete_transfer_config(
+                request={"name": transfer_config.name}
+            )
             logging.info("Finished deleting transfer config [%s]", transfer_config.name)
 
     def update_datasets_to_match_reference_schema(

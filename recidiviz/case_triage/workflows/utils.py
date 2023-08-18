@@ -40,6 +40,9 @@ def allowed_twilio_dev_recipient(recipient_phone_number: str) -> bool:
 
     try:
         config = firestore_client.get_document(path).get().to_dict()
+        if not config:
+            return False
+
         return config.get("allowedTwilioRecipients", {}).get(
             recipient_phone_number, False
         )

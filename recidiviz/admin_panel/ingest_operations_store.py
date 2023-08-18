@@ -228,9 +228,9 @@ class IngestOperationsStore(AdminPanelStore):
 
     def get_ingest_queue_states(self, state_code: StateCode) -> List[Dict[str, str]]:
         """Returns a list of dictionaries that contain the name and states of direct ingest queues for a given region"""
-        ingest_queue_states: List[
-            Dict[str, tasks_v2.enums.Queue.State]
-        ] = self.cloud_task_manager.get_ingest_queue_states(state_code)
+        ingest_queue_states = self.cloud_task_manager.get_ingest_queue_states(
+            state_code
+        )
 
         return [
             {"name": queue_info["name"], "state": queue_info["state"].name}

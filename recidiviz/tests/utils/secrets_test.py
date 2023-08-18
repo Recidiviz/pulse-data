@@ -22,8 +22,7 @@ from typing import Callable
 from unittest.mock import MagicMock, patch
 
 from google.cloud import exceptions
-from google.cloud.secretmanager_v1beta1.proto import service_pb2
-from google.cloud.secretmanager_v1beta1.types import SecretPayload
+from google.cloud.secretmanager_v1 import AccessSecretVersionResponse, SecretPayload
 from mock import Mock
 
 from recidiviz.utils import secrets
@@ -56,11 +55,11 @@ class TestSecrets:
 
         mock_client = Mock()
         mock_client.secret_version_path.return_value = "test-project.top_track.latest"
-        mock_client.access_secret_version.return_value = (
-            service_pb2.AccessSecretVersionResponse(payload=payload)
+        mock_client.access_secret_version.return_value = AccessSecretVersionResponse(
+            payload=payload
         )
         with patch(
-            "google.cloud.secretmanager_v1beta1.SecretManagerServiceClient",
+            "recidiviz.utils.secrets.SecretManagerServiceClient",
             return_value=mock_client,
         ):
             actual = secrets.get_secret("top_track")
@@ -76,7 +75,7 @@ class TestSecrets:
             "Could not find it"
         )
         with patch(
-            "google.cloud.secretmanager_v1beta1.SecretManagerServiceClient",
+            "recidiviz.utils.secrets.SecretManagerServiceClient",
             return_value=mock_client,
         ):
             actual = secrets.get_secret("top_track")
@@ -92,7 +91,7 @@ class TestSecrets:
             "Something bad happened"
         )
         with patch(
-            "google.cloud.secretmanager_v1beta1.SecretManagerServiceClient",
+            "recidiviz.utils.secrets.SecretManagerServiceClient",
             return_value=mock_client,
         ):
             actual = secrets.get_secret("top_track")
@@ -104,11 +103,11 @@ class TestSecrets:
 
         mock_client = Mock()
         mock_client.secret_version_path.return_value = "test-project.top_track.latest"
-        mock_client.access_secret_version.return_value = (
-            service_pb2.AccessSecretVersionResponse(payload=None)
+        mock_client.access_secret_version.return_value = AccessSecretVersionResponse(
+            payload=None
         )
         with patch(
-            "google.cloud.secretmanager_v1beta1.SecretManagerServiceClient",
+            "recidiviz.utils.secrets.SecretManagerServiceClient",
             return_value=mock_client,
         ):
             actual = secrets.get_secret("top_track")

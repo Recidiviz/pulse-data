@@ -22,11 +22,12 @@ from datetime import datetime
 from typing import Dict, List, Optional, Union
 
 from google.api_core.operation import Operation
-from google.cloud import firestore, firestore_admin_v1
+from google.cloud import firestore_admin_v1, firestore_v1
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
-from google.cloud.firestore_v1.query import Query
+from google.cloud.firestore_v1.query import BaseQuery, CollectionGroup
 
+from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
@@ -50,7 +51,7 @@ class FirestoreClient(abc.ABC):
         """Returns a reference to a Firestore collection."""
 
     @abc.abstractmethod
-    def get_collection_group(self, collection_path: str) -> CollectionReference:
+    def get_collection_group(self, collection_path: str) -> CollectionGroup:
         """Returns a query object for a Firestore collection group."""
 
     @abc.abstractmethod
@@ -62,7 +63,7 @@ class FirestoreClient(abc.ABC):
         """Sets the data for a Firestore document."""
 
     @abc.abstractmethod
-    def batch(self) -> firestore.WriteBatch:
+    def batch(self) -> firestore_v1.WriteBatch:
         """Returns a batch for writing to Firestore."""
 
     @abc.abstractmethod
@@ -117,7 +118,7 @@ class FirestoreClientImpl(FirestoreClient):
         self._project_id = project_id
         # (default) is the database name automatically assigned by Firestore to the default database in a project.
         self.database_name = "(default)"
-        self.client = firestore.Client(project=self.project_id)
+        self.client = firestore_v1.Client(project=self.project_id)
         self.admin_client = firestore_admin_v1.FirestoreAdminClient()
 
     @property
@@ -131,21 +132,19 @@ class FirestoreClientImpl(FirestoreClient):
     def get_collection(self, collection_path: str) -> CollectionReference:
         return self.client.collection(collection_path)
 
-    def get_collection_group(self, collection_path: str) -> Query:
+    def get_collection_group(self, collection_path: str) -> CollectionGroup:
         return self.client.collection_group(collection_path)
 
     def get_document(self, document_path: str) -> DocumentReference:
         return self.client.document(document_path)
 
-    def set_document(
-        self, document_path: str, data: Dict, merge: Optional[bool] = False
-    ) -> None:
+    def set_document(self, document_path: str, data: Dict, merge: bool = False) -> None:
         self.client.document(document_path).set(data, merge=merge)
 
     def update_document(self, document_path: str, data: Dict) -> None:
         self.client.document(document_path).update(data)
 
-    def batch(self) -> firestore.WriteBatch:
+    def batch(self) -> firestore_v1.WriteBatch:
         return self.client.batch()
 
     def list_collections_with_indexes(self) -> List[str]:
@@ -153,7 +152,7 @@ class FirestoreClientImpl(FirestoreClient):
         # indexes in a project, regardless of the collection group specified. 'all' does not mean anything here,
         # any string provided will work, but it can not be left blank.
         project_path = f"projects/{self.project_id}/databases/{self.database_name}/collectionGroups/all"
-        indexes = list(self.admin_client.list_indexes(parent=project_path))
+        indexes = list(self.admin_client.list_indexes(request={"parent": project_path}))
         collections = []
         for index in indexes:
             # index.name returns a string that matches:
@@ -172,9 +171,15 @@ class FirestoreClientImpl(FirestoreClient):
         create_index_request: firestore_admin_v1.types.CreateIndexRequest,
     ) -> Operation:
         project_path = f"projects/{self.project_id}/databases/{self.database_name}/collectionGroups/{collection_name}"
-        return self.admin_client.create_index(
-            parent=project_path, index=create_index_request
+
+        request = (
+            ProtoPlusBuilder(firestore_admin_v1.types.CreateIndexRequest)
+            .update_args(parent=project_path)
+            .compose(create_index_request)
+            .build()
         )
+
+        return self.admin_client.create_index(request=request)
 
     def delete_collection(self, collection_path: str) -> None:
         logging.info('Deleting collection "%s"', collection_path)
@@ -213,7 +218,7 @@ class FirestoreClientImpl(FirestoreClient):
         )
 
     def _delete_documents_batch(
-        self, query: Union[CollectionReference, Query], deleted_so_far: int = 0
+        self, query: Union[CollectionReference, BaseQuery], deleted_so_far: int = 0
     ) -> int:
         batch = self.batch()
         docs = query.limit(FIRESTORE_DELETE_BATCH_SIZE).stream()

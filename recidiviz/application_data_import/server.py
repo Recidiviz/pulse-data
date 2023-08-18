@@ -21,9 +21,9 @@ import re
 from http import HTTPStatus
 from typing import Tuple
 
+import google.cloud.pubsub_v1 as pubsub
 from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
-from google.cloud import pubsub
 from sqlalchemy import delete
 
 from recidiviz.big_query.selected_columns_big_query_view import (

@@ -44,7 +44,7 @@ REQUIRED_PACKAGES = [
     "google-cloud-logging==1.15.3",
     "google-cloud-bigquery-datatransfer",
     # Must stay up-to-date with latest google-cloud-tasks version in the Pipfile
-    "google-cloud-tasks==1.5.2",
+    "google-cloud-tasks==2.14.1",
     "html5lib",
     "lxml",
     "iteration-utilities",

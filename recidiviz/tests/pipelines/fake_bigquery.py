@@ -24,6 +24,7 @@ from typing import (
     Collection,
     Dict,
     Generic,
+    Iterable,
     List,
     Optional,
     Set,
@@ -67,10 +68,10 @@ from recidiviz.tests.pipelines.calculator_test_utils import NormalizedDatabaseDi
 
 DatasetStr = str
 QueryStr = str
-DataTablesDict = Dict[str, List[NormalizedDatabaseDict]]
+DataTablesDict = Dict[str, Iterable[NormalizedDatabaseDict]]
 DataDictQueryFn = Callable[
     [DatasetStr, QueryStr, DataTablesDict, str, Optional[DatasetStr]],
-    List[NormalizedDatabaseDict],
+    Iterable[NormalizedDatabaseDict],
 ]
 
 # Regex matching queries used by calc pipelines to hydrate database entities.
@@ -108,10 +109,10 @@ class FakeBigQueryAssertMatchers:
     @staticmethod
     def validate_metric_output(
         expected_metric_type: RecidivizMetricType,
-    ) -> Callable[[List[Dict[str, Any]]], None]:
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
         """Asserts that the pipeline produced the expected types of metrics."""
 
-        def _validate_metric_output(output: List[Dict[str, Any]]) -> None:
+        def _validate_metric_output(output: Iterable[Any]) -> None:
             if not output:
                 raise BeamAssertException(
                     f"Failed assert. Output is empty for expected type [{expected_metric_type}]."
@@ -128,12 +129,14 @@ class FakeBigQueryAssertMatchers:
     @staticmethod
     def validate_normalized_entity_output(
         base_class_name: str,
-    ) -> Callable[[List[Dict[str, Any]]], None]:
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
         """Asserts that the pipeline produces dictionaries with the expected keys
         corresponding to the column names in the table into which the output will be
         written."""
 
-        def _validate_normalized_entity_output(output: List[Dict[str, Any]]) -> None:
+        def _validate_normalized_entity_output(
+            output: Iterable[Dict[str, Any]]
+        ) -> None:
             normalized_entity_class = normalized_entity_class_with_base_class_name(
                 base_class_name=base_class_name
             )
@@ -160,13 +163,13 @@ class FakeBigQueryAssertMatchers:
     @staticmethod
     def validate_normalized_association_entity_output(
         child_class_name: str, parent_class_name: str
-    ) -> Callable[[List[Dict[str, Any]]], None]:
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
         """Asserts that the pipeline produces dictionaries with the expected keys
         corresponding to the column names in the association table which the output
         will be written."""
 
         def _validate_normalized_association_entity_output(
-            output: List[Dict[str, Any]]
+            output: Iterable[Dict[str, Any]]
         ) -> None:
             schema_for_association = bq_schema_for_normalized_state_association_table(
                 child_class_name, parent_class_name
@@ -192,7 +195,7 @@ class FakeBigQueryAssertMatchers:
 class FakeReadFromBigQuery(apache_beam.PTransform):
     """Creates a PCollection from the provided |table_values|."""
 
-    def __init__(self, table_values: List[NormalizedDatabaseDict]):
+    def __init__(self, table_values: Iterable[NormalizedDatabaseDict]):
         super().__init__()
         self._table_values = table_values
 
@@ -306,7 +309,7 @@ class FakeReadFromBigQueryFactory:
         data_dict: DataTablesDict,
         unifying_id_field: str,
         expected_normalized_dataset: Optional[str],
-    ) -> List[NormalizedDatabaseDict]:
+    ) -> Iterable[NormalizedDatabaseDict]:
         """Default implementation of the fake query function, which parses, validates,
         and replicates the behavior of the provided query string, returning data out
         of the data_dict object."""
@@ -339,7 +342,7 @@ class FakeReadFromBigQueryFactory:
         expected_dataset: str,
         expected_unifying_id_field: str,
         expected_normalized_dataset: Optional[str] = None,
-    ) -> List[NormalizedDatabaseDict]:
+    ) -> Iterable[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided entity table
         query string, returning data out of the data_dict object.
         """
@@ -451,7 +454,7 @@ class FakeReadFromBigQueryFactory:
         # TODO(#11734): Implement support for association queries from normalized
         #  datasets
         _expected_normalized_dataset: Optional[str] = None,
-    ) -> List[NormalizedDatabaseDict]:
+    ) -> Iterable[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided association
         value query string, returning data out of the data_dict object.
         """
@@ -740,7 +743,10 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
                 beam_bigquery.TableSchema
             ] = None,
             validator_fn_generator: Optional[  # pylint: disable=unused-argument
-                Callable[[List[Dict[str, Any]]], Callable[[List[Dict[str, Any]]], None]]
+                Callable[
+                    [List[Dict[str, Any]]],
+                    Callable[[List[Dict[str, Any]]], None],
+                ]
             ] = None,
         ) -> FakeWriteToBigQueryType:
             if output_dataset != expected_dataset:
@@ -776,11 +782,11 @@ def id_list_str_to_set(id_list_str: str) -> Set[int]:
 
 def filter_results(
     table_name: str,
-    unfiltered_table_rows: List[NormalizedDatabaseDict],
+    unfiltered_table_rows: Iterable[NormalizedDatabaseDict],
     filter_id_name: str,
     filter_id_set: Union[Set[int], Set[str]],
     allow_none_values: bool,
-) -> List[NormalizedDatabaseDict]:
+) -> Iterable[NormalizedDatabaseDict]:
     check_field_exists_in_table(table_name, filter_id_name)
 
     for row in unfiltered_table_rows:

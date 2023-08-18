@@ -23,6 +23,7 @@ from unittest.mock import MagicMock, patch
 import mock.mock
 from freezegun import freeze_time
 from google.api_core.exceptions import AlreadyExists
+from google.cloud.firestore_admin_v1 import CreateIndexRequest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.metadata import local_project_id_override
@@ -85,7 +86,7 @@ class FakeFileStream:
 # entire class (because our test instance already has a reference to the real class,
 # which also references google.cloud at instantiation, which is why we have to patch that too)
 @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
-@patch("google.cloud.firestore.Client")
+@patch("google.cloud.firestore_v1.Client")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
 @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.delete_old_documents")
@@ -202,16 +203,22 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
             mock_index_exists_for_collection.return_value = False
             delegate = TestETLDelegate(StateCode.US_XX)
             delegate.run_etl("test_export.json")
-            mock_create_index.assert_called_once_with(
-                "testOpportunity",
-                {
-                    "name": "testOpportunity",
-                    "query_scope": "COLLECTION",
-                    "fields": [
-                        {"field_path": "stateCode", "order": "ASCENDING"},
-                        {"field_path": "__loadedAt", "order": "ASCENDING"},
-                    ],
-                },
+            mock_create_index.assert_called_once()
+            call_args = mock_create_index.mock_calls[0].args
+
+            self.assertEqual("testOpportunity", call_args[0])
+            self.assertEqual(
+                CreateIndexRequest(
+                    index={
+                        "name": "testOpportunity",
+                        "query_scope": "COLLECTION",
+                        "fields": [
+                            {"field_path": "stateCode", "order": "ASCENDING"},
+                            {"field_path": "__loadedAt", "order": "ASCENDING"},
+                        ],
+                    }
+                ),
+                call_args[1],
             )
 
     @patch(

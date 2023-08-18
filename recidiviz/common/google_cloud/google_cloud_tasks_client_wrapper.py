@@ -27,11 +27,10 @@ from typing import Any, Dict, List, Optional, Union
 import pytz
 from google.api_core import retry
 from google.cloud import exceptions, tasks_v2
-from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
 
 from recidiviz.common.common_utils import log_retried_google_api_error
-from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
+from recidiviz.common.google_cloud.protobuf_builder import ProtoPlusBuilder
 from recidiviz.common.retry_predicate import google_api_retry_predicate
 from recidiviz.utils import metadata
 
@@ -73,7 +72,7 @@ class GoogleCloudTasksClientWrapper:
         return self.client.queue_path(self.project_id, self.queues_region, queue_name)
 
     @retry.Retry(predicate=google_api_retry_predicate)
-    def initialize_cloud_task_queue(self, queue_config: queue_pb2.Queue) -> None:
+    def initialize_cloud_task_queue(self, queue_config: tasks_v2.Queue) -> None:
         """
         Initializes a task queue with the given config. If a queue with a given
         name already exists, it is updated to have the given config. If it does
@@ -98,7 +97,7 @@ class GoogleCloudTasksClientWrapper:
         self,
         queue_name: str,
         task_id_prefix: str,
-    ) -> List[task_pb2.Task]:
+    ) -> List[tasks_v2.Task]:
         """List tasks for the given queue with the given task path prefix."""
 
         task_name_prefix = self.format_task_path(queue_name, task_id_prefix)
@@ -163,7 +162,7 @@ class GoogleCloudTasksClientWrapper:
                 datetime.now(tz=pytz.UTC) + timedelta(seconds=schedule_delay_seconds)
             )
 
-        task_builder = ProtobufBuilder(task_pb2.Task)
+        task_builder = ProtoPlusBuilder(tasks_v2.Task)
 
         if task_id is not None:
             task_name = self.format_task_path(queue_name, task_id)

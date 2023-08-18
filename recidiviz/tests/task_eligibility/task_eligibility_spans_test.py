@@ -129,7 +129,7 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
             ),
             # ... add addresses here as tasks for new states are added ...
         ]
-
+        self.maxDiff = None
         self.assertCountEqual(
             expected_all_tasks_view_addresses, [b.address for b in builders]
         )

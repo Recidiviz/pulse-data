@@ -22,7 +22,7 @@ import datetime
 import unittest
 from datetime import date
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 from unittest import mock
 
 import apache_beam as beam
@@ -140,7 +140,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         self.state_specific_delegate_patcher.stop()
         self.state_specific_metrics_producer_delegate_patcher.stop()
 
-    def build_data_dict(self, fake_person_id: int) -> Dict[str, List]:
+    def build_data_dict(self, fake_person_id: int) -> Dict[str, Iterable]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code="US_XX",
@@ -243,7 +243,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         ]
 
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
-        data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
+        data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -417,7 +417,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         ]
 
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
-        data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
+        data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
@@ -909,7 +909,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             residency_status=StateResidencyStatus.PERMANENT,
         )
 
-        person_release_events: List[Tuple[entities.StatePerson, Dict]] = [
+        person_release_events: Iterable[Tuple[entities.StatePerson, Dict]] = [
             (fake_person, {})
         ]
 
@@ -1104,7 +1104,7 @@ class MetricGroup:
     )
 
     @staticmethod
-    def get_list() -> List[ReincarcerationRecidivismRateMetric]:
+    def get_list() -> Iterable[ReincarcerationRecidivismRateMetric]:
         return [
             MetricGroup.recidivism_metric_with_age,
             MetricGroup.recidivism_metric_with_gender,
@@ -1125,7 +1125,7 @@ class AssertMatchers:
     def count_metrics(expected_metric_counts: Dict[Any, Any]) -> Callable:
         """Asserts that the number of metric combinations matches the expected counts for each release cohort year."""
 
-        def _count_metrics(output: List) -> None:
+        def _count_metrics(output: Iterable) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():
@@ -1153,7 +1153,7 @@ class AssertMatchers:
 
     @staticmethod
     def validate_metric_writable_dict() -> Callable:
-        def _validate_metric_writable_dict(output: List) -> None:
+        def _validate_metric_writable_dict(output: Iterable) -> None:
             for metric_dict in output:
                 for _, value in metric_dict.items():
                     if isinstance(value, Enum):

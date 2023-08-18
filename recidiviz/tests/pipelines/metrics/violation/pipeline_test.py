@@ -17,7 +17,7 @@
 """Tests for violation/pipeline.py"""
 import unittest
 from datetime import date
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple
 from unittest import mock
 
 import apache_beam as beam
@@ -108,7 +108,7 @@ class TestViolationPipeline(unittest.TestCase):
 
     def build_data_dict(
         self, fake_person_id: int, fake_supervision_violation_id: int
-    ) -> Dict[str, List[Any]]:
+    ) -> Dict[str, Iterable[Any]]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code="US_XX",
@@ -198,7 +198,7 @@ class TestViolationPipeline(unittest.TestCase):
 
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
-        data_dict_overrides: Dict[str, List[Any]] = {
+        data_dict_overrides: Dict[str, Iterable[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -366,8 +366,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
             )
         ]
 
-        correct_output: List[
-            Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
+        correct_output: Iterable[
+            Tuple[
+                int, Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
+            ]
         ] = [(self.fake_person_id, (self.fake_person, violation_events))]
 
         person_violations = {
@@ -393,8 +395,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
     def testClassifyViolationEventsNoViolations(self) -> None:
         """Tests the ClassifyViolationEvents DoFn with no violations for a person."""
 
-        correct_output: List[
-            Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
+        correct_output: Iterable[
+            Tuple[
+                int, Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
+            ]
         ] = []
 
         person_violations = {
@@ -435,8 +439,10 @@ class TestClassifyViolationEvents(unittest.TestCase):
         )
         violation_type.supervision_violation = violation
 
-        correct_output: List[
-            Tuple[int, Tuple[entities.StatePerson, List[ViolationWithResponseEvent]]]
+        correct_output: Iterable[
+            Tuple[
+                int, Tuple[entities.StatePerson, Iterable[ViolationWithResponseEvent]]
+            ]
         ] = []
 
         person_violations = {
@@ -604,11 +610,11 @@ class AssertMatchers:
     @staticmethod
     def count_metrics(
         expected_metric_counts: Dict[str, int]
-    ) -> Callable[[List[RecidivizMetric]], None]:
+    ) -> Callable[[Iterable[RecidivizMetric]], None]:
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_metrics(output: List[RecidivizMetric]) -> None:
+        def _count_metrics(output: Iterable[RecidivizMetric]) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():

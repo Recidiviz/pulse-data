@@ -24,11 +24,13 @@ def get_current_cloud_task_id() -> str:
     being executed from. This function can only be called from within a task created
     with the `app_engine_http_request` arg, i.e.:
 
-    my_task = tasks_v2.types.task_pb2.Task(
-        name=task_path,
-        app_engine_http_request={
-            ...
-        },
+    my_task = tasks_v2.Task(
+        mapping={
+            "name": task_path,
+            "app_engine_http_request": {
+                ...
+            },
+        }
     ).
 
     For a task with a full path like this:

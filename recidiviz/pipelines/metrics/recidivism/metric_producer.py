@@ -70,7 +70,8 @@ class RecidivismMetricProducer(
         self.metric_class = ReincarcerationRecidivismMetric  # type: ignore
         self.event_to_metric_classes = {}
         self.metrics_producer_delegate_classes = {
-            ReincarcerationRecidivismMetric: StateSpecificRecidivismMetricsProducerDelegate
+            # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
+            ReincarcerationRecidivismMetric: StateSpecificRecidivismMetricsProducerDelegate  # type: ignore[type-abstract]
         }
 
     def produce_metrics(

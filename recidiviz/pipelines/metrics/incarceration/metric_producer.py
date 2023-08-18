@@ -59,5 +59,6 @@ class IncarcerationMetricProducer(
             IncarcerationReleaseEvent: [IncarcerationReleaseMetric],
         }
         self.metrics_producer_delegate_classes = {
-            IncarcerationMetric: StateSpecificIncarcerationMetricsProducerDelegate
+            # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
+            IncarcerationMetric: StateSpecificIncarcerationMetricsProducerDelegate  # type: ignore[type-abstract]
         }

@@ -20,6 +20,7 @@ import unittest
 from typing import List
 
 import pytest
+from flask import Flask
 from mock import ANY, Mock, call, patch
 from opencensus.trace import span_context
 from parameterized import parameterized
@@ -144,26 +145,29 @@ class TestCompositeSampler(unittest.TestCase):
             ("c", "/c", 3),
         ]
     )
-    @patch("recidiviz.utils.trace.request")
     def test_compositeSampler_picksCorrect(
-        self, _name: str, test_input: str, expected: int, mock_request: Mock
+        self, _name: str, test_input: str, expected: int
     ) -> None:
-        # Arrange
-        mock_1 = Mock()
-        mock_1.should_sample.return_value = 1
-        mock_2 = Mock()
-        mock_2.should_sample.return_value = 2
-        mock_3 = Mock()
-        mock_3.should_sample.return_value = 3
+        test_app = Flask("test_app")
 
-        composite = trace.CompositeSampler(
-            {
-                "/a/": mock_1,
-                "/b": mock_2,
-            },
-            mock_3,
-        )
-        mock_request.path = test_input
+        with test_app.test_request_context(path=test_input):
+            # Arrange
+            mock_1 = Mock()
+            mock_1.should_sample.return_value = 1
+            mock_2 = Mock()
+            mock_2.should_sample.return_value = 2
+            mock_3 = Mock()
+            mock_3.should_sample.return_value = 3
 
-        # Act / Assert
-        self.assertEqual(composite.should_sample(span_context.SpanContext()), expected)
+            composite = trace.CompositeSampler(
+                {
+                    "/a/": mock_1,
+                    "/b": mock_2,
+                },
+                mock_3,
+            )
+
+            # Act / Assert
+            self.assertEqual(
+                composite.should_sample(span_context.SpanContext()), expected
+            )

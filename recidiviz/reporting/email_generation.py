@@ -24,7 +24,7 @@ import json
 import logging
 from typing import Dict
 
-from google.cloud import pubsub_v1
+import google.cloud.pubsub_v1 as pubsub
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -164,7 +164,7 @@ def start_chart_generation(report_context: ReportContext) -> None:
     Args:
         report_context: The report context containing the data and chart type
     """
-    publisher = pubsub_v1.PublisherClient()
+    publisher = pubsub.PublisherClient()
 
     prepared_data = report_context.get_prepared_data()
     payload = json.dumps(
@@ -172,5 +172,5 @@ def start_chart_generation(report_context: ReportContext) -> None:
     )  # no error checking here since we already validated the JSON previously
     # TODO(#3260): Generalize this with report context
     topic = utils.get_chart_topic()
-    future = publisher.publish(topic, payload.encode("utf-8"))
+    future = publisher.publish(topic=topic, data=payload.encode("utf-8"))
     logging.info("Pubsub publish response: %s", future.result())

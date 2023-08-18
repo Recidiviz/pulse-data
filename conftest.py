@@ -19,10 +19,10 @@
 import os
 from typing import List
 
-import pytest
 from _pytest.config import Config
 from _pytest.config.argparsing import Parser
 from _pytest.mark import deselect_by_mark
+from _pytest.nodes import Item
 
 import recidiviz
 
@@ -60,9 +60,7 @@ def pytest_addoption(parser: Parser) -> None:
     )
 
 
-def get_suite(
-    items: List[pytest.Item], suite_count: int, suite_id: int
-) -> List[pytest.Item]:
+def get_suite(items: List[Item], suite_count: int, suite_id: int) -> List[Item]:
     """Get the items from the passed in suite based on suite count."""
     if not 1 <= suite_id <= suite_count:
         raise ValueError(
@@ -73,7 +71,7 @@ def get_suite(
     return items[start : len(items) : suite_count]
 
 
-def pytest_collection_modifyitems(config: Config, items: List[pytest.Item]) -> None:
+def pytest_collection_modifyitems(config: Config, items: List[Item]) -> None:
     """Hook for selecting which tests should be executed
     Selects the tests for specified suite if using the `--suite` and `--suite-count` options
     """

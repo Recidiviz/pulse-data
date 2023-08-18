@@ -21,7 +21,7 @@ import json
 import logging
 from typing import Any
 
-from google.cloud import pubsub
+import google.cloud.pubsub_v1 as pubsub
 
 from recidiviz.utils import environment, metadata
 
@@ -55,11 +55,13 @@ def publish_message_to_topic(message: str, topic: str) -> None:
         raise ValueError("Message cannot be empty.")
     publisher = get_publisher()
     topic_path = publisher.topic_path(metadata.project_id(), topic)
-    future = publisher.publish(topic_path, data=message.encode("utf-8"))
+    future = publisher.publish(topic=topic_path, data=message.encode("utf-8"))
     logging.info("Pubsub publish response: %s", future.result())
 
 
-def extract_pubsub_message_from_json(json_request: Any) -> pubsub.types.PubsubMessage:
+def extract_pubsub_message_from_json(
+    json_request: Any,
+) -> pubsub.types.PubsubMessage:
     if not isinstance(json_request, dict):
         raise TypeError("Invalid Pub/Sub message")
     if MESSAGE not in json_request:

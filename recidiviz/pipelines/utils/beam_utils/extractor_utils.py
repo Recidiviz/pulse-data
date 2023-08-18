@@ -503,7 +503,7 @@ class ExtractDataForPipeline(beam.PTransform):
         UnifyingId,
         Dict[
             Union[EntityClassName, EntityRelationshipKey, TableName],
-            Union[List[Entity], List[EntityAssociation], List[TableRow]],
+            Union[Iterable[Entity], Iterable[EntityAssociation], Iterable[TableRow]],
         ],
     ],
     beam.typehints.Optional[Type[Entity]],
@@ -639,7 +639,7 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
     def _split_element_data(
         element_data: Dict[
             Union[EntityClassName, EntityRelationshipKey, TableName],
-            Union[List[Entity], List[EntityAssociation], List[TableRow]],
+            Union[Iterable[Entity], Iterable[EntityAssociation], Iterable[TableRow]],
         ],
         relationships_to_hydrate: Dict[
             EntityClassName, List[EntityRelationshipDetails]
@@ -701,7 +701,9 @@ class _ConnectHydratedRelatedEntities(beam.DoFn):
             UnifyingId,
             Dict[
                 Union[EntityClassName, EntityRelationshipKey, TableName],
-                Union[List[Entity], List[EntityAssociation], List[TableRow]],
+                Union[
+                    Iterable[Entity], Iterable[EntityAssociation], Iterable[TableRow]
+                ],
             ],
         ],
         unifying_class: Type[Entity],

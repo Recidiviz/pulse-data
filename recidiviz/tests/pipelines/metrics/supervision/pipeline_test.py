@@ -17,7 +17,7 @@
 """Tests for supervision/pipeline.py"""
 import unittest
 from datetime import date
-from typing import Any, Callable, Collection, Dict, List, Optional, Set
+from typing import Any, Callable, Collection, Dict, Iterable, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
@@ -182,7 +182,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
     def build_supervision_pipeline_data_dict(
         self, state_code: str, fake_person_id: int, fake_supervision_period_id: int
-    ) -> Dict[str, List[Any]]:
+    ) -> Dict[str, Iterable[Any]]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code=state_code,
@@ -366,7 +366,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        us_mo_sentence_status_data: List[Dict[str, Any]] = [
+        us_mo_sentence_status_data: Iterable[Dict[str, Any]] = [
             {
                 "state_code": state_code,
                 "person_id": fake_person_id,
@@ -1035,21 +1035,27 @@ class TestClassifyEvents(unittest.TestCase):
     @staticmethod
     def load_person_entities_dict(
         person: StatePerson,
-        supervision_periods: Optional[List[entities.StateSupervisionPeriod]] = None,
-        incarceration_periods: Optional[List[entities.StateIncarcerationPeriod]] = None,
+        supervision_periods: Optional[Iterable[entities.StateSupervisionPeriod]] = None,
+        incarceration_periods: Optional[
+            Iterable[entities.StateIncarcerationPeriod]
+        ] = None,
         incarceration_sentences: Optional[
-            List[entities.StateIncarcerationSentence]
+            Iterable[entities.StateIncarcerationSentence]
         ] = None,
-        supervision_sentences: Optional[List[entities.StateSupervisionSentence]] = None,
+        supervision_sentences: Optional[
+            Iterable[entities.StateSupervisionSentence]
+        ] = None,
         violation_responses: Optional[
-            List[entities.StateSupervisionViolationResponse]
+            Iterable[entities.StateSupervisionViolationResponse]
         ] = None,
-        assessments: Optional[List[entities.StateAssessment]] = None,
-        supervision_contacts: Optional[List[entities.StateSupervisionContact]] = None,
+        assessments: Optional[Iterable[entities.StateAssessment]] = None,
+        supervision_contacts: Optional[
+            Iterable[entities.StateSupervisionContact]
+        ] = None,
         supervision_location_to_names_association: Optional[
-            List[Dict[Any, Any]]
+            Iterable[Dict[Any, Any]]
         ] = None,
-    ) -> Dict[str, List[Any]]:
+    ) -> Dict[str, Iterable[Any]]:
         return {
             entities.StatePerson.__name__: [person],
             entities.StateSupervisionPeriod.__name__: supervision_periods
@@ -1157,7 +1163,7 @@ class TestClassifyEvents(unittest.TestCase):
         )
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
-        expected_events: List[SupervisionEvent] = [
+        expected_events: Iterable[SupervisionEvent] = [
             create_projected_completion_event_from_period(
                 supervision_period,
                 event_date=date(2015, 5, 31),
@@ -1167,13 +1173,10 @@ class TestClassifyEvents(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=True,
                 sentence_days_served=(completion_date - effective_date).days,
-            )
-        ]
-
-        # We have to add these expected events in this order because there is no unsorted-list equality check in the
-        # Apache Beam testing utils
-        expected_events.extend(
-            identifier_test.expected_population_events(
+            ),
+            # We have to add these expected events in this order because there is no unsorted-list equality check in the
+            # Apache Beam testing utils
+            *identifier_test.expected_population_events(
                 supervision_period,
                 supervision_type,
                 assessment_score=assessment.assessment_score,
@@ -1181,10 +1184,7 @@ class TestClassifyEvents(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 level_1_supervision_location_external_id="10",
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
-            )
-        )
-
-        expected_events.append(
+            ),
             create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_type,
@@ -1192,14 +1192,12 @@ class TestClassifyEvents(unittest.TestCase):
                 level_1_supervision_location_external_id="10",
                 in_supervision_population_on_date=True,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
-            )
-        )
-        expected_events.append(
+            ),
             identifier_test.create_start_event_from_period(
                 supervision_period,
                 supervising_district_external_id="10",
-            )
-        )
+            ),
+        ]
 
         correct_output = [(fake_person.person_id, (fake_person, expected_events))]
 
@@ -1435,7 +1433,7 @@ class SupervisionPipelineFakeWriteMetricsToBigQuery(FakeWriteMetricsToBigQuery):
         self._expected_violation_types = expected_violation_types
         self._table = output_table
 
-    def expand(self, input_or_inputs: List[Any]) -> List[RecidivizMetric]:
+    def expand(self, input_or_inputs: Iterable[Any]) -> Iterable[RecidivizMetric]:
         ret = super().expand(input_or_inputs)
 
         if self._expected_violation_types:
@@ -1459,7 +1457,7 @@ class AssertMatchers:
         """Asserts that there are some population metrics with the
         source_violation_type set."""
 
-        def _assert_source_violation_type_set(output: List[Dict[Any, Any]]) -> None:
+        def _assert_source_violation_type_set(output: Iterable[Dict[Any, Any]]) -> None:
             if not output:
                 return
 
@@ -1485,7 +1483,7 @@ class AssertMatchers:
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_metrics(output: List[RecidivizMetric]) -> None:
+        def _count_metrics(output: Iterable[RecidivizMetric]) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():

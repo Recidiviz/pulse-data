@@ -128,7 +128,7 @@ class WorkflowsLocationETLDelegateTest(TestCase):
             )
 
     @patch("google.cloud.firestore_admin_v1.FirestoreAdminClient")
-    @patch("google.cloud.firestore.Client")
+    @patch("google.cloud.firestore_v1.Client")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.get_collection")
     @patch("recidiviz.firestore.firestore_client.FirestoreClientImpl.batch")
     @patch(

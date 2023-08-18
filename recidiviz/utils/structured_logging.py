@@ -23,8 +23,7 @@ from types import TracebackType
 from typing import Any, Dict, Optional, Tuple, Type, Union
 
 from flask import request
-from google.cloud.logging import Client, handlers
-from google.cloud.logging.resource import Resource
+from google.cloud.logging import Client, Resource, handlers
 from opencensus.common.runtime_context import RuntimeContext
 from opencensus.trace import execution_context
 
@@ -221,6 +220,9 @@ def setup() -> None:
     # ids are propagated and allows us to send structured messages.
     if environment.in_gcp():
         client = Client()
+        structured_handler_cls: Union[
+            Type[StructuredCloudLoggingHandler], Type[StructuredAppEngineHandler]
+        ]
         if environment.in_cloud_run():
             structured_handler_cls = StructuredCloudLoggingHandler
         else:
