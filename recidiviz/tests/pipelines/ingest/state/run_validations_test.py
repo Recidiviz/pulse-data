@@ -58,7 +58,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             )
@@ -75,7 +75,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -83,7 +83,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 staff_external_id_id=22222,
                 state_code="US_XX",
                 external_id="12345",
-                id_type="EMP",
+                id_type="US_ZZ_TYPE",
             ),
         ]
 
@@ -101,7 +101,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
             )
@@ -119,7 +119,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
             ),
@@ -127,7 +127,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person_external_id_id=11111,
                 state_code="US_XX",
                 external_id="12345",
-                id_type="PERSON",
+                id_type="US_XX_TYPE",
             ),
         ]
         output = input_entities | RunValidations()
@@ -144,7 +144,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
             ),
@@ -156,7 +156,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -168,7 +168,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22223,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=22224,
@@ -186,13 +186,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11112,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
             ),
@@ -210,7 +210,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
             ),
@@ -218,7 +218,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person_external_id_id=11111,
                 state_code="US_XX",
                 external_id="12345",
-                id_type="PERSON",
+                id_type="US_XX_TYPE",
             ),
             StateStaff(
                 state_code="US_XX",
@@ -228,7 +228,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -236,7 +236,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 staff_external_id_id=22222,
                 state_code="US_XX",
                 external_id="12345",
-                id_type="EMP",
+                id_type="US_ZZ_TYPE",
             ),
             StateStaff(
                 state_code="US_XX",
@@ -246,7 +246,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22223,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=22224,
@@ -260,7 +260,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 staff_external_id_id=22223,
                 state_code="US_XX",
                 external_id="2000",
-                id_type="EMP",
+                id_type="US_ZZ_TYPE",
             ),
             StateStaffExternalId(
                 staff_external_id_id=22224,
@@ -276,13 +276,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11112,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
             ),
@@ -290,13 +290,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person_external_id_id=11112,
                 state_code="US_XX",
                 external_id="4000",
-                id_type="PERSON",
+                id_type="US_XX_TYPE",
             ),
             StatePersonExternalId(
                 person_external_id_id=11113,
                 state_code="US_XX",
                 external_id="5000",
-                id_type="TEST",
+                id_type="US_YY_TYPE",
             ),
         ]
         output = input_entities | RunValidations()
@@ -345,7 +345,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
             ),
@@ -357,7 +357,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -369,7 +369,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22223,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=22224,
@@ -387,13 +387,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11112,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
             ),
@@ -420,7 +420,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
             ),
@@ -432,7 +432,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -444,7 +444,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22223,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=22224,
@@ -462,13 +462,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11112,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
             ),
@@ -495,7 +495,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
                 supervision_periods=[
@@ -532,7 +532,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -544,7 +544,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=222223,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=22223,
@@ -562,13 +562,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11112,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
             ),
@@ -586,7 +586,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
                 supervision_periods=[
@@ -619,7 +619,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person_external_id_id=11111,
                 state_code="US_XX",
                 external_id="12345",
-                id_type="PERSON",
+                id_type="US_XX_TYPE",
             ),
             StateSupervisionPeriod.new_with_defaults(
                 state_code="US_XX",
@@ -650,7 +650,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -658,7 +658,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 staff_external_id_id=22222,
                 state_code="US_XX",
                 external_id="12345",
-                id_type="EMP",
+                id_type="US_ZZ_TYPE",
             ),
             StateStaff(
                 state_code="US_XX",
@@ -668,7 +668,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=222223,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=22223,
@@ -682,7 +682,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 staff_external_id_id=222223,
                 state_code="US_XX",
                 external_id="2000",
-                id_type="EMP",
+                id_type="US_ZZ_TYPE",
             ),
             StateStaffExternalId(
                 staff_external_id_id=22223,
@@ -698,13 +698,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11112,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
             ),
@@ -712,13 +712,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person_external_id_id=11112,
                 state_code="US_XX",
                 external_id="4000",
-                id_type="PERSON",
+                id_type="US_XX_TYPE",
             ),
             StatePersonExternalId(
                 person_external_id_id=11113,
                 state_code="US_XX",
                 external_id="5000",
-                id_type="TEST",
+                id_type="US_YY_TYPE",
             ),
         ]
         output = input_entities | RunValidations()
@@ -735,7 +735,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
                 supervision_periods=[
@@ -772,7 +772,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=2224,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -784,7 +784,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=2222,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=2223,
@@ -818,13 +818,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=1111,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=1112,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
             ),
@@ -851,7 +851,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
                 supervision_periods=[
@@ -888,7 +888,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=11112,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -900,7 +900,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=2222,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=2223,
@@ -918,13 +918,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=111222,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=111223,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
                 supervision_periods=[
@@ -958,7 +958,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11111,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     )
                 ],
                 supervision_periods=[
@@ -995,7 +995,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22224,
                         state_code="US_XX",
                         external_id="12345",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     )
                 ],
             ),
@@ -1007,7 +1007,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         staff_external_id_id=22222,
                         state_code="US_XX",
                         external_id="2000",
-                        id_type="EMP",
+                        id_type="US_ZZ_TYPE",
                     ),
                     StateStaffExternalId(
                         staff_external_id_id=22223,
@@ -1025,13 +1025,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11112,
                         state_code="US_XX",
                         external_id="4000",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=11113,
                         state_code="US_XX",
                         external_id="5000",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
                 supervision_periods=[
@@ -1050,13 +1050,13 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         person_external_id_id=11114,
                         state_code="US_XX",
                         external_id="4001",
-                        id_type="PERSON",
+                        id_type="US_XX_TYPE",
                     ),
                     StatePersonExternalId(
                         person_external_id_id=11115,
                         state_code="US_XX",
                         external_id="5001",
-                        id_type="TEST",
+                        id_type="US_YY_TYPE",
                     ),
                 ],
                 supervision_periods=[
@@ -1081,32 +1081,36 @@ class TestRunValidations(StateIngestPipelineTestCase):
             self.test_pipeline.run()
 
     def test_unique_constraint_state_person_external_id_simple(self) -> None:
-        entities = [
-            StatePerson(
+        person1 = StatePerson(
+            state_code="US_XX",
+            person_id=1234,
+        )
+        person1.external_ids.append(
+            StatePersonExternalId(
+                person_external_id_id=11111,
                 state_code="US_XX",
-                person_id=1234,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11111,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="PERSON",
-                    ),
-                ],
+                external_id="12345",
+                id_type="US_XX_TYPE",
+                person=person1,
             ),
-            StatePerson(
+        )
+
+        person2 = StatePerson(
+            state_code="US_XX",
+            person_id=1235,
+        )
+
+        person2.external_ids.append(
+            StatePersonExternalId(
+                person_external_id_id=11112,
                 state_code="US_XX",
-                person_id=1235,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11112,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="PERSON",
-                    )
-                ],
-            ),
-        ]
+                external_id="12345",
+                id_type="US_XX_TYPE",
+                person=person2,
+            )
+        )
+        entities = [person1, person2]
+
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1115,100 +1119,128 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_person_external_id entity found with state_code=US_XX, id_type=PERSON, external_id=12345, first entity found: \[person_external_id_id 11111\]",
+            r"More than one state_person_external_id entity found with state_code=US_XX, id_type=US_XX_TYPE, external_id=12345, "
+            r"entities found: \[StatePersonExternalId: person_external_id_id 11111, associated with root entity: StatePerson id 1234\], "
+            r"\[StatePersonExternalId: person_external_id_id 11112, associated with root entity: StatePerson id 1235\], This may indicate an error with the raw data.",
         ):
             self.test_pipeline.run()
 
     def test_unique_constraint_state_supervision_contact(self) -> None:
-        entities = [
-            StatePerson(
+        person1 = StatePerson(
+            state_code="US_XX",
+            person_id=1237,
+        )
+        person1.external_ids.append(
+            StatePersonExternalId(
+                person_external_id_id=11111,
                 state_code="US_XX",
-                person_id=1237,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11111,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="PERSON",
-                    )
-                ],
-                supervision_periods=[
-                    StateSupervisionPeriod.new_with_defaults(
-                        state_code="US_XX",
-                        supervision_period_id=2,
-                        external_id="sp2",
-                    ),
-                    StateSupervisionPeriod.new_with_defaults(
-                        state_code="US_XX",
-                        supervision_period_id=200,
-                        external_id="sp2",
-                    ),
-                    StateSupervisionPeriod.new_with_defaults(
-                        state_code="US_XX",
-                        supervision_period_id=300,
-                        external_id="sp3",
-                    ),
-                ],
-                supervision_contacts=[
-                    StateSupervisionContact.new_with_defaults(
-                        state_code="US_XX",
-                        external_id="c1",
-                        contact_date=date(2018, 4, 1),
-                        supervision_contact_id=101,
-                    ),
-                    StateSupervisionContact.new_with_defaults(
-                        state_code="US_XX",
-                        external_id="c2",
-                        contact_date=date(2018, 4, 1),
-                        supervision_contact_id=102,
-                    ),
-                ],
-            ),
-            StateStaff(
+                external_id="12345",
+                id_type="US_XX_TYPE",
+                person=person1,
+            )
+        )
+        person1.supervision_periods.append(
+            StateSupervisionPeriod.new_with_defaults(
                 state_code="US_XX",
-                staff_id=1234,
-                external_ids=[
-                    StateStaffExternalId(
-                        staff_external_id_id=22222,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="EMP",
-                    )
-                ],
-            ),
-            StatePerson(
+                supervision_period_id=2,
+                external_id="sp2",
+                person=person1,
+            )
+        )
+        person1.supervision_periods.append(
+            StateSupervisionPeriod.new_with_defaults(
                 state_code="US_XX",
-                person_id=3000,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11112,
-                        state_code="US_XX",
-                        external_id="4000",
-                        id_type="PERSON",
-                    ),
-                    StatePersonExternalId(
-                        person_external_id_id=11113,
-                        state_code="US_XX",
-                        external_id="5000",
-                        id_type="TEST",
-                    ),
-                ],
-                supervision_contacts=[
-                    StateSupervisionContact.new_with_defaults(
-                        state_code="US_YY",
-                        external_id="c2",
-                        contact_date=date(2020, 4, 1),
-                        supervision_contact_id=104,
-                    ),
-                    StateSupervisionContact.new_with_defaults(
-                        state_code="US_XX",
-                        external_id="c2",
-                        contact_date=date(2020, 4, 1),
-                        supervision_contact_id=105,
-                    ),
-                ],
+                supervision_period_id=200,
+                external_id="sp2",
+                person=person1,
             ),
-        ]
+        )
+        person1.supervision_periods.append(
+            StateSupervisionPeriod.new_with_defaults(
+                state_code="US_XX",
+                supervision_period_id=300,
+                external_id="sp3",
+                person=person1,
+            ),
+        )
+        person1.supervision_contacts.append(
+            StateSupervisionContact.new_with_defaults(
+                state_code="US_XX",
+                external_id="c1",
+                contact_date=date(2018, 4, 1),
+                supervision_contact_id=101,
+                person=person1,
+            )
+        )
+        person1.supervision_contacts.append(
+            StateSupervisionContact.new_with_defaults(
+                state_code="US_XX",
+                external_id="c2",
+                contact_date=date(2018, 4, 1),
+                supervision_contact_id=102,
+                person=person1,
+            )
+        )
+        staff1 = StateStaff(
+            state_code="US_XX",
+            staff_id=1234,
+        )
+        staff1.external_ids.append(
+            StateStaffExternalId(
+                staff_external_id_id=22222,
+                state_code="US_XX",
+                external_id="12345",
+                id_type="US_ZZ_TYPE",
+                staff=staff1,
+            )
+        )
+
+        person2 = StatePerson(
+            state_code="US_XX",
+            person_id=3000,
+        )
+
+        person2.external_ids.append(
+            StatePersonExternalId(
+                person_external_id_id=11112,
+                state_code="US_XX",
+                external_id="4000",
+                id_type="US_XX_TYPE",
+                person=person2,
+            )
+        )
+
+        person2.external_ids.append(
+            StatePersonExternalId(
+                person_external_id_id=11113,
+                state_code="US_XX",
+                external_id="5000",
+                id_type="US_YY_TYPE",
+                person=person2,
+            )
+        )
+
+        person2.supervision_contacts.append(
+            StateSupervisionContact.new_with_defaults(
+                state_code="US_YY",
+                external_id="c2",
+                contact_date=date(2020, 4, 1),
+                supervision_contact_id=104,
+                person=person2,
+            ),
+        )
+
+        person2.supervision_contacts.append(
+            StateSupervisionContact.new_with_defaults(
+                state_code="US_XX",
+                external_id="c2",
+                contact_date=date(2020, 4, 1),
+                supervision_contact_id=105,
+                person=person2,
+            ),
+        )
+        entities = [person1, staff1, person2]
+
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
@@ -1217,7 +1249,10 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_supervision_contact entity found with state_code=US_XX, external_id=c2, first entity found: \[supervision_contact_id 102\]",
+            r"More than one state_supervision_contact entity found with state_code=US_XX, external_id=c2, entities found: "
+            r"\[StateSupervisionContact: supervision_contact_id 102, associated with root entity: StatePerson id 1237\], "
+            r"\[StateSupervisionContact: supervision_contact_id 105, associated with root entity: StatePerson id 3000\], "
+            r"This may indicate an error with the raw data.",
         ):
             self.test_pipeline.run()
 
@@ -1230,7 +1265,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                     person_external_id_id=11114,
                     state_code="US_XX",
                     external_id="4001",
-                    id_type="PERSON",
+                    id_type="US_XX_TYPE",
                 ),
             ],
         )

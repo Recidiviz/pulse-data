@@ -114,7 +114,12 @@ class RunValidations(beam.PTransform):
                 value = getattr(field_names_to_values_obj, field)
                 error_msg += f"{field}={value}, "
 
-            error_msg += (
-                f"first entity found: [{entity.get_class_id_name()} {entity.get_id()}]"
-            )
+            error_msg += "entities found: "
+            for e in grouped_entities:
+                error_msg += (
+                    f"[{snake_to_camel(e.get_entity_name(), capitalize_first_letter=True)}: {e.get_class_id_name()} {e.get_id()}, "
+                    f"associated with root entity: {e.get_root_entity_name()} id {e.get_root_entity_id()}], "
+                )
+
+            error_msg += "This may indicate an error with the raw data."
             raise ValueError(error_msg)
