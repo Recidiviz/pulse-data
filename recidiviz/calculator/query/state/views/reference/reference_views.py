@@ -60,6 +60,9 @@ from recidiviz.calculator.query.state.views.reference.state_charge_offense_descr
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.state_staff_with_names import (
+    STATE_STAFF_WITH_NAMES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
 )
@@ -109,6 +112,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_IX_LOCATION_METADATA_VIEW_BUILDER,
     WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
+    STATE_STAFF_WITH_NAMES_VIEW_BUILDER,
     US_IX_LEADERSHIP_SUPERVISORS_VIEW_BUILDER,
     US_IX_DUAL_SUPERVISORS_OFFICERS_VIEW_BUILDER,
     US_PA_OFFICER_SUPERVISORS_VIEW_BUILDER,
