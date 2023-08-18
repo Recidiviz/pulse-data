@@ -36,7 +36,7 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
-QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
+QUEUE_STATE_ENUM = tasks_v2.Queue.State
 
 
 class UploadStateFilesToIngestBucketDelegate:

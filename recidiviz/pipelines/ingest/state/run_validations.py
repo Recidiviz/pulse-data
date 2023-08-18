@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility classes for validating state entities and entity trees."""
-
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Iterable, Tuple
 
 import apache_beam as beam
 
@@ -93,11 +92,21 @@ class RunValidations(beam.PTransform):
         return all_entities
 
     @staticmethod
-    def check_id(entity_id: int, grouped_entities: List[Entity]) -> None:
-        entity = grouped_entities[0]
+    def check_id(entity_id: int, grouped_entities: Iterable[Entity]) -> None:
+        entity_iterator = iter(grouped_entities)
+        try:
+            entity = next(entity_iterator)
+        except StopIteration as exc:
+            raise ValueError(f"No entities found for id {entity_id}") from exc
+
         if entity_id is None:
             raise ValueError(f"{entity.get_entity_name()} entity found with None id.")
-        if len(grouped_entities) > 1:
+
+        try:
+            next(entity_iterator)
+        except StopIteration:
+            pass
+        else:
             raise ValueError(
                 f"More than one {entity.get_entity_name()} entity found with {entity.get_class_id_name()} {entity_id}"
             )

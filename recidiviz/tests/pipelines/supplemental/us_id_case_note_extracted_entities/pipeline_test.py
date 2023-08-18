@@ -17,7 +17,7 @@
 """Tests the us_id case notes entity extraction supplemental dataset pipeline."""
 import datetime
 import unittest
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterable, Optional, Set
 
 from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
     US_ID_CASE_UPDATE_INFO_VIEW_NAME,
@@ -74,7 +74,7 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         }
         self.sanction = {**self.initial_fields, "agnt_note_title": "SANCTION"}
 
-        self.initial_data = [
+        self.initial_data: Iterable = [
             self.revocation,
             self.not_a_revocation,
             self.treatment_completion,
@@ -88,7 +88,7 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
             if entity != UsIdTextEntity.REVOCATION_INCLUDE
         }
 
-        self.final_data: List[Dict[str, Any]] = [
+        self.final_data: Iterable[Dict[str, Any]] = [
             {**self.revocation, **self.default_mappings, "revocation": True},
             {**self.not_a_revocation, **self.default_mappings},
             {
@@ -106,7 +106,7 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
 
     def run_test_pipeline(
         self,
-        data_dict: Dict[str, List[Dict]],
+        data_dict: Dict[str, Iterable[Dict]],
         unifying_id_field_filter_set: Optional[Set[int]] = None,
     ) -> None:
         """Runs a test version of the pipeline."""

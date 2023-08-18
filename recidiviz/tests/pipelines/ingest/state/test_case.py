@@ -18,7 +18,7 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, Iterable, Tuple, List
 
 from apache_beam.testing.util import BeamAssertException
 from dateutil import parser
@@ -191,7 +191,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
 
     def get_expected_ingest_view_results(
         self, *, ingest_view_name: str, test_name: str
-    ) -> List[Dict[str, Any]]:
+    ) -> Iterable[Dict[str, Any]]:
         return load_dataframe_from_path(
             raw_fixture_path=ingest_view_results_fixture_path(
                 region_code=self.region.region_code,
@@ -210,7 +210,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
 
     def get_expected_root_entities(
         self, *, ingest_view_name: str, test_name: str
-    ) -> List[Entity]:
+    ) -> Iterable[Entity]:
         rows = list(
             self.get_expected_ingest_view_results(
                 ingest_view_name=ingest_view_name, test_name=test_name
@@ -226,7 +226,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
 
     def get_expected_root_entities_with_upperbound_dates(
         self, *, ingest_view_name: str, test_name: str
-    ) -> List[Tuple[datetime, Entity]]:
+    ) -> Iterable[Tuple[datetime, Entity]]:
         rows = list(
             self.get_expected_ingest_view_results(
                 ingest_view_name=ingest_view_name, test_name=test_name
@@ -263,12 +263,14 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
 
     @staticmethod
     def validate_ingest_view_results(
-        expected_output: List[Dict[str, Any]]
-    ) -> Callable[[List[Dict[str, Any]]], None]:
+        expected_output: Iterable[Dict[str, Any]]
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
         """Allows for validating the output of ingest view results without worrying about
         the output of the materialization time."""
 
-        def _validate_ingest_view_results_output(output: List[Dict[str, Any]]) -> None:
+        def _validate_ingest_view_results_output(
+            output: Iterable[Dict[str, Any]]
+        ) -> None:
             copy_of_expected_output = deepcopy(expected_output)
             for record in copy_of_expected_output:
                 record.pop(MATERIALIZATION_TIME_COL_NAME)

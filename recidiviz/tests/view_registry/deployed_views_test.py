@@ -53,11 +53,30 @@ class DeployedViewsTest(unittest.TestCase):
     """Tests the deployed views configuration"""
 
     def test_unique_addresses(self) -> None:
-        view_addresses: Set[BigQueryAddress] = set()
+        view_addresses: Dict[BigQueryAddress, BigQueryViewBuilder] = {}
         for view_builder in all_deployed_view_builders():
-            address = view_builder.build().address
-            self.assertNotIn(address, view_addresses)
-            view_addresses.add(address)
+            address = view_builder.address
+
+            existing_view_builder = view_addresses.get(address)
+            if not existing_view_builder:
+                view_addresses[address] = view_builder
+
+                continue
+            if id(view_builder) == id(existing_view_builder):
+                self.fail(
+                    f"View builder for address [{address}] added to "
+                    f"all_deployed_view_builders() list twice."
+                )
+            if (
+                view_builder.build().view_query
+                == existing_view_builder.build().view_query
+            ):
+                self.fail(
+                    f"Two view builders with identical view queries defined for "
+                    f"address [{address}]"
+                )
+
+            self.fail(f"Two different view builders defined with address [{address}].")
 
     def test_deployed_views(self) -> None:
         all_view_builders = all_deployed_view_builders()

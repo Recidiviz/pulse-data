@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper that runs a test version of the pipeline in the provided module."""
-from typing import Any, Callable, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type
 
 import apache_beam
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -135,8 +135,8 @@ def run_test_pipeline(
 
 
 def default_data_dict_for_root_schema_classes(
-    root_schema_classes: List[Type[StateBase]],
-) -> Dict[str, List]:
+    root_schema_classes: Iterable[Type[StateBase]],
+) -> Dict[str, Iterable]:
     """Helper function for running test pipelines that determines the set of tables
     required for hydrating the list of root schema classes and their related classes.
 
@@ -176,7 +176,7 @@ def default_data_dict_for_root_schema_classes(
 
 def default_data_dict_for_pipeline_class(
     pipeline_class: Type[MetricPipeline],
-) -> Dict[str, List]:
+) -> Dict[str, Iterable]:
     """Helper function for running test pipelines that determines the set of tables
     required for hydrating the list of entities required by the the run delegate.
 

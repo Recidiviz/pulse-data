@@ -18,7 +18,7 @@
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 from unittest import mock
 
 import apache_beam as beam
@@ -150,7 +150,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         fake_person_id: int,
         fake_incarceration_period_id: int,
         fake_supervision_period_id: int,
-    ) -> Dict[str, List[Any]]:
+    ) -> Dict[str, Iterable[Any]]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code="US_XX",
@@ -669,11 +669,11 @@ class AssertMatchers:
     @staticmethod
     def count_metrics(
         expected_metric_counts: Dict[PopulationSpanMetricType, int]
-    ) -> Callable[[List[RecidivizMetric]], None]:
+    ) -> Callable[[Iterable[RecidivizMetric]], None]:
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_metrics(output: List[Any]) -> None:
+        def _count_metrics(output: Iterable[Any]) -> None:
             actual_combination_counts: Dict[
                 PopulationSpanMetricType, int
             ] = defaultdict()

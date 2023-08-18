@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from google.cloud import exceptions
-from google.cloud import secretmanager_v1beta1 as secretmanager
+from google.cloud.secretmanager_v1 import SecretManagerServiceClient
 
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import in_development, in_test
@@ -31,10 +31,10 @@ from recidiviz.utils.environment import in_development, in_test
 __sm = None
 
 
-def _sm() -> secretmanager.SecretManagerServiceClient:
+def _sm() -> SecretManagerServiceClient:
     global __sm
     if not __sm:
-        __sm = secretmanager.SecretManagerServiceClient()
+        __sm = SecretManagerServiceClient()
     return __sm
 
 

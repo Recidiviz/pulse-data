@@ -15,14 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Util class for building protobuf Message objects."""
-from typing import TypeVar, Generic, Type, Any
+from typing import Any, Generic, Type, TypeVar
 
-from google.protobuf.message import Message
+from google.protobuf.message import Message as ProtobufMessage
+from proto import Message as ProtoPlusMessage
 
-ProtoType = TypeVar("ProtoType", bound=Message)
+ProtoPlusType = TypeVar("ProtoPlusType", bound=ProtoPlusMessage)
+ProtobufType = TypeVar("ProtobufType", bound=ProtobufMessage)
 
 
-class ProtobufBuilder(Generic[ProtoType]):
+class ProtobufBuilder(Generic[ProtobufType]):
     """Util class for building protobuf Message objects by composition.
 
     Usage example:
@@ -40,23 +42,49 @@ class ProtobufBuilder(Generic[ProtoType]):
         )
     """
 
-    def __init__(self, proto_cls: Type[ProtoType]):
-        self.proto_cls: Type[ProtoType] = proto_cls
-        self.proto: ProtoType = proto_cls()
+    def __init__(self, proto_cls: Type[ProtobufType]):
+        self.proto_cls: Type[ProtobufType] = proto_cls
+        self.proto: ProtobufType = proto_cls()
 
-    def update_args(self, **kwargs: Any) -> "ProtobufBuilder[ProtoType]":
+    def update_args(self, **kwargs: Any) -> "ProtobufBuilder":
         """Update proto message with provided args. If args already exist, will
         overwrite with these values.
         """
         return self.compose(self.proto_cls(**kwargs))
 
-    def compose(self, other_proto: ProtoType) -> "ProtobufBuilder[ProtoType]":
+    def compose(self, other_proto: ProtobufType) -> "ProtobufBuilder":
         """Compose proto message object into the proto being built by this
         builder.
         """
         self.proto.MergeFrom(other_proto)
         return self
 
-    def build(self) -> ProtoType:
+    def build(self) -> ProtobufType:
+        """Returns current state of built proto."""
+        return self.proto
+
+
+class ProtoPlusBuilder(Generic[ProtoPlusType]):
+    """Mirrored implementation of ProtobufBuilder but for use with ProtoPlus objects"""
+
+    def __init__(self, proto_cls: Type[ProtoPlusType]):
+        self.proto_cls: Type[ProtoPlusType] = proto_cls
+        self.proto: ProtoPlusType = proto_cls()
+
+    def update_args(self, **kwargs: Any) -> "ProtoPlusBuilder":
+        """Update proto message with provided args. If args already exist, will
+        overwrite with these values.
+        """
+        return self.compose(self.proto_cls(**kwargs))
+
+    def compose(self, other_proto: ProtoPlusMessage) -> "ProtoPlusBuilder":
+        """Compose proto message object into the proto being built by this
+        builder.
+        """
+        self.proto_cls.pb(self.proto).MergeFrom(self.proto_cls.pb(other_proto))
+
+        return self
+
+    def build(self) -> ProtoPlusType:
         """Returns current state of built proto."""
         return self.proto

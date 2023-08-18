@@ -20,6 +20,7 @@ from datetime import datetime
 from unittest import mock
 from unittest.mock import Mock
 
+from google.cloud.firestore_admin_v1 import CreateIndexRequest
 from mock import call
 
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
@@ -34,7 +35,7 @@ class FirestoreClientImplTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
         self.client_patcher = mock.patch(
-            "recidiviz.firestore.firestore_client.firestore.Client"
+            "recidiviz.firestore.firestore_client.firestore_v1.Client"
         )
         self.admin_client_patcher = mock.patch(
             "recidiviz.firestore.firestore_client.firestore_admin_v1.FirestoreAdminClient"
@@ -76,8 +77,10 @@ class FirestoreClientImplTest(unittest.TestCase):
         self.mock_admin_client.list_indexes.return_value = [mock_index]
         collections = self.firestore_client.list_collections_with_indexes()
         self.mock_admin_client.list_indexes.assert_called_with(
-            parent="projects/test-project-id/databases/"
-            "(default)/collectionGroups/all"
+            request={
+                "parent": "projects/test-project-id/databases/"
+                "(default)/collectionGroups/all"
+            }
         )
         self.assertEqual(["clients"], collections)
 
@@ -96,9 +99,12 @@ class FirestoreClientImplTest(unittest.TestCase):
 
     def test_create_index(self) -> None:
         """Tests that create_index is called with the correct args."""
-        self.firestore_client.create_index("clients", {"request": "request stuff"})
-        self.mock_admin_client.create_index.assert_called_with(
-            parent="projects/test-project-id/databases/"
-            "(default)/collectionGroups/clients",
-            index={"request": "request stuff"},
+        self.firestore_client.create_index("clients", CreateIndexRequest())
+        self.mock_admin_client.create_index.assert_called_once()
+        self.assertEqual(
+            self.mock_admin_client.mock_calls[0].kwargs["request"],
+            CreateIndexRequest(
+                parent="projects/test-project-id/databases/"
+                "(default)/collectionGroups/clients"
+            ),
         )

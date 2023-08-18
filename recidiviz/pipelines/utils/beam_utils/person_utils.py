@@ -122,7 +122,7 @@ class ExtractPersonEventsMetadata(beam.DoFn):
     ) -> Iterable[
         Tuple[
             StatePerson,
-            Union[List[IdentifierResult], Dict[int, IdentifierResult]],
+            Union[Iterable[IdentifierResult], Dict[int, IdentifierResult]],
             PersonMetadata,
         ]
     ]:

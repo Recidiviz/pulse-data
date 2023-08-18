@@ -94,7 +94,8 @@ class SupervisionMetricProducer(
             SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
         }
         self.metrics_producer_delegate_classes = {
-            SupervisionMetric: StateSpecificSupervisionMetricsProducerDelegate
+            # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
+            SupervisionMetric: StateSpecificSupervisionMetricsProducerDelegate  # type: ignore[type-abstract]
         }
 
     def produce_metrics(

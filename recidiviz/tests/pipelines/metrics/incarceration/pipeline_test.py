@@ -17,7 +17,7 @@
 """Tests for incarceration/pipeline.py"""
 import unittest
 from datetime import date
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
@@ -69,7 +69,10 @@ from recidiviz.pipelines.metrics.incarceration.metrics import (
     IncarcerationReleaseMetric,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
-from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
+from recidiviz.pipelines.metrics.utils.metric_utils import (
+    PersonMetadata,
+    RecidivizMetric,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
@@ -160,7 +163,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
     def build_incarceration_pipeline_data_dict(
         self, fake_person_id: int, state_code: str = "US_XX"
-    ) -> Dict[str, List]:
+    ) -> Dict[str, Iterable]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code=state_code,
@@ -408,7 +411,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
     def run_test_pipeline(
         self,
         state_code: str,
-        data_dict: Dict[str, List[Dict]],
+        data_dict: Dict[str, Iterable[Dict]],
         expected_metric_types: Set[IncarcerationMetricType],
         unifying_id_field_filter_set: Optional[Set[int]] = None,
         metric_types_filter: Optional[Set[str]] = None,
@@ -445,7 +448,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
     def build_incarceration_pipeline_data_dict_no_incarceration(
         self, fake_person_id: int
-    ) -> Dict[str, List]:
+    ) -> Dict[str, Iterable]:
         """Builds a data_dict for a run of the pipeline where the person has no incarceration."""
         fake_person_1 = schema.StatePerson(
             state_code="US_XX",
@@ -919,7 +922,7 @@ class AssertMatchers:
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_metrics(output: List[Any]) -> None:
+        def _count_metrics(output: Iterable[RecidivizMetric]) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():
@@ -951,7 +954,7 @@ class AssertMatchers:
     ) -> Callable:
         """Asserts that the pipeline produced the expected types of metrics."""
 
-        def _validate_pipeline_test(output: List[Any]) -> None:
+        def _validate_pipeline_test(output: Iterable[Dict[str, Any]]) -> None:
             observed_metric_types: Set[IncarcerationMetricType] = set()
 
             for metric in output:

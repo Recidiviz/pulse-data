@@ -17,7 +17,7 @@
 """Tests the comprehensive normalization pipeline."""
 import datetime
 import unittest
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Dict, Iterable, List, Optional, Set, Type
 
 import mock
 
@@ -89,7 +89,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
     def run_test_pipeline(
         self,
         state_code: str,
-        data_dict: Dict[str, List[Dict]],
+        data_dict: Dict[str, Iterable[Dict]],
         unifying_id_field_filter_set: Optional[Set[int]] = None,
     ) -> None:
         """Runs a test version of the normalization pipeline."""
@@ -129,7 +129,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
     def build_comprehensive_normalization_pipeline_data_dict(
         self, fake_person_id: int, fake_staff_id: int, state_code: str = "US_XX"
-    ) -> Dict[str, List]:
+    ) -> Dict[str, Iterable]:
         """Builds a data_dict for a basic run of the pipeline."""
 
         incarceration_period = schema.StateIncarcerationPeriod(

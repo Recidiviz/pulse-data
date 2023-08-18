@@ -39,7 +39,7 @@ from airflow.utils.state import State
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
-from google.cloud.tasks_v2.types.queue import Queue
+from google.cloud import tasks_v2
 
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
@@ -176,7 +176,7 @@ def get_running_queue_instances(*queues: Optional[Dict[str, Any]]) -> List[str]:
     for queue in queues:
         if queue is None:
             raise ValueError("Found null queue in queues list")
-        if queue["state"] == Queue.State.RUNNING:
+        if queue["state"] == tasks_v2.Queue.State.RUNNING:
             if "secondary" in queue["name"]:
                 ingest_instances_to_unpause.append(
                     DirectIngestInstance.SECONDARY.value.lower()

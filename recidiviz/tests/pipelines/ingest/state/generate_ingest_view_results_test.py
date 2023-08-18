@@ -16,7 +16,7 @@
 # =============================================================================
 """Testing the GenerateIngestViewResults PTransform"""
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, Optional
 
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that
@@ -186,7 +186,7 @@ ORDER BY 1;"""
         self.load_rows_into_table(address=address_1, data=table_1_data)
         self.load_rows_into_table(address=address_2, data=table_2_data)
 
-        expected_results: List[Dict[str, Optional[datetime]]] = [
+        expected_results: Iterable[Dict[str, Optional[datetime]]] = [
             {
                 "__lower_bound_datetime_exclusive": None,
                 "__upper_bound_datetime_inclusive": date_1,
@@ -276,7 +276,7 @@ UNION ALL
         self.load_rows_into_table(address=address_1, data=table_1_data)
         self.load_rows_into_table(address=address_2, data=table_2_data)
 
-        expected_results: List[Dict[str, Optional[datetime]]] = [
+        expected_results: Iterable[Dict[str, Optional[datetime]]] = [
             {
                 "__lower_bound_datetime_exclusive": None,
                 "__upper_bound_datetime_inclusive": date_4,

@@ -288,7 +288,7 @@ class MetricPipeline(
 @with_input_types(
     beam.typehints.Tuple[
         entities.StatePerson,
-        Union[Dict[int, IdentifierResult], List[IdentifierResult]],
+        Union[Dict[int, IdentifierResult], Iterable[IdentifierResult]],
         PersonMetadata,
     ],
     beam.typehints.Optional[str],
@@ -311,7 +311,7 @@ class ProduceMetrics(beam.DoFn):
         self,
         element: Tuple[
             entities.StatePerson,
-            Union[Dict[int, IdentifierResult], List[IdentifierResult]],
+            Union[Dict[int, IdentifierResult], Iterable[IdentifierResult]],
             PersonMetadata,
         ],
         project_id: str,

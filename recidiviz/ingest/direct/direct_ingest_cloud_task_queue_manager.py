@@ -20,7 +20,7 @@ import logging
 import os
 import uuid
 from enum import Enum
-from typing import Dict, Generator, List, Optional
+from typing import Dict, Generator, List, Optional, TypedDict
 from urllib.parse import urlencode
 
 import attr
@@ -45,7 +45,12 @@ SCHEDULER_TASK_ID_TAG = "scheduler"
 HANDLE_NEW_FILES_TASK_ID_TAG = "handle_new_files"
 
 _TASK_LOCATION = "us-east1"
-QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
+QUEUE_STATE_ENUM = tasks_v2.Queue.State
+
+
+class IngestQueueState(TypedDict):
+    name: str
+    state: QUEUE_STATE_ENUM
 
 
 def _build_task_id(
@@ -680,12 +685,12 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         self, state_code: StateCode, new_queue_state_str: str
     ) -> None:
         self.update_ingest_queue_states(
-            state_code, QUEUE_STATE_ENUM[new_queue_state_str]
+            state_code, QUEUE_STATE_ENUM(new_queue_state_str)
         )
 
     def get_scheduler_queue_state(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
-    ) -> tasks_v2.enums.Queue.State:
+    ) -> tasks_v2.Queue.State:
         """Retrieves the state of the state code and instance specific scheduler queue."""
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.SCHEDULER, state_code.value, ingest_instance
@@ -701,7 +706,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         self,
         state_code: StateCode,
         ingest_instance: DirectIngestInstance,
-        new_queue_state: tasks_v2.enums.Queue.State,
+        new_queue_state: tasks_v2.Queue.State,
     ) -> None:
         """Updates the state of the state code and instance specific scheduler queue."""
         queue_name = _queue_name_for_queue_type(
@@ -742,7 +747,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         self.cloud_tasks_client.purge_queue(name=full_queue_path)
 
     def update_ingest_queue_states(
-        self, state_code: StateCode, new_queue_state: tasks_v2.enums.Queue.State
+        self, state_code: StateCode, new_queue_state: tasks_v2.Queue.State
     ) -> None:
         """
          It updates the state of the following queues by either pausing or resuming the
@@ -787,11 +792,9 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
                 logging.info("Resuming queue: %s", new_queue_state)
                 self.cloud_tasks_client.resume_queue(name=queue_path)
 
-    def get_ingest_queue_states(
-        self, state_code: StateCode
-    ) -> List[Dict[str, tasks_v2.enums.Queue.State]]:
+    def get_ingest_queue_states(self, state_code: StateCode) -> List[IngestQueueState]:
         """Returns a list of dictionaries that contain the name and states of direct ingest queues for a given region"""
-        ingest_queue_states: List[Dict[str, tasks_v2.enums.Queue.State]] = []
+        ingest_queue_states: List[IngestQueueState] = []
         queues_for_state = sorted(get_direct_ingest_queues_for_state(state_code))
 
         for queue_name in queues_for_state:
@@ -799,7 +802,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
                 metadata.project_id(), _TASK_LOCATION, queue_name
             )
             queue = self.cloud_tasks_client.get_queue(name=queue_path)
-            queue_state = {
+            queue_state: IngestQueueState = {
                 "name": queue_name,
                 "state": QUEUE_STATE_ENUM(queue.state),
             }

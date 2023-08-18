@@ -17,9 +17,13 @@
 """Tests for class ProtobufBuilder."""
 import unittest
 
-from google.cloud.tasks_v2.proto import queue_pb2
+from google.cloud import tasks_v2
 from google.protobuf import duration_pb2
-from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
+
+from recidiviz.common.google_cloud.protobuf_builder import (
+    ProtobufBuilder,
+    ProtoPlusBuilder,
+)
 
 
 class TestProtobufBuilder(unittest.TestCase):
@@ -101,40 +105,40 @@ class TestProtobufBuilder(unittest.TestCase):
         self.assertEqual(duration, duration_pb2.Duration(seconds=1, nanos=2))
 
     def test_multilevel_compose(self) -> None:
-        base_queue = queue_pb2.Queue(
-            rate_limits=queue_pb2.RateLimits(
+        base_queue = tasks_v2.Queue(
+            rate_limits=tasks_v2.RateLimits(
                 max_dispatches_per_second=100,
                 max_concurrent_dispatches=1,
             ),
-            retry_config=queue_pb2.RetryConfig(
+            retry_config=tasks_v2.RetryConfig(
                 max_attempts=5,
             ),
         )
 
         queue = (
-            ProtobufBuilder(queue_pb2.Queue)
+            ProtoPlusBuilder(tasks_v2.Queue)
             .compose(base_queue)
             .compose(
-                queue_pb2.Queue(
-                    rate_limits=queue_pb2.RateLimits(
+                tasks_v2.Queue(
+                    rate_limits=tasks_v2.RateLimits(
                         max_dispatches_per_second=50,
                     ),
                 )
             )
             .update_args(
-                retry_config=queue_pb2.RetryConfig(
+                retry_config=tasks_v2.RetryConfig(
                     max_doublings=4,
                 )
             )
             .build()
         )
 
-        expected_queue = queue_pb2.Queue(
-            rate_limits=queue_pb2.RateLimits(
+        expected_queue = tasks_v2.Queue(
+            rate_limits=tasks_v2.RateLimits(
                 max_dispatches_per_second=50,
                 max_concurrent_dispatches=1,
             ),
-            retry_config=queue_pb2.RetryConfig(
+            retry_config=tasks_v2.RetryConfig(
                 max_attempts=5,
                 max_doublings=4,
             ),
@@ -145,7 +149,8 @@ class TestProtobufBuilder(unittest.TestCase):
     def test_bad_type_raises_error(self) -> None:
         duration_builder = ProtobufBuilder(duration_pb2.Duration)
         with self.assertRaises(TypeError):
-            duration_builder.compose(queue_pb2.Queue())
+            # arg type ignored as we are intentionally passing the incorrect type
+            duration_builder.compose(tasks_v2.Queue())  # type: ignore[arg-type]
 
     def test_bad_arg_raises_error(self) -> None:
         duration_builder = ProtobufBuilder(duration_pb2.Duration)

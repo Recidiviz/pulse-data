@@ -16,7 +16,7 @@
 # =============================================================================
 """General use mypy types."""
 
-from typing import Any, List, Optional, Type, TypeVar
+from typing import Any, Iterable, Optional, Type, TypeVar
 
 # A type variable intended for use in generic class methods that return an object with the `cls` type.
 # For example:
@@ -57,7 +57,7 @@ def assert_type(v: Optional[Any], expected_type: Type[T]) -> T:
     return non_optional_v
 
 
-def assert_type_list(v: List[Any], expected_type: Type[T]) -> List[T]:
+def assert_type_list(v: Iterable[Any], expected_type: Type[T]) -> Iterable[T]:
     """Asserts that the type of a value is a list of a particular type, throwing if any
     of the elements are not that type."""
     return [assert_type(element, expected_type) for element in v]

@@ -17,7 +17,7 @@
 """A PTransform to associate root entities with their primary keys."""
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, Iterable, List, Tuple, Union, cast
+from typing import Dict, Iterable, Tuple, Union, cast
 
 import apache_beam as beam
 from more_itertools import one
@@ -39,19 +39,19 @@ class AssociateRootEntitiesWithPrimaryKeys(beam.PTransform):
             "merged_root_entities_with_dates: beam.PCollection[Tuple[ExternalIdKey, Tuple[datetime, RootEntity]]]
         }
     After CoGroupByKey, we have a PCollection that is in the form of:
-        (ExternalIdKey, {"primary_keys": List[PrimaryKey], "merged_root_entities_with_dates": List[Tuple[datetime, RootEntity]]})
+        (ExternalIdKey, {"primary_keys": Iterable[PrimaryKey], "merged_root_entities_with_dates": Iterable[Tuple[datetime, RootEntity]]})
     After Map(transform_joined_data), we have a PCollection that is:
-        (PrimaryKey, {datetime: List[RootEntity]}) but there may be multiple instances of PrimaryKey
+        (PrimaryKey, {datetime: Iterable[RootEntity]}) but there may be multiple instances of PrimaryKey
     After GroupByKey, we have a PCollection that is:
-        (PrimaryKey, Iterable[{datetime: List[RootEntity]}]) where PrimaryKey is now unique
+        (PrimaryKey, Iterable[{datetime: Iterable[RootEntity]}]) where PrimaryKey is now unique
     After Map(merge_date_to_root_entity_dictionary_values), we have a PCollection that is:
-        (PrimaryKey, {datetime: List[RootEntity]}) where PrimaryKey is now unique and
+        (PrimaryKey, {datetime: Iterable[RootEntity]}) where PrimaryKey is now unique and
         the values are merged.
     """
 
     def expand(
         self, input_or_inputs: Dict[str, beam.PCollection]
-    ) -> beam.PCollection[Tuple[PrimaryKey, Dict[datetime, List[RootEntity]]]]:
+    ) -> beam.PCollection[Tuple[PrimaryKey, Dict[datetime, Iterable[RootEntity]]]]:
         return (
             input_or_inputs
             | beam.CoGroupByKey()
@@ -64,27 +64,30 @@ class AssociateRootEntitiesWithPrimaryKeys(beam.PTransform):
         self,
         element: Tuple[
             ExternalIdKey,
-            Dict[str, Union[List[Tuple[datetime, RootEntity]], List[PrimaryKey]]],
+            Dict[
+                str, Union[Iterable[Tuple[datetime, RootEntity]], Iterable[PrimaryKey]]
+            ],
         ],
-    ) -> Tuple[PrimaryKey, Dict[datetime, List[RootEntity]]]:
+    ) -> Tuple[PrimaryKey, Dict[datetime, Iterable[RootEntity]]]:
         _, values = element
         primary_key: PrimaryKey = one(
             assert_type_list(values[PRIMARY_KEYS], PrimaryKey)
         )
-        entities_with_dates: List[Tuple[datetime, RootEntity]] = cast(
-            List[Tuple[datetime, RootEntity]], values[MERGED_ROOT_ENTITIES_WITH_DATES]
+        entities_with_dates: Iterable[Tuple[datetime, RootEntity]] = cast(
+            Iterable[Tuple[datetime, RootEntity]],
+            values[MERGED_ROOT_ENTITIES_WITH_DATES],
         )
-        result: Dict[datetime, List[RootEntity]] = defaultdict(list)
+        result: Dict[datetime, Iterable[RootEntity]] = defaultdict(list)
         for date, entity in entities_with_dates:
-            result[date].append(entity)
+            result[date] = [*result[date], entity]
         return (primary_key, result)
 
     def merge_date_to_root_entity_dictionary_values(
-        self, element: Tuple[PrimaryKey, Iterable[Dict[datetime, List[RootEntity]]]]
-    ) -> Tuple[PrimaryKey, Dict[datetime, List[RootEntity]]]:
+        self, element: Tuple[PrimaryKey, Iterable[Dict[datetime, Iterable[RootEntity]]]]
+    ) -> Tuple[PrimaryKey, Dict[datetime, Iterable[RootEntity]]]:
         primary_key, values = element
-        result: Dict[datetime, List[RootEntity]] = defaultdict(list)
+        result: Dict[datetime, Iterable[RootEntity]] = defaultdict(list)
         for value in values:
             for date, entities in value.items():
-                result[date].extend(entities)
+                result[date] = [*result[date], *entities]
         return (primary_key, result)

@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 from typing import Dict, Iterator, List, Optional, TextIO, Tuple
 
 from google.api_core.exceptions import AlreadyExists
+from google.cloud.firestore_admin_v1 import CreateIndexRequest, Index
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -179,14 +180,20 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         # step 2: Create composite indexes if they do not exist
         if not firestore_client.index_exists_for_collection(collection_name):
             try:
-                create_index_request = {
-                    "name": collection_name,
-                    "query_scope": "COLLECTION",
-                    "fields": [
-                        {"field_path": "stateCode", "order": "ASCENDING"},
-                        {"field_path": "__loadedAt", "order": "ASCENDING"},
-                    ],
-                }
+                create_index_request = CreateIndexRequest(
+                    mapping={
+                        "index": Index(
+                            mapping={
+                                "name": collection_name,
+                                "query_scope": "COLLECTION",
+                                "fields": [
+                                    {"field_path": "stateCode", "order": "ASCENDING"},
+                                    {"field_path": "__loadedAt", "order": "ASCENDING"},
+                                ],
+                            }
+                        )
+                    }
+                )
                 logging.info(
                     "Creating composite index for collection: %s", collection_name
                 )

@@ -344,14 +344,16 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         ingest_instance = DirectIngestInstance.PRIMARY
 
         task_name = queue_name + f"/{_REGION.region_code}-2019-07-20-{uuid}"
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_name,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                f"ingest_instance={ingest_instance.value.lower()}&just_finished_job=False",
-                "body": body_encoded,
-            },
+        task = tasks_v2.Task(
+            mapping={
+                "name": task_name,
+                "app_engine_http_request": {
+                    "http_method": "POST",
+                    "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
+                    f"ingest_instance={ingest_instance.value.lower()}&just_finished_job=False",
+                    "body": body_encoded,
+                },
+            }
         )
 
         mock_client.return_value.task_path.return_value = task_name
@@ -397,14 +399,16 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
         ingest_instance = DirectIngestInstance.SECONDARY
 
         task_name = f"{queue_name}/{_REGION.region_code}-2019-07-20-{uuid}"
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_name,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                f"ingest_instance={ingest_instance.value.lower()}&just_finished_job=False",
-                "body": body_encoded,
-            },
+        task = tasks_v2.Task(
+            mapping={
+                "name": task_name,
+                "app_engine_http_request": {
+                    "http_method": "POST",
+                    "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
+                    f"ingest_instance={ingest_instance.value.lower()}&just_finished_job=False",
+                    "body": body_encoded,
+                },
+            }
         )
 
         mock_client.return_value.task_path.return_value = task_name
@@ -465,13 +469,15 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             "ingest_instance": "primary",
             "ingest_view_name": "my_ingest_view_name",
         }
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_name,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/direct/extract_and_merge?{urlencode(url_params)}",
-                "body": body_encoded,
-            },
+        task = tasks_v2.Task(
+            mapping={
+                "name": task_name,
+                "app_engine_http_request": {
+                    "http_method": "POST",
+                    "relative_uri": f"/direct/extract_and_merge?{urlencode(url_params)}",
+                    "body": body_encoded,
+                },
+            }
         )
 
         mock_client.return_value.task_path.return_value = task_name
@@ -532,13 +538,15 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             "ingest_instance": "secondary",
             "ingest_view_name": "my_ingest_view_name",
         }
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_name,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/direct/extract_and_merge?{urlencode(url_params)}",
-                "body": body_encoded,
-            },
+        task = tasks_v2.Task(
+            mapping={
+                "name": task_name,
+                "app_engine_http_request": {
+                    "http_method": "POST",
+                    "relative_uri": f"/direct/extract_and_merge?{urlencode(url_params)}",
+                    "body": body_encoded,
+                },
+            }
         )
 
         mock_client.return_value.task_path.return_value = task_name
@@ -598,13 +606,15 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             "region": _REGION.region_code,
             "file_path": raw_data_path.abs_path(),
         }
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_name,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/direct/raw_data_import?{urlencode(url_params)}",
-                "body": body_encoded,
-            },
+        task = tasks_v2.Task(
+            mapping={
+                "name": task_name,
+                "app_engine_http_request": {
+                    "http_method": "POST",
+                    "relative_uri": f"/direct/raw_data_import?{urlencode(url_params)}",
+                    "body": body_encoded,
+                },
+            }
         )
 
         mock_client.return_value.task_path.return_value = task_name
@@ -663,13 +673,15 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             "ingest_instance": "primary",
             "ingest_view_name": "my_ingest_view",
         }
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_name,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/direct/materialize_ingest_view?{urlencode(url_params)}",
-                "body": body_encoded,
-            },
+        task = tasks_v2.Task(
+            mapping={
+                "name": task_name,
+                "app_engine_http_request": {
+                    "http_method": "POST",
+                    "relative_uri": f"/direct/materialize_ingest_view?{urlencode(url_params)}",
+                    "body": body_encoded,
+                },
+            }
         )
 
         mock_client.return_value.task_path.return_value = task_name

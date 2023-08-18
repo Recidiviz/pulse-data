@@ -21,7 +21,7 @@ import unittest
 from unittest.mock import patch
 
 from airflow.models import DagBag
-from google.cloud.tasks_v2.types.queue import Queue
+from google.cloud.tasks_v2 import Queue
 
 from recidiviz import pipelines
 from recidiviz.airflow.dags.sftp_dag import get_running_queue_instances

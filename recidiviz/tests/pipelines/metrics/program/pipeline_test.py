@@ -19,7 +19,7 @@
 """Tests for program/pipeline.py"""
 import unittest
 from datetime import date
-from typing import Any, Callable, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, Iterable, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
@@ -118,7 +118,7 @@ class TestProgramPipeline(unittest.TestCase):
 
     def build_data_dict(
         self, fake_person_id: int, fake_supervision_period_id: int
-    ) -> Dict[str, List]:
+    ) -> Dict[str, Iterable]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code="US_XX",
@@ -228,7 +228,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
-        data_dict_overrides: Dict[str, List[Any]] = {
+        data_dict_overrides: Dict[str, Iterable[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -423,7 +423,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
-        data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
+        data_dict_overrides: Dict[str, Iterable[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -1082,7 +1082,9 @@ class AssertMatchers:
 
     @staticmethod
     def validate_pipeline_test() -> Callable:
-        def _validate_pipeline_test(output: List, allow_empty: bool = False) -> None:
+        def _validate_pipeline_test(
+            output: Iterable, allow_empty: bool = False
+        ) -> None:
             if not allow_empty and not output:
                 raise BeamAssertException("Output metrics unexpectedly empty")
 
@@ -1098,7 +1100,7 @@ class AssertMatchers:
     def count_metrics(expected_metric_counts: Dict[Any, Any]) -> Callable:
         """Asserts that the number of ProgramMetrics matches the expected counts."""
 
-        def _count_metrics(output: List) -> None:
+        def _count_metrics(output: Iterable) -> None:
             actual_metric_counts = {}
 
             for key in expected_metric_counts.keys():

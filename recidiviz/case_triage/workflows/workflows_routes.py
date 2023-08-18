@@ -547,6 +547,10 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         for doc in client_updates_docs:
             milestonesMessage = doc.to_dict()
+
+            if not milestonesMessage:
+                continue
+
             # This endpoint will be hit multiple times per message, so check here if this is a new status change from
             # what we already have in Firestore.
             if milestonesMessage.get("rawStatus", "") != status:
@@ -618,6 +622,9 @@ def create_workflows_api_blueprint() -> Blueprint:
 
             for doc in client_updates_docs:
                 milestonesMessage = doc.to_dict()
+
+                if not milestonesMessage:
+                    continue
 
                 # This endpoint may be hit multiple times per recipient, so check here if this is a new
                 # opt out type from what we already have in Firestore.

@@ -184,6 +184,8 @@ def test_update_raw_data_table_schemas_parallel_loop_retry_integration(
     assert caplog_info.record_tuples == [
         ("root", logging.INFO, f"Writing logs to {tmpdir}/test_log.log"),
         ("root", logging.ERROR, "Some results are not accounted for"),
+        ("root", logging.INFO, "Exception!"),
+        ("root", logging.INFO, "Exception!"),
         ("root", logging.WARNING, "These tasks failed with the following exceptions:"),
         (
             "root",
@@ -195,6 +197,7 @@ def test_update_raw_data_table_schemas_parallel_loop_retry_integration(
             logging.WARNING,
             ("Time's up    {'state_code': 'US_ZZ', 'raw_file_tag': 'tagthree'}"),
         ),
+        ("root", logging.INFO, "Exception!"),
         ("root", logging.WARNING, "These tasks failed with the following exceptions:"),
         (
             "root",
