@@ -59,6 +59,32 @@ class CoreEntity:
     def get_id(self):
         return getattr(self, self.get_class_id_name())
 
+    def get_root_entity_id(self):
+        """Returns the id of the root entity the entity is associated with."""
+        if hasattr(self, "person"):
+            return self.person.person_id
+
+        if hasattr(self, "staff"):
+            return self.staff.staff_id
+
+        if self.get_class_id_name() not in {"person_id", "staff_id"}:
+            raise ValueError(
+                f"Expected non root entity {type(self)} to have field staff or person but found none."
+            )
+        return self.get_id()
+
+    def get_root_entity_name(self):
+        """Returns the name of the root entity the entity is associated with."""
+        if hasattr(self, "person") or self.get_class_id_name() == "person_id":
+            return "StatePerson"
+
+        if hasattr(self, "staff") or self.get_class_id_name() == "staff_id":
+            return "StateStaff"
+
+        raise ValueError(
+            f"Expected non root entity {type(self)} to have field staff or person but found none."
+        )
+
     @classmethod
     @lru_cache(maxsize=None)
     def get_entity_name(cls) -> str:

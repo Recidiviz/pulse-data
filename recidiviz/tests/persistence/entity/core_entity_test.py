@@ -92,6 +92,84 @@ class TestCoreEntity(unittest.TestCase):
             entities.StateSupervisionViolationResponse.get_class_id_name(),
         )
 
+    def test_get_root_entity_id_simple(self) -> None:
+        self.assertEqual(
+            "StatePerson",
+            entities.StatePerson.new_with_defaults(
+                person_id=123, state_code="US_XX"
+            ).get_root_entity_name(),
+        )
+
+        self.assertEqual(
+            "StateStaff",
+            entities.StateStaff.new_with_defaults(
+                staff_id=123, state_code="US_XX"
+            ).get_root_entity_name(),
+        )
+
+        person = entities.StatePerson.new_with_defaults(
+            person_id=123, state_code="US_XX"
+        )
+        external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id="11111",
+            id_type="US_XX_TYPE",
+            state_code="US_XX",
+            person=person,
+        )
+        person.external_ids.append(external_id)
+
+        self.assertEqual(123, external_id.get_root_entity_id())
+
+        staff = entities.StateStaff.new_with_defaults(staff_id=123, state_code="US_XX")
+        staff_external_id = entities.StateStaffExternalId.new_with_defaults(
+            external_id="11111",
+            id_type="US_ND_TYPE",
+            state_code="US_ND",
+            staff=staff,
+        )
+        staff.external_ids.append(staff_external_id)
+
+        self.assertEqual(123, staff_external_id.get_root_entity_id())
+
+    def test_get_root_entity_name_simple(self) -> None:
+        self.assertEqual(
+            123,
+            entities.StatePerson.new_with_defaults(
+                person_id=123, state_code="US_XX"
+            ).get_root_entity_id(),
+        )
+
+        self.assertEqual(
+            123,
+            entities.StateStaff.new_with_defaults(
+                staff_id=123, state_code="US_XX"
+            ).get_root_entity_id(),
+        )
+
+        person = entities.StatePerson.new_with_defaults(
+            person_id=123, state_code="US_XX"
+        )
+        external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id="11111",
+            id_type="US_XX_TYPE",
+            state_code="US_XX",
+            person=person,
+        )
+        person.external_ids.append(external_id)
+
+        self.assertEqual("StatePerson", external_id.get_root_entity_name())
+
+        staff = entities.StateStaff.new_with_defaults(staff_id=123, state_code="US_XX")
+        staff_external_id = entities.StateStaffExternalId.new_with_defaults(
+            external_id="11111",
+            id_type="US_ND_TYPE",
+            state_code="US_ND",
+            staff=staff,
+        )
+        staff.external_ids.append(staff_external_id)
+
+        self.assertEqual("StateStaff", staff_external_id.get_root_entity_name())
+
     def test_getField(self) -> None:
         entity = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
