@@ -32,6 +32,8 @@ WITH omni AS (
   FROM {ADH_EMPLOYEE} e
   LEFT JOIN {ADH_EMPLOYEE_ADDITIONAL_INFO} ea
   ON e.employee_id = ea.employee_id
+  WHERE email_address IS NOT NULL 
+  AND LOWER(email_address) != 'no_email@michigan.gov'
 ),
 compas AS (
   SELECT DISTINCT
@@ -46,6 +48,8 @@ compas AS (
             THEN CAST(DateUpdated AS DATETIME) ELSE CAST(DateCreated AS DATETIME)
       END AS LastUpdateDate
     FROM {ADH_SHUSER}
+    WHERE Email IS NOT NULL 
+    AND LOWER(Email) != 'no_email@michigan.gov'
   ) compas_base
 )
 
@@ -61,6 +65,24 @@ SELECT
 FROM omni
 FULL JOIN compas
 ON omni.lower_email_address = compas.lower_Email
+
+
+UNION ALL 
+
+-- pull in all rows for people with null emails or no_email@michigan.gov
+-- both of these cases only exist in the omni system
+SELECT DISTINCT
+  e.employee_id AS employee_id_omni,
+  CAST(NULL AS STRING) AS employee_id_compas,
+  position,
+  1 as period_seq_num,
+  DATE(1900, 1, 1) AS start_date,
+  NULL AS end_date
+FROM {ADH_EMPLOYEE} e
+  LEFT JOIN {ADH_EMPLOYEE_ADDITIONAL_INFO} ea
+  ON e.employee_id = ea.employee_id
+WHERE email_address IS NULL
+OR email_address = 'no_email@michigan.gov'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
