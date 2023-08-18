@@ -3,7 +3,8 @@ file_tag: CIS_3030_PP_Item_Type
 file_description: |-
   TODO(#23225): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - PP_ITEM_TYPE_CD
 columns:
   - name: PP_ITEM_TYPE_CD
     description: |-
