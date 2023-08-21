@@ -726,6 +726,18 @@ class DirectIngestRegionRawFileConfig:
             default_no_valid_primary_keys=default_no_valid_primary_keys,
         )
 
+    def get_datetime_parsers(self) -> Set[str]:
+        """
+        Return a set of every datetime parser that exists in the given raw file config
+        """
+        all_parsers = set()
+        for config in self.raw_file_configs.values():
+            for _, parsers in config.datetime_cols:
+                if parsers:
+                    for parser in parsers:
+                        all_parsers.add(parser)
+        return all_parsers
+
     def _region_ingest_dir(self) -> str:
         if self.region_module.__file__ is None:
             raise ValueError(f"No file associated with {self.region_module}.")

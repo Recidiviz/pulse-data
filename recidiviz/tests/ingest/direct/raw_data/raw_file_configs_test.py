@@ -696,25 +696,6 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             table_relationships=[],
         )
 
-        self.sparse_config = DirectIngestRawFileConfig(
-            file_tag="myFile",
-            file_path="/path/to/myFile.yaml",
-            file_description="This is a raw data file",
-            data_classification=RawDataClassification.SOURCE,
-            columns=[],
-            custom_line_terminator=None,
-            primary_key_cols=[],
-            supplemental_order_by_clause="",
-            encoding="UTF-8",
-            separator=",",
-            ignore_quotes=False,
-            always_historical_export=True,
-            no_valid_primary_keys=False,
-            import_chunk_size_rows=10,
-            infer_columns_from_config=False,
-            table_relationships=[],
-        )
-
     def test_missing_configs_for_region(self) -> None:
         with self.assertRaisesRegex(
             ValueError, "^Missing raw data configs for region: us_xy"
@@ -1292,3 +1273,52 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
             InMemoryDirectIngestRegionRawFileConfig(
                 region_code="us_xx",
             )
+
+    def test_get_datetime_parsers(self) -> None:
+        parsers = [
+            "SAFE.PARSE_DATE('%m/%d/%y', {col_name})",
+            "SAFE.PARSE_DATE('%m/%d/%Y', {col_name})",
+        ]
+        config1 = attr.evolve(
+            self.sparse_config,
+            columns=[
+                RawTableColumnInfo(
+                    name="date",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="test",
+                    datetime_sql_parsers=parsers,
+                )
+            ],
+        )
+        # Duplicate parsers
+        config2 = attr.evolve(
+            self.sparse_config,
+            file_tag="myFile2",
+            columns=[
+                RawTableColumnInfo(
+                    name="date",
+                    field_type=RawTableColumnFieldType.DATETIME,
+                    is_pii=False,
+                    description="test",
+                    datetime_sql_parsers=parsers[:-1],
+                )
+            ],
+        )
+        region_with_parsers = attr.evolve(
+            self.us_xx_region_config,
+            raw_file_configs={
+                "myFile": config1,
+                "myFile2": config2,
+            },
+        )
+        self.assertEqual(set(parsers), region_with_parsers.get_datetime_parsers())
+
+    def test_get_no_parsers(self) -> None:
+        region_without_parsers = attr.evolve(
+            self.us_xx_region_config,
+            raw_file_configs={
+                "myFile": self.sparse_config,
+            },
+        )
+        self.assertEqual(set(), region_without_parsers.get_datetime_parsers())
