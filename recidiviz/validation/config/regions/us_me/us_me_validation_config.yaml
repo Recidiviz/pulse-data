@@ -38,11 +38,6 @@ max_allowed_error_overrides:
     override_reason: >-
       P2. 10-ish rows failing. More details in TODO(#19973).
 num_allowed_rows_overrides:
-  - validation_name: sentence_end_dates_before_start_dates
-    hard_num_allowed_rows_override: 150000
-    override_reason: >-
-      Needs investigation.  Current failing level as of 10/21 is 121,838 rows
-      #TODO(#16183)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 60000
     override_reason: >-
