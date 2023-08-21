@@ -92,7 +92,6 @@ class TestKubernetesResourceAllocator(unittest.TestCase):
                 ),
             ),
             {
-                "requests": {"cpu": "2000m", "memory": "1.5Gi"},
-                "limits": {"cpu": "2000m", "memory": "2.5Gi"},
+                "limits": {"cpu": "1000m", "memory": "2Gi"},
             },
         )

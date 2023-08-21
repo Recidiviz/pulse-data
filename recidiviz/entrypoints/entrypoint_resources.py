@@ -36,8 +36,7 @@ RESOURCES_YAML_PATH = os.path.join(
 )
 
 DEFAULT_RESOURCES = {
-    "requests": {"cpu": "2000m", "memory": "1Gi"},
-    "limits": {"cpu": "2000m", "memory": "2Gi"},
+    "limits": {"cpu": "1000m", "memory": "1Gi"},
 }
 
 
