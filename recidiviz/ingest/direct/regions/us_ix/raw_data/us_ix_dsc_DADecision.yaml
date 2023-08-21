@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dsc_DADecision
+file_description: |-
+  Contains information about DA decisions.
+data_classification: source
+primary_key_cols:
+  - DADecisionId
+columns:
+  - name: DADecisionId
+    description: |-
+      DA Decision ID
+  - name: DADecisionName
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+  - name: Inactive
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: InsertUserId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    is_pii: True
+
+  - name: InsertDate
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: UpdateUserId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    is_pii: True
+
+  - name: UpdateDate
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: Locking
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: IsCustom
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name

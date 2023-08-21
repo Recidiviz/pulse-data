@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dsc_DACase
+file_description: |-
+  Contains information about DA cases.
+data_classification: source
+primary_key_cols:
+  - DACaseId
+columns:
+  - name: DACaseId
+    description: |-
+      DA case ID
+
+  - name: CaseNo
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: TermId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: LocationId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: OffenseDateTime
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    field_type: datetime
+
+  - name: OffenseDesc
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: PhysicalEvidence
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: ImmediateAction
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: DiscOffenseRptId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: AuditHearingDate
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    field_type: datetime
+
+  - name: AuditAppealDate
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    field_type: datetime
+
+  - name: PreviousActionId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: InternalLocationId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: InternalLocationAreaId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: LocationOfOffenceOther
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: FacilityLevelId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: DAProcedureStatusId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: OffenderId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    is_pii: True
+
+  - name: Locking
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: InsertUserId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    is_pii: True
+
+  - name: InsertDate
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    field_type: datetime
+
+  - name: UpdateUserId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    is_pii: True
+
+  - name: UpdateDate
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+    field_type: datetime
+
+  - name: IncidentReportId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
+
+  - name: ViolenceLevelId
+    description: |-
+      TODO(#23206): Fill in column description like that for each column name
