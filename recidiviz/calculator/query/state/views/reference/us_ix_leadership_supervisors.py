@@ -31,11 +31,12 @@ US_IX_LEADERSHIP_SUPERVISORS_QUERY_TEMPLATE = """
     DISTINCT
     super.state_code,
     super.supervisor_staff_external_id AS external_id,
+    TO_HEX(SHA256(super.supervisor_staff_external_id)) AS supervisor_id_hash,
     staff.staff_id,
     staff.full_name,
     staff.email,
     CAST(NULL AS STRING) AS supervisor_external_id,
-    CASE WHEN supervisor_staff_external_id = '3399' THEN 'DISTRICT 2'
+    CASE WHEN TO_HEX(SHA256(supervisor_staff_external_id)) = '5f829f9e9b41706a703e4b4d3b89c31f34acaf80ffbe3ed4ac1431c4527800f2' THEN 'DISTRICT 2'
          ELSE JSON_EXTRACT_SCALAR(loc_meta.location_metadata, '$.supervision_district_name') 
       END AS supervision_district,
     CAST(NULL AS STRING) AS supervision_unit,  
@@ -52,7 +53,12 @@ US_IX_LEADERSHIP_SUPERVISORS_QUERY_TEMPLATE = """
     ON loc.location_external_id = loc_meta.location_external_id
   WHERE 
     super.state_code = 'US_IX'
-    AND super.supervisor_staff_external_id in ('2773', '2791', '3032', '3163', '3399')
+    AND TO_HEX(SHA256(super.supervisor_staff_external_id)) in (
+      'ce121073a5210988d0d44892ed9597a853b6f7384ef3887c0c4c229dbabb4691', 
+      '6bcc05d40b1752992b7142914608fbac9adb28af8ca29b7d14b1e46428be693e', 
+      '2acee0ce6421d1b64d86cc141ef89090305ec18652dcf7d264cb034739e2c1b1', 
+      'e5c31b7a40373b6459fad9f33059f767665b7028f375ac63a8279ad53a2c5488', 
+      '5f829f9e9b41706a703e4b4d3b89c31f34acaf80ffbe3ed4ac1431c4527800f2')
     AND super.supervisor_staff_external_id_type = 'US_IX_EMPLOYEE'
     AND super.end_date is null
 """
