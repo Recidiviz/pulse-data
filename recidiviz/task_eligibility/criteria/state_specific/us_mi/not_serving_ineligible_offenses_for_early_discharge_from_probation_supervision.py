@@ -52,13 +52,8 @@ _QUERY_TEMPLATE = f"""
         AND sent.sentence_sub_type = "PROBATION" 
         --only include spans with ineligible offenses 
         AND sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
-            WHERE CAST(requires_so_registration AS BOOL))
-        --include all statutes that have 750.81 followed by a digit (but not by a letter) since those are not substatutes
-        OR ((sent.statute LIKE '750.81%' AND REGEXP_CONTAINS(statute, r'750\\.81(\\d+)*$'))
-        OR sent.statute LIKE '750.84%'
-        OR sent.statute LIKE '750.411H%'
-        OR sent.statute LIKE '750.411I%'
-        OR sent.statute LIKE '750.136B%')
+            WHERE (CAST(requires_so_registration AS BOOL) OR CAST(is_excluded_from_probation_ed AS BOOL))
+            )
     GROUP BY 1, 2, 3, 4,5
     """
 
