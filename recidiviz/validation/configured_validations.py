@@ -232,6 +232,9 @@ from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentenc
 from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
     SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.stable_counts.configured_validations import (
+    get_all_stable_counts_validations,
+)
 from recidiviz.validation.views.state.supervision_period_dates_existence import (
     SUPERVISION_PERIOD_DATES_EXISTENCE_VIEW_BUILDER,
 )
@@ -354,6 +357,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         *get_all_task_eligibility_validations(),
         *get_all_dataflow_metrics_validations(),
         *get_all_location_metadata_validations(),
+        *get_all_stable_counts_validations(region_configs),
         ExistenceDataValidationCheck(
             view_builder=ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
