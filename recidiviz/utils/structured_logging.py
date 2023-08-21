@@ -202,7 +202,7 @@ class StructuredCloudLoggingHandler(handlers.CloudLoggingHandler):
             record,
             super().format(record),
             resource=self.logging_resource,
-            labels=self.labels,
+            labels=self.labels or {},
             trace=trace_id,
         )
 
