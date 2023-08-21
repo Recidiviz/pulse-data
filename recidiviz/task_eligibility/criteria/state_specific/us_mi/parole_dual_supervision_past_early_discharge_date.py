@@ -78,7 +78,8 @@ sentence_statutes_preprocessed AS (
                         x LIKE "750.520C%" OR
                         x LIKE "750.520D%" OR
                         x LIKE "750.520F%" OR
-                        x LIKE "750.529" OR
+                        x LIKE "750.529%" OR
+                        x LIKE "750.350%" OR 
                         x LIKE "750.349" OR 
                         x LIKE "750.3491%" OR 
                         x LIKE "750.213" )) AS any_qualifying_statute,
@@ -90,10 +91,11 @@ sentence_statutes_preprocessed AS (
                         x LIKE "750.520C%" OR
                         x LIKE "750.520D%" OR
                         x LIKE "750.520F%" OR
-                        x LIKE "750.529" OR
+                        x LIKE "750.529%" OR
+                        x LIKE "750.350%" OR 
                         x LIKE "750.349" OR 
                         x LIKE "750.3491%" OR 
-                        x LIKE "750.213" ))
+                        x LIKE "750.213"))
     OR any_life_sentence
     OR any_qualifying_statute_term
  ),
