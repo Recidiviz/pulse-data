@@ -153,11 +153,11 @@ from recidiviz.calculator.query.state.views.sessions.sentences_preprocessed impo
 from recidiviz.calculator.query.state.views.sessions.session_location_names import (
     SESSION_LOCATION_NAMES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.state_staff_role_subtype_dedup_priority import (
-    STATE_STAFF_ROLE_SUBTYPE_PRIORITY_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.state_staff_id_to_legacy_supervising_officer_external_id import (
     STATE_STAFF_ID_TO_LEGACY_SUPERVISING_OFFICER_EXTERNAL_ID_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.state_staff_role_subtype_dedup_priority import (
+    STATE_STAFF_ROLE_SUBTYPE_PRIORITY_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_downgrade_sessions import (
     SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,
@@ -221,6 +221,9 @@ from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_consecutive_sen
 )
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_drug_screens_preprocessed import (
     US_IX_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_parole_board_hearing_sessions import (
+    US_IX_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_raw_lsir_assessments import (
     US_IX_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
@@ -344,6 +347,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_IX_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
+    US_IX_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
     US_IX_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
