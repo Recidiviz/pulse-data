@@ -15,5 +15,11 @@ columns:
     description: Boolean flag for whether this statute code indicates an assaultive misdemeanor
   - name: requires_so_registration
     description: Boolean flag for whether this statute code requires sex offender registration
-  - name: is_excluded
-    description: Boolean flag for whether this statute code would indicate that someone should be excluded from the opportunity
+  - name: is_excluded_from_trs
+    description: Boolean flag for whether this statute code would indicate that someone should be excluded from Telephone Reporting
+  - name: is_excluded_from_parole_ed
+    description: Boolean flag for whether this statute code would indicate that someone should be excluded from Parole Early Discharge
+  - name: is_excluded_from_probation_ed
+    description: Boolean flag for whether this statute code would indicate that someone should be excluded from Probation Early Discharge
+  - name: is_owi_ouil
+    description: Boolean flag for whether this statute code indicates operating while intoxicated or operating under the influence of liquor
