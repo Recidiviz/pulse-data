@@ -1,6 +1,8 @@
 # Configuration for determining pod resource sizing
 # If many configurations match, the configuration that is closer to the end of the list is given priority
 # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+# !!! BE SURE TO READ "Setting Resource limits in AutoPilot
+# https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#resource-limits
 # entrypoint: (str, required)
 # args: (dict[str, any], optional)
 # resources: (dict[str, any], required)
@@ -12,18 +14,20 @@
 #     memory:
 - entrypoint: MetricViewExportEntrypoint
   resources:
-    requests:
-      cpu: 2000m
-      memory: 1.5Gi
     limits:
-      cpu: 2000m
-      memory: 2.5Gi
+      cpu: 1000m
+      memory: 1Gi
+
+- entrypoint: MetricViewExportEntrypoint
+  args:
+    export_job_name: LANTERN
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
 
 - entrypoint: BigQueryRefreshEntrypoint
   resources:
     requests:
-      cpu: 1000m
+      cpu: 500m
       memory: 0.5Gi
-    limits:
-      cpu: 2000m
-      memory: 1Gi

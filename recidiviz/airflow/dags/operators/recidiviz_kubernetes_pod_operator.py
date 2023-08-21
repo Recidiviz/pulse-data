@@ -21,6 +21,7 @@ A factory function for building KubernetesPodOperators that run our appengine im
 # pylint: disable=W0104 pointless-statement
 import logging
 import os
+import string
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from airflow.decorators import task
@@ -139,14 +140,22 @@ def build_kubernetes_pod_task_group(
             do_xcom_push=True,
         )
 
+        formatter = string.Formatter()
+
         execute_entrypoint_operator = RecidivizKubernetesPodOperator(
             task_id="execute_entrypoint_operator",
             cmds=["pipenv"],
             arguments=kubernetes_arguments["entrypoint_execution_command"],
             container_resources=k8s.V1ResourceRequirements(
                 # Airflow turns these string values into Python dictionaries when rendering, disabling typing warnings
-                limits=f"{{{{ task_instance.xcom_pull(task_ids='{set_kubernetes_resources.task_id}')['limits'] }}}}",  # type: ignore[arg-type]
-                requests=f"{{{{ task_instance.xcom_pull(task_ids='{set_kubernetes_resources.task_id}')['requests'] }}}}",  # type: ignore[arg-type]
+                limits=formatter.format(
+                    "{{{{ task_instance.xcom_pull(task_ids='{set_kubernetes_resources}')['limits'] | default(dict()) }}}}",
+                    set_kubernetes_resources=set_kubernetes_resources.task_id,
+                ),  # type: ignore[arg-type]
+                requests=formatter.format(
+                    "{{{{ task_instance.xcom_pull(task_ids='{set_kubernetes_resources}')['requests'] | default(dict()) }}}}",
+                    set_kubernetes_resources=set_kubernetes_resources.task_id,
+                ),  # type: ignore[arg-type]
             ),
             env_vars=[
                 # TODO(census-instrumentation/opencensus-python#796)
