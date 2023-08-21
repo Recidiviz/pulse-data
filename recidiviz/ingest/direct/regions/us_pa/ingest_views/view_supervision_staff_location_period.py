@@ -24,7 +24,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH base AS (
+WITH agent_base AS (
 SELECT 
     ORG_ID, 
     Employ_Num, 
@@ -33,9 +33,9 @@ SELECT
     '1900-01-01' AS start_date, 
     NULL as end_date
 FROM {RECIDIVIZ_REFERENCE_agent_districts}
-
-UNION ALL
-
+WHERE NOT (UPPER(FirstName) LIKE '%VACANT%' AND UPPER(LastName) LIKE '%POSITION%')
+),
+supervisor_base AS (
 SELECT 
     LPAD(district_id, 2, '0') AS district_id,
     ext_id, 
@@ -43,7 +43,7 @@ SELECT
     NULL as end_date
 FROM {RECIDIVIZ_REFERENCE_field_supervisor_list} 
 WHERE role IN ('District Director','Deputy District Director')
-AND ext_id NOT IN (SELECT DISTINCT Employ_Num FROM {RECIDIVIZ_REFERENCE_agent_districts})
+AND ext_id NOT IN (SELECT DISTINCT Employ_Num FROM agent_base)
 ),
 cntc_base AS (
 SELECT DISTINCT
@@ -52,16 +52,18 @@ SELECT DISTINCT
     FIRST_VALUE(START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS start_date,
     NULL AS end_date
 FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}
-WHERE PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv')
-AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT Employ_Num FROM base)
+WHERE PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv','Prl Mgr 1')
+AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT Employ_Num FROM agent_base)
+AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT ext_id FROM supervisor_base)
 AND PRL_AGNT_ORG_NAME IS NOT NULL
 )
 
-SELECT * FROM base 
+SELECT * FROM agent_base 
 UNION ALL
--- rank to include only most recent locations from contacts get included
-SELECT district_id, PRL_AGNT_EMPL_NO,start_date,end_date 
-FROM  cntc_base 
+SELECT * FROM supervisor_base
+UNION ALL
+SELECT * 
+FROM cntc_base 
 
 """
 

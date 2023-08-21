@@ -25,15 +25,13 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH staff_in_roster AS (
+    -- Fill in POs and their supervisors from roster
     SELECT LastName,FirstName,EMAIL_ADDRESS,Employ_Num
     FROM {RECIDIVIZ_REFERENCE_agent_districts}
-)
--- Fill in POs and their supervisors from roster
-SELECT *
-FROM staff_in_roster
-
-UNION ALL
-
+    -- The name "Vacant Position" is used for roles that aren't filled
+    WHERE NOT (UPPER(FirstName) LIKE '%VACANT%' AND UPPER(LastName) LIKE '%POSITION%')
+),
+supervisors_in_roster AS (
 -- Fill in upper management from different roster
 SELECT DISTINCT 
     lastname AS LastName,
@@ -41,19 +39,35 @@ SELECT DISTINCT
     email AS EMAIL_ADDRESS,
     ext_id AS Employ_Num
 FROM {RECIDIVIZ_REFERENCE_field_supervisor_list}
+WHERE ext_id NOT IN (
+    SELECT DISTINCT Employ_Num FROM staff_in_roster
+)
+)
+
+SELECT *
+FROM staff_in_roster
 
 UNION ALL
 
--- Fill in missing agent ids staff employee numbers for 
--- older staff not in the staff roster.
+SELECT *
+FROM supervisors_in_roster
+
+UNION ALL
+
+-- Fill in names / emails for agents in contacts data who are not present in either other roster
 SELECT DISTINCT
     LAST_VALUE(PRL_AGNT_LAST_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE) AS LastName,
     LAST_VALUE(PRL_AGNT_FIRST_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE) AS FirstName,
-    CAST(NULL AS STRING) AS EMAIL_ADDRESS,
+    agent_roster.EMAIL_ADDRESS AS EMAIL_ADDRESS,
     PRL_AGNT_EMPL_NO AS Employ_Num
-FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}
+FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY} contacts
+LEFT JOIN {RECIDIVIZ_REFERENCE_agent_districts} agent_roster
+ON(contacts.PRL_AGNT_EMPL_NO = agent_roster.Employ_Num)
 WHERE PRL_AGNT_EMPL_NO NOT IN (
     SELECT Employ_Num FROM staff_in_roster
+)
+AND PRL_AGNT_EMPL_NO NOT IN (
+    SELECT Employ_Num FROM supervisors_in_roster
 )
 """
 
