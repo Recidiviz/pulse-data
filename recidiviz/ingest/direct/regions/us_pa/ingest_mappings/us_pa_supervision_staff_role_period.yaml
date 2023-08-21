@@ -38,6 +38,7 @@ output:
                   - "SUPERVISION_OFFICER"
                   - "PRL AGT 2"
                   - "PRL AGT 1"
+                  - "PRL MGR 1"
                 StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
                   - "SUPERVISION_OFFICER_SUPERVISOR"
                   - "PRL SUPV"
