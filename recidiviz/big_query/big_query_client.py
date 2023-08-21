@@ -2242,7 +2242,7 @@ class BigQueryClientImpl(BigQueryClient):
             response = transfer_client.start_manual_transfer_runs(
                 request=StartManualTransferRunsRequest(
                     {
-                        "parent": f"projects/{self.project_id}",
+                        "parent": transfer_config.name,
                         "requested_run_time": requested_run_time,
                     }
                 )

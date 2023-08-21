@@ -41,7 +41,7 @@ REQUIRED_PACKAGES = [
     "google-cloud-monitoring",
     "google-cloud-secret-manager",
     "google-cloud-storage",
-    "google-cloud-logging==1.15.3",
+    "google-cloud-logging",
     "google-cloud-bigquery-datatransfer",
     # Must stay up-to-date with latest google-cloud-tasks version in the Pipfile
     "google-cloud-tasks==2.14.1",
