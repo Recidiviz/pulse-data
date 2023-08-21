@@ -40,9 +40,6 @@ num_allowed_rows_overrides:
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 300
     override_reason: TODO(#12165) Needs investigation. Ingest view is mishandling supervision events during a supervision period with overlap and duplicating periods by reversing their dates.
-  - validation_name: sentence_end_dates_before_start_dates
-    hard_num_allowed_rows_override: 30000
-    override_reason: Needs investigation.  Current failing level as of 10/21 is 15,059 rows #TODO(#16190)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 400000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 325,825 rows #TODO(#16230)

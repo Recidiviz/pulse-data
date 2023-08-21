@@ -10,9 +10,6 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.03
     override_reason: Data from the old system is causing more errors, need to find more conversions.
 num_allowed_rows_overrides:
-  - validation_name: sentence_end_dates_before_start_dates
-    hard_num_allowed_rows_override: 600000
-    override_reason: Needs investigation.  Current failing level as of 10/21 is 567,662 rows - no valid sentence info #TODO(#16185)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 60000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 47,807 rows #TODO(#16229)
