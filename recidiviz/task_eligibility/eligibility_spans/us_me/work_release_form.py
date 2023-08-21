@@ -27,7 +27,7 @@ from recidiviz.task_eligibility.completion_events.general import (
     release_to_community_confinement_supervision,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
-    custody_level_is_minimum_or_community,
+    custody_level_is_minimum,
     no_class_a_or_b_violation_for_90_days,
     no_detainers_warrants_or_other,
     served_30_days_at_eligible_facility_for_furlough_or_work_release,
@@ -49,13 +49,12 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        custody_level_is_minimum_or_community.VIEW_BUILDER,
+        custody_level_is_minimum.VIEW_BUILDER,
         three_years_remaining_on_sentence.VIEW_BUILDER,
         no_detainers_warrants_or_other.VIEW_BUILDER,
         served_30_days_at_eligible_facility_for_furlough_or_work_release.VIEW_BUILDER,
         no_class_a_or_b_violation_for_90_days.VIEW_BUILDER,
     ],
-    # TODO(#22045): add furlough event builder once created
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
 )
 
