@@ -18,6 +18,9 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_parole_board_hearing_sessions import (
+    US_IX_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_sessions import (
     US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
@@ -38,6 +41,11 @@ SELECT
     *
 FROM
     `{project_id}.{us_tn_pb_hearing_sessions}`
+UNION ALL
+SELECT
+    *
+FROM
+    `{project_id}.{us_ix_pb_hearing_sessions}`
 """
 
 PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -46,6 +54,7 @@ PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=_QUERY_TEMPLATE,
     description=_VIEW_DESCRIPTION,
     us_tn_pb_hearing_sessions=US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER.table_for_query.to_str(),
+    us_ix_pb_hearing_sessions=US_IX_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER.table_for_query.to_str(),
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )

@@ -42,6 +42,7 @@ WITH hearing_tbl AS (
         pei.person_id,
         DATE(HearingDate) AS hearing_date,
         DATE(ParoleDecisionDate) AS decision_date,
+        DATE(CertificateReleaseDate) AS tentative_parole_date,
         HearingOfficerStaffID AS recommendation_officer_external_id,
 
         -- recommended decision
@@ -79,10 +80,10 @@ WITH hearing_tbl AS (
 
         ParoleDecision AS decision_raw,
 
-        ARRAY_AGG(
+        ARRAY_TO_STRING(ARRAY_AGG(
             DISTINCT decision_reasons_unnested IGNORE NULLS
             ORDER BY decision_reasons_unnested
-        ) AS decision_reasons_raw,
+        ), ",") AS decision_reasons_raw,
 
     FROM
         `{project_id}.{us_tn_raw_dataset}.Hearing_latest` hearings,
@@ -103,9 +104,9 @@ WITH hearing_tbl AS (
             "IP", -- INITIAL PAROLE
             "PV" -- PAROLE REVIEW
         )
-        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
-        -- drop same-day hearings
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, hearing_date ORDER BY decision DESC) = 1
+        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+        -- drop same-day hearings, prioritizing by alphabetical order of decision value
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, hearing_date ORDER BY decision ASC) = 1
 )
 
 SELECT
@@ -130,7 +131,9 @@ SELECT
     recommended_decision,
     recommended_decision_raw,
     decision,
+    decision_raw,
     decision_reasons_raw,
+    tentative_parole_date,
 
     -- days from incarceration start to hearing
     DATE_DIFF(
