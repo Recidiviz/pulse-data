@@ -297,7 +297,7 @@ def in_offline_mode() -> bool:
     return os.environ.get("IS_OFFLINE_MODE") == "true"
 
 
-def get_version() -> str:
+def get_app_engine_version() -> str:
     return os.getenv("GAE_VERSION", "")
 
 
@@ -307,3 +307,7 @@ class ServiceType(Enum):
 
 def get_service_type() -> ServiceType:
     return ServiceType(os.getenv("GAE_SERVICE", "default"))
+
+
+def in_app_engine() -> bool:
+    return get_app_engine_version() != ""

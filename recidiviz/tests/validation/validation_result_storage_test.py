@@ -49,7 +49,10 @@ from recidiviz.validation.validation_result_storage import (
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
-@patch("recidiviz.utils.environment.get_version", MagicMock(return_value="v1.0.0"))
+@patch(
+    "recidiviz.utils.environment.get_app_engine_version",
+    MagicMock(return_value="v1.0.0"),
+)
 class TestValidationResultStorage(unittest.TestCase):
     """Tests for validation_result_storage"""
 

@@ -200,6 +200,6 @@ def blocked_condition_handler(event: events.EventLoopBlocked) -> None:
 
 @app.before_request
 def log_request_entry() -> None:
-    logging.getLogger(structured_logging.BEFORE_REQUEST_LOG).info(
+    logging.getLogger(structured_logging.RECIDIVIZ_BEFORE_REQUEST_LOG).info(
         "%s %s", request.method, request.full_path
     )
