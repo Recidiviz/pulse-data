@@ -3,9 +3,8 @@ file_tag: RCDVZ_CISPRDDTA_OPCONE
 file_description: |-
   This file contains information on expired conditions.
 data_classification: source
-primary_key_cols:
-  - RECORD_KEY
-  - SEQUENCE_NO
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: RECORD_KEY
     description: |-

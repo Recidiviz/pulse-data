@@ -3,9 +3,8 @@ file_tag: RCDVZ_CISPRDDTA_CMOBLD
 file_description: |-
   This file contains Obligation Transaction Detail.
 data_classification: source
-primary_key_cols:
-  - RECORD_KEY
-  - SUBFILE_KEY
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: RECORD_KEY
     description: |-
