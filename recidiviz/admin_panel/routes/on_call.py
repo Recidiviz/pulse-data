@@ -41,6 +41,9 @@ def add_on_call_routes(blueprint: Blueprint) -> None:
 
         return jsonify(
             OnCallLogsSearch().query(
-                view, show_resolved=request.json.get("show_resolved")
+                view,
+                ignored_statuses=request.json["ignored_statuses"],
+                cloud_run_services=request.json.get("cloud_run_services", ""),
+                show_resolved=request.json.get("show_resolved"),
             )
         )
