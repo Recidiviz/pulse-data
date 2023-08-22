@@ -142,10 +142,16 @@ class SQLAlchemyEngineManager:
         cls._engine_for_database.clear()
 
     @classmethod
-    def init_engine(cls, database_key: SQLAlchemyDatabaseKey) -> Engine:
+    def init_engine(
+        cls,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
+    ) -> Engine:
         return cls.init_engine_for_postgres_instance(
             database_key=database_key,
-            db_url=cls.get_server_postgres_instance_url(database_key=database_key),
+            db_url=cls.get_server_postgres_instance_url(
+                database_key=database_key, secret_prefix_override=secret_prefix_override
+            ),
         )
 
     @classmethod
@@ -164,7 +170,9 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def get_engine_for_database(
-        cls, database_key: SQLAlchemyDatabaseKey
+        cls,
+        database_key: SQLAlchemyDatabaseKey,
+        secret_prefix_override: Optional[str] = None,
     ) -> Optional[Engine]:
         """Retrieve the engine for a given database.
 
@@ -176,7 +184,9 @@ class SQLAlchemyEngineManager:
                     database_key,
                 )
                 return None
-            cls.init_engine(database_key)
+            cls.init_engine(
+                database_key=database_key, secret_prefix_override=secret_prefix_override
+            )
         return cls._engine_for_database.get(database_key, None)
 
     @classmethod

@@ -33,6 +33,7 @@ from opencensus.trace import base_exporter, config_integration, file_exporter, s
 from opencensus.trace.propagation import google_cloud_format
 
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -129,9 +130,16 @@ if environment.in_development():
     ]
 
     for schema_type in enabled_development_schema_types:
+        # TODO(#23253): Remove when Publisher is migrated to JC GCP project.
+        secret_prefix_override = (
+            JUSTICE_COUNTS_DB_SECRET_PREFIX
+            if schema_type == SchemaType.JUSTICE_COUNTS
+            else None
+        )
         try:
             SQLAlchemyEngineManager.init_engine(
-                SQLAlchemyDatabaseKey.for_schema(schema_type),
+                database_key=SQLAlchemyDatabaseKey.for_schema(schema_type),
+                secret_prefix_override=secret_prefix_override,
             )
         except BaseException as e:
             logging.warning(
