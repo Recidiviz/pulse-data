@@ -14,41 +14,45 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
-"""
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+"""Defines a view that shows transfers to Community Reentry Centers (CRC)
+in ID."""
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
+from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
+    TaskCompletionEventType,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    DETAINER_TYPE_LST,
-    detainer_span,
+    IX_CRC_FACILITIES,
+    ix_crc_facilities_in_location_sessions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_NO_DETAINERS_FOR_CRC"
+_DESCRIPTION = """Defines a view that shows transfers to Community Reentry Centers (CRC)
+in ID."""
 
-_DESCRIPTION = """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
-"""
-# TODO(##23124): Determine Correct Detainer IDs
-_QUERY_TEMPLATE = f"""
-{detainer_span(DETAINER_TYPE_LST)}
+_QUERY_TEMPLATE = f"""WITH crc_spans AS (
+    {ix_crc_facilities_in_location_sessions(
+            crc_facilities_list=IX_CRC_FACILITIES)}
+)
+SELECT 
+    state_code,
+    person_id,
+    start_date AS completion_event_date,
+FROM (
+    {aggregate_adjacent_spans(table_name="crc_spans")}
+)
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
-        criteria_name=_CRITERIA_NAME,
-        criteria_spans_query_template=_QUERY_TEMPLATE,
-        description=_DESCRIPTION,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
+    StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_IX,
-        meets_criteria_default=True,
+        completion_event_type=TaskCompletionEventType.TRANSFER_TO_REENTRY_CENTER,
+        description=_DESCRIPTION,
+        completion_event_query_template=_QUERY_TEMPLATE,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 

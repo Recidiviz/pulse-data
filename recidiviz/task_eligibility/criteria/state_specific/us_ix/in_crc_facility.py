@@ -15,40 +15,44 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
+Defines a criteria span view that shows spans of time during which
+someone in ID is in a Community Reentry Center facility
 """
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    DETAINER_TYPE_LST,
-    detainer_span,
+    IX_CRC_FACILITIES,
+    ix_crc_facilities_in_location_sessions,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_NO_DETAINERS_FOR_CRC"
+_CRITERIA_NAME = "US_IX_IN_CRC_FACILITY"
 
 _DESCRIPTION = """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
+Defines a criteria span view that shows spans of time during which
+someone in ID is in a Community Reentry Center facility
 """
-# TODO(##23124): Determine Correct Detainer IDs
-_QUERY_TEMPLATE = f"""
-{detainer_span(DETAINER_TYPE_LST)}
-"""
+
+# TODO(#22998) Add PWCC' Unit 1 here once we know where to look
+
+_ADDITIONAL_COLUMNS = """TRUE AS meets_criteria,
+    TO_JSON(STRUCT(start_date AS crc_start_date, facility_name AS facility_name)) AS reason,"""
+
+_QUERY_TEMPLATE = ix_crc_facilities_in_location_sessions(
+    crc_facilities_list=IX_CRC_FACILITIES, additional_columns=_ADDITIONAL_COLUMNS
+)
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_IX,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        state_code=StateCode.US_IX,
-        meets_criteria_default=True,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 

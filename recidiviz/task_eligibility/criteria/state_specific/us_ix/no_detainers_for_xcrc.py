@@ -19,11 +19,15 @@ Defines a criteria view that currently incarcerated individuals
 who do not have an active detainer or hold for Idaho XCRC.
 """
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import detainer_span
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+    DETAINER_TYPE_LST,
+    HOLD_TYPE_LST,
+    detainer_span,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -34,9 +38,8 @@ Defines a criteria view that currently incarcerated individuals
 who do not have an active detainer or hold for Idaho XCRC.
 """
 # TODO(##23124): Determine Correct Detainer IDs
-_DETAINER_TYPE_LST = ["23", "32"]
 _QUERY_TEMPLATE = f"""
-{detainer_span(_DETAINER_TYPE_LST)}
+{detainer_span(DETAINER_TYPE_LST + HOLD_TYPE_LST)}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

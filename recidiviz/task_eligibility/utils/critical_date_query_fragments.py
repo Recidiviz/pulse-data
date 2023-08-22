@@ -186,6 +186,8 @@ def critical_date_exists_spans_cte() -> str:
 def is_past_full_term_completion_date(
     meets_criteria_leading_window_days: int = 0,
     compartment_level_1_filter: str = "SUPERVISION",
+    critical_date_column: str = "projected_completion_date_max",
+    critical_date_name_in_reason: str = "eligible_date",
 ) -> str:
     """
     Returns a criteria query that has spans of time when the projected completion date
@@ -199,6 +201,10 @@ def is_past_full_term_completion_date(
             `critical_date_has_passed_spans_cte` function.
         compartment_level_1_filter (str, optional): Either 'SUPERVISION' OR
             'INCARCERATION'. Defaults to "SUPERVISION".
+        critical_date_column (str, optional): The name of the column that contains the
+            critical date. Defaults to "projected_completion_date_max".
+        critical_date_name_in_reason (str, optional): The name of the critical date in
+            the reason column. Defaults to "eligible_date".
 
     Raises:
         ValueError: if compartment_level_1_filter is different from "supervision" or
@@ -223,7 +229,7 @@ def is_past_full_term_completion_date(
             person_id,
             start_date AS start_datetime,
             end_date AS end_datetime,
-            {revert_nonnull_end_date_clause('projected_completion_date_max')} AS critical_date
+            {revert_nonnull_end_date_clause(critical_date_column)} AS critical_date
         FROM `{{project_id}}.{{sessions_dataset}}.{compartment_level_1}_projected_completion_date_spans_materialized`
     ),
     {critical_date_has_passed_spans_cte(meets_criteria_leading_window_days)}
@@ -233,6 +239,6 @@ def is_past_full_term_completion_date(
         start_date,
         end_date,
         critical_date_has_passed AS meets_criteria,
-        TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+        TO_JSON(STRUCT(critical_date AS {critical_date_name_in_reason})) AS reason,
     FROM critical_date_has_passed_spans
     """

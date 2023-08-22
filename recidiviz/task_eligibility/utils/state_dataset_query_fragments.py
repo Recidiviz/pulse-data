@@ -185,3 +185,64 @@ def get_current_offenses() -> str:
         USING(person_id, state_code, sentences_preprocessed_id)
       WHERE sentences_preprocessed_id in UNNEST(sentences_preprocessed_id_array_projected_completion)
     """
+
+
+def x_time_from_ineligible_offense(
+    statutes_list: list,
+    date_part: str,
+    date_interval: int,
+    additional_where_clause: str = "",
+) -> str:
+    """
+    Generate a BigQuery SQL query to identify time spans where individuals
+    are ineligible for an opportunity due to ineligible charges/statutes.
+
+    Args:
+        statutes_list (list): A list of statutes to check for ineligibility.
+        date_part (str): The unit of time for the date interval, e.g., 'DAY', 'MONTH', 'YEAR'.
+        date_interval (int): The duration of the interval to add to start_date.
+        additional_where_clause (str): An optional clause to add to the WHERE clause of
+            the query.
+
+
+    Returns:
+        str: A formatted BigQuery SQL query that identifies time spans without ineligible statutes.
+
+    Example usage:
+        query = x_time_without_ineligible_statute(statutes_list=['statute1', 'statute2'],
+                                                  date_part='DAY', date_interval=30)
+    """
+
+    statutes_string = "('" + "', '".join(statutes_list) + "')"
+
+    return f"""ineligible_sentences AS (
+    SELECT 
+        state_code,
+        person_id, 
+        effective_date AS start_date,
+        DATE_ADD(effective_date, INTERVAL {date_interval} {date_part}) AS end_date,
+        statute,
+        #TODO(#23423): make sure we are using the right date
+        effective_date,
+        description
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` 
+    WHERE statute IS NOT NULL
+        AND statute IN {statutes_string}
+        AND effective_date IS NOT NULL
+        AND effective_date NOT IN ('9999-12-31', '9999-12-20')
+        {additional_where_clause}
+),
+
+{create_sub_sessions_with_attributes('ineligible_sentences')}
+
+SELECT 
+  state_code, 
+  person_id,
+  start_date, 
+  end_date,
+  FALSE AS meets_criteria,
+  TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
+                 ARRAY_AGG(DISTINCT description) AS ineligible_offenses_descriptions,
+                 MAX(effective_date) AS most_recent_statute_date)) AS reason,
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4,5"""

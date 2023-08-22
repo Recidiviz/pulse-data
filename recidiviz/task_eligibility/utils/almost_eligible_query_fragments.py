@@ -114,18 +114,19 @@ def one_criteria_away_from_eligibility(
         EXCEPT(criteria_value)
         """
 
-    return f"""SELECT
-        * {criteria_value_except_clause}
-    FROM (SELECT
-            * EXCEPT(array_reasons),
-            {criteria_value_query_fragment}
-        FROM {cte_table}
-        WHERE 
-            -- keep if only ineligible criteria is criteria_name
-            '{criteria_name}' IN UNNEST(ineligible_criteria) 
-            AND ARRAY_LENGTH(ineligible_criteria) = 1
-)
-{criteria_value_where_clause}"""
+    return f"""    SELECT
+            * {criteria_value_except_clause}
+        FROM (SELECT
+                * EXCEPT(array_reasons),
+                {criteria_value_query_fragment}
+            FROM {cte_table}
+            WHERE 
+                -- keep if only ineligible criteria is criteria_name
+                '{criteria_name}' IN UNNEST(ineligible_criteria) 
+                AND ARRAY_LENGTH(ineligible_criteria) = 1
+            )
+{criteria_value_where_clause}
+"""
 
 
 def x_time_away_from_eligibility(
@@ -180,6 +181,6 @@ def clients_eligible(from_cte: str) -> str:
             containing all the current eligibility spans of the relevant population
 
     """
-    return f"""SELECT *
-    FROM {from_cte}
-    WHERE is_eligible"""
+    return f"""    SELECT *
+        FROM {from_cte}
+        WHERE is_eligible"""

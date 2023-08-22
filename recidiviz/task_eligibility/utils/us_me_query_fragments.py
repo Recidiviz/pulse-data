@@ -201,7 +201,9 @@ def cis_425_program_enrollment_notes(
         str: SQL query
     """
 
-    return f"""SELECT
+    return f"""
+    -- Program enrollment data as notes
+    SELECT 
         mp.CIS_100_CLIENT_ID AS external_id,
         {criteria} AS criteria,
         {note_title} AS note_title,
@@ -318,7 +320,8 @@ def cis_201_case_plan_case_notes() -> str:
         str: Query that surfaces case plan goals for incarcerated individuals in ME.
     """
 
-    _FINAL_SELECT = """SELECT
+    _FINAL_SELECT = """
+    SELECT  
         Cis_200_Cis_100_Client_Id AS external_id,
         "Case Plan Goals" AS criteria,
         CONCAT(Domain_Goal_Desc,' - ', Goal_Status_Desc) AS note_title,
@@ -330,8 +333,8 @@ def cis_201_case_plan_case_notes() -> str:
     FROM
     """
 
-    return f"""{_FINAL_SELECT} (
-            SELECT 
+    return f"""
+    {_FINAL_SELECT} (SELECT 
                 *
             FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_201_GOALS_latest` gl
             INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2012_GOAL_STATUS_TYPE_latest` gs
@@ -340,8 +343,7 @@ def cis_201_case_plan_case_notes() -> str:
                 ON gl.Cis_2010_Goal_Type_Cd = gt.Goal_Type_Cd
             INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2011_DOMAIN_GOAL_TYPE_latest` dg
                 ON gl.Cis_2011_Dmn_Goal_Cd = dg.Domain_Goal_Cd
-            WHERE gs.Goal_Status_Cd IN ('1','2')
-            ) 
+            WHERE gs.Goal_Status_Cd IN ('1','2')) 
     """
 
 

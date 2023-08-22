@@ -20,6 +20,7 @@ can be parameterized.
 from typing import List, Optional
 
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -210,4 +211,59 @@ def get_supervision_level_is_not_criteria_query(
         criteria_spans_query_template=criteria_query,
         sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
+    )
+
+
+def get_custody_level_is_criteria_query(
+    criteria_name: str,
+    description: str,
+    custody_levels: list,
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """
+
+    Args:
+        criteria_name (str): Criteria query name
+        description (str): Criteria query description
+        custody_level (list): Custody levels in custody_level_sessions.
+
+    Returns:
+        StateAgnosticTaskCriteriaBigQueryViewBuilder: Returns a state agnostic criteria
+        view builder indicating spans of time when a person is in custody_level
+        |custody_level| as tracked by our `sessions` dataset
+
+
+    """
+
+    custody_levels_str = "('" + "', '".join(custody_levels) + "')"
+
+    criteria_query = f"""
+    WITH custody_level_spans AS (
+        SELECT
+                state_code,
+                person_id,
+                start_date,
+                end_date_exclusive AS end_date,
+                custody_level,
+        FROM
+            `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
+        WHERE
+            custody_level IN {custody_levels_str}
+    )
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            TRUE AS meets_criteria,
+            TO_JSON(STRUCT(custody_level AS custody_level)) AS reason,
+        FROM 
+            ({aggregate_adjacent_spans(table_name='custody_level_spans',
+                                       attribute='custody_level')})
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        description=description,
+        criteria_spans_query_template=criteria_query,
+        sessions_dataset=SESSIONS_DATASET,
     )

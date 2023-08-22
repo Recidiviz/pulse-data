@@ -1,0 +1,106 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""
+Queries information needed to surface eligible folks to be sent to work-release in an ID
+CRC. This means they could be transferred into the facility to live there and work outside
+the facility.
+"""
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    array_agg_case_notes_by_external_id,
+    join_current_task_eligibility_spans_with_external_id,
+    opportunity_query_final_select_with_case_notes,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_spans_state_specific_dataset,
+)
+from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
+    clients_eligible,
+)
+from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+    INSTITUTIONAL_BEHAVIOR_NOTES_STR,
+    ix_general_case_notes,
+    ix_offender_alerts_case_notes,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_NAME = (
+    "us_ix_transfer_to_crc_work_release_request_record"
+)
+
+US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_DESCRIPTION = """
+Queries information needed to surface eligible folks to be sent to work-release in an ID
+CRC. This means they could be transferred into the facility to live there and work outside
+the facility.
+"""
+
+US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_QUERY_TEMPLATE = f"""
+WITH current_incarcerated_population AS (
+    -- Keep only current incarcerated individuals
+    {join_current_task_eligibility_spans_with_external_id(
+        state_code= "'US_IX'", 
+        tes_task_query_view = 'transfer_to_crc_work_release_request_materialized',
+        id_type = "'US_IX_DOC'")}),
+
+    eligible_and_almost_eligible AS (
+        -- ELIGIBLE
+    {clients_eligible(from_cte = 'current_incarcerated_population')}
+    ),
+
+    case_notes_cte AS (
+    -- Offender alerts
+    {ix_offender_alerts_case_notes()}
+
+    UNION ALL
+
+    -- Institutional Behavior Notes
+        -- Corrective Action
+    {ix_general_case_notes(where_clause_addition="AND ContactModeDesc = 'Corrective Action'", 
+                           criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR)}
+    ),
+
+    array_case_notes_cte AS (
+    {array_agg_case_notes_by_external_id()}
+    )
+
+{opportunity_query_final_select_with_case_notes()}
+"""
+
+US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
+    view_id=US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_NAME,
+    view_query_template=US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_QUERY_TEMPLATE,
+    description=US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_DESCRIPTION,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
+        StateCode.US_IX
+    ),
+    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
+    ),
+    should_materialize=True,
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER.build_and_print()
