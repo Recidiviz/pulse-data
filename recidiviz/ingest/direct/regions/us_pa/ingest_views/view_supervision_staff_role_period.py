@@ -66,7 +66,7 @@ SELECT DISTINCT
         THEN officer_start_dates.start_date
         ELSE supervisor_start_dates.start_date
     END AS start_date,
-    NULL as end_date  -- assume people are still employed since they showed up in recent roster
+    CAST(NULL AS STRING) as end_date  -- assume people are still employed since they showed up in recent roster
 FROM officer_start_dates
 JOIN supervisor_start_dates
 USING(Employ_Num)
