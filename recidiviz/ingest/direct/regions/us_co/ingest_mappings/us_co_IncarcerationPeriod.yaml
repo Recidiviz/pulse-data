@@ -129,6 +129,7 @@ output:
                   - "A2" # CO Discharge Return with NC
                   - "A4" # Probation Violator
                   - "A5" # Returned from Bond
+                  - "A6" # Court Order Return with NC
                   - "A7" # Probation Violator with NC
                   - "A8" # New Conviction
                   - "A9" # Possible Parole Violator (PPV)
@@ -211,8 +212,6 @@ output:
                   - "V3" # From ICC
                   - "V4" # From Other Jurisdiction
                   - "V5" # From ISP-I
-                StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN:
-                  - "A6" # Unknown. TODO(#23268): Identify what this REASONFORMOVEMENT should be mapped to.
           admission_reason:
             $enum_mapping:
               $raw_text: start_code
