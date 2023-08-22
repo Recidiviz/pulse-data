@@ -46,7 +46,7 @@ class CloudSQLProxyControl:
         *,
         schema_type: SchemaType,
         prompt: Optional[bool] = True,
-        secret_prefix_override: Optional[str] = None,
+        secret_prefix_override: Optional[str],
     ) -> str:
         connection_string = SQLAlchemyEngineManager.get_full_cloudsql_instance_id(
             schema_type=schema_type, secret_prefix_override=secret_prefix_override

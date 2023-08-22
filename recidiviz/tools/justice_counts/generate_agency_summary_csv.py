@@ -31,6 +31,7 @@ from typing import Any, Dict, List
 import pandas as pd
 
 from recidiviz.auth.auth0_client import Auth0Client
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -141,8 +142,13 @@ def generate_agency_summary_csv() -> None:
     auth0_users = auth0_client.get_all_users()
     auth0_user_id_to_user = {user["user_id"]: user for user in auth0_users}
 
-    with cloudsql_proxy_control.connection(schema_type=schema_type):
-        with SessionFactory.for_proxy(database_key) as session:
+    with cloudsql_proxy_control.connection(
+        schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+    ):
+        with SessionFactory.for_proxy(
+            database_key=database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+        ) as session:
             agencies = session.execute(
                 "select * from source where type = 'agency'"
             ).all()
