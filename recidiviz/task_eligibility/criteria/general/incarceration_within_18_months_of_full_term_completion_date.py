@@ -15,40 +15,38 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 18 months of their full term completion date.
 """
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.common.constants.states import StateCode
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateSpecificTaskCriteriaBigQueryViewBuilder,
+    StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    DETAINER_TYPE_LST,
-    detainer_span,
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    is_past_full_term_completion_date,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_NO_DETAINERS_FOR_CRC"
+_CRITERIA_NAME = "INCARCERATION_WITHIN_18_MONTHS_OF_FULL_TERM_COMPLETION_DATE"
 
 _DESCRIPTION = """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
-"""
-# TODO(##23124): Determine Correct Detainer IDs
-_QUERY_TEMPLATE = f"""
-{detainer_span(DETAINER_TYPE_LST)}
+Defines a criteria span view that shows spans of time during which
+someone is incarcerated within 18 months of their full term completion date.
 """
 
-VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    StateSpecificTaskCriteriaBigQueryViewBuilder(
+_QUERY_TEMPLATE = f"""
+{is_past_full_term_completion_date(compartment_level_1_filter='INCARCERATION',
+                                   meets_criteria_leading_window_days=548,
+                                   critical_date_name_in_reason='full_term_completion_date')}
+"""
+
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        state_code=StateCode.US_IX,
-        meets_criteria_default=True,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 

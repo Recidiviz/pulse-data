@@ -438,7 +438,8 @@ def spans_within_x_and_y_months_of_start_date(
 
     Args:
         x_months (int): Number of months to add to the start_date.
-        y_months (int): Number of months to add to the start_date.
+        y_months (int): Number of months to add to the start_date. If None, start_date_plus_y_months
+            will be set to '9999-12-31'.
         start_date_plus_x_months_name_in_reason_blob (str): Name of the start_date_plus_x_months field in the reason blob.
         table_view (str): Name of the table or view to query.
         dataset (str): BigQuery dataset.
@@ -452,6 +453,11 @@ def spans_within_x_and_y_months_of_start_date(
         query = spans_within_x_and_y_months_of_start_date(3, 6, "start_date_plus_3_months", "my_table_view")
     """
 
+    if y_months is None:
+        start_date_plus_y_months = "CAST('9999-12-31' AS DATE)"
+    else:
+        start_date_plus_y_months = f"DATE_ADD(start_date, INTERVAL {y_months} MONTH)"
+
     where_clause_additions_sql: str = ""
     if where_clause_additions:
         where_clause_additions_sql = "AND " + " AND ".join(list(where_clause_additions))
@@ -461,7 +467,7 @@ def spans_within_x_and_y_months_of_start_date(
             state_code,
             person_id,
             DATE_ADD(start_date, INTERVAL {x_months} MONTH) AS start_date_plus_x_months,
-            DATE_ADD(start_date, INTERVAL {y_months} MONTH) AS start_date_plus_y_months,
+            {start_date_plus_y_months} AS start_date_plus_y_months,
             {nonnull_end_date_clause('end_date')} AS end_date,
         FROM `{{{project_id}}}.{{{dataset}}}.{table_view}`
         WHERE meets_criteria=True
@@ -513,6 +519,7 @@ def spans_within_x_and_y_months_of_end_date(
             LEAD(start_date) OVER(PARTITION BY state_code, person_id 
                                   ORDER BY {nonnull_end_date_clause('end_date')})
                 AS lead_start_date,
+            # TODO(#23420): Use end_date exclusive instead of end_date
             DATE_ADD({nonnull_end_date_clause('end_date')}, INTERVAL {x_months} MONTH) AS end_date_plus_x_months,
             DATE_ADD({nonnull_end_date_clause('end_date')}, INTERVAL {y_months} MONTH) AS end_date_plus_y_months,
         FROM `{{{project_id}}}.{{{dataset}}}.{table_view}`

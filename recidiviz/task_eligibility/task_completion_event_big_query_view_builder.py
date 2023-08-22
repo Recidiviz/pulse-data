@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ class TaskCompletionEventType(Enum):
     SCHEDULED_HEARING_OCCURRED = "SCHEDULED_HEARING_OCCURRED"
     GRANTED_WORK_RELEASE = "GRANTED_WORK_RELEASE"
     GRANTED_FURLOUGH = "GRANTED_FURLOUGH"
+    TRANSFER_TO_REENTRY_CENTER = "TRANSFER_TO_REENTRY_CENTER"
 
 
 class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):

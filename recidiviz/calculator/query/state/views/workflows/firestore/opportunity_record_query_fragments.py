@@ -16,7 +16,10 @@
 #  =============================================================================
 " Helper SQL fragments that can be re-used for several opportunity queries."
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_exclusive_clause,
+    today_between_start_date_and_nullable_end_date_exclusive_clause,
+)
 
 
 def join_current_task_eligibility_spans_with_external_id(
@@ -34,7 +37,7 @@ def join_current_task_eligibility_spans_with_external_id(
         tes_task_query_view (str): The task query view that we're interested in querying.
             E.g. 'work_release_materialized'.
     """
-    return f"""    SELECT
+    return f"""SELECT
         pei.external_id,
         tes.person_id,
         tes.state_code,
@@ -73,14 +76,14 @@ def array_agg_case_notes_by_external_id(
     """
 
     return f"""    SELECT
-      external_id,
-      -- Group all notes into an array within a JSON
-      TO_JSON(ARRAY_AGG( STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
-  FROM {from_cte}
-  LEFT JOIN {left_join_cte}
-    USING(external_id)
-  WHERE criteria IS NOT NULL
-  GROUP BY 1 """
+            external_id,
+            -- Group all notes into an array within a JSON
+            TO_JSON(ARRAY_AGG( STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
+        FROM {from_cte}
+        LEFT JOIN {left_join_cte}
+            USING(external_id)
+        WHERE criteria IS NOT NULL
+        GROUP BY 1"""
 
 
 def opportunity_query_final_select_with_case_notes(
@@ -105,3 +108,27 @@ def opportunity_query_final_select_with_case_notes(
     LEFT JOIN {left_join_cte}
         USING(external_id)
   """
+
+
+def current_employment_case_notes(state_code: str) -> str:
+    """Returns a CTE containing all current employment periods as case notes.
+
+    Args:
+        state_code (str): State code. The final statement will filter out all other states.
+    """
+
+    return f"""    SELECT
+            external_id,
+            "Current Employment" AS criteria,
+            employment_status_raw_text AS note_title,
+            CONCAT("Employer: ", 
+                    employer_name,
+                    ' - ',
+                    "Job title: ",
+                    job_title) AS note_body,
+            start_date AS event_date,
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period`
+        WHERE state_code = '{state_code}'
+            AND {today_between_start_date_and_nullable_end_date_exclusive_clause('start_date', 
+                                                                                 'end_date')}
+"""

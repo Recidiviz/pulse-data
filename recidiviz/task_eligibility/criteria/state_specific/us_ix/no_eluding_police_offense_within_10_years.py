@@ -13,41 +13,50 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
+# ============================================================================
 """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
+This file creates a spans of time where a person is ineligible if they have an IX eluding 
+police offense within the last 10 years.
 """
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    DETAINER_TYPE_LST,
-    detainer_span,
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    x_time_from_ineligible_offense,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_NO_DETAINERS_FOR_CRC"
+_CRITERIA_NAME = "US_IX_NO_ELUDING_POLICE_OFFENSE_WITHIN_10_YEARS"
 
 _DESCRIPTION = """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
+This file creates a spans of time where a person is ineligible if they have an IX eluding 
+police offense within the last 10 years.
 """
-# TODO(##23124): Determine Correct Detainer IDs
-_QUERY_TEMPLATE = f"""
-{detainer_span(DETAINER_TYPE_LST)}
+_INELIGIBLE_STATUTES = [
+    "I49-1404(1)",
+    "I49-1404 {{F}}",
+    "I49-1404(2)",
+    "I49-1404 {{F}} AB",
+    "I49-1404(2)(A)",
+]
+_WHERE_CLAUSE = "AND state_code = 'US_IX'"
+
+_QUERY_TEMPLATE = f"""WITH {x_time_from_ineligible_offense(statutes_list = _INELIGIBLE_STATUTES,
+                                                              date_part='YEAR',
+                                                              date_interval=10,
+                                                              additional_where_clause = _WHERE_CLAUSE)}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
+        state_code=StateCode.US_IX,
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
-        state_code=StateCode.US_IX,
+        sessions_dataset=SESSIONS_DATASET,
         meets_criteria_default=True,
     )
 )

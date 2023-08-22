@@ -15,30 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
+Defines a criteria span view that shows spans of time during which
+someone is within 1 year of their tentative parole date.
 """
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
-    DETAINER_TYPE_LST,
-    detainer_span,
-)
+from recidiviz.task_eligibility.utils.us_ix_query_fragments import date_within_time_span
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_NO_DETAINERS_FOR_CRC"
+_CRITERIA_NAME = "US_IX_TENTATIVE_PAROLE_DATE_WITHIN_6_MONTHS"
 
 _DESCRIPTION = """
-Defines a criteria view that currently incarcerated individuals
-who do not have an active felony detainer for Idaho CRC.
+Defines a criteria span view that shows spans of time during which
+someone is within 6 months of their tentative parole date.
 """
-# TODO(##23124): Determine Correct Detainer IDs
+
 _QUERY_TEMPLATE = f"""
-{detainer_span(DETAINER_TYPE_LST)}
+{date_within_time_span(meets_criteria_leading_window_days=183,
+                        critical_date_column='tentative_parole_date')}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -48,7 +46,6 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         state_code=StateCode.US_IX,
-        meets_criteria_default=True,
     )
 )
 
