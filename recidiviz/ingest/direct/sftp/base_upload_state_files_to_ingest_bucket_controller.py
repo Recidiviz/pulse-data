@@ -22,8 +22,6 @@ import os
 from multiprocessing.pool import ThreadPool
 from typing import List, Optional, Tuple
 
-from google.cloud import tasks_v2
-
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.results import MultiRequestResultWithSkipped
@@ -35,8 +33,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-
-QUEUE_STATE_ENUM = tasks_v2.Queue.State
 
 
 class UploadStateFilesToIngestBucketDelegate:
