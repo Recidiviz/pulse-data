@@ -51,12 +51,13 @@ QUERY_PAGE_SIZE = 10000
 
 DEFAULT_DATA_VALUE = 0
 
-# We set this to 10 because urllib3 (used by the Google BigQuery client) has an default limit of 10 connections and
-# we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
+# We set this to lower than 10 because urllib3 (used by Google BigQuery client) has a default limit of 10 connections,
+# and we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
 # increased.
 # In the future, we could increase the worker number by playing around with increasing the pool size per this post:
 # https://github.com/googleapis/python-storage/issues/253
-OPTIMIZED_VIEW_EXPORTER_MAX_WORKERS = 10
+# Setting to 5 workers to reduce pod memory usage
+OPTIMIZED_VIEW_EXPORTER_MAX_WORKERS = 5
 
 
 @attr.s(frozen=True)
