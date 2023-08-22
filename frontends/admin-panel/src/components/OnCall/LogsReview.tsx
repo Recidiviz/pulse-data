@@ -20,6 +20,7 @@ import {
   Card,
   Checkbox,
   Collapse,
+  Descriptions,
   Divider,
   Form,
   Radio,
@@ -29,21 +30,34 @@ import {
   Typography,
 } from "antd";
 import {
+  AlignLeftOutlined,
+  BookOutlined,
   CheckCircleOutlined,
   FileAddOutlined,
   FileSearchOutlined,
   MinusCircleOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components/macro";
-import moment from "moment";
+import moment from "moment-timezone";
 import { Loading } from "@recidiviz/design-system";
 import newGithubIssueUrl from "new-github-issue-url";
+import { CheckboxValueType } from "antd/es/checkbox/Group";
+import { CheckboxChangeEvent } from "antd/es/checkbox";
 import { fetchOncallLogs } from "../../AdminPanelAPI/OnCall";
-import { gcpEnvironment } from "../Utilities/EnvironmentUtilities";
+import { ErrorInstance, RequestTrace } from "./types";
+import {
+  buildLogsExplorerUrl,
+  formatTimestamp,
+  getIssueTitle,
+  getRequestsQuery,
+  getStatusCodeTitle,
+  getTraceQuery,
+} from "./utils";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 const CodeBlock = styled.pre`
+  font-size: smaller;
   padding: 0.4em 0.6em;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -58,81 +72,46 @@ const CollapsePanelWithFullWidthHeader = styled(Collapse.Panel)`
   }
 `;
 
-type RequestTrace = {
-  timestamp: string;
-  trace: string;
-};
-
-type ErrorInstance = {
-  method: string;
-  status: string;
-  url: string;
-  errorLogs: string[];
-  latestResponse: string;
-  earliestResponse: string;
-  sinceSucceededTimestamp: string;
-  traces: RequestTrace[];
-};
-
 type ErrorInstanceProps = {
   instance: ErrorInstance;
 };
-
-function getIssueTitle(instance: ErrorInstance): string {
-  return `${instance.status} ${instance.method} \`${instance.url}\``;
-}
-
 const ErrorInstanceHeader = ({ instance }: ErrorInstanceProps) => {
   const tag = instance.sinceSucceededTimestamp ? (
     <Tag icon={<CheckCircleOutlined />} color="success">
-      A 200 response was recorded on {instance.sinceSucceededTimestamp}
+      200 seen: {formatTimestamp(instance.sinceSucceededTimestamp)}
     </Tag>
-  ) : (
-    <Tag icon={<MinusCircleOutlined />} color="error">
-      Last seen: {instance.latestResponse}
-    </Tag>
-  );
+  ) : null;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
-      <div>
+    <>
+      <code>
+        <Text strong>{instance.method}</Text>{" "}
+        <Text ellipsis style={{ maxWidth: "65vw" }}>
+          {instance.url}
+        </Text>
+      </code>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <code>
-          <Text strong>
-            {instance.status} {instance.method}
+          <Text strong>{instance.status} </Text>
+          <Text type="secondary">
+            {getStatusCodeTitle(parseInt(instance.status))}
           </Text>{" "}
-          <Text>{instance.url}</Text>
         </code>
-        <br />
-        {tag}
+        <aside>
+          {tag}
+          <Tag icon={<MinusCircleOutlined />} color="error">
+            Last seen: {formatTimestamp(instance.latestResponse)}
+          </Tag>
+        </aside>
       </div>
-      <Space size="small">
-        <Button
-          href={`https://github.com/recidiviz/pulse-data/issues?q=${encodeURIComponent(
-            getIssueTitle(instance)
-          )}`}
-          target="_blank"
-        >
-          <FileSearchOutlined /> Search Issues
-        </Button>
-        <Button
-          href={newGithubIssueUrl({
-            user: "Recidiviz",
-            repo: "pulse-data",
-            title: getIssueTitle(instance),
-            template: "bug_report.md",
-          })}
-          target="_blank"
-        >
-          <FileAddOutlined /> Open Issue
-        </Button>
-      </Space>
-    </div>
+    </>
   );
 };
 const TraceTableColumns = [
@@ -153,22 +132,9 @@ const TraceTableColumns = [
   },
 ];
 
-const getTraceQuery = (trace: RequestTrace): string => {
-  return `trace = "${trace.trace}"`;
-};
-
 const TraceLink = ({ trace }: { trace: RequestTrace }) => {
-  const projectId = gcpEnvironment.isProduction
-    ? "recidiviz-123"
-    : "recidiviz-staging";
-
   return (
-    <Button
-      target="_blank"
-      href={`https://console.cloud.google.com/logs/query;query=${encodeURIComponent(
-        getTraceQuery(trace)
-      )}?project=${projectId}`}
-    >
+    <Button target="_blank" href={buildLogsExplorerUrl(getTraceQuery(trace))}>
       View Logs
     </Button>
   );
@@ -180,6 +146,64 @@ const ERROR_INSTANCE_TAB_LIST = [
   { key: "summary", tab: "Summary" },
   { key: "traces", tab: "Traces" },
 ];
+
+const ErrorInstanceInfo = ({ instance }: ErrorInstanceProps) => {
+  const url = new URL(instance.url, window.location.href);
+  return (
+    <>
+      <Title level={5}>
+        <samp>{url.pathname}</samp>{" "}
+      </Title>{" "}
+      <Descriptions bordered column={3}>
+        {Array.from(url.searchParams.entries()).map(
+          ([key, value]: [string, string]) => (
+            <>
+              <Descriptions.Item label={<Text strong>{key}</Text>} span={3}>
+                <samp>{value}</samp>
+              </Descriptions.Item>
+            </>
+          )
+        )}
+      </Descriptions>
+      <br />
+      <Space>
+        {instance.resource.type === "gae_app" ? (
+          <Button
+            href={`https://app.gitbook.com/o/-MS0FZPVqDyJ1aem018G/s/-MRvK9sMirb5JcYHAkjo-887967055/endpoint-catalog${url.pathname}`}
+            target="_blank"
+          >
+            <BookOutlined /> Endpoint Documentation
+          </Button>
+        ) : null}
+        <Button
+          href={buildLogsExplorerUrl(getRequestsQuery(instance))}
+          target="_blank"
+        >
+          <AlignLeftOutlined /> Recent Logs
+        </Button>
+        <Button
+          href={`https://github.com/recidiviz/pulse-data/issues?q=${encodeURIComponent(
+            getIssueTitle(instance)
+          )}`}
+          target="_blank"
+        >
+          <FileSearchOutlined /> Search Issues
+        </Button>
+        <Button
+          href={newGithubIssueUrl({
+            user: "Recidiviz",
+            repo: "pulse-data",
+            title: getIssueTitle(instance),
+            template: "bug_report.md",
+          })}
+          target="_blank"
+        >
+          <FileAddOutlined /> Open Issue
+        </Button>
+      </Space>
+    </>
+  );
+};
 
 const ErrorInstanceComponent = ({ instance }: ErrorInstanceProps) => {
   const [activeTabKey, setActiveTabKey] =
@@ -193,9 +217,16 @@ const ErrorInstanceComponent = ({ instance }: ErrorInstanceProps) => {
   });
 
   const contentList = {
-    summary: instance.errorLogs.map((message: string) => {
-      return <CodeBlock>{message}</CodeBlock>;
-    }),
+    summary: (
+      <>
+        <ErrorInstanceInfo instance={instance} />
+        <Divider />
+        <Title level={5}>Error logs</Title>
+        {instance.errorLogs.map((message: string) => {
+          return <CodeBlock>{message}</CodeBlock>;
+        })}
+      </>
+    ),
     traces: <Table dataSource={traces} columns={TraceTableColumns} />,
   };
 
@@ -215,6 +246,20 @@ const ErrorInstanceComponent = ({ instance }: ErrorInstanceProps) => {
 
 type ErrorInstancesByDate = Record<string, ErrorInstance[]>;
 
+const NOISY_STATUSES = [400, 403, 404, 405, 409, 429, 431, 499, 502].map(
+  (code) => ({
+    label: (
+      <>
+        <Text strong>{code}</Text>{" "}
+        <Text type="secondary">
+          <small>{getStatusCodeTitle(code)}</small>
+        </Text>
+      </>
+    ) as React.ReactNode,
+    value: code,
+  })
+);
+
 const Component: React.FC = () => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [results, setResults] = React.useState<ErrorInstancesByDate>({});
@@ -227,7 +272,9 @@ const Component: React.FC = () => {
         const errorsByLastResponseDate: Record<string, ErrorInstance[]> =
           data.reduce(
             (memo: Record<string, ErrorInstance[]>, result: ErrorInstance) => {
-              const date = moment(result.latestResponse).format("LL");
+              const date = moment(result.latestResponse)
+                .tz(moment.tz.guess())
+                .format("LL");
               return {
                 ...memo,
                 [date]: memo[date] ? [...memo[date], result] : [result],
@@ -239,10 +286,34 @@ const Component: React.FC = () => {
         setResults(errorsByLastResponseDate);
       });
   }
+  const [form] = Form.useForm();
+  const view = Form.useWatch("view", form);
+  const statuses = Form.useWatch("ignored_statuses", form);
 
   React.useEffect(() => {
-    requestOnCallLogs({ view: "direct_ingest" });
-  }, []);
+    form.submit();
+  }, [form]);
+
+  const [checkAll, setCheckAll] = React.useState(false);
+  const [indeterminate, setIndeterminate] = React.useState(true);
+
+  const onChange = (list: CheckboxValueType[]) => {
+    form.setFieldsValue({
+      statuses: list,
+    });
+    setIndeterminate(!!list.length && list.length < NOISY_STATUSES.length);
+    setCheckAll(list.length === NOISY_STATUSES.length);
+  };
+
+  const onCheckAllChange = (e: CheckboxChangeEvent) => {
+    form.setFieldsValue({
+      statuses: e.target.checked
+        ? NOISY_STATUSES.map((option) => option.value)
+        : [],
+    });
+    setIndeterminate(false);
+    setCheckAll(e.target.checked);
+  };
 
   return (
     <>
@@ -250,11 +321,22 @@ const Component: React.FC = () => {
 
       <Card>
         <Form
-          layout="vertical"
-          initialValues={{ view: "direct_ingest" }}
+          layout="horizontal"
+          labelCol={{ span: 4 }}
+          wrapperCol={{ span: 18 }}
+          initialValues={{
+            view: "direct_ingest",
+            ignored_statuses: NOISY_STATUSES.map((option) => option.value),
+            cloud_run_services: [
+              "application-data-import",
+              "asset-generation",
+              "case-triage-web",
+            ],
+          }}
           onFinish={requestOnCallLogs}
+          form={form}
         >
-          <Form.Item name="view" label="Logs To View">
+          <Form.Item name="view" label="Services">
             <Radio.Group
               options={[
                 { label: "Direct Ingest", value: "direct_ingest" },
@@ -264,10 +346,46 @@ const Component: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item name="show_resolved" valuePropName="checked">
+          {view === "cloud_run" ? (
+            <Form.Item name="cloud_run_services" wrapperCol={{ offset: 4 }}>
+              <Checkbox.Group
+                options={[
+                  {
+                    label: "Application Data Import",
+                    value: "application-data-import",
+                  },
+                  { label: "Asset Generation", value: "asset-generation" },
+                  { label: "Case Triage", value: "case-triage-web" },
+                  { label: "Justice Counts", value: "justice-counts-web" },
+                ]}
+              />
+            </Form.Item>
+          ) : null}
+
+          <Form.Item name="ignored_statuses" label="Ignored statuses">
+            <Checkbox
+              indeterminate={indeterminate}
+              onChange={onCheckAllChange}
+              checked={checkAll}
+            >
+              Check all
+            </Checkbox>
+            <Checkbox.Group
+              options={NOISY_STATUSES}
+              onChange={onChange}
+              value={statuses}
+              style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="show_resolved"
+            valuePropName="checked"
+            wrapperCol={{ offset: 4 }}
+          >
             <Checkbox>Show Resolved Issues</Checkbox>
           </Form.Item>
-          <Form.Item>
+          <Form.Item wrapperCol={{ offset: 4 }}>
             <Button type="primary" htmlType="submit">
               Search
             </Button>

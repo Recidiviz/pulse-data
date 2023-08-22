@@ -29,14 +29,13 @@ WITH requests_by_status_code AS (
     httpRequest.requestUrl AS url,
     httpRequest.requestMethod AS method,
     httpRequest.status AS status,
-    ANY_VALUE(resource.type) AS resource,
+    ANY_VALUE(resource) AS resource,
     COUNT(*) AS request_count,
     MAX(timestamp) AS latest_response,
     ARRAY_AGG(
       STRUCT (timestamp, trace)
       ORDER BY timestamp DESC
     ) AS traces
-
   FROM `{project_id}.{on_call_logs_dataset}.{requests_table}`
   WHERE timestamp >= DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)
   GROUP BY 1, 2, 3
@@ -47,6 +46,7 @@ WITH requests_by_status_code AS (
       status,
       request_count, 
       latest_response,
+      ANY_VALUE(requests_by_status_code.resource) AS resource,
       ANY_VALUE(requests_by_status_code.traces) AS traces,
       (
         SELECT MAX(success_requests.latest_response)
@@ -62,8 +62,10 @@ WITH requests_by_status_code AS (
     LEFT OUTER JOIN `{project_id}.{on_call_logs_dataset}.{traces_table}` trace_errors
       ON trace_errors.trace = trace.trace
       AND trace_errors.severity = "ERROR"
-    WHERE requests_by_status_code.status NOT IN  (200, 302, 304, 400, 404, 405)
+    WHERE CAST(requests_by_status_code.status AS INT64) > 399
+    AND {status_filter}
     AND {view_filter}
+    {cloud_run_service_filter}
     GROUP BY 1, 2, 3, 4, 5
     ORDER BY requests_by_status_code.latest_response DESC
 )
@@ -86,7 +88,14 @@ class OnCallLogsSearch:
     def __init__(self) -> None:
         self.client: BigQueryClient = BigQueryClientImpl()
 
-    def query(self, view: LogsView, show_resolved: bool = False) -> list[dict]:
+    def query(
+        self,
+        view: LogsView,
+        cloud_run_services: list[str],
+        ignored_statuses: list[str],
+        show_resolved: bool = False,
+    ) -> list[dict]:
+        """Searches BigQuery for request logs"""
         view_filter = 'STARTS_WITH(requests_by_status_code.url, "/direct/")'
 
         if view == LogsView.APP_ENGINE:
@@ -95,10 +104,15 @@ class OnCallLogsSearch:
         if view == LogsView.CLOUD_RUN:
             requests_table = "run_googleapis_com_requests"
             traces_table = "python"
-            view_filter = 'requests_by_status_code.resource = "cloud_run_revision"'
+            view_filter = 'requests_by_status_code.resource.type = "cloud_run_revision"'
+            service_filter = (
+                f"AND requests_by_status_code.resource.labels.service_name IN"
+                f' ({",".join(map(repr, cloud_run_services))})'
+            )
         else:
             requests_table = "appengine_googleapis_com_nginx_request"
             traces_table = "app"
+            service_filter = ""
 
         query_builder = BigQueryQueryBuilder(address_overrides=None)
         query = query_builder.build_query(
@@ -112,6 +126,8 @@ class OnCallLogsSearch:
                 if show_resolved
                 else "since_succeeded_timestamp is null",
                 "view_filter": view_filter,
+                "status_filter": f"requests_by_status_code.status NOT IN ({','.join(map(str, ignored_statuses))})",
+                "cloud_run_service_filter": service_filter or "",
             },
         )
 
