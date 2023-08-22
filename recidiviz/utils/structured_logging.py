@@ -155,12 +155,11 @@ def setup() -> None:
         # If a request is OOMing a machine you won’t  be able to see that request because it will never be logged.
         # If you are wondering if a request has started and is just taking a really long time you can’t see that either
         # For these reasons, we emit a log at the beginning of the request lifecycle
+        before_request_log = logging.getLogger(RECIDIVIZ_BEFORE_REQUEST_LOG)
         before_request_handler = handlers.CloudLoggingHandler(
             client, name=RECIDIVIZ_BEFORE_REQUEST_LOG
         )
-        logging.getLogger(RECIDIVIZ_BEFORE_REQUEST_LOG).addHandler(
-            before_request_handler
-        )
+        before_request_log.addHandler(before_request_handler)
 
         if label_filter:
             structured_handler.addFilter(label_filter)
@@ -171,7 +170,9 @@ def setup() -> None:
         # even if other logs are stalled on the global interpreter lock or some
         # other issue.
         stdout_handler = logging.StreamHandler(sys.stdout)
-        handlers.setup_logging(stdout_handler, log_level=logging.INFO)
+        logger.addHandler(stdout_handler)
+        logger.setLevel(logging.INFO)
+
         for handler in logger.handlers:
             if not isinstance(
                 handler,
