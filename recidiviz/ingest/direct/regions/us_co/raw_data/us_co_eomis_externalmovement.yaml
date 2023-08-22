@@ -135,7 +135,7 @@ columns:
       Other location code - can link to partyid in organizationprof table.
   - name: REASONFORMOVEMENT
     description: |-
-      CITRREAS code indicating the reason for movement.
+      CITRREAS dataname code in eomis_codevaluedesc indicating the reason for movement.
     known_values:
       - value: "01"
         description: Approved Transfer Request
@@ -275,6 +275,8 @@ columns:
         description: Probation Violator
       - value: "A5"
         description: Returned from Bond
+      - value: "A6"
+        description: Court Order Return with NC
       - value: "A7"
         description: Probation Violator with NC
       - value: "A8"
