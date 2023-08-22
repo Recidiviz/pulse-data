@@ -27,6 +27,7 @@ from google.cloud import tasks_v2
 from mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
@@ -723,3 +724,17 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
         )
+
+    @patch("google.cloud.tasks_v2.CloudTasksClient")
+    def test_update_queue_state_str(
+        self,
+        client_mock: mock.MagicMock,
+    ) -> None:
+        impl = DirectIngestCloudTaskQueueManagerImpl()
+        impl.update_ingest_queue_states_str(StateCode.US_CA, "PAUSED")
+        client_mock.return_value.pause_queue.assert_called()
+
+        client_mock.reset_mock()
+
+        impl.update_ingest_queue_states_str(StateCode.US_CA, "RUNNING")
+        client_mock.return_value.resume_queue.assert_called()

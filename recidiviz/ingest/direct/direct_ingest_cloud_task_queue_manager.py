@@ -685,7 +685,9 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         self, state_code: StateCode, new_queue_state_str: str
     ) -> None:
         self.update_ingest_queue_states(
-            state_code, QUEUE_STATE_ENUM(new_queue_state_str)
+            state_code,
+            # The Queue.State proto enum specifies __members__ for key-index lookups, but mypy does not recognize that
+            QUEUE_STATE_ENUM[new_queue_state_str],  # type: ignore[misc, valid-type]
         )
 
     def get_scheduler_queue_state(
@@ -804,7 +806,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             queue = self.cloud_tasks_client.get_queue(name=queue_path)
             queue_state: IngestQueueState = {
                 "name": queue_name,
-                "state": QUEUE_STATE_ENUM(queue.state),
+                "state": queue.state,
             }
             ingest_queue_states.append(queue_state)
 
