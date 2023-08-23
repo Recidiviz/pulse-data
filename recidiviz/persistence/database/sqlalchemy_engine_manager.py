@@ -156,7 +156,9 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def attempt_init_engines_for_databases(
-        cls, database_keys: List[SQLAlchemyDatabaseKey]
+        cls,
+        database_keys: List[SQLAlchemyDatabaseKey],
+        secret_prefix_override: Optional[str] = None,
     ) -> None:
         """Attempts to initialize engines for the provided databases.
 
@@ -164,7 +166,10 @@ class SQLAlchemyEngineManager:
         our server to crash."""
         for database_key in database_keys:
             try:
-                cls.init_engine(database_key)
+                cls.init_engine(
+                    database_key=database_key,
+                    secret_prefix_override=secret_prefix_override,
+                )
             except BaseException:
                 pass
 
