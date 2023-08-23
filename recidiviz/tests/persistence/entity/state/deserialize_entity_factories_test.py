@@ -20,7 +20,6 @@ import unittest
 from datetime import date
 from typing import Set
 
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -189,26 +188,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             external_id="123A",
             id_type="STATE_ID",
             state_code="US_XX",
-        )
-
-        self.assertEqual(expected_result, result)
-
-    def test_deserialize_StateAgent(self) -> None:
-        result = deserialize_entity_factories.StateAgentFactory.deserialize(
-            agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text="OFFICER",
-            external_id="AGENT_ID",
-            state_code="us_xx",
-            full_name=NormalizedJSON(full_name="Joe Brown"),
-        )
-
-        # Assert
-        expected_result = entities.StateAgent(
-            agent_type=StateAgentType.SUPERVISION_OFFICER,
-            agent_type_raw_text="OFFICER",
-            external_id="AGENT_ID",
-            state_code="US_XX",
-            full_name='{"full_name": "JOE BROWN"}',
         )
 
         self.assertEqual(expected_result, result)

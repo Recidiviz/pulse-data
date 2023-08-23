@@ -21,7 +21,6 @@ from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
-    StateAgent,
     StateAssessment,
     StateCharge,
     StateIncarcerationIncident,
@@ -97,10 +96,6 @@ def make_state_charge(**kwargs: Any) -> StateCharge:
         state_code=_STATE_CODE,
         **{"status": StateChargeStatus.PRESENT_WITHOUT_INFO, **kwargs},
     )
-
-
-def make_agent(**kwargs: Any) -> StateAgent:
-    return StateAgent.new_with_defaults(state_code=_STATE_CODE, **kwargs)
 
 
 def make_incarceration_incident_outcome(

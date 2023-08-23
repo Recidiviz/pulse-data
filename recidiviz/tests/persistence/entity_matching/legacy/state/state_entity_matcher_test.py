@@ -23,7 +23,6 @@ import attr
 from mock import patch
 from more_itertools import one
 
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_person import (
@@ -85,7 +84,6 @@ from recidiviz.persistence.persistence_utils import (
     SchemaRootEntityT,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
-    generate_agent,
     generate_alias,
     generate_assessment,
     generate_charge,
@@ -1160,11 +1158,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_person = self.to_entity(db_person)
 
         db_person_dup = generate_person(full_name=_FULL_NAME, state_code=_STATE_CODE)
-        db_agent_dup = generate_agent(
-            external_id=_EXTERNAL_ID,
-            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-            state_code=_STATE_CODE,
-        )
         db_supervision_period = generate_supervision_period(
             person=db_person_dup,
             external_id=_EXTERNAL_ID,
@@ -1186,7 +1179,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_external_id_2 = self.to_entity(db_external_id_2)
         db_person_dup.external_ids = [db_external_id_2]
         db_person_dup.supervision_sentences = [db_supervision_sentence_dup]
-        db_person_dup.supervising_officer = db_agent_dup
         db_person_dup.supervision_periods = [db_supervision_period]
 
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
@@ -1469,16 +1461,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             assessment_metadata="metadata_2",
         )
         entity_assessment_2 = self.to_entity(db_assessment_2)
-        db_agent_po = generate_agent(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID_5, full_name="full_name_po"
-        )
-        entity_agent_po = self.to_entity(db_agent_po)
-        db_agent_term = generate_agent(
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID_6,
-            full_name="full_name_term",
-        )
-        entity_agent_term = self.to_entity(db_agent_term)
         db_incarceration_incident = generate_incarceration_incident(
             person=db_person,
             state_code=_STATE_CODE,
@@ -1502,7 +1484,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_violation_response_decisions=[
                 db_supervision_violation_response_decision
             ],
-            decision_agents=[db_agent_term],
         )
         entity_supervision_violation_response = self.to_entity(
             db_supervision_violation_response
@@ -1561,8 +1542,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             county_code="county_code",
             case_type_entries=[db_case_type_dv],
-            supervising_officer=db_agent_po,
-            supervising_officer_staff_external_id=db_agent_po.external_id,
+            supervising_officer_staff_external_id=_EXTERNAL_ID_5,
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
         )
         entity_supervision_period = self.to_entity(db_supervision_period)
@@ -1605,14 +1585,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             assessment_id=None,
             assessment_metadata="metadata_2-updated",
         )
-        agent_po = attr.evolve(
-            entity_agent_po, agent_id=None, full_name="full_name_po-updated"
-        )
-        agent_term = attr.evolve(
-            entity_agent_term,
-            agent_id=None,
-            full_name="full_name_term-updated",
-        )
         incarceration_incident = attr.evolve(
             entity_incarceration_incident,
             incarceration_incident_id=None,
@@ -1636,7 +1608,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         supervision_violation_response = attr.evolve(
             entity_supervision_violation_response,
             supervision_violation_response_id=None,
-            decision_agents=[agent_term],
             supervision_violation_response_decisions=[
                 supervision_violation_response_decision
             ],
@@ -1670,8 +1641,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_period_id=None,
             county_code="county_code-updated",
             case_type_entries=[case_type_dv, case_type_so],
-            supervising_officer=agent_po,
-            supervising_officer_staff_external_id=agent_po.get_external_id(),
+            supervising_officer_staff_external_id=_EXTERNAL_ID_5,
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
         )
         supervision_sentence = attr.evolve(
@@ -1699,8 +1669,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_charge_2 = attr.evolve(charge_2)
         expected_assessment = attr.evolve(assessment)
         expected_assessment_2 = attr.evolve(assessment_2)
-        expected_agent_po = attr.evolve(agent_po)
-        expected_agent_term = attr.evolve(agent_term)
         expected_incarceration_incident = attr.evolve(
             incarceration_incident,
         )
@@ -1716,7 +1684,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
         expected_supervision_violation_response = attr.evolve(
             supervision_violation_response,
-            decision_agents=[expected_agent_term],
             supervision_violation_response_decisions=[
                 expected_supervision_violation_response_decision
             ],
@@ -1736,7 +1703,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_supervision_period = attr.evolve(
             supervision_period,
             case_type_entries=[expected_case_type_dv, expected_case_type_so],
-            supervising_officer=expected_agent_po,
         )
         expected_supervision_sentence = attr.evolve(
             supervision_sentence,

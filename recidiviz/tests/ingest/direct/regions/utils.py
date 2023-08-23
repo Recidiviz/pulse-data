@@ -267,7 +267,6 @@ def add_supervision_period_to_person(
     supervision_site: Optional[str] = None,
     supervising_officer_staff_external_id: Optional[str] = None,
     supervising_officer_staff_external_id_type: Optional[str] = None,
-    supervising_officer: Optional[entities.StateAgent] = None,
     admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = None,
     termination_reason: Optional[StateSupervisionPeriodTerminationReason] = None,
     conditions: Optional[str] = None,
@@ -293,7 +292,6 @@ def add_supervision_period_to_person(
         supervision_site=supervision_site,
         supervising_officer_staff_external_id=supervising_officer_staff_external_id,
         supervising_officer_staff_external_id_type=supervising_officer_staff_external_id_type,
-        supervising_officer=supervising_officer,
         admission_reason=admission_reason,
         admission_reason_raw_text=admission_reason_raw_text,
         termination_reason=termination_reason,
@@ -326,7 +324,6 @@ def add_assessment_to_person(
     assessment_level: Optional[StateAssessmentLevel],
     assessment_level_raw_text: Optional[str],
     assessment_metadata: Optional[str],
-    conducting_agent: Optional[entities.StateAgent] = None,
     assessment_class_raw_text: Optional[str] = None,
     assessment_type_raw_text: Optional[str] = None,
     conducting_staff_external_id: Optional[str] = None,
@@ -348,7 +345,6 @@ def add_assessment_to_person(
         assessment_metadata=assessment_metadata,
         conducting_staff_external_id=conducting_staff_external_id,
         conducting_staff_external_id_type=conducting_staff_external_id_type,
-        conducting_agent=conducting_agent,
         person=person,
     )
 
@@ -479,7 +475,6 @@ def add_supervision_contact_to_person(
     supervision_contact_id: Optional[int] = None,
     contacting_staff_external_id: Optional[str] = None,
     contacting_staff_external_id_type: Optional[str] = None,
-    contacted_agent: Optional[entities.StateAgent] = None,
 ) -> entities.StateSupervisionContact:
     """Append a supervision contact to the person (updates the person entity in place)."""
 
@@ -502,7 +497,6 @@ def add_supervision_contact_to_person(
         supervision_contact_id=supervision_contact_id,
         contacting_staff_external_id=contacting_staff_external_id,
         contacting_staff_external_id_type=contacting_staff_external_id_type,
-        contacted_agent=contacted_agent,
         person=person,
     )
 

@@ -255,9 +255,6 @@ class TestClassesInNormalizedEntitySubtree(unittest.TestCase):
             expected_subtree, classes_in_normalized_entity_subtree(entity_class)
         )
 
-    def test_classes_in_normalized_entity_subtree_cannot_be_hydrated(self) -> None:
-        # StateAgent is not a valid entity for a normalized subtree
-        entity_class = state_entities.StateAgent
-
-        with self.assertRaises(ValueError):
+    def test_classes_in_normalized_entity_subtree_valid_for_all_entities(self) -> None:
+        for entity_class in get_all_entity_classes_in_module(state_entities):
             _ = classes_in_normalized_entity_subtree(entity_class)

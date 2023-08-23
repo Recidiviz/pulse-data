@@ -28,7 +28,10 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.state.state_agent import (
+
+# TODO(#17856): Delete these when we delete StateAgent entirely (currently used for
+#  documentation generation to discover all enums in the schema).
+from recidiviz.common.constants.state.state_agent import (  # pylint: disable=unused-import
     StateAgentSubtype,
     StateAgentType,
 )
@@ -554,7 +557,6 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Only optional when hydrated in the parsing layer, before we have written this
     # entity to the persistence layer
     person: Optional["StatePerson"] = attr.ib(default=None)
-    conducting_agent: Optional["StateAgent"] = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1001,7 +1003,6 @@ class StateSupervisionPeriod(
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    supervising_officer: Optional["StateAgent"] = attr.ib(default=None)
     case_type_entries: List["StateSupervisionCaseTypeEntry"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -1402,9 +1403,6 @@ class StateSupervisionViolationResponse(
     supervision_violation_response_decisions: List[
         "StateSupervisionViolationResponseDecisionEntry"
     ] = attr.ib(factory=list, validator=attr_validators.is_list)
-    decision_agents: List["StateAgent"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:
@@ -1414,48 +1412,6 @@ class StateSupervisionViolationResponse(
                 fields=["state_code", "external_id"],
             )
         ]
-
-
-# TODO(#17856): Delete StateAgent once all usages deprecated
-@attr.s(eq=False, kw_only=True)
-class StateAgent(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models an agent working within a justice system."""
-
-    # Override validator on parent class - we don't care that StateAgent has
-    # nonnull external_ids - this entity will never be referenced in the new
-    # implementation of entity matching run in Ingest in Dataflow
-    external_id: str = attr.ib(validator=attr_validators.is_opt_str)
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Type
-    agent_type: StateAgentType = attr.ib(
-        validator=attr.validators.instance_of(StateAgentType)
-    )
-    agent_type_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Attributes
-    #   - What
-    full_name: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Primary key - Only optional when hydrated in the parsing layer, before we have
-    # written this entity to the persistence layer
-    agent_id: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    # Subtype
-    agent_subtype: Optional[StateAgentSubtype] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateAgentSubtype)
-    )
-    agent_subtype_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1512,7 +1468,6 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    referring_agent: Optional["StateAgent"] = attr.ib(default=None)
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:
@@ -1675,7 +1630,6 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    contacted_agent: Optional["StateAgent"] = attr.ib(default=None)
 
     @classmethod
     def global_unique_constraints(cls) -> List[UniqueConstraint]:

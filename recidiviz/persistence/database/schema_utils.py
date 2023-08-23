@@ -136,6 +136,10 @@ def get_state_table_classes() -> Iterator[Table]:
 
 def get_state_entity_names() -> Iterator[str]:
     for state_table_class in get_all_table_classes_in_module(state_schema):
+        # TODO(#17856): Clean up this logic when StateAgent has been deleted
+        #  from the schema.
+        if state_table_class.name == "state_agent":
+            continue
         yield state_table_class.name
 
 
