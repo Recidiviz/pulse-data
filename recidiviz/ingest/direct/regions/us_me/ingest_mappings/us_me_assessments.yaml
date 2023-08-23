@@ -15,7 +15,10 @@ input_columns:
   - Conductor_First_Name
   - Conductor_Last_Name
   - Conductor_Middle_Name
-unused_columns: []
+unused_columns:
+  - Conductor_First_Name
+  - Conductor_Last_Name
+  - Conductor_Middle_Name
 output:
   StatePerson:
     external_ids:
@@ -123,11 +126,3 @@ output:
               - $if:
                   $not_null: Conductor_Id
                 $then: $literal("US_ME_EMPLOYEE")
-          conducting_agent:
-            StateAgent:
-              external_id: Conductor_Id
-              full_name:
-                $person_name:
-                  $given_names: Conductor_First_Name
-                  $surname: Conductor_Last_Name
-                  $middle_names: Conductor_Middle_Name

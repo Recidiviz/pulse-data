@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing MDOC client supervision periods for hydrating StateSupervisionPeriod and StateAgent entities."""
+"""Query containing MDOC client supervision periods for hydrating StateSupervisionPeriod entities."""
 from recidiviz.ingest.direct.regions.us_me.ingest_views.templates_statuses import (
     statuses_cte,
 )
