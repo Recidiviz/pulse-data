@@ -64,6 +64,10 @@ unused_columns:
   - RecDate
   - CHANGE_DATE_REASON
   - JUDGE
+  - terminating_officer_lname
+  - terminating_officer_fname
+  - recent_officer_lname
+  - recent_officer_fname
 variables:
   - is_rev_new_off:
       $in:
@@ -129,18 +133,6 @@ output:
                       external_id: CASE_NUMBER
                       response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
                       response_date: REV_DATE
-                      decision_agents:
-                        - $conditional:
-                            - $if:
-                                $not_null: terminating_officer_id
-                              $then:
-                                StateAgent:
-                                  external_id: terminating_officer_id
-                                  full_name:
-                                    $person_name:
-                                      $given_names: terminating_officer_fname
-                                      $surname: terminating_officer_lname
-                                  agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
                       supervision_violation_response_decisions:
                         - StateSupervisionViolationResponseDecisionEntry:
                             decision:
@@ -332,30 +324,6 @@ output:
                         - $is_null: TERM_DATE
                         - $not_null: recent_officer_id
                 $then: $literal("US_ND_DOCSTARS_OFFICER")
-          supervising_officer:
-            $conditional:
-              - $if:
-                  $not_null: terminating_officer_id
-                $then:
-                  StateAgent:
-                    external_id: terminating_officer_id
-                    full_name:
-                      $person_name:
-                        $given_names: terminating_officer_fname
-                        $surname: terminating_officer_lname
-                    agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
-              - $else_if:
-                  $and:
-                    - $is_null: TERM_DATE
-                    - $not_null: recent_officer_id
-                $then:
-                  StateAgent:
-                    external_id: recent_officer_id
-                    full_name:
-                      $person_name:
-                        $given_names: recent_officer_fname
-                        $surname: recent_officer_lname
-                    agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
                 case_type:
