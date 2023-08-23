@@ -30,6 +30,11 @@ input_columns:
   - most_recent_supervision_level_id
 unused_columns:
   - next_order_type_id_list
+  - first_name
+  - middle_name
+  - last_name
+  - name_suffix
+  - position
 output:
   StatePerson:
     external_ids:
@@ -805,20 +810,3 @@ output:
                       StateCustodialAuthority.INTERNAL_UNKNOWN:
                         - "Outside MDOC Jurisdiction"
               - $else: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
-          supervising_officer:
-            $conditional:
-              - $if:
-                  $not_null: employee_id
-                $then:
-                  StateAgent:
-                    external_id: employee_id
-                    full_name:
-                      $person_name:
-                        $given_names: first_name
-                        $middle_names: middle_name
-                        $surname: last_name
-                        $name_suffix: name_suffix
-                    agent_type:
-                      $enum_mapping:
-                        $raw_text: position
-                        $custom_parser: us_mi_custom_enum_parsers.parse_agent_type

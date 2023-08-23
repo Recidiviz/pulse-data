@@ -326,7 +326,7 @@ def add_assessment_to_person(
     assessment_level: Optional[StateAssessmentLevel],
     assessment_level_raw_text: Optional[str],
     assessment_metadata: Optional[str],
-    conducting_agent: Optional[entities.StateAgent],
+    conducting_agent: Optional[entities.StateAgent] = None,
     assessment_class_raw_text: Optional[str] = None,
     assessment_type_raw_text: Optional[str] = None,
     conducting_staff_external_id: Optional[str] = None,
