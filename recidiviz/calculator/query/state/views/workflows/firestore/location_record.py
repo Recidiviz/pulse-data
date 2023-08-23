@@ -50,7 +50,12 @@ LOCATION_RECORD_QUERY_TEMPLATE = """
                     WHEN rr.state_code IN ({level_2_state_codes})
                         THEN locations.level_2_incarceration_location_name
                     END,
-                rr.facility_id) AS name,
+                IF(
+                    rr.state_code = "US_IX",
+                    INITCAP(rr.facility_id),
+                    rr.facility_id
+                )
+            ) AS name,
         FROM `{project_id}.{workflows_dataset}.resident_record_materialized` rr
         LEFT JOIN `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names` locations
         ON rr.facility_id = locations.level_1_incarceration_location_external_id
