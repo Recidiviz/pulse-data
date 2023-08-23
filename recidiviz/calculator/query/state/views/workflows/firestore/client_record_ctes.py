@@ -23,6 +23,9 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     workflows_state_specific_supervision_level,
 )
+from recidiviz.calculator.query.state.views.workflows.us_ca.shared_ctes import (
+    US_CA_MOST_RECENT_CLIENT_DATA,
+)
 from recidiviz.calculator.query.state.views.workflows.us_id.shared_ctes import (
     us_id_latest_phone_number,
 )
@@ -35,28 +38,10 @@ from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import 
 )
 
 _CLIENT_RECORD_SUPERVISION_CTE = f"""
-    -- TODO(#22427) Once PersonParole has badge numbers, delete this and just use the table directly 
-    ca_person_parole_imputed_badges AS (
-        SELECT
-            OffenderId, 
-            COALESCE(pp.BadgeNumber, ap.BadgeNumber) as BadgeNumber,
-            EarnedDischargeDate, ControllingDischargeDate
-        FROM `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.PersonParole_latest` pp
-        LEFT JOIN (
-            SELECT
-                ParoleRegion,
-                ParoleDistrict,
-                ParoleUnit,
-                -- Change delimiter, trim middle initial
-                REGEXP_REPLACE(REPLACE(ParoleAgentName,'|', ','), ' [A-Z]$', '') as ParoleAgentName,
-                MIN(BadgeNumber) as BadgeNumber
-            FROM `{{project_id}}.{{us_ca_raw_data_up_to_date_dataset}}.AgentParole_latest`
-            WHERE BadgeNumber is not null
-            GROUP BY ParoleRegion, ParoleDistrict, ParoleUnit, ParoleAgentName
-        ) ap USING(ParoleRegion, ParoleDistrict, ParoleUnit, ParoleAgentName)
-    ),
-
-    supervision_cases AS (
+    us_ca_most_recent_client_data AS (
+        {US_CA_MOST_RECENT_CLIENT_DATA}
+    )
+    , supervision_cases AS (
         SELECT
           sessions.person_id,
           sessions.state_code,
@@ -70,11 +55,11 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           sessions.supervision_district_name_end AS district,
           IFNULL(
             projected_end.projected_completion_date_max,
-            PARSE_DATE("%F", SUBSTR(COALESCE(
+            COALESCE(
                 LEAST(ca_pp.EarnedDischargeDate, ca_pp.ControllingDischargeDate),
                 ca_pp.EarnedDischargeDate,
                 ca_pp.ControllingDischargeDate
-            ), 0,10))
+            )
           ) AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
         LEFT JOIN {{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map ids
@@ -102,7 +87,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         ) active_officer
             ON sessions.state_code = active_officer.state_code
             AND sessions.person_id = active_officer.person_id
-        LEFT JOIN ca_person_parole_imputed_badges ca_pp
+        LEFT JOIN us_ca_most_recent_client_data ca_pp
             ON pei.person_external_id = ca_pp.OffenderId
             AND sessions.state_code = "US_CA"
         LEFT JOIN (
@@ -113,6 +98,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
           AND (sessions.state_code = "US_CA" OR sessions.supervising_officer_external_id_end IS NOT NULL)
+          AND (sessions.state_code != "US_CA" OR ca_pp.BadgeNumber IS NOT NULL)
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY person_id
             ORDER BY person_external_id,
@@ -190,7 +176,7 @@ _CLIENT_RECORD_DISPLAY_IDS_CTE = """
                 END
                 AS display_id
         FROM `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
-        LEFT JOIN `{project_id}.{us_ca_raw_data_up_to_date_dataset}.PersonParole_latest` ca_pp
+        LEFT JOIN us_ca_most_recent_client_data ca_pp
             ON person_external_id=ca_pp.OffenderId
         WHERE
             state_code IN ({workflows_supervision_states})
