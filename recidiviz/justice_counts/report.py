@@ -391,6 +391,7 @@ class ReportInterface:
         session: Session,
         report: schema.Report,
         agency_datapoints: Optional[List[schema.Datapoint]] = None,
+        is_superagency: Optional[bool] = False,
     ) -> List[MetricInterface]:
         """Given a report, determine all MetricDefinitions that must be populated
         on this report, and convert them to MetricInterfaces. If the agency has already
@@ -438,6 +439,14 @@ class ReportInterface:
         # construct a MetricInterface object
 
         for metric_definition in metric_definitions:
+            # For superagencies: only include superagency metrics and
+            # exclude all other system metrics
+            if (
+                is_superagency is True
+                and metric_definition.system != schema.System.SUPERAGENCY
+            ):
+                continue
+
             reported_datapoints = metric_key_to_datapoints.get(
                 metric_definition.key,
                 DatapointsForMetric(),

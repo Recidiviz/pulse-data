@@ -857,6 +857,9 @@ def get_api_blueprint(
             report = ReportInterface.get_report_by_id(
                 session=current_session, report_id=int(report_id)
             )
+            is_superagency = None
+            if report is not None and report.agency is not None:
+                is_superagency = report.agency.is_superagency
 
             raise_if_user_is_not_in_agency(user=user, agency_id=report.source_id)
 
@@ -866,6 +869,7 @@ def get_api_blueprint(
             report_metrics = ReportInterface.get_metrics_by_report(
                 session=current_session,
                 report=report,
+                is_superagency=is_superagency,
                 agency_datapoints=agency_datapoints,
             )
             editor_id_to_json = (
