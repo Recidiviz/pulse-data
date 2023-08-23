@@ -55,6 +55,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
             case_type,
             IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
+            metrics.supervising_officer_staff_id,
             staff.external_id,
             {state_specific_most_recent_officer_recommendation},
             {state_specific_recommended_for_revocation},
@@ -69,7 +70,8 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
     )
     
     SELECT 
-        *,
+        metrics.*,
+        agent.* EXCEPT (state_code, legacy_supervising_officer_external_id),
         -- We drop commas in agent names since we use commas as the delimiters in the export
         -- TODO(#8674): Use agent_external_id instead of agent_external_id_with_full_name
         -- once the FE is using the officer_full_name field for names
@@ -78,8 +80,8 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
     FROM
         metrics
     LEFT JOIN
-        `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
-    USING (state_code, external_id)
+        `{project_id}.reference_views.state_staff_with_names` agent
+    ON metrics.state_code = agent.state_code AND metrics.supervising_officer_staff_id = agent.staff_id
     """
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -89,7 +91,6 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER = SimpleBigQuer
     view_query_template=EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE,
     description=EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_specific_most_recent_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation(
         input_col="most_recent_response_decision"
     ),

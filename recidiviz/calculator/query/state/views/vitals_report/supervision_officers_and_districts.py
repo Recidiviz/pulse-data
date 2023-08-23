@@ -73,12 +73,10 @@ SUPERVISION_OFFICERS_AND_DISTRICTS_QUERY_TEMPLATE = f"""
    LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names_materialized` locations
         ON sup_pop.state_code = locations.state_code
         AND {{vitals_state_specific_join_with_supervision_location_ids}}
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` sid
-        ON sup_pop.state_code = sid.state_code
-        AND sup_pop.supervising_officer_external_id = sid.external_id
+   LEFT JOIN `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` sid
+        ON sup_pop.supervising_officer_staff_id = sid.staff_id
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_role_period` rp
-        ON sid.state_code = rp.state_code
-        AND sid.staff_id = rp.staff_id
+        ON sid.staff_id = rp.staff_id
    
    WHERE COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern')) > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
         AND sup_pop.state_code in {enabled_states}

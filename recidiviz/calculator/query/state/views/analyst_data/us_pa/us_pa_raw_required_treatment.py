@@ -226,8 +226,8 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
       AND df_and_board_actions.level_2_supervision_location_external_id = ref.level_2_supervision_location_external_id
       AND df_and_board_actions.state_code = ref.state_code      
     LEFT JOIN 
-        ( SELECT DISTINCT * EXCEPT(agent_id, agent_type) FROM `{project_id}.{reference_dataset}.augmented_agent_info`) agent
-        ON df_and_board_actions.supervising_officer_external_id = agent.external_id
+        `{project_id}.reference_views.state_staff_with_names` agent
+        ON df_and_board_actions.supervising_officer_external_id = agent.legacy_supervising_officer_external_id
         AND df_and_board_actions.state_code = agent.state_code
     INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` person
         ON df_and_board_actions.person_id = person.person_id

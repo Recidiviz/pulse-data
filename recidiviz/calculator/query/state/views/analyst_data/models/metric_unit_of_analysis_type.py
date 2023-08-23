@@ -158,10 +158,10 @@ SELECT a.*, b.full_name_clean AS officer_name
 FROM 
     `{project_id}.sessions.supervision_officer_sessions_materialized` a
 LEFT JOIN 
-    `{project_id}.reference_views.agent_external_id_to_full_name` b
+    `{project_id}.reference_views.state_staff_with_names` b
 ON 
     a.state_code = b.state_code
-    AND a.supervising_officer_external_id = b.external_id
+    AND a.supervising_officer_external_id = b.legacy_supervising_officer_external_id
 """,
         primary_key_columns=["state_code", "officer_id"],
         static_attribute_columns=["officer_name"],

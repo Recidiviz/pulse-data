@@ -91,12 +91,10 @@ LEFT JOIN `{{project_id}}.{{workflows_views_dataset}}.clients_latest_referral_st
   USING (state_code, person_external_id, opportunity_type)
 LEFT JOIN (
   SELECT
-    state_code, external_id AS officer_id, full_name AS officer_name
-  FROM `{{project_id}}.{{normalized_state_dataset}}.state_agent`
-  WHERE full_name IS NOT NULL
-  -- Restrict to one row per officer id
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, officer_id ORDER BY full_name) = 1
-) state_agent
+    state_code, legacy_supervising_officer_external_id AS officer_id, full_name_json AS officer_name
+  FROM `{{project_id}}.reference_views.state_staff_with_names`
+  WHERE full_name_json IS NOT NULL
+) state_staff
   USING (state_code, officer_id)
 """
 
@@ -106,7 +104,6 @@ CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CURRENT_IMPACT_FUNNEL_STATUS_QUERY_TEMPLATE,
     description=CURRENT_IMPACT_FUNNEL_STATUS_DESCRIPTION,
     analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     task_eligibility_dataset=TASK_ELIGIBILITY_DATASET_ID,
     workflows_views_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,

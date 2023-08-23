@@ -42,8 +42,8 @@ US_ID_SUPERVISION_STAFF_TEMPLATE = """
         LEFT JOIN `{project_id}.{reference_views_dataset}.product_roster_materialized` r
             ON ids.id = r.external_id
             AND r.state_code = 'US_ID'
-        LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` names
-            ON ids.id = names.external_id 
+        LEFT JOIN `{project_id}.reference_views.state_staff_with_names` names
+            ON ids.id = names.legacy_supervising_officer_external_id 
             AND ids.state_code = names.state_code
         LEFT JOIN `{project_id}.{vitals_report_dataset}.supervision_officers_and_districts_materialized` districts
             ON ids.state_code = districts.state_code 

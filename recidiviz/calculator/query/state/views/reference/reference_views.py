@@ -18,12 +18,6 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.state.views.reference.agent_external_id_to_full_names import (
-    AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.reference.augmented_agent_info import (
-    AUGMENTED_AGENT_INFO_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
@@ -93,12 +87,10 @@ from recidiviz.calculator.query.state.views.reference.workflows_opportunity_conf
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
-    AUGMENTED_AGENT_INFO_VIEW_BUILDER,
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
-    AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
     US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,

@@ -856,14 +856,14 @@ FROM ({_TASK_ELIGIBILITY_SPANS_TN_CTE})
     ),
     EventQueryBuilder(
         event_type=PersonEventType.TREATMENT_REFERRAL,
-        description="Treatment referrals, keeping at most one per person per program-agent-status per day",
+        description="Treatment referrals, keeping at most one per person per program-staff-status per day",
         sql_source="""SELECT *
 FROM
     `{project_id}.normalized_state.state_program_assignment`
 """,
         attribute_cols=[
             "program_id",
-            "referring_agent_id",
+            "referring_staff_id",
             "referral_metadata",
             "participation_status",
         ],
