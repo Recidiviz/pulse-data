@@ -1,0 +1,263 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - PERIOD_ID
+  - CURRENT_STATUS
+  - LOCATION_TYPE
+  - MOVE_IN_DATE
+  - MOVE_OUT_DATE
+  - COUNTY
+  - LOCATION_NAME
+  - FACILITY
+  - RISK_LEVEL
+  - ADMISSION_REASON
+  - RELEASE_REASON
+  - RESPONSIBLE_DIVISION
+unused_columns:
+  - LOCATION_NAME
+  - LOCATION_TYPE
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - RECORD_KEY
+                - PERIOD_ID
+          supervision_type:
+            $enum_mapping:
+              $raw_text: CURRENT_STATUS
+              $mappings:
+                StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN:
+                  - P # (2 instances)
+                  - C # (2 instances)
+                  - I # (1 instance)
+                  - R # (1 instance)
+                  - "00" # (1 instance)
+                  - CR # (1 instance)
+                StateSupervisionPeriodSupervisionType.INVESTIGATION:
+                  - IV # Investigation
+                StateSupervisionPeriodSupervisionType.PAROLE:
+                  - PA # Parole
+                StateSupervisionPeriodSupervisionType.PROBATION:
+                  - PR # Probation
+                  - CD # Prob/Conditional Discharge
+                  - DV # Probation Diversion
+                StateSupervisionPeriodSupervisionType.DUAL:
+                  - PO # Post Prison - Post Prison and Parole at same time
+                StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
+                  - LV # Leave
+                  - PS # Post Parole
+                  - HL # Hold
+                  - LC # Local Control (generally means a jail)
+                  - SL # Second Look Juvenile (old term, means they were let out at half of sentence generally)
+                  - IN # Adult in Custody (AIC) - look into removing
+                  - DI # Discharge
+                  - AP # Admission Pending (1 instance)
+                  - PP # ParolePending - Not used (1 instance)
+          start_date: MOVE_IN_DATE
+          termination_date: MOVE_OUT_DATE
+          county_code: COUNTY
+          supervision_site: FACILITY
+          admission_reason:
+            $enum_mapping:
+              $raw_text: ADMISSION_REASON
+              $mappings:
+                StateSupervisionPeriodAdmissionReason.ABSCONSION:
+                  - ABSC # Absconded Supervision
+                  - ESCA # Escape
+                StateSupervisionPeriodAdmissionReason.INVESTIGATION:
+                  - ODTA # Out of State Detainer
+                  - DETA # Detainer
+                  - WRNT # Warrant
+                StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
+                  - COPB # Release To County Probation Office (old code)
+                StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                  - SUPLEVEL_CHANGE # Recidiviz-made to indicate period changes due to supervision level change
+                  - PROB # Probation-Status Change Only
+                  - TRAN # Transferred to another location
+                StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
+                  - RETU # Return to Sentencing State - Inst. Only (only 1 instance)
+                StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - COMP # Compact Closure Only-Compact Form Req. (26 instances)
+                  - UNSU # Unsupervised
+                  - USAP # Unsupervised Appeal - Court Order Req'd
+                  - COUR # Out to court (only 1 instance)
+                  - INPR # Inactive Probation
+                  - DISM # Conviction/Sentence Dismissed (only 1 instance)
+                  - IMMI # Immigration Deportation-order req.
+                  - IDTA # Immigration Detainer
+                  - BNPB # Conv. to Bench Prob. Court Order Req'd.
+                  - ABEX # ABSC EXPI/DISM BY COURT or LSA -DOC REQ
+                  - LEAV # Temporary or Transitional Leave
+                  - REVP # Offender Sentenced to Federal Prison
+                  - CDTA # Instate / County Detainer
+                  - EARL # Early Termination of Prob-order req. (only 2 instances)
+                  - RTNS # Revoke/Term Felony Prob Supv-Order Required (onlt 3 instnaces)
+                  - CMPO # Compact Out - Oregon Offenders Only
+                  - JAIL # House in jail
+                  - WARR # Warrant for Non-Compliance
+                  - SAPP # Supervised Appeal
+                  - FDTA # Federal Detainer
+                  - CNPS # Post-Prison Supervision & Parole Cont'd
+                  - LV # Leave (only 1 instance)
+                  - VIOL # PA/PPS/PR/LV Viol. to DOC or Local Control OR being admitted to DOC/LC on additional sentences
+                  - APPE # Appeal - Appeal won - Court Order Required
+                  - EXPI # Sentence Expiration - See longer definition
+                  - PARO # Parole - Parole Order Required
+                  - INAC # Off Sentenced to out-of-State Facility
+                  - PSRB # Psychiatric Review Board-Order Req.
+                StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN:
+                  - JDET # (only 14 instances)
+          termination_reason:
+            $enum_mapping:
+              $raw_text: RELEASE_REASON
+              $mappings:
+                StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                  - INAC # Off Sentenced to out-of-State Facility
+                  - RETU # Return to Sentencing State - Inst. Only (entered in error, only 1 instance)
+                  - CMPO # Compact Out - Oregon Offenders Only
+                  - RETC # Compact - Return to sender - DOC Req.
+                StateSupervisionPeriodTerminationReason.COMMUTED:
+                  - SCOM # Sentence Commuted - DOC Required
+                StateSupervisionPeriodTerminationReason.ABSCONSION:
+                  - ESCA # Escape
+                  - ABSC # Absconded Supervision
+                StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION:
+                  - DOC # Return to DOC Custody
+                  - ERRO # PA/PPS/LV returned to DOC or Local Cntrl
+                  - LOCL # Released to Local Control
+                StateSupervisionPeriodTerminationReason.VACATED:
+                  - VARE # Sentences Vacated & Remanded to Court
+                  - VACA # Conviction(s) Vacated / No new trial
+                  - DISM # Conviction/Sentence Dismissed
+                StateSupervisionPeriodTerminationReason.DEATH:
+                  - DIED # Death
+                  - DEAT # Old death code
+                StateSupervisionPeriodTerminationReason.DISCHARGE:
+                  - EDIS # EARNED DISCHARGE
+                  - DISC # PA/PPS Discharge prior to max date
+                  - PRCD # Conditional Discharge-Status Change Only
+                  - XERD # Admitted in Error and Discharged
+                  - EARL # Early Termination of Prob-order req.
+                StateSupervisionPeriodTerminationReason.EXPIRATION:
+                  - EXPI # Sentence Expiration - See longer definition
+                  - POST # SGL Prison/LC Sentence Expired
+                  - LCMP # Completion of 1145 Sentence Obligation
+                StateSupervisionPeriodTerminationReason.INVESTIGATION:
+                  - CREJ # Compact Investigation ONLY-case rejected
+                StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
+                  - RADM # Re-admit for ESCA
+                StateSupervisionPeriodTerminationReason.REVOCATION:
+                  - VIOL # PA/PPS/PR/LV Viol. to DOC or Local Control OR being admitted to DOC/LC on additional sentences.
+                  - RESC # Parole Rescinded
+                  - RTNS # Revoke/Term Felony Prob Supv-Order Required
+                StateSupervisionPeriodTerminationReason.SUSPENSION:
+                  - SUSP # PAROLE SUSPENDED- DOCUMENTATION REQUIRED (only 2 instances)
+                StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
+                  - SUPLEVEL_CHANGE # Recidiviz-made to indicate period changes due to supervision level change
+                  - TRAN # Transferred to another location
+                  - CUST # Custody Change (only 4 instances)
+                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
+                  - SPEC # Special Purpose / Special Education (old code)
+                  - BNPB # Conv. to Bench Prob. Court Order Req'd.
+                  - ADMA # Admission from Inst 30 days +
+                  - COMP # Compact Closure Only-Compact Form Req.
+                  - CONT # Parole Continued - Document Required
+                  - MIBP # MISD.TRAN.BNCH.PROB/BM#5 SPEC CASES ONLY
+                  - PR # Probation (only 1 instance)
+                  - VOID # Void Parole (only 1 instance)
+                  - LODG # Lodged out of Institution (only 1 instance)
+                  - PROB # Probation-Status Change Only
+                  - PARO # Parole - Parole Order Required
+                  - CCPR # Concurrent Probation (only 4 instances)
+                  - APPE # Appeal - Appeal won - Court Order Required
+                  - CRTR # REVOKE/TERM MISD PROB SUPV - ORDER REQ'D -
+                  - ABEX # ABSC EXPI/DISM BY COURT or LSA -DOC REQ
+                  - LEAV # Temporary or Transitional Leave
+                  - INPR # Inactive Probation
+                  - IMMI # Immigration Deportation-order req.
+                  - JDET # Released To Jail on a Detainer (only 14, all before 2000)
+                  - IDTA # Immigration Detainer
+                  - CNPA # Parole Continued - Document Required
+                  - REVP # Offender Sentenced to Federal Prison
+                  - REVO # PAROLE REVOKED BY BOARD- DOC REQUIRED (all before 2000)
+                  - CDTA # Instate / County Detainer
+                  - UNSU # Unsuccessful termination?
+                  - WRNT # Warrant
+                  - DIVR # Diversion-Status Change Only
+                  - COPB # Release To County Probation Office (old code)
+                  - FDTA # Federal Detainer
+                  - USAP # Unsupervised Appeal - Court Order Req'd
+                  - COUR # Out to court
+                  - WARR # Warrant for Non-Compliance
+                  - JAIL # House in jail
+                  - SAPP # Supervised Appeal
+                  - MISD # MISD.TRAN.BNCH.PROB/BM#5 SPEC CASES ONLY
+                  - POPA # Post-Prison & Parole Supervision
+                  - ACQT # Acquittal After Re-trial/Re-sentencing
+                  - RSNT # Resentenced (only 1 instance)
+                  - PSRB # Psychiatric Review Board-Order Req.
+                StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN:
+                  - AUTO # unknown
+                  - ADMB # unknown - old code (only 39 instances)
+                  - MIAC # unknown - old code
+                  - CLOS # unknown (old code)
+                  - BENT # unknown (only 1 instance)
+                  - MTCB # unknown (only 2 instances)
+                  - DINI # unknown (only 1 instance)
+                  - ADMN # unknown (only 7 instances)
+                  - OSHS # unknown (only 1 instance)
+                  - (UNS # incorrect code
+                  - MICO # unknown (old code)
+                  - MTDV # (only 1 instance)
+                  - INTK # Intake (entered in error, 1 instance)
+                  - CCOM # old code (only 2 instances)
+                  - REAB # Unknown (old code)
+                  - MTSW # unknown (only 1 instance)
+                  - STAN # unknown (old code)
+                  - CONV # (only 4 instances)
+                  - ADMI # Administrative (old code)
+                  - FECO # unknown - old code
+                  - FELO # unknown - old code
+                  - RCOM # (only 1 instance)
+                  - UNAS # unknown - old code (only 2)
+                  - DOCO # (only 1 instance)
+                  - IBRO # (only 1 instance)
+                  - MTNO # (only 1 instance)
+                  - DOUG # (only 1 instance)
+                  - IVST # unknown - old code (only 36)
+                  - IDLE # unknown - old code (only 5)
+                  - FEAC # unknown - old code (all before 1990)
+                  - INVT # unknown - old code (only 4 instances)
+          supervision_level:
+            $enum_mapping:
+              $raw_text: RISK_LEVEL
+              $mappings:
+                StateSupervisionLevel.MINIMUM:
+                  - LOW
+                StateSupervisionLevel.MEDIUM:
+                  - MED
+                  - MEDIUM
+                StateSupervisionLevel.HIGH:
+                  - HIGH
+                  - HI
+          custodial_authority:
+            $enum_mapping:
+              $raw_text: RESPONSIBLE_DIVISION
+              $mappings:
+                StateCustodialAuthority.SUPERVISION_AUTHORITY:
+                  - C # Community
+                  - D # DOC - non institution/CC
+                StateCustodialAuthority.COUNTY:
+                  - L # Local Control - Jail # remove filter in view to see if thhey show up
+                StateCustodialAuthority.INTERNAL_UNKNOWN:
+                  - N # Not State Agency
