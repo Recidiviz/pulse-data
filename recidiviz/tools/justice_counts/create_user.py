@@ -29,12 +29,16 @@ import logging
 
 from recidiviz.admin_panel.routes.justice_counts_tools import _get_auth0_client
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+)
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -46,7 +50,10 @@ def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--project-id",
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        choices=[
+            GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+            GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+        ],
         help="Used to select which GCP project in which to run this script.",
         required=True,
     )
@@ -56,7 +63,7 @@ def create_parser() -> argparse.ArgumentParser:
         help="Email address of the user to create.",
         required=True,
     )
-    parser.add_argument("--dry-run", type=str_to_bool, default=True)
+    parser.add_argument("--dry-run", type=str_to_bool, default=False)
     return parser
 
 
@@ -85,8 +92,13 @@ def create_user_account(dry_run: bool, email: str) -> None:
         name,
     )
 
-    with cloudsql_proxy_control.connection(schema_type=schema_type):
-        with SessionFactory.for_proxy(database_key) as session:
+    with cloudsql_proxy_control.connection(
+        schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+    ):
+        with SessionFactory.for_proxy(
+            database_key=database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+        ) as session:
             db_user = UserAccountInterface.get_user_by_email(
                 session=session, email=email
             )
