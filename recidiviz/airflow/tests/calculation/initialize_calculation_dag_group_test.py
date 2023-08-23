@@ -27,6 +27,8 @@ from airflow.decorators import task
 from airflow.exceptions import TaskDeferred
 from airflow.models import DagRun
 from airflow.models.dag import DAG, dag
+from airflow.utils.state import DagRunState
+from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
     WaitUntilCanContinueOrCancelSensorAsync,
@@ -43,6 +45,11 @@ from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 # Need a disable expression-not-assigned because the chaining ('>>') doesn't need expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
 
+_VERIFY_PARAMETERS_TASK_ID = "initialize_dag.verify_parameters"
+_HANDLE_QUEUEING_RESULT_TASK_ID = "initialize_dag.handle_queueing_result"
+_WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID = "initialize_dag.wait_to_continue_or_cancel"
+_WAIT_SECONDS_TASK_ID = "wait_seconds"
+
 
 @dag(
     dag_id="test_initialize_dag",
@@ -51,7 +58,7 @@ from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
     catchup=False,
 )
 def _create_test_initialize_dag() -> None:
-    @task
+    @task(task_id=_WAIT_SECONDS_TASK_ID)
     def wait_seconds(dag_run: DagRun = None) -> None:
         if not dag_run:
             raise ValueError("Dag run not passed to task")
@@ -117,13 +124,111 @@ class TestInitializeCalculationDagGroup(unittest.TestCase):
         )
 
 
-@patch.dict(KNOWN_CONFIGURATION_PARAMETERS, {test_dag.dag_id: ["known_key"]})
+@patch.dict(
+    KNOWN_CONFIGURATION_PARAMETERS,
+    {test_dag.dag_id: KNOWN_CONFIGURATION_PARAMETERS["None_calculation_dag"]},
+)
 class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
+    """
+    Integration tests for the initialize_calculation_dag_group.py task group.
+    """
+
+    def test_successfully_initializes_dag(self) -> None:
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag, session, {"ingest_instance": "PRIMARY"}
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def test_successfully_initializes_dag_primary_with_state_code(self) -> None:
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                {"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def test_successfully_initializes_dag_secondary(self) -> None:
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                dag=test_dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "SECONDARY",
+                    "state_code_filter": "US_XX",
+                    "sandbox_prefix": "my_prefix",
+                },
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def test_secondary_no_state_code(
+        self,
+    ) -> None:
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                dag=test_dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "SECONDARY",
+                    "sandbox_prefix": "my_prefix",
+                },
+                expected_failure_task_ids={_VERIFY_PARAMETERS_TASK_ID},
+                expected_skipped_task_ids={
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
+                    _WAIT_SECONDS_TASK_ID,
+                },
+            )
+
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+            self.assertEqual(
+                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
+                "[state_code_filter] must be set in dag_run configuration for SECONDARY ingest_instance",
+            )
+
+    def test_secondary_no_sandbox_prefix(self) -> None:
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                dag=test_dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "SECONDARY",
+                    "state_code_filter": "US_XX",
+                },
+                expected_failure_task_ids={_VERIFY_PARAMETERS_TASK_ID},
+                expected_skipped_task_ids={
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
+                    _WAIT_SECONDS_TASK_ID,
+                },
+            )
+
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+            self.assertEqual(
+                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
+                "[sandbox_prefix] must be set in dag_run configuration for SECONDARY ingest_instance",
+            )
+
     def test_unknown_parameters(self) -> None:
-        with self.assertRaises(
-            ValueError, msg="Unknown configuration parameters supplied: unknown_key"
-        ):
-            test_dag.test(run_conf={"unknown_key": "value"})
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                dag=test_dag,
+                session=session,
+                run_conf={"unknown_key": "value"},
+                expected_failure_task_ids={_VERIFY_PARAMETERS_TASK_ID},
+                expected_skipped_task_ids={
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
+                    _WAIT_SECONDS_TASK_ID,
+                },
+            )
+
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+            self.assertEqual(
+                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
+                "Unknown configuration parameters supplied: {'unknown_key'}",
+            )
 
 
 class TestWaitUntilCanContinueOrCancelSensorAsync(unittest.TestCase):
