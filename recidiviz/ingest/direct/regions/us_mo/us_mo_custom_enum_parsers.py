@@ -28,7 +28,6 @@ from typing import Callable, Dict, List, Optional, Set
 from more_itertools import one
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
@@ -815,19 +814,6 @@ def parse_supervision_period_termination_reason(
 
 def _status_rank_str(status: str, rank_fn: Callable[[str], int]) -> str:
     return f"{str({rank_fn(status)}).zfill(3)}{status}"
-
-
-def parse_supervising_officer_type(raw_text: str) -> Optional[StateAgentType]:
-    """Maps |raw_text|, a MO specific job title, to its corresponding StateAgentType."""
-    if not raw_text:
-        return None
-    if (
-        ("PROBATION" in raw_text and "PAROLE" in raw_text)
-        or "P&P" in raw_text
-        or "P & P" in raw_text
-    ):
-        return StateAgentType.SUPERVISION_OFFICER
-    return StateAgentType.INTERNAL_UNKNOWN
 
 
 def parse_staff_role_type(raw_text: str) -> Optional[StateStaffRoleType]:

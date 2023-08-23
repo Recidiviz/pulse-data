@@ -66,6 +66,11 @@ unused_columns:
   - CZ_SEO # Sentence Key Sequence Number
   - CZ_FSO # Field Sentence Sequence Number
   - FINAL_FORMED_UPDATE_DATE # Unused - Finally formed last update date (E6_* cols)
+  - BDGNO
+  - CLSTTL
+  - LNAME
+  - FNAME
+  - MINTL
 output:
   StatePerson:
     external_ids:
@@ -140,22 +145,6 @@ output:
                       - $literal("R")
                       - BY_VSN
                 deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
-                decision_agents:
-                  - $conditional:
-                      - $if:
-                          $not_null: BDGNO
-                        $then:
-                          StateAgent:
-                            external_id: BDGNO
-                            agent_type:
-                              $enum_mapping:
-                                $raw_text: CLSTTL
-                                $custom_parser: us_mo_custom_enum_parsers.parse_supervising_officer_type
-                            full_name:
-                              $person_name:
-                                $given_names: FNAME
-                                $middle_names: MINTL
-                                $surname: LNAME
                 is_draft:
                   $is_null: FINAL_FORMED_CREATE_DATE
                 response_date:
