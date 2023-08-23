@@ -118,7 +118,7 @@ columns:
       - value: OC
         description: Other Charge
       - value: UF
-        description: Unassignmed Felony
+        description: Unassigned Felony
   - name: CRIME_CATEGORY
     description: |-
       Category of the crime.
