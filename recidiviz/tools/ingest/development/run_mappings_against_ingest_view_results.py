@@ -24,8 +24,8 @@ missed.
 Example Usage:
     python -m recidiviz.tools.ingest.development.run_mappings_against_ingest_view_results \
         --project-id recidiviz-staging \
-        --state-code US_OR \
-        --ingest-view-name Sentence
+        --state-code US_ND \
+        --ingest-view-name elite_alias
 """
 
 import argparse
