@@ -17,7 +17,10 @@ input_columns:
   - FirstName
   - MiddleName
   - LastName
-unused_columns: []
+unused_columns:
+  - FirstName
+  - MiddleName
+  - LastName
 output:
   StatePerson:
     external_ids:
@@ -32,15 +35,6 @@ output:
               - $if:
                   $not_null: EmployeeId
                 $then: $literal("US_IX_EMPLOYEE")
-          contacted_agent:
-            StateAgent:
-              external_id: EmployeeId
-              full_name:
-                $person_name:
-                  $given_names: FirstName
-                  $surname: LastName
-                  $middle_names: MiddleName
-              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
           external_id:
             $concat:
               $values:
