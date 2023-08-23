@@ -18,6 +18,7 @@
 Used inside person_details_lookml_writer
 """
 
+import functools
 import itertools
 import os
 from collections import defaultdict
@@ -176,7 +177,9 @@ def _generate_shared_fields_view(
 
 
 def _get_dimensions_for_raw_file_view(
-    config: DirectIngestRawFileConfig, primary_key_sql: str
+    config: DirectIngestRawFileConfig,
+    primary_key_sql: str,
+    primary_person_view_name: str,
 ) -> List[LookMLViewField]:
     """
     Returns a list of dimensions/dimension groups representing the columns
@@ -210,11 +213,35 @@ def _get_dimensions_for_raw_file_view(
         col_params = [
             LookMLFieldParameter.label(_label_name_for_column(column)),
             LookMLFieldParameter.type(LookMLFieldType.STRING),
-            LookMLFieldParameter.sql("${TABLE}." + column.name),
         ]
 
         if column.description:
             col_params.append(LookMLFieldParameter.description(column.description))
+            col_params.append(LookMLFieldParameter.sql("${TABLE}." + column.name))
+        else:
+            # Columns with no description aren't available in up to date views
+            def no_description_value_builder(s: str, *, col: RawTableColumnInfo) -> str:
+                if s == RAW_DATA_OPTION:
+                    return "${TABLE}." + col.name
+                if s == RAW_DATA_UP_TO_DATE_VIEWS_OPTION:
+                    return "NULL"
+                raise ValueError(f"Unexpected raw data table type: {s}")
+
+            col_params.append(
+                LookMLFieldParameter.sql(
+                    ParameterizedValue(
+                        parameter_name=f"{primary_person_view_name}.{VIEW_TYPE_PARAM_NAME}",
+                        parameter_options=[
+                            RAW_DATA_OPTION,
+                            RAW_DATA_UP_TO_DATE_VIEWS_OPTION,
+                        ],
+                        value_builder=functools.partial(
+                            no_description_value_builder, col=column
+                        ),
+                        indentation_level=3,
+                    )
+                )
+            )
 
         if column.name in config.primary_key_cols:
             col_params.append(LookMLFieldParameter.group_label("Primary Key"))
@@ -339,7 +366,9 @@ def _generate_raw_file_view(
         included_paths=[f"{shared_fields_name}.view"],
         extended_views=[shared_fields_name],
         fields=[
-            *_get_dimensions_for_raw_file_view(config, primary_key_sql),
+            *_get_dimensions_for_raw_file_view(
+                config, primary_key_sql, primary_person_view_name
+            ),
             MeasureLookMLViewField(
                 field_name="count",
                 parameters=[

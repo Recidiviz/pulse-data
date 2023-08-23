@@ -67,7 +67,7 @@ def get_table_relationship_edges(
     while tables:
         cur_table = tables.popleft()
         # we don't include any tables that aren't directly linked to a primary table
-        if not cur_table.is_primary_person_table:
+        if not cur_table.has_primary_external_id_col:
             continue
 
         for relationship in cur_table.table_relationships:
