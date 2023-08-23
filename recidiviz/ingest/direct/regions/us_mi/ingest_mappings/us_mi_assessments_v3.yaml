@@ -17,7 +17,10 @@ input_columns:
   - MiddleInitial
   - LastName
   - FKCoSyRecSupervisionLevel
-unused_columns: []
+unused_columns:
+  - FirstName
+  - MiddleInitial
+  - LastName
 output:
   StatePerson:
     external_ids:
@@ -307,11 +310,3 @@ output:
               - $if:
                   $not_null: FkShUserScreener
                 $then: $literal("US_MI_COMPAS_USER")
-          conducting_agent:
-            StateAgent:
-              external_id: FkShUserScreener
-              full_name:
-                $person_name:
-                  $given_names: FirstName
-                  $surname: LastName
-                  $middle_names: MiddleInitial
