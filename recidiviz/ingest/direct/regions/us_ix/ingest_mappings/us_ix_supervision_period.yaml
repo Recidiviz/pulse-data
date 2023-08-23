@@ -25,6 +25,9 @@ input_columns:
 unused_columns:
   - EmployeeTypeName
   - LocationName
+  - FirstName
+  - MiddleName
+  - LastName
 output:
   StatePerson:
     external_ids:
@@ -48,20 +51,6 @@ output:
               - $if:
                   $not_null: EmployeeId
                 $then: $literal("US_IX_EMPLOYEE")
-          supervising_officer:
-            $conditional:
-              - $if:
-                  $not_null: EmployeeId
-                $then:
-                  StateAgent:
-                    external_id: EmployeeId
-                    full_name:
-                      $person_name:
-                        $given_names: FirstName
-                        $surname: LastName
-                        $middle_names: MiddleName
-                    # TODO(#16848): Add mappings based on `EmployeeTypeName`
-                    agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
           supervision_type:
             $conditional:
               - $if:
