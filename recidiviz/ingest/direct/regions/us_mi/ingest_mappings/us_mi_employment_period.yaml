@@ -44,7 +44,14 @@ output:
                   - "14347" # Proposed
                   - "15055" # Gave victim drugs or alcohol (I think this is a data entry error)
           start_date: employment_date
-          end_date: termination_date
+          # Since all employment data moved to COMS on 8-14-2023, end all employment periods open as of 8-14-2023 on that date
+          # The employment_periods_coms view should pick up all employment periods that were active on and after that date.
+          end_date:
+            $conditional:
+              - $if:
+                  $not_null: termination_date
+                $then: termination_date
+              - $else: $literal("2023-08-14")
           employer_name: employer_name
           # There is both a position and occupation column in the raw data and sometimes both are valued,
           # sometimes only one is valued, and sometimes neither are valued. But when they're both valued,
