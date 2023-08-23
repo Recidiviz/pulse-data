@@ -23,7 +23,10 @@ input_columns:
   - officer_middle_name
   - officer_last_name
   - supervision_period_id
-unused_columns: []
+unused_columns:
+  - officer_first_name
+  - officer_middle_name
+  - officer_last_name
 output:
   StatePerson:
     external_ids:
@@ -106,12 +109,3 @@ output:
               - $if:
                   $not_null: officer_external_id
                 $then: $literal("US_ME_EMPLOYEE")
-          supervising_officer:
-            StateAgent:
-              external_id: officer_external_id
-              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
-              full_name:
-                $person_name:
-                  $given_names: officer_first_name
-                  $middle_names: officer_middle_name
-                  $surname: officer_last_name
