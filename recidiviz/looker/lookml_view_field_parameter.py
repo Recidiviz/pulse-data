@@ -109,6 +109,10 @@ class LookMLFieldParameter:
         return FieldParameterAllowedValue(label, value)
 
     @classmethod
+    def convert_tz(cls, value: bool) -> "LookMLFieldParameter":
+        return FieldParameterConvertTz(value)
+
+    @classmethod
     def default_value(cls, value: str) -> "LookMLFieldParameter":
         return FieldParameterDefaultValue(value)
 
@@ -145,6 +149,10 @@ class LookMLFieldParameter:
         cls, options: List[LookMLTimeframesOption]
     ) -> "LookMLFieldParameter":
         return FieldParameterTimeframes(options)
+
+    @classmethod
+    def value_format(cls, value: str) -> "LookMLFieldParameter":
+        return FieldParameterValueFormat(value)
 
 
 # DISPLAY PARAMETERS
@@ -285,6 +293,26 @@ class FieldParameterDefaultValue(LookMLFieldParameter):
 
 # QUERY PARAMETERS
 @attr.define
+class FieldParameterConvertTz(LookMLFieldParameter):
+    """Generates a `convert_tz` field parameter
+    (see https://cloud.google.com/looker/docs/reference/param-field-convert-tz).
+    """
+
+    value: bool
+
+    @property
+    def key(self) -> str:
+        return "convert_tz"
+
+    @property
+    def value_text(self) -> str:
+        return "yes" if self.value else "no"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return True
+
+
+@attr.define
 class FieldParameterDatatype(LookMLFieldParameter):
     """Generates a `datatype` field parameter
     (see https://cloud.google.com/looker/docs/reference/param-field-datatype).
@@ -343,6 +371,26 @@ class FieldParameterHidden(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return True
+
+
+@attr.define
+class FieldParameterValueFormat(LookMLFieldParameter):
+    """Generates a `value_format` field parameter
+    (see https://cloud.google.com/looker/docs/reference/param-field-value-format).
+    """
+
+    value: str
+
+    @property
+    def key(self) -> str:
+        return "value_format"
+
+    @property
+    def value_text(self) -> str:
+        return f'"{self.value}"'
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category != LookMLFieldCategory.PARAMETER
 
 
 @attr.define
@@ -418,6 +466,7 @@ class FieldParameterType(LookMLFieldParameter):
         return False
 
 
+# OTHER PARAMETERS
 @attr.define
 class FieldParameterTimeframes(LookMLFieldParameter):
     """Generates a `timeframes` field parameter,

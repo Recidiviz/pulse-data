@@ -14,16 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Helpers for LookML generation scripts."""
-
-import os
-
-
-def remove_lookml_files_from(directory: str) -> None:
-    """
-    Removes all LookML files from the given directory
-    """
-    for path, _, filenames in os.walk(directory):
-        for file in filenames:
-            if file.endswith(".lkml") or file.endswith(".lookml"):
-                os.remove(os.path.join(path, file))
