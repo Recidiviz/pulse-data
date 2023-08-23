@@ -68,21 +68,21 @@ def schema_field_for_attribute(field_name: str, attribute: attr.Attribute) -> bi
     )
 
 
-def _schema_column_type_for_type(field_type: Type) -> str:
+def _bq_schema_column_type_for_type(field_type: Type) -> bigquery.enums.SqlTypeNames:
     """Returns the schema column type that should be used to store the value of the
     provided |field_type| in a BigQuery table."""
     if field_type is Enum or field_type is str or field_type is List:
-        return bigquery.enums.SqlTypeNames.STRING.value
+        return bigquery.enums.SqlTypeNames.STRING
     if field_type is int:
-        return bigquery.enums.SqlTypeNames.INTEGER.value
+        return bigquery.enums.SqlTypeNames.INTEGER
     if field_type is float:
-        return bigquery.enums.SqlTypeNames.FLOAT.value
+        return bigquery.enums.SqlTypeNames.FLOAT
     if field_type is datetime.date:
-        return bigquery.enums.SqlTypeNames.DATE.value
+        return bigquery.enums.SqlTypeNames.DATE
     if field_type is datetime.datetime:
-        return bigquery.enums.SqlTypeNames.DATETIME.value
+        return bigquery.enums.SqlTypeNames.DATETIME
     if field_type is bool:
-        return bigquery.enums.SqlTypeNames.BOOLEAN.value
+        return bigquery.enums.SqlTypeNames.BOOLEAN
     # TODO(#7285): Add support for ARRAY types when we turn on the regular
     #  CloudSQL to BQ refresh for the JUSTICE_COUNTS schema
     raise ValueError(f"Unhandled field type for field_type: {field_type}")
@@ -92,11 +92,13 @@ def schema_field_for_type(field_name: str, field_type: Type) -> bigquery.SchemaF
     """Returns a BigQuery SchemaField object with the information needed for a column
     with the name of |field_name| storing the values in the |field_type|."""
     return bigquery.SchemaField(
-        field_name, _schema_column_type_for_type(field_type), mode="NULLABLE"
+        field_name, _bq_schema_column_type_for_type(field_type).value, mode="NULLABLE"
     )
 
 
-def _schema_column_type_for_sqlalchemy_column(column: Column) -> str:
+def bq_schema_column_type_for_sqlalchemy_column(
+    column: Column,
+) -> bigquery.enums.SqlTypeNames:
     """Returns the schema column type that should be used to store the value of the
     provided |column| in a BigQuery table."""
     col_postgres_type = column.type
@@ -104,7 +106,7 @@ def _schema_column_type_for_sqlalchemy_column(column: Column) -> str:
     if isinstance(col_postgres_type, postgresql.UUID):
         # UUID types don't have a python_type implemented, but we cast to string
         # when we migrate to BQ
-        return bigquery.enums.SqlTypeNames.STRING.value
+        return bigquery.enums.SqlTypeNames.STRING
 
     col_python_type = col_postgres_type.python_type
 
@@ -112,13 +114,13 @@ def _schema_column_type_for_sqlalchemy_column(column: Column) -> str:
         isinstance(col_postgres_type, postgresql.TIMESTAMP)
         or col_postgres_type.timezone
     ):
-        return bigquery.enums.SqlTypeNames.TIMESTAMP.value
+        return bigquery.enums.SqlTypeNames.TIMESTAMP
     if col_python_type == dict and isinstance(
         col_postgres_type, (postgresql.JSON, postgresql.JSONB)
     ):
-        return bigquery.enums.SqlTypeNames.STRING.value
+        return bigquery.enums.SqlTypeNames.STRING
 
-    return _schema_column_type_for_type(col_python_type)
+    return _bq_schema_column_type_for_type(col_python_type)
 
 
 def schema_for_sqlalchemy_table(
@@ -130,7 +132,9 @@ def schema_for_sqlalchemy_table(
     column name and value type for each column in the table."""
     columns_for_table = [
         bigquery.SchemaField(
-            col.name, _schema_column_type_for_sqlalchemy_column(col), mode="NULLABLE"
+            col.name,
+            bq_schema_column_type_for_sqlalchemy_column(col).value,
+            mode="NULLABLE",
         )
         for col in table.columns
     ]

@@ -124,11 +124,12 @@ class DimensionLookMLViewField(LookMLViewField):
         cls,
         column_name: str,
         field_type: LookMLFieldType = LookMLFieldType.STRING,
+        custom_params: Optional[List[LookMLFieldParameter]] = None,
     ) -> "DimensionLookMLViewField":
         """
         Generates simple dimension referencing a column name present in the view source table.
         """
-        additional_params: List[LookMLFieldParameter] = []
+        additional_params: List[LookMLFieldParameter] = custom_params or []
         if field_type is LookMLFieldType.DATE:
             additional_params.append(
                 LookMLFieldParameter.datatype(LookMLFieldDatatype.DATE)

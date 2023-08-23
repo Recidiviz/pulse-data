@@ -224,6 +224,18 @@ def get_database_entities_by_association_table(
     return child_member, parent_member
 
 
+def get_primary_key_column_name(
+    schema_module: ModuleType, table_name: str
+) -> Optional[str]:
+    """Return the column name of the primary key associated with the given table name"""
+    if is_association_table(table_name):
+        # Association tables don't have primary keys
+        return None
+
+    database_entity = get_database_entity_by_table_name(schema_module, table_name)
+    return database_entity.get_primary_key_column_name()
+
+
 def _is_database_entity_subclass(member: Any) -> bool:
     return (
         inspect.isclass(member)
