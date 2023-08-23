@@ -28,6 +28,7 @@ from recidiviz.justice_counts.dimensions import (
     person,
     prisons,
     prosecution,
+    superagency,
     supervision,
 )
 
@@ -94,6 +95,9 @@ DIMENSIONS = [
     supervision.ViolationType,
     supervision.FundingType,
     supervision.RevocationType,
+    superagency.FundingType,
+    superagency.ExpenseType,
+    superagency.StaffType,
 ]
 
 

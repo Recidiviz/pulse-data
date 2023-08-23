@@ -27,6 +27,7 @@ from recidiviz.justice_counts.metrics import (
     law_enforcement,
     prisons,
     prosecution,
+    superagency,
     supervision,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -101,6 +102,9 @@ METRICS = [
     supervision.violations,
     supervision.revocations,
     supervision.reconvictions,
+    superagency.funding,
+    superagency.expenses,
+    superagency.staff,
 ]
 
 METRICS_BY_SYSTEM = {}

@@ -172,7 +172,7 @@ expenses = MetricDefinition(
                 ExpenseType.TRAINING: "The amount spent on the training of personnel involved in the operation and maintenance of criminal public defense providers and the representation of people who are clients of those providers, including any associated expenses, such as registration fees and travel costs.",
                 ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent for the purchase and use of the physical plant and property owned and operated by the provider for criminal defense services.",
                 ExpenseType.OTHER: "The amount spent on other costs relating the operation and maintenance of criminal public defense providers and the representation of people who are clients of those providers that are not personnel, training, or facilities and equipment expenses.",
-                ExpenseType.UNKNOWN: "he amount spent on other costs relating the operation and maintenance of criminal defense providers and the representation of people who are clients of those providers that are for an unknown purpose.",
+                ExpenseType.UNKNOWN: "The amount spent on other costs relating the operation and maintenance of criminal defense providers and the representation of people who are clients of those providers that are for an unknown purpose.",
             },
             dimension_to_includes_excludes={
                 ExpenseType.PERSONNEL: [
