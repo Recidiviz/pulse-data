@@ -169,8 +169,15 @@ elif environment.in_gcp():
         raise ValueError(f"Unsupported service type: {service_type}")
 
     for schema_type in schemas:
+        # TODO(#23253): Remove when Publisher is migrated to JC GCP project.
+        secret_prefix_override = (
+            JUSTICE_COUNTS_DB_SECRET_PREFIX
+            if schema_type == SchemaType.JUSTICE_COUNTS
+            else None
+        )
         SQLAlchemyEngineManager.attempt_init_engines_for_databases(
-            database_keys_for_schema_type(schema_type)
+            database_keys=database_keys_for_schema_type(schema_type),
+            secret_prefix_override=secret_prefix_override,
         )
 if environment.in_development() or environment.in_gcp():
     # Initialize datastores for the admin panel and trigger a data refresh. This call
