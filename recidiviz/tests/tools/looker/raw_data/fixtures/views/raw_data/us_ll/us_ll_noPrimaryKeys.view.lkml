@@ -20,23 +20,25 @@ view: us_ll_noPrimaryKeys {
   dimension: col_name_1a {
     label: "col_name_1a"
     type: string
-    sql: ${TABLE}.col_name_1a ;;
     description: "First column."
+    sql: ${TABLE}.col_name_1a ;;
   }
 
   dimension: col_name_1b {
     label: "col_name_1b"
     type: string
-    sql: ${TABLE}.col_name_1b ;;
     description: "A column description that is long enough to take up
 multiple lines. This text block will be interpreted
 literally and trailing/leading whitespace is removed."
+    sql: ${TABLE}.col_name_1b ;;
   }
 
   dimension: undocumented_column {
     label: "undocumented_column"
     type: string
-    sql: ${TABLE}.undocumented_column ;;
+    sql: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} ${TABLE}.undocumented_column
+      {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
   }
 
   measure: count {

@@ -20,7 +20,9 @@ view: us_ll_datetimeNoParsers {
   dimension: COL1 {
     label: "COL1"
     type: string
-    sql: ${TABLE}.COL1 ;;
+    sql: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} ${TABLE}.COL1
+      {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
     group_label: "Primary Key"
   }
 
@@ -42,7 +44,9 @@ view: us_ll_datetimeNoParsers {
   dimension: COL2__raw {
     label: "COL2__raw"
     type: string
-    sql: ${TABLE}.COL2 ;;
+    sql: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} ${TABLE}.COL2
+      {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
   }
 
   measure: count {

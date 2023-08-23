@@ -20,20 +20,26 @@ view: us_ll_basicData {
   dimension: COL1 {
     label: "COL1"
     type: string
-    sql: ${TABLE}.COL1 ;;
+    sql: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} ${TABLE}.COL1
+      {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
     group_label: "Primary Key"
   }
 
   dimension: COL2 {
     label: "COL2"
     type: string
-    sql: ${TABLE}.COL2 ;;
+    sql: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} ${TABLE}.COL2
+      {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
   }
 
   dimension: COL3 {
     label: "COL3"
     type: string
-    sql: ${TABLE}.COL3 ;;
+    sql: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} ${TABLE}.COL3
+      {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
+      {% endif %} ;;
   }
 
   measure: count {
