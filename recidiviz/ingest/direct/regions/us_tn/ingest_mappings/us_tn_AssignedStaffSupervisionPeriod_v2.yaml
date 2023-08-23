@@ -17,7 +17,10 @@ input_columns:
   - Site
   - SupervisionPeriodSequenceNumber
   - SupervisionLevel
-unused_columns: []
+unused_columns:
+  - SupervisionOfficerFirstName
+  - SupervisionOfficerLastName
+  - SupervisionOfficerSuffix
 output:
   StatePerson:
     external_ids:
@@ -40,15 +43,6 @@ output:
               - $if:
                   $not_null: SupervisionOfficerID
                 $then: $literal("US_TN_STAFF_TOMIS")
-          supervising_officer:
-            StateAgent:
-              external_id: SupervisionOfficerID
-              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
-              full_name:
-                $person_name:
-                  $given_names: SupervisionOfficerFirstName
-                  $surname: SupervisionOfficerLastName
-                  $name_suffix: SupervisionOfficerSuffix
           admission_reason:
             $enum_mapping:
               $raw_text: AdmissionReason
