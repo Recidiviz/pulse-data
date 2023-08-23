@@ -30,6 +30,7 @@ from recidiviz.justice_counts.metricfiles.law_enforcement import (
 )
 from recidiviz.justice_counts.metricfiles.prisons import PRISON_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.prosecution import PROSECUTION_METRIC_FILES
+from recidiviz.justice_counts.metricfiles.superagency import SUPERAGENCY_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.supervision import SUPERVISION_METRIC_FILES
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -42,6 +43,7 @@ SYSTEM_TO_METRICFILES = {
     schema.System.JAILS: JAILS_METRIC_FILES,
     schema.System.PRISONS: PRISON_METRIC_FILES,
     schema.System.SUPERVISION: SUPERVISION_METRIC_FILES,
+    schema.System.SUPERAGENCY: SUPERAGENCY_METRIC_FILES,
 }
 
 
