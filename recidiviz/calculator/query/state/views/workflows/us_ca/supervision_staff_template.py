@@ -17,12 +17,19 @@
 
 """View logic to prepare US_CA supervision staff data for Workflows"""
 
-US_CA_SUPERVISION_STAFF_TEMPLATE = """
+from recidiviz.calculator.query.state.views.workflows.us_ca.shared_ctes import (
+    US_CA_MOST_RECENT_CLIENT_DATA,
+)
+
+US_CA_SUPERVISION_STAFF_TEMPLATE = f"""
     WITH
+    most_recent_client_data AS (
+        {US_CA_MOST_RECENT_CLIENT_DATA}
+    )
     -- Assign officers to the district where they have the most clients
-    caseload_districts AS (
+    , caseload_districts AS (
         SELECT BadgeNumber, ParoleUnit as district
-            FROM `{project_id}.{us_ca_raw_data_up_to_date_dataset}.PersonParole_latest`
+            FROM most_recent_client_data
             WHERE
                 ParoleUnit IS NOT NULL
             GROUP BY BadgeNumber, ParoleUnit
@@ -39,13 +46,13 @@ US_CA_SUPERVISION_STAFF_TEMPLATE = """
         FALSE AS has_facility_caseload,
         caseload_districts.district
 
-    FROM `{project_id}.{normalized_state_dataset}.state_staff` state_staff
-    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_staff_external_id` eid
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_staff` state_staff
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` eid
         USING(staff_id)
     LEFT JOIN caseload_districts ON eid.external_id = caseload_districts.BadgeNumber
     INNER JOIN (
         SELECT DISTINCT state_code, officer_id as external_id
-        FROM `{project_id}.{workflows_dataset}.client_record_materialized`
+        FROM `{{project_id}}.{{workflows_dataset}}.client_record_materialized`
         WHERE state_code="US_CA"
     ) USING(external_id)
     WHERE state_staff.state_code = "US_CA"

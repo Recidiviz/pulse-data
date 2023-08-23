@@ -32,7 +32,10 @@ from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_clients_
     US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
@@ -189,7 +192,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
     ),
-    us_ca_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+    us_ca_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_CA, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
