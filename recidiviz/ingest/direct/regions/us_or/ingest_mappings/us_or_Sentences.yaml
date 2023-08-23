@@ -1,0 +1,257 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_Sentence` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - CUSTODY_NUMBER
+  - ADMISSION_NUMBER
+  - OFFENSE_NUMBER
+  - SENTENCE_NUMBER
+  - CURRENT_STATUS
+  - SENTENCE_TYPE # supervision_type   # date_imposed? CONVICTED_DATE?
+  - SENTENCE_BEGIN_DATE # effective_date
+  - MINIMUM_DATE # projected_min_release_date # min_length_days
+  - MAXIMUM_DATE # projected_max_release_date # max_length_days
+  - TERMINATION_DATE # completion_date
+  - TERMINATION_CODE
+  - LIFE_OR_DEATH # life_sentence and is_capital_punishment
+  - TIME_SERVED # initial_time_served_days
+  - STATUTORY_GOOD_TIME # good_time_days
+  - EARNED_TIME_DAYS # earned_time_days
+  - CONSEC_TO
+  - MERGE_SENTENCE
+  - CRIME_COMMITTED_DATE # offense_date
+  - CONVICTED_DATE # date_charged
+  - COUNTY
+  - ORS_NUMBER # statute # need to link to NCIC table for NCIC_CODE
+  - ORS_DESCRIPTION
+  - PAROLE_RELEASE_DATE
+  - PAROLE_POSSIBLE
+  - CONDITIONS_LIST
+  - NCIC_CODE
+  - SEX_ASSAULT_CRIME
+  - CRIME_CLASS # classification_type
+  - DANG_OFFENDER # is_violent
+  - COURT_CASE_COUNT # counts
+  - JUDGE
+unused_columns:
+  - CURRENT_STATUS
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    supervision_sentences:
+      # Populate supervision sentence if sentence type is considered supervision
+      - $conditional:
+          - $if:
+              $in:
+                $value: SENTENCE_TYPE
+                $options:
+                  - $literal("P")
+                  - $literal("O")
+                  - $literal("D")
+            $then:
+              StateSupervisionSentence:
+                external_id:
+                  $concat:
+                    $values:
+                      - RECORD_KEY
+                      - CUSTODY_NUMBER
+                      - ADMISSION_NUMBER
+                      - OFFENSE_NUMBER
+                      - SENTENCE_NUMBER
+                status:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "@@"
+                        $values:
+                          - TERMINATION_CODE
+                          - TERMINATION_DATE
+                        $include_nulls: True
+                    $custom_parser: us_or_custom_enum_parsers.parse_sentence_status
+                supervision_type:
+                  $enum_mapping:
+                    $raw_text: SENTENCE_TYPE
+                    $mappings:
+                      StateSupervisionSentenceSupervisionType.PROBATION:
+                        - P # Probation Sentence
+                      StateSupervisionSentenceSupervisionType.PAROLE:
+                        - O # Post Prison Supervision Sentence (virtually synonymous with Parole in OR)
+                      StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN:
+                        - D # Diversion
+                date_imposed: CONVICTED_DATE
+                effective_date: SENTENCE_BEGIN_DATE
+                completion_date: TERMINATION_DATE
+                county_code: COUNTY
+                conditions: CONDITIONS_LIST
+                is_life:
+                  $equal:
+                    - LIFE_OR_DEATH
+                    - $literal("L") # Life sentence
+                sentence_metadata:
+                  $json_dict:
+                    CONSEC_SENT: CONSEC_TO
+                    MERGED_SENT: MERGE_SENTENCE
+                charges:
+                  - StateCharge:
+                      external_id:
+                        $concat:
+                          $values:
+                            - RECORD_KEY
+                            - CUSTODY_NUMBER
+                            - ADMISSION_NUMBER
+                            - OFFENSE_NUMBER
+                      status: $literal_enum(StateChargeStatus.CONVICTED) # only have data for convictions
+                      offense_date: CRIME_COMMITTED_DATE
+                      date_charged: CONVICTED_DATE
+                      county_code: COUNTY
+                      ncic_code: NCIC_CODE
+                      statute: ORS_NUMBER
+                      classification_type:
+                        $enum_mapping:
+                          $raw_text: CRIME_CLASS
+                          $mappings:
+                            StateChargeClassificationType.FELONY:
+                              - CF # Class C Felony
+                              - BF # Class B Felony
+                              - AF # Class A Felony
+                              - UF # Unassigned Felony
+                            StateChargeClassificationType.MISDEMEANOR:
+                              - AM #  Class A Misdemeanor
+                              - CM # Class C Misdemeanor
+                              - BM # Class B Misdemeanor
+                              - UM # Unassigned Misdemeanor
+                            StateChargeClassificationType.EXTERNAL_UNKNOWN:
+                              - OC # Other Charge
+                      classification_subtype: CRIME_CLASS
+                      offense_type: ORS_DESCRIPTION
+                      is_violent:
+                        $equal:
+                          - DANG_OFFENDER
+                          - $literal("Y") # YES
+                      is_sex_offense:
+                        $equal:
+                          - SEX_ASSAULT_CRIME
+                          - $literal("Y") # YES
+                      counts: COURT_CASE_COUNT
+                      judge_full_name:
+                        $person_name:
+                          $full_name: JUDGE
+    incarceration_sentences:
+      - $conditional:
+          - $if:
+              $in:
+                $value: SENTENCE_TYPE
+                $options:
+                  - $literal("I")
+                  - $literal("X")
+                  - $literal("L")
+                  - $literal("S")
+                  - $literal("J")
+            $then:
+              StateIncarcerationSentence:
+                external_id:
+                  $concat:
+                    $values:
+                      - RECORD_KEY
+                      - CUSTODY_NUMBER
+                      - ADMISSION_NUMBER
+                      - OFFENSE_NUMBER
+                      - SENTENCE_NUMBER
+                status:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $separator: "@@"
+                        $values:
+                          - TERMINATION_CODE
+                          - TERMINATION_DATE
+                        $include_nulls: True
+                    $custom_parser: us_or_custom_enum_parsers.parse_sentence_status
+                incarceration_type:
+                  $enum_mapping:
+                    $raw_text: SENTENCE_TYPE
+                    $mappings:
+                      StateIncarcerationType.STATE_PRISON:
+                        - I # AIC (adult in custody) Sentence
+                        - X # SGL Dangerous Offender Minimum
+                        - S # Sanction Served in Institution
+                      StateIncarcerationType.COUNTY_JAIL:
+                        - L # Local County Jail
+                        - J # AIC (adult in custody) Jail Sentence
+                date_imposed: CONVICTED_DATE
+                effective_date: SENTENCE_BEGIN_DATE
+                projected_min_release_date: MINIMUM_DATE
+                projected_max_release_date: MAXIMUM_DATE
+                completion_date: TERMINATION_DATE
+                parole_eligibility_date: PAROLE_RELEASE_DATE
+                county_code: COUNTY
+                conditions: CONDITIONS_LIST
+                is_life:
+                  $equal:
+                    - LIFE_OR_DEATH
+                    - $literal("L") # Life sentence
+                is_capital_punishment:
+                  $equal:
+                    - LIFE_OR_DEATH
+                    - $literal("D") # Death
+                parole_possible:
+                  $equal:
+                    - PAROLE_POSSIBLE
+                    - $literal("Y") # If before 1989 yes, after supervision is sentenced separately
+                initial_time_served_days: TIME_SERVED
+                good_time_days: STATUTORY_GOOD_TIME
+                earned_time_days: EARNED_TIME_DAYS
+                sentence_metadata:
+                  $json_dict:
+                    CONSEC_SENT: CONSEC_TO
+                    MERGED_SENT: MERGE_SENTENCE
+                charges:
+                  - StateCharge:
+                      external_id:
+                        $concat:
+                          $values:
+                            - RECORD_KEY
+                            - CUSTODY_NUMBER
+                            - ADMISSION_NUMBER
+                            - OFFENSE_NUMBER
+                      status: $literal_enum(StateChargeStatus.CONVICTED) # only have data for convictions
+                      offense_date: CRIME_COMMITTED_DATE
+                      date_charged: CONVICTED_DATE
+                      county_code: COUNTY
+                      ncic_code: NCIC_CODE
+                      statute: ORS_NUMBER
+                      classification_type:
+                        $enum_mapping:
+                          $raw_text: CRIME_CLASS
+                          $mappings:
+                            StateChargeClassificationType.FELONY:
+                              - CF # Class C Felony
+                              - BF # Class B Felony
+                              - AF # Class A Felony
+                              - UF # Unassigned Felony
+                            StateChargeClassificationType.MISDEMEANOR:
+                              - AM #  Class A Misdemeanor
+                              - CM # Class C Misdemeanor
+                              - BM # Class B Misdemeanor
+                              - UM # Unassigned Misdemeanor
+                            StateChargeClassificationType.EXTERNAL_UNKNOWN:
+                              - OC # Other Charge
+                      classification_subtype: CRIME_CLASS
+                      offense_type: ORS_DESCRIPTION
+                      is_violent:
+                        $equal:
+                          - DANG_OFFENDER
+                          - $literal("Y") # YES
+                      is_sex_offense:
+                        $equal:
+                          - SEX_ASSAULT_CRIME
+                          - $literal("Y") # YES
+                      counts: COURT_CASE_COUNT
+                      judge_full_name:
+                        $person_name:
+                          $full_name: JUDGE

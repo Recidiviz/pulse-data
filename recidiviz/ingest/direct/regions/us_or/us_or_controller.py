@@ -43,6 +43,11 @@ class UsOrController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        tags = ["State_Person", "Incarceration_Period", "Incarceration_Incident"]
+        tags = [
+            "State_Person",
+            "Incarceration_Period",
+            "Incarceration_Incident",
+            "Sentences",
+        ]
 
         return tags

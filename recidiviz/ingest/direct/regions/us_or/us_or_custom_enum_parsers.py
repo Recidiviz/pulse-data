@@ -27,6 +27,7 @@ from typing import Optional
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodHousingUnitType,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 
 
 def parse_housing_unit_type(  # TODO(#21278): Update when schema change request for additional types of solitary is in.
@@ -60,3 +61,44 @@ def parse_housing_unit_type(  # TODO(#21278): Update when schema change request 
     if not raw_text:
         return None
     return StateIncarcerationPeriodHousingUnitType.GENERAL
+
+
+def parse_sentence_status(raw_text: str) -> Optional[StateSentenceStatus]:
+    """
+    OR does not have a sentence status but they have TERMINATION_DATE AND TERMINATION CODE
+    """
+    term_code, term_date = raw_text.split("@@")
+
+    if term_code == "NONE" and term_date == "NONE":
+        return StateSentenceStatus.SERVING
+
+    if term_code in ("VACA", "VARE", "ACQT", "DISM"):
+        # VACA-Sentences Vacated, VARE-Sentences Vacated and Remanded to Court,
+        # ACQT-ACQUITTAL: Convictions acquitted after re-trial/re-sentencing, DISM-Dismissed
+        return StateSentenceStatus.VACATED
+
+    if (
+        term_code in ("COMP", "EXEC", "DIED", "DISC", "DSCH", "EXPI", "POST", "TERM")
+        or term_code == "NONE"
+        and term_date != "NONE"
+    ):
+        # Completed, executed, died, discharged, discharged (sp), expired, institution sentence expired,
+        # OR sentence expired - International Transfer
+        return StateSentenceStatus.COMPLETED
+
+    if term_code == "AUTO":
+        return StateSentenceStatus.EXTERNAL_UNKNOWN
+
+    if term_code == "SUSP":
+        return StateSentenceStatus.SUSPENDED
+
+    if term_code in ("APPE", "SCOM", "XERR"):
+        # Appeal Won, Sentence Commuted, Admitted to prison in error
+        return StateSentenceStatus.COMMUTED
+
+    if term_code in ("RSNT", "CASR", "HEAR", "PROB"):
+        # Resentenced, Case Revoked to Court Responsibility, Resentenced under 137.712,
+        # Institution sentence amended to supervision
+        return StateSentenceStatus.AMENDED
+
+    return StateSentenceStatus.INTERNAL_UNKNOWN
