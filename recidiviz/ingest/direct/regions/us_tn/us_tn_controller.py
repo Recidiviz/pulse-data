@@ -55,6 +55,9 @@ class UsTnController(BaseDirectIngestController):
             "SentencesChargesAndCourtCases_v3",
         ]
 
+        if not environment.in_gcp_production():
+            tags.extend(["ViolationsAndSanctions"])
+
         # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes
         #  faster than current infra allows.
         if not environment.in_gcp():
