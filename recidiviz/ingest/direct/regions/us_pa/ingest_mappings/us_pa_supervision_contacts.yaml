@@ -20,6 +20,8 @@ unused_columns:
   - contact_end_date
   - assisted
   - parole_org
+  - agent_first_name
+  - agent_last_name
 output:
   StatePerson:
     external_ids:
@@ -39,14 +41,6 @@ output:
               - $if:
                   $not_null: agent_number
                 $then: $literal("US_PA_PBPP_EMPLOYEE_NUM")
-          contacted_agent:
-            StateAgent:
-              external_id: agent_number
-              full_name:
-                $person_name:
-                  $given_names: agent_first_name
-                  $surname: agent_last_name
-              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
           contact_date: contact_start_date
           contact_type:
             $enum_mapping:

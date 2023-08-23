@@ -124,41 +124,6 @@ def max_and_min_lengths_days_from_court_sentence_duration(
     return str(result)
 
 
-def first_name_parser(full_name: str) -> str:
-    """Returns the cleaned first name"""
-    if full_name != "":
-        if "," in full_name:
-            name_list = full_name.split(",")
-            if " " in name_list[1].strip(" "):  # There is a middle name/initial
-                first_name_list = name_list[1].strip(" ").split(" ")
-                first_name = first_name_list[0]
-            else:
-                first_name = name_list[1].strip(" ")
-        elif " " in full_name:
-            name_list = full_name.split(" ")
-            first_name = name_list[1].strip(" ")
-        else:
-            first_name = ""
-
-        return first_name
-    return ""
-
-
-def last_name_parser(full_name: str) -> str:
-    """Returns the cleaned last name, possibly including a suffix."""
-    if full_name != "":
-        if "," in full_name:
-            name_list = full_name.split(",")
-            last_name = name_list[0].strip(",")
-        elif " " in full_name:
-            name_list = full_name.split(" ")
-            last_name = name_list[0].strip(" ")
-        else:
-            last_name = full_name
-        return last_name
-    return ""
-
-
 def supervision_district_mapper(district: str) -> str:
     """A temporary solution to populate the supervision districts of officers
     who will be included in the first PA Outliers report."""

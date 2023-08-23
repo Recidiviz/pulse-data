@@ -18,7 +18,8 @@ input_columns:
   - district_sub_office_id
   - supervision_location_org_code
   - supervision_types
-unused_columns: []
+unused_columns:
+  - supervising_officer_name
 output:
   StatePerson:
     external_ids:
@@ -181,19 +182,3 @@ output:
               - $if:
                   $not_null: supervising_officer_id
                 $then: $literal("US_PA_PBPP_EMPLOYEE_NUM")
-          supervising_officer:
-            StateAgent:
-              external_id: supervising_officer_id
-              full_name:
-                $person_name:
-                  $given_names:
-                    $custom:
-                      $function: us_pa_custom_parsers.first_name_parser
-                      $args:
-                        full_name: supervising_officer_name
-                  $surname:
-                    $custom:
-                      $function: us_pa_custom_parsers.last_name_parser
-                      $args:
-                        full_name: supervising_officer_name
-              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
