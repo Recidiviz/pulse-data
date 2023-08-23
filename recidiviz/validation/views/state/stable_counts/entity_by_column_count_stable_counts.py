@@ -51,12 +51,15 @@ SELECT * FROM (
             {col}_count, 
             LAG({col}_count) OVER (PARTITION BY region_code ORDER BY month) AS previous_month_{col}_count, 
         FROM {col}_{entity}_counts
-    -- select where the month < first of the current month and >= first of month {validation_window_months} months ago
-    WHERE month < DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL EXTRACT( DAY FROM CURRENT_DATE('US/Eastern')) DAY) and 
-        month >= DATE_SUB(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL EXTRACT( DAY FROM CURRENT_DATE('US/Eastern')) DAY), INTERVAL {validation_window_months} MONTH)
+        -- select where the month < first of the current month
+        WHERE month < DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL EXTRACT( DAY FROM CURRENT_DATE('US/Eastern')) DAY)
     )
-    WHERE {exemptions}
+    -- Limit to most recent {validation_window_months} months
+    -- We apply this filter here after the LAG caluclation has been done so we do not
+    -- compare the first month of the validation to previous month that has been filtered out 
+    WHERE month >= DATE_SUB(DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL EXTRACT( DAY FROM CURRENT_DATE('US/Eastern')) DAY), INTERVAL {validation_window_months} MONTH)
 )
+WHERE {exemptions}
 """
 
 
