@@ -64,6 +64,3 @@ output:
               - $if:
                   $not_null: ConductingStaffID
                 $then: $literal("US_TN_STAFF_TOMIS")
-          conducting_agent:
-            StateAgent:
-              external_id: ConductingStaffID

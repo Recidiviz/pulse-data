@@ -33,13 +33,6 @@ output:
               - $if:
                   $not_null: StaffID
                 $then: $literal("US_TN_STAFF_TOMIS")
-          contacted_agent:
-            $conditional:
-              - $if:
-                  $not_null: StaffID
-                $then:
-                  StateAgent:
-                    external_id: StaffID
           # Due to the number of contact codes present in the raw table, pulled the enum mapping into
           # contact_note_type_mapping variable below
           contact_type: $variable(contact_note_type_mapping)
