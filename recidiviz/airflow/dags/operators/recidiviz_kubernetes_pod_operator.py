@@ -51,6 +51,7 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             image_pull_policy="Always",
             # This config is provided by Cloud Composer
             config_file="/home/airflow/composer_kube_config",
+            startup_timeout_seconds=240,
             env_vars=[
                 k8s.V1EnvVar(name="NAMESPACE", value="composer-user-workloads"),
                 # TODO(census-instrumentation/opencensus-python#796)
