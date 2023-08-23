@@ -45,7 +45,7 @@ resource "google_composer_environment" "default_v2" {
         # The default maximum is 1024, but there may be instances where we may have stopped
         # SFTP and will need to catch up after a few days, so we will increase the limit.
         "core-max_map_length"       = 2000
-        "celery-worker_concurrency" = 3
+        "celery-worker_concurrency" = 16
         "email-email_backend"       = "airflow.providers.sendgrid.utils.emailer.send_email"
         "email-email_conn_id"       = "sendgrid_default"
         "webserver-rbac"            = true
@@ -91,10 +91,10 @@ resource "google_composer_environment" "default_v2" {
         storage_gb = 10
       }
       worker {
-        cpu        = 8
-        memory_gb  = 20
+        cpu        = 4
+        memory_gb  = 16
         storage_gb = 10
-        min_count  = 15
+        min_count  = 2
         max_count  = 30
       }
       triggerer {
