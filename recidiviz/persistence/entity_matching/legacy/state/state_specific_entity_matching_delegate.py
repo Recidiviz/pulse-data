@@ -15,13 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains the base class to handle state specific matching."""
-from typing import List, Optional
-
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity_matching.legacy.entity_matching_types import (
-    EntityTree,
-)
 
 
 class StateSpecificEntityMatchingDelegate:
@@ -39,17 +34,3 @@ class StateSpecificEntityMatchingDelegate:
     def get_region_code(self) -> str:
         """Returns the region code for this object."""
         return self.region_code
-
-    def get_non_external_id_match(
-        # pylint: disable=unused-argument
-        self,
-        ingested_entity_tree: EntityTree,
-        db_entity_trees: List[EntityTree],
-    ) -> Optional[EntityTree]:
-        """This method can be overridden by child classes to allow for state specific matching logic that does not rely
-        solely on matching by external_id.
-
-        If a match is found for the provided |ingested_entity_tree| within the |db_entity_trees| in this manner, it
-        should be returned.
-        """
-        return None

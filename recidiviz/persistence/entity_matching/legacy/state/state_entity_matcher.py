@@ -1057,11 +1057,6 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
                 ingested_entity_tree, db_match_candidates, self.field_index, is_match
             )
 
-        if not exact_match:
-            exact_match = self.state_specific_logic_delegate.get_non_external_id_match(
-                ingested_entity_tree, db_entity_trees
-            )
-
         if exact_match is None:
             return exact_match
 

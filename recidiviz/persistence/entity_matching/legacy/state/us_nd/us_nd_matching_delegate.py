@@ -16,18 +16,8 @@
 # =============================================================================
 
 """Contains logic for US_ND specific entity matching overrides."""
-from typing import List, Optional
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity_matching.legacy import entity_matching_utils
-from recidiviz.persistence.entity_matching.legacy.entity_matching_types import (
-    EntityTree,
-)
-from recidiviz.persistence.entity_matching.legacy.state.state_matching_utils import (
-    nonnull_fields_entity_match,
-)
 from recidiviz.persistence.entity_matching.legacy.state.state_specific_entity_matching_delegate import (
     StateSpecificEntityMatchingDelegate,
 )
@@ -41,30 +31,3 @@ class UsNdMatchingDelegate(StateSpecificEntityMatchingDelegate):
             StateCode.US_ND.value.lower(),
             ingest_metadata,
         )
-
-    def get_non_external_id_match(
-        self, ingested_entity_tree: EntityTree, db_entity_trees: List[EntityTree]
-    ) -> Optional[EntityTree]:
-        """ND specific logic to match the |ingested_entity_tree| to one of the
-        |db_entity_trees| that does not rely solely on matching by external_id.
-        If such a match is found, it is returned.
-        """
-        if isinstance(
-            ingested_entity_tree.entity,
-            (
-                # We will be able to remove StateAgent from this list when we stop
-                # generating supervision officer StateAgent objects with no external_id.
-                schema.StateAgent,
-                # We will be able to remove StateSupervisionViolationResponse from this
-                # list when we stop generating StateSupervisionViolationResponse objects
-                # with no external_id.
-                schema.StateSupervisionViolationResponse,
-            ),
-        ):
-            return entity_matching_utils.get_only_match(
-                ingested_entity_tree,
-                db_entity_trees,
-                self.field_index,
-                nonnull_fields_entity_match,
-            )
-        return None
