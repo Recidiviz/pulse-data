@@ -188,6 +188,7 @@ class System(enum.Enum):
     """Part of the overall criminal justice system that this pertains to, as defined by the Justice Counts Framework."""
 
     # Used by control panel
+    SUPERAGENCY = "SUPERAGENCY"
     LAW_ENFORCEMENT = "LAW_ENFORCEMENT"
     PROSECUTION = "PROSECUTION"
     DEFENSE = "DEFENSE"
