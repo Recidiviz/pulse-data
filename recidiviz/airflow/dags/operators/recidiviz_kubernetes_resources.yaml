@@ -24,6 +24,15 @@
   resources:
     limits:
       cpu: 1000m
+      memory: 3Gi
+
+# TODO(#23450): Remove once old backend exports have been removed
+- entrypoint: MetricViewExportEntrypoint
+  args:
+    export_job_name: PATHWAYS
+  resources:
+    limits:
+      cpu: 1000m
       memory: 2Gi
 
 - entrypoint: BigQueryRefreshEntrypoint
