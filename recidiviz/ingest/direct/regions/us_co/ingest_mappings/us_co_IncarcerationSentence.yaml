@@ -76,6 +76,8 @@ output:
                 StateSentenceStatus.SUSPENDED:
                   - S # Suspended-YOS
                   - H # Held in Abeyance - TODO(#15761): Update when CO responds with additional context
+                StateSentenceStatus.PARDONED:
+                  - "7" # Sealed/Expunged
           incarceration_type:
             $enum_mapping:
               $raw_text: SENTENCETYPE
