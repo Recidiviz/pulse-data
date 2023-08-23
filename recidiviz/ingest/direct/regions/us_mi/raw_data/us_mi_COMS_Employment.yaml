@@ -32,7 +32,6 @@ columns:
     field_type: datetime
   - name: Reason_For_Leaving
     description: Reason For Leaving
-    is_pii: True # Confirm after we get actual data TODO(#23037)
   - name: Employer_Aware_Of_Criminal_Record
     description: Employer Aware Of Criminal Record
   - name: Entered_Date
