@@ -22,7 +22,6 @@ from unittest import TestCase
 import attr
 import pytz
 
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_drug_screen import (
@@ -202,7 +201,6 @@ class TestCoreEntityFieldIndex(TestCase):
 
 
 PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateAgent: [schema.StateAgent(state_code=StateCode.US_XX.value)],
     schema.StateAssessment: [schema.StateAssessment(state_code=StateCode.US_XX.value)],
     schema.StateCharge: [
         schema.StateCharge(
@@ -324,9 +322,6 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
 }
 
 REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateAgent: [
-        schema.StateAgent(state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID)
-    ],
     schema.StateAssessment: [
         schema.StateAssessment(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
@@ -490,18 +485,6 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
 }
 
 HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
-    schema.StateAgent: [
-        schema.StateAgent(
-            state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
-            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-        ),
-        # If meaningful/non-default data is filled out, we do not consider it to be a placeholder.
-        schema.StateAgent(
-            state_code=StateCode.US_XX.value,
-            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-        ),
-    ],
     schema.StateAssessment: [
         schema.StateAssessment(
             state_code=StateCode.US_XX.value,
@@ -918,6 +901,9 @@ class TestEntityUtils(TestCase):
     def test_is_placeholder(self) -> None:
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
+            # TODO(#17856): Delete when we delete StateAgent
+            if db_entity_cls.__name__ == "StateAgent":
+                continue
             if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
                 self.fail(
                     f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"
@@ -948,6 +934,9 @@ class TestEntityUtils(TestCase):
     def test_is_reference_only_entity(self) -> None:
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
+            # TODO(#17856): Delete when we delete StateAgent
+            if db_entity_cls.__name__ == "StateAgent":
+                continue
             if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
                 self.fail(
                     f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"

@@ -81,11 +81,12 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateSupervisionViolationResponseDecisionEntry.__name__,
     state_entities.StateAssessment.__name__,
     state_entities.StateProgramAssignment.__name__,
-    state_entities.StateAgent.__name__,
     state_entities.StateEarlyDischarge.__name__,
     state_entities.StateEmploymentPeriod.__name__,
     state_entities.StateDrugScreen.__name__,
     state_entities.StateTaskDeadline.__name__,
+    # TODO(#17856): Delete when StateAgent is deleted from schema.py
+    "StateAgent",
     # StateStaff hierarchy
     state_entities.StateStaff.__name__,
     state_entities.StateStaffExternalId.__name__,
@@ -208,7 +209,10 @@ def _check_class_hierarchy_includes_all_expected_classes(
 ) -> None:
     expected_class_names = get_all_entity_class_names_in_module(entities_module)
 
-    given_minus_expected = set(class_hierarchy).difference(expected_class_names)
+    # TODO(#17856): Delete when StateAgent is deleted from schema.py
+    given_minus_expected = set(class_hierarchy).difference(expected_class_names) - {
+        "StateAgent"
+    }
     expected_minus_given = expected_class_names.difference(class_hierarchy)
 
     if given_minus_expected or expected_minus_given:

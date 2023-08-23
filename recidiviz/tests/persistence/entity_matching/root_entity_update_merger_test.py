@@ -303,13 +303,11 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             set_back_edges=False,
             include_person_back_edges=False,
             set_ids=False,
-            include_agents=False,
         )
         entity_updates = generate_full_graph_state_person(
             set_back_edges=False,
             include_person_back_edges=False,
             set_ids=False,
-            include_agents=False,
         )
 
         # Expect no change since there is no new info in the updates
@@ -330,7 +328,6 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             set_back_edges=False,
             include_person_back_edges=False,
             set_ids=False,
-            include_agents=False,
         )
 
         previous_root_entity.incarceration_periods = []
@@ -343,7 +340,6 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             set_back_edges=False,
             include_person_back_edges=False,
             set_ids=False,
-            include_agents=False,
         )
 
         entity_updates.supervision_contacts = []
@@ -365,7 +361,6 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             set_back_edges=False,
             include_person_back_edges=False,
             set_ids=False,
-            include_agents=False,
         )
         # The only thing that should be updated is the new response date
         expected_result.supervision_violations[0].supervision_violation_responses[

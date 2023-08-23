@@ -423,7 +423,6 @@ def get_root_entity_external_ids(db_root_entity: SchemaRootEntityT) -> List[str]
 def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
     cls_list: List[Type[DatabaseEntity]] = [
         schema.StateCharge,
-        schema.StateAgent,
     ]
     direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
     direction_checker.assert_sorted(cls_list)

@@ -112,7 +112,6 @@ class TestStateEntities(TestCase):
     def test_all_classes_have_person_or_staff_reference(self):
         classes_without_a_person_or_staff_ref = [
             entities.StatePerson,
-            entities.StateAgent,
             entities.StateStaff,
         ]
 

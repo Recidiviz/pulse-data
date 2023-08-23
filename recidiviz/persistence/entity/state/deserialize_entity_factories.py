@@ -17,7 +17,6 @@
 """Factories for deserializing entities in state/entities.py from ingested values."""
 import json
 
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -109,17 +108,6 @@ class StatePersonAliasFactory(EntityFactory):
             cls=entities.StatePersonAlias,
             converter_overrides={},
             defaults={},
-            **kwargs,
-        )
-
-
-class StateAgentFactory(EntityFactory):
-    @staticmethod
-    def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StateAgent:
-        return entity_deserialize(
-            cls=entities.StateAgent,
-            converter_overrides={},
-            defaults={"agent_type": StateAgentType.PRESENT_WITHOUT_INFO},
             **kwargs,
         )
 

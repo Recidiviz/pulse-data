@@ -21,7 +21,6 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Sequence, Type
 
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -93,7 +92,6 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
-    StateAgent,
     StateIncarcerationIncidentOutcome,
     StateProgramAssignment,
 )
@@ -164,8 +162,6 @@ def generate_full_graph_state_person(
     set_back_edges: bool,
     include_person_back_edges: bool = True,
     set_ids: bool = False,
-    # TODO(#17856): Remove this flag and all agents once we delete StateAgent.
-    include_agents: bool = True,
 ) -> entities.StatePerson:
     """Test util for generating a StatePerson that has at least one child of
     each possible Entity type, with all possible edge types defined between
@@ -221,13 +217,6 @@ def generate_full_graph_state_person(
         )
     ]
 
-    assessment_agent = entities.StateAgent.new_with_defaults(
-        agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="US_XX",
-        external_id="assessment_agent",
-        full_name="MR SIR",
-    )
-
     assessment1 = entities.StateAssessment.new_with_defaults(
         external_id="a1",
         assessment_class=StateAssessmentClass.RISK,
@@ -240,7 +229,6 @@ def generate_full_graph_state_person(
         assessment_level=StateAssessmentLevel.MEDIUM,
         assessment_level_raw_text="MED",
         assessment_metadata="assessment metadata",
-        conducting_agent=assessment_agent if include_agents else None,
         conducting_staff_external_id="EMP3",
         conducting_staff_external_id_type="US_XX_STAFF_ID",
     )
@@ -257,19 +245,11 @@ def generate_full_graph_state_person(
         assessment_level=StateAssessmentLevel.LOW,
         assessment_level_raw_text="LOW",
         assessment_metadata="more assessment metadata",
-        conducting_agent=assessment_agent if include_agents else None,
         conducting_staff_external_id="EMP3",
         conducting_staff_external_id_type="US_XX_STAFF_ID",
     )
 
     person.assessments = [assessment1, assessment2]
-
-    program_assignment_agent = StateAgent.new_with_defaults(
-        external_id="program_assignment_agent",
-        agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="US_XX",
-        full_name='{"full_name": "AGENT PO"}',
-    )
 
     program_assignment = StateProgramAssignment.new_with_defaults(
         external_id="program_assignment_external_id_1",
@@ -280,7 +260,6 @@ def generate_full_graph_state_person(
         start_date=datetime.date(year=2019, month=2, day=11),
         program_id="program_id",
         program_location_id="program_location_id",
-        referring_agent=program_assignment_agent if include_agents else None,
         referring_staff_external_id="EMP1",
         referring_staff_external_id_type="US_XX_STAFF_ID",
     )
@@ -295,7 +274,6 @@ def generate_full_graph_state_person(
         discharge_date=datetime.date(year=2019, month=2, day=12),
         program_id="program_id",
         program_location_id="program_location_id",
-        referring_agent=program_assignment_agent if include_agents else None,
         referring_staff_external_id="EMP1",
         referring_staff_external_id_type="US_XX_STAFF_ID",
     )
@@ -349,13 +327,6 @@ def generate_full_graph_state_person(
 
     person.supervision_violations = [supervision_violation]
 
-    supervising_officer = entities.StateAgent.new_with_defaults(
-        external_id="supervising_officer",
-        agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="US_XX",
-        full_name="MS MADAM",
-    )
-
     supervision_contact = entities.StateSupervisionContact.new_with_defaults(
         external_id="CONTACT_ID",
         status=StateSupervisionContactStatus.COMPLETED,
@@ -370,19 +341,11 @@ def generate_full_graph_state_person(
         location_raw_text="RESIDENCE",
         verified_employment=True,
         resulted_in_arrest=False,
-        contacted_agent=supervising_officer if include_agents else None,
         contacting_staff_external_id="EMP2",
         contacting_staff_external_id_type="US_XX_STAFF_ID",
     )
 
     person.supervision_contacts = [supervision_contact]
-
-    supervision_officer_agent = entities.StateAgent.new_with_defaults(
-        external_id="supervision_officer_agent",
-        agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="US_XX",
-        full_name="JOHN SMITH",
-    )
 
     supervision_violation_response = entities.StateSupervisionViolationResponse.new_with_defaults(
         external_id="svr1",
@@ -390,7 +353,6 @@ def generate_full_graph_state_person(
         response_date=datetime.date(year=2004, month=9, day=2),
         state_code="US_XX",
         deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
-        decision_agents=[supervision_officer_agent] if include_agents else [],
     )
 
     supervision_violation.supervision_violation_responses = [
@@ -573,7 +535,6 @@ def generate_full_graph_state_person(
         supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
         supervision_level_raw_text="UNKNOWN",
         conditions="10PM CURFEW",
-        supervising_officer=supervising_officer if include_agents else None,
         case_type_entries=[supervision_case_type_entry],
         supervising_officer_staff_external_id="EMP1",
         supervising_officer_staff_external_id_type="US_XX_STAFF_ID",
