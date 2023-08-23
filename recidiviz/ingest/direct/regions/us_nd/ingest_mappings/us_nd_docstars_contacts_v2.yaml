@@ -14,7 +14,9 @@ input_columns:
   - CONTACT_CODE_4
   - CONTACT_CODE_5
   - CONTACT_CODE_6
-unused_columns: []
+unused_columns:
+  - FNAME
+  - LNAME
 variables:
   - contact_code_full:
       $concat:
@@ -43,14 +45,6 @@ output:
               - $if:
                   $not_null: OFFICER
                 $then: $literal("US_ND_DOCSTARS_OFFICER")
-          contacted_agent:
-            StateAgent:
-              external_id: OFFICER
-              full_name:
-                $person_name:
-                  $given_names: FNAME
-                  $surname: LNAME
-              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
           contact_reason:
             $enum_mapping:
               $raw_text: CATEGORY
