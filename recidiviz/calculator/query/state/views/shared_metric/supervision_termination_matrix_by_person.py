@@ -53,8 +53,8 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` staff
         ON
             metric.supervising_officer_staff_id = staff.staff_id
-        LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
-        ON metric.state_code = agent.state_code AND staff.external_id = agent.external_id 
+        LEFT JOIN `{project_id}.reference_views.state_staff_with_names` agent
+        ON metric.state_code = agent.state_code AND metric.supervising_officer_staff_id = agent.staff_id 
     ), terminations_matrix AS (
         SELECT
             state_code,
@@ -202,7 +202,6 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     description=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(
         output_column_name="risk_level"

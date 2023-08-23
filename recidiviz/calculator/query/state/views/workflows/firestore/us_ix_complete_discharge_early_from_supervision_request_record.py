@@ -159,15 +159,15 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
       SELECT 
         cses.person_id,
         cses.state_code,
-        sa.full_name AS supervision_officer_name,
+        ss.full_name_json AS supervision_officer_name,
       FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`cses
-      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_agent` sa
-          ON sa.external_id = cses.supervising_officer_external_id_end
-          AND cses.state_code  = sa.state_code
+      INNER JOIN `{{project_id}}.reference_views.state_staff_with_names` ss
+          ON ss.legacy_supervising_officer_external_id = cses.supervising_officer_external_id_end
+          AND cses.state_code  = ss.state_code
           AND cses.state_code = 'US_IX'
      --choose supervising officer for current supervision session 
       WHERE CURRENT_DATE('US/Pacific') BETWEEN cses.start_date AND {nonnull_end_date_clause('cses.end_date')}
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY cses.person_id, cses.start_date ORDER BY cses.start_date DESC, sa.full_name DESC)=1
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY cses.person_id, cses.start_date ORDER BY cses.start_date DESC)=1
     ),
     person_info AS (
       SELECT

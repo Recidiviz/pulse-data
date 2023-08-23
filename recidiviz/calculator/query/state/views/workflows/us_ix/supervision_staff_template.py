@@ -43,8 +43,8 @@ US_IX_SUPERVISION_STAFF_TEMPLATE = """
             ON UPPER(ids.id) = UPPER(r.external_id)
             # The users in the roster all have US_ID state code
             AND r.state_code = 'US_ID'
-        LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` names
-            ON UPPER(ids.id) = UPPER(names.external_id) 
+        LEFT JOIN `{project_id}.reference_views.state_staff_with_names` names
+            ON UPPER(ids.id) = UPPER(names.legacy_supervising_officer_external_id) 
             AND ids.state_code = names.state_code
         LEFT JOIN `{project_id}.{vitals_report_dataset}.supervision_officers_and_districts_materialized` districts
             ON ids.state_code = districts.state_code 

@@ -51,11 +51,10 @@ WITH probation_officer AS(
   /* This CTE creates a view unique on external_id
    for non null officer names */
   SELECT
-    full_name,
-    external_id AS supervising_officer_external_id
-  FROM `{project_id}.{normalized_state_dataset}.state_agent` sa
-  WHERE state_code = 'US_ND' AND full_name IS NOT NULL
-  QUALIFY ROW_NUMBER() OVER (PARTITION BY external_id ORDER BY full_name) = 1 --choose only one name per id 
+    full_name_json AS full_name,
+    legacy_supervising_officer_external_id AS supervising_officer_external_id
+  FROM `{project_id}.reference_views.state_staff_with_names` ss
+  WHERE state_code = 'US_ND' AND full_name_json IS NOT NULL
 ),
 
 dataflow_metrics AS (

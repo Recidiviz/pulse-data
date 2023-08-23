@@ -86,11 +86,10 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
     , officer_names AS (
         SELECT
             state_code,
-            external_id,
+            legacy_supervising_officer_external_id,
             given_names,
             surname,
-            ROW_NUMBER() OVER (PARTITION BY state_code, external_id ORDER BY surname DESC,given_names DESC) AS rn,
-        FROM `{project_id}.{reference_dataset}.agent_external_id_to_full_name`
+        FROM `{project_id}.reference_views.state_staff_with_names`
     ), data AS (
         SELECT
             last_updated,
@@ -103,8 +102,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
             USING(state_code,time_period,gender,supervision_type,age_group,race,district,supervision_level,supervising_officer)
         LEFT JOIN officer_names ON
             event_counts.state_code = officer_names.state_code
-            AND event_counts.supervising_officer = officer_names.external_id
-            AND officer_names.rn = 1
+            AND event_counts.supervising_officer = officer_names.legacy_supervising_officer_external_id
         WHERE supervising_officer IS NOT NULL
         AND time_period IS NOT NULL
     )
@@ -134,7 +132,6 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER = PathwaysMetr
     description=SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_DESCRIPTION,
     get_pathways_supervision_last_updated_date=get_pathways_supervision_last_updated_date(),
     dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
-    reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
     state_specific_officer_filter=state_specific_query_strings.pathways_state_specific_officer_filter(),

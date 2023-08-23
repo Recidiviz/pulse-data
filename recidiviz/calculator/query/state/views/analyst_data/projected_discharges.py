@@ -80,8 +80,8 @@ PROJECTED_DISCHARGES_QUERY_TEMPLATE = (
         ON unioned.person_id = ss.person_id
         AND unioned.date_of_supervision BETWEEN ss.start_date AND COALESCE(ss.end_date, '9999-01-01')
     LEFT JOIN 
-        ( SELECT DISTINCT * EXCEPT(agent_id, agent_type) FROM `{project_id}.{reference_dataset}.augmented_agent_info`) agent
-        ON unioned.supervising_officer_external_id = agent.external_id
+        `{project_id}.reference_views.state_staff_with_names` agent
+        ON unioned.supervising_officer_external_id = agent.legacy_supervising_officer_external_id
         AND unioned.state_code = agent.state_code
     INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` person
         ON unioned.person_id = person.person_id
