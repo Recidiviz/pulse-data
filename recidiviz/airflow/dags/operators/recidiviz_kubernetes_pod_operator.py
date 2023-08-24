@@ -39,6 +39,8 @@ from recidiviz.utils.environment import RECIDIVIZ_ENV, get_environment_for_proje
 
 _project_id = os.environ.get("GCP_PROJECT")
 
+COMPOSER_USER_WORKLOADS = "composer-user-workloads"
+
 
 class RecidivizKubernetesPodOperator(KubernetesPodOperator):
     """KubernetesPodOperator with some defaults"""
@@ -46,7 +48,9 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
     def __init__(self, **kwargs: Any) -> None:
         env_vars = kwargs.pop("env_vars", [])
         super().__init__(
-            namespace="composer-user-workloads",
+            namespace=COMPOSER_USER_WORKLOADS,
+            # Do not delete pods after running, its handled `recidiviz.airflow.dags.monitoring.cleanup_exited_pods`
+            is_delete_operator_pod=False,
             image=os.getenv("RECIDIVIZ_APP_ENGINE_IMAGE"),
             image_pull_policy="Always",
             # This config is provided by Cloud Composer
