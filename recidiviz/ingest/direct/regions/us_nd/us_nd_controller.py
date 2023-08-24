@@ -29,8 +29,8 @@ class UsNdController(BaseDirectIngestController):
     """Direct ingest controller implementation for us_nd."""
 
     @classmethod
-    def region_code(cls) -> str:
-        return StateCode.US_ND.value.lower()
+    def state_code(cls) -> StateCode:
+        return StateCode.US_ND
 
     def __init__(self, ingest_instance: DirectIngestInstance):
         super().__init__(ingest_instance)

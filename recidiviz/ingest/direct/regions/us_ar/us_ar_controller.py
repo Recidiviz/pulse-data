@@ -28,8 +28,8 @@ class UsArController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_AR."""
 
     @classmethod
-    def region_code(cls) -> str:
-        return StateCode.US_AR.value.lower()
+    def state_code(cls) -> StateCode:
+        return StateCode.US_AR
 
     def __init__(self, ingest_instance: DirectIngestInstance):
         super().__init__(ingest_instance)

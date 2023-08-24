@@ -334,8 +334,12 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
     @classmethod
     @abc.abstractmethod
-    def region_code(cls) -> str:
+    def state_code(cls) -> StateCode:
         pass
+
+    @classmethod
+    def region_code(cls) -> str:
+        return cls.state_code().value.lower()
 
     def get_ingest_view_rank_list(self) -> List[str]:
         """Returns the list of ingest view names for ingest views that are shipped in
@@ -359,10 +363,9 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
     @property
     def ingest_database_key(self) -> SQLAlchemyDatabaseKey:
-        state_code = StateCode(self.region_code().upper())
         return database_key_for_state(
             self.ingest_instance,
-            state_code,
+            self.state_code(),
         )
 
     def _ingest_is_not_running(self) -> bool:

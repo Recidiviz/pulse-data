@@ -32,8 +32,8 @@ class UsXxIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         raise NotImplementedError("Choose one of STATE or JAILS")
 
     @classmethod
-    def region_code(cls) -> str:
-        return StateCode.US_XX.value.upper()
+    def state_code(cls) -> StateCode:
+        return StateCode.US_XX
 
     @property
     def test(self) -> unittest.TestCase:

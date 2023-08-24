@@ -28,8 +28,8 @@ class UsIaController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_IA."""
 
     @classmethod
-    def region_code(cls) -> str:
-        return StateCode.US_IA.value.lower()
+    def state_code(cls) -> StateCode:
+        return StateCode.US_IA
 
     def __init__(self, ingest_instance: DirectIngestInstance):
         super().__init__(ingest_instance)
