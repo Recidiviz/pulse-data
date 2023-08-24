@@ -51,3 +51,7 @@ ERRORS_WARNINGS_JSON_BUCKET_STAGING = (
 ERRORS_WARNINGS_JSON_BUCKET_PROD = (
     "justice-counts-production-bulk-upload-errors-warnings-json"
 )
+
+# Bucket for New Mexico Super Agency Uploads
+NEW_MEXICO_SUPERAGENCY_BUCKET_STAGING = "justice-counts-staging-ingest-agency-207"
+NEW_MEXICO_SUPERAGENCY_BUCKET_PROD = "justice-counts-production-ingest-agency-534"
