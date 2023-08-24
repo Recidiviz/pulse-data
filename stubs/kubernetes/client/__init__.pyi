@@ -14,36 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from datetime import datetime
-from typing import Dict, Optional, List
+from typing import Optional
 
-class V1PodStatus:
-    phase: str
-    start_time: datetime
-    def __init__(self, phase: str, start_time: datetime) -> None: ...
+from kubernetes.client.models import (
+    V1EnvVar,
+    V1ObjectMeta,
+    V1Pod,
+    V1PodList,
+    V1PodStatus,
+    V1ResourceRequirements,
+)
 
-class V1ObjectMeta:
-    name: str
+class CoreV1Api:
+    def __init__(self) -> None: ...
+    def list_namespaced_pod(
+        self, namespace: str, field_selector: Optional[str] = None
+    ) -> V1PodList: ...
+    def delete_namespaced_pod(self, namespace: str, name: str) -> None: ...
 
-    def __init__(self, name: str) -> None: ...
-
-class V1Pod:
-    metadata: V1ObjectMeta
-    status: V1PodStatus
-
-    def __init__(self, metadata: V1ObjectMeta, status: V1PodStatus) -> None: ...
-
-class V1PodList:
-    items: List[V1Pod]
-    def __init__(self, items: List[V1Pod]) -> None: ...
-
-class V1ResourceRequirements:
-    def __init__(self, limits: Dict[str, str], requests: Dict[str, str]) -> None: ...
-
-class V1EnvVar:
-    name: str
-    value: str
-
-    def __init__(
-        self, name: Optional[str] = None, value: Optional[str] = None
-    ) -> None: ...
+__all__ = [
+    "CoreV1Api",
+    "V1PodStatus",
+    "V1ObjectMeta",
+    "V1Pod",
+    "V1PodList",
+    "V1ResourceRequirements",
+    "V1EnvVar",
+]

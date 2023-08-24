@@ -26,6 +26,7 @@ from airflow.decorators import dag
 from airflow.exceptions import AirflowNotFoundException
 from airflow.operators.python import PythonOperator
 
+from recidiviz.airflow.dags.monitoring.cleanup_exited_pods import cleanup_exited_pods
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     get_configured_pagerduty_integrations,
     report_failed_tasks,
@@ -77,6 +78,11 @@ def create_monitoring_dag() -> None:
     PythonOperator(
         task_id="airflow_failure_monitoring_and_alerting",
         python_callable=report_failed_tasks,
+    )
+
+    PythonOperator(
+        task_id="cleanup_exited_pods",
+        python_callable=cleanup_exited_pods,
     )
 
 
