@@ -114,14 +114,14 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_supervision_contacts import (
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_detainer_spans import (
+    US_IX_DETAINER_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_early_discharge_sessions_preprocessing import (
     US_IX_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_parole_dates_spans_preprocessing import (
     US_IX_PAROLE_DATES_SPANS_PREPROCESSING_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.us_ix.us_ix_detainer_spans import (
-    US_IX_DETAINER_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_day_0_early_discharge import (
     US_ME_DAY_0_EARLY_DISCHARGE_VIEW_BUILDER,
@@ -249,6 +249,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_workflow_status import (
     US_TN_COMPLIANT_REPORTING_WORKFLOW_STATUS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_contact_comments_preprocessed import (
+    US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cr_raw_sentence_preprocessing import (
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
 )
@@ -281,6 +284,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_recommended
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_logic import (
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_tepe_relevant_codes import (
+    US_TN_TEPE_RELEVANT_CODES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
@@ -380,4 +386,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_MO_CLASSIFICATION_HEARINGS_PREPROCESSED_RECORD_VIEW_BUILDER,
     *get_person_spans_and_events_view_builders(),
     US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
+    US_TN_TEPE_RELEVANT_CODES_VIEW_BUILDER,
+    US_TN_CONTACT_COMMENTS_PREPROCESSED_VIEW_BUILDER,
 ]

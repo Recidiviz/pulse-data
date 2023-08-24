@@ -19,7 +19,7 @@ from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import 
     client_specific_fines_fees_balance,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    get_current_offenses,
+    get_sentences_current_span,
 )
 
 
@@ -41,7 +41,8 @@ def us_tn_fines_fees_info() -> str:
     """
 
 
-def us_tn_get_current_offense_information() -> str:
+def us_tn_get_offense_information(in_projected_completion_array: bool = True) -> str:
+
     return f"""
         SELECT person_id,
          ARRAY_AGG(DISTINCT off.docket_number IGNORE NULLS) AS docket_numbers,
@@ -56,7 +57,7 @@ def us_tn_get_current_offense_information() -> str:
         MIN(off.sentence_start_date) AS sentence_start_date,
         MAX(off.expiration_date) AS expiration_date,
       FROM 
-        ({get_current_offenses()}) off
+        ({get_sentences_current_span(in_projected_completion_array=in_projected_completion_array)}) off
       LEFT JOIN (
                 SELECT *
                 FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CodesDescription_latest`

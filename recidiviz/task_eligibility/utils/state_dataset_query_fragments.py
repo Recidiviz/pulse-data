@@ -158,10 +158,16 @@ def has_at_least_x_incarceration_incidents_in_time_interval(
     """
 
 
-def get_current_offenses() -> str:
+def get_sentences_current_span(in_projected_completion_array: bool = True) -> str:
     """
-    Returns: CTE that pulls information on currently active sentences
+    Returns: CTE that pulls information on sentences from the current sentence span. The where clause determines
+     whether we keep the intersection of sentences in sentences_preprocessed_id_array_actual_completion AND
+     sentences_preprocessed_id_array_projected_completion or only in  sentences_preprocessed_id_array_actual_completion.
     """
+
+    where_clause = ""
+    if in_projected_completion_array:
+        where_clause = "WHERE sentences_preprocessed_id in UNNEST(sentences_preprocessed_id_array_projected_completion)"
 
     return f"""
     SELECT
@@ -183,7 +189,7 @@ def get_current_offenses() -> str:
       UNNEST(sentences_preprocessed_id_array_actual_completion) as sentences_preprocessed_id
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
         USING(person_id, state_code, sentences_preprocessed_id)
-      WHERE sentences_preprocessed_id in UNNEST(sentences_preprocessed_id_array_projected_completion)
+      {where_clause}
     """
 
 

@@ -31,7 +31,7 @@ from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
-    get_current_offenses,
+    get_sentences_current_span,
 )
 from recidiviz.task_eligibility.utils.us_tn_query_fragments import detainers_cte
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -51,7 +51,7 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
             person_id,
             ARRAY_AGG(offense IGNORE NULLS) AS offenses,
          FROM 
-            ({get_current_offenses()})
+            ({get_sentences_current_span(in_projected_completion_array=True)})
         GROUP BY 1
     ),
     latest_classification AS (

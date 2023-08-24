@@ -24,7 +24,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
-    us_tn_get_current_offense_information,
+    us_tn_get_offense_information,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -32,6 +32,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import keep_contact_codes
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,7 +45,13 @@ US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_DESCRIPTION = """
     """
 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
 WITH latest_sentences AS (
-  {us_tn_get_current_offense_information()}
+  /* We don't want to keep the intersection of sentences in both arrays because by definition, we're surfacing people
+  who should have completed (or be 1 day away from completing) all of the sentences in the 
+  sentences_preprocessed_id_array_projected_completion, which means their current span would have no sentences in
+  this intersection, but we still want the TEPE form to contain all the sentences that are not yet associated
+  with an actual completion date
+  */
+  {us_tn_get_offense_information(in_projected_completion_array=False)}
 ),
 latest_system_session AS ( # get latest system session date to bring in relevant codes only for this time on supervision
   SELECT person_id,
@@ -53,8 +60,7 @@ latest_system_session AS ( # get latest system session date to bring in relevant
   WHERE state_code = 'US_TN'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY system_session_id DESC) = 1
 ),
-relevant_codes AS (
-  /*
+/*
     ContactNoteComment is unique on OffenderID and ContactNoteDateTime while ContactNoteType is unique on OffenderID,
     ContactNoteDateTime, and ContactType. Which means POs enter one comment but a collection of ContactTypes at any 
     given time, and there can be multiple per day. 
@@ -67,150 +73,102 @@ relevant_codes AS (
     - A PO might enter completely unrelated contact notes on Date X at Time Y and Time Z - in this case, joining on date
     might just add some noise since we only care about the comment from Time Y but will get both
     
-    Below, we join on contact date and aggregate all relevant contact types and comments for a given date which may be
-    noisier than ideal but also hopefully more complete  
+    For the CTEs below, we join on contact date and aggregate all relevant contact types and comments for a given date 
+    which may be noisier than ideal but also hopefully more complete  
   */ 
-  SELECT person_id,
-         contact_date,
-         ARRAY_AGG(DISTINCT contact.ContactNoteType IGNORE NULLS) AS contact_type_array,
-         STRING_AGG(DISTINCT contact.ContactNoteType, ", ") AS contact_type,
-         STRING_AGG(DISTINCT comment.Comment, ", ") AS contact_comment
-  FROM
-    (
-        SELECT * EXCEPT(ContactNoteDateTime),
-                CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date,
-        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteType_latest`
-    ) contact
-  LEFT JOIN (
-        SELECT * EXCEPT(ContactNoteDateTime),
-                CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date,
-        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteComment_latest`
-    ) comment
-    USING (OffenderID, contact_date)
-  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-      ON contact.OffenderID = pei.external_id
-      AND pei.state_code = 'US_TN'
-  LEFT JOIN latest_system_session
-    USING(person_id)
-  WHERE contact_date >= latest_system_session_start_date
-     AND (
-           ContactNoteType LIKE '%PSE%'
-           OR ContactNoteType IN ('VRPT','VWAR','COHC','ARRP')
-           OR ContactNoteType LIKE "%ABS%"
-           OR ContactNoteType IN ('DRUN','DRUP','DRUM','DRUX')
-           OR ContactNoteType LIKE "%FSW%"
-           OR ContactNoteType LIKE "%EMP%"
-           OR ContactNoteType IN ("SPEC","SPET")
-           OR ContactNoteType LIKE 'VRR%'
-           OR ContactNoteType IN ("FAC1","FAC2")
-           OR ContactNoteType LIKE 'FEE%'
-           OR ContactNoteType = 'TEPE'
-           OR ContactNoteType IN ('NCAC','NCAF')
-     )
-  GROUP BY 1,2
+relevant_codes AS (
+    SELECT *
+    FROM `{{project_id}}.analyst_data.us_tn_tepe_relevant_codes_materialized`
+),
+comments_clean AS (
+    SELECT *
+    FROM `{{project_id}}.analyst_data.us_tn_contact_comments_preprocessed_materialized`
 ),
 sex_offense_pse_code AS ( #latest PSE code
-  SELECT
-    person_id,
-    STRUCT(
-      contact_date,
-      contact_type,
-      contact_comment
-    ) AS latest_pse
-  FROM relevant_codes,
-  UNNEST(contact_type_array) AS contact_type_array
-  WHERE contact_type_array LIKE '%PSE%'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
-),
-new_offense_codes AS ( #latest PSE code
-  SELECT
-    person_id,
-    -- Create array because we want to keep all, not just latest
-    ARRAY_AGG(
-        STRUCT(
-          contact_date,
-          contact_type,
-          contact_comment
-        )
-        ) AS new_offenses
-  FROM relevant_codes,
-  UNNEST(contact_type_array) AS contact_type_array
-  WHERE contact_type_array IN ('NCAC','NCAF')
-  GROUP BY 1
+  {keep_contact_codes(
+    codes_cte="relevant_codes",
+    comments_cte="comments_clean",
+    where_clause_codes_cte="WHERE contact_type LIKE '%PSE%'",
+    output_name="latest_pse",
+    keep_last=True
+    )}
 ),
 emp_code AS ( #latest EMP code
-  SELECT
-    person_id,
-    STRUCT(
-      contact_date,
-      contact_type,
-      contact_comment
-    ) AS latest_emp
-  FROM relevant_codes,
-  UNNEST(contact_type_array) AS contact_type_array
-  WHERE contact_type_array LIKE '%EMP%'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
+  {keep_contact_codes(
+    codes_cte="relevant_codes",
+    comments_cte="comments_clean",
+    where_clause_codes_cte="WHERE contact_type LIKE '%EMP%'",
+    output_name="latest_emp",
+    keep_last=True
+    )}
 ),
 spe_code AS ( #latest SPE code
-  SELECT
-    person_id,
-    STRUCT(
-      contact_date,
-      contact_type,
-      contact_comment
-    ) AS latest_spe
-  FROM relevant_codes,
-  UNNEST(contact_type_array) AS contact_type_array
-  WHERE contact_type_array IN ("SPEC","SPET")
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
+  {keep_contact_codes(
+    codes_cte="relevant_codes",
+    comments_cte="comments_clean",
+    where_clause_codes_cte="WHERE contact_type IN ('SPEC','SPET')",
+    output_name="latest_spe",
+    keep_last=True
+    )}
 ),
-vrr_code AS ( #latest SPE code
-  SELECT
-    person_id,
-    STRUCT(
-      contact_date,
-      contact_type
-    ) AS latest_vrr
-  FROM relevant_codes,
-  UNNEST(contact_type_array) AS contact_type_array
-  WHERE contact_type_array LIKE 'VRR%'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
+vrr_code AS ( #latest VRR code
+  {keep_contact_codes(
+    codes_cte="relevant_codes",
+    comments_cte="comments_clean",
+    where_clause_codes_cte="WHERE contact_type LIKE 'VRR%'",
+    output_name="latest_vrr",
+    keep_last=True
+    )}  
 ),
-fee_code AS ( #latest SPE code
-  SELECT
-    person_id,
-    STRUCT(
-      contact_date,
-      contact_type,
-      contact_comment
-    ) AS latest_fee
-  FROM relevant_codes,
-  UNNEST(contact_type_array) AS contact_type_array
-  WHERE contact_type_array LIKE 'FEE%'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
+fee_code AS ( #latest fee code
+  {keep_contact_codes(
+    codes_cte="relevant_codes",
+    comments_cte="comments_clean",
+    where_clause_codes_cte="WHERE contact_type LIKE 'FEE%'",
+    output_name="latest_fee",
+    keep_last=True
+    )}
 ),
 tepe_code AS ( # latest TEPE code
     SELECT
     person_id,
     contact_date AS latest_tepe,
-  FROM relevant_codes,
-  UNNEST(contact_type_array) AS contact_type_array
-  WHERE contact_type_array = 'TEPE'
+  FROM relevant_codes
+  WHERE contact_type = 'TEPE'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
+new_offense_codes AS ( #all new offense codes
+    SELECT
+        person_id,
+        ARRAY_AGG(
+            STRUCT(
+              contact_date,
+              contact_type,
+              contact_comment
+            )) AS new_offenses
+    FROM ({keep_contact_codes(
+            codes_cte="relevant_codes",
+            comments_cte="comments_clean",
+            where_clause_codes_cte="WHERE contact_type IN ('NCAC','NCAF')",
+            keep_last=False
+            )})
+    GROUP BY 1
+),
 alc_history_codes AS (
-    SELECT  person_id,
-            -- Create array because we want to keep all, not just latest
-            ARRAY_AGG(
-                STRUCT(
-                  contact_date,
-                  contact_type,
-                  contact_comment
-                )
-            ) AS alc_history
-    FROM relevant_codes,
-    UNNEST(contact_type_array) AS contact_type_array
-    WHERE contact_type_array IN ('DRUP') OR contact_type_array LIKE "%FSW%"
+    SELECT
+        person_id,
+        ARRAY_AGG(
+            STRUCT(
+              contact_date,
+              contact_type,
+              contact_comment
+            )) AS alc_history
+    FROM ({keep_contact_codes(
+            codes_cte="relevant_codes",
+            comments_cte="comments_clean",
+            where_clause_codes_cte="WHERE contact_type IN ('DRUP') OR contact_type LIKE '%FSW%'",
+            keep_last=False
+            )})
     GROUP BY 1
 ),
 sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed in sidebar
@@ -219,10 +177,12 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
           contact_date AS event_date,
           contact_comment AS note_body,
           "REVOCATION HEARINGS" AS criteria,
-    FROM relevant_codes,
-    UNNEST(contact_type_array) AS contact_type_array
-    WHERE contact_type_array IN ('VRPT','VWAR','COHC','AARP')
-          OR contact_type_array LIKE "%ABS%"
+    FROM ({keep_contact_codes(
+            codes_cte="relevant_codes",
+            comments_cte="comments_clean",
+            where_clause_codes_cte="WHERE contact_type IN ('VRPT','VWAR','COHC','AARP') OR contact_type LIKE '%ABS%'",
+            keep_last=False
+            )})
 
     UNION ALL
 
@@ -231,20 +191,27 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
             contact_date AS event_date,
             contact_comment AS note_body,
             "ALCOHOL DRUG HISTORY" AS criteria,
-    FROM relevant_codes,
-    UNNEST(contact_type_array) AS contact_type_array
-    WHERE contact_type_array IN ('DRUP') OR contact_type_array LIKE "%FSW%"
+    FROM ({keep_contact_codes(
+            codes_cte="relevant_codes",
+            comments_cte="comments_clean",
+            where_clause_codes_cte="WHERE contact_type IN ('DRUP') OR contact_type LIKE '%FSW%'",
+            keep_last=False
+            )})
     
     UNION ALL
 
     SELECT  person_id,
             contact_type AS note_title,
             contact_date AS event_date,
-            contact_comment AS note_body,
+            CAST(NULL AS STRING) AS note_body,
             "ALCOHOL DRUG HISTORY - NEGATIVE SCREENS" AS criteria,
-    FROM relevant_codes,
-    UNNEST(contact_type_array) AS contact_type_array
-    WHERE contact_type_array IN ('DRUN','DRUM','DRUX')
+    FROM ({keep_contact_codes(
+            codes_cte="relevant_codes",
+            comments_cte="comments_clean",
+            where_clause_codes_cte="WHERE contact_type IN ('DRUN','DRUM','DRUX')",
+            keep_last=False
+            )})
+            
 
     UNION ALL
 
@@ -255,9 +222,12 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
             "INTAKE NOTES" AS criteria,
     FROM (
       SELECT person_id, contact_type, contact_date, contact_comment
-      FROM relevant_codes,
-      UNNEST(contact_type_array) AS contact_type_array
-      WHERE contact_type_array IN ("FAC1","FAC2")
+      FROM ({keep_contact_codes(
+            codes_cte="relevant_codes",
+            comments_cte="comments_clean",
+            where_clause_codes_cte="WHERE contact_type IN ('FAC1','FAC2')",
+            keep_last=False
+            )})      
       -- Keep latest FAC1 and latest FAC2
       QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, contact_type ORDER BY contact_date DESC) = 1
     )
