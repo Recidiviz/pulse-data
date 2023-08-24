@@ -25,7 +25,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_reco
 )
 from recidiviz.calculator.query.state.views.workflows.us_tn.shared_ctes import (
     us_tn_fines_fees_info,
-    us_tn_get_current_offense_information,
+    us_tn_get_offense_information,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -219,7 +219,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
         SELECT 
             off.*,
             DATE_DIFF(expiration_date,sentence_start_date,DAY) AS sentence_length_days, 
-        FROM ({us_tn_get_current_offense_information()}) off
+        FROM ({us_tn_get_offense_information(in_projected_completion_array=True)}) off
     ),
     all_offenses_cte AS (
         SELECT 

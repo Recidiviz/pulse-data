@@ -51,3 +51,60 @@ def detainers_cte() -> str:
             {nonnull_end_date_exclusive_clause('DATE(DetainerLiftDate)')} > {nonnull_end_date_exclusive_clause('DATE(DetainerReceivedDate)')}
         
         """
+
+
+def keep_contact_codes(
+    codes_cte: str,
+    comments_cte: str,
+    where_clause_codes_cte: str,
+    output_name: str = "output",
+    keep_last: bool = False,
+) -> str:
+
+    """
+    Helper function to join on contact codes with comments, filter to specific codes, and either keep all codes of a
+    specific type or the latest one. Useful for TEPE form and side-bar
+
+    codes_cte: String that contains a CTE with contact notes that can be filtered on ContactNoteType
+    comments_cte: String that contains a CTE with contact comments
+    where_clause_codes_cte: String used to filter to specific contact types
+    output_name: Optional parameter for Struct containing contact date, type, comment
+    keep_last: Optional parameter defaulting to false. If true, only the latest contact date for a given person is kept,
+              otherwise all are
+    """
+
+    qualify = ""
+    if keep_last:
+        qualify = "QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1"
+
+    return f"""
+        SELECT
+            person_id,
+            STRUCT(
+              contact_date,
+              contact_type,
+              contact_comment
+            ) AS {output_name},
+            contact_date,
+            contact_type,
+            contact_comment,
+        FROM (
+            SELECT
+                person_id,
+                contact_date,
+                STRING_AGG(DISTINCT contact_type, ", ") AS contact_type,
+            FROM {codes_cte}
+            {where_clause_codes_cte}
+            GROUP BY 1,2
+        )
+        LEFT JOIN (
+            SELECT
+                person_id,
+                contact_date,
+                STRING_AGG(DISTINCT contact_comment, ", ") AS contact_comment,
+            FROM {comments_cte}
+            GROUP BY 1,2        
+        )
+        USING(person_id, contact_date)
+        {qualify}
+    """
