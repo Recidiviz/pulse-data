@@ -59,8 +59,10 @@ class TestDeployYamls(unittest.TestCase):
         prod_cloud_sql_instances = cloud_sql_instance_diff["new_value"].split(", ")
 
         for i, instance in enumerate(staging_cloud_sql_instances):
-            instance = instance.replace("recidiviz-staging", "recidiviz-123").replace(
-                "dev-", "prod-"
+            instance = (
+                instance.replace("recidiviz-staging", "recidiviz-123")
+                .replace("justice-counts-staging", "justice-counts-production")
+                .replace("dev-", "prod-")
             )
             match = re.match("(.*-data).*", instance)
             if match:
