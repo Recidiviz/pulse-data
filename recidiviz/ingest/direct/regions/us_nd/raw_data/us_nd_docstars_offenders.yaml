@@ -263,3 +263,19 @@ columns:
   - name: EMAIL
     description: This person's email address.
     is_pii: True
+table_relationships:
+  - foreign_table: docstars_contacts
+    join_logic:
+      - docstars_offenders.SID = docstars_contacts.SID
+  - foreign_table: docstars_ftr_episode
+    join_logic:
+      - docstars_offenders.SID = docstars_ftr_episode.SID
+  - foreign_table: docstars_lsi_chronology
+    join_logic:
+      - docstars_offenders.SID = docstars_lsi_chronology.SID
+  - foreign_table: docstars_offendercasestable
+    join_logic:
+      - docstars_offenders.SID = docstars_offendercasestable.SID
+  - foreign_table: docstars_offensestable
+    join_logic:
+      - docstars_offenders.SID = docstars_offensestable.SID

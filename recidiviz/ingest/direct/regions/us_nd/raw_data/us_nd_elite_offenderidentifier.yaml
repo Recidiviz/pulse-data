@@ -25,3 +25,11 @@ columns:
     field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
+table_relationships:
+  - foreign_table: docstars_offenders
+    join_logic:
+      - docstars_offenders.SID = elite_offenderidentifier.IDENTIFIER
+      - elite_offenderidentifier.IDENTIFIER_TYPE = 'SID'
+  - foreign_table: elite_offenders
+    join_logic:
+      - elite_offenders.ROOT_OFFENDER_ID = elite_offenderidentifier.ROOT_OFFENDER_ID

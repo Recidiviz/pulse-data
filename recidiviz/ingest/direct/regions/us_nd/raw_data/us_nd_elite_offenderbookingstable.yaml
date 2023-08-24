@@ -62,3 +62,34 @@ columns:
     field_type: datetime
     description: |-
       When this record was most recently modified in the source system.
+table_relationships:
+  - foreign_table: elite_bedassignmenthistory
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_bedassignmenthistory.OFFENDER_BOOK_ID
+  - foreign_table: elite_externalmovements
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_externalmovements.OFFENDER_BOOK_ID
+  - foreign_table: elite_grievances
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_grievances.G_OFFENDER_BOOK_ID
+  - foreign_table: elite_institutionalactivities
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_institutionalactivities.OFFENDER_BOOK_ID
+  - foreign_table: elite_offender_trust_details
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_offender_trust_details.OFFENDER_BOOK_ID
+  - foreign_table: elite_offendersentenceaggs
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_offendersentenceaggs.OFFENDER_BOOK_ID
+  - foreign_table: elite_offendersentences
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_offendersentences.OFFENDER_BOOK_ID
+  - foreign_table: elite_offendersentenceterms
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_offendersentenceterms.OFFENDER_BOOK_ID
+  - foreign_table: elite_offense_in_custody_and_pos_report_data
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_offense_in_custody_and_pos_report_data.OFFENDER_BOOK_ID
+  - foreign_table: elite_orderstable
+    join_logic:
+      - elite_offenderbookingstable.OFFENDER_BOOK_ID = elite_orderstable.OFFENDER_BOOK_ID
