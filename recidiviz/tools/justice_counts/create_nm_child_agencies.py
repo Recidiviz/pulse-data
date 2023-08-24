@@ -31,14 +31,15 @@ import pandas as pd
 import requests
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
     in_gcp_production,
 )
 from recidiviz.utils.metadata import local_project_id_override
@@ -53,7 +54,10 @@ def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--project-id",
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        choices=[
+            GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+            GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+        ],
         help="Used to select which GCP project in which to run this script.",
         required=True,
     )
@@ -93,6 +97,9 @@ def get_child_agencies(dry_run: bool) -> None:
 
 
 def create_child_agencies(all_agencies: set, dry_run: bool) -> None:
+    """
+    Given a set of child agencies, creates child agencies of New Mexico Administrative Office of the Courts.
+    """
     state_code = "US_NM"
     system = schema.System.COURTS_AND_PRETRIAL
     if in_gcp_production():
@@ -101,8 +108,12 @@ def create_child_agencies(all_agencies: set, dry_run: bool) -> None:
         super_agency_id = 207
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
-    with cloudsql_proxy_control.connection(schema_type=schema_type):
-        with SessionFactory.for_proxy(database_key) as session:
+    with cloudsql_proxy_control.connection(
+        schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+    ):
+        with SessionFactory.for_proxy(
+            database_key, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+        ) as session:
             for agency in all_agencies:
                 if dry_run is True:
                     logging.info("Would create %s", agency)
