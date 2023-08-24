@@ -94,8 +94,12 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
 
     @classmethod
     @abc.abstractmethod
-    def region_code(cls) -> str:
+    def state_code(cls) -> StateCode:
         pass
+
+    @classmethod
+    def state_code_str_upper(cls) -> str:
+        return cls.state_code().value.upper()
 
     @classmethod
     @abc.abstractmethod
@@ -123,10 +127,9 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
     @classmethod
     def _main_database_key(cls) -> "SQLAlchemyDatabaseKey":
         if cls.schema_type() == SchemaType.STATE:
-            state_code = StateCode(cls.region_code().upper())
             return database_key_for_state(
                 cls._main_ingest_instance(),
-                state_code,
+                cls.state_code(),
             )
         return SQLAlchemyDatabaseKey.for_schema(cls.schema_type())
 
@@ -413,7 +416,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
                 found_root_entities=found_root_entities,
                 expected_root_entities=expected_db_root_entities,
                 field_index=field_index,
-                region_code=self.region_code(),
+                region_code=self.state_code().value.lower(),
                 print_tree_structure_only=print_tree_structure_only,
             )
 

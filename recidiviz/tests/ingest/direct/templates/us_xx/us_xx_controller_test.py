@@ -17,6 +17,7 @@
 """Unit and integration tests for US_XX direct ingest."""
 from typing import List, Type
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -27,15 +28,13 @@ from recidiviz.tests.ingest.direct.regions.region_direct_ingest_controller_test_
     RegionDirectIngestControllerTestCase,
 )
 
-_REGION_CODE_UPPER = "US_XX"
-
 
 class TestUsXxController(RegionDirectIngestControllerTestCase):
     """Unit tests for each US_XX file to be ingested."""
 
     @classmethod
-    def region_code(cls) -> str:
-        return _REGION_CODE_UPPER.lower()
+    def state_code(cls) -> StateCode:
+        return StateCode.US_XX
 
     @classmethod
     def controller_cls(cls) -> Type[BaseDirectIngestController]:

@@ -28,8 +28,8 @@ class UsPaController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_PA."""
 
     @classmethod
-    def region_code(cls) -> str:
-        return StateCode.US_PA.value.lower()
+    def state_code(cls) -> StateCode:
+        return StateCode.US_PA
 
     @classmethod
     def _get_ingest_view_rank_list(

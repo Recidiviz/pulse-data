@@ -79,8 +79,16 @@ class StateIngestViewParserTestBase:
 
     @classmethod
     @abstractmethod
-    def region_code(cls) -> str:
+    def state_code(cls) -> StateCode:
         pass
+
+    @classmethod
+    def state_code_str_upper(cls) -> str:
+        return cls.state_code().value.upper()
+
+    @classmethod
+    def region_code(cls) -> str:
+        return cls.state_code().value.lower()
 
     @property
     @abstractmethod
@@ -204,7 +212,7 @@ class StateIngestViewParserTestBase:
         don't forget to add JSON schema (and therefore
         IDE) support for new features in the language.
         """
-        if self.region_code() == StateCode.US_XX.value:
+        if self.state_code() == StateCode.US_XX:
             # Skip template region
             return
         for manifest_path in self._ingest_view_manifest_paths():
@@ -218,7 +226,7 @@ class StateIngestViewParserTestBase:
             )
 
     def test_all_ingest_view_manifests_parse(self) -> None:
-        if self.region_code() == StateCode.US_XX.value:
+        if self.state_code() == StateCode.US_XX:
             # Skip template region
             return
 
@@ -233,7 +241,7 @@ class StateIngestViewParserTestBase:
             self.test.assertIsInstance(manifest_ast, EntityTreeManifest)
 
     def test_all_ingest_view_manifests_are_tested(self) -> None:
-        if self.region_code() == StateCode.US_XX.value:
+        if self.state_code() == StateCode.US_XX:
             # Skip template region
             return
 
@@ -241,7 +249,7 @@ class StateIngestViewParserTestBase:
             self._check_manifest_has_parser_test(manifest_path)
 
     def test_all_ingest_view_manifests_define_schema_pragma(self) -> None:
-        if self.region_code() == StateCode.US_XX.value:
+        if self.state_code() == StateCode.US_XX:
             # Skip template region
             return
 
