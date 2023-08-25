@@ -586,8 +586,8 @@ AVG_DAILY_POPULATION_MAXIMUM_CUSTODY_JUSTICE_IMPACT = DailyAvgSpanCountMetric(
 
 AVG_DAILY_POPULATION_MEDIUM_CUSTODY = DailyAvgSpanCountMetric(
     name="avg_population_medium_custody",
-    display_name="Average Population: Maximum Custody",
-    description="Average daily population of individuals in maximum custody",
+    display_name="Average Population: Medium Custody",
+    description="Average daily population of individuals in medium custody",
     span_types=[PersonSpanType.CUSTODY_LEVEL_SESSION],
     span_attribute_filters={
         "custody_level": ["MEDIUM", "CLOSE"],
@@ -896,11 +896,11 @@ DAYS_TO_FIRST_VIOLATION_365 = AssignmentDaysToFirstEventMetric(
 DAYS_TO_FIRST_VIOLATION_365_BY_TYPE_METRICS = [
     AssignmentDaysToFirstEventMetric(
         name=f"days_to_first_violation_{category.lower()}_365",
-        display_name=f"Days To First {category.title()} Violation Within 1 Year After "
-        "Assignment",
-        description=f"Sum of the number of days prior to first {category.lower()} "
-        "violation within 1 year following assignment, for all assignments during the "
-        "analysis period",
+        display_name=f"Days To First {category.replace('_', ' ').title()} Violation "
+        "Within 1 Year After Assignment",
+        description="Sum of the number of days prior to first "
+        f"{category.replace('_', ' ').lower()} violation within 1 year following "
+        "assignment, for all assignments during the analysis period",
         event_types=[PersonEventType.VIOLATION],
         event_attribute_filters={"violation_type": types},
         window_length_days=365,
@@ -921,11 +921,11 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_365 = AssignmentDaysToFirstEventMetric(
 DAYS_TO_FIRST_VIOLATION_RESPONSE_365_BY_TYPE_METRICS = [
     AssignmentDaysToFirstEventMetric(
         name=f"days_to_first_violation_response_{category.lower()}_365",
-        display_name=f"Days To First {category.title()} Violation Response Within 1 "
-        "Year After Assignment",
-        description=f"Sum of the number of days prior to first {category.lower()} "
-        "violation response within 1 year following assignment, for all assignments "
-        "during the analysis period",
+        display_name=f"Days To First {category.replace('_', ' ').title()} Violation "
+        "Response Within 1 Year After Assignment",
+        description="Sum of the number of days prior to first "
+        f"{category.replace('_', ' ').lower()} violation response within 1 year "
+        "following assignment, for all assignments during the analysis period",
         event_types=[PersonEventType.VIOLATION_RESPONSE],
         event_attribute_filters={"most_serious_violation_type": types},
         window_length_days=365,
@@ -998,10 +998,11 @@ INCARCERATIONS_INFERRED = EventCountMetric(
 INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
     EventCountMetric(
         name=f"incarcerations_inferred_{category.lower()}_violation",
-        display_name=f"Inferred Incarcerations, {category.title()} Violation",
+        display_name=f"Inferred Incarcerations, {category.replace('_', ' ').title()} "
+        "Violation",
         description="Number of inferred incarceration events that do not align with an "
         "observed incarceration session start, for which the most severe violation "
-        f"type was {category.lower()}",
+        f"type was {category.replace('_', ' ').lower()}",
         event_types=[PersonEventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON],
         event_attribute_filters={
             "outflow_to_incarceration": ["false"],
@@ -1030,9 +1031,10 @@ INCARCERATION_STARTS = EventCountMetric(
 INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
     EventCountMetric(
         name=f"incarceration_starts_{category.lower()}_violation",
-        display_name=f"Incarceration Starts, {category.title()} Violation",
+        display_name=f"Incarceration Starts, {category.replace('_', ' ').title()} "
+        "Violation",
         description="Number of observed incarceration starts for which the most severe "
-        f"violation type was {category.lower()}",
+        f"violation type was {category.replace('_', ' ').lower()}",
         event_types=[PersonEventType.INCARCERATION_START],
         event_attribute_filters={"most_severe_violation_type": types},
     )
@@ -1069,10 +1071,10 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
     EventCountMetric(
         name=f"incarceration_starts_and_inferred_{category.lower()}_violation",
         display_name="Incarceration Starts And Inferred Incarcerations, "
-        f"{category.title()} Violation",
+        f"{category.replace('_', ' ').title()} Violation",
         description="Number of total observed incarceration starts or inferred "
         f"incarcerations for which the most severe violation type was "
-        f"{category.lower()}",
+        f"{category.replace('_', ' ').lower()}",
         event_types=[
             PersonEventType.INCARCERATION_START,
             PersonEventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
@@ -1529,8 +1531,8 @@ VIOLATIONS = EventCountMetric(
 VIOLATIONS_BY_TYPE_METRICS = [
     EventCountMetric(
         name=f"violations_{category.lower()}",
-        display_name=f"Violations: {category.title()}",
-        description=f"Number of {category.lower()} violations",
+        display_name=f"Violations: {category.replace('_', ' ').title()}",
+        description=f"Number of {category.replace('_', ' ').lower()} violations",
         event_types=[
             PersonEventType.VIOLATION,
         ],
@@ -1550,8 +1552,9 @@ VIOLATION_RESPONSES = EventCountMetric(
 VIOLATION_RESPONSES_BY_TYPE_METRICS = [
     EventCountMetric(
         name=f"violation_responses_{category.lower()}",
-        display_name=f"Violation Responses: {category.title()}",
-        description=f"Number of {category.lower()} violation responses",
+        display_name=f"Violation Responses: {category.replace('_', ' ').title()}",
+        description=f"Number of {category.replace('_', ' ').lower()} violation "
+        "responses",
         event_types=[
             PersonEventType.VIOLATION_RESPONSE,
         ],
