@@ -82,3 +82,4 @@ columns:
     description: |-
       Update User Id
     is_pii: True
+always_historical_export: True
