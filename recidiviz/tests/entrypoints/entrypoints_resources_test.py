@@ -28,7 +28,6 @@ from recidiviz.entrypoints.entrypoint_executor import (
     parse_arguments,
 )
 from recidiviz.entrypoints.entrypoint_resources import (
-    DEFAULT_RESOURCES,
     KubernetesEntrypointResourceAllocator,
 )
 from recidiviz.entrypoints.metric_export.metric_view_export import (
@@ -74,7 +73,9 @@ class TestKubernetesResourceAllocator(unittest.TestCase):
                 executor_args=args,
                 entrypoint_args=argparse.Namespace(),
             ),
-            DEFAULT_RESOURCES,
+            {
+                "limits": {"cpu": "1000m", "memory": "2Gi"},
+            },
         )
 
         args, entrypoint_args = parse_arguments(
