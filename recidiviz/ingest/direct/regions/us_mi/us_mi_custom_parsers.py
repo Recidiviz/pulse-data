@@ -184,3 +184,30 @@ def parse_offense_type_ids(offense_type_ids: str, result_field: str) -> bool:
             return True
 
     return False
+
+
+def is_coms_level(supervision_level_value: str) -> bool:
+    """Returns True if the supervsion level is coming from COMS (based on the fact it has multiple parts separated by underscores)"""
+    return len(supervision_level_value.split("_")) > 1
+
+
+def coms_parse_warrant_level(supervision_level_value: str) -> bool:
+    """Returns True if the supervision level is coming from COMS and indicates a warrant status"""
+
+    if len(supervision_level_value.split("_")) > 1:
+        if supervision_level_value.split("_")[1] in ("Probation Warrant"):
+            return True
+
+    return False
+
+
+def coms_parse_absconsion_level(supervision_level_value: str) -> bool:
+    """Returns True if the supervision level is coming from COMS and indicates an absconsion status"""
+    if len(supervision_level_value.split("_")) > 1:
+        if supervision_level_value.split("_")[1] in (
+            "Parole Absconder Warrant",
+            "Probation Absconder Warrant",
+        ):
+            return True
+
+    return False
