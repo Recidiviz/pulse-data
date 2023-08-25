@@ -17,12 +17,12 @@
 """Utils for tests that use pre-processed entities."""
 from typing import List, Optional
 
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
-    IncarcerationPeriodNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
+)
+from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
+    IncarcerationPeriodNormalizationManager,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

@@ -44,15 +44,15 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database import schema_utils
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    NORMALIZED_ENTITY_CLASSES,
+)
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_association_table,

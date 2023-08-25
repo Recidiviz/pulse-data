@@ -28,7 +28,7 @@ from recidiviz.common.constants.states import MAX_FIPS_CODE
 
 # All entity classes that have Normalized versions
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateCharge,
     NormalizedStateEarlyDischarge,
@@ -395,37 +395,3 @@ def update_forward_references_on_updated_entity(
         )
 
     setattr(updated_entity, forward_relationship_field, new_related_entities)
-
-
-def update_reverse_references_on_related_entities(
-    updated_entity: NormalizedStateEntityT,
-    new_related_entities: List[NormalizedStateEntityT],
-    reverse_relationship_field: str,
-    reverse_relationship_field_type: BuildableAttrFieldType,
-) -> None:
-    """For each of the entities in the |new_related_entities| list, updates the value
-    stored in the |reverse_relationship_field| to point to the |updated_entity|.
-
-    If the attribute stored in the |reverse_relationship_field| is a list, replaces
-    the reference to the original entity in the list with the |updated_entity|.
-    """
-    if reverse_relationship_field_type == BuildableAttrFieldType.FORWARD_REF:
-        # If the reverse relationship field is a forward ref, set the updated entity
-        # directly as the value.
-        for new_related_entity in new_related_entities:
-            setattr(new_related_entity, reverse_relationship_field, updated_entity)
-        return
-
-    if reverse_relationship_field_type != BuildableAttrFieldType.LIST:
-        raise ValueError(
-            f"Unexpected reverse_relationship_field_type: [{reverse_relationship_field_type}]"
-        )
-
-    for new_related_entity in new_related_entities:
-        reverse_relationship_list = getattr(
-            new_related_entity, reverse_relationship_field
-        )
-
-        if updated_entity not in reverse_relationship_list:
-            # Add the updated entity to the list since it is not already present
-            reverse_relationship_list.append(updated_entity)

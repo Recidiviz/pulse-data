@@ -36,6 +36,9 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlready
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines import calculation_data_storage_manager, dataflow_config
 from recidiviz.pipelines.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
@@ -43,9 +46,6 @@ from recidiviz.pipelines.calculation_data_storage_manager import (
 )
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_normalization_pipeline_enabled_states,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,

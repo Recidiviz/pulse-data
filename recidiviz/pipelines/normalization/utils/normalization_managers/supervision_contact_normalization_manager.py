@@ -21,14 +21,14 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional, Tuple, Type
 
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state.entities import StateSupervisionContact
-from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
-    EntityNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
+from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
+)
+from recidiviz.persistence.entity.state.entities import StateSupervisionContact
+from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
+    EntityNormalizationManager,
 )
 
 

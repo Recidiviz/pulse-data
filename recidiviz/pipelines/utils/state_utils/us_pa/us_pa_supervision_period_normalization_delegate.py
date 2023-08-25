@@ -23,15 +23,15 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    update_normalized_entity_with_globally_unique_id,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
 )
 
 

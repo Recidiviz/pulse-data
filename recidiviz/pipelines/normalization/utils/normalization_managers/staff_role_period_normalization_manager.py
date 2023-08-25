@@ -20,12 +20,12 @@ from copy import deepcopy
 from typing import List, Optional, Tuple, Type
 
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
 from recidiviz.persistence.entity.state.entities import StateStaffRolePeriod
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    AdditionalAttributesMap,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,

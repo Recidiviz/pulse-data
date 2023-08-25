@@ -34,23 +34,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-)
-from recidiviz.pipelines.normalization.utils import normalized_entities
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateEntity,
-    NormalizedStateSupervisionViolatedConditionEntry,
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationResponse,
-    NormalizedStateSupervisionViolationResponseDecisionEntry,
-    NormalizedStateSupervisionViolationTypeEntry,
-    add_normalized_entity_validator_to_ref_fields,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
+from recidiviz.persistence.entity.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
     AdditionalAttributesMap,
     clear_entity_id_index_cache,
@@ -58,6 +42,21 @@ from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
     get_shared_additional_attributes_map_for_entities,
     merge_additional_attributes_maps,
     update_normalized_entity_with_globally_unique_id,
+)
+from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateEntity,
+    NormalizedStateSupervisionViolatedConditionEntry,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolationTypeEntry,
+    add_normalized_entity_validator_to_ref_fields,
 )
 from recidiviz.tests.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager_test import (
     hydrate_bidirectional_relationships_on_expected_response,
@@ -441,8 +440,8 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
     def setUp(self) -> None:
         clear_entity_id_index_cache()
         self.mock_safe_object_id_patcher = mock.patch(
-            "recidiviz.pipelines.normalization."
-            "utils.normalized_entities_utils._fixed_length_object_id_for_entity",
+            "recidiviz.persistence.entity."
+            "normalized_entities_utils._fixed_length_object_id_for_entity",
             return_value=88888,
         )
         self.mock_safe_object_id = self.mock_safe_object_id_patcher.start()
@@ -470,7 +469,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         self.assertEqual(expected_id_value, entity.get_id())
 
     @mock.patch(
-        "recidiviz.pipelines.normalization.utils.normalized_entities_utils"
+        "recidiviz.persistence.entity.normalized_entities_utils"
         "._get_entity_id_index_for_person_id_entity"
     )
     def test_update_normalized_entity_with_globally_unique_id_id_taken(
@@ -500,7 +499,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         self.assertEqual(expected_id_value, entity.get_id())
 
     @mock.patch(
-        "recidiviz.pipelines.normalization.utils"
+        "recidiviz.persistence.entity"
         ".normalized_entities_utils._get_entity_id_index_for_person_id_entity"
     )
     def test_update_normalized_entity_with_globally_unique_id_id_taken_over_5_digits(
@@ -531,7 +530,7 @@ class TestUpdateNormalizedEntityWithGloballyUniqueId(unittest.TestCase):
         self.assertEqual(expected_id_value, entity.get_id())
 
     @mock.patch(
-        "recidiviz.pipelines.normalization.utils."
+        "recidiviz.persistence.entity."
         "normalized_entities_utils._add_entity_id_to_cache"
     )
     def test_update_normalized_entity_with_globally_unique_id_assert_added_to_index(
@@ -645,8 +644,8 @@ class TestCopyEntitiesAndAddUniqueIds(unittest.TestCase):
     def setUp(self) -> None:
         clear_entity_id_index_cache()
         self.mock_safe_object_id_patcher = mock.patch(
-            "recidiviz.pipelines.normalization."
-            "utils.normalized_entities_utils._fixed_length_object_id_for_entity",
+            "recidiviz.persistence.entity."
+            "normalized_entities_utils._fixed_length_object_id_for_entity",
             return_value=88888,
         )
         self.mock_safe_object_id_patcher.start()

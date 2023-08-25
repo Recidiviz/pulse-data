@@ -39,16 +39,16 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.metrics.utils import commitment_from_supervision_utils
 from recidiviz.pipelines.metrics.utils.commitment_from_supervision_utils import (
     CommitmentDetails,
     count_temporary_custody_as_commitment_from_supervision,
     period_is_commitment_from_supervision_admission_from_parole_board_hold,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateSupervisionCaseTypeEntry,
-    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

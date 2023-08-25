@@ -33,7 +33,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationType,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (

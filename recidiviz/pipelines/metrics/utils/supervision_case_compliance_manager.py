@@ -40,14 +40,14 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionContact,
 )
-from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import (
-    SupervisionCaseCompliance,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
+)
+from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import (
+    SupervisionCaseCompliance,
 )
 from recidiviz.pipelines.utils.assessment_utils import (
     find_most_recent_applicable_assessment_of_class_for_state,

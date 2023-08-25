@@ -18,29 +18,13 @@
 import argparse
 import logging
 from collections import defaultdict
-from functools import lru_cache
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 from googleapiclient.discovery import build
 from more_itertools import one
 from oauth2client.client import GoogleCredentials
 
-from recidiviz.persistence.database import schema_utils
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 # The name of an entity, e.g. StatePerson.
@@ -366,30 +350,3 @@ def extract_county_of_residence_from_rows(
         ]
 
     return county_of_residence
-
-
-def entity_class_can_be_hydrated_in_pipelines(entity_class: Type[Entity]) -> bool:
-    """Returns whether the given |entity_class| can be hydrated in a Dataflow
-    pipeline. An entity class must have a column with the class id of the
-    unifying class (which is currently StatePerson for all pipelines) in order to be
-    hydrated in a Dataflow pipeline."""
-    schema_class: Type[StateBase] = schema_utils.get_state_database_entity_with_name(
-        entity_class.__name__
-    )
-
-    # If the class's corresponding table does not have the person_id
-    # field then we will never bring an entity of this type into
-    # pipelines
-    return hasattr(
-        schema_class, state_entities.StatePerson.get_class_id_name()
-    ) or hasattr(schema_class, state_entities.StateStaff.get_class_id_name())
-
-
-@lru_cache(maxsize=None)
-def get_entity_class_names_excluded_from_pipelines() -> List[str]:
-    """Returns the names of all entity classes that cannot be hydrated in pipelines."""
-    return [
-        entity_cls.__name__
-        for entity_cls in get_all_entity_classes_in_module(state_entities)
-        if not entity_class_can_be_hydrated_in_pipelines(entity_cls)
-    ]

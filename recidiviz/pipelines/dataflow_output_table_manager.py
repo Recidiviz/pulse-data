@@ -59,6 +59,9 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    NORMALIZED_ENTITY_CLASSES,
+)
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.dataflow_orchestration_utils import (
     get_ingest_pipeline_enabled_states,
@@ -69,9 +72,6 @@ from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     NORMALIZATION_MANAGERS,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,

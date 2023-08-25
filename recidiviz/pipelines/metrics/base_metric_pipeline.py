@@ -41,6 +41,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
@@ -54,9 +55,6 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
     json_serializable_list_value_handler,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateEntity,
 )
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
     WriteToBigQuery,

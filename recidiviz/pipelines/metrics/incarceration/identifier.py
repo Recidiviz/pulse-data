@@ -34,7 +34,16 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContext,
@@ -57,15 +66,6 @@ from recidiviz.pipelines.metrics.utils.violation_utils import (
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionViolationResponse,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.pipelines.utils import assessment_utils
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (

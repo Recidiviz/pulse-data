@@ -28,11 +28,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     is_official_supervision_admission,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateSupervisionPeriod,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
+from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
 )
 
 

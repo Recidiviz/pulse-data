@@ -31,11 +31,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     IncarcerationPeriodNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_incarceration_period_normalization_delegate import (
     UsMoIncarcerationNormalizationDelegate,

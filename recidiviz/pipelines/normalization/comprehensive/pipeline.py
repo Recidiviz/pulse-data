@@ -50,7 +50,12 @@ from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+    normalized_entity_class_with_base_class_name,
+)
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (
     ComprehensiveEntityNormalizer,
@@ -91,13 +96,6 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateEntity,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    AdditionalAttributesMap,
-    normalized_entity_class_with_base_class_name,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,

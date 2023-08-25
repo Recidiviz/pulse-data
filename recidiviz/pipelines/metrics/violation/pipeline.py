@@ -21,15 +21,12 @@ from typing import Dict, List, Type, Union
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities, normalized_entities
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.pipelines.metrics.base_identifier import BaseIdentifier
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.metrics.base_metric_producer import BaseMetricProducer
 from recidiviz.pipelines.metrics.violation import identifier, metric_producer
-from recidiviz.pipelines.normalization.utils import normalized_entities
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateEntity,
-)
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )

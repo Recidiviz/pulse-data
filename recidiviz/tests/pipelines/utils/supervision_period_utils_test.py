@@ -38,7 +38,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_delegate import (
@@ -308,7 +308,6 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
     def test_get_supervising_officer_and_location_info_from_supervision_period_us_nd(
         self,
     ) -> None:
-
         supervision_period = attr.evolve(
             DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
             state_code="US_ND",

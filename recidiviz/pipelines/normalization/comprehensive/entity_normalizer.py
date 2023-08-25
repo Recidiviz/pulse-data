@@ -26,6 +26,10 @@ from recidiviz.calculator.query.state.views.reference.state_person_to_state_staf
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+    merge_additional_attributes_maps,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
@@ -38,6 +42,10 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
     normalized_periods_for_calculations,
@@ -71,14 +79,6 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionSentence,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    AdditionalAttributesMap,
-    merge_additional_attributes_maps,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,

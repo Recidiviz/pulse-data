@@ -35,19 +35,19 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.pipelines.metrics.violation import identifier
-from recidiviz.pipelines.metrics.violation.events import (
-    ViolationEvent,
-    ViolationWithResponseEvent,
-)
-from recidiviz.pipelines.metrics.violation.pipeline import ViolationMetricsPipeline
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
     NormalizedStateSupervisionViolationResponseDecisionEntry,
     NormalizedStateSupervisionViolationTypeEntry,
 )
+from recidiviz.pipelines.metrics.violation import identifier
+from recidiviz.pipelines.metrics.violation.events import (
+    ViolationEvent,
+    ViolationWithResponseEvent,
+)
+from recidiviz.pipelines.metrics.violation.pipeline import ViolationMetricsPipeline
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,

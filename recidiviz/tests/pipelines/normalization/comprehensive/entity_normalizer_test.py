@@ -32,6 +32,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+    normalized_entity_class_with_base_class_name,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateCharge,
@@ -47,11 +51,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
-from recidiviz.pipelines.normalization.comprehensive import entity_normalizer, pipeline
-from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (
-    EntityNormalizerResult,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStateIncarcerationPeriod,
     NormalizedStateProgramAssignment,
@@ -60,9 +60,9 @@ from recidiviz.pipelines.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    AdditionalAttributesMap,
-    normalized_entity_class_with_base_class_name,
+from recidiviz.pipelines.normalization.comprehensive import entity_normalizer, pipeline
+from recidiviz.pipelines.normalization.comprehensive.entity_normalizer import (
+    EntityNormalizerResult,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
@@ -74,16 +74,16 @@ from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager impo
 from recidiviz.pipelines.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
+from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
+    get_normalized_violation_tree,
+    get_violation_tree,
+)
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
     generate_full_graph_state_staff,
 )
 from recidiviz.tests.pipelines.normalization.utils.entity_normalization_manager_utils_test import (
     STATE_PERSON_TO_STATE_STAFF_LIST,
-)
-from recidiviz.tests.pipelines.normalization.utils.normalized_entities_utils_test import (
-    get_normalized_violation_tree,
-    get_violation_tree,
 )
 from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,

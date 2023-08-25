@@ -29,7 +29,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
 )
 from recidiviz.pipelines.utils.state_utils.us_pa.us_pa_supervision_delegate import (

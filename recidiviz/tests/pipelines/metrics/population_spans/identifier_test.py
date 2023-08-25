@@ -38,15 +38,15 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StatePerson,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.metrics.population_spans import identifier
 from recidiviz.pipelines.metrics.population_spans.spans import (
     IncarcerationPopulationSpan,
     SupervisionPopulationSpan,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateSupervisionCaseTypeEntry,
-    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.identifier_models import Span

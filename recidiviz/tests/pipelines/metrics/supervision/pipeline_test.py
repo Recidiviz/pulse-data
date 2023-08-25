@@ -62,6 +62,12 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
     ProduceMetrics,
@@ -85,12 +91,6 @@ from recidiviz.pipelines.metrics.utils.metric_utils import (
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,

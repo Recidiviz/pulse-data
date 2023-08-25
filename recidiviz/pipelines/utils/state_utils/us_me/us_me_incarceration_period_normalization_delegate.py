@@ -25,11 +25,11 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.date import safe_strptime
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
 )
 
 INCARCERATION_SENTENCE_PERIOD_LOOKBACK = 7

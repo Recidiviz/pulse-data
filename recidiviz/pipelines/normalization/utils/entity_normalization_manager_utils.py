@@ -19,11 +19,21 @@ import datetime
 from typing import Dict, List, Optional, Tuple, Type, Union
 
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionSentence,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     AssessmentNormalizationManager,
@@ -53,16 +63,6 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationResponse,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    AdditionalAttributesMap,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,

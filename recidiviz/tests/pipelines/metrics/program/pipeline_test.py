@@ -42,7 +42,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
@@ -61,7 +61,6 @@ from recidiviz.pipelines.metrics.program.metrics import (
     ProgramReferralMetric,
 )
 from recidiviz.pipelines.metrics.utils.metric_utils import PersonMetadata
-from recidiviz.pipelines.normalization.utils import normalized_entities
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )

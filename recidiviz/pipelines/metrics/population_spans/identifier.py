@@ -35,6 +35,10 @@ from recidiviz.common.date import (
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContext,
@@ -45,10 +49,6 @@ from recidiviz.pipelines.metrics.population_spans.spans import (
 )
 from recidiviz.pipelines.metrics.utils.supervision_utils import (
     is_supervision_out_of_state,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

@@ -22,7 +22,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_supervision_delegate import (

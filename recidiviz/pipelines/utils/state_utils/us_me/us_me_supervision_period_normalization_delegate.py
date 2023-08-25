@@ -31,11 +31,11 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateSupervisionPeriod,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionSentence,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateSupervisionSentence,
 )
 
 SUPERVISION_SENTENCE_PERIOD_LOOKBACK = 7

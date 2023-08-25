@@ -34,15 +34,15 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    clear_entity_id_index_cache,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionSentence,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    clear_entity_id_index_cache,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
@@ -60,7 +60,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
 
         clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
-            "recidiviz.pipelines.normalization.utils."
+            "recidiviz.persistence.entity."
             "normalized_entities_utils._fixed_length_object_id_for_entity"
         )
         self.mock_unique_id = self.unique_id_patcher.start()

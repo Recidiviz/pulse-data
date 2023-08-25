@@ -31,12 +31,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.date import DateRange, DateRangeDiff
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
+from recidiviz.persistence.entity.normalized_entities_utils import (
     sort_normalized_entities_by_sequence_num,
+)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.pipelines.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,

@@ -64,12 +64,12 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_p
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
     UsXxSupervisionNormalizationDelegate,
 )
-from recidiviz.tests.pipelines.normalization.utils.normalized_entities_test import (
-    classes_in_normalized_entity_subtree,
-)
-from recidiviz.tests.pipelines.normalization.utils.normalized_entities_utils_test import (
+from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
     get_normalized_violation_tree,
     get_violation_tree,
+)
+from recidiviz.tests.persistence.entity.state.normalized_entities_test import (
+    classes_in_normalized_entity_subtree,
 )
 from recidiviz.tests.pipelines.utils.state_utils.state_calculation_config_manager_test import (
     STATE_DELEGATES_FOR_TESTS,
