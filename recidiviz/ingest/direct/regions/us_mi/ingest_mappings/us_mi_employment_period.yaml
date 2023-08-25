@@ -38,7 +38,7 @@ output:
                   - "629" # Unknown
                 StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK:
                   - "630" # Disability
-                StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
+                StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE:
                   - "5105" # Retired
                 StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
                   - "14347" # Proposed
