@@ -49,6 +49,8 @@ _SUPERVISION_OFFICER_ATTRIBUTES = [
     "role_type",
 ]
 
+_SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS = ["role_subtype"]
+
 SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE = f"""
 WITH all_staff_attribute_periods AS (
     -- location periods
@@ -178,7 +180,7 @@ WITH all_staff_attribute_periods AS (
 ,
 {create_sub_sessions_with_attributes(table_name="all_staff_attribute_periods",index_columns=["state_code","staff_id"])}
 ,
--- Dedupes to the max non-null value. In theory all state staff periods should be non-overlapping
+-- Dedupes to the max non-null value by default. In theory all state staff periods should be non-overlapping
 -- on a single attribute, so the ordered deduplication is just an extra safeguard.
 sub_sessions_dedup AS (
     SELECT
@@ -191,9 +193,9 @@ sub_sessions_dedup AS (
             partition_columns=["state_code", "staff_id", "start_date"]
         )},
         FIRST_VALUE(role_subtype IGNORE NULLS) OVER (
-            PARTITION BY {list_to_query_string(["state_code", "staff_id", "start_date"])}
+            PARTITION BY state_code, staff_id, start_date
             ORDER BY COALESCE(role_subtype_priority, 99), role_subtype DESC
-        ) AS role_subtype
+        ) AS role_subtype_primary,
     FROM
         sub_sessions_with_attributes
     LEFT JOIN `{{project_id}}.sessions.state_staff_role_subtype_dedup_priority` subtype
@@ -204,15 +206,38 @@ sub_sessions_dedup AS (
     QUALIFY
         ROW_NUMBER() OVER (PARTITION BY state_code, staff_id, start_date) = 1
 )
+,
+-- Aggregates arrays of all staff attributes where overlaps could be present
+attribute_arrays AS (
+    SELECT
+        state_code,
+        staff_id,
+        start_date,
+        end_date AS end_date_exclusive,
+        {list_to_query_string(
+            [
+                f"ARRAY_AGG(DISTINCT {attr} IGNORE NULLS) AS {attr}_array"
+                for attr in _SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS
+            ]
+        )}
+    FROM
+        sub_sessions_with_attributes
+    GROUP BY 1, 2, 3, 4
+)
 SELECT
-    b.external_id AS officer_id, 
+    b.external_id AS officer_id,
     a.*,
+    {list_to_query_string([f"c.{attr}_array" for attr in _SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS])},
 FROM
     sub_sessions_dedup a
 LEFT JOIN
     `{{project_id}}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` b
 USING
     (staff_id)
+LEFT JOIN
+    attribute_arrays c
+USING
+    (state_code, staff_id, start_date)
 WHERE
     role_type = "SUPERVISION_OFFICER"
 """
