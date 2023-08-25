@@ -40,7 +40,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_db_objs_from_tree,
     get_all_db_objs_from_trees,
     is_placeholder,
-    is_standalone_entity,
 )
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
@@ -470,7 +469,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         for root_entity in root_entities:
             children = get_all_db_objs_from_tree(root_entity, self.field_index)
             for child in children:
-                if child is not root_entity and not is_standalone_entity(child):
+                if child is not root_entity:
                     child.set_field(back_edge_field_name, root_entity)
 
     def _match_entity_trees(
@@ -910,9 +909,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
                 updated_children.extend(match_results.unmatched_db_entities)
                 db_entity.set_field(child_field_name, updated_children)
             else:
-                if match_results.unmatched_db_entities and not is_standalone_entity(
-                    ingested_child_field
-                ):
+                if match_results.unmatched_db_entities:
                     raise EntityMatchingError(
                         f"Singular ingested entity field {ingested_entity.get_entity_name()}.{child_field_name} "
                         f"with value: {ingested_child_field} should match one of the provided db options, but it does "

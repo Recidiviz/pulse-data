@@ -200,10 +200,6 @@ class ExtractDataForPipeline(beam.PTransform):
                         property_name
                     )
                 )
-                # TODO(#17856): Delete this when StateAgent has been deleted out of
-                #  schema.py
-                if property_class_name == "StateAgent":
-                    continue
 
                 property_entity_class = (
                     entity_utils.get_entity_class_in_module_with_name(

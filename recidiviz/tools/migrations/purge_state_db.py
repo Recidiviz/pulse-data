@@ -37,11 +37,7 @@ import alembic.config
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
-from recidiviz.persistence.database.schema.state.schema import (
-    StateAgent,
-    StatePerson,
-    StateStaff,
-)
+from recidiviz.persistence.database.schema.state.schema import StatePerson, StateStaff
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -133,7 +129,6 @@ def main(
             tables_to_truncate = [
                 StatePerson.__tablename__,
                 StateStaff.__tablename__,
-                StateAgent.__tablename__,
             ]
             for table_name in tables_to_truncate:
                 command = f"TRUNCATE TABLE {table_name} CASCADE;"

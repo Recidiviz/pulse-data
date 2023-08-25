@@ -17,7 +17,6 @@
 """Helper methods to generate schema objects with required fields
 prepopulated.
 """
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -200,15 +199,6 @@ def generate_assessment(person: schema.StatePerson, **kwargs) -> schema.StateAss
     }
     args.update(kwargs)
     return schema.StateAssessment(person=person, **args)
-
-
-def generate_agent(**kwargs) -> schema.StateAgent:
-    args = {
-        "state_code": _STATE_CODE,
-        "agent_type": StateAgentType.SUPERVISION_OFFICER.value,
-    }
-    args.update(kwargs)
-    return schema.StateAgent(**args)
 
 
 def generate_early_discharge(

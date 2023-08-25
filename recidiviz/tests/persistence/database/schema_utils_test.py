@@ -52,7 +52,6 @@ class TestSchemaUtils(unittest.TestCase):
 
     def test_get_all_database_entity_classes(self) -> None:
         state_database_entity_names = [
-            "StateAgent",
             "StateAssessment",
             "StateCharge",
             "StateDrugScreen",
@@ -157,7 +156,6 @@ class TestSchemaUtils(unittest.TestCase):
             "us_tn_compliant_reporting_workflows_impact",
         ]
         state_table_names = [
-            "state_agent",
             "state_assessment",
             "state_charge",
             "state_drug_screen",
@@ -191,7 +189,6 @@ class TestSchemaUtils(unittest.TestCase):
             "state_task_deadline",
             "state_charge_incarceration_sentence_association",
             "state_charge_supervision_sentence_association",
-            "state_supervision_violation_response_decision_agent_association",
         ]
         operations_table_names = [
             "direct_ingest_view_materialization_metadata",
@@ -243,7 +240,6 @@ class TestSchemaUtils(unittest.TestCase):
 
     def test_get_state_database_entities(self) -> None:
         state_database_entity_names = [
-            "StateAgent",
             "StateAssessment",
             "StateCharge",
             "StateDrugScreen",

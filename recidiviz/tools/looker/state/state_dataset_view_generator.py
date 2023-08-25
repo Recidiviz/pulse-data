@@ -174,9 +174,6 @@ def generate_state_views(looker_dir: str) -> None:
     # TODO(#23292): Either auto-generate or don't delete the person_periods view
 
     for table in get_state_table_classes():
-        # TODO(#17856): Remove when state agent is all cleaned up
-        if table.name == "state_agent":
-            continue
         lookml_view = get_lookml_view_table(table=table)
         lookml_view.write(state_dir, source_script_path=__file__)
     # TODO(#23292): Add `actions` dimension to state_person view

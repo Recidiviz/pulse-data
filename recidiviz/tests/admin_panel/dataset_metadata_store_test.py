@@ -82,9 +82,8 @@ region_codes_to_exclude:
 
     def test_object_counts_match(self) -> None:
         self.assertIngestMetadataResultsEqual(
-            self.store.fetch_object_counts_by_table(),
             {
-                "state_agent": {
+                "state_staff": {
                     "US_WW": DatasetMetadataCounts.from_json(
                         {
                             "total_count": "687179",
@@ -105,7 +104,7 @@ region_codes_to_exclude:
                     ),
                     "US_ZZ": DatasetMetadataCounts.from_json(
                         {
-                            "total_count": "888765",
+                            "total_count": "876944",
                             "placeholder_count": "359273",
                         }
                     ),
@@ -125,6 +124,7 @@ region_codes_to_exclude:
                     ),
                 },
             },
+            self.store.fetch_object_counts_by_table(),
         )
 
     def test_empty_table(self) -> None:
@@ -164,7 +164,7 @@ region_codes_to_exclude:
     def test_count_primary_keys(self) -> None:
         """Tests that primary key values should only report a single type, non-null."""
         results = self.store.fetch_column_object_counts_by_value(
-            "state_agent", "agent_id"
+            "state_staff", "staff_id"
         )
         self.assertEqual(
             1,
@@ -174,7 +174,7 @@ region_codes_to_exclude:
 
     @parameterized.expand(
         [
-            ("state_agent", ["US_WW", "US_XX", "US_YY", "US_ZZ"]),
+            ("state_staff", ["US_WW", "US_XX", "US_YY", "US_ZZ"]),
             ("state_charge", ["US_XX", "US_YY"]),
         ]
     )

@@ -53,13 +53,6 @@ SHARED_ENUM_VALUE_DESCRIPTIONS: Dict[str, str] = {
     present_without_info: """This value is used by status enums to denote that no status for an entity was provided by the source, but the entity itself was found in the source.""",
 }
 
-
-# state_agent.py
-state_agent_supervision_officer = "SUPERVISION_OFFICER"
-state_agent_subtype_supervision_officer = "SUPERVISION_OFFICER"
-state_agent_subtype_supervision_officer_supervisor = "SUPERVISION_OFFICER_SUPERVISOR"
-state_agent_subtype_supervision_regional_manager = "SUPERVISION_REGIONAL_MANAGER"
-
 # state_assessment.py
 state_assessment_class_risk = "RISK"
 state_assessment_class_sex_offense = "SEX_OFFENSE"

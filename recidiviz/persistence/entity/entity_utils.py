@@ -85,8 +85,6 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateEmploymentPeriod.__name__,
     state_entities.StateDrugScreen.__name__,
     state_entities.StateTaskDeadline.__name__,
-    # TODO(#17856): Delete when StateAgent is deleted from schema.py
-    "StateAgent",
     # StateStaff hierarchy
     state_entities.StateStaff.__name__,
     state_entities.StateStaffExternalId.__name__,
@@ -209,10 +207,7 @@ def _check_class_hierarchy_includes_all_expected_classes(
 ) -> None:
     expected_class_names = get_all_entity_class_names_in_module(entities_module)
 
-    # TODO(#17856): Delete when StateAgent is deleted from schema.py
-    given_minus_expected = set(class_hierarchy).difference(expected_class_names) - {
-        "StateAgent"
-    }
+    given_minus_expected = set(class_hierarchy).difference(expected_class_names)
     expected_minus_given = expected_class_names.difference(class_hierarchy)
 
     if given_minus_expected or expected_minus_given:
@@ -877,14 +872,6 @@ def get_entities_by_type(
             )
 
     return entities_of_type
-
-
-# TODO(#17856): Eliminate concept of a standalone entity when we have deleted StateAgent
-def is_standalone_entity(entity: DatabaseEntity) -> bool:
-    """Returns True if the provided entity is an instance of a class that
-    can exist separate from a StatePerson tree.
-    """
-    return "person_id" not in entity.__class__.get_column_property_names()
 
 
 def get_non_flat_property_class_name(

@@ -1685,7 +1685,15 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def testExtractAllEntitiesOfType(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
-                123, "US_XX", None, [], [], [], [], [], [], []
+                person_id=123,
+                state_code="US_XX",
+                incarceration_incidents=[],
+                supervision_violations=[],
+                supervision_contacts=[],
+                incarceration_sentences=[],
+                supervision_sentences=[],
+                incarceration_periods=[],
+                supervision_periods=[],
             )
         )
 
@@ -1735,7 +1743,15 @@ class TestExtractAllEntitiesOfType(unittest.TestCase):
     def testExtractAllEntitiesOfType_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
             database_test_utils.generate_test_person(
-                123, "US_XX", None, [], [], [], [], [], [], []
+                person_id=123,
+                state_code="US_XX",
+                incarceration_incidents=[],
+                supervision_violations=[],
+                supervision_contacts=[],
+                incarceration_sentences=[],
+                supervision_sentences=[],
+                incarceration_periods=[],
+                supervision_periods=[],
             )
         )
 
