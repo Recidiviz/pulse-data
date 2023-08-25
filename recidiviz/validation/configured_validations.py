@@ -165,6 +165,9 @@ from recidiviz.validation.views.state.normalized_entities_unique_ids import (
 from recidiviz.validation.views.state.outliers.unidentified_supervision_officer_supervisors import (
     UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.outliers.unidentified_supervision_officers import (
+    UNIDENTIFIED_SUPERVISION_OFFICERS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.overlapping_incarceration_periods import (
     OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
 )
@@ -530,6 +533,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=UNIDENTIFIED_SUPERVISION_OFFICERS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
