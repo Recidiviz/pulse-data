@@ -28,13 +28,6 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-
-# TODO(#17856): Delete these when we delete StateAgent entirely (currently used for
-#  documentation generation to discover all enums in the schema).
-from recidiviz.common.constants.state.state_agent import (  # pylint: disable=unused-import
-    StateAgentSubtype,
-    StateAgentType,
-)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -1389,7 +1382,6 @@ class StateSupervisionViolationResponse(
     deciding_body_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
-    # See also |decision_agents| below
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer

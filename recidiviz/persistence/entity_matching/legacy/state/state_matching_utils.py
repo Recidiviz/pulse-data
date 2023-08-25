@@ -343,7 +343,6 @@ def can_atomically_merge_entity(
     if isinstance(
         new_entity,
         (
-            schema.StateAgent,
             # We update this entity from multiple views in ND
             schema.StateIncarcerationSentence,
             # We update this entity from four views in US_ID:

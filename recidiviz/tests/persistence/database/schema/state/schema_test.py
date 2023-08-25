@@ -25,7 +25,6 @@ from parameterized import parameterized
 
 from recidiviz.common.constants.state import (
     enum_canonical_strings,
-    state_agent,
     state_assessment,
     state_case_type,
     state_charge,
@@ -73,7 +72,6 @@ from recidiviz.tests.persistence.database.schema.schema_test import (
     TestSchemaTableConsistency,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
-    generate_agent,
     generate_assessment,
     generate_charge,
     generate_early_discharge,
@@ -118,8 +116,6 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_employment_period_employment_status": StateEmploymentPeriodEmploymentStatus,
             "state_employment_period_end_reason": StateEmploymentPeriodEndReason,
             "state_incarceration_type": state_incarceration.StateIncarcerationType,
-            "state_agent_type": state_agent.StateAgentType,
-            "state_agent_subtype": state_agent.StateAgentSubtype,
             "state_incarceration_period_admission_reason": state_incarceration_period.StateIncarcerationPeriodAdmissionReason,
             "state_incarceration_period_release_reason": state_incarceration_period.StateIncarcerationPeriodReleaseReason,
             "state_incarceration_period_custody_level": state_incarceration_period.StateIncarcerationPeriodCustodyLevel,
@@ -844,17 +840,13 @@ class TestStateSupervisionPeriod(unittest.TestCase):
     def test_add_valid_supervision_period_simple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_supervision_period = generate_supervision_period(
             person=db_person,
             external_id="sp1",
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            supervising_officer=db_agent,
         )
 
         # Act
@@ -865,17 +857,13 @@ class TestStateSupervisionPeriod(unittest.TestCase):
     def test_add_valid_supervision_period_multiple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_supervision_period = generate_supervision_period(
             person=db_person,
             external_id="sp1",
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            supervising_officer=db_agent,
         )
         db_supervision_period_2 = generate_supervision_period(
             person=db_person,
@@ -894,17 +882,13 @@ class TestStateSupervisionPeriod(unittest.TestCase):
     def test_add_invalid_supervision_period_empty_type(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_supervision_period = generate_supervision_period(
             person=db_person,
             external_id="sp1",
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type=None,
-            supervising_officer=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -922,17 +906,13 @@ class TestStateSupervisionPeriod(unittest.TestCase):
     def test_add_invalid_supervision_period_empty_id(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_supervision_period = generate_supervision_period(
             person=db_person,
             external_id="sp1",
             state_code=self.state_code,
             supervising_officer_staff_external_id=None,
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            supervising_officer=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -981,17 +961,13 @@ class TestStateAssessment(unittest.TestCase):
     def test_add_valid_assessment_simple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_assessment = generate_assessment(
             person=db_person,
             external_id="a1",
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            conducting_agent=db_agent,
         )
 
         # Act
@@ -1002,17 +978,13 @@ class TestStateAssessment(unittest.TestCase):
     def test_add_valid_assessment_multiple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_assessment = generate_assessment(
             person=db_person,
             external_id="a1",
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            conducting_agent=db_agent,
         )
         db_state_assessment_2 = generate_assessment(
             person=db_person,
@@ -1031,17 +1003,13 @@ class TestStateAssessment(unittest.TestCase):
     def test_add_invalid_assessment_empty_type(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_assessment = generate_assessment(
             person=db_person,
             external_id="a1",
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type=None,
-            conducting_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1059,17 +1027,13 @@ class TestStateAssessment(unittest.TestCase):
     def test_add_invalid_assessment_empty_id(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_assessment = generate_assessment(
             person=db_person,
             external_id="a1",
             state_code=self.state_code,
             conducting_staff_external_id=None,
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            conducting_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1118,17 +1082,13 @@ class TestStateSupervisionContact(unittest.TestCase):
     def test_add_valid_supervision_contact_simple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
             external_id="sc1",
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            contacted_agent=db_agent,
         )
 
         # Act
@@ -1139,17 +1099,13 @@ class TestStateSupervisionContact(unittest.TestCase):
     def test_add_valid_supervision_contact_multiple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
             external_id="sc1",
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            contacted_agent=db_agent,
         )
         db_state_supervision_contact_2 = generate_supervision_contact(
             person=db_person,
@@ -1168,17 +1124,13 @@ class TestStateSupervisionContact(unittest.TestCase):
     def test_add_invalid_supervision_contact_empty_type(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
             external_id="sc1",
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type=None,
-            contacted_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1196,17 +1148,13 @@ class TestStateSupervisionContact(unittest.TestCase):
     def test_add_invalid_supervision_contact_empty_id(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
             external_id="sc1",
             state_code=self.state_code,
             contacting_staff_external_id=None,
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            contacted_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1255,17 +1203,13 @@ class TestStateProgramAssignment(unittest.TestCase):
     def test_add_valid_program_assignment_simple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
             external_id="pa1",
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            referring_agent=db_agent,
         )
 
         # Act
@@ -1276,17 +1220,13 @@ class TestStateProgramAssignment(unittest.TestCase):
     def test_add_valid_program_assignment_multiple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
             external_id="pa1",
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            referring_agent=db_agent,
         )
         db_state_program_assignment_2 = generate_program_assignment(
             person=db_person,
@@ -1304,17 +1244,13 @@ class TestStateProgramAssignment(unittest.TestCase):
     def test_add_invalid_program_assignment_empty_type(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
             external_id="pa1",
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type=None,
-            referring_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1332,17 +1268,13 @@ class TestStateProgramAssignment(unittest.TestCase):
     def test_add_invalid_program_assignment_empty_id(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
-        db_agent = generate_agent(
-            external_id="1234",
-            state_code=self.state_code,
-        )
+
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
             external_id="pa1",
             state_code=self.state_code,
             referring_staff_external_id=None,
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
-            referring_agent=db_agent,
         )
 
         with SessionFactory.using_database(

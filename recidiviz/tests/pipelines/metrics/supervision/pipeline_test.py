@@ -650,10 +650,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_violation_id=fake_violation_id,
         )
 
-        state_agent = database_test_utils.generate_test_assessment_agent()
-
-        ssvr.decision_agents = [state_agent]
-
         violation_report = schema.StateSupervisionViolationResponse(
             supervision_violation_response_id=99999,
             external_id="svr2",
@@ -881,10 +877,6 @@ class TestSupervisionPipeline(unittest.TestCase):
                 fake_person_id_2
             )
         )
-
-        state_agent = database_test_utils.generate_test_assessment_agent()
-
-        supervision_violation_response.decision_agents = [state_agent]
 
         supervision_violation = database_test_utils.generate_test_supervision_violation(
             fake_person_id_2, [supervision_violation_response]

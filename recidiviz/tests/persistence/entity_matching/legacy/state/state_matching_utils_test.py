@@ -485,9 +485,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_mergeFlatFields_DoNotOverwriteWithReferenceItems(self) -> None:
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
-            # TODO(#17856): Delete when we delete StateAgent
-            if db_entity_cls.__name__ == "StateAgent":
-                continue
             for old in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
                 for new in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
                     if old.get_external_id() != new.get_external_id():
@@ -771,9 +768,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
             print(db_entity_cls)
-            # TODO(#17856): Delete when we delete StateAgent
-            if db_entity_cls.__name__ == "StateAgent":
-                continue
             for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
                 self.assertFalse(can_atomically_merge_entity(entity, field_index))
             for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
@@ -781,7 +775,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
 
                 if db_entity_cls in {
-                    schema.StateAgent,
                     schema.StateEarlyDischarge,
                     schema.StateIncarcerationSentence,
                     schema.StatePerson,
@@ -794,10 +787,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_is_multiple_id_entity(self) -> None:
         multiple_id_entities = set()
         for cls in get_state_database_entities():
-            # TODO(#17856): Delete when we delete StateAgent
-            if cls.__name__ == "StateAgent":
-                continue
-
             # Shouldn't crash for any entity
             if is_multiple_id_entity(cls):
                 multiple_id_entities.add(cls)

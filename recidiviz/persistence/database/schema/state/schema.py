@@ -215,23 +215,6 @@ state_incarceration_type = Enum(
     name="state_incarceration_type",
 )
 
-state_agent_type = Enum(
-    state_enum_strings.present_without_info,
-    state_enum_strings.state_agent_supervision_officer,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    name="state_agent_type",
-)
-
-state_agent_subtype = Enum(
-    state_enum_strings.state_agent_subtype_supervision_officer,
-    state_enum_strings.state_agent_subtype_supervision_officer_supervisor,
-    state_enum_strings.state_agent_subtype_supervision_regional_manager,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    name="state_agent_subtype",
-)
-
 state_person_alias_type = Enum(
     state_enum_strings.state_person_alias_alias_type_affiliation_name,
     state_enum_strings.state_person_alias_alias_type_alias,
@@ -822,36 +805,6 @@ state_charge_supervision_sentence_association_table = Table(
     ),
 )
 
-state_supervision_violation_response_decision_agent_association_table = Table(
-    "state_supervision_violation_response_decision_agent_association",
-    StateBase.metadata,
-    Column(
-        "supervision_violation_response_id",
-        Integer,
-        ForeignKey(
-            "state_supervision_violation_response.supervision_violation_response_id"
-        ),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="violation response"
-        ),
-    ),
-    Column(
-        "agent_id",
-        Integer,
-        ForeignKey("state_agent.agent_id"),
-        index=True,
-        comment=StrictStringFormatter().format(
-            FOREIGN_KEY_COMMENT_TEMPLATE, object_name="agent"
-        ),
-    ),
-    comment=StrictStringFormatter().format(
-        ASSOCIATON_TABLE_COMMENT_TEMPLATE,
-        first_object_name_plural="supervision violation responses",
-        second_object_name_plural="agents",
-    ),
-)
-
 SchemaPeriodType = TypeVar(
     "SchemaPeriodType", "StateSupervisionPeriod", "StateIncarcerationPeriod"
 )
@@ -1359,18 +1312,6 @@ class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
         "This field with the conducting_staff_external_id field make up a primary key for the "
         "state_staff_external_id table.",
     )
-
-    @declared_attr
-    def conducting_agent_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_agent.agent_id"),
-            index=True,
-            nullable=True,
-            comment="The id of the agent conducting this assessment.",
-        )
-
-    conducting_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
 class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
@@ -1903,19 +1844,6 @@ class StateSupervisionPeriod(StateBase, _ReferencesStatePersonSharedColumns):
         "a primary key for the state_staff_external_id table.",
     )
 
-    @declared_attr
-    def supervising_officer_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_agent.agent_id"),
-            index=True,
-            nullable=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
-            ),
-        )
-
-    supervising_officer = relationship("StateAgent", uselist=False, lazy="selectin")
     case_type_entries = relationship(
         "StateSupervisionCaseTypeEntry", backref="supervision_period", lazy="selectin"
     )
@@ -2448,60 +2376,6 @@ class StateSupervisionViolationResponse(StateBase, _ReferencesStatePersonSharedC
         backref="supervision_violation_response",
         lazy="selectin",
     )
-    decision_agents = relationship(
-        "StateAgent",
-        secondary=state_supervision_violation_response_decision_agent_association_table,
-        lazy="selectin",
-    )
-
-
-class StateAgent(StateBase):
-    """Represents a StateAgent in the SQL schema"""
-
-    __tablename__ = "state_agent"
-    __table_args__ = {
-        "comment": "The StateAgent object represents some agent operating on behalf of the criminal "
-        "justice system, usually referenced in the context of taking some action related "
-        "to a person moving through that system. This includes references such as the judges "
-        "trying cases, the officers supervising people on parole, the individuals who make a "
-        "decision at a parole hearing, and so on. We entity match across StateAgents where "
-        "possible so that we can see the full scope of actions taken by a particular agent "
-        "to understand patterns in their behavior."
-    }
-
-    agent_id = Column(
-        Integer,
-        primary_key=True,
-        comment=StrictStringFormatter().format(
-            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="agent"
-        ),
-    )
-
-    external_id = Column(
-        String(255),
-        index=True,
-        comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateAgent"
-        ),
-    )
-    agent_type = Column(state_agent_type, nullable=False, comment="The type of agent.")
-    agent_type_raw_text = Column(
-        String(255), comment="The raw text value of the agent type."
-    )
-    state_code = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment=STATE_CODE_COMMENT,
-    )
-    full_name = Column(String(255), comment="The state agent's full name.")
-    agent_subtype = Column(
-        state_agent_subtype,
-        comment="The subtype of the position of the agent.",
-    )
-    agent_subtype_raw_text = Column(
-        String(255), comment="The raw text of the agent subtype."
-    )
 
 
 class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):
@@ -2602,20 +2476,6 @@ class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):
         "This field with the referring_staff_external_id field make up a primary key for the state_staff_external_id "
         "table.",
     )
-
-    @declared_attr
-    def referring_agent_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_agent.agent_id"),
-            index=True,
-            nullable=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
-            ),
-        )
-
-    referring_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
 class StateEarlyDischarge(StateBase, _ReferencesStatePersonSharedColumns):
@@ -2845,20 +2705,6 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
         comment="Whether or not the person's current employment status was "
         "verified at this contact.",
     )
-
-    @declared_attr
-    def contacted_agent_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_agent.agent_id"),
-            index=True,
-            nullable=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
-            ),
-        )
-
-    contacted_agent = relationship("StateAgent", uselist=False, lazy="selectin")
 
 
 class StateEmploymentPeriod(StateBase, _ReferencesStatePersonSharedColumns):

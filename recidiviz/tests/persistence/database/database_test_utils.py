@@ -3,7 +3,6 @@
 import datetime
 from typing import List, Optional
 
-from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
@@ -106,14 +105,13 @@ def generate_test_supervision_case_type(
 
 
 def generate_test_supervision_contact(
-    person_id, contacted_agent=None
+    person_id,
 ) -> state_schema.StateSupervisionContact:
     instance = state_schema.StateSupervisionContact(
         person_id=person_id,
         supervision_contact_id=12345,
         external_id="external_id",
         state_code="US_XX",
-        contacted_agent=contacted_agent,
         status=StateSupervisionContactStatus.COMPLETED.value,
         status_raw_text="COMPLETED",
     )
@@ -282,21 +280,10 @@ def generate_test_program_assignment(person_id) -> state_schema.StateProgramAssi
     return instance
 
 
-def generate_test_assessment_agent() -> state_schema.StateAgent:
-    instance = state_schema.StateAgent(
-        agent_id=1010,
-        external_id="ASSAGENT1234",
-        agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-        state_code="US_XX",
-        full_name="JOHN SMITH",
-    )
-    return instance
-
-
 def generate_test_person(
+    *,
     person_id: int,
     state_code: str,
-    agent: Optional[state_schema.StateAgent],
     incarceration_incidents: List[state_schema.StateIncarcerationIncident],
     supervision_violations: List[state_schema.StateSupervisionViolation],
     supervision_contacts: List[state_schema.StateSupervisionContact],
@@ -358,13 +345,11 @@ def generate_test_person(
                 assessment_id=456,
                 person_id=person_id,
                 state_code="US_XX",
-                conducting_agent=agent,
             ),
             state_schema.StateAssessment(
                 assessment_id=4567,
                 person_id=person_id,
                 state_code="US_XX",
-                conducting_agent=agent,
             ),
         ],
         program_assignments=[
@@ -372,7 +357,6 @@ def generate_test_person(
                 program_assignment_id=567,
                 participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
                 state_code="US_XX",
-                referring_agent=agent,
             )
         ],
     )
@@ -421,8 +405,6 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         [test_charge_1, test_charge_2],
     )
 
-    test_agent = generate_test_assessment_agent()
-
     test_state_code = "US_XX"
 
     test_incarceration_incident_outcome = generate_test_incarceration_incident_outcome(
@@ -444,16 +426,15 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
     test_contact = generate_test_supervision_contact(test_person_id)
 
     test_person = generate_test_person(
-        test_person_id,
-        test_state_code,
-        test_agent,
-        [test_incarceration_incident],
-        [test_supervision_violation],
-        [test_contact],
-        [test_incarceration_sentence],
-        [test_supervision_sentence],
-        [test_incarceration_period],
-        [test_supervision_period],
+        person_id=test_person_id,
+        state_code=test_state_code,
+        incarceration_incidents=[test_incarceration_incident],
+        supervision_violations=[test_supervision_violation],
+        supervision_contacts=[test_contact],
+        incarceration_sentences=[test_incarceration_sentence],
+        supervision_sentences=[test_supervision_sentence],
+        incarceration_periods=[test_incarceration_period],
+        supervision_periods=[test_supervision_period],
     )
 
     return test_person

@@ -704,18 +704,15 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             sp_copy.case_type_entries = []
             normalized_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
                 **{
-                    **{
-                        field: value
-                        for field, value in sp_copy.__dict__.items()
-                        # TODO(#20010): remove supervising_officer filtering after legacy field is deleted
-                        if field not in ("supervising_officer", "case_type_entries")
-                    },
-                    **{
-                        "sequence_num": index,
-                        "case_type_entries": normalized_case_type_entries,
-                        "supervising_officer_staff_id": 10000,
-                    },
-                }
+                    field: value
+                    for field, value in sp_copy.__dict__.items()
+                    if field not in ("case_type_entries")
+                },
+                **{
+                    "sequence_num": index,
+                    "case_type_entries": normalized_case_type_entries,
+                    "supervising_officer_staff_id": 10000,
+                },
             )
 
             normalized_sps.append(normalized_sp)
@@ -727,18 +724,11 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
 
         for index, pa in enumerate(self.full_graph_person.program_assignments):
             normalized_pa = NormalizedStateProgramAssignment.new_with_defaults(
+                **pa.__dict__,
                 **{
-                    **{
-                        field: value
-                        for field, value in pa.__dict__.items()
-                        # TODO(#20010): remove this filtering after legacy field is deleted
-                        if field != "referring_agent"
-                    },
-                    **{
-                        "sequence_num": index,
-                        "referring_staff_id": 10000,
-                    },
-                }
+                    "sequence_num": index,
+                    "referring_staff_id": 10000,
+                },
             )
 
             normalized_pas.append(normalized_pa)
@@ -747,17 +737,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
 
         for index, sc in enumerate(self.full_graph_person.supervision_contacts):
             normalized_sc = NormalizedStateSupervisionContact.new_with_defaults(
-                **{
-                    **{
-                        field: value
-                        for field, value in sc.__dict__.items()
-                        # TODO(#20010): remove this filtering after legacy field is deleted
-                        if field != "contacted_agent"
-                    },
-                    **{
-                        "contacting_staff_id": 20000,
-                    },
-                }
+                **{**sc.__dict__, "contacting_staff_id": 20000}
             )
 
             normalized_scs.append(normalized_sc)

@@ -901,9 +901,6 @@ class TestEntityUtils(TestCase):
     def test_is_placeholder(self) -> None:
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
-            # TODO(#17856): Delete when we delete StateAgent
-            if db_entity_cls.__name__ == "StateAgent":
-                continue
             if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
                 self.fail(
                     f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"
@@ -934,9 +931,6 @@ class TestEntityUtils(TestCase):
     def test_is_reference_only_entity(self) -> None:
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
-            # TODO(#17856): Delete when we delete StateAgent
-            if db_entity_cls.__name__ == "StateAgent":
-                continue
             if db_entity_cls not in PLACEHOLDER_ENTITY_EXAMPLES:
                 self.fail(
                     f"Expected to find [{db_entity_cls}] in PLACEHOLDER_ENTITY_EXAMPLES"

@@ -126,13 +126,6 @@ def assert_no_unexpected_entities_in_db(
     entity_counter: Dict[Type, List[DatabaseEntity]] = defaultdict(list)
     get_entities_by_type(expected_entities, field_index, entity_counter)
     for cls, entities_of_cls in entity_counter.items():
-        # TODO(#17856): Clean up this logic when StateAgent has been deleted from
-        #  the schema.
-        if cls.__name__ == "StateAgent":
-            # The StateAgent class does not need to be attached to a root entity, so it
-            # is valid if some StateAgent are not reachable from the provided
-            # |expected_entities|.
-            continue
         expected_ids = set()
         for entity in entities_of_cls:
             expected_ids.add(entity.get_id())
