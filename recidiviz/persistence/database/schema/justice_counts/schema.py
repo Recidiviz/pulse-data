@@ -369,7 +369,9 @@ class Agency(Source):
         "polymorphic_identity": "agency",
     }
 
-    def to_json(self, core_attributes_only: bool = False) -> Dict[str, Any]:
+    def to_json(
+        self, with_team: bool = True, with_settings: bool = True
+    ) -> Dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
@@ -394,10 +396,10 @@ class Agency(Source):
                 }
                 for assoc in self.user_account_assocs
             ]
-            if core_attributes_only is False
+            if with_team is True
             else [],
             "settings": [setting.to_json() for setting in self.agency_settings]
-            if core_attributes_only is False
+            if with_settings is True
             else [],
             "is_superagency": self.is_superagency,
             "super_agency_id": self.super_agency_id,
@@ -475,7 +477,8 @@ class UserAccount(JusticeCountsBase):
             "name": self.name,
             "email": self.email,
             "agencies": [
-                agency.to_json(core_attributes_only=True) for agency in agencies or []
+                agency.to_json(with_team=False, with_settings=False)
+                for agency in agencies or []
             ],
         }
 

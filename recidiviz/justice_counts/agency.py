@@ -111,8 +111,21 @@ class AgencyInterface:
         return agencies
 
     @staticmethod
-    def get_agencies(session: Session) -> List[schema.Agency]:
-        return session.query(schema.Agency).all()
+    def get_agencies(
+        session: Session, with_users: bool = False, with_settings: bool = False
+    ) -> List[schema.Agency]:
+        q = session.query(schema.Agency)
+        # eagerly load the users in this agency
+        if with_users:
+            q = q.options(
+                selectinload(schema.Agency.user_account_assocs).joinedload(
+                    schema.AgencyUserAccountAssociation.user_account
+                )
+            )
+        if with_settings:
+            # eagerly load the agency settings
+            q = q.options(selectinload(schema.Agency.agency_settings))
+        return q.all()
 
     @staticmethod
     def get_agency_ids(session: Session) -> List[int]:
