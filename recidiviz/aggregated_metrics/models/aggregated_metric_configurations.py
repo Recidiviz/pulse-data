@@ -1382,6 +1382,14 @@ SUPERVISION_STARTS_FROM_INCARCERATION = EventCountMetric(
     event_attribute_filters={"inflow_from_level_1": ["INCARCERATION"]},
 )
 
+INCARCERATION_RELEASES = EventCountMetric(
+    name="incarceration_releases",
+    display_name="Incarceration Releases",
+    description="Number of transitions from incarceration to liberty or supervision",
+    event_types=[PersonEventType.INCARCERATION_RELEASE],
+    event_attribute_filters={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
+)
+
 PROP_SENTENCE_SERVED_AT_INCARCERATION_TO_SUPERVISION_TRANSITION = EventValueMetric(
     name="prop_sentence_at_incarceration_outflow_to_supervision",
     display_name="Proportion Sentence Served At Incarceration To Supervision "
@@ -1407,6 +1415,16 @@ PROP_SENTENCE_SERVED_AT_LIBERTY_START = EventValueMetric(
     event_count_metric=LIBERTY_STARTS,
 )
 
+PROP_SENTENCE_SERVED_AT_INCARCERATION_RELEASE = EventValueMetric(
+    name="prop_sentence_served_at_incarceration_release",
+    display_name="Proportion Sentence Served At Incarceration Release",
+    description="Average proportion of sentence served as of the release from "
+    "incarceration to liberty or supervision",
+    event_types=[PersonEventType.INCARCERATION_RELEASE],
+    event_attribute_filters={"outflow_to_level_1": ["LIBERTY", "SUPERVISION"]},
+    event_value_numeric="prop_sentence_served",
+    event_count_metric=INCARCERATION_RELEASES,
+)
 
 PROP_SENTENCE_SERVED_AT_SUPERVISION_INFLOW_FROM_INCARCERATION = EventValueMetric(
     name="prop_sentence_at_supervision_inflow_from_incarceration",
