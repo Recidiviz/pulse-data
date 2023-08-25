@@ -31,12 +31,12 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     PurposeForIncarcerationInfo,
     StateSpecificIncarcerationNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.violation_response_utils import (
     responses_on_most_recent_response_date,

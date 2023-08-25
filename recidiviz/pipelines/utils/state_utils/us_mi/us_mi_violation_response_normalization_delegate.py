@@ -21,6 +21,9 @@ from typing import List, Optional
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    update_normalized_entity_with_globally_unique_id,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolationResponse,
@@ -28,9 +31,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
 )
 from recidiviz.pipelines.utils.incarceration_period_utils import (
     standard_date_sort_for_incarceration_periods,
@@ -56,10 +56,10 @@ class UsMiViolationResponseNormalizationDelegate(
         StateSupervisionViolationResponse's list of supervision_violation_types.
         For each probation supervision violation, use the subsequent incarceration
         period with a probation revocation start reason to add a supervision_violation_type
-        if such an incarceration period occurs before the next probation supervision violation"""
+        if such an incarceration period occurs before the next probation supervision violation
+        """
 
         if sorted_violation_responses:
-
             # skip adding violation types if it's not a probation supervision violation
             if not response.external_id or "PROBATION" not in response.external_id:
                 return []
@@ -99,7 +99,6 @@ class UsMiViolationResponseNormalizationDelegate(
                         < incarceration_period.admission_date
                         < next_response_date
                     ):
-
                         if incarceration_period.admission_reason_raw_text == "15":
                             technical_entry = StateSupervisionViolationTypeEntry(
                                 state_code=response.state_code,

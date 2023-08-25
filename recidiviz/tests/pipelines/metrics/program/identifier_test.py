@@ -35,6 +35,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateProgramAssignment,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.metrics.program import identifier
 from recidiviz.pipelines.metrics.program.events import (
     ProgramEvent,
@@ -44,11 +49,6 @@ from recidiviz.pipelines.metrics.program.events import (
 from recidiviz.pipelines.metrics.program.pipeline import ProgramMetricsPipeline
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateProgramAssignment,
-    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (

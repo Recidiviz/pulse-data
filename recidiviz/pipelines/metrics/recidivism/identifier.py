@@ -45,6 +45,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContext,
@@ -53,9 +56,6 @@ from recidiviz.pipelines.metrics.recidivism.events import (
     NonRecidivismReleaseEvent,
     RecidivismReleaseEvent,
     ReleaseEvent,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

@@ -39,20 +39,20 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_custom_enum_parsers import (
     parse_supervision_period_termination_reason,
 )
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    copy_entities_and_add_unique_ids,
+    update_normalized_entity_with_globally_unique_id,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
-    StateSpecificSupervisionNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionSentence,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    copy_entities_and_add_unique_ids,
-    update_normalized_entity_with_globally_unique_id,
+from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
+    StateSpecificSupervisionNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,

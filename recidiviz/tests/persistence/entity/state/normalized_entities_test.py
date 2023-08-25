@@ -29,22 +29,19 @@ from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.pipelines.normalization.utils import normalized_entities
-from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
-    NORMALIZATION_MANAGERS,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state import normalized_entities
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateEntity,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
     get_entity_class_names_excluded_from_normalization,
 )
+from recidiviz.pipelines.normalization.utils.entity_normalization_manager_utils import (
+    NORMALIZATION_MANAGERS,
+)
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     fields_unique_to_normalized_class,
-)
-from recidiviz.pipelines.utils.execution_utils import (
-    entity_class_can_be_hydrated_in_pipelines,
 )
 
 NORMALIZED_PREFIX = "Normalized"
@@ -193,15 +190,6 @@ def classes_in_normalized_entity_subtree(
     """
     explored_nodes: Set[Type[Entity]] = set()
     unexplored_nodes: Set[Type[Entity]] = {entity_cls}
-
-    # If this entity cannot be hydrated in calculation pipelines, then it does not
-    # have a subtree of related entities that could be normalized as the root entity
-    if not entity_class_can_be_hydrated_in_pipelines(entity_cls):
-        raise ValueError(
-            f"Entity {entity_cls.__name__} cannot be hydrated in "
-            f"calculation pipelines, so cannot be a member of a "
-            f"normalized entity subtree."
-        )
 
     class_names_to_ignore = get_entity_class_names_excluded_from_normalization()
 

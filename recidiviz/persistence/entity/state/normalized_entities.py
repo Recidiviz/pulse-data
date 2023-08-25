@@ -43,9 +43,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.pipelines.utils.execution_utils import (
-    get_entity_class_names_excluded_from_pipelines,
-)
 
 
 class NormalizedStateEntity(BuildableAttr):
@@ -84,13 +81,12 @@ def get_entity_class_names_excluded_from_normalization() -> List[str]:
     """Returns the names of all entity classes that are never modified by
     normalization.
 
-    We never normalize the StatePerson entity, and classes that are excluded from
-    pipelines cannot be normalized.
+    We never normalize the StatePerson / StateStaff entity.
     """
     return [
         StatePerson.__name__,
         StateStaff.__name__,
-    ] + get_entity_class_names_excluded_from_pipelines()
+    ]
 
 
 def _get_ref_fields_with_reference_class_names(

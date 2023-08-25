@@ -24,6 +24,9 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    update_normalized_entity_with_globally_unique_id,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolatedConditionEntry,
     StateSupervisionViolationResponse,
@@ -31,9 +34,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
 )
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violations_delegate import (
     LAW_CITATION_SUBTYPE_STR,

@@ -48,17 +48,17 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
+    update_reverse_references_on_related_entities,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateEntity,
-    get_entity_class_names_excluded_from_normalization,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
+from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
     NormalizedStateEntityT,
     normalized_entity_class_with_base_class_name,
     update_forward_references_on_updated_entity,
-    update_reverse_references_on_related_entities,
+)
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateEntity,
+    get_entity_class_names_excluded_from_normalization,
 )
 
 NormalizedEntityKey = Tuple[Type[NormalizedStateEntity], int]

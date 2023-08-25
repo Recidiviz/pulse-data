@@ -26,12 +26,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.pipelines.metrics.utils.commitment_from_supervision_utils import (
-    _get_commitment_from_supervision_supervision_period,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
+)
+from recidiviz.pipelines.metrics.utils.commitment_from_supervision_utils import (
+    _get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.pipelines.utils.state_utils.us_id.us_id_commitment_from_supervision_delegate import (
     UsIdCommitmentFromSupervisionDelegate,

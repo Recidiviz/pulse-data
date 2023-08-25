@@ -50,12 +50,12 @@ from recidiviz.persistence.database.schema_utils import (
     get_state_table_classes,
     is_association_table,
 )
-from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
-from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetricType
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
+from recidiviz.persistence.entity.normalized_entities_utils import (
     normalized_entity_class_exists_for_base_class_with_name,
     normalized_entity_class_with_base_class_name,
 )
+from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetricType
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_association_table,
     column_names_on_bq_schema_for_normalized_state_entity,

@@ -70,6 +70,18 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionContact,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionSentence,
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+    NormalizedStateSupervisionViolationResponseDecisionEntry,
+    NormalizedStateSupervisionViolationTypeEntry,
+)
 from recidiviz.pipelines.metrics.supervision import identifier
 from recidiviz.pipelines.metrics.supervision.events import (
     ProjectedSupervisionCompletionEvent,
@@ -88,18 +100,6 @@ from recidiviz.pipelines.metrics.utils.supervision_case_compliance_manager impor
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateIncarcerationPeriod,
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionCaseTypeEntry,
-    NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionSentence,
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationResponse,
-    NormalizedStateSupervisionViolationResponseDecisionEntry,
-    NormalizedStateSupervisionViolationTypeEntry,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

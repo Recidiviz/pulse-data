@@ -21,7 +21,7 @@ Existence of any rows indicates a bug in IP normalization logic.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

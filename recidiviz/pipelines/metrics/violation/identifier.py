@@ -25,7 +25,14 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    sort_normalized_entities_by_sequence_num,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolation,
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.metrics.base_identifier import (
     BaseIdentifier,
     IdentifierContext,
@@ -40,13 +47,6 @@ from recidiviz.pipelines.metrics.utils.violation_utils import (
 from recidiviz.pipelines.metrics.violation.events import (
     ViolationEvent,
     ViolationWithResponseEvent,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateSupervisionViolation,
-    NormalizedStateSupervisionViolationResponse,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    sort_normalized_entities_by_sequence_num,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,

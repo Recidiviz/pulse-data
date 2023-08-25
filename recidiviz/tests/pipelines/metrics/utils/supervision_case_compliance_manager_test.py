@@ -45,15 +45,15 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateSupervisionContact,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateSupervisionPeriod,
 )
 from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_compliance import (
     NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,

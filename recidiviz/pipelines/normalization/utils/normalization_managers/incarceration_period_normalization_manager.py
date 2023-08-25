@@ -38,21 +38,21 @@ from recidiviz.persistence.entity.entity_utils import (
     deep_entity_update,
     is_placeholder,
 )
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
+)
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.normalization_utils import (
     drop_fuzzy_matched_periods,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionViolationResponse,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    AdditionalAttributesMap,
-    get_shared_additional_attributes_map_for_entities,
-    merge_additional_attributes_maps,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,

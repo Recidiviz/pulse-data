@@ -29,7 +29,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
     release_reason_overrides_released_from_temporary_custody,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

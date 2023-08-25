@@ -36,7 +36,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision,
 )
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.metrics.base_metric_pipeline import (
     ClassifyResults,
     ProduceMetrics,
@@ -56,7 +56,6 @@ from recidiviz.pipelines.metrics.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
 )
-from recidiviz.pipelines.normalization.utils import normalized_entities
 from recidiviz.pipelines.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,

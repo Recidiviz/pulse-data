@@ -29,10 +29,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
+from recidiviz.persistence.entity.normalized_entities_utils import (
     clear_entity_id_index_cache,
 )
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.utils.state_utils.us_mi.us_mi_incarceration_period_normalization_delegate import (
     UsMiIncarcerationNormalizationDelegate,
 )
@@ -49,7 +49,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
         clear_entity_id_index_cache()
         self.unique_id_patcher = mock.patch(
-            "recidiviz.pipelines.normalization.utils."
+            "recidiviz.persistence.entity."
             "normalized_entities_utils._fixed_length_object_id_for_entity"
         )
         self.mock_unique_id = self.unique_id_patcher.start()
@@ -61,7 +61,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 1: test that new period gets created for temporary release period
     def test_basic_infer_additional_periods(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2022, 6, 1),
@@ -135,7 +134,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 2: test that new period does not get created if it's not a temporary release release reason
     def test_infer_additional_periods_not_release_release_reason(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2022, 6, 1),
@@ -167,7 +165,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 3: test that new period does not get created if it's not a temporary return from temp release admission reason
     def test_infer_additional_periods_not_release_admission_reason(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2022, 6, 1),
@@ -199,7 +196,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 4: test that new period does not get created if it's there's no return from temp IP
     def test_infer_additional_periods_no_return_from_temp_release_ip(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2022, 6, 1),
@@ -222,7 +218,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 5: test that new period does not get created if return from temp release is before temp release date
     def test_infer_additional_periods_return_before_release(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2022, 6, 1),

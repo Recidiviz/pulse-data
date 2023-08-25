@@ -33,7 +33,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateSupervisionPeriod,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.pipelines.utils.state_utils.us_me.us_me_supervision_period_normalization_delegate import (

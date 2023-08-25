@@ -36,6 +36,12 @@ from recidiviz.persistence.entity.state.entities import (
     StateStaffSupervisorPeriod,
     StateSupervisionContact,
 )
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateAssessment,
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionPeriod,
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.metrics.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
@@ -59,12 +65,6 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_
 )
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     StateSpecificViolationResponseNormalizationDelegate,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateAssessment,
-    NormalizedStateIncarcerationSentence,
-    NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,

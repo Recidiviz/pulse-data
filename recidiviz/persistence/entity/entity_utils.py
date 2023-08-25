@@ -23,7 +23,7 @@ from enum import Enum, auto
 from functools import lru_cache
 from io import TextIOWrapper
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, cast
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, Union, cast
 
 import attr
 
@@ -55,6 +55,7 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.persistence.errors import PersistenceError
 from recidiviz.utils.log_helpers import make_log_output_path
 
@@ -920,8 +921,8 @@ def _is_property_flat_field(entity_cls: Type[Entity], property_name: str) -> boo
 
 
 def update_reverse_references_on_related_entities(
-    updated_entity: EntityT,
-    new_related_entities: List[EntityT],
+    updated_entity: Union[Entity, NormalizedStateEntity],
+    new_related_entities: Union[List[Entity], List[NormalizedStateEntity]],
     reverse_relationship_field: str,
     reverse_relationship_field_type: BuildableAttrFieldType,
 ) -> None:
@@ -1019,7 +1020,7 @@ def deep_entity_update(
             related_class, reverse_relationship_field
         )
 
-        new_related_entities: List[EntityT]
+        new_related_entities: List[Entity]
         if isinstance(updated_value, list):
             new_related_entities = updated_value
         else:

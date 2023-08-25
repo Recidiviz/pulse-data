@@ -23,15 +23,15 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
-    StateSpecificIncarcerationNormalizationDelegate,
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    update_normalized_entity_with_globally_unique_id,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationSentence,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    update_normalized_entity_with_globally_unique_id,
+from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
+    StateSpecificIncarcerationNormalizationDelegate,
 )
 
 
@@ -91,7 +91,6 @@ class UsMiIncarcerationNormalizationDelegate(
                     and next_incarceration_period.admission_date
                     > incarceration_period.release_date
                 ):
-
                     # create a new incarceration period for this TEMPORARY RELEASE period
                     new_incarceration_period = StateIncarcerationPeriod(
                         state_code=StateCode.US_MI.value,

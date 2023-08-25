@@ -31,7 +31,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    NORMALIZED_ENTITY_CLASSES,
+    AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
+)
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateEarlyDischarge,
@@ -43,18 +48,12 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
-from recidiviz.pipelines.normalization.utils import normalized_entities
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionViolatedConditionEntry,
     NormalizedStateSupervisionViolation,
     NormalizedStateSupervisionViolationResponse,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
-    AdditionalAttributesMap,
-    get_shared_additional_attributes_map_for_entities,
 )
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
     bq_schema_for_normalized_state_entity,
@@ -62,7 +61,7 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
     convert_entity_trees_to_normalized_versions,
     fields_unique_to_normalized_class,
 )
-from recidiviz.tests.pipelines.normalization.utils.normalized_entities_utils_test import (
+from recidiviz.tests.persistence.entity.normalized_entities_utils_test import (
     FakeNormalizedStateCharge,
     FakeNormalizedStateEarlyDischarge,
     FakeNormalizedStateSupervisionSentence,
@@ -250,7 +249,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
         self.assertEqual(expected_normalized_svrs, normalized_trees)
 
     @mock.patch(
-        "recidiviz.pipelines.normalization.utils."
+        "recidiviz.persistence.entity."
         "normalized_entities_utils.NORMALIZED_ENTITY_CLASSES",
         [
             FakeNormalizedStateSupervisionSentence,

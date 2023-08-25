@@ -27,14 +27,14 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
     get_state_database_entity_with_name,
 )
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    state_base_entity_class_for_entity_class,
+)
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
     ComprehensiveNormalizationPipeline,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    state_base_entity_class_for_entity_class,
 )
 from recidiviz.pipelines.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,

@@ -30,6 +30,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.pipelines.metrics.recidivism import identifier
 from recidiviz.pipelines.metrics.recidivism.events import (
     NonRecidivismReleaseEvent,
@@ -37,9 +40,6 @@ from recidiviz.pipelines.metrics.recidivism.events import (
     ReleaseEvent,
 )
 from recidiviz.pipelines.metrics.recidivism.pipeline import RecidivismMetricsPipeline
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-)
 from recidiviz.pipelines.utils.execution_utils import TableRow
 from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_delegates,

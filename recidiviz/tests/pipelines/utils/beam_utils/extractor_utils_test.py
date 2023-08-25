@@ -54,8 +54,7 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateSchemaToEntityConverter,
 )
 from recidiviz.persistence.entity import entity_utils
-from recidiviz.persistence.entity.state import entities
-from recidiviz.pipelines.normalization.utils import normalized_entities
+from recidiviz.persistence.entity.state import entities, normalized_entities
 from recidiviz.pipelines.utils.beam_utils import extractor_utils
 from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.pipelines.calculator_test_utils import (

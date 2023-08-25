@@ -23,13 +23,13 @@ from parameterized import parameterized
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.persistence.entity.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
 from recidiviz.pipelines.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
     AssessmentNormalizationManager,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
-    AdditionalAttributesMap,
 )
 from recidiviz.pipelines.utils.execution_utils import (
     build_staff_external_id_to_staff_id_map,

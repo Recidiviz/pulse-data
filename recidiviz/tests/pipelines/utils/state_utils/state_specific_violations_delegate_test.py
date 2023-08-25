@@ -22,11 +22,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import DateRange
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.metrics.utils.violation_utils import (
     VIOLATION_HISTORY_WINDOW_MONTHS,
-)
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
-    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,

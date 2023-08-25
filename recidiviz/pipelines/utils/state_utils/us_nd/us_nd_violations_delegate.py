@@ -27,7 +27,7 @@ from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
-from recidiviz.pipelines.normalization.utils.normalized_entities import (
+from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
