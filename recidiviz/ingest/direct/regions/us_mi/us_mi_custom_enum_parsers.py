@@ -27,6 +27,7 @@ from typing import Optional
 
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violated_condition import (
     StateSupervisionViolatedConditionType,
@@ -141,6 +142,7 @@ medium_levels = [
     "13578",  # SA Parole Medium Employed
     "13573",  # VO/SA Parole Medium Unemployed
     "13574",  # VO/SA Parole Medium Employed
+    "Level A (Medium)",  # From COMS
 ]
 
 # GPS/EMS levels should be categorized under maximum as well if they're not marked as intensive
@@ -309,36 +311,88 @@ def parse_supervision_level(
 ) -> Optional[StateSupervisionLevel]:
     """Parse supervision level based on assigned supervision level"""
 
-    supervision_level_id = raw_text.split("##")[0]
+    # By default, use the first part of raw text for mapping
+    #   For supervision levels coming from OMNI, this will be the whole raw text string
+    #   For supervision levels coming from COMS, this will be the value coming from COMS_Supervision_Levels
+    supervision_level_value = (raw_text.split("##")[0]).split("_")[0]
 
-    if supervision_level_id in limited_levels:
+    # If the first part of the raw text is NONE, that means this is a supervision level that
+    # came from COMS and the first part is NULL while the second part is non-NULL, so we should
+    # use the second part (which comes from COMS_Supervision_Schedules)
+    if supervision_level_value == "NONE":
+        supervision_level_value = (raw_text.split("##")[0]).split("_")[1]
+
+    # For OMNI
+    if supervision_level_value in limited_levels:
         return StateSupervisionLevel.LIMITED
 
-    if supervision_level_id in minimum_levels:
+    if supervision_level_value in minimum_levels:
         return StateSupervisionLevel.MINIMUM
 
-    if supervision_level_id in medium_levels:
+    if supervision_level_value in medium_levels:
         return StateSupervisionLevel.MEDIUM
 
-    if supervision_level_id in maximum_levels:
+    if supervision_level_value in maximum_levels:
         return StateSupervisionLevel.MAXIMUM
 
-    if supervision_level_id in high_levels:
+    if supervision_level_value in high_levels:
         return StateSupervisionLevel.HIGH
 
-    if supervision_level_id in unsupervised_levels:
+    if supervision_level_value in unsupervised_levels:
         return StateSupervisionLevel.UNSUPERVISED
 
-    if supervision_level_id in warrant_levels:
+    if supervision_level_value in warrant_levels:
         return StateSupervisionLevel.WARRANT
 
-    if supervision_level_id in absconcion_levels:
+    if supervision_level_value in absconcion_levels:
         return StateSupervisionLevel.ABSCONSION
 
-    if supervision_level_id in in_custody_levels:
+    if supervision_level_value in in_custody_levels:
         return StateSupervisionLevel.IN_CUSTODY
 
-    if supervision_level_id:
+    # For COMS
+    if "Minimum Administrative" in supervision_level_value:
+        return StateSupervisionLevel.IN_CUSTODY
+
+    if "Minimum" in supervision_level_value:
+        return StateSupervisionLevel.MINIMUM
+
+    if "Medium" in supervision_level_value:
+        return StateSupervisionLevel.MEDIUM
+
+    if "Maximum" in supervision_level_value:
+        return StateSupervisionLevel.MAXIMUM
+
+    if "Intensive" in supervision_level_value:
+        return StateSupervisionLevel.HIGH
+
+    if "Absconder" in supervision_level_value:
+        return StateSupervisionLevel.ABSCONSION
+
+    if "Warrant" in supervision_level_value:
+        return StateSupervisionLevel.WARRANT
+
+    # If values fall into none of these categories
+    if supervision_level_value:
         return StateSupervisionLevel.INTERNAL_UNKNOWN
+
+    return None
+
+
+def map_supervision_type_based_on_coms_level(
+    raw_text: str,
+) -> Optional[StateSupervisionPeriodSupervisionType]:
+
+    if "parole" in raw_text.lower() and "probation" in raw_text.lower():
+        return StateSupervisionPeriodSupervisionType.DUAL
+
+    if "parole" in raw_text.lower():
+        return StateSupervisionPeriodSupervisionType.PAROLE
+
+    if "probation" in raw_text.lower():
+        return StateSupervisionPeriodSupervisionType.PROBATION
+
+    if raw_text:
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
     return None

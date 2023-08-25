@@ -51,9 +51,22 @@ output:
               $include_nulls: True
           supervision_type:
             $conditional:
-              # If there's an active warrant legal order, then we're going to mark supervision type as BENCH_WARRANT or ABSCONSION
-              # NOTE: MI has said that sometimes the warrant legal order isn't closed in a timely manner but I'm not accounting for that
+              # If this period has a supervision level from COMS that indicates warrant status, map type to BENCH_WARRANT
               - $if:
+                  $custom:
+                    $function: us_mi_custom_parsers.coms_parse_warrant_level
+                    $args:
+                      supervision_level_value: supervision_level_id
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.BENCH_WARRANT)
+              # Else if this period has a supervision level from COMS that indicates absconsion status, map type to ABSCONSION
+              - $else_if:
+                  $custom:
+                    $function: us_mi_custom_parsers.coms_parse_absconsion_level
+                    $args:
+                      supervision_level_value: supervision_level_id
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
+              # Else if this period has a supervision level from OMNI that indicates absconsion or warrant status, map types accordingly
+              - $else_if:
                   $in:
                     $value: supervision_level_id
                     $options:
@@ -137,6 +150,19 @@ output:
                         - "order_type_id_list-1720" # Interstate Compact Probation
                         - "order_type_id_list-1720,1727" # Interstate Compact Probation,Probation
               # If no there's no active legal order for this period but there's an active supervision level, use that to determine type
+              #   If the supervision level came from COMS, map supervision level according to custom enum parser
+              - $else_if:
+                  $and:
+                    - $not_null: supervision_level_id
+                    - $custom:
+                        $function: us_mi_custom_parsers.is_coms_level
+                        $args:
+                          supervision_level_value: supervision_level_id
+                $then:
+                  $enum_mapping:
+                    $raw_text: supervision_level_id
+                    $custom_parser: us_mi_custom_enum_parsers.map_supervision_type_based_on_coms_level
+              #   If the supervision level came from OMNI, map supervision level accordingly to below
               - $else_if:
                   $not_null: supervision_level_id
                 $then:
