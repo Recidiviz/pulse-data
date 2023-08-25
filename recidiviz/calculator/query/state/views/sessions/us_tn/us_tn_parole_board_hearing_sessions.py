@@ -43,7 +43,13 @@ WITH hearing_tbl AS (
         DATE(HearingDate) AS hearing_date,
         DATE(ParoleDecisionDate) AS decision_date,
         DATE(CertificateReleaseDate) AS tentative_parole_date,
-        HearingOfficerStaffID AS recommendation_officer_external_id,
+        IF(
+            -- rows from early 90s and before have placeholder hearing officer staff ID
+            -- with no associated recommendation information
+            HearingOfficerStaffID = "OBSCIS01",
+            NULL,
+            HearingOfficerStaffID
+        ) AS recommendation_officer_external_id,
 
         -- recommended decision
         CASE
@@ -106,7 +112,9 @@ WITH hearing_tbl AS (
         )
         GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
         -- drop same-day hearings, prioritizing by alphabetical order of decision value
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id, hearing_date ORDER BY decision ASC) = 1
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY person_id, hearing_date ORDER BY decision ASC
+        ) = 1
 )
 
 SELECT
