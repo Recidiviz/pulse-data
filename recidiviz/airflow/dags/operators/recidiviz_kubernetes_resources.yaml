@@ -40,3 +40,9 @@
     requests:
       cpu: 500m
       memory: 0.5Gi
+
+- entrypoint: ValidationEntrypoint
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
