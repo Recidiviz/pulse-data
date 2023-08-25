@@ -471,7 +471,7 @@ def get_api_blueprint(
                     session=current_session, agency=agency
                 )
                 agency_json["child_agencies"] = [
-                    child_agency.to_json(core_attributes_only=True)
+                    child_agency.to_json(with_team=False, with_settings=False)
                     for child_agency in child_agencies
                 ]
                 agency_jsons.append(agency_json)

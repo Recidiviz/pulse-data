@@ -141,8 +141,10 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 jsonify(
                     {
                         "agencies": [
-                            agency.to_json()
-                            for agency in AgencyInterface.get_agencies(session=session)
+                            agency.to_json(with_team=True, with_settings=False)
+                            for agency in AgencyInterface.get_agencies(
+                                session=session, with_users=True, with_settings=False
+                            )
                         ],
                         "systems": [enum.value for enum in schema.System],
                     }
