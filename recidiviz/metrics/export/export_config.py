@@ -356,8 +356,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="OUTLIERS",
         export_output_formats_and_validations={
-            # TODO(#20729): Validate that the export is non-empty
-            ExportOutputFormatType.HEADERLESS_CSV: []
+            ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
         },
     ),
     # Impact Views
