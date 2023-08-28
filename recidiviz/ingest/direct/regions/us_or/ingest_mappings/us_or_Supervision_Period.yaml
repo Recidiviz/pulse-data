@@ -238,6 +238,7 @@ output:
                   - IDLE # unknown - old code (only 5)
                   - FEAC # unknown - old code (all before 1990)
                   - INVT # unknown - old code (only 4 instances)
+                  - DOCC # unknown (1 instance)
           supervision_level:
             $enum_mapping:
               $raw_text: RISK_LEVEL
