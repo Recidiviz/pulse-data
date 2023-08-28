@@ -14,7 +14,9 @@ columns:
   - name: Probation_Violation_Id
     description: COMS system generated ID for a probation violation record
   - name: Offender_Number
-    description: MDOC assigned person ID for JII in the MDOC system.  This is their publically searchable JII id (same as offender_number in the OMNI system).
+    description: >-
+      MDOC assigned person ID for JII in the MDOC system.  This is their publically
+      searchable JII id (same as offender_number in the OMNI system).
     is_pii: True
     field_type: person_external_id
     external_id_type: US_MI_DOC

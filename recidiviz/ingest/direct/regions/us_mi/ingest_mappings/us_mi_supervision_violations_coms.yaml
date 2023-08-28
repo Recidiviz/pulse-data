@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Violation_Incident_Id
+  - Offender_Number
+  - Incident_Date
+  - Violation_Type
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: Offender_Number
+          id_type: $literal("US_MI_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - $literal("COMS")
+                - Violation_Incident_Id
+              $separator: "##"
+              $include_nulls: true
+          violation_date: Incident_Date
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: Violation_Type
+                    $mappings:
+                      # Violation_Type is derived from case_type for probation
+                      # violations and violation_type for parole violations. The
+                      # comments below specify whether the raw text that is being mapped
+                      # belongs to a parole or a probation violation.
+                      StateSupervisionViolationType.ABSCONDED:
+                        # Probation
+                        - "Probation Violation Abscond"
+                      StateSupervisionViolationType.FELONY:
+                        # Parole
+                        - "Felony"
+                      StateSupervisionViolationType.LAW:
+                        # Parole
+                        - "New Offense"
+                      StateSupervisionViolationType.TECHNICAL:
+                        # Parole
+                        - "Technical"
+                          # Probation
+                        - "Probation Violation Administrative"
+                      StateSupervisionViolationType.INTERNAL_UNKNOWN:
+                        # Probation
+                        - "Probation Violation Regular Court Liaison"
+                        - "Probation Violation Regular"
+                        # Parole
+                        - "Incident"
+                        - "Investigation"
+                        - "Multiple Order Violation"
+                        - "Positive Drug/Alcohol Test"
+                        - "Supplemental"
