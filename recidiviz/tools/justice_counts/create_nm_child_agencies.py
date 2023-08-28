@@ -40,7 +40,6 @@ from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_contr
 from recidiviz.utils.environment import (
     GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
     GCP_PROJECT_JUSTICE_COUNTS_STAGING,
-    in_gcp_production,
 )
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
@@ -65,7 +64,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_child_agencies(dry_run: bool) -> None:
+def get_child_agencies(dry_run: bool, project_id: str) -> None:
     user = get_secret(secret_id="justice_counts_dataXchange_user")  # nosec
     password = get_secret(secret_id="justice_counts_dataXchange_password")  # nosec
 
@@ -93,16 +92,18 @@ def get_child_agencies(dry_run: bool) -> None:
         logging.info(offset)
         continue_fetching = len(json) != 0
     logging.info("Retrieved %s agencies from dataXchange API", len(all_agencies))
-    create_child_agencies(all_agencies=all_agencies, dry_run=dry_run)
+    create_child_agencies(
+        all_agencies=all_agencies, dry_run=dry_run, project_id=project_id
+    )
 
 
-def create_child_agencies(all_agencies: set, dry_run: bool) -> None:
+def create_child_agencies(all_agencies: set, dry_run: bool, project_id: str) -> None:
     """
     Given a set of child agencies, creates child agencies of New Mexico Administrative Office of the Courts.
     """
     state_code = "US_NM"
     system = schema.System.COURTS_AND_PRETRIAL
-    if in_gcp_production():
+    if project_id == GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION:
         super_agency_id = 534
     else:
         super_agency_id = 207
@@ -137,4 +138,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        get_child_agencies(dry_run=args.dry_run)
+        get_child_agencies(dry_run=args.dry_run, project_id=args.project_id)
