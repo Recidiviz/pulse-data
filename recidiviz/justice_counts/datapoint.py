@@ -539,7 +539,7 @@ class DatapointInterface:
         session: Session,
         agency: schema.Agency,
         agency_metric: MetricInterface,
-        user_account: schema.UserAccount,
+        user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         """
         Agency datapoints are not used to store data, like report datapoints are; rather, they are used to
@@ -759,10 +759,10 @@ class DatapointInterface:
         session: Session,
         member: enum.Enum,
         agency: schema.Agency,
-        user_account: schema.UserAccount,
         agency_metric: MetricInterface,
         setting: Optional[IncludesExcludesSetting] = None,
         dimension_identifier_to_member: Optional[Dict[str, str]] = None,
+        user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         """Adds agency datapoints to the Datapoint table that correspond with
         includes/excludes settings."""
