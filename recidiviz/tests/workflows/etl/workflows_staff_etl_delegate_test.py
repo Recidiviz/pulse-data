@@ -77,6 +77,7 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "district": "District 1",
                     "givenNames": "Joey",
                     "surname": "Joe-Joe Jr. III",
+                    "roleSubtype": "SUPERVISION_OFFICER",
                 },
             )
 
@@ -96,6 +97,7 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "district": "District 2",
                     "givenNames": "Sally S.",
                     "surname": "Slithers",
+                    "roleSubtype": "SUPERVISION_OFFICER_SUPERVISOR",
                 },
             )
 
@@ -115,6 +117,7 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "district": "District 3",
                     "givenNames": "Foghorn",
                     "surname": "Leghorn",
+                    "roleSubtype": None,
                 },
             )
 
@@ -134,6 +137,7 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "district": "District 4",
                     "givenNames": "",
                     "surname": "",
+                    "roleSubtype": None,
                 },
             )
 

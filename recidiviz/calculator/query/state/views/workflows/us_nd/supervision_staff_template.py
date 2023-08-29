@@ -43,6 +43,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             FALSE AS has_facility_caseload,
             UPPER(first_name) as given_names,
             UPPER(last_name) as surname,
+            CAST(NULL AS STRING) AS role_subtype,
         FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` r
         LEFT JOIN `{project_id}.{vitals_report_dataset}.supervision_officers_and_districts_materialized` districts
             ON r.state_code = districts.state_code 
@@ -62,6 +63,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             false as has_facility_caseload,
             names.given_names as given_names,
             names.surname as surname,
+            CAST(NULL AS STRING) AS role_subtype,
         FROM caseload_staff_ids ids
         LEFT JOIN `{project_id}.reference_views.state_staff_with_names` names
             ON ids.id = names.legacy_supervising_officer_external_id 
