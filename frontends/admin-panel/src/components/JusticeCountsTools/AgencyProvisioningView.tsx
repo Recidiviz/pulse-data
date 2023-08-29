@@ -104,7 +104,7 @@ const AgencyProvisioningView = (): JSX.Element => {
   type AgencyRecord = {
     id: number;
     name: string;
-    systems: string[];
+
     state: string;
     county?: string;
     team: AgencyTeamMember[];
@@ -392,7 +392,7 @@ const AgencyProvisioningView = (): JSX.Element => {
         </Form.Item>
         <Form.Item label="Systems" name="systems" rules={[{ required: true }]}>
           <Select mode="multiple" disabled={showSpinner || !data?.systems}>
-            {Object.keys(System).map((system) => (
+            {data?.systems.map((system) => (
               <Select.Option key={system} value={system}>
                 {system}
               </Select.Option>

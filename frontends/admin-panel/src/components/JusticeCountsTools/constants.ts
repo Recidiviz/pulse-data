@@ -69,6 +69,7 @@ export type UsersResponse = {
 };
 
 export enum System {
+  SUPERAGENCY = "SUPERAGENCY",
   LAW_ENFORCEMENT = "LAW_ENFORCEMENT",
   PROSECUTION = "PROSECUTION",
   DEFENSE = "DEFENSE",
