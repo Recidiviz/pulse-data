@@ -31,16 +31,19 @@ from more_itertools import one
 from requests import Response
 
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+    INGEST_INSTANCE_JINJA_ARG,
+    SANDBOX_PREFIX_JINJA_ARG,
+    STATE_CODE_FILTER_JINJA_ARG,
     get_ingest_instance,
     get_sandbox_prefix,
-    get_state_code_filter,
     initialize_calculation_dag_group,
 )
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
-    build_kubernetes_pod_task_group,
+    RecidivizKubernetesPodOperator,
+    build_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
@@ -84,131 +87,89 @@ project_id: str = project_id_opt
 retry: Retry = Retry(predicate=lambda _: False)
 
 
-def update_managed_views_operator(view_update_type: ManagedViewUpdateType) -> TaskGroup:
+def update_managed_views_operator(
+    view_update_type: ManagedViewUpdateType,
+) -> RecidivizKubernetesPodOperator:
 
-    group_id = f"update_managed_views_{view_update_type.value}"
+    task_id = f"update_managed_views_{view_update_type.value}"
 
-    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
-        additional_args = []
+    additional_args = []
 
-        sandbox_prefix = get_sandbox_prefix(dag_run)
-        if sandbox_prefix:
-            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
+    if view_update_type == ManagedViewUpdateType.REFERENCE_VIEWS_ONLY:
+        additional_args.append(f"--dataset_ids_to_load={REFERENCE_VIEWS_DATASET}")
+        additional_args.append("--clean_managed_datasets=False")
 
-        if view_update_type == ManagedViewUpdateType.REFERENCE_VIEWS_ONLY:
-            additional_args.append(f"--dataset_ids_to_load={REFERENCE_VIEWS_DATASET}")
-            additional_args.append("--clean_managed_datasets=False")
-
-        return [
+    return build_kubernetes_pod_task(
+        task_id=task_id,
+        container_name=task_id,
+        arguments=[
             "--entrypoint=UpdateAllManagedViewsEntrypoint",
+            SANDBOX_PREFIX_JINJA_ARG,
             *additional_args,
-        ]
-
-    return build_kubernetes_pod_task_group(
-        group_id=group_id,
-        container_name=group_id,
-        arguments=get_kubernetes_arguments,
+        ],
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
 
-def refresh_bq_dataset_operator(schema_type: str) -> TaskGroup:
-    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
-        additional_args = []
-
-        sandbox_prefix = get_sandbox_prefix(dag_run)
-        if sandbox_prefix:
-            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
-
-        return [
+def refresh_bq_dataset_operator(schema_type: str) -> RecidivizKubernetesPodOperator:
+    return build_kubernetes_pod_task(
+        task_id=f"refresh_bq_dataset_{schema_type}",
+        container_name=f"refresh_bq_dataset_{schema_type}",
+        arguments=[
             "--entrypoint=BigQueryRefreshEntrypoint",
             f"--schema_type={schema_type.upper()}",
-            f"--ingest_instance={get_ingest_instance(dag_run)}",
-            *additional_args,
-        ]
-
-    return build_kubernetes_pod_task_group(
-        group_id=f"refresh_bq_dataset_{schema_type}",
-        container_name=f"refresh_bq_dataset_{schema_type}",
-        arguments=get_kubernetes_arguments,
+            INGEST_INSTANCE_JINJA_ARG,
+            SANDBOX_PREFIX_JINJA_ARG,
+        ],
     )
 
 
-def execute_update_normalized_state() -> TaskGroup:
-    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
-        additional_args = []
-
-        sandbox_prefix = get_sandbox_prefix(dag_run)
-        if sandbox_prefix:
-            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
-
-            # Only include a state filter for sandbox runs to make sure PRIMARY runs for a specific state doesn't
-            # filter out other states from the normalized_state dataset.
-            state_code_filter = get_state_code_filter(dag_run)
-            if state_code_filter:
-                additional_args.append(f"--state_code_filter={state_code_filter}")
-
-        return [
-            "--entrypoint=UpdateNormalizedStateEntrypoint",
-            f"--ingest_instance={get_ingest_instance(dag_run)}",
-            *additional_args,
-        ]
-
-    return build_kubernetes_pod_task_group(
-        group_id="update_normalized_state",
+def execute_update_normalized_state() -> RecidivizKubernetesPodOperator:
+    return build_kubernetes_pod_task(
+        task_id="update_normalized_state",
         container_name="update_normalized_state",
-        arguments=get_kubernetes_arguments,
+        arguments=[
+            "--entrypoint=UpdateNormalizedStateEntrypoint",
+            INGEST_INSTANCE_JINJA_ARG,
+            SANDBOX_PREFIX_JINJA_ARG,
+            STATE_CODE_FILTER_JINJA_ARG,
+        ],
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
 
-def execute_validations_operator(state_code: str) -> TaskGroup:
-    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
-        additional_args = []
-
-        sandbox_prefix = get_sandbox_prefix(dag_run)
-        if sandbox_prefix:
-            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
-
-        return [
+def execute_validations_operator(state_code: str) -> RecidivizKubernetesPodOperator:
+    return build_kubernetes_pod_task(
+        task_id=f"execute_validations_{state_code}",
+        container_name=f"execute_validations_{state_code}",
+        arguments=[
             "--entrypoint=ValidationEntrypoint",
             f"--state_code={state_code}",
-            f"--ingest_instance={get_ingest_instance(dag_run)}",
-            *additional_args,
-        ]
-
-    return build_kubernetes_pod_task_group(
-        group_id=f"execute_validations_{state_code}",
-        container_name=f"execute_validations_{state_code}",
-        arguments=get_kubernetes_arguments,
+            INGEST_INSTANCE_JINJA_ARG,
+            SANDBOX_PREFIX_JINJA_ARG,
+        ],
     )
 
 
 def trigger_metric_view_data_operator(
     export_job_name: str, state_code: Optional[str]
-) -> TaskGroup:
+) -> RecidivizKubernetesPodOperator:
     state_code_component = f"_{state_code.lower()}" if state_code else ""
 
-    def get_kubernetes_arguments(dag_run: DagRun) -> List[str]:
-        additional_args = []
+    additional_args = []
 
-        sandbox_prefix = get_sandbox_prefix(dag_run)
-        if sandbox_prefix:
-            additional_args.append(f"--sandbox_prefix={sandbox_prefix}")
+    if state_code:
+        additional_args.append(f"--state_code={state_code}")
 
-        if state_code:
-            additional_args.append(f"--state_code={state_code}")
-
-        return [
+    return build_kubernetes_pod_task(
+        task_id=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
+        container_name=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
+        arguments=[
             "--entrypoint=MetricViewExportEntrypoint",
             f"--export_job_name={export_job_name}",
+            SANDBOX_PREFIX_JINJA_ARG,
             *additional_args,
-        ]
-
-    return build_kubernetes_pod_task_group(
-        group_id=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
-        container_name=f"export_{export_job_name.lower()}{state_code_component}_metric_view_data",
-        arguments=get_kubernetes_arguments,
+        ],
     )
 
 

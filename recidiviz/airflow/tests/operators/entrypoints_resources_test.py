@@ -15,23 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for entrypoint resource allocation"""
-import argparse
 import os
 import unittest
 from typing import Any
 
 import yaml
+from kubernetes.client import models as k8s
 
 import recidiviz
-from recidiviz.entrypoints.entrypoint_executor import (
-    ENTRYPOINTS_BY_NAME,
-    parse_arguments,
-)
-from recidiviz.entrypoints.entrypoint_resources import (
+from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     KubernetesEntrypointResourceAllocator,
-)
-from recidiviz.entrypoints.metric_export.metric_view_export import (
-    MetricViewExportEntrypoint,
 )
 
 
@@ -56,43 +49,26 @@ class TestKubernetesResourceAllocator(unittest.TestCase):
         allocator = KubernetesEntrypointResourceAllocator()
 
         for argv in self.entrypoint_args_fixture.values():
-            executor_args, entrypoint_argv = parse_arguments(argv)
-            entrypoint = ENTRYPOINTS_BY_NAME[executor_args.entrypoint]
-            self.assertIsNotNone(
-                allocator.get_resources(
-                    executor_args=executor_args,
-                    entrypoint_args=entrypoint.get_parser().parse_args(entrypoint_argv),
-                )
-            )
+            self.assertIsNotNone(allocator.get_resources(argv))
 
     def test_resources(self) -> None:
         allocator = KubernetesEntrypointResourceAllocator()
-        args, _ = parse_arguments(["--entrypoint=ValidationEntrypoint"])
         self.assertEqual(
-            allocator.get_resources(
-                executor_args=args,
-                entrypoint_args=argparse.Namespace(),
+            allocator.get_resources(argv=["--entrypoint=ValidationEntrypoint"]),
+            k8s.V1ResourceRequirements(
+                limits={"cpu": "1000m", "memory": "2Gi"}, requests=None
             ),
-            {
-                "limits": {"cpu": "1000m", "memory": "2Gi"},
-            },
         )
 
-        args, entrypoint_args = parse_arguments(
-            [
-                "--entrypoint=MetricViewExportEntrypoint",
-                "--export_job_name=LANTERN",
-                "--state_code=US_PA",
-            ]
-        )
         self.assertEqual(
             allocator.get_resources(
-                executor_args=args,
-                entrypoint_args=MetricViewExportEntrypoint.get_parser().parse_args(
-                    entrypoint_args
-                ),
+                argv=[
+                    "--entrypoint=MetricViewExportEntrypoint",
+                    "--export_job_name=LANTERN",
+                    "--state_code=US_PA",
+                ]
             ),
-            {
-                "limits": {"cpu": "1000m", "memory": "3Gi"},
-            },
+            k8s.V1ResourceRequirements(
+                limits={"cpu": "1000m", "memory": "3Gi"}, requests=None
+            ),
         )

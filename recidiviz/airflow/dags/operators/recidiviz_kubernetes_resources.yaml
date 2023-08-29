@@ -1,7 +1,7 @@
 # Configuration for determining pod resource sizing
 # If many configurations match, the configuration that is closer to the end of the list is given priority
 # https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-# !!! BE SURE TO READ "Setting Resource limits in AutoPilot
+# !!! BE SURE TO READ "Setting Resource limits in AutoPilot"
 # https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-resource-requests#resource-limits
 # entrypoint: (str, required)
 # args: (dict[str, any], optional)
@@ -12,37 +12,53 @@
 #   limits:
 #     cpu:
 #     memory:
-- entrypoint: MetricViewExportEntrypoint
-  resources:
+MetricViewExportEntrypoint:
+  default_resources:
     limits:
       cpu: 1000m
       memory: 1Gi
+  overrides:
+    - args:
+        - --entrypoint=MetricViewExportEntrypoint
+        - --export_job_name=LANTERN
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 3Gi
+    # TODO(#23450): Remove once old backend exports have been removed
+    - args:
+        - --export_job_name=PATHWAYS
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 2Gi
 
-- entrypoint: MetricViewExportEntrypoint
-  args:
-    export_job_name: LANTERN
-  resources:
+BigQueryRefreshEntrypoint:
+  default_resources:
     limits:
-      cpu: 1000m
-      memory: 3Gi
-
-# TODO(#23450): Remove once old backend exports have been removed
-- entrypoint: MetricViewExportEntrypoint
-  args:
-    export_job_name: PATHWAYS
-  resources:
-    limits:
-      cpu: 1000m
-      memory: 2Gi
-
-- entrypoint: BigQueryRefreshEntrypoint
-  resources:
-    requests:
-      cpu: 500m
+      cpu: 250m
       memory: 0.5Gi
 
-- entrypoint: ValidationEntrypoint
-  resources:
+ValidationEntrypoint:
+  default_resources:
     limits:
       cpu: 1000m
       memory: 2Gi
+
+UpdateAllManagedViewsEntrypoint:
+  default_resources:
+    limits:
+      cpu: 1000m
+      memory: 750Mi
+
+MetricExportTimelinessEntrypoint:
+  default_resources:
+    limits:
+      cpu: 500m
+      memory: 300Mi
+
+UpdateNormalizedStateEntrypoint:
+  default_resources:
+    limits:
+      cpu: 250m
+      memory: 500Mi
