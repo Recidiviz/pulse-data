@@ -23,14 +23,11 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.general import (
-    custody_level_higher_than_recommended,
+    custody_level_compared_to_recommended,
     custody_level_is_not_max,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
-    at_least_6_months_since_most_recent_incarceration_incident,
-    has_had_at_least_1_incarceration_incident_past_year,
-    ineligible_for_annual_reclassification,
-    latest_assessment_not_override,
+    at_least_12_months_since_latest_assessment,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -44,19 +41,15 @@ someone in TN is eligible for a custody level downgrade.
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
-    task_name="CUSTODY_LEVEL_DOWNGRADE",
+    task_name="ANNUAL_RECLASSIFICATION_REVIEW",
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population_facility_filter.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        latest_assessment_not_override.VIEW_BUILDER,
-        ineligible_for_annual_reclassification.VIEW_BUILDER,
-        custody_level_higher_than_recommended.VIEW_BUILDER,
+        at_least_12_months_since_latest_assessment.VIEW_BUILDER,
         custody_level_is_not_max.VIEW_BUILDER,
-        # TODO(#23086): Remove these two criteria when has_had_at_least_1_assessment_past_year is written and the wider
-        # funnel is validated
-        has_had_at_least_1_incarceration_incident_past_year.VIEW_BUILDER,
-        at_least_6_months_since_most_recent_incarceration_incident.VIEW_BUILDER,
+        custody_level_compared_to_recommended.VIEW_BUILDER,
     ],
+    # Placeholder completion event
     completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
 )
 
