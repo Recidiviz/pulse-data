@@ -43,44 +43,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 INITIALIZE_DAG_GROUP_ID = "initialize_dag"
 
 
-INGEST_INSTANCE = "ingest_instance"
-SANDBOX_PREFIX = "sandbox_prefix"
-STATE_CODE_FILTER = "state_code_filter"
-
-
-def templated_argument_from_conf(
-    conf_key: str,
-    entrypoint_argument: Optional[str] = None,
-    jinja_filter: Optional[str] = None,
-) -> str:
-    """
-    Returns a Jinja-templated entrypoint argument
-    example:
-    {% if 'ingest_instance' in dag_run.conf %}--ingest_instance={{dag_run.conf["ingest_instance"]}}{% endif %}
-    """
-    if entrypoint_argument is None:
-        entrypoint_argument = conf_key
-
-    jinja_filter_str = ""
-    if jinja_filter:
-        jinja_filter_str = f"| {jinja_filter}"
-
-    return (
-        f"{{% if '{conf_key}' in dag_run.conf %}}"
-        f'--{entrypoint_argument}={{{{ dag_run.conf["{entrypoint_argument}"] {jinja_filter_str} }}}}'
-        "{% endif %}"
-    )
-
-
-INGEST_INSTANCE_JINJA_ARG = templated_argument_from_conf(
-    INGEST_INSTANCE, jinja_filter="upper"
-)
-SANDBOX_PREFIX_JINJA_ARG = templated_argument_from_conf(SANDBOX_PREFIX)
-STATE_CODE_FILTER_JINJA_ARG = templated_argument_from_conf(
-    STATE_CODE_FILTER, jinja_filter="upper"
-)
-
-
 @task
 def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     """Verifies that the required parameters are set in the dag_run configuration and
@@ -129,20 +91,15 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
 
 
 def get_sandbox_prefix(dag_run: DagRun) -> Optional[str]:
-    return dag_run.conf.get(SANDBOX_PREFIX)
+    return dag_run.conf.get("sandbox_prefix")
 
 
 def get_ingest_instance(dag_run: DagRun) -> str:
-    return dag_run.conf.get(INGEST_INSTANCE).upper()
+    return dag_run.conf.get("ingest_instance").upper()
 
 
 def get_state_code_filter(dag_run: DagRun) -> Optional[str]:
-    state_code_filter = dag_run.conf.get(STATE_CODE_FILTER)
-
-    if state_code_filter:
-        return state_code_filter.upper()
-
-    return None
+    return dag_run.conf.get("state_code_filter")
 
 
 @task.short_circuit(trigger_rule=TriggerRule.ALL_DONE)

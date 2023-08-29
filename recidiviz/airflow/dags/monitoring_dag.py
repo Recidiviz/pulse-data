@@ -32,7 +32,7 @@ from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     report_failed_tasks,
 )
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
-    build_kubernetes_pod_task,
+    build_kubernetes_pod_task_group,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.email import can_send_mail
@@ -67,8 +67,8 @@ except (AirflowNotFoundException, KeyError) as e:
     render_template_as_native_obj=True,
 )
 def create_monitoring_dag() -> None:
-    build_kubernetes_pod_task(
-        task_id="generate_export_timeliness_metrics",
+    build_kubernetes_pod_task_group(
+        group_id="generate_export_timeliness_metrics",
         container_name="generate_export_timeliness_metric",
         arguments=[
             "--entrypoint=MetricExportTimelinessEntrypoint",
