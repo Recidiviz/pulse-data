@@ -90,9 +90,6 @@ lifelines = "*"
 linearmodels = "*"
 looker-sdk = "*"
 nbautoexport = "*"
-# TODO(#23543): unpin notebook version when child packages (e.g. 
-# jupyter-contrib-nbextensions) become compatible with Notebook 7
-notebook = "6.4.12"
 pandasql = "*"
 pgeocode = "*"
 plotly = "*"
