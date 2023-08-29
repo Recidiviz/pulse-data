@@ -6,6 +6,7 @@ input_columns:
   - OffenderID
   - CAFDate
   - ClassificationDate
+  - ClassificationDecisionDate
   - CAFScore
   - OverrideReason
   - ScheduleAScore
@@ -67,4 +68,5 @@ output:
               CAFScore: CAFScore
               CAFSite: CAFSiteID
               ClassificationDate: ClassificationDate
+              ClassificationDecisionDate: ClassificationDecisionDate
               OverrideReason: OverrideReason
