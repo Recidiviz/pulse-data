@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: dsc_DADecision
 file_description: |-
-  Contains information about DA decisions.
+  Reference table that contains information about DA decisions.
 data_classification: source
 primary_key_cols:
   - DADecisionId
@@ -11,10 +11,10 @@ columns:
       DA Decision ID
   - name: DADecisionName
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      Description of the DA Decision ID.
   - name: Inactive
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      1 = Inactive, 0 = Active.
 
   - name: InsertUserId
     description: |-

@@ -24,16 +24,16 @@ columns:
 
   - name: OffenseDateTime
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      Date of the DA offense.
     field_type: datetime
 
   - name: OffenseDesc
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      Free text description of the DA offense, among other details that are captured in binary variables.
 
   - name: PhysicalEvidence
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      Physical evidence associated with the DA case.
 
   - name: ImmediateAction
     description: |-
@@ -41,16 +41,16 @@ columns:
 
   - name: DiscOffenseRptId
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      Disciplinary Offense Report (DOR) ID. Could be used to merge with scl_DiscOffenseRpt.
 
   - name: AuditHearingDate
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      Hearing date of the DA case.
     field_type: datetime
 
   - name: AuditAppealDate
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      Date of the Audit Appeal of the DA case.
     field_type: datetime
 
   - name: PreviousActionId
@@ -75,11 +75,11 @@ columns:
 
   - name: DAProcedureStatusId
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      DA procedure status ID. Could be used to merge with DAProcedure.
 
   - name: OffenderId
     description: |-
-      TODO(#23206): Fill in column description like that for each column name
+      The IDOC identifier for a given person.  This is synonymous to the docno and ofndr_num fields in other IDOC data systems.
     is_pii: True
 
   - name: Locking
