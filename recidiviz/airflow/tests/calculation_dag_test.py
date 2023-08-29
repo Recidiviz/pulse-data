@@ -20,17 +20,16 @@ Unit test to test the calculation pipeline DAG logic.
 import os
 import unittest
 from typing import Dict, List, Set
-from unittest import mock
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import yaml
+from airflow.models import DagRun
 from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
-from recidiviz import pipelines
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
@@ -44,25 +43,32 @@ from recidiviz.utils.environment import GCPEnvironment
 
 _PROJECT_ID = "recidiviz-testing"
 CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
-    os.path.relpath(
-        os.path.dirname(pipelines.__file__),
-        start=AIRFLOW_WORKING_DIRECTORY,
-    ),
-    "calculation_pipeline_templates.yaml",
+    AIRFLOW_WORKING_DIRECTORY,
+    "../pipelines/calculation_pipeline_templates.yaml",
 )
 
-_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
-    "update_managed_views_all.execute_entrypoint_operator"
-)
+_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_managed_views_all"
 _VALIDATIONS_STATE_CODE_BRANCH_START = "validations.state_code_branch_start"
-_REFRESH_BQ_DATASET_TASK_ID = (
-    "bq_refresh.refresh_bq_dataset_STATE.execute_entrypoint_operator"
-)
-_EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data.execute_entrypoint_operator"
+_REFRESH_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_STATE"
+_EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
 
 
 def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
     return f"bq_refresh.{schema_type.lower()}_bq_refresh.release_lock_{schema_type.upper()}"
+
+
+PRIMARY_DAG_RUN = DagRun(
+    conf={
+        "ingest_instance": "PRIMARY",
+    }
+)
+
+SECONDARY_DAG_RUN = DagRun(
+    conf={
+        "sandbox_prefix": "test_prefix",
+        "ingest_instance": "SECONDARY",
+    }
+)
 
 
 class TestCalculationPipelineDag(unittest.TestCase):
@@ -122,13 +128,13 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(dag.task_ids))
 
         bq_refresh_group: TaskGroup = dag.task_group_dict["bq_refresh"]
-        update_reference_views_dag = dag.task_group_dict[
+        update_reference_views = dag.get_task(
             "update_managed_views_reference_views_only"
-        ]
+        )
 
         self.assertIn(
-            update_reference_views_dag.group_id,
-            bq_refresh_group.upstream_group_ids,
+            update_reference_views.task_id,
+            bq_refresh_group.upstream_task_ids,
         )
 
     def test_update_normalized_state_upstream_of_view_update(self) -> None:
@@ -139,7 +145,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(dag.task_ids))
 
         normalized_state_downstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state.execute_entrypoint_operator"],
+            task_ids_or_regex=["update_normalized_state"],
             include_downstream=True,
             include_upstream=False,
         )
@@ -162,11 +168,11 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(dag.task_ids))
 
         normalization_group: TaskGroup = dag.task_group_dict["normalization"]
-        update_normalized_state_group = dag.task_group_dict["update_normalized_state"]
+        update_normalized_state_group = dag.get_task("update_normalized_state")
 
         self.assertIn(
-            update_normalized_state_group.group_id,
-            normalization_group.downstream_group_ids,
+            update_normalized_state_group.task_id,
+            normalization_group.downstream_task_ids,
         )
 
     def test_update_normalized_state_upstream_of_non_normalization_pipelines(
@@ -187,7 +193,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state.execute_entrypoint_operator"],
+            task_ids_or_regex=["update_normalized_state"],
             include_downstream=True,
             include_upstream=False,
         )
@@ -218,7 +224,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         }
 
         normalized_state_upstream_dag = dag.partial_subset(
-            task_ids_or_regex=["update_normalized_state.execute_entrypoint_operator"],
+            task_ids_or_regex=["update_normalized_state"],
             include_downstream=True,
             include_upstream=False,
         )
@@ -310,97 +316,47 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_update_task)}]."
             )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_update_managed_views_endpoint(
-        self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-    ) -> None:
+    def test_update_managed_views_endpoint(self) -> None:
         from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
 
-        mock_get_sandbox_prefix.return_value = None
+        task = update_managed_views_operator(ManagedViewUpdateType.ALL)
+        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
-        update_managed_views_operator(ManagedViewUpdateType.ALL)
+        self.assertEqual(task.task_id, "update_managed_views_all")
+        self.assertEqual(task.trigger_rule, TriggerRule.ALL_DONE)
 
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="update_managed_views_all",
-            container_name="update_managed_views_all",
-            arguments=mock.ANY,
-            trigger_rule=TriggerRule.ALL_DONE,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture["test_update_all_managed_views_endpoint"],
         )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_update_managed_views_endpoint_sandbox_prefix(
-        self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-    ) -> None:
+    def test_update_managed_views_endpoint_sandbox_prefix(self) -> None:
         from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
 
-        mock_get_sandbox_prefix.return_value = "test_prefix"
-
-        update_managed_views_operator(ManagedViewUpdateType.ALL)
-
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="update_managed_views_all",
-            container_name="update_managed_views_all",
-            arguments=mock.ANY,
-            trigger_rule=TriggerRule.ALL_DONE,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+        task = update_managed_views_operator(ManagedViewUpdateType.ALL)
+        task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
+        self.assertEqual(task.task_id, "update_managed_views_all")
+        self.assertEqual(task.trigger_rule, TriggerRule.ALL_DONE)
 
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture[
                 "test_update_all_managed_views_endpoint_sandbox_prefix"
             ],
         )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_update_managed_views_endpoint_reference_views_only(
         self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
     ) -> None:
         from recidiviz.airflow.dags.calculation_dag import update_managed_views_operator
 
-        mock_get_sandbox_prefix.return_value = None
-
-        update_managed_views_operator(ManagedViewUpdateType.REFERENCE_VIEWS_ONLY)
-
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="update_managed_views_reference_views_only",
-            container_name="update_managed_views_reference_views_only",
-            arguments=mock.ANY,
-            trigger_rule=TriggerRule.ALL_DONE,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+        task = update_managed_views_operator(ManagedViewUpdateType.REFERENCE_VIEWS_ONLY)
+        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
+        self.assertEqual(task.task_id, "update_managed_views_reference_views_only")
+        self.assertEqual(task.trigger_rule, TriggerRule.ALL_DONE)
 
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture[
                 "test_update_managed_views_endpoint_reference_views_only"
             ],
@@ -418,80 +374,40 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(bq_refresh_task)}]."
             )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_refresh_bq_dataset_task(
         self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-        mock_get_ingest_instance: MagicMock,
     ) -> None:
         """Tests that refresh_bq_dataset_task triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
 
-        mock_get_sandbox_prefix.return_value = None
-        mock_get_ingest_instance.return_value = "PRIMARY"
+        task = refresh_bq_dataset_operator("STATE")
+        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
-        refresh_bq_dataset_operator("STATE")
-
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="refresh_bq_dataset_STATE",
-            container_name="refresh_bq_dataset_STATE",
-            arguments=mock.ANY,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
-
+        self.assertEqual(task.task_id, "refresh_bq_dataset_STATE")
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture["test_refresh_bq_dataset_task"],
         )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_refresh_bq_dataset_task_secondary(
-        self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-        mock_get_ingest_instance: MagicMock,
-    ) -> None:
+    def test_refresh_bq_dataset_task_secondary(self) -> None:
         """Tests that refresh_bq_dataset_task triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
 
-        mock_get_sandbox_prefix.return_value = "test_prefix"
-        mock_get_ingest_instance.return_value = "SECONDARY"
+        task = refresh_bq_dataset_operator("STATE")
 
-        refresh_bq_dataset_operator("STATE")
+        self.assertEqual(task.task_id, "refresh_bq_dataset_STATE")
 
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="refresh_bq_dataset_STATE",
-            container_name="refresh_bq_dataset_STATE",
-            arguments=mock.ANY,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+        task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
 
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture["test_refresh_bq_dataset_task_secondary"],
         )
 
     def test_validations_task_exists(self) -> None:
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        trigger_validation_task = dag.get_task(
-            "validations.execute_validations_US_ND.execute_entrypoint_operator"
-        )
+        trigger_validation_task = dag.get_task("validations.execute_validations_US_ND")
 
         if not isinstance(trigger_validation_task, KubernetesPodOperator):
             raise ValueError(
@@ -499,71 +415,33 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_validation_task)}]."
             )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
     def test_validations_task(
         self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-        mock_get_ingest_instance: MagicMock,
     ) -> None:
         """Tests that validation triggers the proper endpoint."""
         from recidiviz.airflow.dags.calculation_dag import execute_validations_operator
 
-        mock_get_sandbox_prefix.return_value = None
-        mock_get_ingest_instance.return_value = "PRIMARY"
+        task = execute_validations_operator(state_code="US_ND")
+        self.assertEqual(task.task_id, "execute_validations_US_ND")
 
-        execute_validations_operator(state_code="US_ND")
-
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="execute_validations_US_ND",
-            container_name="execute_validations_US_ND",
-            arguments=mock.ANY,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture["test_validations_task"],
         )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_ingest_instance")
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_validations_task_secondary(
-        self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-        mock_get_ingest_instance: MagicMock,
-    ) -> None:
+    def test_validations_task_secondary(self) -> None:
         """Tests that validation triggers the proper endpoint."""
         from recidiviz.airflow.dags.calculation_dag import execute_validations_operator
 
-        mock_get_sandbox_prefix.return_value = "test_prefix"
-        mock_get_ingest_instance.return_value = "SECONDARY"
+        task = execute_validations_operator(state_code="US_ND")
 
-        execute_validations_operator(state_code="US_ND")
+        task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
 
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="execute_validations_US_ND",
-            container_name="execute_validations_US_ND",
-            arguments=mock.ANY,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
-
+        self.assertEqual(task.task_id, "execute_validations_US_ND")
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture["test_validations_task_secondary"],
         )
 
@@ -578,111 +456,105 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 f"[{type(trigger_metric_view_data_task)}]."
             )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_trigger_metric_view_data_operator(
-        self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-    ) -> None:
+    def test_trigger_metric_view_data_operator(self) -> None:
         """Tests the trigger_metric_view_data_operator triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import (
             trigger_metric_view_data_operator,
         )
 
-        mock_get_sandbox_prefix.return_value = None
-
-        trigger_metric_view_data_operator(
+        task = trigger_metric_view_data_operator(
             export_job_name="INGEST_METADATA", state_code=None
         )
+        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="export_ingest_metadata_metric_view_data",
-            container_name="export_ingest_metadata_metric_view_data",
-            arguments=mock.ANY,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+        self.assertEqual(task.task_id, "export_ingest_metadata_metric_view_data")
 
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture["test_trigger_metric_view_data_operator"],
         )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_trigger_metric_view_data_operator_sandbox_prefix(
-        self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-    ) -> None:
+    def test_trigger_metric_view_data_operator_sandbox_prefix(self) -> None:
         """Tests the trigger_metric_view_data_operator triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import (
             trigger_metric_view_data_operator,
         )
 
-        mock_get_sandbox_prefix.return_value = "test_prefix"
-
-        trigger_metric_view_data_operator(
+        task = trigger_metric_view_data_operator(
             export_job_name="INGEST_METADATA", state_code=None
         )
+        task.render_template_fields({"dag_run": SECONDARY_DAG_RUN})
 
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="export_ingest_metadata_metric_view_data",
-            container_name="export_ingest_metadata_metric_view_data",
-            arguments=mock.ANY,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
+        self.assertEqual(task.task_id, "export_ingest_metadata_metric_view_data")
 
         self.assertEqual(
-            arguments(MagicMock()),
+            task.arguments,
             self.entrypoint_args_fixture[
                 "test_trigger_metric_view_data_operator_sandbox_prefix"
             ],
         )
 
-    @patch("recidiviz.airflow.dags.calculation_dag.get_sandbox_prefix")
-    @patch("recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task_group")
-    def test_trigger_metric_view_data_operator_state_code(
-        self,
-        mock_build_kubernetes_pod_task_group: MagicMock,
-        mock_get_sandbox_prefix: MagicMock,
-    ) -> None:
+    def test_trigger_metric_view_data_operator_state_code(self) -> None:
+
         """Tests the trigger_metric_view_data_operator triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import (
             trigger_metric_view_data_operator,
         )
 
-        mock_get_sandbox_prefix.return_value = None
-
-        trigger_metric_view_data_operator(
+        task = trigger_metric_view_data_operator(
             export_job_name="INGEST_METADATA", state_code="US_XX"
         )
-
-        mock_build_kubernetes_pod_task_group.assert_called_once_with(
-            group_id="export_ingest_metadata_us_xx_metric_view_data",
-            container_name="export_ingest_metadata_us_xx_metric_view_data",
-            arguments=mock.ANY,
-        )
-
-        arguments = mock_build_kubernetes_pod_task_group.mock_calls[0].kwargs[
-            "arguments"
-        ]
-        if not callable(arguments):
-            raise ValueError(f"Expected callable arguments, found [{type(arguments)}].")
-
+        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
         self.assertEqual(
-            arguments(MagicMock()),
+            task.task_id,
+            "export_ingest_metadata_us_xx_metric_view_data",
+        )
+        self.assertEqual(
+            task.arguments,
             self.entrypoint_args_fixture[
                 "test_trigger_metric_view_data_operator_state_code"
+            ],
+        )
+
+    def test_bq_refresh_arguments(self) -> None:
+        """Tests that the `bq_refresh` task is downstream of initialize_dag."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        task = dag.get_task("bq_refresh.refresh_bq_dataset_STATE")
+        task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
+
+        self.assertEqual(
+            task.arguments,
+            [
+                "--entrypoint=BigQueryRefreshEntrypoint",
+                "--schema_type=STATE",
+                "--ingest_instance=PRIMARY",
+            ],
+        )
+
+    def test_execute_update_normalized_state_arguments(self) -> None:
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        task = dag.get_task("update_normalized_state")
+        task.render_template_fields(
+            {
+                "dag_run": DagRun(
+                    conf={**SECONDARY_DAG_RUN.conf, "state_code_filter": "us_ca"}
+                )
+            }
+        )
+
+        self.assertEqual(
+            task.arguments,
+            [
+                "--entrypoint=UpdateNormalizedStateEntrypoint",
+                "--ingest_instance=SECONDARY",
+                "--sandbox_prefix=test_prefix",
+                # Assert uppercased
+                "--state_code_filter=US_CA",
             ],
         )
