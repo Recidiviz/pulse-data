@@ -62,9 +62,9 @@ _QUERY_TEMPLATE = f"""
     sessions_cte AS 
     (
     {aggregate_adjacent_spans(table_name='supervision_level_cte',
-                       attribute='supervision_level',
-                       end_date_field_name='end_date_exclusive',
-                        )}
+                              attribute='supervision_level',
+                              end_date_field_name='end_date_exclusive',
+                              )}
     )
     ,
     /*
@@ -73,7 +73,8 @@ _QUERY_TEMPLATE = f"""
     18 if medium, (2) the "super-span" start date + 18 months where a super-span represents the continuous time on
     either of these levels (this is where the "date_gap_id" field is utilized). This latter date captures situations
     where a person transitions from MEDIUM --> MINIMUM and the MEDIUM start date + 18 months comes before the MINIMUM
-    start date + 12 months.
+    start date + 12 months. Using this logic we also calculate the relevant date, the date from which to start calculating
+    the time spent on the eligible level.
     */
     critical_date_spans AS
     (
@@ -83,22 +84,30 @@ _QUERY_TEMPLATE = f"""
         start_date AS start_datetime,
         end_date_exclusive AS end_datetime,
         supervision_level,
-        LEAST
-            (
+        LEAST(critical_date_session_start, critical_date_super_session_start) AS critical_date,
+        IF(critical_date_session_start<critical_date_super_session_start, start_date, super_session_start_date) AS relevant_date,
+    FROM 
+        (
+        SELECT
+            *,
             CASE WHEN supervision_level = 'MINIMUM' THEN DATE_ADD(start_date, INTERVAL 12 MONTH)
-                WHEN supervision_level = 'MEDIUM' THEN DATE_ADD(start_date, INTERVAL 18 MONTH) END,
-            
-            DATE_ADD(MIN(start_date) OVER(PARTITION BY person_id, state_code, date_gap_id 
-                ORDER BY session_id), INTERVAL 18 MONTH)
-            ) AS critical_date
-        FROM sessions_cte
+                WHEN supervision_level = 'MEDIUM' THEN DATE_ADD(start_date, INTERVAL 18 MONTH) END AS critical_date_session_start,
+            DATE_ADD(super_session_start_date, INTERVAL 18 MONTH) AS critical_date_super_session_start,
+        FROM
+            (
+            SELECT 
+                *,
+                MIN(start_date) OVER(PARTITION BY person_id, state_code, date_gap_id ORDER BY session_id) AS super_session_start_date,
+            FROM sessions_cte
+            )
+        )
     )
     ,
     /*
     Use the critical date has passed function with the "attributes" parameter so that we keep the "supervision_level"
     that a person is on at that point for the reasons json.
     */
-    {critical_date_has_passed_spans_cte(attributes=['supervision_level'])}
+    {critical_date_has_passed_spans_cte(attributes=['supervision_level', 'relevant_date'])}
     SELECT
         state_code,
         person_id,
@@ -107,7 +116,8 @@ _QUERY_TEMPLATE = f"""
         critical_date_has_passed AS meets_criteria,
         TO_JSON(STRUCT(
             supervision_level AS eligible_level,
-            critical_date AS eligible_date
+            critical_date AS eligible_date,
+            relevant_date AS start_date_on_eligible_level
         )) AS reason
     FROM critical_date_has_passed_spans
 """
