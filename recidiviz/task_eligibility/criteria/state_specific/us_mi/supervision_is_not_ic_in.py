@@ -47,6 +47,7 @@ WITH ic_in_spans AS (
         'IC_IN' AS current_status,
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` ssp
     WHERE state_code = 'US_MI'
+        AND ssp.supervision_type_raw_text LIKE 'ORDER_TYPE_ID_LIST%'
     -- 1719: Interstate Compact Parole, 1720: Interstate Compact Probation
         AND ('1719' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[offset(1)], ","))
                 OR '1720' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[offset(1)],",")))
