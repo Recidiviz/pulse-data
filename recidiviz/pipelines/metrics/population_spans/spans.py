@@ -66,6 +66,9 @@ class IncarcerationPopulationSpan(Span, IncludedInStateMixin):
         StateIncarcerationPeriodHousingUnitCategory
     ] = attr.ib(default=None)
 
+    # The raw text value of the incarceration period housing unit type
+    housing_unit_category_raw_text: Optional[str] = attr.ib(default=None)
+
     # Where the person is currently being housed regardless of technical assignment/custody level
     housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = attr.ib(
         default=None

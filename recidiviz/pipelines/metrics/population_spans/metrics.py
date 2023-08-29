@@ -127,6 +127,9 @@ This metric is derived from the `StateIncarcerationPeriod` entities, which store
         StateIncarcerationPeriodHousingUnitCategory
     ] = attr.ib(default=None)
 
+    # The raw text value of the incarceration period housing unit category
+    housing_unit_category_raw_text: Optional[str] = attr.ib(default=None)
+
     # Where the person is currently being housed regardless of technical assignment/custody level
     housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = attr.ib(
         default=None

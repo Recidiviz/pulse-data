@@ -222,6 +222,7 @@ def add_incarceration_period_to_person(
     custody_level: Optional[StateIncarcerationPeriodCustodyLevel] = None,
     custody_level_raw_text: Optional[str] = None,
     housing_unit_category: Optional[StateIncarcerationPeriodHousingUnitCategory] = None,
+    housing_unit_category_raw_text: Optional[str] = None,
     housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = None,
     housing_unit_type_raw_text: Optional[str] = None,
 ) -> None:
@@ -249,6 +250,7 @@ def add_incarceration_period_to_person(
         custody_level=custody_level,
         custody_level_raw_text=custody_level_raw_text,
         housing_unit_category=housing_unit_category,
+        housing_unit_category_raw_text=housing_unit_category_raw_text,
         housing_unit_type=housing_unit_type,
         housing_unit_type_raw_text=housing_unit_type_raw_text,
     )

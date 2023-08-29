@@ -814,6 +814,9 @@ class StateIncarcerationPeriod(
         default=None,
         validator=attr_validators.is_opt(StateIncarcerationPeriodHousingUnitCategory),
     )
+    housing_unit_category_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
     #   - What
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
         default=None,
