@@ -15,12 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script to retrieve and upload data for New Mexico Administrative Office of the Courts.
+Script to retrieve and upload data for New Mexico Administrative Office of the Courts
+for every month/year combination over the past 5 years (July, 2018 - July, 2023).
 Data is retrieved from the dataXchange API.
 
-python -m recidiviz.tools.justice_counts.new_mexico_dataxchange \
-    --year=2023 \
-    --month=1 \
+python -m recidiviz.tools.justice_counts.new_mexico_dataxchange_historical \
     --project-id=PROJECT_ID \
     --dry-run=true
 """
@@ -28,6 +27,7 @@ python -m recidiviz.tools.justice_counts.new_mexico_dataxchange \
 import argparse
 import datetime
 import logging
+import time
 from typing import Dict, List
 
 import pandas as pd
@@ -56,22 +56,6 @@ logger = logging.getLogger(__name__)
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--year",
-        help="The year in which you want to retrieve data for.",
-        required=True,
-        default=datetime.datetime.now(tz=datetime.timezone.utc).year,
-        type=int,
-    )
-    parser.add_argument(
-        "--month",
-        help="The month in which you want to retrieve data for.",
-        required=True,
-        default=datetime.datetime.now(tz=datetime.timezone.utc).month - 1
-        if datetime.datetime.now(tz=datetime.timezone.utc).month > 1
-        else 12,
-        type=int,
-    )
     parser.add_argument(
         "--project-id",
         choices=[
@@ -168,10 +152,19 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
         for global_metric, global_url in METRIC_TO_URL.items():
-            get_new_mexico_courts_data(
-                year=args.year,
-                month=args.month,
-                url=global_url,
-                metric=global_metric,
-                dry_run=args.dry_run,
-            )
+            for global_year in range(2018, 2024):
+                for global_month in range(1, 13):
+                    if (global_year == 2018 and global_month < 7) or (
+                        global_year == 2023 and global_month > 7
+                    ):
+                        continue
+                    get_new_mexico_courts_data(
+                        year=global_year,
+                        month=global_month,
+                        url=global_url,
+                        metric=global_metric,
+                        dry_run=args.dry_run,
+                    )
+                    logging.info("%s, %s called", global_month, global_year)
+                    time.sleep(10)
+        logging.info("Done!")
