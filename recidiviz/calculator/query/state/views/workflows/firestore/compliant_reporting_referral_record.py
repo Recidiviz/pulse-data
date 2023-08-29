@@ -97,11 +97,6 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         IF (
             remaining_criteria_needed = 0,
             NULL,
-            drug_screen_eligibility_bool = 1
-        ) AS almost_eligible_drug_screen,
-        IF (
-            remaining_criteria_needed = 0,
-            NULL,
             fines_fees_eligible_bool = 1
         ) AS almost_eligible_fines_fees,
         IF (

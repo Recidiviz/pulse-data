@@ -883,8 +883,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = f"""
                 CASE WHEN eligible_serious_sanctions = 'almost_eligible' THEN 1
                      WHEN eligible_serious_sanctions = 'eligible' THEN 0
                      END as eligible_serious_sanctions_bool,
-                CASE WHEN drug_screen_eligibility = 'almost_eligible' THEN 1
-                     WHEN drug_screen_eligibility = 'eligible' THEN 0
+                CASE WHEN drug_screen_eligibility = 'eligible' THEN 0
                      END as drug_screen_eligibility_bool,
                 CASE WHEN fines_fees_eligible = 'ineligible' AND current_balance BETWEEN 500 AND 2000 THEN 1
                      WHEN fines_fees_eligible != 'ineligible' THEN 0
