@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, Optional, List
 
 class V1PodStatus:
     phase: str
@@ -38,9 +38,7 @@ class V1PodList:
     def __init__(self, items: List[V1Pod]) -> None: ...
 
 class V1ResourceRequirements:
-    def __init__(
-        self, limits: Optional[Dict[str, str]], requests: Optional[Dict[str, str]]
-    ) -> None: ...
+    def __init__(self, limits: Dict[str, str], requests: Dict[str, str]) -> None: ...
 
 class V1EnvVar:
     name: str
