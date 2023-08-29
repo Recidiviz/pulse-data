@@ -380,6 +380,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                     "facility": None,
                     "housing_unit": None,
                     "housing_unit_category": None,
+                    "housing_unit_category_raw_text": None,
                     "housing_unit_type": None,
                     "housing_unit_type_raw_text": None,
                     "incarceration_period_id": 111,

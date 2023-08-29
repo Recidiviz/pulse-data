@@ -1659,6 +1659,10 @@ class StateIncarcerationPeriod(StateBase, _ReferencesStatePersonSharedColumns):
         state_incarceration_period_housing_unit_category,
         comment="A supertype corresponding to the housing_unit_type.",
     )
+    housing_unit_category_raw_text = Column(
+        String(255),
+        comment="The raw text value of the incarceration period housing unit category.",
+    )
     housing_unit_type = Column(
         state_incarceration_period_housing_unit_type,
         comment="Where the person is currently being housed regardless of technical assignment/custody level - "
