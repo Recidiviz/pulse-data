@@ -38,6 +38,7 @@ US_ID_SUPERVISION_STAFF_TEMPLATE = """
             false AS has_facility_caseload,
             names.given_names as given_names,
             names.surname as surname,
+            CAST(NULL AS STRING) AS role_subtype,
         FROM caseload_staff_ids ids
         LEFT JOIN `{project_id}.{reference_views_dataset}.product_roster_materialized` r
             ON ids.id = r.external_id

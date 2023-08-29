@@ -63,7 +63,8 @@ US_MI_SUPERVISION_STAFF_TEMPLATE = f"""
         employee.employee_id IN (SELECT officer_id FROM officers_with_caseload) AS has_caseload,
         FALSE AS has_facility_caseload,
         employee.first_name AS given_names,
-        employee.last_name AS surname
+        employee.last_name AS surname,
+        CAST(NULL AS STRING) AS role_subtype,
     FROM `{{project_id}}.{{us_mi_raw_data_up_to_date_views_dataset}}.ADH_EMPLOYEE_latest` employee
     LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_views_dataset}}.ADH_EMPLOYEE_ADDITIONAL_INFO_latest`
         additional_info USING (employee_id)

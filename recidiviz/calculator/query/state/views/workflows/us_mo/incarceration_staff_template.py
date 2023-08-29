@@ -32,6 +32,7 @@ US_MO_INCARCERATION_STAFF_TEMPLATE = """
             true AS has_facility_caseload,
             IFNULL(locations.level_1_incarceration_location_name, rr.facility_id) AS given_names,
             "" as surname,
+            CAST(NULL AS STRING) AS role_subtype,
         FROM `{project_id}.{workflows_dataset}.resident_record_materialized` rr
         LEFT JOIN `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names` locations
         ON rr.facility_id = locations.level_1_incarceration_location_external_id

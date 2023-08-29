@@ -103,6 +103,7 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "has_facility_caseload",
         "given_names",
         "surname",
+        "role_subtype",
     ],
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,

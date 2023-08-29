@@ -51,6 +51,7 @@ US_ME_STAFF_TEMPLATE = """
             LOGICAL_OR(has_facility_caseload) has_facility_caseload,
             UPPER(state_table.First_Name) as given_names,
             UPPER(state_table.Last_Name) as surname,
+            CAST(NULL AS STRING) AS role_subtype,
         FROM caseload_staff_ids ids
         LEFT JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` state_table
             ON state_table.Employee_Id = ids.id
