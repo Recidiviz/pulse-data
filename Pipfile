@@ -10,7 +10,7 @@ mock = "*"
 pytest = "*"
 # TODO(#23317): pytest-xdist changed its parallelization method after this result
 # This resulted in our ModuleCollectorMixin encountering a condition where some modules were collected twice
-pytest-xdist = "2.5.0"
+pytest-xdist = "< 3.0"
 pylint = "*"
 pytest-cov = "*"
 mypy = "*"
@@ -32,7 +32,6 @@ parameterized = "*"
 google-api-python-client = "*"
 google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
-google-cloud-build = "*"
 gspread = "*"
 # Note: Update the `black` version in `.pre-commit-config.yaml` whenever this is updated.
 # If we remove the restriction, then add `pre-commit autoupdate` to the Pipenv Github action to keep them in sync.
@@ -92,7 +91,7 @@ looker-sdk = "*"
 nbautoexport = "*"
 # TODO(#23543): unpin notebook version when child packages (e.g. 
 # jupyter-contrib-nbextensions) become compatible with Notebook 7
-notebook = "6.4.12"
+notebook = "==6.4.12"
 pandasql = "*"
 pgeocode = "*"
 plotly = "*"
@@ -122,13 +121,7 @@ lxml = "*"
 opencensus = ">=0.7.0"
 opencensus-context = "*"
 opencensus-correlation = "*"
-# TODO(census-instrumentation/opencensus-python#1072): Move to current version once this
-# is merged.
-# Context: Opencensus arbitrarily limits us to less than Flask 2, which now is quite old
-# and was holding back a lot of dependencies. An open PR shows that all of their tests
-# pass on Flask 2, so we include their package with that PR for now to unblock our
-# upgrade.
-opencensus-ext-flask = {ref = "93dbd9043d6a367ab9866dd8ae28aebcc45baf2d",git = "https://github.com/census-instrumentation/opencensus-python.git", editable = true, subdirectory = "contrib/opencensus-ext-flask"}
+opencensus-ext-flask = "*"
 opencensus-ext-google-cloud-clientlibs = "*"
 opencensus-ext-grpc = "*"
 opencensus-ext-requests = "*"
@@ -150,16 +143,27 @@ flask-smorest = "*"
 iteration-utilities = "*"
 "pypdf2" = "*"
 pyyaml = "*"
-google-cloud-datastore = "*"
-google-cloud-tasks = "*"
-google-cloud-pubsub = "*"
-google-cloud-monitoring = "*"
 pyjwt = "*"
 cssselect = "*"
 grpcio = "*"
 gunicorn = "*"
 gevent = ">=20.5.1"
+google-api-core = ">= 2.0.0"
+# TODO(#4287): Versions >= 3.0.0 create namespace conflicts with other cloud libraries
+#  (and resulting mypy errors). We should revisit upgrade when we've updated all
+#  google-cloud* libraries to >= 2.0.0.
+google-cloud-bigquery = "<3.0.0"
+google-cloud-bigquery-datatransfer = "<3.0.0"
+google-cloud-bigquery-storage = "*"
+google-cloud-build = "*"
+google-cloud-datastore = "*"
+google-cloud-firestore = "*"
 google-cloud-logging = "*"
+google-cloud-monitoring = "*"
+google-cloud-tasks = "*"
+google-cloud-pubsub = "*"
+google-cloud-secret-manager = "*"
+google-cloud-storage = ">=2.0.0"
 google-cloud-trace = "*"
 wrapt = "*"
 attrs = "*"
@@ -168,28 +172,18 @@ pytz = "*"
 # TODO(#9732): Upgrade to 4.0 introduces dateparsing errors to ingest controller tests
 tzlocal = "<4.0"
 python-dateutil = "*"
-google-api-core = "*"
 # If the protobuf version changes be sure to update the pinned version in dataflow_setup.py
 protobuf = "*"
 "psycopg2" = "*"
 cryptography = "*"
-# TODO(#4287): Versions >= 3.0.0 create namespace conflicts with other cloud libraries
-#  (and resulting mypy errors). We should revisit upgrade when we've updated all
-#  google-cloud* libraries to >= 2.0.0.
-google-cloud-bigquery = "<3.0.0"
-google-cloud-bigquery-datatransfer = "<3.0.0"
 google-api-python-client = "*"
 google-auth = "*"
 deepdiff = "*"
 "mmh3" = "*"
 yq = "*"
 oauth2client = "*" #TODO(#2922): Remove deprecated oauth2client dependency
-google-cloud-storage = ">=2.0.0"
-google-cloud-firestore = "*"
 progress="*"
-google-cloud-secret-manager = "*"
 pandas-gbq = "*"
-google-cloud-bigquery-storage = "*"
 guppy3 = "*"
 sendgrid = "*"
 zope = {event = "*"}
