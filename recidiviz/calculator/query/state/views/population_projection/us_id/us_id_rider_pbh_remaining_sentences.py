@@ -66,7 +66,6 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
         AND gender IN ('MALE', 'FEMALE')
         -- Select the tail of the duration distribution starting from the time served in the compartment on the run date
         AND CEIL(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) <= transitions.compartment_duration
-        -- TODO(#4868): filter invalid transitions
     )
     SELECT
       state_code,

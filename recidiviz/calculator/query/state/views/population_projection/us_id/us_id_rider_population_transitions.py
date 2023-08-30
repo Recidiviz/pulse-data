@@ -32,7 +32,7 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         run_dates.run_date,
         compartment,
         CASE WHEN outflow_to = 'INCARCERATION - GENERAL' AND previously_incarcerated THEN 'INCARCERATION - RE-INCARCERATION'
-          ELSE outflow_to 
+          ELSE outflow_to
         END AS outflow_to,
         person_id,
         gender,
@@ -47,7 +47,6 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         AND compartment = 'INCARCERATION - TREATMENT_IN_PRISON'
         AND gender IN ('MALE', 'FEMALE')
         -- Only include valid outflows
-        -- TODO(#4868): filter invalid transitions in a scalable way
         AND outflow_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - GENERAL')
         -- Only take data from the 3 years prior to the run date to match short-term behavior better
         AND DATE_DIFF(run_dates.run_date, sessions.end_date, year) < 3
