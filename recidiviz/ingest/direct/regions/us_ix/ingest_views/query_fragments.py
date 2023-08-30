@@ -39,6 +39,7 @@ bed_assignment_periods_cte AS (
         SecurityLevelDesc AS Bed_SecurityLevelDesc,
         SecurityLevelRank AS Bed_SecurityLevelRank,
         FacilityLevelId,
+        LevelPath,
     FROM {hsn_BedAssignment}
     LEFT JOIN {hsn_ChangeReason}
         USING (ChangeReasonId)
@@ -65,6 +66,8 @@ bed_assignment_periods_cte AS (
         ) bed_security_level USING (BedId)
     LEFT JOIN {hsn_SecurityLevel}
         USING (SecurityLevelId)
+    LEFT JOIN {hsn_FacilityLevel}
+        USING (FacilityLevelId)
 )"""
 
 LEGAL_STATUS_PERIODS_CTE = """

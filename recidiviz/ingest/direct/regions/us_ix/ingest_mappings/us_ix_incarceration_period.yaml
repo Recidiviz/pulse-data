@@ -13,6 +13,7 @@ input_columns:
   - DOCLocationToTypeName
   - LegalStatusDesc
   - Bed_SecurityLevelDesc
+  - LevelPath
 unused_columns: []
 output:
   StatePerson:
@@ -201,3 +202,4 @@ output:
                   - Serving Other Jurisdiction
                   - Serving Out of State Sentence
                   - Interstate Compact Community Out
+          housing_unit: LevelPath

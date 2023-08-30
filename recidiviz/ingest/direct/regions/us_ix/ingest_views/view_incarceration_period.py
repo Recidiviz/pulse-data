@@ -78,12 +78,75 @@ transfer_periods_with_legal_status AS (
 -- Adds the security level based on bed assignment at the time of transfer
 transfer_periods_with_legal_status_with_beds AS (
     SELECT
-        tls.*,
+        p.OffenderId,
+        p.period_start as Start_TransferDate,
+        p.period_end as End_TransferDate,
+        -- Only populate transfer details if this period matches the transfer date
+        -- This prevents us from improperly setting the admission reason for subsequent
+        -- periods following the actual transfer when the actual admission reason is due
+        -- to some other attribute changing, like supervision level or supervising officer
+        CASE WHEN p.period_start = tls.Start_TransferDate THEN tls.Start_TransferReasonDesc
+             ELSE NULL
+             END AS Start_TransferReasonDesc,
+        CASE WHEN p.period_end = tls.End_TransferDate THEN tls.End_TransferReasonDesc
+             ELSE NULL
+             END AS End_TransferReasonDesc,
+        -- We use Start_TransferTypeDesc to determine whether this period is an incarceration period or not, 
+        -- so we keep this valued for all rows
+        tls.Start_TransferTypeDesc,
+        tls.LegalStatusDesc,
+        tls.DOCLocationToName,
+        tls.DOCLocationToTypeName,
+        tls.DOCLocationToSubTypeName,
         b.Bed_SecurityLevelDesc,
-    FROM transfer_periods_with_legal_status tls
+        b.LevelPath
+    FROM (
+        -- Create periods based on all the dates in transfer_periods_with_legal_status and bed_assignment_periods_cte
+        SELECT
+            OffenderId,
+            dte as period_start,
+            LEAD(dte) OVER(PARTITION BY OffenderId ORDER BY dte) as period_end
+        FROM (
+            SELECT 
+                DISTINCT
+                OffenderId,
+                Start_TransferDate as dte
+            FROM transfer_periods_with_legal_status
+            
+            UNION DISTINCT 
+
+            SELECT 
+                DISTINCT
+                OffenderId,
+                End_TransferDate as dte
+            FROM transfer_periods_with_legal_status
+
+            UNION DISTINCT
+
+            SELECT
+                DISTINCT
+                OffenderId,
+                FromDate as dte
+            FROM bed_assignment_periods_cte  
+
+            UNION DISTINCT
+
+            SELECT
+                DISTINCT
+                OffenderId,
+                ToDate as dte
+            FROM bed_assignment_periods_cte         
+        ) spans 
+    ) p
+    -- merge on all relevant info from transfer_periods_with_legal_status and bed_assignment_periods_cte for each period
+    LEFT JOIN transfer_periods_with_legal_status tls
+        ON p.OffenderId = tls.OffenderId
+        AND p.period_start >= tls.Start_TransferDate
+        AND COALESCE(p.period_end, DATE(9999,12,31)) <= COALESCE(tls.End_TransferDate, DATE(9999,12,31))
     LEFT JOIN bed_assignment_periods_cte b
-        ON tls.OffenderId = b.OffenderId
-        AND tls.Start_TransferDate = b.FromDate
+        ON p.OffenderId = b.OffenderId
+        AND p.period_start >= b.FromDate
+        AND COALESCE(p.period_end, DATE(9999,12,31)) <= COALESCE(b.ToDate, DATE(9999,12,31))
 ),
 
 -- final cte, adds a period_id and drops the final period per person that starts with
@@ -103,6 +166,7 @@ incarceration_periods AS (
             DOCLocationToTypeName,
             LegalStatusDesc,
             Bed_SecurityLevelDesc,
+            LevelPath,
         FROM transfer_periods_with_legal_status_with_beds
         WHERE Start_TransferTypeDesc != 'Out from DOC'
     ) a
