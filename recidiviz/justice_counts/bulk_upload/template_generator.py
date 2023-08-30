@@ -41,12 +41,13 @@ def generate_bulk_upload_template(
 ) -> None:
     """Generates a Bulk Upload template for a particular agency."""
 
-    MetricInterface_objs = DatapointInterface.get_metric_settings_by_agency(
+    metric_interface_list = DatapointInterface.get_metric_settings_by_agency(
         session,
         agency,
     )
-    metric_key_to_enabled_status = {
-        metric.key: metric.is_metric_enabled for metric in MetricInterface_objs
+    metric_key_to_interface = {
+        metric_interface.key: metric_interface
+        for metric_interface in metric_interface_list
     }
     metricfiles = SYSTEM_TO_METRICFILES[system]
     filename_to_rows = {}
@@ -55,9 +56,14 @@ def generate_bulk_upload_template(
     last_year = this_year - 1
 
     for metricfile in metricfiles:  # pylint: disable=too-many-nested-blocks
-        enabled_status = metric_key_to_enabled_status.get(metricfile.definition.key)
+        metric_interface = metric_key_to_interface.get(metricfile.definition.key)
+        enabled_status = (
+            metric_interface.is_metric_enabled if metric_interface is not None else True
+        )
+
         if enabled_status is False:
             continue
+
         rows = []
         if (
             metricfile.definition.reporting_frequency
@@ -95,12 +101,36 @@ def generate_bulk_upload_template(
                         rows.append(row)
 
         new_rows = []
-        if metricfile.disaggregation:
+        if metricfile.disaggregation is not None:
+            dimension_id_to_dimension_metric_interface = (
+                {
+                    aggregated_dim.dimension_identifier(): aggregated_dim
+                    for aggregated_dim in metric_interface.aggregated_dimensions
+                }
+                if metric_interface is not None
+                else {}
+            )
+            dimension_metric_interface = dimension_id_to_dimension_metric_interface.get(
+                metricfile.disaggregation.dimension_identifier()
+            )
             for row in rows:
                 row.pop("value")  # move value column last
                 for (
                     dimension
                 ) in metricfile.disaggregation:  # type: ignore[attr-defined]
+                    if (
+                        dimension_metric_interface is not None
+                        and dimension_metric_interface.dimension_to_enabled_status
+                        is not None
+                    ):
+                        if (
+                            dimension_metric_interface.dimension_to_enabled_status.get(
+                                dimension
+                            )
+                            is False
+                        ):
+                            # If a dimension is turned off, don't include it in the spreadsheet.
+                            continue
                     new_row: Dict[str, Any] = {
                         **row,
                         metricfile.disaggregation_column_name: dimension.value,  # type: ignore
@@ -110,7 +140,11 @@ def generate_bulk_upload_template(
         else:
             new_rows = rows
 
-        filename_to_rows[metricfile.canonical_filename] = new_rows
+        # If no new rows were added, don't add the sheet. This will happen in
+        # the case where a metric is all dimensions of an dissaggregation
+        # are disabled.
+        if len(new_rows) > 0:
+            filename_to_rows[metricfile.canonical_filename] = new_rows
 
     with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
         file_path
