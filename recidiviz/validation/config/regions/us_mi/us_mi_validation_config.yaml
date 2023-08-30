@@ -4,15 +4,27 @@ region_code: US_MI
 dev_mode: False
 exclusions: []
 max_allowed_error_overrides:
+  - validation_name: client_record_archive_duplicate_person_ids
+    hard_max_allowed_error_override: 0.01
+    override_reason:
+      A case where the MI accidentally assigned 2 sets of ids to a single person, and
+      then at one point realized and then combined the records in the raw data so we
+      combined their records in ingest. But that means now that this person was
+      associated with two distinct offender_ids and so they came up as duplicates in the
+      client record. Since it seems like this person no longer appears twice in the more
+      recent client records, that means this no longer has any impact on workflows.
+      # TODO(#23568)
   - validation_name: incarceration_population_by_facility_external_comparison
     hard_max_allowed_error_override: 1.0
-    override_reason: Needs further investigation.
-      There are some facilities in the external data that don't appear in our data.
-      In some cases (like "GUI"), it's not an actual facility in the external data but a category of facilities.
-      In other cases (like "JLS", "ZPF", "ZPM"), they're facilities that we don't consider as part of incarceration
-      but further investigation is required to confirm that they are being excluded in our incarceration periods view.
-      Lastly, there are also some mismatches for facilities that no longer exist ("IRM").
-      As a note, MI has cautioned that the counts they have in the external data are also not entirely consistent.
+    override_reason:
+      Needs further investigation. There are some facilities in the external data that
+      don't appear in our data. In some cases (like "GUI"), it's not an actual facility
+      in the external data but a category of facilities. In other cases (like "JLS",
+      "ZPF", "ZPM"), they're facilities that we don't consider as part of incarceration
+      but further investigation is required to confirm that they are being excluded in
+      our incarceration periods view. Lastly, there are also some mismatches for
+      facilities that no longer exist ("IRM"). As a note, MI has cautioned that the
+      counts they have in the external data are also not entirely consistent.
   - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison #TODO(#13513)
     hard_max_allowed_error_override: .125
     override_reason: Needs investigation; fails for years 2010-2013. #TODO(#13514)
@@ -22,10 +34,12 @@ max_allowed_error_overrides:
   - validation_name: supervision_population_by_type_external_comparison
     hard_max_allowed_error_override: .11
     override_reason:
-      Some error is expected because MI has told us that their validation numbers for suprevision have some weirdness.
-      Hopefully we'll be able to get more reliable validation data for supervision population when we receive OTIS data.
-      Some investigation is required however for the case where validations are producing different results in
-      staging vs production.  Current failing level as of 2/10 is 9.74% in staging and 10.11% in production #TODO(#18578), TODO(#16338)
+      Some error is expected because MI has told us that their validation
+      numbers for suprevision have some weirdness. Hopefully we'll be able to get more
+      reliable validation data for supervision population when we receive OTIS data.
+      Some investigation is required however for the case where validations are
+      producing different results in staging vs production.  Current failing level as of
+      2/10 is 9.74% in staging and 10.11% in production #TODO(#18578), TODO(#16338)
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 1500
@@ -38,18 +52,23 @@ num_allowed_rows_overrides:
     override_reason: Needs investigation. Current failing level as of 9/26 is 4 rows #TODO(#15586)
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 1000
-    override_reason:
-      Needs further investigation; there's a known issue with incarceration periods (#13336) that might be related?
-      Current failing level as of 9/26 is 145071 rows #TODO(#13518)
+    override_reason: Needs further investigation; there's a known issue with
+      incarceration periods (#13336) that might be related? Current failing level as of
+      9/26 is 145071 rows #TODO(#13518)
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 2500
-    override_reason: Addressed known issue with overlapping offender bookings so remaining errors needs further investigation. #TODO(#15587)
+    override_reason: Addressed known issue with overlapping offender bookings so
+      remaining errors needs further investigation. #TODO(#15587)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 350000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 326,285 rows #TODO(#16227)
+    override_reason:
+      Needs investigation.  Current failing level as of 10/26 is 326,285
+      rows #TODO(#16227)
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 100000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 69,392 rows #TODO(#16237)
+    override_reason:
+      Needs investigation.  Current failing level as of 10/26 is 69,392
+      rows #TODO(#16237)
   - validation_name: supervision_termination_reason_no_date
     hard_num_allowed_rows_override: 10
     override_reason: Needs investigation.  Current failing level as of 10/28 is 3 rows #TODO(#16337)
@@ -64,4 +83,6 @@ num_allowed_rows_overrides:
     override_reason: Current failing level as of 4/5/23 is 0 rows
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 14000
-    override_reason: Current failing level as of 4/20/23 is 11,081 rows (0.6%).  Needs investigation. #TODO(#22303)
+    override_reason:
+      Current failing level as of 4/20/23 is 11,081 rows (0.6%).  Needs
+      investigation. #TODO(#22303)
