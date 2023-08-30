@@ -28,7 +28,8 @@ VIEW_QUERY_TEMPLATE = """,
             incidents.Violation_Incident_Id,
             LTRIM(incidents.Offender_Number, '0') AS Offender_Number,
             incidents.Incident_Date,
-            COALESCE(parole.Violation_Type, probation.Case_Type) AS Violation_Type
+            COALESCE(parole.Violation_Type, probation.Case_Type) AS Violation_Type,
+            COALESCE(parole.Entered_Date, probation.Entered_Date) as Report_Entered_Date
         FROM {COMS_Violation_Incidents} incidents
 
         -- PAROLE
@@ -43,7 +44,13 @@ VIEW_QUERY_TEMPLATE = """,
         LEFT JOIN {ADH_OFFENDER} off ON LTRIM(incidents.Offender_Number, '0') = off.Offender_Number
         INNER JOIN {ADH_OFFENDER_BOOKING} booking ON booking.Offender_Id = off.Offender_Id 
     )
-    SELECT DISTINCT Offender_Number, Violation_Incident_Id, Incident_Date, Violation_Type
+    SELECT 
+        DISTINCT 
+        Offender_Number, 
+        Violation_Incident_Id, 
+        Incident_Date, 
+        Violation_Type, 
+        Report_Entered_Date
     FROM probation_and_violation_joined_incidents
 """
 
