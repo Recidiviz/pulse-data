@@ -40,7 +40,7 @@ US_IX_DUAL_SUPERVISORS_OFFICERS_QUERY_TEMPLATE = """
       END as supervisor_external_id,
     supervision_district,
     supervision_unit,
-    specialized_caseload_type
+    specialized_caseload_type_primary AS specialized_caseload_type,
   FROM `{project_id}.sessions.supervision_officer_attribute_sessions_materialized` attrs
   INNER JOIN `{project_id}.{normalized_state_dataset}.state_staff` staff USING(staff_id)
   LEFT JOIN (

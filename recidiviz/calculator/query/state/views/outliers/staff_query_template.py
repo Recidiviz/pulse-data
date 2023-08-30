@@ -37,7 +37,7 @@ SELECT
     staff.email,
     COALESCE(attrs.supervision_district,attrs.supervision_district_inferred) AS supervision_district,
     attrs.supervisor_staff_external_id AS supervisor_external_id,
-    attrs.specialized_caseload_type AS specialized_caseload_type,
+    attrs.specialized_caseload_type_primary AS specialized_caseload_type,
 FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` attrs
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff 
     USING (staff_id, state_code)

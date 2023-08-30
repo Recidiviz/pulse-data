@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper functions for building BQ sessions views."""
-# pylint: disable=line-too-long
 
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
@@ -499,20 +498,43 @@ def create_intersection_spans(
     """
 
 
-def generate_largest_value_query_fragment(
-    table_columns: List[str], partition_columns: List[str]
+def generate_largest_value_single_column_query_fragment(
+    table_column: str,
+    partition_columns: List[str],
+    priority_columns: List[str],
+    column_suffix: Optional[str] = "",
 ) -> str:
     """
-    Returns query fragment that dedupes all table columns to the largest non-null value
-    over the partition defined by the provided list of partition columns
+    Returns query fragment that dedupes a table column based on a set of priority columns
+    if provided, then chooses the largest non-null value over the partition defined by the
+    provided list of partition columns.
+    If column_suffix provided, add suffix to output column name.
+    """
+    order_columns_str = (
+        list_to_query_string(priority_columns) + ", " if priority_columns else ""
+    )
+    return f"""
+    FIRST_VALUE({table_column} IGNORE NULLS) OVER (
+        PARTITION BY {list_to_query_string(partition_columns)}
+        ORDER BY {order_columns_str}{table_column} DESC
+    ) AS {table_column}{column_suffix}"""
+
+
+def generate_largest_value_query_fragment(
+    table_columns_with_priority_columns: Dict[str, List[str]],
+    partition_columns: List[str],
+    column_suffix: Optional[str] = "",
+) -> str:
+    """
+    Returns query fragment that dedupes all table columns based on their respective lists of
+    prioritization columns, then chooses the largest non-null value for a given table column
+    over the partition defined by the provided list of partition columns.
     """
     return ",\n    ".join(
         [
-            f"""
-FIRST_VALUE({column} IGNORE NULLS) OVER (
-    PARTITION BY {list_to_query_string(partition_columns)}
-    ORDER BY {column} DESC
-) AS {column}"""
-            for column in table_columns
+            generate_largest_value_single_column_query_fragment(
+                table_column, partition_columns, priority_columns, column_suffix
+            )
+            for table_column, priority_columns in table_columns_with_priority_columns.items()
         ]
     )

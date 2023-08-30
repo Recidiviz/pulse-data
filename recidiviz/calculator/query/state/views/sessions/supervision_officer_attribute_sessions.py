@@ -17,6 +17,8 @@
 """
 View that preprocesses state staff periods to extract relevant attributes and external id's.
 """
+from typing import Dict, List
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -36,20 +38,24 @@ SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_DESCRIPTION = """
 View that preprocesses state staff periods to extract relevant attributes and external id's.
 """
 
-_SUPERVISION_OFFICER_ATTRIBUTES = [
-    "supervision_district",
-    "supervision_office",
-    "supervision_unit",
-    "supervision_unit_name",
-    "supervision_district_inferred",
-    "supervision_office_inferred",
-    "specialized_caseload_type",
-    "supervisor_staff_external_id",
-    "supervisor_staff_id",
-    "role_type",
-]
+# All dictionary values below should specify a list of values by which to sort rows for deduplication.
+# All columns referenced in a given list should be queryable within the `sub_sessions_dedup` cte below.
+_SUPERVISION_OFFICER_ATTRIBUTES_NO_OVERLAPS: Dict[str, List[str]] = {
+    "supervision_district": [],
+    "supervision_office": [],
+    "supervision_unit": [],
+    "supervision_unit_name": [],
+    "supervision_district_inferred": [],
+    "supervision_office_inferred": [],
+    "supervisor_staff_external_id": [],
+    "supervisor_staff_id": [],
+}
 
-_SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS = ["role_subtype"]
+_SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS: Dict[str, List[str]] = {
+    "role_subtype": ["COALESCE(role_subtype_priority, 99)"],
+    "role_type": [],
+    "specialized_caseload_type": [],
+}
 
 SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_QUERY_TEMPLATE = f"""
 WITH all_staff_attribute_periods AS (
@@ -188,18 +194,21 @@ sub_sessions_dedup AS (
         staff_id,
         start_date,
         end_date AS end_date_exclusive,
+        -- Apply an arbitrary dedup to attributes that we don't expect to overlap, mostly as an added protection
         {generate_largest_value_query_fragment(
-            table_columns=_SUPERVISION_OFFICER_ATTRIBUTES, 
-            partition_columns=["state_code", "staff_id", "start_date"]
+            table_columns_with_priority_columns=_SUPERVISION_OFFICER_ATTRIBUTES_NO_OVERLAPS, 
+            partition_columns=["state_code", "staff_id", "start_date"],
         )},
-        FIRST_VALUE(role_subtype IGNORE NULLS) OVER (
-            PARTITION BY state_code, staff_id, start_date
-            ORDER BY COALESCE(role_subtype_priority, 99), role_subtype DESC
-        ) AS role_subtype_primary,
+        -- For attributes that might have overlap, dedup via the configured priority order and suffix with "_primary"
+        {generate_largest_value_query_fragment(
+            table_columns_with_priority_columns=_SUPERVISION_OFFICER_ATTRIBUTES_WITH_OVERLAPS, 
+            partition_columns=["state_code", "staff_id", "start_date"],
+            column_suffix="_primary"
+        )},
     FROM
         sub_sessions_with_attributes
     LEFT JOIN `{{project_id}}.sessions.state_staff_role_subtype_dedup_priority` subtype
-        USING(role_subtype)
+        USING (role_subtype)
     -- Remove zero-day sessions
     WHERE
         start_date < {nonnull_end_date_clause("end_date")}
@@ -239,7 +248,7 @@ LEFT JOIN
 USING
     (state_code, staff_id, start_date)
 WHERE
-    role_type = "SUPERVISION_OFFICER"
+    "SUPERVISION_OFFICER" IN UNNEST(role_type_array)
 """
 
 SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
