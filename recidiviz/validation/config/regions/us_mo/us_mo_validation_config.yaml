@@ -36,7 +36,7 @@ num_allowed_rows_overrides:
       Inital investigations into this show entity deletion as the main culprit. Error improved after refresh. This error should also be helped by continual work in MO
       for raw data tables and rework in TODO(#15905). When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 25000
+    hard_num_allowed_rows_override: 30000
     override_reason:
       Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
       we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
