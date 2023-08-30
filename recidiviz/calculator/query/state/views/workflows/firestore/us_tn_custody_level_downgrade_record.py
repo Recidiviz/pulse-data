@@ -49,7 +49,7 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     WITH current_offenses AS (
         SELECT
             person_id,
-            ARRAY_AGG(offense IGNORE NULLS) AS offenses,
+            ARRAY_AGG(offense IGNORE NULLS) AS form_information_current_offenses,
          FROM 
             ({get_sentences_current_span(in_projected_completion_array=True)})
         GROUP BY 1
@@ -57,8 +57,8 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     latest_classification AS (
         SELECT person_id,
               external_id,
-              DATE(ClassificationDecisionDate) AS latest_classification_decision_date,
-              OverrideReason AS latest_override_reason,
+              DATE(ClassificationDecisionDate) AS form_information_latest_classification_decision_date,
+              OverrideReason AS form_information_latest_override_reason,
               RecommendedCustody AS recommended_custody_level
         FROM
             `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Classification_latest` c
@@ -75,8 +75,8 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     latest_CAF AS (
         SELECT
             person_id,
-            assessment_date AS last_CAF_date,
-            assessment_score AS last_CAF_total,
+            assessment_date AS form_information_last_CAF_date,
+            assessment_score AS form_information_last_CAF_total,
             CAST(JSON_EXTRACT_SCALAR(assessment_metadata,'$.SCHEDULEASCORE') AS INT64) AS last_CAF_schedule_A,
             CAST(JSON_EXTRACT_SCALAR(assessment_metadata,'$.SCHEDULEBSCORE') AS INT64) AS last_CAF_schedule_B
         FROM
@@ -113,7 +113,7 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
                 ARRAY_AGG(
                     STRUCT(note_title, note_body, event_date, "ASSAULTIVE DISCIPLINARIES" AS criteria)
                 ORDER BY event_date DESC)
-            ) AS case_notes_assaultive_disciplinaries
+            ) AS case_notes
         FROM
             disciplinaries
         WHERE
@@ -235,7 +235,7 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     level_care AS (
         SELECT
             person_id,
-            SubServiceType AS level_of_care
+            SubServiceType AS form_information_level_of_care
         FROM
             `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.MentalHealthServices_latest` m
         INNER JOIN
@@ -251,13 +251,13 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
     SELECT tes.state_code,
            tes.reasons,
            pei.external_id,
-           level_care.level_of_care,
-           latest_classification.latest_classification_decision_date,
-           latest_classification.latest_override_reason,
-           latest_CAF.last_CAF_date,
-           latest_CAF.last_CAF_total,
-           current_offenses.offenses AS current_offenses,
-           assaultive_disciplinary_history.case_notes_assaultive_disciplinaries,
+           level_care.form_information_level_of_care,
+           latest_classification.form_information_latest_classification_decision_date,
+           latest_classification.form_information_latest_override_reason,
+           latest_CAF.form_information_last_CAF_date,
+           latest_CAF.form_information_last_CAF_total,
+           current_offenses.form_information_current_offenses,
+           assaultive_disciplinary_history.case_notes,
            q6_score_info.form_information_q6_notes,
            most_serious_disciplinaries.form_information_q7_notes,
            detainers_cte.form_information_q8_notes,
