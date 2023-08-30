@@ -263,7 +263,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     )
 
     def test_template_generator(self) -> None:
-        # Testing that a spreadsheet will not include sheets for metric(s) that have been disabled
+        # Testing that a spreadsheet will not include sheets for metric(s) or
+        # dissaggregations that have been disabled.
         with SessionFactory.using_database(self.database_key) as session:
             session.add_all(
                 [
@@ -291,7 +292,11 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 xls = pd.ExcelFile(file_path)
                 sheet_names_set = xls.sheet_names
                 for sheet_name in all_sheet_names_set:
-                    if sheet_name in ("funding", "funding_by_type"):
+                    if sheet_name in (
+                        "funding",
+                        "funding_by_type",
+                        "admissions_by_type",
+                    ):
                         self.assertFalse(sheet_name in sheet_names_set)
                     else:
                         self.assertTrue(sheet_name in sheet_names_set)
