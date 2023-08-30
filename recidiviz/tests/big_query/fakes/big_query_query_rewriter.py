@@ -354,7 +354,6 @@ class BigQueryQueryRewriter:
 
         # Postgres does not have LOGICAL_AND operator, use BOOL_AND instead
         query = _replace_iter(query, r"LOGICAL_AND", "BOOL_AND")
-
         # Postgres doesn't support TO_JSON_STRING so we replace with ARRAY_TO_JSON
         query = _replace_iter(
             query,
