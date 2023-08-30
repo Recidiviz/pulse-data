@@ -36,7 +36,6 @@ from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.persistence.database.schema.justice_counts.schema import Agency
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import create_excel_file
 from recidiviz.tests.justice_counts.utils.utils import (
@@ -266,18 +265,29 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
         # Testing that a spreadsheet will not include sheets for metric(s) or
         # dissaggregations that have been disabled.
         with SessionFactory.using_database(self.database_key) as session:
+            prison_super_agency = self.test_schema_objects.test_prison_super_agency
+            prison_affiliate_A = self.test_schema_objects.test_prison_affiliate_A
+            prison_affiliate_B = self.test_schema_objects.test_prison_affiliate_B
+            test_user_A = self.test_schema_objects.test_user_A
             session.add_all(
                 [
-                    self.test_schema_objects.test_user_A,
-                    self.test_schema_objects.test_agency_G,
+                    prison_super_agency,
+                    prison_affiliate_A,
+                    prison_affiliate_B,
+                    test_user_A,
                 ]
             )
             session.commit()
-            agency = session.query(Agency).one()
-            agency_datapoints = self.test_schema_objects.get_test_agency_datapoints(
-                agency_id=agency.id
+            prison_affiliate_A.super_agency_id = prison_super_agency.id
+            prison_affiliate_B.super_agency_id = prison_super_agency.id
+            session.refresh(prison_super_agency)
+            super_agency_datapoints = (
+                self.test_schema_objects.get_test_agency_datapoints(
+                    agency_id=prison_super_agency.id
+                )
             )
-            session.add_all(agency_datapoints)
+
+            session.add_all(super_agency_datapoints)
             session.commit()
             system = "PRISONS"
             system_enum = schema.System.PRISONS
@@ -288,9 +298,12 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
 
             with tempfile.TemporaryDirectory() as tempbulkdir:
                 file_path = os.path.join(tempbulkdir, str(system) + ".xlsx")
-                generate_bulk_upload_template(system_enum, file_path, session, agency)
+                generate_bulk_upload_template(
+                    system_enum, file_path, session, prison_super_agency
+                )
                 xls = pd.ExcelFile(file_path)
                 sheet_names_set = xls.sheet_names
+                sheet_name_to_df = pd.read_excel(xls, sheet_name=None)
                 for sheet_name in all_sheet_names_set:
                     if sheet_name in (
                         "funding",
@@ -300,3 +313,11 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         self.assertFalse(sheet_name in sheet_names_set)
                     else:
                         self.assertTrue(sheet_name in sheet_names_set)
+                        df = sheet_name_to_df[sheet_name]
+                        rows = df.to_dict("records")
+                        for row in rows:
+                            self.assertTrue("agency" in row)
+                            self.assertTrue(
+                                row["agency"]
+                                in {prison_affiliate_A.name, prison_affiliate_B.name}
+                            )
