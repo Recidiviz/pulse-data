@@ -40,6 +40,9 @@ class StableCountsTableConfig:
 
 
 ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfig] = {
+    # CA: We exclude validations for 2023-01 because this is the month we began receiving
+    # data for CA. We have some historical information, but not much, which causes
+    # many validation failures on 2023-01.
     "state_supervision_violation": StableCountsTableConfig(
         date_columns_to_check=[
             DateCol(
@@ -48,7 +51,7 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     # examples:
                     # StateCode.US_PA: [date(2023, 2, 1), date(2023, 3, 1)],
                     # StateCode.US_MI: [date(2023, 4, 1)]
-                    StateCode.US_CA: [date(2023, 1, 1), date(2023, 4, 1)]
+                    StateCode.US_CA: [date(2023, 1, 1)]
                 },
             )
         ]
@@ -57,11 +60,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
         date_columns_to_check=[
             DateCol(
                 date_column_name="admission_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1), date(2023, 4, 1)]},
+                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
             ),
             DateCol(
                 date_column_name="release_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1), date(2023, 4, 1)]},
+                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
             ),
         ],
         # TODO(#21848): add functionality for disaggregation
@@ -71,11 +74,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
         date_columns_to_check=[
             DateCol(
                 date_column_name="start_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1), date(2023, 4, 1)]},
+                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
             ),
             DateCol(
                 date_column_name="termination_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1), date(2023, 4, 1)]},
+                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
             ),
         ]
         # TODO(#21848): add functionality for disaggregation
@@ -85,7 +88,7 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
         date_columns_to_check=[
             DateCol(
                 date_column_name="response_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1), date(2023, 4, 1)]},
+                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
             )
         ]
     ),
