@@ -43,7 +43,7 @@ from recidiviz import airflow as recidiviz_airflow_module
 from recidiviz.tools.postgres import local_postgres_helpers
 
 AIRFLOW_WORKING_DIRECTORY = os.path.dirname(recidiviz_airflow_module.__file__)
-DAG_FOLDER = "dags"
+DAG_FOLDER = os.path.abspath(os.path.join(AIRFLOW_WORKING_DIRECTORY, "dags"))
 
 _FAKE_RUN_ID = "abc123"
 
