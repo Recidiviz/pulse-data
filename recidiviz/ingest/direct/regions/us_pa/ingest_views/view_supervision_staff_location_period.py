@@ -37,7 +37,7 @@ WHERE NOT (UPPER(FirstName) LIKE '%VACANT%' AND UPPER(LastName) LIKE '%POSITION%
 ),
 supervisor_base AS (
 SELECT 
-    LPAD(district_id, 2, '0') AS district_id,
+    district_id,
     ext_id, 
     '1900-01-01' AS start_date, 
     NULL as end_date
@@ -47,7 +47,7 @@ AND ext_id NOT IN (SELECT DISTINCT Employ_Num FROM agent_base)
 ),
 cntc_base AS (
 SELECT DISTINCT
-    FIRST_VALUE(PRL_AGNT_ORG_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS district_id,
+    FIRST_VALUE(UPPER(PRL_AGNT_ORG_NAME)) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS district_id,
     PRL_AGNT_EMPL_NO,
     FIRST_VALUE(START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS start_date,
     NULL AS end_date

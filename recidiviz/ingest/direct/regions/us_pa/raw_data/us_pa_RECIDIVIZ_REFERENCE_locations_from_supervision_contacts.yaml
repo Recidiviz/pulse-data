@@ -4,6 +4,22 @@ file_description: |-
   Hand-generated reference file containing supervision locations included in dbo_PRS_FACT_PAROLEE_CNTC_SUMRY
   raw data. To be included in us_pa_location_metadata so officers and supervisors pulled
   from supervision contacts will have entries in the location metadata reference table.
+
+  To find additional locations that exist in contacts data for role types we are currently tracking,
+  but do not yet exist in us_pa_location_metadata: 
+
+  SELECT DISTINCT PRL_AGNT_ORG_NAME
+  FROM `recidiviz-staging.us_pa_raw_data_up_to_date_views.dbo_PRS_FACT_PAROLEE_CNTC_SUMRY_latest`
+  WHERE PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv','Prl Mgr 1')
+  AND UPPER(PRL_AGNT_ORG_NAME) NOT IN (
+    SELECT DISTINCT location_name
+    FROM `recidiviz-staging.reference_views.location_metadata_materialized`
+  )
+
+  These should be appended to the existing table. Any information that can be gathered on the
+  locations' details must be added manually, since supervision contacts data only provides 
+  the name of the location. If additional info cannot be easily inferred, fields should be 
+  left blank.
 data_classification: source
 primary_key_cols:
   - Org_Name
