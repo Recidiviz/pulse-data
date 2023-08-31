@@ -44,13 +44,15 @@ includes electronic monitoring */
         person_id,
         start_date,
         end_date_exclusive AS end_date,
-        COALESCE(map.is_em, FALSE) AS is_electronic_monitoring
+        COALESCE(omni_map.is_em, coms_map.is_em, FALSE) AS is_electronic_monitoring
     #TODO(#20035) replace with supervision level raw text sessions once views agree
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
     /* Using regex to match digits in sls.correctional_level_raw_text so imputed values with the form 
     d*##IMPUTED are correctly joined */
-    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
-        ON REGEXP_EXTRACT(sls.correctional_level_raw_text, r'(\\d+)') = map.supervision_level_raw_text
+    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` omni_map
+        ON REGEXP_EXTRACT(sls.correctional_level_raw_text, r'(\\d+)') = omni_map.supervision_level_raw_text and omni_map.source = 'OMNI'
+    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` coms_map
+        ON SPLIT(sls.correctional_level_raw_text, '##')[OFFSET(0)] = coms_map.supervision_level_raw_text and coms_map.source = 'COMS'
     WHERE state_code = "US_MI"
     AND compartment_level_1 = 'SUPERVISION' 
 ),

@@ -33,6 +33,7 @@ downgrade unless there are extenuating circumstances.
 """
 
 _QUERY_TEMPLATE = """
+/* OMNI */ 
 SELECT DISTINCT
     pei.state_code,
     pei.person_id,
@@ -48,6 +49,24 @@ INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pe
     AND pei.external_id = schedule.offender_booking_id
 WHERE ref1.description = 'Classification Review'
 AND item_complete_date IS NOT NULL
+-- this filter shouldn't actually do anything because the data should have been frozen by 2023-08-14
+AND CAST(SAFE_CAST(item_complete_date AS DATETIME) AS DATE) < "2023-08-14"
+
+UNION ALL 
+
+/* COMS */ 
+SELECT DISTINCT
+    pei.state_code,
+    pei.person_id,
+    CAST(SAFE_CAST(Completed_date AS DATETIME) AS DATE) AS completion_event_date,
+FROM `{project_id}.{raw_data_up_to_date_views_dataset}.COMS_Supervision_Schedule_Activities_latest` schedule 
+INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+    ON pei.state_code = 'US_MI'
+    AND pei.id_type = 'US_MI_DOC'
+    AND pei.external_id = LTRIM(schedule.Offender_Number, '0')
+WHERE schedule.Activity = "Classification Review"
+AND Completed_date IS NOT NULL
+AND CAST(SAFE_CAST(Completed_date AS DATETIME) AS DATE) >= "2023-08-14"
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
