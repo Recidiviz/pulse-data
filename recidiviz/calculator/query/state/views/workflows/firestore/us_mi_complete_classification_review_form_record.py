@@ -167,29 +167,6 @@ case_notes_cte AS (
 
     UNION ALL
 
-    -- Recent employment (past 6 months)
-    SELECT 
-        person_id, 
-        CONCAT("Employer: ", employer_name) AS note_title, 
-        IF(job_title IS NOT NULL,
-            CONCAT('Job title: ', 
-                job_title, ' - ', 
-                "From ", CAST(start_date AS string), ' until ', IF(end_date = CURRENT_DATE, 'today', CAST(end_date AS string)), " (", CAST(DATE_DIFF(end_date, start_date, MONTH) AS STRING), " months)"),
-            CONCAT("From ", CAST(start_date AS string), ' until ', IF(end_date = CURRENT_DATE, 'today', CAST(end_date AS string)), " (", CAST(DATE_DIFF(end_date, start_date, MONTH) AS STRING), " months)")
-        ) AS note_body,
-        end_date AS event_date,
-        "Recent employment (past 6 months)" AS criteria,
-    FROM (
-        SELECT 
-            * EXCEPT(end_date),
-            COALESCE(end_date, CURRENT_DATE) AS end_date
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` 
-    )
-    WHERE state_code = 'US_MI'
-        AND DATE_DIFF(CURRENT_DATE, end_date, MONTH)<=6
-
-    UNION ALL
-
     -- Fines and fees
     SELECT 
         person_id, 
