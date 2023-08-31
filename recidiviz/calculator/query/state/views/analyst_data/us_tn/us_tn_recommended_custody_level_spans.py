@@ -47,7 +47,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             assessment_date AS start_date,
-            score_end_date_exclusive AS end_date,
+            score_end_date_exclusive AS end_date_exclusive,
             assessment_score,
             CAST(JSON_EXTRACT_SCALAR(assessment_metadata,'$.QUESTION1') AS INT64) AS q1_score,
             CAST(JSON_EXTRACT_SCALAR(assessment_metadata,'$.QUESTION2') AS INT64) AS q2_score,
@@ -71,7 +71,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             NULL AS q1_score,
             NULL AS q2_score,
             q3_score,
@@ -94,7 +94,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             LEAD(start_date) OVER(
                             PARTITION BY person_id 
                             ORDER BY start_date ASC
-                            ) AS end_date,
+                            ) AS end_date_exclusive,
             NULL AS q1_score,
             NULL AS q2_score,
             NULL AS q3_score,
@@ -115,7 +115,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             MAX(q1_score) AS q1_score,
             MAX(q2_score) AS q2_score,
             MAX(q3_score) AS q3_score,
@@ -136,7 +136,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             q1_score,
             NULL AS q2_score,
             NULL AS q3_score,
@@ -155,7 +155,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             NULL AS q1_score,
             q2_score,
             NULL AS q3_score,
@@ -174,7 +174,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             NULL AS q1_score,
             NULL AS q2_score,
             NULL AS q3_score,
@@ -193,7 +193,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             NULL AS q1_score,
             NULL AS q2_score,
             NULL AS q3_score,
@@ -212,7 +212,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             NULL AS q1_score,
             NULL AS q2_score,
             NULL AS q3_score,
@@ -231,7 +231,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date_exclusive AS end_date,
+            end_date_exclusive,
             0 AS q1_score,
             0 AS q2_score,
             NULL AS q3_score,
@@ -248,7 +248,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
         
     )
     ,
-    {create_sub_sessions_with_attributes('union_scores')},
+    {create_sub_sessions_with_attributes(table_name='union_scores',end_date_field_name="end_date_exclusive")},
     -- This CTE computes the relevant sub-scores needed for computing a recommended custody level
     dedup_cte AS (
         SELECT *,
@@ -260,7 +260,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
                 person_id,
                 state_code,
                 start_date,
-                end_date,
+                end_date_exclusive,
                 MAX(q1_score) AS q1_score,
                 MAX(q2_score) AS q2_score,
                 MAX(q3_score) AS q3_score,
@@ -280,7 +280,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             CASE WHEN calculated_schedule_a_score BETWEEN 10 AND 14 THEN 'CLOSE'
                  WHEN calculated_schedule_a_score >= 15 THEN 'MAXIMUM'
                  WHEN calculated_total_score >= 17 THEN 'CLOSE'
@@ -306,7 +306,8 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
     )
     SELECT *,
     FROM ({aggregate_adjacent_spans(table_name='scoring',
-                                    attribute=['recommended_custody_level','score_metadata'])})
+                                    attribute=['recommended_custody_level','score_metadata'],
+                                    end_date_field_name="end_date_exclusive")})
 """
 
 US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

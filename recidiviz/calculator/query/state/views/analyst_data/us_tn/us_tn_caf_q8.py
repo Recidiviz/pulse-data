@@ -50,7 +50,7 @@ US_TN_CAF_Q8_QUERY_TEMPLATE = f"""
         person_id,
         state_code,
         start_date,
-        end_date,
+        end_date AS end_date_exclusive,
         MAX(detainer_score) AS q8_score,
     FROM
         sub_sessions_with_attributes

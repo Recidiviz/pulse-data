@@ -31,7 +31,7 @@ RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = """
         state_code,
         person_id,
         start_date,
-        end_date,
+        end_date_exclusive,
         recommended_custody_level,
         score_metadata
     FROM

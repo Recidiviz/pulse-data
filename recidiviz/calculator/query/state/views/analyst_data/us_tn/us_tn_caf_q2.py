@@ -60,7 +60,7 @@ US_TN_CAF_Q2_QUERY_TEMPLATE = f"""
         person_id,
         state_code,
         start_date,
-        end_date,
+        end_date AS end_date_exclusive,
         MAX(score) AS q2_score,
     FROM
         sub_sessions_with_attributes

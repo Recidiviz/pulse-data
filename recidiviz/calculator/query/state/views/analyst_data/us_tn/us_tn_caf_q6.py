@@ -153,7 +153,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date AS end_date_exclusive,
             -- Count if there is any disciplinary in that sub-session
             LOGICAL_OR(disciplinary = 1) AS disciplinary,
             -- Keep the latest incident_date
@@ -172,7 +172,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive,
             /* The logic here is as follows:
             - When there are 2 or more disciplinaries, score is 4
             - When there is 1 disciplinary, score is 1 (because we've already accounted for this only "counting" for 6 months
@@ -187,14 +187,14 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
                  WHEN sum_disciplinaries = 1 THEN 1
                  WHEN sum_disciplinaries = 0 THEN (
                     CASE 
-                        WHEN session_start_date BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')} THEN 0
-                        WHEN DATE_DIFF(COALESCE(DATE_SUB(end_date, INTERVAL 1 DAY),CURRENT_DATE('US/Eastern')), start_date, MONTH) <= 6 THEN (
+                        WHEN session_start_date BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')} THEN 0
+                        WHEN DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY),CURRENT_DATE('US/Eastern')), start_date, MONTH) <= 6 THEN (
                             CASE WHEN months_since_latest_disc <= 6 THEN -1
                                  WHEN months_since_latest_disc <= 12 THEN -2
                                  ELSE -4
                                  END
                         )
-                        WHEN DATE_DIFF(COALESCE(DATE_SUB(end_date, INTERVAL 1 DAY),CURRENT_DATE('US/Eastern')), start_date, MONTH) <= 12 THEN (
+                        WHEN DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY),CURRENT_DATE('US/Eastern')), start_date, MONTH) <= 12 THEN (
                             CASE WHEN months_since_latest_disc <= 12 THEN -2
                                  ELSE -4
                                  END
@@ -213,7 +213,8 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
     )
     SELECT *
     FROM ({aggregate_adjacent_spans(table_name='scoring',
-                                    attribute=['q6_score'])})
+                                    attribute=['q6_score'],
+                                    end_date_field_name="end_date_exclusive")})
     
 """
 

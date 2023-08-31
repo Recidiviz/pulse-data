@@ -97,6 +97,10 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
                 table_id="all_state_specific_completion_events",
             ),
             BigQueryAddress(
+                dataset_id="task_eligibility_completion_events_us_tn",
+                table_id="all_state_specific_completion_events",
+            ),
+            BigQueryAddress(
                 dataset_id="task_eligibility_completion_events_us_ix",
                 table_id="all_state_specific_completion_events",
             ),
