@@ -188,7 +188,10 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
       )
       QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id,
                                               contact_type_category
-                                ORDER BY contact_date DESC) = 1
+                                ORDER BY contact_date DESC,
+                                    CASE WHEN contact_type = 'SPET' THEN 0
+                                         WHEN contact_type = 'SPEC' THEN 1
+                                         END) = 1
     ),
     pivoted_contacts AS (
         SELECT
@@ -272,7 +275,6 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
         base.ineligible_criteria,
         pc.contact_type_arrest_check AS metadata_most_recent_arrest_check,
         pc.contact_type_spe_note AS metadata_most_recent_spe_note,
-        latest_spet.contact_date AS metadata_special_conditions_terminated_date,
         att.DriverLicenseNumber AS form_information_drivers_license,
         null AS form_information_drivers_license_suspended,
         null AS form_information_drivers_license_revoked,
@@ -305,15 +307,6 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
         pivoted_contacts pc
     ON
         base.external_id = pc.external_id
-    LEFT JOIN
-        ( SELECT *
-          FROM contacts
-          WHERE contact_type IN ("SPET")
-          QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id                                          
-                                ORDER BY contact_date DESC) = 1
-        ) latest_spet
-    ON
-        base.external_id = latest_spet.external_id
     LEFT JOIN
         restitution
     ON
