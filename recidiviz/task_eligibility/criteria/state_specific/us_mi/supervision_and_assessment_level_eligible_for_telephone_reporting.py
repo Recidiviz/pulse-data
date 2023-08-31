@@ -68,16 +68,18 @@ eligible combination of supervision and initial assessment level */
     person_id,
     start_date,
     end_date,
-    COALESCE((is_minimum_low OR
-        (is_minimum_in_person AND initial_assessment_level != 'MAXIMUM')), FALSE) AS meets_criteria,
-    map.description,
+    COALESCE((COALESCE(omni_map.is_minimum_low, coms_map.is_minimum_low) OR
+        (COALESCE(omni_map.is_minimum_in_person, coms_map.is_minimum_in_person) AND initial_assessment_level != 'MAXIMUM')), FALSE) AS meets_criteria,
+    COALESCE(omni_map.description, coms_map.description) as description,
     initial_assessment_level
   FROM supervision_level_sessions_with_assessments sl
   /* Using regex to match digits in sl.supervision_level_raw_text
    so imputed values with the form d*##IMPUTED are correctly joined */
-  LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
+  LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` omni_map
   ON REGEXP_EXTRACT(sl.supervision_level_raw_text, r'(\\d+)') = \
-  map.supervision_level_raw_text
+  omni_map.supervision_level_raw_text AND omni_map.source  = 'OMNI'
+  LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` coms_map
+  ON SPLIT(sl.supervision_level_raw_text, "##")[OFFSET(0)] = coms_map.supervision_level_raw_text AND coms_map.source = 'COMS'
 )
 SELECT * EXCEPT (description, initial_assessment_level),
     TO_JSON(STRUCT(description AS supervision_level_raw_text, 

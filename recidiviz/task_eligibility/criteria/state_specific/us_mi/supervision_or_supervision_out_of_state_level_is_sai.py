@@ -47,12 +47,17 @@ WITH sai_spans AS (
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
     /* Using regex to match digits in sls.correctional_level_raw_text
    so imputed values with the form d*##IMPUTED are correctly joined */
-    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
+    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` omni_map
         ON REGEXP_EXTRACT(sls.correctional_level_raw_text, r'(\\d+)') \
-         = map.supervision_level_raw_text
+         = omni_map.supervision_level_raw_text \
+        AND omni_map.source = "OMNI"
+    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` coms_map
+        ON SPLIT(sls.correctional_level_raw_text, "##")[OFFSET(0)] \
+        = coms_map.supervision_level_raw_text \
+        AND coms_map.source = 'COMS'
     WHERE state_code = "US_MI"
     AND compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
-    AND map.is_sai
+    AND COALESCE(omni_map.is_sai, coms_map.is_sai)
 )
     SELECT 
         state_code,

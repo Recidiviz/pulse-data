@@ -45,16 +45,22 @@ WITH
   FROM
     `{{project_id}}.sessions.compartment_sub_sessions_materialized`c
   LEFT JOIN
-    `{{project_id}}.analyst_data.us_mi_supervision_level_raw_text_mappings` sls
+    `{{project_id}}.analyst_data.us_mi_supervision_level_raw_text_mappings` omni_sls
   ON
     REGEXP_EXTRACT(c.correctional_level_raw_text, r'(\\d+)') = \
-    sls.supervision_level_raw_text
+    omni_sls.supervision_level_raw_text \
+    AND omni_sls.source = "OMNI"
+  LEFT JOIN 
+    `{{project_id}}.analyst_data.us_mi_supervision_level_raw_text_mappings` coms_sls
+  ON SPLIT(c.correctional_level_raw_text, "##")[OFFSET(0)] \
+    = coms_sls.supervision_level_raw_text \
+    AND coms_sls.source = 'COMS'
   WHERE
     state_code = 'US_MI'
     AND compartment_level_1 = 'SUPERVISION'
-    AND NOT COALESCE(is_minimum_low, FALSE)
-    AND NOT COALESCE(is_minimum_in_person, FALSE)
-    AND NOT COALESCE(is_telephone, FALSE)
+    AND NOT COALESCE(omni_sls.is_minimum_low, coms_sls.is_minimum_low, FALSE)
+    AND NOT COALESCE(omni_sls.is_minimum_in_person, coms_sls.is_minimum_in_person, FALSE)
+    AND NOT COALESCE(omni_sls.is_telephone, coms_sls.is_telephone, FALSE)
     AND CURRENT_DATE('US/Pacific') BETWEEN start_date
     AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
     )

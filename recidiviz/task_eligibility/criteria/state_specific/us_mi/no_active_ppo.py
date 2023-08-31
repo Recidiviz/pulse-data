@@ -41,6 +41,7 @@ not have an active personal protection order (PPO).
 _QUERY_TEMPLATE = f"""
 WITH ppo_data_parsed AS(
 /*This CTE cleans PPO data from raw data */
+    /* OMNI */  
     SELECT
       pei.state_code,
       pei.person_id,
@@ -51,6 +52,21 @@ WITH ppo_data_parsed AS(
       ON o.offender_id= pei.external_id
       AND pei.state_code = 'US_MI'
       AND pei.id_type = "US_MI_DOC"
+      
+    UNION ALL 
+    
+    /* COMS */  
+    SELECT
+      pei.state_code,
+      pei.person_id,
+      DATE(EFFECTIVE_DATE) as effective_date,
+      COALESCE(DATE(Expiration_Date), "9999-12-31") as expiration_date
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.COMS_Personal_Protection_Orders_latest` o
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON LTRIM(o.Offender_Number, '0')= pei.external_id
+      AND pei.state_code = 'US_MI'
+      AND pei.id_type = "US_MI_DOC"
+
 ),
 active_ppos AS (
 /*This CTE identifies active ppos and sets active_ppo as TRUE*/
