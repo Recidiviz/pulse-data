@@ -42,8 +42,7 @@ us_pa_supervision_district_managers AS (
         )
     ) AS full_name,
     email,
-    # this table uses nonstandard district IDs, this transformation corrects them
-    LPAD(district, 2, "0") AS supervision_district,
+    district AS supervision_district
   FROM `{project_id}.{static_reference_dataset}.us_pa_upper_mgmt`  
   WHERE role IN ('District Director', 'Deputy District Director')
 ),

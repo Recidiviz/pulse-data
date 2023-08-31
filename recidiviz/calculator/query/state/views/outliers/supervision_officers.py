@@ -50,7 +50,7 @@ SELECT
     full_name,
     email,
     supervisor_external_id,
-    LPAD(supervision_district,2,'0') AS supervision_district,
+    supervision_district,
     specialized_caseload_type,
 FROM supervision_officers
 

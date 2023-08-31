@@ -86,11 +86,6 @@ SELECT
       )
     ) AS location_metadata,
 FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_locations_from_supervision_contacts_latest`
--- There are a few of organization codes associated with the central office across
--- regions other than the CENTRAL region (CR). We filter these out to make downstream 
--- deduplication easier.
-WHERE level_2_supervision_location_external_id != 'CO' 
-    OR level_3_supervision_location_external_id = 'CR';
 """
 
 US_PA_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -70,52 +70,14 @@ file_description: |-
          Org_Name,
          UPPER(sub_office_external_id) AS level_1_supervision_location_external_id,
          sub_office_external_id AS level_1_supervision_location_name,
-         district_office_external_id AS level_2_supervision_location_external_id,
+         IF(LENGTH(district_office_external_id) < 2, 
+          LPAD(district_office_external_id, 2, '0'), 
+          district_office_external_id) AS level_2_supervision_location_external_id,
          district_office_name AS level_2_supervision_location_name,
          Region_Code AS level_3_supervision_location_external_id,
          Region AS level_3_supervision_location_name,
      FROM  base_locations
-
-     UNION ALL
-
-    ## Add supervision districts as distinct organizations with location_external_ids
-     SELECT 
-        DISTINCT LPAD(district_id, 2, '0') AS Org_cd,
-        CONCAT(district_name, ' DO') AS Org_Name,
-        '' AS level_1_supervision_location_external_id,
-        '' AS level_1_supervision_location_name,
-        LPAD(district_id, 2, '0') AS level_2_supervision_location_external_id,
-        CONCAT(district_name, ' DO') AS level_2_supervision_location_name,
-        CASE 
-          WHEN region = 'CENTRAL' THEN 'CR'
-          WHEN region = 'EASTERN' THEN 'ER'
-          WHEN region = 'WESTERN' THEN 'WR'
-        END AS region_code,
-        region AS level_3_supervision_location_name
-        FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_field_supervisor_list_latest`
-
-      UNION ALL 
-
-      ## Add supervision regions as distinct organizations with location_external_ids
-      SELECT 
-        DISTINCT CASE 
-          WHEN region = 'CENTRAL' THEN 'CR'
-          WHEN region = 'EASTERN' THEN 'ER'
-          WHEN region = 'WESTERN' THEN 'WR'
-        END AS Org_cd,
-        CONCAT(region, ' REGION') AS Org_Name,
-        '' AS level_1_supervision_location_external_id,
-        '' AS level_1_supervision_location_name,
-        '' AS level_2_supervision_location_external_id,
-        '' AS level_2_supervision_location_name,
-        CASE 
-          WHEN region = 'CENTRAL' THEN 'CR'
-          WHEN region = 'EASTERN' THEN 'ER'
-          WHEN region = 'WESTERN' THEN 'WR'
-        END AS region_code,
-        region AS level_3_supervision_location_name
-        FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_field_supervisor_list_latest`
-  )
+    )
   SELECT * FROM pa_location_names
   ORDER BY level_1_supervision_location_external_id, Org_cd;
   ```
