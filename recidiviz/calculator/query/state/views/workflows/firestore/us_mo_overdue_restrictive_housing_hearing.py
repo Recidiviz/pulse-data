@@ -17,14 +17,15 @@
 """Query for relevant metadata needed to support upcoming restrictive housing hearing opportunity in Missouri
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    today_between_start_date_and_nullable_end_date_exclusive_clause,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_start_date_clause
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
+    join_current_task_eligibility_spans_with_external_id,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -53,21 +54,11 @@ US_MO_UPCOMING_HEARING_NUM_DAYS = 7
 US_MO_NUM_CLASSES_TO_DISPLAY = 10
 
 US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
-    WITH base_query AS (
-        SELECT
-           tes.person_id,
-           pei.external_id, 
-           tes.state_code,
-           tes.reasons,
-           tes.is_eligible,
-           tes.ineligible_criteria,
-        FROM `{{project_id}}.{{task_eligibility_dataset}}.overdue_restrictive_housing_hearing_materialized`  tes
-        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-          USING(person_id)
-        WHERE 
-            {today_between_start_date_and_nullable_end_date_exclusive_clause("tes.start_date", "tes.end_date")}
-            AND tes.state_code = 'US_MO'
-    )
+    WITH base_query AS ({join_current_task_eligibility_spans_with_external_id(
+        state_code='"US_MO"',
+        tes_task_query_view="overdue_restrictive_housing_hearing_materialized",
+        id_type='"US_MO_DOC"',
+    )})
     ,
     eligible_and_almost_eligible AS (
 
@@ -91,22 +82,6 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             'US_MO_IN_RESTRICTIVE_HOUSING' NOT IN UNNEST(ineligible_criteria)            
     )
     ,
-    most_recent_hearings AS (
-        SELECT DISTINCT
-            state_code,
-            person_id,
-            FIRST_VALUE(hearing_id) OVER person_window AS most_recent_hearing_id,
-            FIRST_VALUE(hearing_date) OVER person_window AS most_recent_hearing_date,
-            FIRST_VALUE(hearing_type) OVER person_window AS most_recent_hearing_type,
-            FIRST_VALUE(hearing_facility) OVER person_window AS most_recent_hearing_facility,
-            FIRST_VALUE(hearing_comments) OVER person_window AS most_recent_hearing_comments,
-        FROM `{{project_id}}.{{analyst_views_dataset}}.us_mo_classification_hearings_preprocessed_materialized`
-        WINDOW person_window AS (
-            PARTITION by person_id, state_code
-            ORDER BY hearing_date DESC
-        )
-    )
-    ,
     current_confinement_stay AS (
         SELECT DISTINCT
             person_id,
@@ -116,6 +91,29 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
         WINDOW w AS (
             PARTITION BY person_id, state_code
             ORDER BY confinement_type_session_id DESC
+        )
+    )
+    ,
+    most_recent_hearings AS (
+        SELECT DISTINCT
+            h.state_code,
+            h.person_id,
+            FIRST_VALUE(h.hearing_id) OVER person_window AS most_recent_hearing_id,
+            FIRST_VALUE(h.hearing_date) OVER person_window AS most_recent_hearing_date,
+            FIRST_VALUE(h.hearing_type) OVER person_window AS most_recent_hearing_type,
+            FIRST_VALUE(h.hearing_facility) OVER person_window AS most_recent_hearing_facility,
+            FIRST_VALUE(h.hearing_comments) OVER person_window AS most_recent_hearing_comments,
+        FROM `{{project_id}}.{{analyst_views_dataset}}.us_mo_classification_hearings_preprocessed_materialized` h 
+        LEFT JOIN current_confinement_stay c
+        USING(state_code, person_id)
+        WHERE 
+            -- Omit most recent hearing if it occurred before the current stay in solitary
+            -- confinement, *and* no review was scheduled later than when the stay began.
+            {nonnull_start_date_clause('h.next_review_date')} >= c.start_date
+            OR h.hearing_date >= c.start_date
+        WINDOW person_window AS (
+            PARTITION by h.person_id, h.state_code
+            ORDER BY h.hearing_date DESC
         )
     )
     ,
@@ -133,60 +131,36 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     ,
     {current_bed_stay_cte()}
     ,
-    -- TODO(#20812): Deprecate raw sanctions and violations queries once violations and outcomes are ingested 
-    cdv_sanctions AS (
+    cdv_sanctions_by_person AS (
         SELECT
-            cdv.IZ_DOC,
-            cdv.IZ_CYC,
-            cdv.IZCSEQ,
+            person_id,
             ARRAY_AGG(
                 STRUCT(
-                    IU_SU as sanction_start_date,
-                    IU_SE as sanction_expiration_date,
-                    IUSSAN as sanction_code
-                ) ORDER BY IUSASQ ASC
+                    incarceration_incident_outcome_id as sanction_id,
+                    date_effective as sanction_start_date,
+                    projected_end_date as sanction_expiration_date,
+                    outcome_type_raw_text as sanction_code
+                ) ORDER BY date_effective DESC
             ) AS sanctions,
-        FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK233_latest` cdv
-        INNER JOIN `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK236_latest` sanc
-        ON 
-          cdv.IZ_DOC = sanc.IU_DOC
-          and cdv.IZ_CYC = sanc.IU_CYC
-          and cdv.IZCSEQ = sanc.IUCSEQ
-        GROUP BY 1,2,3
-    )
-    ,
-    cdv_clean AS (
-        SELECT 
-            person_id,
-            SAFE.PARSE_DATE("%Y%m%d", cdv.IZWDTE) AS cdv_date,
-            IZVRUL as cdv_rule,
-            -- Rules are formatted as [major_number].[minor_number] e.g. 11.5
-            CAST(RTRIM(REGEXP_EXTRACT(cdv.IZVRUL, r'.+\\.'), r'\\.') AS INT64) as cdv_rule_part1,
-            TO_JSON(IFNULL(sanctions, [])) as sanctions,
-        FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK233_latest` cdv
-        LEFT JOIN cdv_sanctions
-        USING(IZ_DOC, IZ_CYC, IZCSEQ)
-        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON
-            cdv.IZ_DOC = pei.external_id
-            AND pei.state_code = 'US_MO'
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome`
+        GROUP BY 1
     )
     ,
     cdv_all AS (
-        SELECT
+        SELECT 
             person_id,
-            cdv.cdv_date,
-            cdv.cdv_rule,
+            cdv.incident_date AS cdv_date,
+            cdv.incident_type_raw_text as cdv_rule,
+            -- Rules are formatted as [major_number].[minor_number] e.g. 11.5
             -- Major violations are rules 1-9
             -- Further info on CDVs here: 
             -- https://doc.mo.gov/sites/doc/files/media/pdf/2020/03/Offender_Rulebook_REVISED_2019.pdf
-            cdv.cdv_rule_part1 < 10 AS is_major_violation,
+            CAST(RTRIM(REGEXP_EXTRACT(cdv.incident_type_raw_text, r'.+\\.'), r'\\.') AS INT64) < 10 AS is_major_violation,
             -- Excludes violations that occur the day of a hearing, which could in reality
             -- occur either before or after the hearing, since hearings are likely to be
             -- scheduled further in advance than on the same day as the violation.
-            cdv.cdv_date > h.most_recent_hearing_date AS occurred_since_last_hearing,
-            sanctions,
-        FROM cdv_clean cdv
+            cdv.incident_date > h.most_recent_hearing_date AS occurred_since_last_hearing,
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` cdv
         LEFT JOIN most_recent_hearings h
         USING(person_id)
     )
@@ -194,7 +168,7 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     cdv_majors_recent AS (
         SELECT
             person_id,
-            ARRAY_AGG(STRUCT(cdv_date, cdv_rule, sanctions) ORDER BY cdv_date DESC) AS cdvs
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
         FROM cdv_all
         WHERE
             cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_major_months_to_display}} MONTH)
@@ -205,7 +179,7 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     cdv_minors_since_hearing AS (
         SELECT
             person_id,
-            ARRAY_AGG(STRUCT(cdv_date, cdv_rule, sanctions) ORDER BY cdv_date DESC) AS cdvs
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
         FROM cdv_all
         WHERE
             occurred_since_last_hearing
@@ -216,7 +190,7 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     cdv_minors_recent AS (
         SELECT
             person_id,
-            ARRAY_AGG(STRUCT(cdv_date, cdv_rule, sanctions) ORDER BY cdv_date DESC) AS cdvs
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
         FROM cdv_all
         WHERE
             cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_minor_months_to_display}} MONTH)
@@ -249,11 +223,11 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             CLASS_TITLE as class_title,
             CLASS_EXIT_REASON_DESC as class_exit_reason,
         FROM classes c
-        -- EXIT_TYPE_CD and CLASS_EXIT_REASON_DESC together describe the reason someone stopped taking a class.
-        -- Each description (CLASS_EXIT_REASON_DESC) is under the umbrella of a more general EXIT_TYPE_CD category:
-        -- "UNS": Unsuccessful, "SFL": Successful, and "NOF": (Unsuccessful) No-fault exit
-        -- Here we omit Unsuccessful classes so as only to surface classes that were either completed or were not
-        -- completed, but through no fault of the person taking them.
+        /* EXIT_TYPE_CD and CLASS_EXIT_REASON_DESC together describe the reason someone stopped taking a class.
+        Each description (CLASS_EXIT_REASON_DESC) is under the umbrella of a more general EXIT_TYPE_CD category:
+        "UNS": Unsuccessful, "SFL": Successful, and "NOF": (Unsuccessful) No-fault exit
+        Here we omit Unsuccessful classes so as only to surface classes that were either completed or were not
+        completed, but through no fault of the person taking them. */
         WHERE COALESCE(EXIT_TYPE_CD, '') != 'UNS'
     )
     ,
@@ -370,6 +344,7 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             TO_JSON(IFNULL(classes_by_person_recent.classes, [])) AS metadata_classes_recent,
             aic_scores_latest.aic_score as metadata_aic_score,
             TO_JSON(IFNULL(unwaived_enemies_by_person.unwaived_enemies, [])) AS metadata_unwaived_enemies,
+            TO_JSON(IFNULL(cdv_sanctions_by_person.sanctions, [])) AS metadata_all_sanctions,
         FROM eligible_and_almost_eligible base
         LEFT JOIN most_recent_hearings hearings
         USING (person_id)
@@ -393,6 +368,8 @@ US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
         USING (external_id)
         LEFT JOIN unwaived_enemies_by_person
         USING (external_id)
+        LEFT JOIN cdv_sanctions_by_person
+        USING (person_id)
     )
     SELECT * FROM final
 """

@@ -15,9 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time during which someone in MO
-is in Restrictive Housing.
+is overdue for release from a Restrictive Housing placement.
 """
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -25,25 +28,50 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MO_IN_RESTRICTIVE_HOUSING"
+_CRITERIA_NAME = "US_MO_OVERDUE_FOR_RELEASE"
 
 _DESCRIPTION = """Describes the spans of time during which someone in MO
-is in Restrictive Housing.
+is overdue for release from a Restrictive Housing placement.
 """
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
+    WITH sanction_spans AS (
+        SELECT 
+            person_id,
+            state_code,
+            date_effective as start_date, 
+            projected_end_date as end_date,
+            TRUE as under_sanction,
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome`
+        WHERE 
+            state_code = "US_MO"
+            AND outcome_type_raw_text = "D1"
+    )
+    ,
+    {create_sub_sessions_with_attributes("sanction_spans")}
+    ,
+    sanction_spans_without_duplicates AS (
+        SELECT DISTINCT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            under_sanction
+        FROM sub_sessions_with_attributes
+    )
     SELECT 
-        state_code, 
-        person_id, 
+        state_code,
+        person_id,
         start_date,
-        end_date,
-        confinement_type IN ("PROTECTIVE_CUSTODY", "SOLITARY_CONFINEMENT") as meets_criteria,
+        -- Set current span's end date to null
+        IF(end_date > CURRENT_DATE('US/Pacific'), NULL, end_date) AS end_date,
+        under_sanction AS meets_criteria,
         TO_JSON(STRUCT(
-            confinement_type AS confinement_type
+            start_date as sanction_start_date,
+            end_date as sanction_end_date
         )) AS reason
-    -- TODO(#23550) Replace with housing_unit_type once ingested
-    FROM `{project_id}.{sessions_dataset}.us_mo_confinement_type_sessions_materialized`
-    WHERE start_date != COALESCE(end_date, '9999-01-01')
+    FROM sanction_spans_without_duplicates
+    WHERE start_date != end_date
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -52,7 +80,8 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=False,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
     )
 )
 

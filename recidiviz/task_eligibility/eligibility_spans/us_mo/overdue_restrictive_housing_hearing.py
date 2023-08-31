@@ -44,6 +44,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         in_restrictive_housing.VIEW_BUILDER,
         overdue_for_hearing.VIEW_BUILDER,
+        # TODO(#22382) Require overdue for release
+        # overdue_for_release.VIEW_BUILDER,
     ],
     completion_event_builder=scheduled_hearing_occurred.VIEW_BUILDER,
 )
