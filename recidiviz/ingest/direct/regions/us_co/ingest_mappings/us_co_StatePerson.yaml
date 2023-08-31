@@ -35,7 +35,9 @@ output:
         $mappings:
           StateGender.MALE: M
           StateGender.FEMALE: F
-          StateGender.EXTERNAL_UNKNOWN: U
+          StateGender.EXTERNAL_UNKNOWN:
+            - U
+            - O
     races:
       - StatePersonRace:
           race:
