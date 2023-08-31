@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     at_least_6_months_since_most_recent_incarceration_incident,
     has_had_at_least_1_incarceration_incident_past_year,
     ineligible_for_annual_reclassification,
-    latest_assessment_not_override,
+    latest_caf_assessment_not_override,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -48,12 +48,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=general_incarceration_population_facility_filter.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        latest_assessment_not_override.VIEW_BUILDER,
+        latest_caf_assessment_not_override.VIEW_BUILDER,
         ineligible_for_annual_reclassification.VIEW_BUILDER,
         custody_level_higher_than_recommended.VIEW_BUILDER,
         custody_level_is_not_max.VIEW_BUILDER,
-        # TODO(#23086): Remove these two criteria when has_had_at_least_1_assessment_past_year is written and the wider
-        # funnel is validated
+        # TODO(#23614): Remove these two criteria as part of widening the funnel for special downgrades
         has_had_at_least_1_incarceration_incident_past_year.VIEW_BUILDER,
         at_least_6_months_since_most_recent_incarceration_incident.VIEW_BUILDER,
     ],

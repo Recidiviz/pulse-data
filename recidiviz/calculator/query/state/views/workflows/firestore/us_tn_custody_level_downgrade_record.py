@@ -216,7 +216,7 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
           FROM
             `{{project_id}}.{{analyst_dataset}}.recommended_custody_level_spans_materialized`
           WHERE
-            CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
+            CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
             AND state_code = 'US_TN'
       )
     ),

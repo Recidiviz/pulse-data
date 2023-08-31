@@ -16,11 +16,15 @@
 # ============================================================================
 """Describes spans of time comparing current custody level to recommended custody level. True for all spans."""
 
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    custody_level_compared_to_recommended,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,15 +34,22 @@ _CRITERIA_NAME = "CUSTODY_LEVEL_COMPARED_TO_RECOMMENDED"
 _DESCRIPTION = """Describes spans of time comparing current custody level to recommended custody level.
 True for all spans."""
 
-_REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS current_custody_level,
-                      '9999-99-99' AS recommended_custody_level
-                    ))"""
+_QUERY_TEMPLATE = f"""
+    {custody_level_compared_to_recommended(
+        criteria=
+        "TRUE"
+    )}    
+"""
+
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        sessions_dataset=SESSIONS_DATASET,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
+        meets_criteria_default=False,
     )
 )
 

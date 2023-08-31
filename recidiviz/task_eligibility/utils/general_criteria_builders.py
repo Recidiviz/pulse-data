@@ -21,6 +21,7 @@ from typing import List, Optional
 
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
     join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -267,3 +268,71 @@ def get_custody_level_is_criteria_query(
         criteria_spans_query_template=criteria_query,
         sessions_dataset=SESSIONS_DATASET,
     )
+
+
+def custody_level_compared_to_recommended(
+    criteria: str,
+) -> str:
+    """
+    Args:
+        criteria (str): The criteria for comparing current custody level to recommended level
+    Returns:
+        f-string: Spans of time where a given criteria comparing current and recommended custody level is met
+    """
+
+    return f"""
+    WITH critical_dates AS (
+      SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive,
+        custody_level,
+        CAST(NULL AS STRING) AS recommended_custody_level,
+      FROM `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
+
+      UNION ALL
+
+      SELECT 
+        state_code, 
+        person_id, 
+        start_date,
+        end_date_exclusive,
+        CAST(NULL AS STRING) AS custody_level,
+        recommended_custody_level,
+      FROM `{{project_id}}.{{analyst_dataset}}.recommended_custody_level_spans_materialized`
+
+    ),
+    {create_sub_sessions_with_attributes(table_name='critical_dates',end_date_field_name="end_date_exclusive")}
+    , 
+    dedup_cte AS (
+        SELECT
+            person_id,
+            state_code,
+            start_date,
+            end_date_exclusive,
+            -- Take non-null values if there are any
+            MAX(custody_level) AS custody_level,
+            MAX(recommended_custody_level) AS recommended_custody_level,
+        FROM
+            sub_sessions_with_attributes
+        GROUP BY
+            1,2,3,4
+    )
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        {criteria} AS meets_criteria,
+        TO_JSON(STRUCT(
+            recommended_custody_level AS recommended_custody_level,
+            dedup_cte.custody_level AS custody_level
+        )) AS reason,
+    FROM dedup_cte
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` current_cl
+        ON dedup_cte.custody_level = current_cl.custody_level
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` recommended_cl
+        ON recommended_custody_level = recommended_cl.custody_level
+    WHERE start_date <= CURRENT_DATE('US/Pacific')
+    """

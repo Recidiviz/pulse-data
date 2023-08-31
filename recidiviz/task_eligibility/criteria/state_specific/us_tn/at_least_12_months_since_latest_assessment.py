@@ -16,12 +16,18 @@
 # ============================================================================
 """Describes the spans of time when at least 12 months have passed since a resident's last classification assessment."""
 
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
+    at_least_X_time_since_latest_assessment,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,17 +37,27 @@ _CRITERIA_NAME = "US_TN_AT_LEAST_12_MONTHS_SINCE_LATEST_ASSESSMENT"
 _DESCRIPTION = """Describes the spans of time when at least 12 months have passed since a resident's last
 classification assessment."""
 
-_REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS most_recent_assessment_date))"""
+_QUERY_TEMPLATE = f"""
+    {at_least_X_time_since_latest_assessment(
+        assessment_type="CAF",
+        date_interval = 12, 
+        date_part = "MONTH")}
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
         state_code=StateCode.US_TN,
+        sessions_dataset=SESSIONS_DATASET,
+        description=_DESCRIPTION,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=True,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+        ),
     )
 )
-
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()
