@@ -3,6 +3,7 @@ file_tag: ADH_EMPLOYEE
 file_description: |-
   Table containing metadata regarding MIDOC employees
 data_classification: source
+always_historical_export: False
 primary_key_cols:
   - employee_id
 columns:
