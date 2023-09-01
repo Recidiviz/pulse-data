@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 6 months of their full term completion date,
-parole eligibility date, or tentative parole date.
+Defines a criteria span view that shows spans of time during which someone is 
+1 year away from the tentative parole date (TPD) AND has a life sentence.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
@@ -33,50 +32,38 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_INCARCERATION_WITHIN_6_MONTHS_OF_FTCD_OR_PED_OR_TPD"
+_CRITERIA_NAME = "US_IX_INCARCERATION_WITHIN_1_YEAR_OF_TPD_AND_LIFE_SENTENCE"
 
 _DESCRIPTION = """
-Defines a criteria span view that shows spans of time during which
-someone is incarcerated within 6 months of their full term completion date,
-parole eligibility date, or tentative parole date.
+Defines a criteria span view that shows spans of time during which someone is 
+1 year away from the tentative parole date (TPD) AND has a life sentence.
 """
 
 _CRITERIA_QUERY_1 = """
     SELECT
-        * EXCEPT (reason),
-        SAFE_CAST(JSON_VALUE(reason, '$.full_term_completion_date') AS DATE) AS full_term_completion_date,
-        NULL AS parole_eligibility_date,
+        * EXCEPT (reason, meets_criteria),
+        NOT meets_criteria AS meets_criteria,
         NULL AS tentative_parole_date,
-    FROM `{project_id}.{task_eligibility_criteria_general}.incarceration_within_6_months_of_full_term_completion_date_materialized`
+        NOT meets_criteria AS life_sentence,
+    FROM `{project_id}.{task_eligibility_criteria_general}.not_serving_a_life_sentence_materialized`
     WHERE state_code = 'US_IX'"""
 
 _CRITERIA_QUERY_2 = """
     SELECT
         * EXCEPT (reason),
-        NULL AS full_term_completion_date,
-        SAFE_CAST(JSON_VALUE(reason, '$.parole_eligibility_date') AS DATE) AS parole_eligibility_date,
-        NULL AS tentative_parole_date,
-    FROM `{project_id}.{task_eligibility_criteria_general}.incarceration_within_6_months_of_parole_eligibility_date_materialized`
-    WHERE state_code = 'US_IX'"""
-
-_CRITERIA_QUERY_3 = """
-    SELECT
-        * EXCEPT (reason),
-        NULL AS full_term_completion_date,
-        NULL AS parole_eligibility_date,
         SAFE_CAST(JSON_VALUE(reason, '$.tentative_parole_date') AS DATE) AS tentative_parole_date,
-    FROM `{project_id}.{task_eligibility_criteria_us_ix}.tentative_parole_date_within_6_months_materialized` """
+        False AS life_sentence,
+    FROM `{project_id}.{task_eligibility_criteria_us_ix}.tentative_parole_date_within_1_year_materialized`"""
 
-_JSON_CONTENT = """MIN(full_term_completion_date) AS full_term_completion_date,
-                    MIN(parole_eligibility_date) AS parole_eligibility_date,
-                    MIN(tentative_parole_date) AS tentative_parole_date"""
+
+_JSON_CONTENT = """MIN(tentative_parole_date) AS tentative_parole_date,
+                   LOGICAL_OR(life_sentence) AS life_sentence"""
 
 _QUERY_TEMPLATE = f"""
 {ix_combining_several_criteria_into_one_view_builder(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
-                                             _CRITERIA_QUERY_2,
-                                             _CRITERIA_QUERY_3],
-        meets_criteria="LOGICAL_OR(meets_criteria)",
+                                             _CRITERIA_QUERY_2],
+        meets_criteria="(LOGICAL_AND(meets_criteria AND (num_criteria >= 2)))",
         json_content=_JSON_CONTENT,
     )}
 """
