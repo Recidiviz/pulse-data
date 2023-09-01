@@ -40,6 +40,7 @@ FROM `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_309_MOVEMENT_latest` 
 INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_3090_MOVEMENT_TYPE_latest` mvty
   ON mv.Cis_3090_Movement_Type_Cd = mvty.Movement_Type_Cd
     AND mvty.E_Movement_Type_Desc IN ('Furlough')
+    AND mv.Cis_3095_Mvmt_Direction_Cd = '2' # Movements out of facilities
 INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_3093_MVMT_STATUS_latest` mvst
   ON mv.Cis_3093_Mvmt_Status_Cd = mvst.Mvmt_Status_Cd
     AND mvst.E_Mvmt_Status_Desc IN ('Complete')
