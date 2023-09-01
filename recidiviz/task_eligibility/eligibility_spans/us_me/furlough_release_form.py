@@ -24,7 +24,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     general_incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_me import (
-    release_to_furlough,
+    granted_furlough,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
     custody_level_is_minimum_or_community,
@@ -57,7 +57,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         served_30_days_at_eligible_facility_for_furlough_or_work_release.VIEW_BUILDER,
         no_class_a_or_b_violation_for_90_days.VIEW_BUILDER,
     ],
-    completion_event_builder=release_to_furlough.VIEW_BUILDER,
+    completion_event_builder=granted_furlough.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

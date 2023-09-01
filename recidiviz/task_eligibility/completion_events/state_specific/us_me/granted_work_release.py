@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows furlough releases for clients in Maine.
+"""Defines a view that shows successful work-release approvals for 
+clients in Maine. This happens when a client's custody level is lowered to 'Community'.
 """
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -27,33 +28,31 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows furlough releases for clients in Maine.
+_DESCRIPTION = """Defines a view that shows successful work-release approvals for
+clients in Maine. This happens when a client's custody level is lowered to 'Community'.
 """
-# TODO(#23182) Make sure were using the right dataset to catch furloughs
 
 _QUERY_TEMPLATE = """
-SELECT 
-  peid.state_code,
-  peid.person_id,
-  SAFE_CAST(LEFT(mv.Movement_Date, 10) AS DATE) AS completion_event_date,
-FROM `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_309_MOVEMENT_latest` mv
-INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_3090_MOVEMENT_TYPE_latest` mvty
-  ON mv.Cis_3090_Movement_Type_Cd = mvty.Movement_Type_Cd
-    AND mvty.E_Movement_Type_Desc IN ('Furlough')
-INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_3093_MVMT_STATUS_latest` mvst
-  ON mv.Cis_3093_Mvmt_Status_Cd = mvst.Mvmt_Status_Cd
-    AND mvst.E_Mvmt_Status_Desc IN ('Complete')
-INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` peid
-  ON peid.external_id = mv.Cis_Client_Id
-    AND peid.state_code = 'US_ME'
+SELECT
+    state_code,
+    person_id,
+    SAFE_CAST(LEFT(CUSTODY_DATE, 10) AS DATE) AS completion_event_date,
+#TODO(#16722): pull custody level from ingested data once it is hydrated in our schema
+FROM `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_112_CUSTODY_LEVEL_latest`
+INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
+    ON CIS_100_CLIENT_ID = external_id
     AND id_type = 'US_ME_DOC'
+INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_1017_CLIENT_SYS_latest` cl_sys
+    ON CIS_1017_CLIENT_SYS_CD = CLIENT_SYS_CD
+# Only include clients whose custody level was lowered to 'Community'
+WHERE cl_sys.CLIENT_SYS_DESC = 'Community'
 GROUP BY 1,2,3
 """
 
 VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
     StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_ME,
-        completion_event_type=TaskCompletionEventType.RELEASE_TO_FURLOUGH,
+        completion_event_type=TaskCompletionEventType.GRANTED_WORK_RELEASE,
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
