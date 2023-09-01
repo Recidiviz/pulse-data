@@ -60,6 +60,7 @@ output:
                         - UNAUTH
                         - NON
                         - REFSEC
+                        - INDEXP # Indecent Exposure
                       StateIncarcerationIncidentType.CONTRABAND:
                         - CONT
                         - PROP
