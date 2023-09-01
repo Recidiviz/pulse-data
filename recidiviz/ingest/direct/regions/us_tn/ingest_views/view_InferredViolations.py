@@ -55,7 +55,7 @@ cleaned_contact_note_type AS (
         OffenderID,
         ContactNoteDateTime,
         ContactNoteType,
-        ROW_NUMBER() OVER (PARTITION BY OffenderID, DATE_TRUNC(CAST(ContactNoteDateTime AS DATETIME), DAY) ORDER BY ContactNoteType DESC ) as type_ranking
+        ROW_NUMBER() OVER (PARTITION BY OffenderID, DATE_TRUNC(CAST(ContactNoteDateTime AS DATETIME), DAY) ORDER BY ContactNoteType DESC, ContactNoteDateTime ASC ) as type_ranking
       FROM {ContactNoteType} c
       WHERE ContactNoteType IN ('VWAR','VRPT')) c
     WHERE type_ranking = 1 
