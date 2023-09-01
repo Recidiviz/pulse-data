@@ -55,22 +55,42 @@ FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized
 WHERE state_code = "US_MI" 
 QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment_date DESC, assessment_id)=1
 ),
-
 eligible_clients AS (
-    SELECT
-        pei.external_id,
-        tes.person_id,
+    SELECT 
         tes.state_code,
-        reasons,
+        tes.person_id,
+        pei.external_id, 
+        tes.reasons,
+        CASE
+            WHEN COALESCE(sai.meets_criteria, FALSE) THEN c.recommended_supervision_level
+            WHEN cses.correctional_level = 'HIGH' THEN 'MAXIMUM' 
+            WHEN cses.correctional_level = 'MAXIMUM' THEN 'MEDIUM' 
+            WHEN cses.correctional_level = 'MEDIUM' THEN 'MINIMUM' 
+            WHEN cses.correctional_level = 'MINIMUM' THEN 'TELEPHONE REPORTING' 
+        ELSE NULL
+        END AS metadata_recommended_supervision_level, 
     FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON tes.state_code = pei.state_code 
         AND tes.person_id = pei.person_id
         AND pei.id_type = "{ID_TYPE}"
         AND task_name IN ("COMPLETE_INITIAL_CLASSIFICATION_REVIEW_FORM", "COMPLETE_SUBSEQUENT_CLASSIFICATION_REVIEW_FORM")
+    LEFT JOIN `{{project_id}}.{{criteria_dataset}}.supervision_or_supervision_out_of_state_level_is_sai_materialized` sai
+        ON sai.person_id = tes.person_id 
+        AND CURRENT_DATE('US/Pacific') BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause("sai.end_date")}
+    #TODO(#20035) replace with supervision level raw text sessions once views agree
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`cses
+        ON tes.state_code = cses.state_code
+        AND tes.person_id = cses.person_id
+        AND CURRENT_DATE('US/Pacific') BETWEEN cses.start_date AND {nonnull_end_date_exclusive_clause("cses.end_date_exclusive")}
+    LEFT JOIN compas_recommended_preprocessed c
+        ON tes.state_code = c.state_code
+        AND tes.person_id = c.person_id
     WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause("tes.end_date")}
         AND tes.is_eligible
         AND tes.state_code = "US_MI"
+    --for clients that have multiple external ids, it is necessary to dedup here 
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY tes.person_id ORDER BY person_external_id_id) =1
 ),
 three_progress_notes AS (
   SELECT 
@@ -107,37 +127,6 @@ three_progress_notes AS (
 
 case_notes_cte AS (
 --- Get together all case_notes
-
-    -- Recommended supervision level
-    SELECT 
-        e.person_id,
-        CAST(NULL AS STRING) AS note_title, 
-        CASE
-            WHEN COALESCE(sai.meets_criteria, FALSE) THEN c.recommended_supervision_level
-            WHEN cses.correctional_level = 'HIGH' THEN 'MAXIMUM' 
-            WHEN cses.correctional_level = 'MAXIMUM' THEN 'MEDIUM' 
-            WHEN cses.correctional_level = 'MEDIUM' THEN 'MINIMUM' 
-            WHEN cses.correctional_level = 'MINIMUM' THEN 'TELEPHONE REPORTING' 
-        ELSE NULL
-        END AS note_body, 
-        CAST(NULL AS DATE) as event_date, 
-        "Recommended supervision level" AS criteria,
-    FROM eligible_clients e
-    LEFT JOIN `{{project_id}}.{{criteria_dataset}}.supervision_or_supervision_out_of_state_level_is_sai_materialized` sai
-        ON sai.person_id = e.person_id 
-        AND CURRENT_DATE('US/Pacific') BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause("sai.end_date")}
-    #TODO(#20035) replace with supervision level raw text sessions once views agree
-    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`cses
-        ON e.state_code = cses.state_code
-        AND e.person_id = cses.person_id
-        AND CURRENT_DATE('US/Pacific') BETWEEN cses.start_date AND {nonnull_end_date_exclusive_clause("cses.end_date_exclusive")}
-    LEFT JOIN compas_recommended_preprocessed c
-        ON e.state_code = c.state_code
-        AND e.person_id = c.person_id
-    --for clients that have multiple external ids, it is necessary to dedup here 
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY e.person_id ORDER BY note_body IS NOT NULL) =1
-    
-    UNION ALL
 
     -- Recent violations (past 6 months)
     SELECT 
@@ -272,6 +261,7 @@ SELECT
     ec.external_id,
     ec.state_code,
     ec.reasons,
+    ec.metadata_recommended_supervision_level,
     cn.case_notes,
 FROM eligible_clients ec
 LEFT JOIN array_case_notes_for_eligible_folks cn
