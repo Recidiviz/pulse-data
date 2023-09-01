@@ -261,13 +261,19 @@ metric_pipelines:
   - pipeline: population_span_metrics
     job_name: full-us-or-population-span-metrics
     state_code: US_OR
-    metric_types: INCARCERATION_POPULATION_SPAN
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west3
     staging_only: True #TODO(#22632): Turn on for prod
   - pipeline: incarceration_metrics
     job_name: full-us-or-incarceration-metrics
     state_code: US_OR
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
+    region: us-west3
+    staging_only: True #TODO(#22632): Turn on for prod
+  - pipeline: supervision_metrics
+    job_name: full-us-or-supervision-metrics
+    state_code: US_OR
+    metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west3
     staging_only: True #TODO(#22632): Turn on for prod
 
