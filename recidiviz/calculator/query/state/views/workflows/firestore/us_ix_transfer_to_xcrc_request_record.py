@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
     current_employment_case_notes,
+    current_violent_statutes_being_served,
     join_current_task_eligibility_spans_with_external_id,
     opportunity_query_final_select_with_case_notes,
 )
@@ -31,6 +32,7 @@ from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.task_eligibility.dataset_config import (
+    TASK_ELIGIBILITY_CRITERIA_GENERAL,
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
@@ -92,6 +94,11 @@ WITH current_crc_population AS (
                            criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR)}
 
         UNION ALL
+
+        -- Violent charges being served
+    ({current_violent_statutes_being_served(state_code = 'US_IX')})
+
+        UNION ALL
         -- NCIC/ILETS
     {ix_fuzzy_matched_case_notes(where_clause = "WHERE ncic_ilets_nco_check")}
     ),
@@ -109,6 +116,7 @@ US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_IX_TRANSFER_TO_XCRC_QUERY_TEMPLATE,
     description=US_IX_TRANSFER_TO_XCRC_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    task_eligibility_criteria_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_IX
     ),

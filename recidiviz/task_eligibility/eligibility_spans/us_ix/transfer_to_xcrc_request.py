@@ -27,16 +27,14 @@ from recidiviz.task_eligibility.completion_events.general import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
-    no_absconsion_within_10_years,
     not_serving_for_sexual_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     in_crc_facility,
     in_crc_facility_for_60_days,
     incarceration_within_6_months_of_ftcd_or_ped_or_tpd,
+    no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_detainers_for_xcrc,
-    no_eluding_police_offense_within_10_years,
-    no_escape_offense_within_10_years,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -64,9 +62,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_detainers_for_xcrc.VIEW_BUILDER,
         # TODO(#22759) need to hydrate sex offense
         not_serving_for_sexual_offense.VIEW_BUILDER,
-        no_escape_offense_within_10_years.VIEW_BUILDER,
-        no_eluding_police_offense_within_10_years.VIEW_BUILDER,
-        no_absconsion_within_10_years.VIEW_BUILDER,
+        no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
     ],
     completion_event_builder=release_to_community_confinement_supervision.VIEW_BUILDER,
 )

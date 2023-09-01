@@ -132,3 +132,38 @@ def current_employment_case_notes(state_code: str) -> str:
             AND {today_between_start_date_and_nullable_end_date_exclusive_clause('start_date', 
                                                                                  'end_date')}
 """
+
+
+def current_violent_statutes_being_served(state_code: str) -> str:
+    """Returns a CTE containing all current violent statutes being served ready to be
+        displayed as case notes.
+
+    Args:
+        state_code (str): State code. The final statement will filter out all other states.
+    """
+
+    return f"""
+        WITH statutes_with_descriptions AS (
+            SELECT 
+                DISTINCT
+                state_code,
+                statute,
+                description
+            FROM `{{project_id}}.{{normalized_state_dataset}}.state_charge` 
+            WHERE state_code = '{state_code}'
+            )
+
+        SELECT 
+            pei.external_id,
+            'Violent offenses currently serving' AS criteria,
+            description AS note_title,
+            statute AS note_body,
+            vo.start_date AS event_date,
+        FROM `{{project_id}}.{{task_eligibility_criteria_dataset}}.not_serving_for_violent_offense_materialized` vo,
+        UNNEST(JSON_VALUE_ARRAY(reason.ineligible_offenses)) AS statute
+        LEFT JOIN statutes_with_descriptions
+            USING(state_code, statute)
+        LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+            USING(person_id)
+        WHERE vo.state_code = '{state_code}'
+            AND CURRENT_DATE('US/Eastern') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}"""

@@ -27,13 +27,12 @@ from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
-    no_absconsion_within_10_years,
     not_serving_for_sexual_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
+    crc_work_release_time_based_criteria,
+    no_absconsion_escape_and_eluding_police_offenses_within_10_years,
     no_detainers_for_crc,
-    no_eluding_police_offense_within_10_years,
-    no_escape_offense_within_10_years,
     not_in_crc_facility,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -52,17 +51,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     task_name="TRANSFER_TO_CRC_WORK_RELEASE_REQUEST",
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
-    # TODO(#22758) add the rest of the criteria
     criteria_spans_view_builders=[
         custody_level_is_minimum.VIEW_BUILDER,
         no_detainers_for_crc.VIEW_BUILDER,
         # TODO(#22759) need to hydrate sex offense
         not_serving_for_sexual_offense.VIEW_BUILDER,
-        no_escape_offense_within_10_years.VIEW_BUILDER,
-        no_absconsion_within_10_years.VIEW_BUILDER,
-        no_eluding_police_offense_within_10_years.VIEW_BUILDER,
-        # Work release time-based criteria (25)
+        no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
         not_in_crc_facility.VIEW_BUILDER,
+        crc_work_release_time_based_criteria.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
 )
