@@ -41,12 +41,7 @@ from alembic.command import revision, upgrade
 
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
-)
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -64,67 +59,40 @@ def create_parser() -> argparse.ArgumentParser:
         help="String message passed to alembic to apply to the revision.",
         required=True,
     )
-    parser.add_argument(
-        "--project-id",
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-        help="Used to select which GCP project in which to run this script. "
-        "If not set, then this script runs against a locally generated "
-        "database.",
-    )
     return parser
 
 
-def main(schema_type: SchemaType, message: str, use_local_db: bool) -> None:
+def main(schema_type: SchemaType, message: str) -> None:
     """Runs the script to autogenerate migrations."""
     database_key = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)
-    if use_local_db:
-        # TODO(#4619): We should eventually move this from a local postgres instance to running
-        # postgres from a docker container.
-        if not local_postgres_helpers.can_start_on_disk_postgresql_database():
-            logging.error(
-                "pg_ctl is not installed, so the script cannot be run locally. "
-                "--project-id must be specified to run against staging or production."
-            )
-            logging.error("Exiting...")
-            sys.exit(1)
-        logging.info("Starting local postgres database for autogeneration...")
-        tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
-        original_env_vars = (
-            local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+    # TODO(#4619): We should eventually move this from a local postgres instance to running
+    # postgres from a docker container.
+    if not local_postgres_helpers.can_start_on_disk_postgresql_database():
+        logging.error(
+            "pg_ctl is not installed, so the script cannot be run locally. "
+            "--project-id must be specified to run against staging or production."
         )
-    else:
-        # TODO(Recidiviz/zenhub-tasks#134): This code path will throw when pointed at staging
-        # because we havne't created valid read-only users there just yet.
-        try:
-            original_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-                database_key=database_key, readonly_user=True
-            )
-        except ValueError as e:
-            logging.warning("Error fetching SQLAlchemy credentials: %s", e)
-            logging.warning(
-                "Until readonly users are created, we cannot autogenerate migrations against staging."
-            )
-            logging.warning("See https://github.com/Recidiviz/zenhub-tasks/issues/134")
-            sys.exit(1)
+        logging.error("Exiting...")
+        sys.exit(1)
+
+    logging.info("Starting local postgres database for autogeneration...")
+    tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+    original_env_vars = (
+        local_persistence_helpers.update_local_sqlalchemy_postgres_env_vars()
+    )
 
     try:
         config = alembic.config.Config(database_key.alembic_file)
-        if use_local_db:
-            upgrade(config, "head")
+        upgrade(config, "head")
         revision(config, autogenerate=True, message=message)
     except Exception as e:
         logging.error("Automigration generation failed: %s", e)
 
     local_postgres_helpers.restore_local_env_vars(original_env_vars)
-    if use_local_db:
-        logging.info("Stopping local postgres database...")
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(tmp_db_dir)
+    logging.info("Stopping local postgres database...")
+    local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(tmp_db_dir)
 
 
 if __name__ == "__main__":
     args = create_parser().parse_args()
-    if not args.project_id:
-        main(args.database, args.message, True)
-    else:
-        with local_project_id_override(args.project_id):
-            main(args.database, args.message, False)
+    main(args.database, args.message)
