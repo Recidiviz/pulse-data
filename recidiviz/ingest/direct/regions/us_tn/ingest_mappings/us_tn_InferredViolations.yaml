@@ -48,6 +48,9 @@ output:
                               $json: $iter_item
                           - $literal("INFERRED")
                           - $json_extract:
+                              $key: ContactNoteDateTime
+                              $json: $iter_item
+                          - $json_extract:
                               $key: sequence
                               $json: $iter_item
                     response_type:
