@@ -166,6 +166,7 @@ class PipelineParameters:
                 # Prevents VMs from accepting SSH keys that are stored in project metadata.
                 # This is an additional measure of security for disallowing remote access to our VM instance
                 "block_project_ssh_keys",
+                "enable_dynamic_thread_scaling",
             ],
         )
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
