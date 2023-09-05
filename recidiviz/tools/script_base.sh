@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+#
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+#
+
 # Get escape sequence / code that will allow us to make stdout output blue
 BLUE_OUTPUT_ESCAPE_CODE=$(tput setaf 4)
 
@@ -153,9 +172,9 @@ function check_for_tags_at_branch_tip {
     BRANCH=$1
     ALLOW_ALPHA=${2-}  # Optional argument
     if [[ -n ${ALLOW_ALPHA} ]]; then
-        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at "${BRANCH}" | grep -v alpha || echo "") || exit_on_fail
+        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at "${BRANCH}" | grep '^v\d\+\.' | grep -v alpha || echo "") || exit_on_fail
     else
-        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at "${BRANCH}") || exit_on_fail
+        TAGS_AT_TIP_OF_BRANCH=$(git tag --points-at "${BRANCH}" | grep '^v\d\+\.' || echo "") || exit_on_fail
     fi
 
     if [[ -n ${TAGS_AT_TIP_OF_BRANCH} ]]; then
