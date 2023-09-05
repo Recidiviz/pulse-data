@@ -1676,6 +1676,8 @@ def get_api_blueprint(
                 500,
             )
 
+        is_single_page_template = request.args.get("singlePage") == "true"
+
         system_enum = schema.System[system]
 
         with tempfile.TemporaryDirectory() as tempbulkdir:
@@ -1684,7 +1686,11 @@ def get_api_blueprint(
                 agency_id=int(agency_id), session=current_session
             )
             generate_bulk_upload_template(
-                system_enum, file_path, current_session, agency
+                system=system_enum,
+                file_path=file_path,
+                session=current_session,
+                agency=agency,
+                is_single_page_template=is_single_page_template,
             )
             try:
                 return send_file(file_path, as_attachment=True)

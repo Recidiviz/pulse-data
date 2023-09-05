@@ -297,6 +297,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             ]
 
             with tempfile.TemporaryDirectory() as tempbulkdir:
+                # Standard Template
                 file_path = os.path.join(tempbulkdir, str(system) + ".xlsx")
                 generate_bulk_upload_template(
                     system_enum, file_path, session, prison_super_agency
@@ -321,3 +322,28 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                                 row["agency"]
                                 in {prison_affiliate_A.name, prison_affiliate_B.name}
                             )
+
+                # Single-page template
+                file_path = os.path.join(tempbulkdir, str(system) + ".xlsx")
+                generate_bulk_upload_template(
+                    system_enum,
+                    file_path,
+                    session,
+                    prison_super_agency,
+                    is_single_page_template=True,
+                )
+                xls = pd.ExcelFile(file_path)
+                self.assertEqual(len(xls.sheet_names), 1)
+                df = pd.read_excel(xls, sheet_name="Sheet 1")
+                metrics_in_sheet = df["metric"].unique()
+                self.assertFalse(
+                    {
+                        "funding",
+                        "funding_by_type",
+                        "admissions_by_type",
+                    }.issubset(metrics_in_sheet)
+                )
+
+                agencies = df["agency"].unique()
+                self.assertTrue(prison_affiliate_A.name in agencies)
+                self.assertTrue(prison_affiliate_B.name in agencies)
