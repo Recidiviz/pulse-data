@@ -36,29 +36,35 @@ from recidiviz.task_eligibility.utils.us_tn_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_NAME = "us_tn_custody_level_downgrade_record"
+US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_NAME = (
+    "us_tn_annual_reclassification_review_record"
+)
 
-US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_DESCRIPTION = """
+US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_DESCRIPTION = """
     Query for relevant metadata needed to support custody level downgrade opportunity in Tennessee
     """
 
-US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE = f"""
+US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE = f"""
     SELECT *
-    FROM ({us_tn_classification_forms(tes_view="custody_level_downgrade",
+    FROM ({us_tn_classification_forms(tes_view="annual_reclassification_review",
                                       where_clause="WHERE "
                                                     "tes.state_code = 'US_TN' "
-                                                    "AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date "
-                                                    f"AND {nonnull_end_date_exclusive_clause('tes.end_date')} "
-                                                    "AND tes.is_eligible"
+                                                    "AND DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH) "
+                                                    "BETWEEN DATE_TRUNC(tes.start_date, MONTH) "
+                                                    f"AND {nonnull_end_date_exclusive_clause('DATE_TRUNC(tes.end_date, MONTH)')} "
+                                                    "AND tes.is_eligible "
+                                                    f"AND {nonnull_end_date_exclusive_clause('tes.end_date')} < CURRENT_DATE('US/Pacific')"
+                                      
                                       )
         })
+    
 """
 
-US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
-    view_id=US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_NAME,
-    view_query_template=US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_QUERY_TEMPLATE,
-    description=US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_DESCRIPTION,
+    view_id=US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_NAME,
+    view_query_template=US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_QUERY_TEMPLATE,
+    description=US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
@@ -73,4 +79,4 @@ US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER.build_and_print()
+        US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER.build_and_print()

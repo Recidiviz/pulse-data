@@ -105,6 +105,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_re
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
     US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_annual_reclassification_review_record import (
+    US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_custody_level_downgrade_record import (
     US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
 )
@@ -152,4 +155,5 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
     US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER,
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
+    US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
 ]
