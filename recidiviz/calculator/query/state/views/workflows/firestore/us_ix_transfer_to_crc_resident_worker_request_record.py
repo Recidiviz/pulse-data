@@ -83,6 +83,12 @@ WITH current_incarcerated_population AS (
         -- Corrective Action
     {ix_general_case_notes(where_clause_addition="AND ContactModeDesc = 'Corrective Action'", 
                            criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR)}
+        
+        UNION ALL 
+        
+        -- Positive [behavior notes]
+    {ix_general_case_notes(where_clause_addition="AND ContactModeDesc = 'Positive'", 
+                           criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR)}
     
         UNION ALL
 
