@@ -18,6 +18,7 @@
 stable employment
 """
 
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -58,6 +59,7 @@ SELECT
   TRUE AS meets_criteria,
   TO_JSON(STRUCT(ARRAY_AGG(DISTINCT status_employer_start_date) AS status_employer_start_date)) AS reason
 FROM sub_sessions_with_attributes
+WHERE start_date < {nonnull_end_date_clause('end_date')}
 GROUP BY 1,2,3,4
 """
 
