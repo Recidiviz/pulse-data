@@ -94,6 +94,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = StateSpecificTaskCr
     task_eligibility_criteria_us_ix=task_eligibility_criteria_state_specific_dataset(
         StateCode.US_IX
     ),
+    meets_criteria_default=True,
 )
 
 if __name__ == "__main__":
