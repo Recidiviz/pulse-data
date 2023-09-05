@@ -60,6 +60,8 @@ def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
 PRIMARY_DAG_RUN = DagRun(
     conf={
         "ingest_instance": "PRIMARY",
+        "sandbox_prefix": None,
+        "state_code_filter": None,
     }
 )
 
@@ -67,6 +69,7 @@ SECONDARY_DAG_RUN = DagRun(
     conf={
         "sandbox_prefix": "test_prefix",
         "ingest_instance": "SECONDARY",
+        "state_code_filter": None,
     }
 )
 
@@ -556,5 +559,38 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "--sandbox_prefix=test_prefix",
                 # Assert uppercased
                 "--state_code_filter=US_CA",
+            ],
+        )
+
+    def test_execute_entrypoint_arguments_nonetypes(self) -> None:
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        task = dag.get_task("update_normalized_state")
+        task.render_template_fields(
+            {"dag_run": DagRun(conf={**SECONDARY_DAG_RUN.conf, "sandbox_prefix": None})}
+        )
+
+        # Assert sandbox_prefix is not included
+        self.assertEqual(
+            task.arguments[4:],
+            [
+                "--entrypoint=UpdateNormalizedStateEntrypoint",
+                "--ingest_instance=SECONDARY",
+            ],
+        )
+
+        task = dag.get_task("update_normalized_state")
+        task.render_template_fields(
+            {"dag_run": DagRun(conf={**SECONDARY_DAG_RUN.conf, "sandbox_prefix": ""})}
+        )
+
+        # Assert sandbox_prefix is not included when set to empty string
+        self.assertEqual(
+            task.arguments[4:],
+            [
+                "--entrypoint=UpdateNormalizedStateEntrypoint",
+                "--ingest_instance=SECONDARY",
             ],
         )

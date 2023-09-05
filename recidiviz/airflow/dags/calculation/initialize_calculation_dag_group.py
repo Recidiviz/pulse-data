@@ -66,7 +66,7 @@ def templated_argument_from_conf(
         jinja_filter_str = f"| {jinja_filter}"
 
     return (
-        f"{{% if '{conf_key}' in dag_run.conf %}}"
+        f"{{% if '{conf_key}' in dag_run.conf and dag_run.conf['{conf_key}'] %}}"
         f'--{entrypoint_argument}={{{{ dag_run.conf["{entrypoint_argument}"] {jinja_filter_str} }}}}'
         "{% endif %}"
     )
