@@ -159,9 +159,12 @@ def gen_tes_spans_by_removing_each_criteria_once(df: pd.DataFrame) -> pd.DataFra
         df["remove_" + criteria] = df["is_eligible"]
 
         for row in range(n_rows):
-            # If criteria is the only ineligible_criteria, make that person eligible
+            # Check if <criteria> is present in all elements of the "ineligible_criteria"
+            #   column of the DataFrame
             if (np.all(np.isin(df["ineligible_criteria"][row], criteria))) & (
-                df["remove_" + criteria][row] == np.bool_(False)
+                # Only loop over folks who are currently ineligible.
+                df["remove_" + criteria][row]
+                == np.bool_(False)
             ):
                 # Set column associated with that criteria to True
                 df.loc[row, "remove_" + criteria] = True
@@ -297,9 +300,9 @@ def count_tes_spans_per_month_adding_each_criteria_one_by_one(
 ) -> pd.DataFrame:
     """
     Counts the number of eligible folks per month by adding each of the relevant
-    criteria one by one. I.e., the output of the first column is the total candidate
+    criteria one by one. I.e., the first column of the output is the total candidate
     population, the second column is the number of folks who meet the first criteria,
-    the third column is the number of folks who meet the first and second criteria,
+    the third column is the number of folks who meet the first AND second criteria,
     and so on.
 
     Args:
@@ -327,11 +330,12 @@ def count_tes_spans_per_month_removing_each_criteria_once(
     task_name: str, state_code: str, project_id: str = "recidiviz-staging"
 ) -> pd.DataFrame:
     """
-    Counts the number of eligible folks per month by removing each of the relevant
-    criteria one by one. I.e., the output of the first column is the number of folks
-    who would be newly eligible if the first criteria was removed, the third column
-    is the number of folks who would be newly eligible if the second criteria were
-    removed, and so on.
+    Counts the number of eligible folks per month if we removed one criteria from the
+    eligibility list. This does not successively remove each criteria, like
+    `count_tes_spans_per_month_adding_each_criteria_one_by_one` does. Instead, it
+    looks at people at the margin of eligibility i.e. "who would be eligible if we
+    removed this one criteria". This could help us understand which criteria are
+    constraining eligibility the most.
 
     Args:
         task_name (str): The name of the task. E.g., 'TRANSFER_TO_XCRC_REQUEST'.
