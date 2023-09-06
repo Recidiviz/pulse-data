@@ -37,6 +37,9 @@ import sys
 from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.view_update_manager import (
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     normalized_state_dataset_for_state_code,
@@ -128,7 +131,11 @@ def create_or_update_ingest_output_sandbox(
         "after 72 hours.",
         sandbox_dataset_prefix,
     )
-    update_bq_dataset_to_match_sqlalchemy_schema(SchemaType.STATE, sandbox_state_id)
+    update_bq_dataset_to_match_sqlalchemy_schema(
+        schema_type=SchemaType.STATE,
+        dataset_id=sandbox_state_id,
+        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+    )
 
 
 def create_or_update_supplemental_datasets_sandbox(
@@ -228,7 +235,8 @@ def create_or_update_normalized_state_sandbox(
     )
 
     update_normalized_table_schemas_in_dataset(
-        normalized_state_dataset_id=sandbox_dataset_id
+        normalized_state_dataset_id=sandbox_dataset_id,
+        default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
     )
 
 
