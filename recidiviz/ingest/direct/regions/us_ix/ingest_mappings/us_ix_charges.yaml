@@ -51,6 +51,15 @@ variables:
           $equal:
             - VIOLENT_OFFENSE_IND # some mismatches here with US_ID ingest view results
             - $literal("1")
+        is_sex_offense:
+          $conditional:
+            - $if:
+                $not_null: Offense_statute
+              $then:
+                $custom:
+                  $function: us_ix_custom_parsers.parse_charge_is_sex_offense
+                  $args:
+                    statute: Offense_statute
         counts: Count
         judge_external_id: JudgeLegistId
         judge_full_name:

@@ -54,7 +54,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         custody_level_is_minimum.VIEW_BUILDER,
         no_detainers_for_crc.VIEW_BUILDER,
-        # TODO(#22759) need to hydrate sex offense
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
         not_in_crc_facility.VIEW_BUILDER,

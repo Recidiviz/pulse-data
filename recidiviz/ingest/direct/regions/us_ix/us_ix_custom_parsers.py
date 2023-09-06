@@ -34,6 +34,46 @@ from recidiviz.common.str_field_utils import (
     safe_parse_days_from_duration_pieces,
 )
 
+# Sex Offense Statute Codes
+US_IX_SEX_OFFENSE_STATUTE_CODES = [
+    "I18-1505B",
+    "I18-1505B(1)",
+    "I18-1506",
+    "I18-1506(1)(A)",
+    "I18-1506(1)(B)",
+    "I18-1506(1)(C)",
+    "I18-1506(AT)",
+    "I18-1507",
+    "I18-1508 {AT}",
+    "I18-1508 {F}",
+    "I18-1508",
+    "I18-1508A(1)(A)",
+    "I18-1508A(1)(C)",
+    "I18-4502",
+    "I18-6101 (AB)",
+    "I18-6101 {A}",
+    "I18-6101 {AT}",
+    "I18-6101-1 {F}",
+    "I18-6101",
+    "I18-6101(1)",
+    "I18-6101(2)",
+    "I18-6101(3)",
+    "I18-6101(4)",
+    "I18-6101(5)",
+    "I18-6108",
+    "I18-6602",
+    "I18-6605",
+    "I18-6606 (AT)",
+    "I18-6606",
+    "I18-6609(3)",
+    "I18-8304",
+    "I18-8307",
+    "I18-8308",
+    "I18-924",
+    "I18-925",
+    "I19-2520C",
+]
+
 
 def parse_duration_from_two_dates(
     start_date_str: str, end_date_str: str
@@ -50,7 +90,6 @@ def parse_duration_from_two_dates(
 
 
 def parse_supervision_violation_is_violent(new_crime_types: str) -> bool:
-
     for new_crime_type in new_crime_types.split(","):
         if (
             "VIOLENT" in new_crime_type.upper()
@@ -61,7 +100,6 @@ def parse_supervision_violation_is_violent(new_crime_types: str) -> bool:
 
 
 def parse_supervision_violation_is_sex_offense(new_crime_types: str) -> bool:
-
     for new_crime_type in new_crime_types.split(","):
         if "SEX" in new_crime_type.upper():
             return True
@@ -145,7 +183,6 @@ def is_district(location_name: str, district_num: str) -> bool:
 
 
 def is_bw(supervising_officer_external_id: str) -> bool:
-
     officer_id_includes_bw = re.match(
         r"D[0-9]+BENCH", supervising_officer_external_id.upper()
     )
@@ -227,3 +264,9 @@ def judicial_district_from_county(county_code: str) -> Optional[str]:
         return "SEVENTH JUDICIAL DISTRICT"
 
     return None
+
+
+def parse_charge_is_sex_offense(statute: str) -> bool:
+    if statute in US_IX_SEX_OFFENSE_STATUTE_CODES:
+        return True
+    return False
