@@ -32,6 +32,18 @@ MetricViewExportEntrypoint:
         limits:
           cpu: 1000m
           memory: 2Gi
+    - args:
+        - --export_job_name=INGEST_METADATA
+      resources:
+        limits:
+          cpu: 500m
+          memory: 0.5Gi
+    - args:
+        - --export_job_name=JUSTICE_COUNTS
+      resources:
+        limits:
+          cpu: 500m
+          memory: 0.5Gi
 
 BigQueryRefreshEntrypoint:
   default_resources:
@@ -42,8 +54,8 @@ BigQueryRefreshEntrypoint:
 ValidationEntrypoint:
   default_resources:
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: 500m
+      memory: 1Gi
 
 UpdateAllManagedViewsEntrypoint:
   default_resources:
@@ -55,7 +67,7 @@ MetricExportTimelinessEntrypoint:
   default_resources:
     limits:
       cpu: 500m
-      memory: 300Mi
+      memory: 500Mi
 
 UpdateNormalizedStateEntrypoint:
   default_resources:
