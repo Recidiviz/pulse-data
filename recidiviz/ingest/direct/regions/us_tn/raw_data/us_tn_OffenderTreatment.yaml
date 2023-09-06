@@ -5,14 +5,14 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - OffenderID
-  - ProgramID
+  - Program
   - SequenceNumber
 columns:
   - name: OffenderID
     is_pii: True
     description: |-
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.
-  - name: ProgramID
+  - name: Program
     description: |-
       This code represents either a class or a treatment program.
   - name: SequenceNumber
@@ -26,7 +26,7 @@ columns:
     field_type: datetime
     description: |-
       The date on which an inmate begins a job, class or program.
-  - name: StartDateVerified
+  - name: VerifiedStartDate
     field_type: datetime
     description: |-
       The verified date on which an inmate begins a job, class or program according to the verification letter response.
@@ -34,21 +34,21 @@ columns:
     field_type: datetime
     description: |-
       The date a vocational or class assignment ends. The date a draw limit ends.  Also, it is used in sentencing for credits and dead, delinquent, street-time, etc.
-  - name: EndDateVerified
+  - name: VerifiedEndDate
     field_type: datetime
     description: |-
       The verified date a program, job, or class assignment ended according to the verification letter response.
-  - name: ReasonTreatmentTerminated
+  - name: TreatmentTerminatedReason
     description: |-
       The reason for an offender's termination from a treatment program.
-  - name: TreatmentTerminatedVerified
+  - name: VerifiedTreatmentTerminatedReason
     description: |-
       The verified reason for an offender's termination from a treatment program based on confirmation from the program.
   - name: Result
     is_pii: True
     description: |-
       Free form text regarding the results of a treatment program that an offender attended.
-  - name: VerificationStatus
+  - name: VerifiedStatus
     description: |-
       The status of the verification of information obtained from the offender during the pre-sentence investigation.
   - name: LastUpdateDate
