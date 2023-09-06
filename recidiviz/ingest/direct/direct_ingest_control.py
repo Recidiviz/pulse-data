@@ -346,7 +346,12 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
                     return str(e), HTTPStatus.BAD_REQUEST
                 raise e
 
-            controller.do_raw_data_import(data_import_args)
+            try:
+                controller.do_raw_data_import(data_import_args)
+            except GCSPseudoLockAlreadyExists as e:
+                logging.warning(str(e))
+                return str(e), HTTPStatus.CONFLICT
+
     return "", HTTPStatus.OK
 
 

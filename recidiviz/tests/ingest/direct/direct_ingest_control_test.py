@@ -26,6 +26,7 @@ from unittest import mock
 from flask import Flask
 from mock import Mock, call, create_autospec, patch
 
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -824,6 +825,17 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         self.assertEqual(200, response.status_code)
         mock_controller.do_raw_data_import.assert_called_with(import_args)
+
+        # Lock conflicts return 409
+        mock_controller.do_raw_data_import.side_effect = GCSPseudoLockAlreadyExists
+
+        response = self.client.post(
+            "/raw_data_import",
+            query_string=request_args,
+            headers=headers,
+            data=body_encoded,
+        )
+        self.assertEqual(409, response.status_code)
 
     @patch("recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region")
     def test_materialize_ingest_view(
