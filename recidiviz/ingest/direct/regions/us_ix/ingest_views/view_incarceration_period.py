@@ -147,6 +147,8 @@ transfer_periods_with_legal_status_with_beds AS (
         ON p.OffenderId = b.OffenderId
         AND p.period_start >= b.FromDate
         AND COALESCE(p.period_end, DATE(9999,12,31)) <= COALESCE(b.ToDate, DATE(9999,12,31))
+    -- filter out periods that start in the future
+    WHERE p.period_start <= @update_timestamp
 ),
 
 -- final cte, adds a period_id and drops the final period per person that starts with
