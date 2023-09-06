@@ -386,8 +386,12 @@ class SpreadsheetInterface:
                 is not True
             ):
                 # If the metric is a supervision subsystem, but the metric is reported as an aggregate,
-                # don't display any messages for that metric.
-                continue
+                # only display messages for that metric if data was explicitly reported.
+                if (
+                    metric_definition.key not in metric_key_to_errors
+                    and metric_definition.key not in metric_key_to_datapoint_jsons
+                ):
+                    continue
 
             if (
                 metric_definition.system == schema.System.SUPERVISION
@@ -564,7 +568,7 @@ class SpreadsheetInterface:
                 if schema.System[system] in schema.System.supervision_subsystems()
                 or schema.System[system] == schema.System.SUPERVISION
             }
-            if system == "SUPERVISION"
+            if system.name == "SUPERVISION"
             # Only send over metric definitions for the current system unless
             # the agency is uploading for supervision, which sheets contain
             # data for many supervision systems such as OTHER_SUPERVISION, PAROLE,

@@ -133,11 +133,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(spreadsheet.ingested_at, None)
 
     def test_get_ingest_spreadsheet_json(self) -> None:
-        # Tests that spreadsheet jsons will include the right metrics. If
-        # a metric is disaggregated by supervision subsystems, only the metrics
-        # for the subsystems should be in the response. If the metric is not disaggregated,
-        # then the response should only return results for the supverision (combined) values
-        # for that metric.
+        # Tests that spreadsheet jsons will include the right metrics.
+        # The response should contain whatever was included in the spreadsheet,
+        # even if it does not exactly match how the metrics are configured.
         with SessionFactory.using_database(self.database_key) as session:
             user = self.test_schema_objects.test_user_A
             agency = self.test_schema_objects.test_agency_E
@@ -190,7 +188,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 supervision.expenses.key: [setting_datapoint_enabled],
                 supervision.discharges.key: [setting_datapoint_disabled],
             }
-            # Excel worbook will have an invalid sheet.
+            # Excel workbook will have an invalid sheet.
             file_path = create_excel_file(
                 system=schema.System.SUPERVISION,
                 metric_key_to_subsystems={
@@ -245,7 +243,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 elif definition.system in schema.System.supervision_subsystems():
                     if metric_key_to_json.get(definition.key) is not None:
                         # Funding metric should be aggregated by the supervision subsystems.
-                        self.assertTrue("BUDGET" in definition.key)
+                        self.assertTrue("FUNDING" in definition.key)
                 elif definition.key == supervision.expenses.key:
                     self.assertEqual(
                         metric_key_to_json[supervision.expenses.key]["enabled"], True
