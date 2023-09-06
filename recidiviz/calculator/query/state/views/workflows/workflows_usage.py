@@ -45,7 +45,8 @@ WORKFLOWS_OFFICER_EVENT_NAME_SET = {
 WORKFLOWS_USAGE_QUERY_TEMPLATE = f"""
 WITH workflows_events AS (
     SELECT
-        * EXCEPT (event_date, event_attributes),
+        * EXCEPT (event_date, event_attributes, officer_id),
+        officer_id AS officer_external_id,
         event_date as event_ts,
         DATE(event_date) AS event_date,
         JSON_EXTRACT_SCALAR(event_attributes, '$.opportunity_type') AS opportunity_type,

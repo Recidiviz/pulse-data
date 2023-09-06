@@ -26,8 +26,8 @@ from recidiviz.calculator.query.state.dataset_config import (
     PULSE_DASHBOARD_SEGMENT_DATASET,
     WORKFLOWS_VIEWS_DATASET,
 )
-from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
-    OfficerEvent,
+from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
+    EventType,
 )
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS,
@@ -48,7 +48,7 @@ class WorkflowsOfficerEventQueryConfig:
     table_name: str = attr.ib()
 
     # The general officer event name
-    officer_event_name: OfficerEvent = attr.ib()
+    officer_event_name: EventType = attr.ib()
 
     # The workflows-specific event type
     workflows_event_type: str = attr.ib()
@@ -75,7 +75,7 @@ class WorkflowsOfficerEventQueryConfig:
 WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_profile_viewed",
-        officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
+        officer_event_name=EventType.WORKFLOWS_PAGE,
         workflows_event_type="PROFILE_VIEWED",
         has_person_external_id=True,
         has_opportunity_type=False,
@@ -84,7 +84,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_opportunity_previewed",
-        officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
+        officer_event_name=EventType.WORKFLOWS_PAGE,
         workflows_event_type="OPPORTUNITY_PREVIEWED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -93,7 +93,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_viewed",
-        officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
+        officer_event_name=EventType.WORKFLOWS_PAGE,
         workflows_event_type="FORM_VIEWED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -102,7 +102,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_copied",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="FORM_COPIED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -111,7 +111,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_printed",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="FORM_PRINTED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -120,7 +120,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_first_edited",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="FORM_FIRST_EDITED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -129,7 +129,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_status_updated",
-        officer_event_name=OfficerEvent.WORKFLOWS_CLIENT_STATUS_UPDATE,
+        officer_event_name=EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
         workflows_event_type="CLIENT_REFERRAL_STATUS_UPDATED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -138,7 +138,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_submitted",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="FORM_SUBMITTED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -147,7 +147,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_surfaced",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="CLIENT_SURFACED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -156,7 +156,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="identifies",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="USER_IDENTIFIED",
         has_person_external_id=False,
         has_opportunity_type=False,
@@ -165,7 +165,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="frontend_caseload_search",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="SEARCH_BAR_USED",
         has_person_external_id=False,
         has_opportunity_type=False,
@@ -174,7 +174,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_edited",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="FORM_EDITED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -183,7 +183,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
     ),
     WorkflowsOfficerEventQueryConfig(
         table_name="clients_referral_form_downloaded",
-        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        officer_event_name=EventType.WORKFLOWS_ACTION,
         workflows_event_type="FORM_DOWNLOADED",
         has_person_external_id=True,
         has_opportunity_type=True,
@@ -222,7 +222,7 @@ def workflows_officer_event_template(config: WorkflowsOfficerEventQueryConfig) -
     template = f"""
 SELECT
     state_code,
-    user_external_id AS officer_external_id,
+    user_external_id AS officer_id,
     "{config.officer_event_name.value}" AS event,
     EXTRACT(DATETIME FROM timestamp AT TIME ZONE "US/Eastern") AS event_ts,
     "{config.workflows_event_type}" AS event_type, 
@@ -278,7 +278,7 @@ WITH events AS (
     -- join on person_record and apply this event to all opportunities the person is eligible for
     SELECT
         state_code, 
-        officer_external_id,
+        events.officer_id,
         event,
         event_ts, 
         event_type,
@@ -293,7 +293,7 @@ WITH events AS (
 
 SELECT 
     state_code,
-    officer_external_id,
+    officer_id,
     event,
     event_ts, 
     event_type,
@@ -308,7 +308,7 @@ UNION ALL
 
 SELECT 
     state_code, 
-    officer_external_id,
+    officer_id,
     event,
     event_ts, 
     event_type,
@@ -326,7 +326,7 @@ WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=WORKFLOWS_OFFICER_EVENTS_QUERY_TEMPLATE,
     description=WORKFLOWS_OFFICER_EVENTS_DESCRIPTION,
     should_materialize=True,
-    clustering_fields=["state_code", "officer_external_id"],
+    clustering_fields=["state_code", "officer_id"],
     workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
     workflows_segment_dataset=PULSE_DASHBOARD_SEGMENT_DATASET,
 )
