@@ -35,7 +35,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import in_gcp_production
+from recidiviz.utils.environment import in_gcp_staging
 from recidiviz.utils.types import assert_type, non_optional
 
 _auth0_client = None
@@ -85,17 +85,16 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     fips_county_code=fips_county_code,
                 )
 
-                # Add all CSG accounts as READ_ONLY in production
-                if "test" not in name.lower() and in_gcp_production():
-                    csg_users = UserAccountInterface.get_csg_users(session=session)
-                    for csg_user in csg_users:
-                        AgencyUserAccountAssociationInterface.update_user_role(
-                            role="READ_ONLY",
-                            user=csg_user,
-                            agency=agency,
-                            session=session,
-                        )
-
+                # Add all CSG accounts (READ_ONLY in production, AGENCY_ADMIN in staging)
+                csg_users = UserAccountInterface.get_csg_users(session=session)
+                for csg_user in csg_users:
+                    role = "AGENCY_ADMIN" if in_gcp_staging() else "READ_ONLY"
+                    AgencyUserAccountAssociationInterface.update_user_role(
+                        role=role,
+                        user=csg_user,
+                        agency=agency,
+                        session=session,
+                    )
                 return (
                     jsonify({"agency": agency.to_json()}),
                     HTTPStatus.OK,
