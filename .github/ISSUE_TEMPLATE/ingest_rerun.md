@@ -37,15 +37,10 @@ Q2. Will you need to delete anything from the state tables?
 - [ ] Yes
 - [ ] No
 
-Q3. Will you need to pause the BQ refresh?
-
-- [ ] Yes
-- [ ] No
-
 Steps:
 
 - [ ] 1. Pause the ingest queues
-- [ ] 2. If you answered Yes to Q3, pause the BQ refresh
+- [ ] 2. Pause the BQ refresh
 
 _Staging config lock:_
   
@@ -90,7 +85,7 @@ _Insert all commands you will run to clear out state tables for relevant entitie
 
 - [ ] 7. Unpause the ingest queues and trigger the task scheduler
 - [ ] 8. Wait for the partial rerun to complete
-- [ ] 9. If you answered Yes to Q3, unpause the BQ refresh
+- [ ] 9. Unpause the BQ refresh
 **If you will have to do any non-standard database operations before starting this rerun, please write the plan you intend to do below.**
 
 _Plan here - fill this out before starting the rerun_
