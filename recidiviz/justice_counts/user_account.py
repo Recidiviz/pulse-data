@@ -82,9 +82,11 @@ class UserAccountInterface:
         agencies: List[Agency],
         invitation_status: Optional[UserAccountInvitationStatus] = None,
         role: Optional[UserAccountRole] = None,
+        preserve_role: Optional[bool] = False,
     ) -> None:
         """If there is an existing association between the user and given agency in our DB,
-        then update the invitation status and role. Else, create a new association.
+        then update the invitation status and role (if preserve_role is False).
+        Else, create a new association.
         """
         existing_agency_assocs_by_id = {
             assoc.agency_id: assoc for assoc in user.agency_assocs
@@ -95,7 +97,7 @@ class UserAccountInterface:
             if existing_assoc is not None:
                 if invitation_status is not None:
                     existing_assoc.invitation_status = invitation_status
-                if role is not None:
+                if role is not None and preserve_role is False:
                     existing_assoc.role = role
                 continue
 
