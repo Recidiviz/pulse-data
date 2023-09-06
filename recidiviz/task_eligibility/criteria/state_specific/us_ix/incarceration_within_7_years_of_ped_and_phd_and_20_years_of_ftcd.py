@@ -69,9 +69,10 @@ _CRITERIA_QUERY_3 = """
         SAFE_CAST(JSON_VALUE(reason, '$.next_parole_hearing_date') AS DATE) AS next_parole_hearing_date,
     FROM `{project_id}.{task_eligibility_criteria_us_ix}.parole_hearing_date_within_7_years_materialized`"""
 
-_JSON_CONTENT = """MIN(full_term_completion_date) AS full_term_completion_date,
+_JSON_CONTENT = f"""MIN(full_term_completion_date) AS full_term_completion_date,
                     MIN(parole_eligibility_date) AS parole_eligibility_date,
-                    MIN(next_parole_hearing_date) AS next_parole_hearing_date"""
+                    MIN(next_parole_hearing_date) AS next_parole_hearing_date,
+                   '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
 {ix_combining_several_criteria_into_one_view_builder(

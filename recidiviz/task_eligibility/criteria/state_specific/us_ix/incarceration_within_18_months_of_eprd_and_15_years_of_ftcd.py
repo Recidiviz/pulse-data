@@ -55,8 +55,9 @@ _CRITERIA_QUERY_2 = """
     WHERE state_code = 'US_IX'"""
 
 
-_JSON_CONTENT = """MIN(full_term_completion_date) AS full_term_completion_date,
-                   MIN(min_term_completion_date) AS next_parole_hearing_date"""
+_JSON_CONTENT = f"""MIN(full_term_completion_date) AS full_term_completion_date,
+                   MIN(min_term_completion_date) AS next_parole_hearing_date,
+                   '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
 {ix_combining_several_criteria_into_one_view_builder(

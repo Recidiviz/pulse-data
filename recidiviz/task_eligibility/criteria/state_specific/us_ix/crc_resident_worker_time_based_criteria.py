@@ -57,17 +57,20 @@ For this to be true, the person must have one of the following three conditions:
 _CRITERIA_QUERY_1 = """
     SELECT
         *
-    FROM `{project_id}.{task_eligibility_criteria_us_ix}.incarceration_within_7_years_of_ftcd_or_tpd_materialized`"""
+    FROM `{project_id}.{task_eligibility_criteria_us_ix}.incarceration_within_7_years_of_ftcd_or_tpd_materialized`
+    WHERE meets_criteria"""
 
 _CRITERIA_QUERY_2 = """
     SELECT
         *
-    FROM `{project_id}.{task_eligibility_criteria_us_ix}.incarceration_within_7_years_of_ped_and_phd_and_20_years_of_ftcd_materialized`"""
+    FROM `{project_id}.{task_eligibility_criteria_us_ix}.incarceration_within_7_years_of_ped_and_phd_and_20_years_of_ftcd_materialized`
+    WHERE meets_criteria"""
 
 _CRITERIA_QUERY_3 = """
     SELECT
         *
-    FROM `{project_id}.{task_eligibility_criteria_us_ix}.incarceration_within_3_years_of_tpd_and_life_sentence_materialized`"""
+    FROM `{project_id}.{task_eligibility_criteria_us_ix}.incarceration_within_3_years_of_tpd_and_life_sentence_materialized`
+    WHERE meets_criteria"""
 
 _JSON_CONTENT = """ARRAY_AGG(reason) AS reasons"""
 
