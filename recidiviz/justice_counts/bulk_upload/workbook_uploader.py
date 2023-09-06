@@ -269,9 +269,19 @@ class WorkbookUploader:
         for different_key in unique_key_difference:
             # datapoint that previously did not exist has been added to report
             agency_id = different_key[2]
-            updated_report = agency_id_to_time_range_to_reports[agency_id][
-                (different_key[0], different_key[1])
-            ][0]
+
+            # If a user tried to upload monthly data for a metric that is configured as
+            # annual (or vice versa) and the agency has previously existing reports,
+            # let's not assume that a previously existing report exists with the
+            # correct/new time range. In other words, don't attempt to update report
+            # statuses for reports that do not exist.
+            updated_reports = agency_id_to_time_range_to_reports.get(agency_id, {}).get(
+                ((different_key[0], different_key[1])), []
+            )
+            if len(updated_reports) == 0:
+                continue
+            updated_report = updated_reports[0]
+
             # add report ID to set of updated report IDs to help the FE determine which existing reports have been updated
             if updated_report.id is not None and updated_report.id in set(
                 self.existing_report_ids
@@ -298,9 +308,19 @@ class WorkbookUploader:
             ):
                 # datapoint that previously existed has been updated/changed
                 agency_id = unique_key[2]
-                updated_report = agency_id_to_time_range_to_reports[agency_id][
-                    (unique_key[0], unique_key[1])
-                ][0]
+
+                # If a user tried to upload monthly data for a metric that is configured as
+                # annual (or vice versa) and the agency has previously existing reports,
+                # let's not assume that a previously existing report exists with the
+                # correct/new time range. In other words, don't attempt to update report
+                # statuses for reports that do not exist.
+                updated_reports = agency_id_to_time_range_to_reports.get(
+                    agency_id, {}
+                ).get(((unique_key[0], unique_key[1])), [])
+                if len(updated_reports) == 0:
+                    continue
+                updated_report = updated_reports[0]
+
                 # add report ID to set of updated report IDs to help the FE determine which existing reports have been updated
                 self.updated_reports.add(updated_report)
 
