@@ -56,8 +56,9 @@ _CRITERIA_QUERY_2 = """
         SAFE_CAST(JSON_VALUE(reason, '$.tentative_parole_date') AS DATE) AS tentative_parole_date,
     FROM `{project_id}.{task_eligibility_criteria_us_ix}.tentative_parole_date_within_18_months_materialized`"""
 
-_JSON_CONTENT = """MIN(full_term_completion_date) AS full_term_completion_date,
-                    MIN(tentative_parole_date) AS tentative_parole_date"""
+_JSON_CONTENT = f"""MIN(full_term_completion_date) AS full_term_completion_date,
+                    MIN(tentative_parole_date) AS tentative_parole_date,
+                   '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
 {ix_combining_several_criteria_into_one_view_builder(

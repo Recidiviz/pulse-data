@@ -55,8 +55,9 @@ _CRITERIA_QUERY_2 = """
         False AS life_sentence,
     FROM `{project_id}.{task_eligibility_criteria_us_ix}.tentative_parole_date_within_3_years_materialized`"""
 
-_JSON_CONTENT = """MIN(tentative_parole_date) AS tentative_parole_date,
-                   LOGICAL_OR(life_sentence) AS life_sentence"""
+_JSON_CONTENT = f"""MIN(tentative_parole_date) AS tentative_parole_date,
+                   LOGICAL_OR(life_sentence) AS life_sentence,
+                   '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
 {ix_combining_several_criteria_into_one_view_builder(
