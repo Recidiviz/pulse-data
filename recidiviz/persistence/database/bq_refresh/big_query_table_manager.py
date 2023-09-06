@@ -21,6 +21,8 @@ match that of the schema being deployed before the next CloudSqlToBQ export or d
 pipelines attempt to write these datasets. Does not perform any migrations, only adds
 and deletes columns where necessary.
 """
+from typing import Optional
+
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
@@ -70,17 +72,20 @@ def update_bq_schema_for_sqlalchemy_table(
 
 
 def update_bq_dataset_to_match_sqlalchemy_schema(
-    schema_type: SchemaType, dataset_id: str
+    schema_type: SchemaType,
+    dataset_id: str,
+    default_table_expiration_ms: Optional[int],
+    bq_region_override: Optional[str] = None,
 ) -> None:
     """For each table defined in the schema, ensures that the schema of the
     table the provided BigQuery dataset matches the schema defined in the corresponding
     schema.py.
     """
-    bq_client = BigQueryClientImpl()
+    bq_client = BigQueryClientImpl(region_override=bq_region_override)
     export_config = CloudSqlToBQConfig.for_schema_type(schema_type)
     bq_dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
 
-    bq_client.create_dataset_if_necessary(bq_dataset_ref)
+    bq_client.create_dataset_if_necessary(bq_dataset_ref, default_table_expiration_ms)
 
     for table in export_config.get_tables_to_export():
         update_bq_schema_for_sqlalchemy_table(

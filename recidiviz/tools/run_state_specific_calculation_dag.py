@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-A script to run the calculation DAG in a secondary environment for a specific state. Once the script is run,
-open Airflow in staging (go/airflow-staging) and you can find the sandbox prefix the dag created
-within the initialize_dag task group if you did not provide one as an argument.
+A script to run the calculation DAG for a specific state. If running for the SECONDARY ingest-instance,
+a sandbox-prefix will be generated if none is provided.
 
 Run:
     python -m recidiviz.tools.run_state_specific_calculation_dag \
@@ -40,9 +39,6 @@ from recidiviz.tools.deploy.update_big_query_table_schemas import (
 )
 from recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas import (
     update_dataflow_output_schemas,
-)
-from recidiviz.tools.deploy.update_raw_data_table_schemas import (
-    update_all_raw_data_table_schemas,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -89,11 +85,9 @@ def main(
         sandbox_prefix = f"{state_code.value.lower()}_{ingest_instance.value.lower()}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
         logging.info("Setting sandbox prefix to: %s", sandbox_prefix)
 
-    if ingest_instance == DirectIngestInstance.PRIMARY:
-        update_all_raw_data_table_schemas()
-
-    update_cloud_sql_bq_refresh_output_schemas(sandbox_prefix)
-    update_dataflow_output_schemas(sandbox_prefix)
+    if sandbox_prefix:
+        update_cloud_sql_bq_refresh_output_schemas(sandbox_prefix)
+        update_dataflow_output_schemas(sandbox_prefix)
 
     trigger_calculation_dag_pubsub(ingest_instance, state_code, sandbox_prefix)
 

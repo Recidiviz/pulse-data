@@ -24,6 +24,9 @@ from google.cloud import bigquery
 from mock import patch
 from mock.mock import Mock
 
+from recidiviz.big_query.view_update_manager import (
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -250,12 +253,14 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "us_xx_normalized_state"
-                    )
+                    ),
+                    None,
                 ),
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "us_yy_normalized_state"
-                    )
+                    ),
+                    None,
                 ),
             ],
             any_order=True,
@@ -284,12 +289,14 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "my_prefix_us_xx_normalized_state"
-                    )
+                    ),
+                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "my_prefix_us_yy_normalized_state"
-                    )
+                    ),
+                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
             ],
             any_order=True,
@@ -301,7 +308,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.mock_client.table_exists.return_value = False
 
         dataflow_output_table_manager.update_normalized_table_schemas_in_dataset(
-            "us_xx_normalized_state"
+            "us_xx_normalized_state", default_table_expiration_ms=None
         )
 
         self.mock_client.create_table_with_schema.assert_called()
@@ -313,7 +320,7 @@ class NormalizedStateTableManagerTest(unittest.TestCase):
         self.mock_client.table_exists.return_value = True
 
         dataflow_output_table_manager.update_normalized_table_schemas_in_dataset(
-            "us_xx_normalized_state"
+            "us_xx_normalized_state", default_table_expiration_ms=None
         )
         self.mock_client.update_schema.assert_called()
         self.mock_client.create_table_with_schema.assert_not_called()
@@ -536,22 +543,26 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "us_xx_dataflow_ingest_view_results_primary"
-                    )
+                    ),
+                    None,
                 ),
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "us_xx_dataflow_ingest_view_results_secondary"
-                    )
+                    ),
+                    None,
                 ),
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "us_yy_dataflow_ingest_view_results_primary"
-                    )
+                    ),
+                    None,
                 ),
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id, "us_yy_dataflow_ingest_view_results_secondary"
-                    )
+                    ),
+                    None,
                 ),
             ],
             any_order=True,
@@ -583,25 +594,29 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
                     bigquery.dataset.DatasetReference(
                         self.project_id,
                         "my_prefix_us_xx_dataflow_ingest_view_results_primary",
-                    )
+                    ),
+                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id,
                         "my_prefix_us_xx_dataflow_ingest_view_results_secondary",
-                    )
+                    ),
+                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id,
                         "my_prefix_us_yy_dataflow_ingest_view_results_primary",
-                    )
+                    ),
+                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
                 mock.call(
                     bigquery.dataset.DatasetReference(
                         self.project_id,
                         "my_prefix_us_yy_dataflow_ingest_view_results_secondary",
-                    )
+                    ),
+                    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
                 ),
             ],
             any_order=True,

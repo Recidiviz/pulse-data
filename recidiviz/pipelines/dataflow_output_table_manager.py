@@ -33,6 +33,9 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClientImpl,
 )
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
+from recidiviz.big_query.view_update_manager import (
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
@@ -90,7 +93,8 @@ def update_dataflow_metric_tables_schemas(
     """For each table that stores Dataflow metric output in the
     |dataflow_metrics_dataset_id|, ensures that all attributes on the corresponding
     metric are present in the table in BigQuery. If no |dataflow_metrics_dataset_id| is
-    provided, defaults to the DATAFLOW_METRICS_DATASET."""
+    provided, defaults to the DATAFLOW_METRICS_DATASET. If a |sandbox_dataset_prefix| is
+    provided, a temporary dataset will be created with the prefix."""
     bq_client = BigQueryClientImpl()
 
     if sandbox_dataset_prefix:
@@ -102,7 +106,10 @@ def update_dataflow_metric_tables_schemas(
         dataflow_metrics_dataset_id
     )
 
-    bq_client.create_dataset_if_necessary(dataflow_metrics_dataset_ref)
+    bq_client.create_dataset_if_necessary(
+        dataflow_metrics_dataset_ref,
+        TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS if sandbox_dataset_prefix else None,
+    )
 
     for metric_class, table_id in dataflow_config.DATAFLOW_METRICS_TO_TABLES.items():
         schema_for_metric_class = metric_class.bq_schema_for_metric_table()
@@ -142,6 +149,7 @@ def update_dataflow_metric_tables_schemas(
 
 def update_normalized_table_schemas_in_dataset(
     normalized_state_dataset_id: str,
+    default_table_expiration_ms: Optional[int],
 ) -> List[str]:
     """For each table in the dataset, ensures that all expected attributes on the
     corresponding normalized state entity are present in the table in BigQuery.
@@ -154,7 +162,7 @@ def update_normalized_table_schemas_in_dataset(
     )
 
     bq_client.create_dataset_if_necessary(
-        normalized_state_dataset_ref,
+        normalized_state_dataset_ref, default_table_expiration_ms
     )
 
     normalized_table_ids: List[str] = []
@@ -211,7 +219,8 @@ def update_state_specific_normalized_state_schemas(
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> None:
     """Updates the tables for each state-specific dataset that stores Dataflow
-    normalized state entity output to match expected schemas."""
+    normalized state entity output to match expected schemas. If |sandbox_dataset_prefix|
+    is provided, a temporary dataset will be created with the prefix."""
     for state_code in get_normalization_pipeline_enabled_states():
         normalized_state_dataset_id = normalized_state_dataset_for_state_code(
             state_code
@@ -224,13 +233,20 @@ def update_state_specific_normalized_state_schemas(
                 )
             )
 
-        update_normalized_table_schemas_in_dataset(normalized_state_dataset_id)
+        update_normalized_table_schemas_in_dataset(
+            normalized_state_dataset_id,
+            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+            if sandbox_dataset_prefix
+            else None,
+        )
 
 
 def update_normalized_state_schema(
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> None:
-    """Updates each table in the normalized_state dataset to match expected schemas."""
+    """Updates each table in the normalized_state dataset to match expected schemas. If
+    |sandbox_dataset_prefix| is provided, a temporary dataset will be created with the
+    prefix."""
     bq_client = BigQueryClientImpl()
 
     normalized_state_dataset_id = dataset_config.NORMALIZED_STATE_DATASET
@@ -244,12 +260,16 @@ def update_normalized_state_schema(
         normalized_state_dataset_id
     )
 
-    bq_client.create_dataset_if_necessary(normalized_state_dataset_ref)
+    bq_client.create_dataset_if_necessary(
+        normalized_state_dataset_ref,
+        TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS if sandbox_dataset_prefix else None,
+    )
 
     # Update the tables in the normalized_state dataset for all entities that are
     # normalized, and get a list back of all tables updated
     normalized_table_ids = update_normalized_table_schemas_in_dataset(
-        normalized_state_dataset_id
+        normalized_state_dataset_id,
+        TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS if sandbox_dataset_prefix else None,
     )
 
     export_config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
@@ -273,7 +293,9 @@ def update_supplemental_dataset_schemas(
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> None:
     """For each table in the supplemental data dataset, ensures that all attributes on
-    the corresponding supplemental dataset are present in the table in BigQuery."""
+    the corresponding supplemental dataset are present in the table in BigQuery.
+    If |sandbox_dataset_prefix| is provided, a temporary dataset will be created with
+    the prefix."""
     bq_client = BigQueryClientImpl()
 
     if sandbox_dataset_prefix:
@@ -287,7 +309,10 @@ def update_supplemental_dataset_schemas(
         supplemental_metrics_dataset_id
     )
 
-    bq_client.create_dataset_if_necessary(supplemental_metrics_dataset_ref)
+    bq_client.create_dataset_if_necessary(
+        supplemental_metrics_dataset_ref,
+        TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS if sandbox_dataset_prefix else None,
+    )
     supplemental_data_pipelines = [
         pipeline
         for pipeline in collect_all_pipeline_classes()
@@ -323,6 +348,9 @@ def update_state_specific_ingest_state_schemas(
                 dataset_id=state_dataset_for_state_code(
                     state_code, ingest_instance, sandbox_dataset_prefix
                 ),
+                default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if sandbox_dataset_prefix
+                else None,
             )
 
 
@@ -330,12 +358,15 @@ def update_state_specific_ingest_view_result_schema(
     ingest_view_dataset_id: str,
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
+    default_table_expiration_ms: Optional[int] = None,
 ) -> None:
     """Updates each table in the ingest view dataset to match expected schemas."""
     bq_client = BigQueryClientImpl()
 
     ingest_view_dataset_ref = bq_client.dataset_ref_for_id(ingest_view_dataset_id)
-    bq_client.create_dataset_if_necessary(ingest_view_dataset_ref)
+    bq_client.create_dataset_if_necessary(
+        ingest_view_dataset_ref, default_table_expiration_ms
+    )
 
     controller = DirectIngestControllerFactory.build(
         region_code=state_code.value,
@@ -396,4 +427,7 @@ def update_state_specific_ingest_view_results_schemas(
                 ),
                 state_code,
                 ingest_instance,
+                TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                if sandbox_dataset_prefix
+                else None,
             )
