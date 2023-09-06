@@ -25,11 +25,11 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.person_span_type import (
-    PersonSpanType,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.query_builder_utils import (
     package_json_attributes,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
+    SpanType,
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.str_field_utils import snake_to_title
@@ -44,10 +44,13 @@ class SpanQueryBuilder:
     """
 
     # Type of span
-    span_type: PersonSpanType = attr.ib()
+    span_type: SpanType = attr.ib()
 
     # Description of the span
     description: str = attr.field(validator=attr_validators.is_str)
+
+    # The unit of analysis at which the span was observed
+    unit_of_observation_type: MetricUnitOfAnalysisType = attr.ib()
 
     # Source for generating metric entity: requires either a standalone SQL query string, or a BigQueryAddress
     # if referencing an existing table
@@ -77,12 +80,14 @@ class SpanQueryBuilder:
             return f"`{{project_id}}.{self.sql_source.to_str()}`"
         return f"({self.sql_source})"
 
-    def generate_subquery(self, unit_of_analysis_type: MetricUnitOfAnalysisType) -> str:
-        unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
+    def generate_subquery(self) -> str:
+        unit_of_observation = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
+            self.unit_of_observation_type
+        ]
         return f"""
 /* {self.description} */
 SELECT DISTINCT
-    {unit_of_analysis.get_index_columns_query_string()},
+    {unit_of_observation.get_primary_key_columns_query_string()},
     "{self.span_type.value}" AS span,
     {self.span_start_date_col} AS start_date,
     {self.span_end_date_col} AS end_date,

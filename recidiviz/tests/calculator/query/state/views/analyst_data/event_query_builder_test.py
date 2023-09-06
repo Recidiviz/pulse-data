@@ -20,11 +20,11 @@ import unittest
 from recidiviz.calculator.query.state.views.analyst_data.models.event_query_builder import (
     EventQueryBuilder,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
+    EventType,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.person_event_type import (
-    PersonEventType,
 )
 
 
@@ -33,8 +33,9 @@ class EventQueryBuilderTest(unittest.TestCase):
 
     def test_generate_subquery(self) -> None:
         custom_event = EventQueryBuilder(
-            event_type=PersonEventType.LIBERTY_START,
+            event_type=EventType.LIBERTY_START,
             description="This is a description of a dummy liberty starts metric",
+            unit_of_observation_type=MetricUnitOfAnalysisType.FACILITY,
             sql_source="""SELECT *
 FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized` 
 WHERE compartment_level_1 = "LIBERTY" """,
@@ -44,7 +45,7 @@ WHERE compartment_level_1 = "LIBERTY" """,
         expected_subquery = """
 /* This is a description of a dummy liberty starts metric */
 SELECT DISTINCT
-    state_code, facility, facility_name,
+    state_code, facility,
     "LIBERTY_START" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(
@@ -57,7 +58,5 @@ FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized`
 WHERE compartment_level_1 = "LIBERTY" 
 )
 """
-        actual_subquery = custom_event.generate_subquery(
-            MetricUnitOfAnalysisType.FACILITY
-        )
+        actual_subquery = custom_event.generate_subquery()
         self.assertEqual(expected_subquery, actual_subquery)

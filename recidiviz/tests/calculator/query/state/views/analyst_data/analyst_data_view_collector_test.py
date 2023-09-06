@@ -23,11 +23,11 @@ from recidiviz.calculator.query.state.views.analyst_data.models.analyst_data_vie
 from recidiviz.calculator.query.state.views.analyst_data.models.event_query_builder import (
     EventQueryBuilder,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
+    EventType,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.person_event_type import (
-    PersonEventType,
 )
 
 
@@ -37,8 +37,9 @@ class GenerateUnionedViewBuilderTest(unittest.TestCase):
     def test_generate_unioned_view_builder(self) -> None:
         events = [
             EventQueryBuilder(
-                event_type=PersonEventType.LIBERTY_START,
+                event_type=EventType.LIBERTY_START,
                 description="This is a description of a dummy liberty starts metric",
+                unit_of_observation_type=MetricUnitOfAnalysisType.FACILITY,
                 sql_source="""SELECT *
 FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized` 
 WHERE compartment_level_1 = "LIBERTY" """,
@@ -46,8 +47,9 @@ WHERE compartment_level_1 = "LIBERTY" """,
                 event_date_col="start_date",
             ),
             EventQueryBuilder(
-                event_type=PersonEventType.SUPERVISION_CONTACT,
+                event_type=EventType.SUPERVISION_CONTACT,
                 description="This is a description of a dummy contacts metric",
+                unit_of_observation_type=MetricUnitOfAnalysisType.FACILITY,
                 sql_source="""SELECT *
 FROM `{project_id}.normalized_state.state_supervision_contact` """,
                 attribute_cols=["compartment_level_1"],
@@ -58,7 +60,7 @@ FROM `{project_id}.normalized_state.state_supervision_contact` """,
         expected_query_template = """
 /* This is a description of a dummy liberty starts metric */
 SELECT DISTINCT
-    state_code, facility, facility_name,
+    state_code, facility,
     "LIBERTY_START" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(
@@ -75,7 +77,7 @@ UNION ALL
 
 /* This is a description of a dummy contacts metric */
 SELECT DISTINCT
-    state_code, facility, facility_name,
+    state_code, facility,
     "SUPERVISION_CONTACT" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(
@@ -88,7 +90,7 @@ FROM `{project_id}.normalized_state.state_supervision_contact`
 )
 """
         actual_bigquery_view_builder = generate_unioned_view_builder(
-            unit_of_analysis_type=MetricUnitOfAnalysisType.FACILITY,
+            unit_of_observation_type=MetricUnitOfAnalysisType.FACILITY,
             query_builders=events,
         )
         actual_query_template = actual_bigquery_view_builder.view_query_template

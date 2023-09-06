@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines PersonSpanType enum."""
+"""Defines SpanType enum."""
 
 from enum import Enum
 
 
-class PersonSpanType(Enum):
+class SpanType(Enum):
     """Category of span-shaped data"""
 
     ASSESSMENT_SCORE_SESSION = "ASSESSMENT_SCORE_SESSION"

@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines PersonEventType enum."""
+"""Defines EventType enum."""
 from enum import Enum
 
 
-class PersonEventType(Enum):
+class EventType(Enum):
     """Category of event-shaped data"""
 
     ABSCONSION_BENCH_WARRANT = "ABSCONSION_BENCH_WARRANT"

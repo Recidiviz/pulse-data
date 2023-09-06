@@ -24,8 +24,8 @@ from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.person_span_type import (
-    PersonSpanType,
+from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
+    SpanType,
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -57,11 +57,11 @@ class MetricPopulation:
     # Enum describing the type of population
     population_type: MetricPopulationType
 
-    # Dictionary in which keys are `PersonSpanType` enums, and values are dictionaries
+    # Dictionary in which keys are `SpanType` enums, and values are dictionaries
     # mapping span attributes to filters
-    person_spans_dict: Dict[
-        PersonSpanType, Dict[str, Union[List[str], str]]
-    ] = attr.field(validator=attr_validators.is_dict)
+    person_spans_dict: Dict[SpanType, Dict[str, Union[List[str], str]]] = attr.field(
+        validator=attr_validators.is_dict
+    )
 
     @property
     def population_name_short(self) -> str:
@@ -136,7 +136,7 @@ METRIC_POPULATIONS_BY_TYPE = {
     MetricPopulationType.INCARCERATION: MetricPopulation(
         population_type=MetricPopulationType.INCARCERATION,
         person_spans_dict={
-            PersonSpanType.COMPARTMENT_SESSION: {
+            SpanType.COMPARTMENT_SESSION: {
                 "compartment_level_1": ["INCARCERATION"],
                 "compartment_level_2": [
                     StateSpecializedPurposeForIncarceration.GENERAL.value,
@@ -153,7 +153,7 @@ METRIC_POPULATIONS_BY_TYPE = {
     MetricPopulationType.SUPERVISION: MetricPopulation(
         population_type=MetricPopulationType.SUPERVISION,
         person_spans_dict={
-            PersonSpanType.COMPARTMENT_SESSION: {
+            SpanType.COMPARTMENT_SESSION: {
                 "compartment_level_1": ["SUPERVISION"],
                 "compartment_level_2": [
                     StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT.value,
@@ -168,7 +168,7 @@ METRIC_POPULATIONS_BY_TYPE = {
     MetricPopulationType.JUSTICE_INVOLVED: MetricPopulation(
         population_type=MetricPopulationType.JUSTICE_INVOLVED,
         person_spans_dict={
-            PersonSpanType.COMPARTMENT_SESSION: {
+            SpanType.COMPARTMENT_SESSION: {
                 # every compartment in the union of incarceration and supervision
                 "compartment_level_1": ["INCARCERATION", "SUPERVISION"],
                 "compartment_level_2": [

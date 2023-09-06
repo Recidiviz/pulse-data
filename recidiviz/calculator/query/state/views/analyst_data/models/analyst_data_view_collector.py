@@ -24,18 +24,14 @@ from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASE
 from recidiviz.calculator.query.state.views.analyst_data.models.event_query_builder import (
     EventQueryBuilder,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.events import EVENTS
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.person_events import (
-    PERSON_EVENTS,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.person_spans import (
-    PERSON_SPANS,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
     SpanQueryBuilder,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.spans import SPANS
 
 
 def _get_query_builder_properties_markdown_table(
@@ -55,12 +51,12 @@ def _get_query_builder_properties_markdown_table(
 
 
 def generate_unioned_view_builder(
-    unit_of_analysis_type: MetricUnitOfAnalysisType,
+    unit_of_observation_type: MetricUnitOfAnalysisType,
     query_builders: Union[List[EventQueryBuilder], List[SpanQueryBuilder]],
 ) -> SimpleBigQueryViewBuilder:
     """Unions together a list of span or event query builders into a BigQuery view builder. All
     query builders must produce a query containing the index columns that define the specified
-    `unit_of_analysis_type`."""
+    `unit_of_observation_type`."""
     if not (
         all(isinstance(x, EventQueryBuilder) for x in query_builders)
         or all(isinstance(x, SpanQueryBuilder) for x in query_builders)
@@ -68,23 +64,35 @@ def generate_unioned_view_builder(
         raise ValueError(
             "All query builders in list must be of the same type (either EventQueryBuilder or SpanQueryBuilder)."
         )
+    if not (
+        all(
+            x.unit_of_observation_type == unit_of_observation_type
+            for x in query_builders
+        )
+    ):
+        raise ValueError(
+            f"All query builders in list must have unit of observation type {unit_of_observation_type.name}."
+        )
     query_builder_type_label = query_builders[0].query_builder_label
-    unit_of_analysis_type_label = unit_of_analysis_type.value.lower()
+    unit_of_observation_type_label = unit_of_observation_type.value.lower()
 
-    view_id = f"{unit_of_analysis_type_label}_{query_builder_type_label}s"
-    view_description_header = f"View concatenating {query_builder_type_label} queries at the {unit_of_analysis_type_label} level in a common format."
+    view_id = f"{unit_of_observation_type_label}_{query_builder_type_label}s"
+    view_description_header = f"View concatenating {query_builder_type_label} queries at the \
+{unit_of_observation_type_label} level in a common format."
     view_description = f"""
 {view_description_header}
 
-To change or add attributes to an existing entity, see `{unit_of_analysis_type_label}_{query_builder_type_label}s.py`.
-To create a new `{unit_of_analysis_type_label}_{query_builder_type_label}`, add a new enum for the new {query_builder_type_label} to `{unit_of_analysis_type_label}_{query_builder_type_label}_type.py` and configure in `{unit_of_analysis_type_label}_{query_builder_type_label}s.py`.
+To change or add attributes to an existing entity, see `{unit_of_observation_type_label}_{query_builder_type_label}s.py`.
+To create a new `{unit_of_observation_type_label}_{query_builder_type_label}`, add a new enum for the new \
+{query_builder_type_label} to `{unit_of_observation_type_label}_{query_builder_type_label}_type.py` and configure \
+in `{unit_of_observation_type_label}_{query_builder_type_label}s.py`.
 
 {_get_query_builder_properties_markdown_table(query_builder_type_label.title(), query_builders)}
 
 """
 
     query_template = "\nUNION ALL\n".join(
-        [q.generate_subquery(unit_of_analysis_type) for q in query_builders]
+        [q.generate_subquery() for q in query_builders]
     )
     return SimpleBigQueryViewBuilder(
         dataset_id=ANALYST_VIEWS_DATASET,
@@ -97,15 +105,23 @@ To create a new `{unit_of_analysis_type_label}_{query_builder_type_label}`, add 
     )
 
 
-def get_person_spans_and_events_view_builders() -> List[SimpleBigQueryViewBuilder]:
+def get_spans_and_events_view_builders() -> List[SimpleBigQueryViewBuilder]:
     """Returns all view builders for configured spans and events"""
-    return [
-        generate_unioned_view_builder(
-            unit_of_analysis_type=MetricUnitOfAnalysisType.PERSON_ID,
-            query_builders=PERSON_SPANS,
-        ),
-        generate_unioned_view_builder(
-            unit_of_analysis_type=MetricUnitOfAnalysisType.PERSON_ID,
-            query_builders=PERSON_EVENTS,
-        ),
-    ]
+    view_builders: List[SimpleBigQueryViewBuilder] = []
+    for unit in MetricUnitOfAnalysisType:
+        span_query_builders = [s for s in SPANS if s.unit_of_observation_type == unit]
+        event_query_builders = [e for e in EVENTS if e.unit_of_observation_type == unit]
+        if span_query_builders:
+            view_builders.append(
+                generate_unioned_view_builder(
+                    unit_of_observation_type=unit, query_builders=span_query_builders
+                )
+            )
+        if event_query_builders:
+            view_builders.append(
+                generate_unioned_view_builder(
+                    unit_of_observation_type=unit, query_builders=event_query_builders
+                )
+            )
+
+    return view_builders
