@@ -27,11 +27,11 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
     MetricPopulation,
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.person_span_type import (
-    PersonSpanType,
+from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
+    SpanType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.person_spans import (
-    PERSON_SPANS_BY_TYPE,
+from recidiviz.calculator.query.state.views.analyst_data.models.spans import (
+    SPANS_BY_TYPE,
 )
 
 
@@ -58,10 +58,10 @@ class MetricPopulationsByTypeTest(unittest.TestCase):
         for _, value in METRIC_POPULATIONS_BY_TYPE.items():
             for span_type, attribute_dict in value.person_spans_dict.items():
                 for attribute in attribute_dict:
-                    if attribute not in PERSON_SPANS_BY_TYPE[span_type].attribute_cols:
+                    if attribute not in SPANS_BY_TYPE[span_type].attribute_cols:
                         raise ValueError(
                             f"Span attribute `{attribute}` is not supported by {span_type.value} span. "
-                            f"Supported attributes: {PERSON_SPANS_BY_TYPE[span_type].attribute_cols}"
+                            f"Supported attributes: {SPANS_BY_TYPE[span_type].attribute_cols}"
                         )
 
 
@@ -75,11 +75,11 @@ class MetricPopulationTest(unittest.TestCase):
         my_population = MetricPopulation(
             population_type=MetricPopulationType.CUSTOM,
             person_spans_dict={
-                PersonSpanType.SENTENCE_SPAN: {
+                SpanType.SENTENCE_SPAN: {
                     "any_is_drug_uniform": ["True"],
                     "any_is_crime_against_person": ["False"],
                 },
-                PersonSpanType.CUSTODY_LEVEL_SESSION: {
+                SpanType.CUSTODY_LEVEL_SESSION: {
                     "custody_level": ["MAXIMUM"],
                 },
             },
@@ -125,11 +125,11 @@ span)
         my_population = MetricPopulation(
             population_type=MetricPopulationType.CUSTOM,
             person_spans_dict={
-                PersonSpanType.SENTENCE_SPAN: {
+                SpanType.SENTENCE_SPAN: {
                     "any_is_drug_uniform": 'IN ("True")',
                     "any_is_crime_against_person": 'IN ("False")',
                 },
-                PersonSpanType.CUSTODY_LEVEL_SESSION: {
+                SpanType.CUSTODY_LEVEL_SESSION: {
                     "custody_level": 'IN ("MAXIMUM")',
                 },
             },
@@ -175,8 +175,8 @@ span)
         my_population = MetricPopulation(
             population_type=MetricPopulationType.CUSTOM,
             person_spans_dict={
-                PersonSpanType.SENTENCE_SPAN: {},
-                PersonSpanType.CUSTODY_LEVEL_SESSION: {},
+                SpanType.SENTENCE_SPAN: {},
+                SpanType.CUSTODY_LEVEL_SESSION: {},
             },
         )
         query_string = my_population.get_population_query()

@@ -20,24 +20,25 @@ import unittest
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.person_span_type import (
-    PersonSpanType,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
     SpanQueryBuilder,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
+    SpanType,
 )
 from recidiviz.calculator.query.state.views.sessions.compartment_level_0_super_sessions import (
     COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER,
 )
 
 
-class EventQueryBuilderTest(unittest.TestCase):
+class SpanQueryBuilderTest(unittest.TestCase):
     """Tests method for generating a span query builder subquery"""
 
     def test_generate_subquery(self) -> None:
         custom_span = SpanQueryBuilder(
-            span_type=PersonSpanType.COMPARTMENT_SESSION,
+            span_type=SpanType.COMPARTMENT_SESSION,
             description="This is a description of a dummy session span metric",
+            unit_of_observation_type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
             sql_source=COMPARTMENT_LEVEL_0_SUPER_SESSIONS_VIEW_BUILDER.table_for_query,
             attribute_cols=["dummy_var_1", "dummy_var_2"],
             span_start_date_col="my_start",
@@ -46,7 +47,7 @@ class EventQueryBuilderTest(unittest.TestCase):
         expected_subquery = """
 /* This is a description of a dummy session span metric */
 SELECT DISTINCT
-    state_code, district, district_name,
+    state_code, district,
     "COMPARTMENT_SESSION" AS span,
     my_start AS start_date,
     my_end AS end_date,
@@ -57,7 +58,5 @@ SELECT DISTINCT
 FROM
     `{project_id}.sessions.compartment_level_0_super_sessions_materialized`
 """
-        actual_subquery = custom_span.generate_subquery(
-            MetricUnitOfAnalysisType.SUPERVISION_DISTRICT
-        )
+        actual_subquery = custom_span.generate_subquery()
         self.assertEqual(expected_subquery, actual_subquery)

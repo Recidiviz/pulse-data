@@ -21,12 +21,12 @@ from typing import List, Union
 import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
+    EventType,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
     MetricUnitOfAnalysisType,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.person_event_type import (
-    PersonEventType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.query_builder_utils import (
     package_json_attributes,
@@ -43,11 +43,14 @@ class EventQueryBuilder:
     attributes in a JSON blob.
     """
 
-    # Type of span
-    event_type: PersonEventType = attr.ib()
+    # Type of event
+    event_type: EventType = attr.ib()
 
     # Description of the event
     description: str = attr.field(validator=attr_validators.is_str)
+
+    # The unit of analysis at which the event was observed
+    unit_of_observation_type: MetricUnitOfAnalysisType = attr.ib()
 
     # Source for generating metric entity: requires either a standalone SQL query string, or a BigQueryAddress
     # if referencing an existing table
@@ -76,12 +79,14 @@ class EventQueryBuilder:
 {self.sql_source}
 )"""
 
-    def generate_subquery(self, unit_of_analysis_type: MetricUnitOfAnalysisType) -> str:
-        unit_of_analysis = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[unit_of_analysis_type]
+    def generate_subquery(self) -> str:
+        unit_of_observation = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
+            self.unit_of_observation_type
+        ]
         return f"""
 /* {self.description} */
 SELECT DISTINCT
-    {unit_of_analysis.get_index_columns_query_string()},
+    {unit_of_observation.get_primary_key_columns_query_string()},
     "{self.event_type.value}" AS event,
     {self.event_date_col} AS event_date,
     {package_json_attributes(self.attribute_cols)} AS event_attributes,

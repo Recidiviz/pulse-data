@@ -30,11 +30,11 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     SpanMetricConditionsMixin,
     SumSpanDaysMetric,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.person_events import (
-    PERSON_EVENTS_BY_TYPE,
+from recidiviz.calculator.query.state.views.analyst_data.models.events import (
+    EVENTS_BY_TYPE,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.person_spans import (
-    PERSON_SPANS_BY_TYPE,
+from recidiviz.calculator.query.state.views.analyst_data.models.spans import (
+    SPANS_BY_TYPE,
 )
 
 
@@ -53,10 +53,10 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 for span, attribute in itertools.product(
                     metric.span_types, metric.span_attribute_filters
                 ):
-                    if attribute not in PERSON_SPANS_BY_TYPE[span].attribute_cols:
+                    if attribute not in SPANS_BY_TYPE[span].attribute_cols:
                         raise ValueError(
                             f"Span attribute `{attribute}` is not supported by {span.value} span. "
-                            f"Supported attributes: {PERSON_SPANS_BY_TYPE[span].attribute_cols}"
+                            f"Supported attributes: {SPANS_BY_TYPE[span].attribute_cols}"
                         )
 
     # check that event attribute filters are compatible with source events for all configured event metrics
@@ -68,10 +68,10 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 for event, attribute in itertools.product(
                     metric.event_types, metric.event_attribute_filters
                 ):
-                    if attribute not in PERSON_EVENTS_BY_TYPE[event].attribute_cols:
+                    if attribute not in EVENTS_BY_TYPE[event].attribute_cols:
                         raise ValueError(
                             f"Event attribute `{attribute}` is not supported by {event.value} event. "
-                            f"Supported attributes: {PERSON_EVENTS_BY_TYPE[event].attribute_cols}"
+                            f"Supported attributes: {EVENTS_BY_TYPE[event].attribute_cols}"
                         )
 
     # check that `event_value_numeric` is compatible with event attributes for all configured EventValue metrics
@@ -83,11 +83,11 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 for event in metric.event_types:
                     if (
                         metric.event_value_numeric
-                        not in PERSON_EVENTS_BY_TYPE[event].attribute_cols
+                        not in EVENTS_BY_TYPE[event].attribute_cols
                     ):
                         raise ValueError(
                             f"Configured event_value_numeric `{metric.event_value_numeric}` is not supported by "
-                            f"{event.value} event. Supported attributes: {PERSON_EVENTS_BY_TYPE[event].attribute_cols}"
+                            f"{event.value} event. Supported attributes: {EVENTS_BY_TYPE[event].attribute_cols}"
                         )
 
     # check that `span_value_numeric` is compatible with span attributes for all configured DailyAvgSpanValue
@@ -102,11 +102,11 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                 for span in metric.span_types:
                     if (
                         metric.span_value_numeric
-                        not in PERSON_SPANS_BY_TYPE[span].attribute_cols
+                        not in SPANS_BY_TYPE[span].attribute_cols
                     ):
                         raise ValueError(
                             f"Configured span_value_numeric `{metric.span_value_numeric}` is not supported by "
-                            f"{span.value} span. Supported attributes: {PERSON_SPANS_BY_TYPE[span].attribute_cols}"
+                            f"{span.value} span. Supported attributes: {SPANS_BY_TYPE[span].attribute_cols}"
                         )
 
     # check that `weight_col` is compatible with span attributes for all configured SumSpanDays metrics
@@ -117,10 +117,9 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
             if isinstance(metric, SumSpanDaysMetric):
                 for span in metric.span_types:
                     if metric.weight_col and (
-                        metric.weight_col
-                        not in PERSON_SPANS_BY_TYPE[span].attribute_cols
+                        metric.weight_col not in SPANS_BY_TYPE[span].attribute_cols
                     ):
                         raise ValueError(
                             f"Configured weight_col `{metric.weight_col}` is not supported by {span.value} span. "
-                            f"Supported attributes: {PERSON_SPANS_BY_TYPE[span].attribute_cols}"
+                            f"Supported attributes: {SPANS_BY_TYPE[span].attribute_cols}"
                         )
