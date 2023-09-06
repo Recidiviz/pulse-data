@@ -39,9 +39,6 @@ from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed i
 from recidiviz.calculator.query.state.views.analyst_data.models.analyst_data_view_collector import (
     get_spans_and_events_view_builders,
 )
-from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
-    OFFICER_EVENTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.payments_preprocessed import (
     PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -298,7 +295,6 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_officer_event
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER,
-    OFFICER_EVENTS_VIEW_BUILDER,
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
     PSA_RISK_SCORES_VIEW_BUILDER,

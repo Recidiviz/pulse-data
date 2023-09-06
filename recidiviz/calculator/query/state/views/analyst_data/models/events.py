@@ -986,6 +986,54 @@ WHERE
         ],
         event_date_col="response_date",
     ),
+    EventQueryBuilder(
+        event_type=EventType.WORKFLOWS_ACTION,
+        description="Event where the officer took a specific Workflows action, e.g., FORM_COPIED",
+        unit_of_observation_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        sql_source=f"""
+SELECT * 
+FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
+WHERE event = "{EventType.WORKFLOWS_ACTION.value}" """,
+        attribute_cols=[
+            "event_type",
+            "opportunity_type",
+            "person_external_id",
+            "new_status",
+        ],
+        event_date_col="event_ts",
+    ),
+    EventQueryBuilder(
+        event_type=EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
+        description="Event where the officer updated a person's status on Workflows tool",
+        unit_of_observation_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        sql_source=f"""
+SELECT * 
+FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
+WHERE event = "{EventType.WORKFLOWS_CLIENT_STATUS_UPDATE.value}" """,
+        attribute_cols=[
+            "event_type",
+            "opportunity_type",
+            "person_external_id",
+            "new_status",
+        ],
+        event_date_col="event_ts",
+    ),
+    EventQueryBuilder(
+        event_type=EventType.WORKFLOWS_PAGE,
+        description="Event where the officer viewed a particular Workflows page, e.g., PROFILE_VIEWED",
+        unit_of_observation_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        sql_source=f"""
+SELECT * 
+FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
+WHERE event = "{EventType.WORKFLOWS_PAGE.value}" """,
+        attribute_cols=[
+            "event_type",
+            "opportunity_type",
+            "person_external_id",
+            "new_status",
+        ],
+        event_date_col="event_ts",
+    ),
 ]
 
 EVENTS_BY_TYPE = {e.event_type: e for e in EVENTS}
