@@ -60,7 +60,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         # TODO(#22996) add the rest of the criteria
         # A or B DORs
         no_detainers_for_xcrc.VIEW_BUILDER,
-        # TODO(#22759) need to hydrate sex offense
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
     ],
