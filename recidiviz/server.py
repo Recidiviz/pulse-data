@@ -188,7 +188,7 @@ if environment.in_development() or environment.in_gcp():
 
 @app.route("/health")
 def health() -> Tuple[str, HTTPStatus]:
-    """This just returns 200, and is used by Docker to verify that the flask workers are
+    """This just returns 200, and is used by Docker and GCP uptime checks to verify that the flask workers are
     up and serving requests."""
     return "", HTTPStatus.OK
 

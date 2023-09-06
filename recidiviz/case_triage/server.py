@@ -17,6 +17,8 @@
 """Backend entry point for Case Triage API server."""
 import logging
 import os
+from http import HTTPStatus
+from typing import Tuple
 
 import sentry_sdk
 from flask import Flask, Response, redirect
@@ -159,3 +161,9 @@ if not in_offline_mode():
     @app.route("/")
     def index() -> Response:
         return redirect("https://dashboard.recidiviz.org")  # type: ignore[return-value]
+
+    @app.route("/health")
+    def health() -> Tuple[str, HTTPStatus]:
+        """This just returns 200, and is used by Docker and GCP uptime checks to verify that the flask workers are
+        up and serving requests."""
+        return "", HTTPStatus.OK
