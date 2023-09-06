@@ -99,7 +99,11 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             image_pull_policy="Always",
             # This config is provided by Cloud Composer
             config_file="/home/airflow/composer_kube_config",
-            startup_timeout_seconds=240,
+            # Allow up to 12 minutes for the pod to start. Normally, pods will start within 10 seconds, however,
+            # there may be times when it is not possible for Kubernetes to adequately fulfill a pod's resource
+            # requirements. In this case, a new compute engine VM is started and the pod will not run until the node
+            # fully starts. Anecdotally this happens in about 10 minutes.
+            startup_timeout_seconds=12 * 60,
             env_vars=[
                 k8s.V1EnvVar(name="NAMESPACE", value="composer-user-workloads"),
                 # TODO(census-instrumentation/opencensus-python#796)
@@ -159,6 +163,7 @@ def build_kubernetes_pod_task(
 
     return RecidivizKubernetesPodOperator(
         task_id=task_id,
+        name=task_id,
         cmds=["pipenv"],
         arguments=[
             "run",
