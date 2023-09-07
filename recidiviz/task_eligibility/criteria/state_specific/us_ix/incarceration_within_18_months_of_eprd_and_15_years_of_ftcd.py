@@ -24,7 +24,11 @@ from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_CRITERIA_
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    extract_object_from_json,
+)
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+    IX_STATE_CODE_WHERE_CLAUSE,
     ix_combining_several_criteria_into_one_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -38,21 +42,23 @@ incarcerated within 18 months of their earliest possible release date (EPRD) AND
 of their full term completion date (FTCD).
 """
 
-_CRITERIA_QUERY_1 = """
+_CRITERIA_QUERY_1 = f"""
     SELECT
         * EXCEPT (reason),
-        SAFE_CAST(JSON_VALUE(reason, '$.full_term_completion_date') AS DATE) AS full_term_completion_date,
+        {extract_object_from_json(object_column = 'full_term_completion_date', 
+                    object_type = 'DATE')} AS full_term_completion_date,
         NULL AS min_term_completion_date,
-    FROM `{project_id}.{task_eligibility_criteria_general}.incarceration_within_15_years_of_full_term_completion_date_materialized`
-    WHERE state_code = 'US_IX'"""
+    FROM `{{project_id}}.{{task_eligibility_criteria_general}}.incarceration_within_15_years_of_full_term_completion_date_materialized`
+    {IX_STATE_CODE_WHERE_CLAUSE}"""
 
-_CRITERIA_QUERY_2 = """
+_CRITERIA_QUERY_2 = f"""
     SELECT
         * EXCEPT (reason),
         NULL AS full_term_completion_date,
-        SAFE_CAST(JSON_VALUE(reason, '$.min_term_completion_date') AS DATE) AS min_term_completion_date,
-    FROM `{project_id}.{task_eligibility_criteria_general}.incarceration_within_18_months_of_min_term_completion_date_materialized`
-    WHERE state_code = 'US_IX'"""
+        {extract_object_from_json(object_column = 'min_term_completion_date', 
+                    object_type = 'DATE')} AS min_term_completion_date,
+    FROM `{{project_id}}.{{task_eligibility_criteria_general}}.incarceration_within_18_months_of_min_term_completion_date_materialized`
+    {IX_STATE_CODE_WHERE_CLAUSE}"""
 
 
 _JSON_CONTENT = f"""MIN(full_term_completion_date) AS full_term_completion_date,

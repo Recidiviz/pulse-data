@@ -21,7 +21,10 @@ the facility.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
     current_violent_statutes_being_served,
@@ -34,15 +37,22 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     TASK_ELIGIBILITY_CRITERIA_GENERAL,
+    task_eligibility_criteria_state_specific_dataset,
     task_eligibility_spans_state_specific_dataset,
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+    I9_NOTE_TX_REGEX,
+    I9_NOTES_STR,
     INSTITUTIONAL_BEHAVIOR_NOTES_STR,
+    MEDICAL_CLEARANCE_STR,
+    MEDICAL_CLEARANCE_TX_REGEX,
     NOTE_BODY_REGEX,
     NOTE_TITLE_REGEX,
+    detainer_case_notes,
+    escape_absconsion_or_eluding_police_case_notes,
     ix_fuzzy_matched_case_notes,
     ix_general_case_notes,
     ix_offender_alerts_case_notes,
@@ -89,6 +99,23 @@ WITH current_incarcerated_population AS (
         -- Positive [behavior notes]
     {ix_general_case_notes(where_clause_addition="AND ContactModeDesc = 'Positive'", 
                            criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR)}
+
+        UNION ALL 
+        
+        -- I-9 Documents
+    {ix_general_case_notes(
+        where_clause_addition=f"AND REGEXP_CONTAINS(UPPER(note.Details), r'{I9_NOTE_TX_REGEX}')", 
+        criteria_str=I9_NOTES_STR,
+        in_the_past_x_months=60)}
+
+        UNION ALL 
+        
+        -- Medical clearance
+    {ix_general_case_notes( 
+        where_clause_addition=f"AND REGEXP_CONTAINS(UPPER(note.Details), r'{MEDICAL_CLEARANCE_TX_REGEX}')",
+        criteria_str=MEDICAL_CLEARANCE_STR,
+        in_the_past_x_months=6)}
+
         UNION ALL
 
         -- Violent charges being served
@@ -97,6 +124,14 @@ WITH current_incarcerated_population AS (
         UNION ALL
         -- NCIC/ILETS
     {ix_fuzzy_matched_case_notes(where_clause = "WHERE ncic_ilets_nco_check")}
+
+        UNION ALL
+        -- Recent escape, absconsion or eluding police
+    {escape_absconsion_or_eluding_police_case_notes()}
+
+        UNION ALL
+        -- Detainers
+    {detainer_case_notes()}
     ),
 
     array_case_notes_cte AS (
@@ -116,12 +151,16 @@ US_IX_TRANSFER_TO_CRC_WORK_RELEASE_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryV
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_IX
     ),
+    task_eligibility_criteria_us_ix_dataset=task_eligibility_criteria_state_specific_dataset(
+        StateCode.US_IX
+    ),
     supplemental_dataset=SUPPLEMENTAL_DATA_DATASET,
     note_title_regex=NOTE_TITLE_REGEX,
     note_body_regex=NOTE_BODY_REGEX,
     us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),
+    analyst_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=True,
 )
 

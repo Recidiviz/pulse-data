@@ -37,8 +37,6 @@ Defines a criteria span view that shows spans of time during which
 someone in ID is in a Community Reentry Center facility
 """
 
-# TODO(#22998) Add PWCC' Unit 1 here once we know where to look
-
 _ADDITIONAL_COLUMNS = """TRUE AS meets_criteria,
     TO_JSON(STRUCT(start_date AS crc_start_date, facility_name AS facility_name)) AS reason,"""
 

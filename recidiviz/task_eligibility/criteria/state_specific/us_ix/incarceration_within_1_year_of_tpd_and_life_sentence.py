@@ -26,7 +26,11 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    extract_object_from_json,
+)
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+    IX_STATE_CODE_WHERE_CLAUSE,
     ix_combining_several_criteria_into_one_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -39,21 +43,22 @@ Defines a criteria span view that shows spans of time during which someone is
 1 year away from the tentative parole date (TPD) AND has a life sentence.
 """
 
-_CRITERIA_QUERY_1 = """
+_CRITERIA_QUERY_1 = f"""
     SELECT
         * EXCEPT (reason, meets_criteria),
         NOT meets_criteria AS meets_criteria,
         NULL AS tentative_parole_date,
         NOT meets_criteria AS life_sentence,
-    FROM `{project_id}.{task_eligibility_criteria_general}.not_serving_a_life_sentence_materialized`
-    WHERE state_code = 'US_IX'"""
+    FROM `{{project_id}}.{{task_eligibility_criteria_general}}.not_serving_a_life_sentence_materialized`
+    {IX_STATE_CODE_WHERE_CLAUSE}"""
 
-_CRITERIA_QUERY_2 = """
+_CRITERIA_QUERY_2 = f"""
     SELECT
         * EXCEPT (reason),
-        SAFE_CAST(JSON_VALUE(reason, '$.tentative_parole_date') AS DATE) AS tentative_parole_date,
+        {extract_object_from_json(object_column = 'tentative_parole_date', 
+                                  object_type = 'DATE')} AS tentative_parole_date,
         False AS life_sentence,
-    FROM `{project_id}.{task_eligibility_criteria_us_ix}.tentative_parole_date_within_1_year_materialized`"""
+    FROM `{{project_id}}.{{task_eligibility_criteria_us_ix}}.tentative_parole_date_within_1_year_materialized`"""
 
 
 _JSON_CONTENT = f"""MIN(tentative_parole_date) AS tentative_parole_date,

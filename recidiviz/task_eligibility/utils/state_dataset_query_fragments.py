@@ -252,3 +252,23 @@ SELECT
                  MAX(effective_date) AS most_recent_statute_date)) AS reason,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5"""
+
+
+def extract_object_from_json(
+    object_column: str, object_type: str, json_column: str = "reason"
+) -> str:
+    """
+    Extracts an object from a JSON column. E.g. this is useful for extracting dates from
+    the reason column of a task eligibility view.
+
+    Args:
+        object_column (str): The name of the column in the BigQuery table to extract.
+        object_type (str): The type of the object we want as output. E.g. 'STRING', 'DATE'.
+        json_column (str): The name of the JSON column to extract from. Defaults to
+            "reason".
+
+    Returns:
+        str: A formatted BigQuery SQL query that extracts an object from a JSON column.
+    """
+
+    return f"""SAFE_CAST(JSON_VALUE({json_column}, '$.{object_column}') AS {object_type})"""

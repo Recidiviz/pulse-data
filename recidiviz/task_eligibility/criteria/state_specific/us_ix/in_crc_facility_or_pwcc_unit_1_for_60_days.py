@@ -16,9 +16,11 @@
 # =============================================================================
 """
 Defines a criteria span view that shows spans of time during which
-someone in ID is in a Community Reentry Center facility
+someone in ID  has been in a Community Reentry Center facility or
+PWCC Unit 1 for 60 days.
 """
 
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_criteria_state_specific_dataset,
@@ -32,22 +34,33 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_IX_IN_CRC_FACILITY_FOR_60_DAYS"
+_CRITERIA_NAME = "US_IX_IN_CRC_FACILITY_OR_PWCC_UNIT_1_FOR_60_DAYS"
 
 _DESCRIPTION = """
 Defines a criteria span view that shows spans of time during which
-someone in ID  has been in a Community Reentry Center facility for 60 days
+someone in ID  has been in a Community Reentry Center facility or
+PWCC Unit 1 for 60 days.
 """
 
 _QUERY_TEMPLATE = f"""
-WITH critical_date_spans AS (
+WITH in_crc AS (
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+    FROM `{{project_id}}.{{task_eligibility_criteria_us_ix_dataset}}.in_crc_facility_or_pwcc_unit_1_materialized`
+),
+
+critical_date_spans AS (
     SELECT 
         *,
         start_date AS start_datetime,
         end_date AS end_datetime,
         DATE_ADD(start_date, INTERVAL 60 DAY) AS critical_date
-    FROM `{{project_id}}.{{task_eligibility_criteria_us_ix_dataset}}.in_crc_facility_materialized`
+    FROM ({aggregate_adjacent_spans('in_crc')})
 ),
+
 {critical_date_has_passed_spans_cte()}
 
 SELECT
