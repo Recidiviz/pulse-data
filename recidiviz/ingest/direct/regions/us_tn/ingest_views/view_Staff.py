@@ -33,8 +33,10 @@ WITH
     SELECT 
         REGEXP_REPLACE(StaffID, r'[^A-Z0-9]', '') as StaffID, 
         LastName,
-        FirstName
+        FirstName,
+        OutlookEmail
     FROM most_recent_staff_information
+    LEFT JOIN {StaffEmailByAlias} USING (StaffID)
     WHERE StaffID IS NOT NULL AND RecencyRank = 1
 """
 
