@@ -299,6 +299,14 @@ export const getAllIngestInstanceStatuses = async (): Promise<Response> => {
   return getResource("/api/ingest_operations/all_ingest_instance_statuses");
 };
 
+// Get all ingest instance statuses
+export const getAllIngestInstanceDataflowEnabledStatuses =
+  async (): Promise<Response> => {
+    return getResource(
+      "/api/ingest_operations/all_ingest_instance_dataflow_enabled_status"
+    );
+  };
+
 export const getRecentIngestInstanceStatusHistory = async (
   stateCode: string
 ): Promise<Response> => {

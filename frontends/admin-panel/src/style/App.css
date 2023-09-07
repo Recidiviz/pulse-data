@@ -194,6 +194,20 @@ tr.metadata-table-row > td.ant-table-cell > div {
   text-align: center;
 }
 
+.dataflow-enabled {
+  color: #ffffff;
+  background-color: #389e0d;
+  width: 150px;
+  text-align: center;
+}
+
+.dataflow-disabled {
+  color: #ffffff;
+  background-color: #f5222d;
+  width: 150px;
+  text-align: center;
+}
+
 .ingest-caution {
   color: #000000;
   background-color: #ffff00;

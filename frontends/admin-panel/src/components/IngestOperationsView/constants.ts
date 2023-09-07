@@ -84,6 +84,13 @@ export type IngestInstanceStatusResponse = {
   };
 };
 
+export type IngestInstanceDataflowEnabledStatusResponse = {
+  [stateCode: string]: {
+    primary: boolean;
+    secondary: boolean;
+  };
+};
+
 export enum DirectIngestInstance {
   PRIMARY = "PRIMARY",
   SECONDARY = "SECONDARY",
@@ -141,6 +148,8 @@ export type IngestInstanceStatusTableInfo = {
   primary: string;
   secondary: string;
   queueInfo: string | undefined;
+  dataflowEnabledPrimary: boolean | undefined;
+  dataflowEnabledSecondary: boolean | undefined;
   timestampPrimary: string;
   timestampSecondary: string;
 };

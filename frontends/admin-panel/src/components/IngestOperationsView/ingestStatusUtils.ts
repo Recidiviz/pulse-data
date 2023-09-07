@@ -176,6 +176,15 @@ export const getQueueStatusSortedOrder = (
   return queueStatusColorDict[queueInfo].sortRank;
 };
 
+export const getDataflowEnabledSortedOrder = (
+  dataflowEnabled: boolean | undefined
+): number => {
+  if (!dataflowEnabled) {
+    return 0;
+  }
+  return dataflowEnabled ? 1 : 0;
+};
+
 export function getGCPBucketURL(
   fileDirectoryPath: string,
   fileTag: string
