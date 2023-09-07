@@ -250,9 +250,10 @@ def us_tn_classification_forms(
     latest_classification AS (
         SELECT person_id,
               external_id,
-              DATE(ClassificationDecisionDate) AS form_information_latest_classification_decision_date,
+              DATE(ClassificationDate) AS form_information_latest_classification_date,
               OverrideReason AS form_information_latest_override_reason,
-              RecommendedCustody AS recommended_custody_level
+              RecommendedCustody AS recommended_custody_level,
+              DATE_ADD(DATE(ClassificationDate), INTERVAL 12 MONTH) AS form_reclassification_due_date,
         FROM
             `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Classification_latest` c
         INNER JOIN 
@@ -440,12 +441,54 @@ def us_tn_classification_forms(
         WHERE
             MainServiceType = 'LVCA'
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY DATE(HealthServiceDateTime) DESC) = 1
+    ),
+    vantage AS (
+        SELECT  
+            a.OffenderID, 
+            a.RiskLevel,
+            DATE(a.CompletedDate) AS CompletedDate,
+            ROW_NUMBER() OVER(PARTITION BY a.OffenderID ORDER BY DATE(a.CompletedDate) DESC) AS latest_row,
+            r.Pathway,
+            p.PathwayName,
+            r.Recommendation,
+            r.TreatmentGoal,
+            DATE(r.RecommendationDate) AS RecommendationDate,
+            DATE(r.RecommendedEndDate) AS RecommendedEndDate,
+            pr.VantagePointTitle
+        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointAssessments_latest` a
+        LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointRecommendations_latest` r
+          ON a.OffenderID = r.OffenderID
+          AND a.AssessmentID = r.AssessmentID
+          AND CURRENT_DATE BETWEEN DATE(RecommendationDate) AND COALESCE(DATE(RecommendedEndDate), '9999-01-01')
+        LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointPathways_latest` p
+          USING(Recommendation, Pathway)
+        LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.VantagePointProgram_latest` pr
+          ON pr.VantageProgramID = r.VantagePointProgamID
+    ),
+    active_vantage_recommendations AS (
+        SELECT
+            OffenderID,
+            ARRAY_AGG(
+                STRUCT(
+                    Recommendation,
+                    Pathway,
+                    PathwayName,
+                    TreatmentGoal,
+                    VantagePointTitle
+                )
+            ) AS active_recommendations,
+        FROM vantage
+        WHERE Recommendation IS NOT NULL
+        GROUP BY 1
+    
     )
+    -- TODO(#23800): Add additional fields
     SELECT tes.state_code,
            tes.reasons,
            pei.external_id,
            level_care.form_information_level_of_care,
-           latest_classification.form_information_latest_classification_decision_date,
+           latest_classification.form_information_latest_classification_date,
+           latest_classification.form_reclassification_due_date,
            latest_classification.form_information_latest_override_reason,
            latest_CAF.form_information_last_CAF_date,
            latest_CAF.form_information_last_CAF_total,
@@ -454,7 +497,18 @@ def us_tn_classification_forms(
            q6_score_info.form_information_q6_notes,
            most_serious_disciplinaries.form_information_q7_notes,
            detainers_cte.form_information_q8_notes,
-           recommended_scores.* EXCEPT(person_id)
+           recommended_scores.* EXCEPT(person_id),
+           stg.STGID AS form_information_gang_affiliation_id,
+           CAST(CAST(sent.SentenceEffectiveDate AS datetime) AS DATE) AS form_information_sentence_effective_date,
+           CAST(CAST(sent.ExpirationDate AS datetime) AS DATE) AS form_information_sentence_expiration_date,
+           CAST(CAST(sent.FullExpirationDate AS datetime) AS DATE) AS form_information_sentence_full_expiration_date,
+           CAST(CAST(sent.ReleaseEligibilityDate AS datetime) AS DATE) AS form_information_sentence_release_eligibility_date,
+           CAST(CAST(sent.SafetyValveDate AS datetime) AS DATE) AS form_information_sentence_safety_valve_date,
+           CASE WHEN seg.OffenderID IS NOT NULL THEN 'SEG' ELSE 'GEN' END AS form_information_status_at_hearing_seg,
+           CASE WHEN tes.task_name = 'ANNUAL_RECLASSIFICATION_REVIEW' THEN 'ANNUAL' ELSE 'SPECIAL' END AS form_information_classification_type,
+           latest_vantage.RiskLevel AS form_information_latest_vantage_risk_level,
+           latest_vantage.CompletedDate AS form_information_latest_vantage_completed_date,
+           active_vantage_recommendations.active_recommendations AS form_information_active_recommendations,
     FROM
         `{{project_id}}.{{task_eligibility_dataset}}.{tes_view}_materialized` tes
     INNER JOIN
@@ -490,5 +544,21 @@ def us_tn_classification_forms(
     LEFT JOIN
         level_care
     USING(person_id)
+    LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.STGOffender_latest` stg
+        ON pei.external_id = stg.OffenderID
+    LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.OffenderSentenceSummary_latest` sent
+        ON pei.external_id = sent.OffenderID
+    LEFT JOIN (
+        SELECT *
+        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Segregation_latest`
+        WHERE ActualEndDateTime IS NULL
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY DATE(StartDateTime) DESC) = 1     
+    ) seg
+        ON pei.external_id = seg.OffenderID
+    LEFT JOIN vantage latest_vantage
+        ON pei.external_id = latest_vantage.OffenderID
+        AND latest_vantage.latest_row = 1
+    LEFT JOIN active_vantage_recommendations
+        ON pei.external_id = active_vantage_recommendations.OffenderID
     {where_clause}
     """
