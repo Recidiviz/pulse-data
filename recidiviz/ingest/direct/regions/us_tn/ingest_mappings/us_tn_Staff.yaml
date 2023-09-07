@@ -4,7 +4,7 @@ input_columns:
   - StaffID
   - LastName
   - FirstName
-# TODO(#21399): Ingest email addresses for State staff members when needed
+  - OutlookEmail
 unused_columns: []
 output:
   StateStaff:
@@ -16,3 +16,4 @@ output:
       $person_name:
         $given_names: FirstName
         $surname: LastName
+    email: OutlookEmail
