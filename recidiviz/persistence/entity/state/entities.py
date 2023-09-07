@@ -1274,6 +1274,9 @@ class StateSupervisionViolation(HasExternalIdEntity, BuildableAttr, DefaultableA
     is_sex_offense: Optional[bool] = attr.ib(
         default=None, validator=attr_validators.is_opt_bool
     )
+    violation_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     #   - Who
     # See |person| in entity relationships below.
@@ -1370,6 +1373,10 @@ class StateSupervisionViolationResponse(
     #   - What
     is_draft: Optional[bool] = attr.ib(
         default=None, validator=attr_validators.is_opt_bool
+    )
+
+    violation_response_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
 
     #   - Who
