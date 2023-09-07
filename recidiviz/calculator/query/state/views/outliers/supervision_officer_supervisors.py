@@ -35,11 +35,6 @@ WITH
 supervision_officer_supervisors AS (
     {staff_query_template(role="SUPERVISION_OFFICER_SUPERVISOR")}
 ),
-us_ix_additional_supervisors AS (
-    -- Include additional staff who do not have role_subtype=SUPERVISION_OFFICER_SUPERVISOR but directly supervise officers
-    SELECT *
-    FROM `{{project_id}}.{{reference_views_dataset}}.us_ix_leadership_supervisors_materialized`
-),
 us_pa_additional_supervisors AS (
     SELECT *
     FROM `{{project_id}}.{{reference_views_dataset}}.us_pa_officer_supervisors_materialized`
@@ -54,12 +49,6 @@ SELECT
     supervisor_external_id,
     supervision_district
 FROM supervision_officer_supervisors
-
-UNION ALL
-
-SELECT
-    {{columns}}
-FROM us_ix_additional_supervisors
 
 UNION ALL 
 
