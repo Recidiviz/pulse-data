@@ -29,6 +29,9 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    extract_object_from_json,
+)
 
 IX_CRC_FACILITIES = [
     "Nampa Community Reentry Center",
@@ -40,6 +43,8 @@ IX_CRC_FACILITIES = [
 
 DETAINER_TYPE_LST = ["59"]
 HOLD_TYPE_LST = ["84", "112", "85", "61", "87", "86", "62", "88", "67", "83", "113"]
+
+IX_STATE_CODE_WHERE_CLAUSE = "WHERE state_code = 'US_IX'"
 
 
 def date_within_time_span(
@@ -186,6 +191,14 @@ def ix_offender_alerts_case_notes(
 
 
 INSTITUTIONAL_BEHAVIOR_NOTES_STR = "Institutional Behavior Notes (in the past 6 months)"
+I9_NOTES_STR = "I-9 Documents Notes"
+WORK_HISTORY_STR = "Work History (in the past 5 years)"
+MEDICAL_CLEARANCE_STR = "Medical Clearance (in the past 6 months)"
+
+I9_NOTE_TX_REGEX = "|".join(
+    ["I9", "I-9", "I- 9", "I - 9", "I -9", "I - 9", "I- 9", "I -9"]
+)
+MEDICAL_CLEARANCE_TX_REGEX = "|".join(["MEDICALLY CLEAR", "MEDICAL CLEAR"])
 
 
 def ix_general_case_notes(
@@ -303,3 +316,95 @@ GROUP BY 1,2,3,4
     """
 
     return query
+
+
+def escape_absconsion_or_eluding_police_case_notes(
+    criteria_column_str: str = "Escape, Absconsion or Eluding Police history (in the past 10 years",
+) -> str:
+    """
+    Returns a SQL query that returns case notes for escape, absconsion or eluding police in Idaho.
+
+    Args:
+        criteria_column_str (str): Criteria to use for the criteria column. Defaults to
+        'Escape, Absconsion or Eluding Police history (in the past 10 years').
+
+    Returns:
+        str: SQL query as a string.
+    """
+
+    return f"""
+    SELECT
+        pei.external_id,
+        '{criteria_column_str}' AS criteria,
+        description AS note_title,
+        statute AS note_body,
+        {extract_object_from_json(object_column = 'most_recent_statute_date', 
+                                object_type='DATE')} AS event_date,
+    FROM `{{project_id}}.{{task_eligibility_criteria_us_ix_dataset}}.no_escape_offense_within_10_years_materialized` ne,
+    UNNEST(JSON_VALUE_ARRAY(reason.ineligible_offenses)) AS statute,
+    UNNEST(JSON_VALUE_ARRAY(reason.ineligible_offenses_descriptions)) AS description
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON ne.person_id = pei.person_id
+         AND ne.state_code = pei.state_code
+         AND pei.id_type = 'US_IX_IDOC'
+    WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
+        AND meets_criteria IS FALSE
+    GROUP BY 1,2,3,4,5
+
+    UNION ALL 
+
+    SELECT 
+        pei.external_id,
+        '{criteria_column_str}' AS criteria,
+        '' AS note_title,
+        'ABSCONSION' AS note_body,
+        {extract_object_from_json(object_column = 'most_recent_absconded_date', 
+                                object_type='DATE')} AS event_date,
+    FROM `{{project_id}}.{{task_eligibility_criteria_dataset}}.no_absconsion_within_10_years_materialized` na
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON na.person_id = pei.person_id
+         AND na.state_code = pei.state_code
+         AND pei.id_type = 'US_ID_IDOC'
+    WHERE pei.state_code = 'US_IX'
+        AND CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
+            AND meets_criteria IS FALSE
+
+    UNION ALL
+
+    SELECT
+        pei.external_id,
+        '{criteria_column_str}' AS criteria,
+        description AS note_title,
+        statute AS note_body,
+        {extract_object_from_json(object_column = 'most_recent_statute_date', 
+                                object_type='DATE')} AS event_date,
+    FROM `{{project_id}}.{{task_eligibility_criteria_us_ix_dataset}}.no_eluding_police_offense_within_10_years_materialized` ne,
+    UNNEST(JSON_VALUE_ARRAY(reason.ineligible_offenses)) AS statute,
+    UNNEST(JSON_VALUE_ARRAY(reason.ineligible_offenses_descriptions)) AS description
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON ne.person_id = pei.person_id
+            AND ne.state_code = pei.state_code
+            AND pei.id_type = 'US_IX_IDOC'
+    WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
+        AND meets_criteria IS FALSE
+    GROUP BY 1,2,3,4,5
+"""
+
+
+def detainer_case_notes(criteria_column: str = "Detainers") -> str:
+    """
+    Returns a SQL query that returns case notes for detainers in Idaho.
+    """
+
+    return f"""SELECT
+        pei.external_id,
+        '{criteria_column}' AS criteria,
+        CONCAT(DetainerTypeDesc, ' - ', DetainerStatusDesc) AS note_title,
+        Comments AS note_body,
+        start_date AS event_date,
+    FROM `{{project_id}}.{{analyst_dataset}}.us_ix_detainer_spans_materialized` det
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON det.person_id = pei.person_id
+            AND det.state_code = pei.state_code
+            AND pei.id_type = 'US_IX_IDOC'
+"""

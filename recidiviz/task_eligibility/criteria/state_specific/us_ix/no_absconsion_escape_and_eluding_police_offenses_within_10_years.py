@@ -27,7 +27,11 @@ from recidiviz.task_eligibility.dataset_config import (
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    extract_object_from_json,
+)
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+    IX_STATE_CODE_WHERE_CLAUSE,
     ix_combining_several_criteria_into_one_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -43,32 +47,35 @@ someone has not been involved with absconsion, escape, or eluding police
 in the previous 10 years.
 """
 
-_CRITERIA_QUERY_1 = """
+_CRITERIA_QUERY_1 = f"""
     SELECT 
         * EXCEPT (reason),
-        SAFE_CAST(JSON_VALUE(reason, '$.most_recent_absconded_date') AS DATE) AS most_recent_absconded_date,
+        {extract_object_from_json(object_column = 'most_recent_absconded_date', 
+                                  object_type = 'DATE')} AS most_recent_absconded_date,
         NULL AS most_recent_escape_date,
         NULL AS most_recent_eluding_police_date,
-    FROM `{project_id}.{task_eligibility_criteria_general}.no_absconsion_within_10_years_materialized`
-    WHERE state_code = 'US_IX'
+    FROM `{{project_id}}.{{task_eligibility_criteria_general}}.no_absconsion_within_10_years_materialized`
+    {IX_STATE_CODE_WHERE_CLAUSE}
 """
 
-_CRITERIA_QUERY_2 = """
+_CRITERIA_QUERY_2 = f"""
     SELECT 
         * EXCEPT (reason),
         NULL AS most_recent_absconded_date,
         NULL AS most_recent_escape_date,
-        SAFE_CAST(JSON_VALUE(reason, '$.most_recent_statute_date') AS DATE) AS most_recent_eluding_police_date,
-    FROM `{project_id}.{task_eligibility_criteria_us_ix}.no_eluding_police_offense_within_10_years_materialized`
+        {extract_object_from_json(object_column = 'most_recent_statute_date', 
+                                  object_type = 'DATE')} AS most_recent_eluding_police_date,
+    FROM `{{project_id}}.{{task_eligibility_criteria_us_ix}}.no_eluding_police_offense_within_10_years_materialized`
 """
 
-_CRITERIA_QUERY_3 = """
+_CRITERIA_QUERY_3 = f"""
     SELECT 
         * EXCEPT (reason),
         NULL AS most_recent_absconded_date,
-        SAFE_CAST(JSON_VALUE(reason, '$.most_recent_statute_date') AS DATE) AS most_recent_escape_date,
+        {extract_object_from_json(object_column = 'most_recent_statute_date', 
+                                  object_type = 'DATE')} AS most_recent_escape_date,
         NULL AS most_recent_eluding_police_date,
-    FROM `{project_id}.{task_eligibility_criteria_us_ix}.no_escape_offense_within_10_years_materialized`
+    FROM `{{project_id}}.{{task_eligibility_criteria_us_ix}}.no_escape_offense_within_10_years_materialized`
 """
 
 _JSON_CONTENT = """MAX(most_recent_escape_date) AS most_recent_escape_date,

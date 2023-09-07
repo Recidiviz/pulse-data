@@ -156,8 +156,8 @@ def current_violent_statutes_being_served(state_code: str) -> str:
         SELECT 
             pei.external_id,
             'Violent offenses currently serving' AS criteria,
-            description AS note_title,
-            statute AS note_body,
+            statute AS note_title,
+            description AS note_body,
             vo.start_date AS event_date,
         FROM `{{project_id}}.{{task_eligibility_criteria_dataset}}.not_serving_for_violent_offense_materialized` vo,
         UNNEST(JSON_VALUE_ARRAY(reason.ineligible_offenses)) AS statute

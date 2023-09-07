@@ -30,11 +30,11 @@ from recidiviz.task_eligibility.criteria.general import (
     not_serving_for_sexual_offense,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    in_crc_facility,
-    in_crc_facility_for_60_days,
+    in_crc_facility_or_pwcc_unit_1,
+    in_crc_facility_or_pwcc_unit_1_for_60_days,
     incarceration_within_6_months_of_ftcd_or_ped_or_tpd,
     no_absconsion_escape_and_eluding_police_offenses_within_10_years,
-    no_detainers_for_xcrc,
+    no_detainers_for_xcrc_and_crc,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -53,13 +53,13 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        in_crc_facility.VIEW_BUILDER,
-        in_crc_facility_for_60_days.VIEW_BUILDER,
+        in_crc_facility_or_pwcc_unit_1.VIEW_BUILDER,
+        in_crc_facility_or_pwcc_unit_1_for_60_days.VIEW_BUILDER,
         incarceration_within_6_months_of_ftcd_or_ped_or_tpd.VIEW_BUILDER,
         custody_level_is_minimum.VIEW_BUILDER,
         # TODO(#22996) add the rest of the criteria
         # A or B DORs
-        no_detainers_for_xcrc.VIEW_BUILDER,
+        no_detainers_for_xcrc_and_crc.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
     ],

@@ -35,7 +35,6 @@ Defines a criteria span view that shows spans of time during which
 someone in ID is NOT in a Community Reentry Center facility
 """
 
-# TODO(#22998) Add PWCC' Unit 1 here once we know where to look
 _QUERY_TEMPLATE = """SELECT
     state_code,
     person_id,
