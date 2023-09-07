@@ -160,7 +160,7 @@ def at_least_X_time_since_latest_assessment(
             assessment is due 
             */
             classification_decision_date AS start_date,
-            DATE_TRUNC(DATE_ADD(assessment_date, INTERVAL {date_interval} {date_part}), MONTH) AS end_date,
+            DATE_SUB(DATE_TRUNC(DATE_ADD(assessment_date, INTERVAL {date_interval} {date_part}), MONTH), INTERVAL 1 WEEK) AS end_date,
             FALSE AS meets_criteria,
             assessment_date,
         FROM
