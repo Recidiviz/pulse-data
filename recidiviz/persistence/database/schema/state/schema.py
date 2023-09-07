@@ -2214,6 +2214,12 @@ class StateSupervisionViolation(StateBase, _ReferencesStatePersonSharedColumns):
     is_sex_offense = Column(
         Boolean, comment="Whether or not the violation involved a sex offense."
     )
+    violation_metadata = Column(
+        Text,
+        comment="Arbitrary JSON-formatted metadata relevant to a fine"
+        " understanding of a particular violation. It can be provided in any "
+        "format, but will be transformed into JSON prior to persistence.",
+    )
 
     supervision_violation_types = relationship(
         "StateSupervisionViolationTypeEntry",
@@ -2360,6 +2366,12 @@ class StateSupervisionViolationResponse(StateBase, _ReferencesStatePersonSharedC
         Boolean,
         comment="Whether or not this is response is still a draft, i.e. is not yet "
         "finalized by the deciding body.",
+    )
+    violation_response_metadata = Column(
+        Text,
+        comment="Arbitrary JSON-formatted metadata relevant to a fine"
+        " understanding of a particular violation response. It can be provided in any "
+        "format, but will be transformed into JSON prior to persistence.",
     )
 
     @declared_attr
