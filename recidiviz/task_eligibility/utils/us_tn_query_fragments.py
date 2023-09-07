@@ -192,6 +192,8 @@ def at_least_X_time_since_latest_assessment(
             )
         WHERE
             assessment_type = "{assessment_type}"
+            -- Removes a small number of spans where ClassificationDecisionDate appears to be 1 year after the ClassficationDate
+            AND DATE_TRUNC(DATE_ADD(assessment_date, INTERVAL {date_interval} {date_part}), MONTH) > classification_decision_date
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_type, assessment_date ORDER BY assessment_score DESC) = 1
     )
     ,
