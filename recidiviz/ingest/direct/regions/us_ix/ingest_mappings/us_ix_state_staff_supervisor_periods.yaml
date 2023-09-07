@@ -26,3 +26,15 @@ output:
           supervisor_staff_external_id_type: $literal("US_IX_EMPLOYEE")
           start_date: start_date
           end_date: end_date
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - $literal("OFFICER")
+                - officer_EmployeeId
+                - period_id
+          start_date: start_date
+          end_date: end_date
+          role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
+          role_subtype: $literal_enum(StateStaffRoleSubtype.SUPERVISION_OFFICER)

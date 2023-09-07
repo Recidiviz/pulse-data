@@ -36,29 +36,10 @@ SUPERVISION_OFFICERS_QUERY_TEMPLATE = f"""
 WITH 
 supervision_officers AS (
     {staff_query_template(role="SUPERVISION_OFFICER")}
-),
-us_ix_additional_officers AS (
-    -- Include additional staff who do not have role_subtype=SUPERVISION_OFFICER but do have caseloads
-    SELECT *
-    FROM `{{project_id}}.{{reference_views_dataset}}.us_ix_dual_supervisors_officers_materialized`
 )
 
-SELECT 
-    state_code,
-    external_id,
-    staff_id,
-    full_name,
-    email,
-    supervisor_external_id,
-    supervision_district,
-    specialized_caseload_type,
+SELECT {{columns}}
 FROM supervision_officers
-
-UNION ALL
-
-SELECT
-    {{columns}}
-FROM us_ix_additional_officers
 """
 
 SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -68,7 +49,6 @@ SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     description=SUPERVISION_OFFICERS_DESCRIPTION,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     should_materialize=True,
     columns=[
         "state_code",
