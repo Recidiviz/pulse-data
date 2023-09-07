@@ -65,7 +65,7 @@ WITH current_incarcerated_population AS (
     -- Keep only current incarcerated individuals
     {join_current_task_eligibility_spans_with_external_id(
         state_code= "'US_IX'", 
-        tes_task_query_view = 'transfer_to_crc_work_release_request_materialized',
+        tes_task_query_view = 'transfer_to_crc_resident_worker_request_materialized',
         id_type = "'US_IX_DOC'")}),
 
     eligible_and_almost_eligible AS (
