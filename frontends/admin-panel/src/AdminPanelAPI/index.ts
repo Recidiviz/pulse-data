@@ -104,6 +104,7 @@ export {
   deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
+  getAllIngestInstanceDataflowEnabledStatuses,
   getAllIngestInstanceStatuses,
   getCurrentIngestInstanceStatus,
   getCurrentIngestInstanceStatusInformation,

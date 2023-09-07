@@ -21,6 +21,7 @@ import classNames from "classnames";
 import { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import {
+  getAllIngestInstanceDataflowEnabledStatuses,
   getAllIngestInstanceStatuses,
   getIngestQueuesState,
 } from "../../AdminPanelAPI";
@@ -30,7 +31,9 @@ import {
   INGEST_ACTIONS_ROUTE,
 } from "../../navigation/IngestOperations";
 import NewTabLink from "../NewTabLink";
+import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import {
+  IngestInstanceDataflowEnabledStatusResponse,
   IngestInstanceStatusInfo,
   IngestInstanceStatusResponse,
   IngestInstanceStatusTableInfo,
@@ -39,8 +42,8 @@ import {
   StateCodeInfo,
   StateIngestQueuesStatuses,
 } from "./constants";
-import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
 import {
+  getDataflowEnabledSortedOrder,
   getIngestQueuesCumalativeState,
   getQueueColor,
   getQueueStatusSortedOrder,
@@ -55,6 +58,20 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     useFetchedDataJSON<IngestInstanceStatusResponse>(
       getAllIngestInstanceStatuses
     );
+
+  const [stateDataflowEnabledStatuses, setStateDataflowEnabledStatuses] =
+    useState<IngestInstanceDataflowEnabledStatusResponse | undefined>(
+      undefined
+    );
+
+  useEffect(() => {
+    const loadAllStateDataflowEnabledStatuses = async () => {
+      const result = await getAllIngestInstanceDataflowEnabledStatuses();
+      const newData = await result.json();
+      setStateDataflowEnabledStatuses(newData);
+    };
+    loadAllStateDataflowEnabledStatuses();
+  }, []);
 
   const [stateIngestQueueStatuses, setStateIngestQueueStatuses] =
     useState<StateIngestQueuesStatuses | undefined>(undefined);
@@ -134,6 +151,12 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       queueInfo: stateIngestQueueStatuses
         ? stateIngestQueueStatuses[key]
         : undefined,
+      dataflowEnabledPrimary: stateDataflowEnabledStatuses
+        ? stateDataflowEnabledStatuses[key].primary
+        : undefined,
+      dataflowEnabledSecondary: stateDataflowEnabledStatuses
+        ? stateDataflowEnabledStatuses[key].secondary
+        : undefined,
       timestampPrimary: primaryTimestamp,
       timestampSecondary: secondaryTimestamp,
     };
@@ -157,6 +180,16 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
     const queueColor = getQueueColor(queueInfo);
 
     return <div className={classNames(queueColor)}>{queueInfo}</div>;
+  };
+
+  const renderDataflowEnabledCell = (enabled: boolean | undefined) => {
+    if (enabled === undefined) {
+      return <Spin />;
+    }
+    const enabledColor = enabled ? "dataflow-enabled" : "dataflow-disabled";
+    const enabledInfo = enabled ? "YES" : "NO";
+
+    return <div className={classNames(enabledColor)}>{enabledInfo}</div>;
   };
 
   const columns: ColumnsType<IngestInstanceStatusTableInfo> = [
@@ -207,6 +240,29 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       sorter: (a, b) =>
         getQueueStatusSortedOrder(a.queueInfo) -
         getQueueStatusSortedOrder(b.queueInfo),
+    },
+    // TODO(#20930): Delete this column once ingest in dataflow enabled for all states
+    {
+      title: "Dataflow Enabled? (Primary)",
+      dataIndex: "dataflowEnabledPrimary",
+      key: "dataflowEnabledPrimary",
+      render: (dataflowEnabled: boolean | undefined) => (
+        <span>{renderDataflowEnabledCell(dataflowEnabled)}</span>
+      ),
+      sorter: (a, b) =>
+        getDataflowEnabledSortedOrder(a.dataflowEnabledPrimary) -
+        getDataflowEnabledSortedOrder(b.dataflowEnabledPrimary),
+    },
+    {
+      title: "Dataflow Enabled? (Secondary)",
+      dataIndex: "dataflowEnabledSecondary",
+      key: "dataflowEnabledSecondary",
+      render: (dataflowEnabled: boolean | undefined) => (
+        <span>{renderDataflowEnabledCell(dataflowEnabled)}</span>
+      ),
+      sorter: (a, b) =>
+        getDataflowEnabledSortedOrder(a.dataflowEnabledSecondary) -
+        getDataflowEnabledSortedOrder(b.dataflowEnabledSecondary),
     },
   ];
 

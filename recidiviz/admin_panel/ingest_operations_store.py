@@ -41,6 +41,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     get_direct_ingest_queues_for_state,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -553,6 +554,24 @@ class IngestOperationsStore(AdminPanelStore):
 
                 curr_status_info = status_manager.get_current_status_info()
                 instance_to_status_dict[i_instance] = curr_status_info
+
+            ingest_statuses[state_code] = instance_to_status_dict
+
+        return ingest_statuses
+
+    def get_all_ingest_instance_dataflow_enabled_status(
+        self,
+    ) -> Dict[StateCode, Dict[DirectIngestInstance, bool]]:
+        """Returns whetherer dataflow is enabled for both primary and secondary instances for states
+        in the given project"""
+
+        ingest_statuses = {}
+        for state_code in get_direct_ingest_states_launched_in_env():
+            instance_to_status_dict: Dict[DirectIngestInstance, bool] = {}
+            for i_instance in DirectIngestInstance:  # new direct ingest instance
+                instance_to_status_dict[i_instance] = is_ingest_in_dataflow_enabled(
+                    state_code, i_instance
+                )
 
             ingest_statuses[state_code] = instance_to_status_dict
 

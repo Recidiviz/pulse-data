@@ -717,6 +717,26 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             HTTPStatus.OK,
         )
 
+    @bp.route("/api/ingest_operations/all_ingest_instance_dataflow_enabled_status")
+    @requires_gae_auth
+    def _all_ingest_instance_dataflow_enabled_status() -> Tuple[Response, HTTPStatus]:
+        all_instance_statuses = (
+            get_ingest_operations_store().get_all_ingest_instance_dataflow_enabled_status()
+        )
+
+        return (
+            jsonify(
+                {
+                    instance_state_code.value: {
+                        instance.value.lower(): curr_status_info
+                        for instance, curr_status_info in instances.items()
+                    }
+                    for instance_state_code, instances in all_instance_statuses.items()
+                }
+            ),
+            HTTPStatus.OK,
+        )
+
     @bp.route(
         "/api/ingest_operations/get_current_ingest_instance_status", methods=["POST"]
     )
