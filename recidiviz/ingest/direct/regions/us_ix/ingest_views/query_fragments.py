@@ -874,17 +874,29 @@ retained_jurisdiction_details_cte AS (
 )"""
 
 STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
-    -- compile up to date info about active employees
+    -- compile the most recent info for each employee
+    --   recency order prioritizes Inactive = '0' and then most recently inserted record
     current_atlas_employee_info as (
-        SELECT
-            EmployeeId,
-            UPPER(FirstName) as FirstName,
-            UPPER(LastName) as LastName,
-            UPPER(LocationName) as LocationName,
-            UPPER(Email) as Email
-        FROM {{ref_Employee}} emp
-        LEFT JOIN {{ref_Location}} USING(LocationId)
-        WHERE emp.Inactive = '0'
+        SELECT * EXCEPT(recency_rnk)
+        FROM (
+            SELECT
+                EmployeeId,
+                UPPER(FirstName) as FirstName,
+                UPPER(LastName) as LastName,
+                UPPER(LocationName) as LocationName,
+                UPPER(Email) as Email,
+                ROW_NUMBER() 
+                    OVER(PARTITION BY UPPER(Email), 
+                                    UPPER(LocationName),
+                                    UPPER(FirstName),
+                                    UPPER(LastName)
+                        ORDER BY emp.Inactive,
+                                 (DATE(emp.InsertDate)) DESC,
+                                 CAST(EmployeeId as INT) DESC) as recency_rnk
+            FROM {{ref_Employee}} emp
+            LEFT JOIN {{ref_Location}} USING(LocationId)
+        ) as recency_ranked
+        WHERE recency_rnk = 1
     ),
     -- since the roster currently only comes with officer email and names, we have to link on EmployeeId ourselves
     -- we'll first try matching by email (which works most of the time) and then try matching on name/district
