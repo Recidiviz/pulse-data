@@ -137,6 +137,11 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
         
         WITH {compartment_level_1_super_sessions_without_me_sccp()}
         
+        # TODO(#23716) - Remove this CTE once CA date in super_sessions is fixed
+        , us_ca_most_recent_client_data AS (
+            {US_CA_MOST_RECENT_CLIENT_DATA}
+        )
+
         # This CTE has 1 row per person with an active supervision period and the start_date corresponds to 
         # the earliest start date for dual supervision periods.
         SELECT
@@ -147,6 +152,8 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
         AND end_date IS NULL
         # TODO(#20872) - Remove 'US_ME' filter once super_sessions fixed
         AND state_code != 'US_ME'
+        # TODO(#23716) - Remove 'US_CA' filter once CA date in super_sessions is fixed
+        AND state_code != 'US_CA'
  
         UNION ALL
 
@@ -160,6 +167,14 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = f"""
         FROM partitioning_compartment_l1_ss_with_sccp
         WHERE state_code = 'US_ME'
         AND end_date IS NULL
+
+        #TODO(#23716) - remove once CA date in super_sessions is fixed
+        UNION ALL
+
+        SELECT
+            person_id,
+            LastParoleDate AS start_date
+        FROM us_ca_most_recent_client_data
     ),
     """
 

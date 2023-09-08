@@ -32,17 +32,36 @@ US_CA_MOST_RECENT_AGENT_DATA = """
 
 US_CA_MOST_RECENT_CLIENT_DATA = """
   SELECT
+    person_id,
     OffenderId,
     Cdcno,
     ParoleRegion,
     ParoleDistrict,
     ParoleUnit,
     BadgeNumber,
-    PARSE_DATE("%m/%d/%Y", EarnedDischargeDate) AS EarnedDischargeDate,
-    PARSE_DATE("%m/%d/%Y", ControllingDischargeDate) AS ControllingDischargeDate
-  FROM `{project_id}.{us_ca_raw_data_dataset}.PersonParole`
-  WHERE BadgeNumber IS NOT NULL
-  QUALIFY file_id = FIRST_VALUE(file_id) OVER (
-    ORDER BY update_datetime DESC
+    LastParoleDate,
+    -- Replace placeholder dates with NULL
+    IF(EarnedDischargeDate >= '9999-01-01', NULL, EarnedDischargeDate) AS EarnedDischargeDate,
+    IF(ControllingDischargeDate >= '9999-01-01', NULL, ControllingDischargeDate) AS ControllingDischargeDate,
+  FROM (
+    SELECT
+      person_id,
+      OffenderId,
+      Cdcno,
+      ParoleRegion,
+      ParoleDistrict,
+      ParoleUnit,
+      BadgeNumber,
+      PARSE_DATE("%m/%d/%Y", LastParoleDate) AS LastParoleDate,
+      PARSE_DATE("%m/%d/%Y", EarnedDischargeDate) AS EarnedDischargeDate,
+      PARSE_DATE("%m/%d/%Y", ControllingDischargeDate) AS ControllingDischargeDate
+    FROM `{project_id}.{us_ca_raw_data_dataset}.PersonParole` a
+    LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` b
+      ON a.OffenderId = b.person_external_id
+      AND b.state_code = 'US_CA'
+    WHERE BadgeNumber IS NOT NULL
+    QUALIFY file_id = FIRST_VALUE(file_id) OVER (
+      ORDER BY update_datetime DESC
+    )
   )
 """
