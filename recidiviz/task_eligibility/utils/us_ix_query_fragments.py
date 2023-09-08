@@ -160,6 +160,11 @@ QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_da
     """
 
 
+# This pattern should match text enclosed within angle brackets < >,
+#   curly braces { }, or the pattern &nbsp
+ESCAPE_CURLY_AND_ANGLE_BRACKETS_REGEX = "[<{{]([^>}}]*)[>}}]|&nbsp"
+
+
 def ix_offender_alerts_case_notes(
     date_part: str = "MONTH", date_interval: str = "6", where_clause: str = ""
 ) -> str:
@@ -176,7 +181,7 @@ def ix_offender_alerts_case_notes(
             OffenderId AS external_id,
             "Alerts" AS criteria,
             AlertDesc AS note_title,
-            Notes AS note_body,
+            REGEXP_REPLACE(Notes, r'{ESCAPE_CURLY_AND_ANGLE_BRACKETS_REGEX}', '') AS note_body,
             start_date AS event_date,
         FROM (
             SELECT  
@@ -224,7 +229,7 @@ def ix_general_case_notes(
                 info.OffenderId AS external_id,
                 '{criteria_str}' AS criteria,
                 note_type_cm.ContactModeDesc AS note_title,
-                note.Details AS note_body,
+                REGEXP_REPLACE(note.Details, r'{ESCAPE_CURLY_AND_ANGLE_BRACKETS_REGEX}', '') AS note_body,
                 SAFE_CAST(LEFT(info.NoteDate, 10) AS DATE) AS event_date,
             FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNote_latest` note
             LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_OffenderNoteInfo_latest` info
