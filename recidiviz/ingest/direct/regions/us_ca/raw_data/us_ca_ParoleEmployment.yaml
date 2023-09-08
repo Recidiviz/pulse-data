@@ -12,6 +12,10 @@ columns:
     is_pii: True
     description: >-
       ID of the individual.
+  - name: EmployerName
+    is_pii: True
+    description: >-
+      Name of employer
   - name: EmpAddress
     description: >-
       Address of the place of employment.
