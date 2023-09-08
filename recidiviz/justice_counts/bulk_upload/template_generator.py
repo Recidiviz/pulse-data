@@ -81,13 +81,17 @@ def generate_bulk_upload_template(
             metric_interface.is_metric_enabled if metric_interface is not None else True
         )
 
-        if enabled_status is False:
+        if enabled_status is not True:
             continue
 
-        if (
-            metricfile.definition.reporting_frequency
-            == schema.ReportingFrequency.ANNUAL
-        ):
+        reporting_frequency = (
+            metric_interface.custom_reporting_frequency.frequency
+            if metric_interface is not None
+            and metric_interface.custom_reporting_frequency.frequency is not None
+            else metricfile.definition.reporting_frequency
+        )
+
+        if reporting_frequency == schema.ReportingFrequency.ANNUAL:
             rows = _add_rows_for_annual_metric(
                 rows=rows,
                 metricfile=metricfile,
