@@ -375,9 +375,8 @@ def _upsert_roster_rows(
         # Enforce casing for columns where we have a preference.
         row["state_code"] = state_code.upper()
         row["email_address"] = email
-        row["external_id"] = (
-            row["external_id"].upper() if row.get("external_id") is not None else None
-        )
+        if row.get("external_id") is not None:
+            row["external_id"] = row["external_id"].upper()
         row["role"] = row["role"].lower()
         row["user_hash"] = generate_user_hash(row["email_address"])
 
