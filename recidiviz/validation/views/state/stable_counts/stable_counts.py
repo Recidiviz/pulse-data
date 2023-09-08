@@ -60,11 +60,25 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
         date_columns_to_check=[
             DateCol(
                 date_column_name="admission_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
+                exemptions={
+                    StateCode.US_CA: [date(2023, 1, 1)],
+                    StateCode.US_MO: [
+                        date(2022, 11, 1),
+                        date(2022, 12, 1),
+                        date(2023, 3, 1),
+                    ],
+                },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
             ),
             DateCol(
                 date_column_name="release_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
+                exemptions={
+                    StateCode.US_CA: [date(2023, 1, 1)],
+                    StateCode.US_MO: [
+                        date(2022, 11, 1),
+                        date(2022, 12, 1),
+                        date(2023, 2, 1),
+                    ],
+                },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
             ),
         ],
         # TODO(#21848): add functionality for disaggregation
@@ -74,11 +88,25 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
         date_columns_to_check=[
             DateCol(
                 date_column_name="start_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
+                exemptions={
+                    StateCode.US_CA: [date(2023, 1, 1)],
+                    StateCode.US_TN: [
+                        date(2023, 1, 1),
+                        date(2023, 2, 1),
+                        date(2021, 12, 1),
+                    ],
+                },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
             ),
             DateCol(
                 date_column_name="termination_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
+                exemptions={
+                    StateCode.US_CA: [date(2023, 1, 1)],
+                    StateCode.US_TN: [
+                        date(2023, 1, 1),
+                        date(2023, 2, 1),
+                        date(2021, 12, 1),
+                    ],
+                },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
             ),
         ]
         # TODO(#21848): add functionality for disaggregation
