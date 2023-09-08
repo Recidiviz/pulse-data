@@ -13,6 +13,9 @@ input_columns:
   - SENTENCE_BEGIN_DATE # effective_date
   - MINIMUM_DATE # projected_min_release_date # min_length_days
   - MAXIMUM_DATE # projected_max_release_date # max_length_days
+  - SENTENCE_LENGTH_YEARS
+  - SENTENCE_LENGTH_MONTHS
+  - SENTENCE_LENGTH_DAYS
   - TERMINATION_DATE # completion_date
   - TERMINATION_CODE
   - LIFE_OR_DEATH # life_sentence and is_capital_punishment
@@ -86,6 +89,14 @@ output:
                 date_imposed: CONVICTED_DATE
                 effective_date: SENTENCE_BEGIN_DATE
                 completion_date: TERMINATION_DATE
+                max_length_days:
+                  $custom:
+                    $function: us_or_custom_parsers.get_length_in_days
+                    $args:
+                      years: SENTENCE_LENGTH_YEARS
+                      months: SENTENCE_LENGTH_MONTHS
+                      days: SENTENCE_LENGTH_DAYS
+                      effective_date: SENTENCE_BEGIN_DATE
                 county_code: COUNTY
                 conditions: CONDITIONS_LIST
                 is_life:
@@ -186,7 +197,23 @@ output:
                 date_imposed: CONVICTED_DATE
                 effective_date: SENTENCE_BEGIN_DATE
                 projected_min_release_date: MINIMUM_DATE
-                projected_max_release_date: MAXIMUM_DATE
+                projected_max_release_date:
+                  $custom:
+                    $function: us_or_custom_parsers.get_maximum_date
+                    $args:
+                      years_str: SENTENCE_LENGTH_YEARS
+                      months_str: SENTENCE_LENGTH_MONTHS
+                      days_str: SENTENCE_LENGTH_DAYS
+                      effective_date: SENTENCE_BEGIN_DATE
+                      max_date: MAXIMUM_DATE
+                max_length_days:
+                  $custom:
+                    $function: us_or_custom_parsers.get_length_in_days
+                    $args:
+                      years: SENTENCE_LENGTH_YEARS
+                      months: SENTENCE_LENGTH_MONTHS
+                      days: SENTENCE_LENGTH_DAYS
+                      effective_date: SENTENCE_BEGIN_DATE
                 completion_date: TERMINATION_DATE
                 parole_eligibility_date: PAROLE_RELEASE_DATE
                 county_code: COUNTY
