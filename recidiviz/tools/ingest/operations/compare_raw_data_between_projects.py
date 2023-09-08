@@ -43,9 +43,14 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import IS_DELETED_COL_NAME
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
+
+RECIDIVIZ_COLUMNS = [
+    IS_DELETED_COL_NAME,
+]
 
 COMPARISON_TEMPLATE = """
 WITH compared AS (
@@ -106,6 +111,7 @@ def compare_raw_data_between_projects(
             continue
 
         columns = ", ".join([column.name for column in file_config.documented_columns])
+        columns += ", " + ", ".join(RECIDIVIZ_COLUMNS)
 
         query_job = bq_client.run_query_async(
             query_str=StrictStringFormatter().format(
