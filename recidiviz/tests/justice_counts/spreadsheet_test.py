@@ -29,11 +29,15 @@ from recidiviz.justice_counts.bulk_upload.template_generator import (
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_METRICFILES,
 )
-from recidiviz.justice_counts.metrics import supervision
+from recidiviz.justice_counts.metrics import prisons, supervision
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+    REPORTING_FREQUENCY_CONTEXT_KEY,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -285,7 +289,33 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 )
             )
 
-            session.add_all(super_agency_datapoints)
+            enabled_admissions_datapoint = schema.Datapoint(
+                metric_definition_key=prisons.admissions.key,
+                source=prison_super_agency,
+                enabled=True,
+                dimension_identifier_to_member=None,
+                value=str(True),
+                is_report_datapoint=False,
+            )
+
+            admissions_custom_reporting_frequency = schema.Datapoint(
+                metric_definition_key=prisons.admissions.key,
+                source=prison_super_agency,
+                context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+                value=CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+                ).to_json_str(),
+                is_report_datapoint=False,
+            )
+
+            session.add_all(
+                super_agency_datapoints
+                + [
+                    admissions_custom_reporting_frequency,
+                    enabled_admissions_datapoint,
+                ]
+            )
+
             session.commit()
             system = "PRISONS"
             system_enum = schema.System.PRISONS
@@ -304,17 +334,17 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 sheet_names_set = xls.sheet_names
                 sheet_name_to_df = pd.read_excel(xls, sheet_name=None)
                 for sheet_name in all_sheet_names_set:
-                    if sheet_name in (
-                        "funding",
-                        "funding_by_type",
-                        "admissions_by_type",
-                    ):
+                    if sheet_name not in ("admissions",):
+                        # Un-configured / disabled metrics are not included in the workbook
                         self.assertFalse(sheet_name in sheet_names_set)
                     else:
                         self.assertTrue(sheet_name in sheet_names_set)
                         df = sheet_name_to_df[sheet_name]
                         rows = df.to_dict("records")
                         for row in rows:
+                            self.assertTrue(
+                                "month" not in row
+                            )  # Custom Reporting Frequency is set to ANNUAL
                             self.assertTrue("agency" in row)
                             self.assertTrue(
                                 row["agency"]
@@ -334,14 +364,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 self.assertEqual(len(xls.sheet_names), 1)
                 df = pd.read_excel(xls, sheet_name="Sheet 1")
                 metrics_in_sheet = df["metric"].unique()
-                self.assertFalse(
-                    {
-                        "funding",
-                        "funding_by_type",
-                        "admissions_by_type",
-                    }.issubset(metrics_in_sheet)
-                )
-
+                self.assertFalse({"admissions"} == (metrics_in_sheet))
                 agencies = df["agency"].unique()
                 self.assertTrue(prison_affiliate_A.name in agencies)
                 self.assertTrue(prison_affiliate_B.name in agencies)
