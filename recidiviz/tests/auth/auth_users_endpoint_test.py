@@ -1019,3 +1019,67 @@ class AuthUsersEndpointTestCase(TestCase):
                 .first()
             )
             self.assertEqual(existing_user_override, None)
+
+    def test_upload_roster_missing_external_id(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="1234",  # This should NOT change with the new upload
+            district="OLD DISTRICT",  # This should change with the new upload
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="leadership_role",
+            routes={"A": True},
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_leadership_user,
+                leadership_default,
+            ],
+        )
+
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_missing_external_id.csv"), "rb"
+        ) as fixture, self.app.test_request_context(), self.assertLogs(
+            level="INFO"
+        ) as log:
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertReasonLog(
+                log.output,
+                "uploading roster for state US_XX with reason: test",
+            )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "NEW DISTRICT",
+                    "emailAddress": "leadership@domain.org",
+                    "externalId": "1234",
+                    "firstName": "leadership",
+                    "lastName": "user",
+                    "role": "leadership_role",
+                    "stateCode": "US_XX",
+                    "routes": {"A": True},
+                    "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))

@@ -88,7 +88,7 @@ const UploadRoster = ({
                 in order to ensure that the data is imported correctly.
               </div>
               <div>
-                The inputted CSV must have a header row with exactly these five
+                The inputted CSV must have a header row with exactly these
                 columns (in any order):
                 <ul>
                   {columns.map((column) => {
