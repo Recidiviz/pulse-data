@@ -12,6 +12,7 @@ input_columns:
   - START_DATE
   - END_DATE
   - FACILITY
+  - HOUSING_TYPE
   - SQN
   - START_SCD_CODES
   - END_SCD_CODES
@@ -72,3 +73,27 @@ output:
                   - "L" # Long Term Drug Treatment
               $ignore:
                 - "X"
+          housing_unit_category:
+            $enum_mapping:
+              $raw_text: HOUSING_TYPE
+              $mappings:
+                StateIncarcerationPeriodHousingUnitCategory.GENERAL: "GNP" # General Population
+                StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN: "HOS" # Hospitalized
+                StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT:
+                  - "ADS" # Administrative Segregation
+                  - "DIS" # Disciplinary Segregation
+                  - "NOC" # Ad Seg No Contact
+                  - "PRC" # Protective Custody
+                  - "TAS" # Temporary Administrative Segregation
+          housing_unit_type:
+            $enum_mapping:
+              $raw_text: HOUSING_TYPE
+              $mappings:
+                StateIncarcerationPeriodHousingUnitType.GENERAL: "GNP"
+                StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT: "DIS"
+                StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY: "PRC"
+                StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT: "TAS"
+                StateIncarcerationPeriodHousingUnitType.HOSPITAL: "HOS"
+                StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
+                  - "ADS"
+                  - "NOC"
