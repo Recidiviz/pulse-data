@@ -46,8 +46,8 @@ SELECT
     -- 1719: Interstate Compact Parole, 1720: Interstate Compact Probation
     -- Currently clients can meet both criteria, and in these cases the clients mistakenly have `OTHER_STATE` periods
     -- when in reality they are `IC-IN` so we default here to `IC-IN`.
-        WHEN ('1719' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[offset(1)], ","))
-                OR '1720' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[offset(1)],","))) THEN 'IC-IN'
+        WHEN ('1719' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[SAFE_OFFSET(1)], ","))
+                OR '1720' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[SAFE_OFFSET(1)],","))) THEN 'IC-IN'
         WHEN ssp.custodial_authority = 'OTHER_STATE' THEN 'IC-OUT'
         ELSE NULL 
         END AS metadata_interstate_flag,
@@ -69,6 +69,7 @@ INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period
 WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
     AND tes.state_code = 'US_MI'
+    AND ssp.supervision_type_raw_text LIKE 'ORDER_TYPE_ID_LIST%'
 --in the rare case where there are two open supervision periods, dedup so that there is only one record per client
 QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.external_id, tes.state_code ORDER BY metadata_interstate_flag DESC)=1
 """
