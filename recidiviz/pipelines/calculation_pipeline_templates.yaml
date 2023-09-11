@@ -189,6 +189,12 @@ metric_pipelines:
     state_code: US_TN
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-central1
+  - pipeline: violation_metrics
+    job_name: full-us-tn-violation-metrics
+    state_code: US_TN
+    metric_types: VIOLATION
+    region: us-east1
+    staging_only: True
 
   # Full US_ME calculations with no time limit
   - pipeline: population_span_metrics
