@@ -217,6 +217,27 @@ class FirestoreClientImpl(FirestoreClient):
             collection_path,
         )
 
+    def delete_documents_with_state_code(
+        self,
+        collection_path: str,
+        state_code: str,
+    ) -> None:
+        logging.info(
+            'Deleting documents from collection "%s" with state code "%s"',
+            collection_path,
+            state_code,
+        )
+        collection = self.get_collection(collection_path)
+        total_docs_deleted = self._delete_documents_batch(
+            collection.where("stateCode", "==", state_code)
+        )
+        logging.info(
+            '[%s] Deleted %d documents from collection "%s"',
+            state_code,
+            total_docs_deleted,
+            collection_path,
+        )
+
     def _delete_documents_batch(
         self, query: Union[CollectionReference, BaseQuery], deleted_so_far: int = 0
     ) -> int:

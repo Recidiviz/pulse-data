@@ -19,7 +19,7 @@ import logging
 import tempfile
 from http import HTTPStatus
 from json import JSONDecodeError
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import dateutil.parser
 import pandas as pd
@@ -41,6 +41,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import is_date_str
 from recidiviz.common.results import MultiRequestResult
+from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.reporting import data_retrieval, email_delivery
 from recidiviz.reporting.constants import ReportType
@@ -55,6 +56,7 @@ from recidiviz.reporting.email_reporting_utils import (
 )
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.types import assert_type
 
 
@@ -394,3 +396,36 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                     return error.message, HTTPStatus(error.code)
                 return error.message, HTTPStatus.INTERNAL_SERVER_ERROR
         return "", HTTPStatus.OK
+
+    @requires_gae_auth
+    @bp.route(
+        "/api/line_staff_tools/demo_client_updates_v2",
+        defaults={"state_code_str": None},
+        methods=["DELETE"],
+    )
+    @bp.route(
+        "/api/line_staff_tools/demo_client_updates_v2/<state_code_str>",
+        methods=["DELETE"],
+    )
+    @requires_gae_auth
+    def handle_delete_demo_client_updates_v2(
+        state_code_str: Optional[str],
+    ) -> Tuple[str, HTTPStatus]:
+        if in_gcp_production():
+            return (
+                "Attempting to delete client updates in Production environment. This is only allowed in the staging environment for the demo app.",
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        firestore_client = FirestoreClientImpl()
+        path = "DEMO_clientUpdatesV2"
+
+        if not state_code_str:
+            firestore_client.delete_collection(path)
+            return (f"Deleted firestore collection: {path}", HTTPStatus.OK)
+
+        firestore_client.delete_documents_with_state_code(path, state_code_str.lower())
+        return (
+            f"Deleted documents from collection: {path} with state_code: {state_code_str}",
+            HTTPStatus.OK,
+        )
