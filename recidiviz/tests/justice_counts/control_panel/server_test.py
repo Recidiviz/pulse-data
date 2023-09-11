@@ -1358,42 +1358,42 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 schema.UserAccountRole.AGENCY_ADMIN,
             )
 
-    def test_update_invitation_status(self) -> None:
-        agency_A = self.test_schema_objects.test_agency_A
-        user_A = self.test_schema_objects.test_user_A
-        self.session.add_all([agency_A, user_A])
-        self.session.commit()
-        self.session.refresh(agency_A)
-        self.session.refresh(user_A)
-        user_agency_association = AgencyUserAccountAssociation(
-            user_account_id=user_A.id,
-            agency_id=agency_A.id,
-            invitation_status=UserAccountInvitationStatus.PENDING,
-        )
-        self.session.add(user_agency_association)
-        self.session.commit()
-        with self.app.test_request_context():
-            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
-            response = self.client.put(
-                "/api/users",
-                json={
-                    "email_verified": True,
-                    "agency_id": agency_A.id,
-                },
-            )
+    # def test_update_invitation_status(self) -> None:
+    #     agency_A = self.test_schema_objects.test_agency_A
+    #     user_A = self.test_schema_objects.test_user_A
+    #     self.session.add_all([agency_A, user_A])
+    #     self.session.commit()
+    #     self.session.refresh(agency_A)
+    #     self.session.refresh(user_A)
+    #     user_agency_association = AgencyUserAccountAssociation(
+    #         user_account_id=user_A.id,
+    #         agency_id=agency_A.id,
+    #         invitation_status=UserAccountInvitationStatus.PENDING,
+    #     )
+    #     self.session.add(user_agency_association)
+    #     self.session.commit()
+    #     with self.app.test_request_context():
+    #         g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
+    #         response = self.client.put(
+    #             "/api/users",
+    #             json={
+    #                 "email_verified": True,
+    #                 "agency_id": agency_A.id,
+    #             },
+    #         )
 
-            self.assertEqual(response.status_code, 200)
-            # Updates the AgencyUserAccountAssociation with the new invitation status
-            db_user = self.session.query(UserAccount).one()
-            user_account_association = self.session.query(
-                AgencyUserAccountAssociation
-            ).one()
-            self.assertEqual(user_account_association.user_account_id, db_user.id)
-            self.assertEqual(user_account_association.agency_id, agency_A.id)
-            self.assertEqual(
-                user_account_association.invitation_status,
-                UserAccountInvitationStatus.ACCEPTED,
-            )
+    #         self.assertEqual(response.status_code, 200)
+    #         # Updates the AgencyUserAccountAssociation with the new invitation status
+    #         db_user = self.session.query(UserAccount).one()
+    #         user_account_association = self.session.query(
+    #             AgencyUserAccountAssociation
+    #         ).one()
+    #         self.assertEqual(user_account_association.user_account_id, db_user.id)
+    #         self.assertEqual(user_account_association.agency_id, agency_A.id)
+    #         self.assertEqual(
+    #             user_account_association.invitation_status,
+    #             UserAccountInvitationStatus.ACCEPTED,
+    #         )
 
     def test_update_report(self) -> None:
         report = self.test_schema_objects.test_report_monthly

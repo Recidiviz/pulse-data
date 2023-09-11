@@ -430,7 +430,6 @@ def get_api_blueprint(
             request_dict = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict)
             email = request_dict.get("email")
-            is_email_verified = request_dict.get("email_verified")
 
             user = UserAccountInterface.create_or_update_user(
                 session=current_session,
@@ -445,23 +444,12 @@ def get_api_blueprint(
                 # won't be up-to-date (it's hard to do this via fixtures),
                 # so just give access to all agencies.
                 agency_ids = AgencyInterface.get_agency_ids(session=current_session)
-                role = schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+
             else:
                 agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
-                role = None
 
             agencies = AgencyInterface.get_agencies_by_id(
                 session=current_session, agency_ids=agency_ids
-            )
-
-            UserAccountInterface.add_or_update_user_agency_association(
-                session=current_session,
-                user=user,
-                agencies=agencies,
-                invitation_status=schema.UserAccountInvitationStatus.ACCEPTED
-                if is_email_verified is True
-                else None,
-                role=role,
             )
 
             agency_jsons = []
