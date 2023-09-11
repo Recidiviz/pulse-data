@@ -18,7 +18,7 @@ bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
 # If this version is bumped then the beam version in recidiviz/pipelines/Dockerfile.pipelines must be as well.
-apache-beam = {extras = ["gcp", "test"],version = "==2.49.0"}
+apache-beam = {extras = ["gcp", "test"],version = "==2.50.0"}
 fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
@@ -104,8 +104,6 @@ ydata-profiling = "*"
 # end recidiviz-research dependencies
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
-# TODO(#23318): Newer Cython versions encounter a crash when compiling apache-beam
-Cython = "==0.29.36"
 
 [packages]
 callee = "*"
@@ -232,8 +230,6 @@ twilio = "*"
 twilio-stubs = "*"
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
-# TODO(#23318): Newer Cython versions encounter a crash when compiling apache-beam
-Cython = "==0.29.36"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
