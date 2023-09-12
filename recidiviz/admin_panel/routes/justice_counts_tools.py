@@ -181,6 +181,16 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 agency = AgencyInterface.update_is_superagency(
                     session=session, agency_id=agency_id, is_superagency=is_superagency
                 )
+                # When provisioning a superagency, add the SUPERAGENCY system if it is not included in the list of systems
+                if (
+                    is_superagency
+                    and schema.System.SUPERAGENCY.value not in agency.systems
+                ):
+                    AgencyInterface.update_agency_systems(
+                        session=session,
+                        systems=[*agency.systems, schema.System.SUPERAGENCY.value],
+                        agency_id=agency_id,
+                    )
                 return (
                     jsonify({"agency": agency.to_json()}),
                     HTTPStatus.OK,
