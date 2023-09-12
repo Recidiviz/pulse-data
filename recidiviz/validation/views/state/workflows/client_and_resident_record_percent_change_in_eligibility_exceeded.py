@@ -30,7 +30,7 @@ CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_NAME = (
 )
 
 CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_DESCRIPTION = """
-Identifies when a considerable change in exports to client/resident records has occurred for a given task type.
+Identifies when a considerable change in exports to client/resident records has occurred for a given task type. NOTE: This validation may pass on subsequent runs after failing even if the underlying issue is not resolved.
 """
 
 CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_QUERY_TEMPLATE = """
