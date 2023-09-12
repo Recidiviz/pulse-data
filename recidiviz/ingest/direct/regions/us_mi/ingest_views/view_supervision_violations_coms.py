@@ -29,7 +29,7 @@ VIEW_QUERY_TEMPLATE = """,
             LTRIM(incidents.Offender_Number, '0') AS Offender_Number,
             incidents.Incident_Date,
             COALESCE(parole.Violation_Type, probation.Case_Type) AS Violation_Type,
-            COALESCE(parole.Entered_Date, probation.Entered_Date) as Report_Entered_Date
+            COALESCE(parole.Investigation_Start_Date, probation.Investigation_Start_Date) as Investigation_Start_Date
         FROM {COMS_Violation_Incidents} incidents
 
         -- PAROLE
@@ -50,7 +50,7 @@ VIEW_QUERY_TEMPLATE = """,
         Violation_Incident_Id, 
         Incident_Date, 
         Violation_Type, 
-        Report_Entered_Date
+        Investigation_Start_Date
     FROM probation_and_violation_joined_incidents
 """
 
