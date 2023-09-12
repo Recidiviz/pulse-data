@@ -7,7 +7,7 @@ input_columns:
   - Offender_Number
   - Incident_Date
   - Violation_Type
-  - Report_Entered_Date
+  - Investigation_Start_Date
 unused_columns: []
 output:
   StatePerson:
@@ -68,5 +68,5 @@ output:
                       - $literal("REPORT")
                     $separator: "##"
                 response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
-                response_date: Report_Entered_Date
+                response_date: Investigation_Start_Date
                 deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
