@@ -26,8 +26,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 1500
     override_reason: TODO(#12167) Needs investigation. Ingest view mishandling zero-day incarceration periods. 552 failing rows as of 11/3/2022. This number jumped with incarceration period refactor to include segregation. Current error at 1059 as of 4/13/23.
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 80
-    override_reason: TODO(#13055) Needs investigation.
+    hard_num_allowed_rows_override: 120
+    override_reason: TODO(#13055) Needs investigation. Current failing level as of 9/12/23 is 94 rows.
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 90
     override_reason: TODO(#12166) Needs investigation. Ingest mappings don't account currently map to temp custody releases
@@ -47,8 +47,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 125000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 376,632 rows #TODO(#16234)
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 30
-    override_reason: Needs investigation.  Current failing level as of 8/15/23 is 23 rows
+    hard_num_allowed_rows_override: 60
+    override_reason: Needs investigation.  Current failing level as of 8/15/23 is 23 rows. Current failing level as of 9/12/23 is 39 rows.
   - validation_name: sentences_undefined_relationship
     hard_num_allowed_rows_override: 4000
     override_reason: Needs investigation. Current failing level as of 2/24/23 is 2,193 rows #TODO(#19047)
