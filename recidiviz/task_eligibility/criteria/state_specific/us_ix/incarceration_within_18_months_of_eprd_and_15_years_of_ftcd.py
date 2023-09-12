@@ -62,14 +62,14 @@ _CRITERIA_QUERY_2 = f"""
 
 
 _JSON_CONTENT = f"""MIN(full_term_completion_date) AS full_term_completion_date,
-                   MIN(min_term_completion_date) AS next_parole_hearing_date,
+                   MIN(min_term_completion_date) AS min_term_completion_date,
                    '{_CRITERIA_NAME}' AS criteria_name"""
 
 _QUERY_TEMPLATE = f"""
 {ix_combining_several_criteria_into_one_view_builder(
         select_statements_for_criteria_lst=[_CRITERIA_QUERY_1,
                                              _CRITERIA_QUERY_2],
-        meets_criteria="LOGICAL_AND(meets_criteria)",
+        meets_criteria="LOGICAL_AND(meets_criteria AND num_criteria>=2)",
         json_content=_JSON_CONTENT,
     )}
 """
