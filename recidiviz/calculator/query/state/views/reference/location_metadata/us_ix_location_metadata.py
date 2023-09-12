@@ -62,11 +62,13 @@ SELECT
           CASE 
             WHEN UPPER(LocationName) like 'DISTRICT %' AND UPPER(LocationName) like '%-%' THEN REPLACE(SPLIT(UPPER(LocationName), ' - ')[OFFSET(0)], 'OFFICE ', '')
             WHEN UPPER(LocationName) like 'DISTRICT %' AND UPPER(LocationName) like '%,%' THEN REPLACE(SPLIT(UPPER(LocationName), ',')[OFFSET(0)], 'OFFICE ', '') 
+            WHEN UPPER(LocationName) = 'LOW SUPERVISION UNIT' THEN 'DISTRICT 4'
             ELSE NULL
           END AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
           CASE 
             WHEN UPPER(LocationName) like 'DISTRICT %' AND UPPER(LocationName) like '%-%' THEN REPLACE(SPLIT(UPPER(LocationName), ' - ')[OFFSET(0)], 'OFFICE ', '')
             WHEN UPPER(LocationName) like 'DISTRICT %' AND UPPER(LocationName) like '%,%' THEN REPLACE(SPLIT(UPPER(LocationName), ',')[OFFSET(0)], 'OFFICE ', '') 
+            WHEN UPPER(LocationName) = 'LOW SUPERVISION UNIT' THEN 'DISTRICT 4'
             ELSE NULL
           END AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value}
         )
