@@ -93,7 +93,7 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_TN: [
                         date(2023, 1, 1),
                         date(2023, 2, 1),
-                        date(2021, 12, 1),
+                        date(2022, 12, 1),
                     ],
                 },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
             ),
@@ -104,7 +104,7 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_TN: [
                         date(2023, 1, 1),
                         date(2023, 2, 1),
-                        date(2021, 12, 1),
+                        date(2022, 12, 1),
                     ],
                 },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
             ),
