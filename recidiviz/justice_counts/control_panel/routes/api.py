@@ -430,6 +430,7 @@ def get_api_blueprint(
             request_dict = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict)
             email = request_dict.get("email")
+            is_email_verified = request_dict.get("email_verified")
 
             user = UserAccountInterface.create_or_update_user(
                 session=current_session,
@@ -444,25 +445,28 @@ def get_api_blueprint(
                 # won't be up-to-date (it's hard to do this via fixtures),
                 # so just give access to all agencies.
                 agency_ids = AgencyInterface.get_agency_ids(session=current_session)
+                role = schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
 
             else:
                 agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+                role = None
 
             agencies = AgencyInterface.get_agencies_by_id(
                 session=current_session, agency_ids=agency_ids
             )
 
-            agency_jsons = []
-            for agency in agencies:
-                agency_json = agency.to_json()
-                child_agencies = AgencyInterface.get_child_agencies_for_agency(
-                    session=current_session, agency=agency
-                )
-                agency_json["child_agencies"] = [
-                    child_agency.to_json(with_team=False, with_settings=False)
-                    for child_agency in child_agencies
-                ]
-                agency_jsons.append(agency_json)
+            if is_email_verified is True:
+                for assoc in user.agency_assocs:
+                    if (
+                        assoc.invitation_status
+                        == schema.UserAccountInvitationStatus.PENDING
+                    ):
+                        assoc.invitation_status = (
+                            schema.UserAccountInvitationStatus.ACCEPTED
+                        )
+                        assoc.role = role
+
+            agency_jsons = [a.to_json() for a in agencies]
 
             current_session.commit()
             return jsonify(
