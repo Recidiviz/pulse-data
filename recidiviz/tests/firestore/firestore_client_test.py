@@ -18,10 +18,9 @@
 import unittest
 from datetime import datetime
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 from google.cloud.firestore_admin_v1 import CreateIndexRequest
-from mock import call
 
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 
@@ -54,13 +53,13 @@ class FirestoreClientImplTest(unittest.TestCase):
         self.metadata_patcher.stop()
         self.admin_client_fn.stop()
 
-    def test_delete_old_documents(self) -> None:
-        self.mock_collection = mock.MagicMock()
-        self.mock_client.collection.return_value = self.mock_collection
+    @mock.patch("recidiviz.firestore.firestore_client.FieldFilter")
+    def test_delete_old_documents(self, field_filter_mock: Mock) -> None:
+        """Tests that the call to delete old documents actually filters for old documents."""
         self.firestore_client.delete_old_documents(
             "clients", "US_XX", "__lastUpdated", datetime(2022, 1, 1)
         )
-        self.mock_collection.where.assert_has_calls(
+        field_filter_mock.assert_has_calls(
             [
                 call("stateCode", "==", "US_XX"),
                 call().where("__lastUpdated", "<", datetime(2022, 1, 1)),
