@@ -23,6 +23,7 @@ from typing import Dict, List, Optional, Union
 
 from google.api_core.operation import Operation
 from google.cloud import firestore_admin_v1, firestore_v1
+from google.cloud.firestore_v1 import FieldFilter
 from google.cloud.firestore_v1.collection import CollectionReference
 from google.cloud.firestore_v1.document import DocumentReference
 from google.cloud.firestore_v1.query import BaseQuery, CollectionGroup
@@ -206,8 +207,8 @@ class FirestoreClientImpl(FirestoreClient):
         )
         collection = self.get_collection(collection_path)
         total_docs_deleted = self._delete_documents_batch(
-            collection.where("stateCode", "==", state_code).where(
-                timestamp_field, "<", cutoff
+            collection.where(filter=FieldFilter("stateCode", "==", state_code)).where(
+                filter=FieldFilter(timestamp_field, "<", cutoff)
             )
         )
         logging.info(
@@ -229,7 +230,7 @@ class FirestoreClientImpl(FirestoreClient):
         )
         collection = self.get_collection(collection_path)
         total_docs_deleted = self._delete_documents_batch(
-            collection.where("stateCode", "==", state_code)
+            collection.where(filter=FieldFilter("stateCode", "==", state_code))
         )
         logging.info(
             '[%s] Deleted %d documents from collection "%s"',
