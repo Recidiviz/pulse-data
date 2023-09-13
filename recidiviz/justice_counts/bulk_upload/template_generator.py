@@ -285,7 +285,7 @@ def _add_rows_for_disaggregated_metric(
                     dimension_metric_interface.dimension_to_enabled_status.get(
                         dimension
                     )
-                    is False
+                    is not True
                 ):
                     # If a dimension is turned off, don't include it in the spreadsheet.
                     continue
