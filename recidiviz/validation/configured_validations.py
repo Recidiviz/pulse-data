@@ -162,11 +162,8 @@ from recidiviz.validation.views.state.multiple_supervision_info_for_commitment_a
 from recidiviz.validation.views.state.normalized_entities_unique_ids import (
     NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.outliers.unidentified_supervision_officer_supervisors import (
-    UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.outliers.unidentified_supervision_officers import (
-    UNIDENTIFIED_SUPERVISION_OFFICERS_VIEW_BUILDER,
+from recidiviz.validation.views.state.outliers.configured_validations import (
+    get_all_outliers_validations,
 )
 from recidiviz.validation.views.state.overlapping_incarceration_periods import (
     OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
@@ -361,6 +358,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         *get_all_dataflow_metrics_validations(),
         *get_all_location_metadata_validations(),
         *get_all_stable_counts_validations(region_configs),
+        *get_all_outliers_validations(),
         ExistenceDataValidationCheck(
             view_builder=ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
@@ -529,14 +527,6 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=EXPERIMENT_ASSIGNMENTS_UNIT_OF_ANALYSIS_VALIDATION_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=UNIDENTIFIED_SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
-            validation_category=ValidationCategory.INVARIANT,
-        ),
-        ExistenceDataValidationCheck(
-            view_builder=UNIDENTIFIED_SUPERVISION_OFFICERS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
