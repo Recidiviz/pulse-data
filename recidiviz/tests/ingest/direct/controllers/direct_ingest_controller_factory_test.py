@@ -17,6 +17,7 @@
 """Tests for the DirectIngestControllerFactory."""
 import unittest
 
+import pytest
 from mock import Mock, patch
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -33,23 +34,41 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestError
-from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
-    FakeDirectIngestInstanceStatusManager,
-)
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils.fake_region import fake_region
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 CONTROLLER_FACTORY_PACKAGE_NAME = direct_ingest_controller_factory.__name__
 
 
+@pytest.mark.uses_db
 class TestDirectIngestControllerFactory(unittest.TestCase):
     """Tests for the DirectIngestControllerFactory."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: str
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
     def setUp(self) -> None:
+        self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
+            SchemaType.OPERATIONS
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.operations_database_key
+        )
+
         self.project_id_patcher = patch(
             "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
         )
@@ -74,78 +93,76 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
         self.fs_patcher.stop()
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.operations_database_key
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_build_gcsfs_ingest_controller_all_regions(self) -> None:
         for region_code in get_existing_region_codes():
             for ingest_instance in DirectIngestInstance:
-                with patch(
-                    f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-                ) as instance_status_manager_cls:
-                    instance_status_manager_cls.return_value = (
-                        FakeDirectIngestInstanceStatusManager(
-                            region_code=region_code,
-                            ingest_instance=ingest_instance,
-                            initial_statuses=[
-                                DirectIngestStatus.STANDARD_RERUN_STARTED
-                            ],
-                        )
-                    )
+                # Seed the DB with an initial status
+                PostgresDirectIngestInstanceStatusManager(
+                    region_code=region_code,
+                    ingest_instance=ingest_instance,
+                ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
-                    controller = DirectIngestControllerFactory.build(
-                        region_code=region_code,
-                        ingest_instance=ingest_instance,
-                        allow_unlaunched=False,
-                    )
+                controller = DirectIngestControllerFactory.build(
+                    region_code=region_code,
+                    ingest_instance=ingest_instance,
+                    allow_unlaunched=False,
+                )
 
-                    self.assertIsNotNone(controller)
-                    self.assertIsInstance(controller, BaseDirectIngestController)
-                    self.assertEqual(ingest_instance, controller.ingest_instance)
+                self.assertIsNotNone(controller)
+                self.assertIsInstance(controller, BaseDirectIngestController)
+                self.assertEqual(ingest_instance, controller.ingest_instance)
 
     def test_build_gcsfs_ingest_controller_all_regions_raw_import_secondary(
         self,
     ) -> None:
         for region_code in get_existing_region_codes():
-            with patch(
-                f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-            ) as instance_status_manager_cls:
-                instance_status_manager_cls.return_value = (
-                    FakeDirectIngestInstanceStatusManager(
-                        region_code=region_code,
-                        ingest_instance=DirectIngestInstance.SECONDARY,
-                        initial_statuses=[
-                            DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
-                        ],
-                    )
-                )
+            # Seed the DB with an initial status
+            PostgresDirectIngestInstanceStatusManager(
+                region_code=region_code,
+                ingest_instance=DirectIngestInstance.SECONDARY,
+            ).add_instance_status(DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED)
+
+            controller = DirectIngestControllerFactory.build(
+                region_code=region_code,
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                allow_unlaunched=False,
+            )
+
+            self.assertIsNotNone(controller)
+            self.assertIsInstance(controller, BaseDirectIngestController)
+            self.assertEqual(DirectIngestInstance.SECONDARY, controller.ingest_instance)
 
     def test_build_gcsfs_ingest_controller_all_regions_do_not_allow_launched(
         self,
     ) -> None:
         for region_code in get_existing_region_codes():
             for ingest_instance in DirectIngestInstance:
-                with patch(
-                    f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-                ) as instance_status_manager_cls:
-                    instance_status_manager_cls.return_value = (
-                        FakeDirectIngestInstanceStatusManager(
-                            region_code=region_code,
-                            ingest_instance=ingest_instance,
-                            initial_statuses=[
-                                DirectIngestStatus.STANDARD_RERUN_STARTED
-                            ],
-                        )
-                    )
+                # Seed the DB with an initial status
+                PostgresDirectIngestInstanceStatusManager(
+                    region_code=region_code,
+                    ingest_instance=ingest_instance,
+                ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
-                    controller = DirectIngestControllerFactory.build(
-                        region_code=region_code,
-                        ingest_instance=ingest_instance,
-                        allow_unlaunched=True,
-                    )
+                controller = DirectIngestControllerFactory.build(
+                    region_code=region_code,
+                    ingest_instance=ingest_instance,
+                    allow_unlaunched=True,
+                )
 
-                    # Should still succeed for all controllers in the test environment
-                    self.assertIsNotNone(controller)
-                    self.assertIsInstance(controller, BaseDirectIngestController)
-                    self.assertEqual(ingest_instance, controller.ingest_instance)
+                # Should still succeed for all controllers in the test environment
+                self.assertIsNotNone(controller)
+                self.assertIsInstance(controller, BaseDirectIngestController)
+                self.assertEqual(ingest_instance, controller.ingest_instance)
 
     @patch(
         "recidiviz.utils.environment.get_gcp_environment",
@@ -194,16 +211,12 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
         with patch(
             "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region",
             Mock(return_value=mock_region),
-        ), patch(
-            f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-        ) as instance_status_manager_cls:
-            instance_status_manager_cls.return_value = (
-                FakeDirectIngestInstanceStatusManager(
-                    region_code=mock_region.region_code,
-                    ingest_instance=DirectIngestInstance.PRIMARY,
-                    initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
-                )
-            )
+        ):
+            # Seed the DB with an initial status
+            PostgresDirectIngestInstanceStatusManager(
+                region_code=mock_region.region_code,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
             controller = DirectIngestControllerFactory.build(
                 region_code=mock_region.region_code,

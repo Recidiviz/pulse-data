@@ -51,6 +51,9 @@ from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager impo
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManager,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
@@ -71,9 +74,6 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
-from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
-    FakeDirectIngestInstanceStatusManager,
-)
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
     FakeAsyncDirectIngestCloudTaskManager,
@@ -400,13 +400,15 @@ def build_fake_direct_ingest_controller(
         region_code: str,
         ingest_instance: DirectIngestInstance,
         change_listener: DirectIngestInstanceStatusChangeListener,
-    ) -> FakeDirectIngestInstanceStatusManager:
-        return FakeDirectIngestInstanceStatusManager(
+    ) -> PostgresDirectIngestInstanceStatusManager:
+        status_manager = PostgresDirectIngestInstanceStatusManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
             change_listener=change_listener,
-            initial_statuses=initial_statuses,
         )
+        for status in initial_statuses:
+            status_manager.add_instance_status(status)
+        return status_manager
 
     if "TestDirectIngestController" in controller_cls.__name__:
         view_collector_cls: Type[

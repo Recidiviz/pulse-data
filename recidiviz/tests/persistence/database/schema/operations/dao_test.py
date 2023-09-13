@@ -21,7 +21,6 @@ import datetime
 from datetime import timedelta
 from typing import Optional
 from unittest import TestCase
-from unittest.mock import patch
 
 import pytest
 import pytz
@@ -37,6 +36,9 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import dao, schema
 from recidiviz.persistence.database.schema.operations.dao import (
@@ -45,9 +47,6 @@ from recidiviz.persistence.database.schema.operations.dao import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
-    FakeDirectIngestInstanceStatusManager,
-)
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
@@ -151,35 +150,29 @@ class TestDao(TestCase):
     ) -> None:
         discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
         with freeze_time(discovery_date):
-            with patch(
-                "recidiviz.persistence.database.schema.operations.dao.PostgresDirectIngestInstanceStatusManager",
-            ) as instance_status_manager_cls:
-                instance_status_manager_cls.return_value = (
-                    FakeDirectIngestInstanceStatusManager(
-                        region_code="us_xx",
-                        ingest_instance=DirectIngestInstance.PRIMARY,
-                        initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
-                    )
-                )
+            PostgresDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
-                normalized_path_str = to_normalized_unprocessed_raw_file_path(
-                    original_file_path="bucket/file_tag.csv", dt=discovery_date
-                )
-                raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
-                    normalized_path_str
-                )
+            normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="bucket/file_tag.csv", dt=discovery_date
+            )
+            raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                normalized_path_str
+            )
 
-                raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
-                    region_code="us_xx",
-                    raw_data_instance=DirectIngestInstance.PRIMARY,
-                )
+            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+            )
 
-                # Mark the file as discovered in PRIMARY on frozen `discovery_date`
-                raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+            # Mark the file as discovered in PRIMARY on frozen `discovery_date`
+            raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
 
-                # Assert that secondary raw data is not stale, because no file in PRIMARY is found after
-                # `discovery_date`
-                self.assertFalse(stale_secondary_raw_data("us_xx"))
+            # Assert that secondary raw data is not stale, because no file in PRIMARY is found after
+            # `discovery_date`
+            self.assertFalse(stale_secondary_raw_data("us_xx"))
 
     def test_stale_secondary_raw_data_rerun_start_before_discovery_present_in_both(
         self,
@@ -219,21 +212,15 @@ class TestDao(TestCase):
 
         with freeze_time(rerun_start_before_discovery_date):
             # Start a secondary raw data import rerun BEFORE the discovery_date
-            fake_manager = FakeDirectIngestInstanceStatusManager(
+            PostgresDirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
-                initial_statuses=[
-                    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
-                ],
-            )
-            with patch(
-                "recidiviz.persistence.database.schema.operations.dao.PostgresDirectIngestInstanceStatusManager",
-                return_value=fake_manager,
-            ):
-                # Assert that raw data is not considered stale because the same file_tag is present and non-invalidated
-                # in both instances, and the rerun in secondary started BEFORE the files were discovered in both
-                # PRIMARY and SECONDARY
-                self.assertFalse(stale_secondary_raw_data("us_xx"))
+            ).add_instance_status(DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED)
+
+            # Assert that raw data is not considered stale because the same file_tag is present and non-invalidated
+            # in both instances, and the rerun in secondary started BEFORE the files were discovered in both
+            # PRIMARY and SECONDARY
+            self.assertFalse(stale_secondary_raw_data("us_xx"))
 
     def test_stale_secondary_raw_data_standard_secondary_rerun(
         self,
@@ -258,18 +245,14 @@ class TestDao(TestCase):
 
         with freeze_time(rerun_start_before_discovery_date):
             # Start a secondary standard BEFORE the discovery_date
-            fake_manager = FakeDirectIngestInstanceStatusManager(
+            PostgresDirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
-                initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
-            )
-            with patch(
-                "recidiviz.persistence.database.schema.operations.dao.PostgresDirectIngestInstanceStatusManager",
-                return_value=fake_manager,
-            ):
-                # Assert that raw data is not considered stale because there isn't a secondary raw data import in
-                # progress in SECONDARY
-                self.assertFalse(stale_secondary_raw_data("us_xx"))
+            ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
+
+            # Assert that raw data is not considered stale because there isn't a secondary raw data import in
+            # progress in SECONDARY
+            self.assertFalse(stale_secondary_raw_data("us_xx"))
 
     def test_stale_secondary_raw_data_rerun_start_before_discovery_present_in_both_invalidated_in_secondary(
         self,
@@ -313,17 +296,11 @@ class TestDao(TestCase):
             )
 
         with freeze_time(rerun_start_before_discovery_date):
-            fake_manager = FakeDirectIngestInstanceStatusManager(
+            PostgresDirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
-                initial_statuses=[
-                    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
-                ],
-            )
-            with patch(
-                "recidiviz.persistence.database.schema.operations.dao.PostgresDirectIngestInstanceStatusManager",
-                return_value=fake_manager,
-            ):
-                # Assert that raw data is considered stale because the same file_tag is present in both, but is
-                # invalidated in SECONDARY
-                self.assertTrue(stale_secondary_raw_data("us_xx"))
+            ).add_instance_status(DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED)
+
+            # Assert that raw data is considered stale because the same file_tag is present in both, but is
+            # invalidated in SECONDARY
+            self.assertTrue(stale_secondary_raw_data("us_xx"))
