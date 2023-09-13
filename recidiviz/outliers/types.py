@@ -21,9 +21,6 @@ from typing import Any, Dict, List, Optional, Union
 import attr
 import cattrs
 
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.common.str_field_utils import person_name_case
 
 
@@ -127,16 +124,11 @@ class OutliersConfig:
     # URL that methodology/FAQ links can be pointed to
     learn_more_url: str = attr.ib()
 
-    # Location exclusions; a unit of analysis mapped to a list of ids to exclude
-    unit_of_analysis_to_exclusion: Dict[MetricUnitOfAnalysisType, List[str]] = attr.ib(
-        default=None
-    )
+    # String containing exclusions that should be applied to the supervision staff product views.
+    supervision_staff_exclusions: str = attr.ib(default=None)
 
     # A string representing the filters to apply for the state's supervision officer aggregated metrics
-    supervision_officer_aggregated_metric_filters: str = attr.ib(default=None)
-
-    # A string representing additional filters to apply
-    additional_exclusions: Dict[str, List[str]] = attr.ib(default=None)
+    supervision_officer_metric_exclusions: str = attr.ib(default=None)
 
 
 @attr.s

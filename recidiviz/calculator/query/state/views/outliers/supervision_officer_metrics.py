@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Aggregated metrics at the officer-level for supervision-related metrics"""
-from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
@@ -33,49 +32,32 @@ from recidiviz.calculator.query.state.views.outliers.utils import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_OFFICER_METRICS_VIEW_NAME = "supervision_officer_metrics"
+_VIEW_NAME = "supervision_officer_metrics"
 
-SUPERVISION_OFFICER_METRICS_DESCRIPTION = (
+_DESCRIPTION = (
     """Aggregated metrics at the officer-level for supervision-related metrics"""
 )
 
 
-SUPERVISION_OFFICER_METRICS_QUERY_TEMPLATE = f"""
+_QUERY_TEMPLATE = f"""
 WITH 
 filtered_supervision_officer_aggregated_metrics AS (
-  SELECT *
-  FROM `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized`
-  WHERE 
-    {format_state_specific_officer_aggregated_metric_filters()}
+  {format_state_specific_officer_aggregated_metric_filters()}
 ),
 supervision_officer_metrics AS (
     {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.SUPERVISION_OFFICER], cte_source="filtered_supervision_officer_aggregated_metrics")}
-),
-final_supervision_officer_metrics AS (
-  SELECT 
-    supervision_officer_metrics.state_code AS state_code,
-    metric_id,
-    metric_value,
-    period,
-    end_date,
-    officer_id
-  FROM supervision_officer_metrics
-  INNER JOIN `{{project_id}}.{{outliers_views_dataset}}.supervision_officers_materialized` officers
-    ON officers.external_id = supervision_officer_metrics.officer_id and officers.state_code = supervision_officer_metrics.state_code
 )
 
 SELECT 
     {{columns}}
-FROM final_supervision_officer_metrics
+FROM supervision_officer_metrics
 """
 
 SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET,
-    view_id=SUPERVISION_OFFICER_METRICS_VIEW_NAME,
-    view_query_template=SUPERVISION_OFFICER_METRICS_QUERY_TEMPLATE,
-    description=SUPERVISION_OFFICER_METRICS_DESCRIPTION,
-    aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
-    outliers_views_dataset=dataset_config.OUTLIERS_VIEWS_DATASET,
+    view_id=_VIEW_NAME,
+    view_query_template=_QUERY_TEMPLATE,
+    description=_DESCRIPTION,
     should_materialize=True,
     columns=[
         "state_code",
