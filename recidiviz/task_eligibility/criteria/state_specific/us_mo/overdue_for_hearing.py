@@ -69,11 +69,20 @@ _QUERY_TEMPLATE = f"""
         ON
             c.person_id = current_hearing_due_span.person_id
             AND c.state_code = current_hearing_due_span.state_code
-            AND current_hearing_due_span.hearing_date <= c.start_date
-            AND current_hearing_due_span.next_review_date >= c.start_date
+            AND (
+                /* A due date for an initial hearing is not inferred if either a hearing
+                is already scheduled upon assignment, or a hearing occurs the day of assignment
+                (regardless of whether the next hearing is scheduled at that hearing). */
+                (
+                    current_hearing_due_span.hearing_date < c.start_date
+                    AND
+                    current_hearing_due_span.next_review_date >= c.start_date
+                )
+                OR current_hearing_due_span.hearing_date = c.start_date
+            )
         WHERE 
             -- TODO(#21788): Use ingested enums once MO housing_unit_type is ingested
-            confinement_type IN ("SOLITARY_CONFINEMENT", "PROTECTIVE_CUSTODY")
+            confinement_type IN ("SOLITARY_CONFINEMENT")
             /* Filter out the beginning of Restrictive Housing assignments in cases
             where there has already been a hearing scheduled (this may happen if
             someone's hearing occurs before they're transferred to Restrictive
@@ -128,7 +137,7 @@ _QUERY_TEMPLATE = f"""
             AND h.hearing_date >= c.start_date
             AND h.hearing_date < c.end_date
             -- TODO(#23550): Use ingested enums once MO housing_unit_type is ingested
-            AND c.confinement_type IN ("PROTECTIVE_CUSTODY", "SOLITARY_CONFINEMENT")
+            AND c.confinement_type IN ("SOLITARY_CONFINEMENT")
     )
     ,
     -- Add 1-day lag so that someone is overdue after, but not on, the "next review date"

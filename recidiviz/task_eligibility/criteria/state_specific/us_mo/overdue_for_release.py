@@ -71,7 +71,9 @@ _QUERY_TEMPLATE = f"""
             end_date as sanction_end_date
         )) AS reason
     FROM sanction_spans_without_duplicates
-    WHERE start_date != end_date
+    WHERE 
+        start_date != end_date
+        AND start_date <= CURRENT_DATE('US/Pacific')
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

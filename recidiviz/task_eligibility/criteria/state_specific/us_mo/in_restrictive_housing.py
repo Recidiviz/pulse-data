@@ -37,7 +37,7 @@ _QUERY_TEMPLATE = """
         person_id, 
         start_date,
         end_date,
-        confinement_type IN ("PROTECTIVE_CUSTODY", "SOLITARY_CONFINEMENT") as meets_criteria,
+        confinement_type IN ("SOLITARY_CONFINEMENT") as meets_criteria,
         TO_JSON(STRUCT(
             confinement_type AS confinement_type
         )) AS reason
