@@ -17,9 +17,6 @@
 """The configuration objects for Outliers states"""
 from typing import Dict
 
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
@@ -67,11 +64,11 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             ),
         ],
         supervision_officer_label="officer",
-        supervision_officer_aggregated_metric_filters="""
+        supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
-        additional_exclusions={"specialized_caseload_type_primary": ["OTHER"]},
         learn_more_url="https://drive.google.com/file/d/1nMRMNGRFMzk_e7zAcCvuKvMP9YBOeesU/view",
+        supervision_staff_exclusions="COALESCE(specialized_caseload_type_primary,'') NOT IN ('OTHER')",
     ),
     StateCode.US_PA: OutliersConfig(
         metrics=[
@@ -94,14 +91,12 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 event_name="absconsions",
             ),
         ],
-        unit_of_analysis_to_exclusion={
-            MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: ["FAST", "CO"]
-        },
         supervision_officer_label="agent",
-        supervision_officer_aggregated_metric_filters="""
+        supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75
         AND (avg_population_community_confinement / avg_daily_population) <= 0.05""",
         learn_more_url="https://drive.google.com/file/d/1NvTuKhN-N1-ba1KMI562_z9ka932JqXQ/view",
+        supervision_staff_exclusions="COALESCE(supervision_district, supervision_district_inferred, '') NOT IN ('FAST', 'CO')",
     ),
 }

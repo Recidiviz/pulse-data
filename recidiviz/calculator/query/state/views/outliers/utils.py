@@ -15,66 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for building Outliers views"""
-from typing import List
-
-from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
-    get_outliers_enabled_states,
-)
-from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 
 
-def get_all_config_based_query_filters_query_str() -> str:
-    """Returns additional clauses for filtering based on the state-configs"""
-    enabled_states = get_outliers_enabled_states()
-
-    state_filters = []
-    for state_code in enabled_states:
-        state_exclusions = get_state_specific_config_exclusions(StateCode(state_code))
-
-        state_filter = (
-            f"state_code = '{StateCode(state_code).value}' AND "
-            + " AND ".join(state_exclusions)
-        )
-        state_filters.append(f"NOT({state_filter})")
-
-    return f"({' OR '.join(state_filters)})"
-
-
-def get_state_specific_config_exclusions(state_code: StateCode) -> List[str]:
-    """
-    For a given state, use the OutliersConfig object to get exclusions for.
-    """
-    exclusions = []
-    state_outliers_config = OUTLIERS_CONFIGS_BY_STATE[state_code]
-
-    if state_outliers_config.unit_of_analysis_to_exclusion:
-        unit_of_analysis_exclusions = [
-            f"{f'supervision_{unit_of_analysis.value.lower()}'} IN ({list_to_query_string(exclusions, quoted=True)})"
-            for unit_of_analysis, exclusions in state_outliers_config.unit_of_analysis_to_exclusion.items()
-        ]
-
-        exclusions.extend(unit_of_analysis_exclusions)
-
-    if state_outliers_config.additional_exclusions:
-        additional_exclusions = [
-            f"{f'{column}'} IN ({list_to_query_string(excluded_values, quoted=True)})"
-            for column, excluded_values in state_outliers_config.additional_exclusions.items()
-        ]
-        exclusions.extend(additional_exclusions)
-
-    return exclusions
-
-
 def format_state_specific_officer_aggregated_metric_filters() -> str:
-    filters = []
+
+    state_specific_ctes = []
+
     for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
-        filters.append(
-            f"""(
-        state_code = '{state_code.value}' {config.supervision_officer_aggregated_metric_filters if config.supervision_officer_aggregated_metric_filters else ""}
-    )
+        state_specific_ctes.append(
+            f"""
+    SELECT 
+        m.*
+    FROM `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` m
+    -- Join on staff product view to ensure staff exclusions are applied
+    INNER JOIN `{{project_id}}.outliers_views.supervision_officers_materialized` o
+        ON m.state_code = o.state_code AND m.officer_id = o.external_id
+    WHERE 
+        m.state_code = '{state_code.value}' {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""}
 """
         )
 
-    return "    OR\n    ".join(filters)
+    return "\n      UNION ALL\n".join(state_specific_ctes)
