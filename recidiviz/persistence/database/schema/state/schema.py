@@ -696,6 +696,7 @@ state_task_type = Enum(
     state_enum_strings.state_task_type_supervision_case_plan_update,
     state_enum_strings.state_task_type_discharge_early_from_supervision,
     state_enum_strings.state_task_type_discharge_from_incarceration,
+    state_enum_strings.state_task_type_discharge_from_incarceration_min,
     state_enum_strings.state_task_type_discharge_from_supervision,
     state_enum_strings.state_task_type_drug_screen,
     state_enum_strings.state_task_type_employment_verification,

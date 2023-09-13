@@ -40,6 +40,9 @@ class StateTaskType(StateEntityEnum):
     DISCHARGE_FROM_INCARCERATION = (
         state_enum_strings.state_task_type_discharge_from_incarceration
     )
+    DISCHARGE_FROM_INCARCERATION_MIN = (
+        state_enum_strings.state_task_type_discharge_from_incarceration_min
+    )
     DISCHARGE_FROM_SUPERVISION = (
         state_enum_strings.state_task_type_discharge_from_supervision
     )
@@ -97,6 +100,11 @@ _STATE_TASK_TYPES_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
         "official sentence termination date (i.e. this person is overdue for "
         "discharge). This person may transition to supervision if they are sentenced "
         "to serve a stacked supervision sentence."
+    ),
+    StateTaskType.DISCHARGE_FROM_INCARCERATION_MIN: (
+        "Consider discharging this person from incarceration because they have passed "
+        "their earliest possible sentence termination date. This person may transition "
+        "to supervision if they are sentenced to serve a stacked supervision sentence."
     ),
     StateTaskType.DISCHARGE_FROM_SUPERVISION: (
         "Discharge this person from supervision because they have passed their "
