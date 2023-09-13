@@ -25,7 +25,6 @@ import unittest
 from typing import List, Optional, Type, Union, cast
 
 import pytest
-from freezegun import freeze_time
 from mock import patch
 
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -73,6 +72,9 @@ from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
 from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents import (
     FakeInstanceIngestViewContents,
 )
+from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
+    DEFAULT_UPDATE_DATETIME,
+)
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
     clear_db_ids,
@@ -86,7 +88,6 @@ FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
 
 @pytest.mark.uses_db
-@freeze_time("2019-09-27")
 class RegionDirectIngestControllerTestCase(unittest.TestCase):
     """Class with basic functionality for tests of all region-specific
     BaseDirectIngestControllers.
@@ -271,7 +272,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
                 f"type [{type(self.controller.fs.gcs_file_system)}]"
             )
 
-        now = datetime.datetime.now()
+        now = DEFAULT_UPDATE_DATETIME
         yesterday = now - datetime.timedelta(days=1)
         file_tag, _ext = os.path.splitext(filename)
 

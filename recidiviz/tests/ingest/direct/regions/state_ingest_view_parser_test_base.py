@@ -68,6 +68,8 @@ YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
     r"^# yaml-language-server: \$schema=(?P<schema_path>.*schema.json)$"
 )
 
+DEFAULT_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0)
+
 
 class StateIngestViewParserTestBase:
     """Base test class for ingest view parser tests."""
@@ -101,7 +103,7 @@ class StateIngestViewParserTestBase:
     def _build_parser(
         self, ingest_instance: DirectIngestInstance
     ) -> IngestViewResultsParser:
-        results_update_datetime = datetime.datetime.now()
+        results_update_datetime = DEFAULT_UPDATE_DATETIME
         region = self._region()
         return IngestViewResultsParser(
             delegate=IngestViewResultsParserDelegateImpl(

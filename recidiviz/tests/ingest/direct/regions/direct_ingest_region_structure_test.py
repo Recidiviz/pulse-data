@@ -24,6 +24,7 @@ from datetime import datetime
 from types import ModuleType
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
+import pytest
 import yaml
 from mock import patch
 from parameterized import parameterized
@@ -54,6 +55,9 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     IngestViewResultsParserDelegateImpl,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration import (
     DeleteFromRawTableMigration,
     UpdateRawTableMigration,
@@ -76,13 +80,12 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
-    FakeDirectIngestInstanceStatusManager,
-)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.common.constants.state.external_id_types_test import (
     get_external_id_types,
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 from recidiviz.utils import environment, metadata
 from recidiviz.utils.environment import GCPEnvironment
 
@@ -92,10 +95,25 @@ YAML_LANGUAGE_SERVER_PRAGMA = re.compile(
 )
 
 
+@pytest.mark.uses_db
 class DirectIngestRegionDirStructureBase:
     """Tests that each regions direct ingest directory is set up properly."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: str
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
     def setUp(self) -> None:
+        self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
+            SchemaType.OPERATIONS
+        )
+        local_persistence_helpers.use_on_disk_postgresql_database(
+            self.operations_database_key
+        )
+
         self.bq_client_patcher = patch("google.cloud.bigquery.Client")
         self.storage_client_patcher = patch("google.cloud.storage.Client")
         self.task_client_patcher = patch("google.cloud.tasks_v2.CloudTasksClient")
@@ -107,6 +125,16 @@ class DirectIngestRegionDirStructureBase:
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
+
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.operations_database_key
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     @property
     @abc.abstractmethod
@@ -139,28 +167,24 @@ class DirectIngestRegionDirStructureBase:
         allow_unlaunched: bool,
         region_module_override: Optional[ModuleType],
     ) -> BaseDirectIngestController:
-        with patch(
-            f"{BaseDirectIngestController.__module__}.PostgresDirectIngestInstanceStatusManager",
-        ) as instance_status_manager_cls:
-            instance_status_manager_cls.return_value = (
-                FakeDirectIngestInstanceStatusManager(
-                    region_code=region_code,
-                    ingest_instance=ingest_instance,
-                    initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
-                )
+        # Seed the DB with an initial status
+        PostgresDirectIngestInstanceStatusManager(
+            region_code=region_code,
+            ingest_instance=ingest_instance,
+        ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
+
+        controller = DirectIngestControllerFactory.build(
+            region_code=region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            allow_unlaunched=allow_unlaunched,
+            region_module_override=region_module_override,
+        )
+        if not isinstance(controller, BaseDirectIngestController):
+            raise ValueError(
+                f"Expected type BaseDirectIngestController, found [{controller}] "
+                f"with type [{type(controller)}]."
             )
-            controller = DirectIngestControllerFactory.build(
-                region_code=region_code,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                allow_unlaunched=allow_unlaunched,
-                region_module_override=region_module_override,
-            )
-            if not isinstance(controller, BaseDirectIngestController):
-                raise ValueError(
-                    f"Expected type BaseDirectIngestController, found [{controller}] "
-                    f"with type [{type(controller)}]."
-                )
-            return controller
+        return controller
 
     def test_region_dirname_matches_pattern(self) -> None:
         for d in self.region_dir_names:

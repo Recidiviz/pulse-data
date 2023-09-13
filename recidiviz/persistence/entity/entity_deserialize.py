@@ -124,9 +124,15 @@ def entity_deserialize(
             if is_str(field):
                 return normalize(field_value)
             if is_datetime(field):
-                return parse_datetime(field_value)
+                # Pick an arbitrary from_dt so parsing is deterministic (used for
+                # parsing strings like 10Y 1D into dates).
+                return parse_datetime(
+                    field_value, from_dt=datetime.datetime(2020, 1, 1)
+                )
             if is_date(field):
-                return parse_date(field_value)
+                # Pick an arbitrary from_dt so parsing is deterministic (used for
+                # parsing strings like 10Y 1D into dates).
+                return parse_date(field_value, from_dt=datetime.datetime(2020, 1, 1))
             if is_int(field):
                 return parse_int(field_value)
             if is_bool(field):
