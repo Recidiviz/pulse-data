@@ -190,7 +190,7 @@ tagPrimaryKeyColsMissing file description
         documentation_generator = DirectIngestDocumentationGenerator()
         tags = ["tagFullyEmptyFile", "tagHeadersNoContents", "tagBasicData"]
         my_collector = FakeDirectIngestViewQueryBuilderCollector(
-            region=fake_region(), controller_ingest_view_rank_list=tags
+            region=fake_region(), expected_ingest_views=tags
         )
         expected_referencing_views = {
             "tagFullyEmptyFile": ["tagFullyEmptyFile"],

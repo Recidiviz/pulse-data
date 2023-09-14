@@ -274,26 +274,12 @@ class DirectIngestRegionDirStructureBase:
             region = get_direct_ingest_region(
                 region_code, region_module_override=self.region_module_override
             )
-            with patch(
-                "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
-            ):
-                controller = self._build_controller(
-                    region_code=region_code,
-                    ingest_instance=DirectIngestInstance.PRIMARY,
-                    allow_unlaunched=True,
-                    region_module_override=self.region_module_override,
-                )
+            raw_file_manager = DirectIngestRegionRawFileConfig(
+                region_code=region_code,
+                region_module=self.region_module_override,
+            )
 
-                builders = DirectIngestViewQueryBuilderCollector(
-                    region, controller.get_ingest_view_rank_list()
-                ).collect_query_builders()
-
-                raw_file_manager = DirectIngestRegionRawFileConfig(
-                    region_code=region_code,
-                    region_module=self.region_module_override,
-                )
-
-            if not builders and not raw_file_manager.raw_file_configs:
+            if not raw_file_manager.raw_file_configs:
                 continue
 
             if region.is_ingest_launched_in_env() is not None:
@@ -370,33 +356,20 @@ class DirectIngestRegionDirStructureBase:
 
     @parameterized.expand(
         [
-            ("build_prod", "recidiviz-123", GCPEnvironment.PRODUCTION),
-            ("build_staging", "recidiviz-staging", GCPEnvironment.STAGING),
+            ("build_prod", "recidiviz-123"),
+            ("build_staging", "recidiviz-staging"),
         ]
     )
-    def test_collect_and_print_ingest_views(
-        self, _name: str, project_id: str, env: GCPEnvironment
-    ) -> None:
-        with patch(
-            "recidiviz.utils.environment.get_gcp_environment",
-            return_value=env.value,
-        ), patch("recidiviz.utils.metadata.project_id", return_value=project_id):
+    def test_collect_and_print_ingest_views(self, _name: str, project_id: str) -> None:
+        with patch("recidiviz.utils.metadata.project_id", return_value=project_id):
             for region_code in self.region_dir_names:
                 region = get_direct_ingest_region(
                     region_code, region_module_override=self.region_module_override
                 )
-                if not region.exists_in_env():
-                    continue
 
-                controller = self._build_controller(
-                    region_code=region_code,
-                    ingest_instance=DirectIngestInstance.PRIMARY,
-                    allow_unlaunched=True,
-                    region_module_override=self.region_module_override,
-                )
-
+                # Collect all views regardless of gating and make sure they build
                 views = DirectIngestViewQueryBuilderCollector(
-                    region, controller.get_ingest_view_rank_list()
+                    region, expected_ingest_views=[]
                 ).collect_query_builders()
                 for view in views:
                     view.build_and_print()

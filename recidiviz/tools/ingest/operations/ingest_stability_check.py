@@ -57,10 +57,13 @@ from recidiviz.fakes.null_direct_ingest_view_materialization_metadata_manager im
     NullDirectIngestViewMaterializationMetadataManager,
 )
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
-    DirectIngestControllerFactory,
-)
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
+    IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegateImpl,
+)
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
 )
@@ -77,6 +80,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 from recidiviz.utils.context import on_exit
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -177,17 +181,16 @@ def verify_ingest_view_determinism(
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
     dataset_prefix = f"stability_{str(uuid.uuid4())[:6]}"
 
-    # TODO(#10128): We can't instantiate the full controller without patching classes
-    # or inventing new fakes, but all we need is the ingest view rank list so we get the
-    # class and call the protected class method. Once state specific controllers are
-    # simple delegates and don't inherit from base controller, we will be able to
-    # instantiate the full delegate here.
-    controller_cls = DirectIngestControllerFactory.get_controller_class(region=region)
-    ingest_view_rank_list = (
-        controller_cls._get_ingest_view_rank_list(  # pylint: disable=protected-access
-            ingest_instance=ingest_instance
-        )
+    ingest_manifest_collector = IngestViewManifestCollector(
+        region=region,
+        delegate=IngestViewResultsParserDelegateImpl(
+            region=region,
+            schema_type=SchemaType.STATE,
+            ingest_instance=ingest_instance,
+            results_update_datetime=datetime.datetime.now(),
+        ),
     )
+    launched_ingest_views = ingest_manifest_collector.launchable_ingest_views()
 
     ingest_view_contents = InstanceIngestViewContentsImpl(
         big_query_client=bq_client,
@@ -207,15 +210,15 @@ def verify_ingest_view_determinism(
         big_query_client=bq_client,
         view_collector=DirectIngestViewQueryBuilderCollector(
             region,
-            controller_ingest_view_rank_list=ingest_view_rank_list,
+            expected_ingest_views=launched_ingest_views,
         ),
-        launched_ingest_views=ingest_view_rank_list,
+        launched_ingest_views=launched_ingest_views,
     )
 
     current_datetime = datetime.datetime.now()
 
     progress = tqdm(
-        total=len(ingest_view_rank_list),
+        total=len(launched_ingest_views),
         desc="Verifying ingest view determinism",
     )
 
@@ -248,7 +251,7 @@ def verify_ingest_view_determinism(
 
         summary_futures = {
             executor.submit(materialize_ingest_view, ingest_view_name): ingest_view_name
-            for ingest_view_name in ingest_view_rank_list
+            for ingest_view_name in launched_ingest_views
         }
 
     nondeterministic_views = {}
