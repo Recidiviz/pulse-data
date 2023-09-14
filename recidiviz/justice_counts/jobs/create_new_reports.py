@@ -27,9 +27,9 @@ import logging
 
 from sqlalchemy.engine import Engine
 
-from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.report import ReportInterface
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -63,13 +63,11 @@ def main(engine: Engine) -> None:
     previous_year = current_year - 1
 
     logger.info("Generating new Reports in database %s", engine.url)
-    for agency in session.query(schema.Agency).all():
-        child_agencies = AgencyInterface.get_child_agencies_for_agency(
-            session=session, agency=agency
-        )
-        if len(child_agencies) > 0:
-            continue
-
+    for agency in session.query(schema.Agency).filter(
+        # Skip child agencies -- safe to assume their reports will be
+        # created via bulk upload
+        schema.Agency.super_agency_id.is_(None)
+    ):
         logger.info("Generating Reports for Agency %s", agency.name)
 
         agency_datapoints = DatapointInterface.get_agency_datapoints(
@@ -143,7 +141,12 @@ def main(engine: Engine) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
-    justice_counts_engine = SQLAlchemyEngineManager.init_engine(database_key)
+    database_key = SQLAlchemyDatabaseKey.for_schema(
+        SchemaType.JUSTICE_COUNTS,
+    )
+    justice_counts_engine = SQLAlchemyEngineManager.init_engine(
+        database_key=database_key,
+        secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+    )
 
     main(justice_counts_engine)
