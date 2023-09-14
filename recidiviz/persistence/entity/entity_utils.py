@@ -311,9 +311,11 @@ class CoreEntityFieldIndex:
     functionality.
     """
 
-    def __init__(self) -> None:
-        self.state_direction_checker = (
-            SchemaEdgeDirectionChecker.state_direction_checker()
+    def __init__(
+        self, direction_checker: Optional[SchemaEdgeDirectionChecker] = None
+    ) -> None:
+        self.direction_checker = (
+            direction_checker or SchemaEdgeDirectionChecker.state_direction_checker()
         )
 
         # Cache of fields by field type for DatabaseEntity classes
@@ -325,13 +327,6 @@ class CoreEntityFieldIndex:
         self.entity_fields_by_field_type: Dict[
             str, Dict[EntityFieldType, Set[str]]
         ] = defaultdict(lambda: defaultdict(set))
-
-    def _direction_checker(self, entity_name: str) -> SchemaEdgeDirectionChecker:
-        if entity_name.startswith("state_"):
-            return self.state_direction_checker
-        raise ValueError(
-            f"Direction checking only supported for entities in the state schema. Found: {entity_name}"
-        )
 
     def get_fields_with_non_empty_values(
         self, entity: CoreEntity, entity_field_type: EntityFieldType
@@ -403,16 +398,13 @@ class CoreEntityFieldIndex:
         This function is relatively slow and the results should be cached across
         repeated calls.
         """
-        entity_name = entity_cls.get_entity_name()
-        direction_checker = self._direction_checker(entity_name)
-
         back_edges = set()
         forward_edges = set()
         flat_fields = set()
         foreign_keys = set()
 
         for relationship_field_name in entity_cls.get_relationship_property_names():
-            if direction_checker.is_back_edge(entity_cls, relationship_field_name):
+            if self.direction_checker.is_back_edge(entity_cls, relationship_field_name):
                 back_edges.add(relationship_field_name)
             else:
                 forward_edges.add(relationship_field_name)
@@ -448,9 +440,6 @@ class CoreEntityFieldIndex:
         This function is relatively slow and the results should be cached across
         repeated calls.
         """
-        entity_name = entity_cls.get_entity_name()
-        direction_checker = self._direction_checker(entity_name)
-
         back_edges = set()
         forward_edges = set()
         flat_fields = set()
@@ -458,7 +447,7 @@ class CoreEntityFieldIndex:
             # TODO(#1908): Update traversal logic if relationship fields can be
             # different types aside from Entity and List
             if is_forward_ref(attribute) or is_list(attribute):
-                if direction_checker.is_back_edge(entity_cls, field):
+                if self.direction_checker.is_back_edge(entity_cls, field):
                     back_edges.add(field)
                 else:
                     forward_edges.add(field)
