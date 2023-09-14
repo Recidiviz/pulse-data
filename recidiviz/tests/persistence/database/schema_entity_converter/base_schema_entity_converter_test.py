@@ -28,7 +28,6 @@ from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_cla
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 from recidiviz.tests.persistence.database.schema_entity_converter import (
     fake_entities as entities,
 )
@@ -41,6 +40,9 @@ from recidiviz.tests.persistence.database.schema_entity_converter.fake_base_sche
 from recidiviz.tests.persistence.database.schema_entity_converter.fake_entities import (
     RootType,
 )
+from recidiviz.tests.persistence.database.schema_entity_converter.fake_schema_direction_checker import (
+    FAKE_SCHEMA_DIRECTION_CHECKER,
+)
 from recidiviz.tests.utils import fakes
 
 
@@ -50,19 +52,47 @@ class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
     database schema
     """
 
-    CLASS_HIERARCHY = [
-        entities.Root.__name__,
-        entities.Parent.__name__,
-        entities.Child.__name__,
-        entities.Toy.__name__,
-    ]
-
     def __init__(self) -> None:
         class_mapper = SchemaToEntityClassMapper.get(
             schema_module=schema, entities_module=entities
         )
-        direction_checker = SchemaEdgeDirectionChecker(self.CLASS_HIERARCHY, entities)
-        super().__init__(class_mapper, direction_checker)
+        super().__init__(class_mapper, FAKE_SCHEMA_DIRECTION_CHECKER)
+
+
+class SimpsonsFamily:
+    """
+    Convenience class for instantiating a bunch of Entity objects for use
+    in tests. The relationships between these objects are intentionally not
+    set.
+    """
+
+    def __init__(self):
+        self.root = entities.Root.new_with_defaults(
+            root_id=314, type=RootType.SIMPSONS, parents=[]
+        )
+
+        self.homer = entities.Parent.new_with_defaults(
+            parent_id=1011, full_name="Homer Simpson", children=[]
+        )
+
+        self.marge = entities.Parent.new_with_defaults(
+            parent_id=1213, full_name="Marge Simpson", children=[]
+        )
+
+        self.bart = entities.Child.new_with_defaults(
+            child_id=123, full_name="Bart Simpson", parents=[]
+        )
+
+        self.lisa = entities.Child.new_with_defaults(
+            child_id=456, full_name="Lisa Simpson", parents=[]
+        )
+
+        self.maggie = entities.Child.new_with_defaults(
+            child_id=789, full_name="Maggie Simpson", parents=[]
+        )
+
+        self.parent_entities = [self.homer, self.marge]
+        self.child_entities = [self.bart, self.lisa, self.maggie]
 
 
 class TestBaseSchemaEntityConverter(TestCase):
@@ -256,48 +286,13 @@ class TestBaseSchemaEntityConverter(TestCase):
                 for converted_child in converted_parent.children:
                     self._check_parents(converted_child, parent_entities)
 
-    class SimpsonsFamily:
-        """
-        Convenience class for instantiating a bunch of Entity objects for use
-        in tests. The relationships between these objects are intentionally not
-        set.
-        """
-
-        def __init__(self):
-            self.root = entities.Root.new_with_defaults(
-                root_id=314, type=RootType.SIMPSONS, parents=[]
-            )
-
-            self.homer = entities.Parent.new_with_defaults(
-                parent_id=1011, full_name="Homer Simpson", children=[]
-            )
-
-            self.marge = entities.Parent.new_with_defaults(
-                parent_id=1213, full_name="Marge Simpson", children=[]
-            )
-
-            self.bart = entities.Child.new_with_defaults(
-                child_id=123, full_name="Bart Simpson", parents=[]
-            )
-
-            self.lisa = entities.Child.new_with_defaults(
-                child_id=456, full_name="Lisa Simpson", parents=[]
-            )
-
-            self.maggie = entities.Child.new_with_defaults(
-                child_id=789, full_name="Maggie Simpson", parents=[]
-            )
-
-            self.parent_entities = [self.homer, self.marge]
-            self.child_entities = [self.bart, self.lisa, self.maggie]
-
     def test_convert_many_to_many_full_graph(self):
         """
         Tests conversion on a many-to-many schema where all edges are
         explicitly represented on entities.
         """
 
-        family = self.SimpsonsFamily()
+        family = SimpsonsFamily()
 
         family.homer.children = family.child_entities
         family.marge.children = family.child_entities
@@ -313,7 +308,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         inferred but are not explicitly set.
         """
 
-        family = self.SimpsonsFamily()
+        family = SimpsonsFamily()
 
         family.homer.children = family.child_entities
         family.marge.children = family.child_entities
@@ -326,7 +321,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         inferred but are not explicitly set.
         """
 
-        family = self.SimpsonsFamily()
+        family = SimpsonsFamily()
 
         family.marge.children = family.child_entities
         family.bart.parents = [family.homer]
@@ -341,7 +336,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         inferred but are not explicitly set.
         """
 
-        family = self.SimpsonsFamily()
+        family = SimpsonsFamily()
 
         family.homer.children = [family.bart]
         family.marge.children = [family.lisa, family.maggie]
@@ -356,7 +351,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         Tests conversion on a mnay-to-many schema where the parent->children relationship
         is a diamond.
         """
-        family = self.SimpsonsFamily()
+        family = SimpsonsFamily()
 
         family.homer.children = [family.bart]
         family.marge.children = [family.bart]
@@ -368,7 +363,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         """
         Tests converting a simple graph with one root node and one child
         """
-        family = self.SimpsonsFamily()
+        family = SimpsonsFamily()
         self.assertEqual(len(family.homer.children), 0)
         family.root.parents = [family.homer]
 
@@ -395,7 +390,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         Tests converting a graph that has a single root node that is connected
         either directly or indirectly to all entities.
         """
-        family = self.SimpsonsFamily()
+        family = SimpsonsFamily()
 
         family.root.parents = family.parent_entities
         family.homer.children = family.child_entities
@@ -426,7 +421,7 @@ class TestBaseSchemaEntityConverter(TestCase):
                     self._check_parents(converted_child, family.parent_entities)
 
     def test_many_to_one_no_backref(self):
-        family = self.SimpsonsFamily()
+        family = SimpsonsFamily()
         self.assertEqual(len(family.homer.children), 0)
         family.root.parents = [family.homer]
         family.homer.children = [family.bart, family.maggie]
