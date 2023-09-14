@@ -34,6 +34,7 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import in_gcp_staging
 from recidiviz.utils.types import assert_type, non_optional
@@ -256,19 +257,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             email = assert_type(request_json.get("email"), str)
             name = assert_type(request_json.get("name"), str)
 
-            db_user = UserAccountInterface.get_user_by_email(
-                session=session, email=email
-            )
-            if db_user:
-                return (
-                    jsonify(
-                        {
-                            "error": "User with this email already exists in the database."
-                        }
-                    ),
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                )
-
             auth0_client = _get_auth0_client()
             matching_users = auth0_client.get_all_users_by_email_addresses(
                 email_addresses=[email]
@@ -288,6 +276,18 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 email=email,
                 auth0_user_id=auth0_user_id,
             )
+
+            if email is not None and "@csg.org" in email:
+                # Add new CSG users to all agencies
+                all_agencies = AgencyInterface.get_agencies(session=session)
+                UserAccountInterface.add_or_update_user_agency_association(
+                    session=session,
+                    user=user,
+                    agencies=all_agencies,
+                    role=schema.UserAccountRole.AGENCY_ADMIN
+                    if metadata.project_id() == "justice-counts-staging"
+                    else schema.UserAccountRole.READ_ONLY,
+                )
 
             return (
                 jsonify({"user": user.to_json()}),

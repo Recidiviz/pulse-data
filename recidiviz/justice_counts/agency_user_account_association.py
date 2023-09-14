@@ -110,6 +110,7 @@ class AgencyUserAccountAssociationInterface:
                 auth0_user_id=auth0_user_id,
                 email=email,
             )
+
             # Add the user to the agency
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
@@ -386,7 +387,6 @@ class AgencyUserAccountAssociationInterface:
     def get_subscribed_user_emails_by_agency_id(
         session: Session, agency_id: int
     ) -> List[str]:
-
         subscribed_user_email_tuples = (
             session.query(schema.UserAccount.email)
             .join(
