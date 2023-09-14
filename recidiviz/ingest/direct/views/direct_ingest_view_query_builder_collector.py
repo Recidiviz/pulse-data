@@ -34,11 +34,10 @@ _VIEW_BUILDER_EXPECTED_NAME = "VIEW_BUILDER"
 class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
     """A class that collects all defined ingest view query builders for a given region."""
 
-    def __init__(
-        self, region: DirectIngestRegion, controller_ingest_view_rank_list: List[str]
-    ):
+    def __init__(self, region: DirectIngestRegion, expected_ingest_views: List[str]):
         self.region = region
-        self.controller_ingest_view_rank_list = controller_ingest_view_rank_list
+        # The list of views we expect to find during collection.
+        self.expected_ingest_views = expected_ingest_views
 
     def collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
         if self.region.region_module.__file__ is None:
@@ -83,12 +82,12 @@ class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
                 f"[{found_ingest_view_names}]."
             )
 
-        controller_view_names_set = set(self.controller_ingest_view_rank_list)
-        controller_names_no_view_defined = controller_view_names_set.difference(
+        expected_view_names_set = set(self.expected_ingest_views)
+        expected_names_no_view_defined = expected_view_names_set.difference(
             found_ingest_view_names_set
         )
-        if self.region.is_ingest_launched_in_env() and controller_names_no_view_defined:
+        if expected_names_no_view_defined:
             raise ValueError(
-                f"Found controller ingest view names with no corresponding view "
-                f"defined: {controller_names_no_view_defined}"
+                f"Found expected ingest view names with no corresponding view "
+                f"defined: {expected_names_no_view_defined}"
             )
