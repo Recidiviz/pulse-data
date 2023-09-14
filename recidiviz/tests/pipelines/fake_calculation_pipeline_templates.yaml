@@ -10,7 +10,7 @@ normalization_pipelines:
   - pipeline: normalization_pipeline_2
     job_name: us-yy-normalization
     state_code: US_YY
-    regions: us-east2
+    region: us-east2
 
 metric_pipelines:
   # Full US_XX calculations with no time limit

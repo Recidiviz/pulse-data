@@ -19,32 +19,43 @@ Unit test to test the calculation pipeline DAG logic.
 """
 import os
 import unittest
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 from unittest.mock import patch
 
 import yaml
 from airflow.models import DagRun
 from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
+from airflow.operators.empty import EmptyOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
+from sqlalchemy.orm import Session
 
+from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
+    KNOWN_CONFIGURATION_PARAMETERS,
+)
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
-from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
+from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
+from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.utils.environment import GCPEnvironment
+from recidiviz.utils.yaml_dict import YAMLDict
 
 # Need to import calculation_dag inside test suite so environment variables are set before importing,
 # otherwise calculation_dag will raise an Error and not import.
 # pylint: disable=C0415 import-outside-toplevel
 
 _PROJECT_ID = "recidiviz-testing"
-CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
-    AIRFLOW_WORKING_DIRECTORY,
-    "../pipelines/calculation_pipeline_templates.yaml",
+
+PIPELINES_TESTS_WORKING_DIRECTORY = os.path.dirname(
+    recidiviz_pipelines_tests_module.__file__
+)
+FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
+    PIPELINES_TESTS_WORKING_DIRECTORY,
+    "fake_calculation_pipeline_templates.yaml",
 )
 
 _UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_managed_views_all"
@@ -94,7 +105,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
             "os.environ",
             {
                 "GCP_PROJECT": _PROJECT_ID,
-                "CONFIG_FILE": CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
             },
         )
         self.environment_patcher.start()
@@ -594,3 +604,121 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "--ingest_instance=SECONDARY",
             ],
         )
+
+
+def fake_operator_constructor(*_args: Any, **kwargs: Any) -> EmptyOperator:
+    return EmptyOperator(
+        task_id=kwargs["task_id"],
+        trigger_rule=kwargs["trigger_rule"]
+        if "trigger_rule" in kwargs
+        else TriggerRule.ALL_SUCCESS,
+    )
+
+
+class TestCalculationDagIntegration(AirflowIntegrationTest):
+    """
+    Integration tests for the calculation DAG.
+    """
+
+    CALCULATION_DAG_ID = f"{_PROJECT_ID}_calculation_dag"
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.environment_patcher = patch(
+            "os.environ",
+            {
+                "GCP_PROJECT": _PROJECT_ID,
+            },
+        )
+        self.environment_patcher.start()
+
+        from recidiviz.airflow.dags.calculation_dag import create_calculation_dag
+
+        self.project_patcher = patch(
+            "recidiviz.airflow.dags.calculation_dag.get_project_id",
+            return_value=_PROJECT_ID,
+        )
+        self.project_patcher.start()
+
+        self.pipeline_config_yaml_path_patcher = patch(
+            "recidiviz.airflow.dags.calculation_dag._get_pipeline_config",
+            return_value=YAMLDict.from_path(FAKE_PIPELINE_CONFIG_YAML_PATH),
+        )
+        self.pipeline_config_yaml_path_patcher.start()
+
+        self.project_environment_patcher = patch(
+            "recidiviz.utils.environment.get_environment_for_project",
+            return_value=GCPEnvironment.STAGING,
+        )
+        self.project_environment_patcher.start()
+
+        self.kubernetes_pod_operator_patcher = patch(
+            "recidiviz.airflow.dags.calculation_dag.build_kubernetes_pod_task",
+            side_effect=fake_operator_constructor,
+        )
+        self.kubernetes_pod_operator_patcher.start()
+
+        self.recidiviz_dataflow_operator_patcher = patch(
+            "recidiviz.airflow.dags.calculation_dag.RecidivizDataflowFlexTemplateOperator",
+            side_effect=fake_operator_constructor,
+        )
+        self.recidiviz_dataflow_operator_patcher.start()
+
+        self.dag = create_calculation_dag()
+
+        self.known_configuration_parameters_patcher = patch.dict(
+            KNOWN_CONFIGURATION_PARAMETERS,
+            {self.dag.dag_id: KNOWN_CONFIGURATION_PARAMETERS["None_calculation_dag"]},
+        )
+        self.known_configuration_parameters_patcher.start()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.environment_patcher.stop()
+        self.project_patcher.stop()
+        self.pipeline_config_yaml_path_patcher.stop()
+        self.project_environment_patcher.stop()
+        self.kubernetes_pod_operator_patcher.stop()
+        self.recidiviz_dataflow_operator_patcher.stop()
+        self.known_configuration_parameters_patcher.stop()
+
+    def test_calculation_dag(self) -> None:
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                self.dag, session=session, run_conf={"ingest_instance": "PRIMARY"}
+            )
+
+    def test_calculation_dag_with_state(self) -> None:
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                self.dag,
+                session=session,
+                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_skipped_ids=[
+                    r"US[_-]YY",
+                ],
+            )
+            self.assertIn(
+                "normalization.US_XX_start",
+                self.dag.task_ids,
+            )
+
+    def test_calculation_dag_secondary(self) -> None:
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                self.dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "SECONDARY",
+                    "state_code_filter": "US_XX",
+                    "sandbox_prefix": "test_prefix",
+                },
+                expected_skipped_ids=[
+                    r"US[_-]YY",
+                ],
+            )
+            self.assertIn(
+                "normalization.US_XX_start",
+                self.dag.task_ids,
+            )

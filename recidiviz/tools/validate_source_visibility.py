@@ -289,19 +289,16 @@ def main() -> int:
 
     valid_calculation_dag_prefixes = {
         "recidiviz.airflow.dags",
-        "recidiviz.pipelines",
         "recidiviz.calculator.query.state.dataset_config",
+        "recidiviz.common",
         "recidiviz.cloud_storage",
-        "recidiviz.common.attr_validators",
-        "recidiviz.common.constants.states",
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.metrics.export.products",
+        "recidiviz.persistence.database.reserved_words",
+        "recidiviz.pipelines",
         "recidiviz.tools.utils.script_helpers",
-        "recidiviz.utils.environment",
-        "recidiviz.utils.metadata",
-        "recidiviz.utils.yaml_dict",
-        "recidiviz.big_query.address_overrides",
-        "recidiviz.big_query.big_query_address",
+        "recidiviz.utils",
+        "recidiviz.big_query",
     }
 
     success &= check_dependencies_for_entrypoint(

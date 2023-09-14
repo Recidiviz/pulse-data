@@ -37,6 +37,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.email import can_send_mail
 
+# TODO(#23873): Remove loading of environment variables from at beginning of file.
 project_id = os.environ.get("GCP_PROJECT")
 DAG_ID = f"{project_id}_hourly_monitoring_dag"
 

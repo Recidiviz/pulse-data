@@ -17,10 +17,11 @@
 """Test utilities for DAG tests"""
 import logging
 import os
+import re
 import sys
 import unittest
 from datetime import datetime
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 from unittest.mock import patch
 
 import attr
@@ -132,19 +133,21 @@ class AirflowIntegrationTest(unittest.TestCase):
         dag: DAG,
         session: Session,
         run_conf: Optional[Dict[str, Any]] = None,
-        expected_failure_task_ids: Optional[Set[str]] = None,
-        expected_skipped_task_ids: Optional[Set[str]] = None,
+        expected_failure_ids: Optional[List[str]] = None,
+        expected_skipped_ids: Optional[List[str]] = None,
     ) -> DagTestResult:
         """
         A Modified version of 'dag.test'. Will run the full dag to allow
-        looking up statuses in the postgres database. Failure messages are stored in self.failure_messages.
+        looking up statuses in the postgres database. `expected_failure_ids` and `expected_skipped_ids`
+        take regexes. Failure messages are stored in self.failure_messages.
         """
 
-        if not expected_failure_task_ids:
-            expected_failure_task_ids = set()
-        if not expected_skipped_task_ids:
-            expected_skipped_task_ids = set()
-
+        expected_failure_task_ids = _find_task_ids_for_given_search_regexes(
+            dag, expected_failure_ids or []
+        )
+        expected_skipped_task_ids = _find_task_ids_for_given_search_regexes(
+            dag, expected_skipped_ids or []
+        )
         failure_messages: Dict[str, str] = {}
 
         def add_logger_if_needed(ti: TaskInstance) -> None:
@@ -205,7 +208,7 @@ class AirflowIntegrationTest(unittest.TestCase):
         dag.run(ignore_first_depends_on_past=True, verbose=True)
 
         for task_instance in dag.tasks:
-            task_state = self._get_task_instance_state(task_instance.task_id, session)
+            task_state = self.get_task_instance_state(task_instance.task_id, session)
             if (
                 task_state == TaskInstanceState.SKIPPED
                 and task_instance.task_id not in expected_skipped_task_ids
@@ -292,7 +295,7 @@ class AirflowIntegrationTest(unittest.TestCase):
             raise ValueError("DagRun not found")
         return DagRunState(rows[0])
 
-    def _get_task_instance_state(
+    def get_task_instance_state(
         self, task_id: str, session: Session
     ) -> TaskInstanceState:
         """Get the state of the task instance with task_id from the most recent dag run."""
@@ -304,3 +307,26 @@ class AirflowIntegrationTest(unittest.TestCase):
         if not rows:
             raise ValueError(f"Task [{task_id}] not found")
         return TaskInstanceState(rows[0])
+
+
+def _find_task_ids_for_given_search_regexes(
+    dag_to_search: DAG, search_regexes: List[str]
+) -> Set[str]:
+    """
+    Returns a set of task ids that match the given search regexes. All task ids that match
+    any of the regexes will be returned. Note that regex search ignores case sensitivity.
+    """
+    found_task_ids = set()
+
+    for search_regex in search_regexes or []:
+        matching_task_ids = set()
+        for task_id in dag_to_search.task_dict:
+            if re.search(search_regex, task_id, re.I):
+                matching_task_ids.add(task_id)
+        if len(matching_task_ids) == 0:
+            raise ValueError(
+                f"Could not find task or task group with id: {search_regex}"
+            )
+        found_task_ids.update(matching_task_ids)
+
+    return found_task_ids
