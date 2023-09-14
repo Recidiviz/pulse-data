@@ -117,10 +117,22 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
         not applicable for a given instance."""
         all_enum_values = list(DirectIngestStatus)
 
+        # TODO(#23799): Remove this list once status transitions are supported for these
+        #  statuses.
+        not_yet_supported_statuses = {
+            DirectIngestStatus.INITIAL_STATE,
+            DirectIngestStatus.RAW_DATA_UP_TO_DATE,
+            DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+            DirectIngestStatus.RAW_DATA_REIMPORT_CANCELED,
+            DirectIngestStatus.RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS,
+            DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
+        }
+
         primary_differences = list(
             set(all_enum_values)
             - set(INVALID_STATUSES[DirectIngestInstance.PRIMARY])
             - set(VALID_CURRENT_STATUS_TRANSITIONS[DirectIngestInstance.PRIMARY].keys())
+            - set(not_yet_supported_statuses)
         )
         self.assertEqual(len(primary_differences), 0)
 
@@ -130,6 +142,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             - set(
                 VALID_CURRENT_STATUS_TRANSITIONS[DirectIngestInstance.SECONDARY].keys()
             )
+            - set(not_yet_supported_statuses)
         )
         self.assertEqual(len(secondary_differences), 0)
 
