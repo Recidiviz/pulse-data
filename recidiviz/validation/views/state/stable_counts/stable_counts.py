@@ -66,8 +66,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2022, 11, 1),
                         date(2022, 12, 1),
                         date(2023, 3, 1),
-                    ],
-                },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    StateCode.US_OR: [
+                        date(2023, 8, 1)
+                    ],  # TODO(#23918): Remove once OR sends data
+                },
             ),
             DateCol(
                 date_column_name="release_date",
@@ -77,8 +80,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2022, 11, 1),
                         date(2022, 12, 1),
                         date(2023, 2, 1),
-                    ],
-                },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    StateCode.US_OR: [
+                        date(2023, 8, 1)
+                    ],  # TODO(#23918): Remove once OR sends data
+                },
             ),
         ],
         # TODO(#21848): add functionality for disaggregation
@@ -94,8 +100,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 1, 1),
                         date(2023, 2, 1),
                         date(2022, 12, 1),
-                    ],
-                },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    StateCode.US_OR: [
+                        date(2023, 8, 1)
+                    ],  # TODO(#23918): Remove once OR sends data
+                },
             ),
             DateCol(
                 date_column_name="termination_date",
@@ -105,8 +114,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 1, 1),
                         date(2023, 2, 1),
                         date(2022, 12, 1),
-                    ],
-                },  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    StateCode.US_OR: [
+                        date(2023, 8, 1)
+                    ],  # TODO(#23918): Remove once OR sends data
+                },
             ),
         ]
         # TODO(#21848): add functionality for disaggregation
