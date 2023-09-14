@@ -26,9 +26,6 @@ from airflow.models import DagBag
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     DISCRETE_CONFIGURATION_PARAMETERS,
 )
-from recidiviz.airflow.tests.calculation_dag_test import (
-    CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
-)
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER
 
 
@@ -36,7 +33,6 @@ from recidiviz.airflow.tests.test_utils import DAG_FOLDER
     "os.environ",
     {
         "GCP_PROJECT": "recidiviz-testing",
-        "CONFIG_FILE": CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH,
     },
 )
 class TestDagIntegrity(unittest.TestCase):

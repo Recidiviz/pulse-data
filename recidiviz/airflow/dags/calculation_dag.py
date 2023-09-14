@@ -18,7 +18,6 @@
 The DAG configuration to run the calculation pipelines in Dataflow simultaneously.
 This file is uploaded to GCS on deploy.
 """
-import os
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Type, Union
 
@@ -47,6 +46,7 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 )
 from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
+from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
 from recidiviz.airflow.dags.utils.state_code_branch import create_state_code_branching
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
@@ -55,6 +55,7 @@ from recidiviz.metrics.export.products.product_configs import (
     ProductConfigs,
     ProductExportConfig,
 )
+from recidiviz.pipelines.dataflow_config import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
@@ -76,15 +77,11 @@ GCP_PROJECT_STAGING = "recidiviz-staging"
 # Need a disable expression-not-assigned because the chaining ('>>') doesn't need expressions to be assigned
 # pylint: disable=W0106 expression-not-assigned
 
-if (config_file_opt := os.environ.get("CONFIG_FILE")) is None:
-    raise ValueError("Configuration file not specified")
-if not (project_id_opt := os.environ.get("GCP_PROJECT")):
-    raise ValueError("project_id must be configured.")
-
-config_file: str = config_file_opt
-project_id: str = project_id_opt
-
 retry: Retry = Retry(predicate=lambda _: False)
+
+
+def _get_pipeline_config() -> YAMLDict:
+    return YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
 
 def update_managed_views_operator(
@@ -201,7 +198,7 @@ def create_pipeline_configs_by_state(
 ) -> Dict[str, List[YAMLDict]]:
     pipeline_params_by_state: Dict[str, List[YAMLDict]] = defaultdict(list)
     for pipeline_config in pipeline_configs:
-        if project_id == GCP_PROJECT_STAGING or not pipeline_config.peek_optional(
+        if get_project_id() == GCP_PROJECT_STAGING or not pipeline_config.peek_optional(
             "staging_only", bool
         ):
             state_code = pipeline_config.peek("state_code", str)
@@ -235,7 +232,7 @@ def build_dataflow_pipeline_task_group(
                 config["job_name"] = f"{job_name}-{ingest_instance.lower()}"
 
             parameters: PipelineParameters = parameter_cls(
-                project=project_id,
+                project=get_project_id(),
                 ingest_instance=ingest_instance,
                 **config,  # type: ignore
             )
@@ -249,14 +246,14 @@ def build_dataflow_pipeline_task_group(
             task_id="run_pipeline",
             location=pipeline_config.peek("region", str),
             body=create_flex_template(),
-            project_id=project_id,
+            project_id=get_project_id(),
         )
 
     return dataflow_pipeline_group
 
 
 def normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
-    normalization_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+    normalization_pipelines = _get_pipeline_config().pop_dicts(
         "normalization_pipelines"
     )
     normalization_pipeline_params_by_state: Dict[
@@ -275,8 +272,8 @@ def normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
 
 def post_normalization_pipeline_branches_by_state_code() -> Dict[str, TaskGroup]:
     """Creates a TaskGroup for each state that contains all the post-normalization pipelines for that state."""
-    metric_pipelines = YAMLDict.from_path(config_file).pop_dicts("metric_pipelines")
-    supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
+    metric_pipelines = _get_pipeline_config().pop_dicts("metric_pipelines")
+    supplemental_dataset_pipelines = _get_pipeline_config().pop_dicts(
         "supplemental_dataset_pipelines"
     )
     metric_pipeline_params_by_state = create_pipeline_configs_by_state(metric_pipelines)
@@ -351,7 +348,7 @@ def metric_export_branches_by_state_code(
 # We set catchup to False, it ensures that extra DAG runs aren't enqueued if the DAG
 # is paused and re-enabled.
 @dag(
-    dag_id=f"{project_id}_calculation_dag",
+    dag_id=f"{get_project_id()}_calculation_dag",
     default_args=DEFAULT_ARGS,
     schedule=None,
     catchup=False,
@@ -443,4 +440,4 @@ def create_calculation_dag() -> None:
     trigger_update_all_views >> metric_exports
 
 
-create_calculation_dag()
+calculation_dag = create_calculation_dag()

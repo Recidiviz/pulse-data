@@ -36,6 +36,7 @@ from recidiviz.airflow.dags.utils.environment import (
 )
 from recidiviz.utils.environment import RECIDIVIZ_ENV, get_environment_for_project
 
+# TODO(#23873): Remove loading of environment variables from at beginning of file.
 _project_id = os.environ.get("GCP_PROJECT")
 
 COMPOSER_USER_WORKLOADS = "composer-user-workloads"

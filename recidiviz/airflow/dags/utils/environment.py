@@ -29,3 +29,13 @@ def get_composer_environment() -> Optional[str]:
 def is_experiment_environment() -> bool:
     composer_environment = get_composer_environment()
     return composer_environment is not None and "experiment" in composer_environment
+
+
+def get_project_id() -> str:
+    """
+    Returns the project ID for the current environment.
+    """
+    if not (project_id_opt := os.environ.get("GCP_PROJECT")):
+        raise ValueError("environment variable GCP_PROJECT not set.")
+
+    return project_id_opt

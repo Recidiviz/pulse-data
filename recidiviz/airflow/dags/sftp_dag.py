@@ -95,6 +95,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 # as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
 
+# TODO(#23873): Remove loading of environment variables from at beginning of file.
 project_id = os.environ.get("GCP_PROJECT")
 
 retry: Retry = Retry(predicate=lambda _: False)
