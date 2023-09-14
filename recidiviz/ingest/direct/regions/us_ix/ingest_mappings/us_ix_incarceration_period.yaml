@@ -108,6 +108,7 @@ output:
                   - Segregation -Administration
                   - Segregation -Mental Health
                   - Segregation -Protective Custody
+                  - Status Change
                 StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
                   - Mental Health Treatment
                   - Substance Abuse And Therapeutic Program Assignment
@@ -181,6 +182,7 @@ output:
                   - Segregation -Administration
                   - Segregation -Mental Health
                   - Segregation -Protective Custody
+                  - Status Change
                 StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
                   - Authorized Temporary Release
                   - Temporary Remand To Community
