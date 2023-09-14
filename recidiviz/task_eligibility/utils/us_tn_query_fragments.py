@@ -504,7 +504,11 @@ def us_tn_classification_forms(
            CAST(CAST(sent.FullExpirationDate AS datetime) AS DATE) AS form_information_sentence_full_expiration_date,
            CAST(CAST(sent.ReleaseEligibilityDate AS datetime) AS DATE) AS form_information_sentence_release_eligibility_date,
            CAST(CAST(sent.SafetyValveDate AS datetime) AS DATE) AS form_information_sentence_safety_valve_date,
-           CASE WHEN seg.OffenderID IS NOT NULL THEN 'SEG' ELSE 'GEN' END AS form_information_status_at_hearing_seg,
+           CASE 
+            WHEN seg.SegregationType = 'PCB' THEN 'PC'
+            WHEN seg.OffenderID IS NOT NULL THEN 'SEG' 
+            ELSE 'GEN' 
+            END AS form_information_status_at_hearing_seg,
            CASE WHEN tes.task_name = 'ANNUAL_RECLASSIFICATION_REVIEW' THEN 'ANNUAL' ELSE 'SPECIAL' END AS form_information_classification_type,
            latest_vantage.RiskLevel AS form_information_latest_vantage_risk_level,
            latest_vantage.CompletedDate AS form_information_latest_vantage_completed_date,
