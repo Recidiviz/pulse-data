@@ -25,6 +25,7 @@ my_enum_field:
 from typing import Optional
 
 from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodHousingUnitCategory,
     StateIncarcerationPeriodHousingUnitType,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -48,19 +49,64 @@ def parse_housing_unit_type(  # TODO(#21278): Update when schema change request 
 
     if raw_text in (
         "%DS%",
-        "%ASU%",
-        "%AHU%",
-        "%SEG%",
         "%SEG%",
     ):
-        return StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT
+        return StateIncarcerationPeriodHousingUnitType.DISCIPLINARY_SOLITARY_CONFINEMENT
 
-    if raw_text in ("%IMU%", "%BHU%", "%MHI%", "%ICH%", "%SHU%", "%SMU%"):
-        return StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT
+    if raw_text == "ASU":
+        return (
+            StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT
+        )
+
+    if raw_text == "AHU":
+        return StateIncarcerationPeriodHousingUnitType.PROTECTIVE_CUSTODY
+
+    if raw_text in ("%IMU%", "%SHU%", "%SMU%"):
+        return StateIncarcerationPeriodHousingUnitType.OTHER_SOLITARY_CONFINEMENT
+
+    if raw_text in (
+        "%BHU%",
+        "%ICH%",
+    ):
+        return (
+            StateIncarcerationPeriodHousingUnitType.MENTAL_HEALTH_SOLITARY_CONFINEMENT
+        )
+
+    if raw_text in ("MHI", "%INFIRMARY%"):
+        return StateIncarcerationPeriodHousingUnitType.HOSPITAL
 
     if not raw_text:
         return None
     return StateIncarcerationPeriodHousingUnitType.GENERAL
+
+
+def parse_housing_unit_category(
+    raw_text: str,
+) -> Optional[StateIncarcerationPeriodHousingUnitCategory]:
+    """
+    Maps |housing_unit|, to its corresponding StateIncarcerationPeriodHousingUnitCategory,
+    identifying which housing units are solitary confinement units and which are general.
+    """
+
+    if raw_text in (
+        "%DS%",
+        "%ASU%",
+        "%AHU%",
+        "%SEG%",
+        "%SEG%",
+        "%IMU%",
+        "%BHU%",
+        "%MHI%",
+        "%ICH%",
+        "%SHU%",
+        "%SMU%",
+    ):
+        return StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT
+
+    if not raw_text:
+        return None
+
+    return StateIncarcerationPeriodHousingUnitCategory.GENERAL
 
 
 def parse_sentence_status(raw_text: str) -> Optional[StateSentenceStatus]:
