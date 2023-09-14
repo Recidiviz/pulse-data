@@ -61,6 +61,10 @@ output:
             $enum_mapping:
               $raw_text: UNIT_NUMBER
               $custom_parser: us_or_custom_enum_parsers.parse_housing_unit_type
+          housing_unit_category:
+            $enum_mapping:
+              $raw_text: UNIT_NUMBER
+              $custom_parser: us_or_custom_enum_parsers.parse_housing_unit_category
           custody_level:
             $enum_mapping:
               $raw_text: INSTITUTION_RISK
