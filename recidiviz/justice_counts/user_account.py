@@ -18,6 +18,7 @@
 
 from typing import List, Optional, Set
 
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -88,32 +89,50 @@ class UserAccountInterface:
         then update the invitation status and role (if preserve_role is False).
         Else, create a new association.
         """
-        existing_agency_assocs_by_id = {
-            assoc.agency_id: assoc for assoc in user.agency_assocs
-        }
 
+        # Flush session to insure that any newly created agencies/user have ids.
+        session.flush()
+
+        # Prepare all the values that should be "upserted" to the DB
+        values = []
+        role = (
+            role
+            if role is not None
+            else UserAccountInterface.get_role_from_email(user.email)
+        )
         for agency in agencies:
-            existing_assoc = existing_agency_assocs_by_id.get(agency.id)
-            if existing_assoc is not None:
-                if invitation_status is not None:
-                    existing_assoc.invitation_status = invitation_status
-                if role is not None and preserve_role is False:
-                    existing_assoc.role = role
-                continue
+            value = {"agency_id": agency.id, "user_account_id": user.id}
+            if invitation_status is not None:
+                value["invitation_status"] = invitation_status
+            if preserve_role is False:
+                value["role"] = role
 
-            session.add(
-                AgencyUserAccountAssociation(
-                    user_account=user,
-                    agency=agency,
-                    invitation_status=invitation_status,
-                    # If an existing user account association does not
-                    # exist for that user and agency, infer the users
-                    # role by the email.
-                    role=role
-                    if role is not None
-                    else UserAccountInterface.get_role_from_email(user.email),
-                )
+            values.append(value)
+
+        insert_statement = insert(AgencyUserAccountAssociation).values(values)
+
+        # update_columns represents the columns that should be updated on conflict
+        update_columns = {}
+        if preserve_role is False:
+            update_columns["role"] = insert_statement.excluded.role
+        if invitation_status is not None:
+            update_columns[
+                "invitation_status"
+            ] = insert_statement.excluded.invitation_status
+        if len(update_columns) > 0:
+            # If invitation status or role is provided, update any existing the
+            # agency_user_account_associations with the role / invitation status.
+            insert_statement = insert_statement.on_conflict_do_update(
+                constraint="agency_user_account_association_pkey",
+                set_=update_columns,
             )
+        if len(update_columns) == 0:
+            # If invitation status or role is not provided, do nothing if an
+            # agency_user_account_association already exists for that user / agency.
+            insert_statement = insert_statement.on_conflict_do_nothing(
+                constraint="agency_user_account_association_pkey",
+            )
+        session.execute(insert_statement)
 
     @staticmethod
     def remove_user_from_agencies(
