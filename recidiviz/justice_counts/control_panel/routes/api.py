@@ -1267,9 +1267,22 @@ def get_api_blueprint(
                 # Return 200 to acknowledge the message from pubsub
                 return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-            system = schema.System[agency.systems[0]]
+            # Superagencies can share their own capacity and cost metrics
+            # (superagency sector) or the metrics for their child agencies (other sector).
+            # We're assuming superagencies won't be bulk uploading their capacity and
+            # cost metrics, but just the metrics for their child agencies, so for the
+            # sake of bulk upload, it's safe to ignore the superagency sector.
+            if schema.System.SUPERAGENCY.value in agency.systems:
+                system_strs = [
+                    sys
+                    for sys in agency.systems
+                    if sys != schema.System.SUPERAGENCY.value
+                ]
+            else:
+                system_strs = agency.systems
 
-            if len(agency.systems) > 1:
+            system = schema.System[system_strs[0]]
+            if len(system_strs) > 1:
                 # Agencies with multiple systems will have a folder in their GCS bucket
                 # for each system that they can report for. When a file is uploaded to
                 # a folder within a bucket, the filepath is prefixed with the folder
