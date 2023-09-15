@@ -17,6 +17,7 @@
 """Defines a criteria span view that shows spans of time during which someone is on lifetime electronic monitoring
 """
 
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
@@ -35,7 +36,7 @@ _CRITERIA_NAME = "US_MI_NOT_ON_LIFETIME_ELECTRONIC_MONITORING"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is on lifetime electronic monitoring
 """
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
 
 WITH lifetime_em_sentences AS (
     /* This CTE checks for sentences where there is a lifetime_gps_flag and sets the end date to far in the future */
@@ -44,28 +45,52 @@ WITH lifetime_em_sentences AS (
         sp.person_id,
     --find the earliest sentence date w/ lifetime gps flag for each person 
         MIN(date_imposed) AS start_date,
-    FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sp
-    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+        CAST(NULL AS DATE) AS end_date,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sp
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON pei.state_code = 'US_MI'
         AND pei.state_code = sp.state_code
         AND pei.person_id = sp.person_id 
         AND pei.id_type = "US_MI_DOC_BOOK"
-    INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.ADH_OFFENDER_SENTENCE_latest` s
+    INNER JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_OFFENDER_SENTENCE_latest` s
         ON sp.external_id = s.offender_sentence_id
         AND pei.external_id = s.offender_booking_id
     WHERE lifetime_gps_flag = '1'
     GROUP BY sp.state_code, sp.person_id
-    )
+    ),
+    /* additional lifetime electronic monitoring can now be found in a separate COMS table as well */
+    COMS_lifetime_em_sentences AS (
     SELECT
+        'US_MI' AS state_code, 
+        pei.person_id, 
+        SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) AS start_date,
+        SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE) AS end_date, 
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.COMS_Specialties_latest`
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON LTRIM(Offender_Number, '0')= pei.external_id
+        AND pei.state_code = 'US_MI'
+        AND pei.id_type = "US_MI_DOC"
+    WHERE Specialty = 'Lifetime GPS Monitoring'
+    ),
+    lifetime_em_spans AS (
+    SELECT *
+    FROM lifetime_em_sentences
+    
+    UNION ALL 
+    
+    SELECT *
+    FROM COMS_lifetime_em_sentences
+    )
+    SELECT 
         state_code,
         person_id,
         start_date,
-        CAST(NULL AS DATE) AS end_date,
+        end_date,
         FALSE AS meets_criteria,
         TO_JSON(STRUCT(
             start_date AS lifetime_em_date
         )) AS reason,
-    FROM lifetime_em_sentences
+    FROM ({aggregate_adjacent_spans(table_name='lifetime_em_spans')})
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
