@@ -16,11 +16,10 @@
 # =============================================================================
 """
 Script to retrieve and upload data for New Mexico Administrative Office of the Courts
-for every month/year combination over the past 5 years (July, 2018 - July, 2023).
+for every month/year combination over the past 10 years (August, 2013 - August, 2023).
 Data is retrieved from the dataXchange API.
 
-python -m recidiviz.tools.justice_counts.new_mexico_dataxchange_historical \
-    --project-id=PROJECT_ID \
+python -m recidiviz.justice_counts.jobs.new_mexico_dataxchange_historical \
     --dry-run=true
 """
 
@@ -38,12 +37,7 @@ from recidiviz.justice_counts.utils.constants import (
     NEW_MEXICO_SUPERAGENCY_BUCKET_PROD,
     NEW_MEXICO_SUPERAGENCY_BUCKET_STAGING,
 )
-from recidiviz.utils.environment import (
-    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
-    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
-    in_gcp_production,
-)
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.secrets import get_secret
 
@@ -56,15 +50,6 @@ logger = logging.getLogger(__name__)
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--project-id",
-        choices=[
-            GCP_PROJECT_JUSTICE_COUNTS_STAGING,
-            GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
-        ],
-        help="Used to select which GCP project in which to run this script.",
-        required=True,
-    )
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
     return parser
 
@@ -150,21 +135,20 @@ def upload_file(filename: str) -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
-    with local_project_id_override(args.project_id):
-        for global_metric, global_url in METRIC_TO_URL.items():
-            for global_year in range(2018, 2024):
-                for global_month in range(1, 13):
-                    if (global_year == 2018 and global_month < 7) or (
-                        global_year == 2023 and global_month > 7
-                    ):
-                        continue
-                    get_new_mexico_courts_data(
-                        year=global_year,
-                        month=global_month,
-                        url=global_url,
-                        metric=global_metric,
-                        dry_run=args.dry_run,
-                    )
-                    logging.info("%s, %s called", global_month, global_year)
-                    time.sleep(10)
-        logging.info("Done!")
+    for global_metric, global_url in METRIC_TO_URL.items():
+        for global_year in range(2013, 2024):
+            for global_month in range(1, 13):
+                if (global_year == 2013 and global_month < 8) or (
+                    global_year == 2023 and global_month > 8
+                ):
+                    continue
+                get_new_mexico_courts_data(
+                    year=global_year,
+                    month=global_month,
+                    url=global_url,
+                    metric=global_metric,
+                    dry_run=args.dry_run,
+                )
+                logging.info("%s, %s called", global_month, global_year)
+                time.sleep(10)
+    logging.info("Done!")

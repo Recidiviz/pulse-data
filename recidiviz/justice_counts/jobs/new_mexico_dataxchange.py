@@ -18,10 +18,9 @@
 Script to retrieve and upload data for New Mexico Administrative Office of the Courts.
 Data is retrieved from the dataXchange API.
 
-python -m recidiviz.tools.justice_counts.new_mexico_dataxchange \
+python -m recidiviz.justice_counts.jobs.new_mexico_dataxchange \
     --year=2023 \
     --month=1 \
-    --project-id=PROJECT_ID \
     --dry-run=true
 """
 
@@ -38,12 +37,7 @@ from recidiviz.justice_counts.utils.constants import (
     NEW_MEXICO_SUPERAGENCY_BUCKET_PROD,
     NEW_MEXICO_SUPERAGENCY_BUCKET_STAGING,
 )
-from recidiviz.utils.environment import (
-    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
-    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
-    in_gcp_production,
-)
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.secrets import get_secret
 
@@ -71,15 +65,6 @@ def create_parser() -> argparse.ArgumentParser:
         if datetime.datetime.now(tz=datetime.timezone.utc).month > 1
         else 12,
         type=int,
-    )
-    parser.add_argument(
-        "--project-id",
-        choices=[
-            GCP_PROJECT_JUSTICE_COUNTS_STAGING,
-            GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
-        ],
-        help="Used to select which GCP project in which to run this script.",
-        required=True,
     )
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
     return parser
@@ -166,12 +151,11 @@ def upload_file(filename: str) -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
-    with local_project_id_override(args.project_id):
-        for global_metric, global_url in METRIC_TO_URL.items():
-            get_new_mexico_courts_data(
-                year=args.year,
-                month=args.month,
-                url=global_url,
-                metric=global_metric,
-                dry_run=args.dry_run,
-            )
+    for global_metric, global_url in METRIC_TO_URL.items():
+        get_new_mexico_courts_data(
+            year=args.year,
+            month=args.month,
+            url=global_url,
+            metric=global_metric,
+            dry_run=args.dry_run,
+        )
