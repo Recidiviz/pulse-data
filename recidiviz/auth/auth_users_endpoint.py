@@ -41,7 +41,7 @@ from recidiviz.auth.auth_api_schemas import (
     UserRequestSchema,
     UserSchema,
 )
-from recidiviz.auth.auth_endpoint import _upsert_roster_rows
+from recidiviz.auth.auth_endpoint import _create_user_override, _upsert_roster_rows
 from recidiviz.auth.helpers import generate_user_hash, log_reason
 from recidiviz.persistence.database.schema.case_triage.schema import (
     PermissionsOverride,
@@ -230,6 +230,26 @@ class UsersAPI(MethodView):
             raise e
         except (ProgrammingError, ValueError) as e:
             abort(HTTPStatus.BAD_REQUEST, message=f"{e}")
+
+    @users_blueprint.arguments(
+        UserRequestSchema(many=True, partial=True),
+        # Return BAD_REQUEST on schema validation errors
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
+    @users_blueprint.response(HTTPStatus.OK, FullUserSchema(many=True))
+    def patch(self, users: List[Dict[str, Any]]) -> List[Row]:
+        """Edits existing users' info by adding or updating an entry for those users in UserOverride."""
+        user_hashes = []
+        for user_dict in users:
+            current_session.add(_create_user_override(current_session, user_dict))
+            user_hashes.append(user_dict["user_hash"])
+        current_session.commit()
+        updated_users = (
+            current_session.query(UserOverride)
+            .filter(UserOverride.user_hash.in_(user_hashes))
+            .all()
+        )
+        return updated_users
 
 
 @users_blueprint.route("<path:user_hash>")

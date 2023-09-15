@@ -50,6 +50,7 @@ _PARAMETER_USER_HASH = "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0="
 _ADD_USER_HASH = "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE="
 _LEADERSHIP_USER_HASH = "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk="
 _SUPERVISION_STAFF_HASH = "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI="
+_USER_HASH = "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o="
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -1083,3 +1084,92 @@ class AuthUsersEndpointTestCase(TestCase):
                 headers=self.headers,
             )
             self.assertEqual(expected, json.loads(response.data))
+
+    ########
+    # PATCH /users
+    ########
+
+    def test_update_users(self) -> None:
+        roster_user = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_CO",
+            external_id="123",
+            role="line_staff_user",
+            district="D1",
+            first_name="Test",
+            last_name="User",
+        )
+        override_user = generate_fake_user_overrides(
+            email="user@domain.org",
+            region_code="US_TN",
+            external_id="456",
+            role="leadership_role",
+            first_name="Original",
+            last_name="Name",
+        )
+        add_entity_to_database_session(self.database_key, [roster_user, override_user])
+
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            updates = self.client.patch(
+                self.users(),
+                headers=self.headers,
+                json=[
+                    {
+                        "stateCode": "US_CO",
+                        "userHash": _PARAMETER_USER_HASH,
+                        "role": "supervision_staff",
+                        "reason": "test",
+                    },
+                    {
+                        "stateCode": "US_TN",
+                        "userHash": _USER_HASH,
+                        "role": "supervision_staff",
+                        "reason": "test",
+                    },
+                ],
+            )
+            self.assertEqual(HTTPStatus.OK, updates.status_code, updates.data)
+
+            expected_users = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "D1",
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": "123",
+                    "firstName": "Test",
+                    "lastName": "User",
+                    "role": "supervision_staff",
+                    "stateCode": "US_CO",
+                    "routes": None,
+                    "featureVariants": None,
+                    "userHash": _PARAMETER_USER_HASH,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": None,
+                    "emailAddress": "user@domain.org",
+                    "externalId": "456",
+                    "firstName": "Original",
+                    "lastName": "Name",
+                    "role": "supervision_staff",
+                    "stateCode": "US_TN",
+                    "routes": None,
+                    "featureVariants": None,
+                    "userHash": _USER_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected_users, json.loads(response.data))
+            self.assertReasonLog(
+                log.output, "updating user parameter@domain.org with reason: test"
+            )
+            self.assertReasonLog(
+                log.output, "updating user user@domain.org with reason: test"
+            )

@@ -29,7 +29,7 @@ def abort(
 class ArgumentsMixin:
     def arguments(
         self,
-        schema: Type[Schema],
+        schema: Union[Type[Schema], Schema],
         *,
         location: str = "json",
         content_type: Optional[str] = None,

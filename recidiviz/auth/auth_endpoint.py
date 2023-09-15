@@ -706,6 +706,30 @@ def delete_state_role(
         return (f"{error}", HTTPStatus.BAD_REQUEST)
 
 
+def _create_user_override(session: Session, user_dict: Dict[str, Any]) -> UserOverride:
+    if "state_code" not in user_dict:
+        raise ValueError("Must provide a state_code when updating a user")
+
+    user_hash = user_dict["user_hash"]
+
+    if (email := _lookup_email_from_hash(session, user_hash)) is None:
+        raise ValueError(
+            f"User not found for email address hash {user_hash}, please file a bug"
+        )
+
+    user_dict["email_address"] = email
+    log_reason(user_dict, f"updating user {user_dict['email_address']}")
+    existing = (
+        session.query(UserOverride).filter(UserOverride.user_hash == user_hash).first()
+    )
+
+    if existing:
+        for key, value in user_dict.items():
+            setattr(existing, key, value)
+        return existing
+    return UserOverride(**user_dict)
+
+
 # "path" type annotation allows parameters containing slashes, which the user hash might
 @auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["PATCH"])
 @requires_gae_auth
@@ -717,46 +741,9 @@ def update_user(user_hash: str) -> Union[tuple[Response, int], tuple[str, int]]:
             user_dict = convert_nested_dictionary_keys(
                 assert_type(request.json, dict), to_snake_case
             )
-            if "state_code" not in user_dict:
-                raise ValueError("Must provide a state_code when updating a user")
-
-            if (email := _lookup_email_from_hash(session, user_hash)) is None:
-                raise ValueError(
-                    f"User not found for email address hash {user_hash}, please file a bug"
-                )
-
-            user_dict["email_address"] = email
             user_dict["user_hash"] = user_hash
-            log_reason(user_dict, f"updating user {user_dict['email_address']}")
-            if (
-                session.query(UserOverride)
-                .filter(UserOverride.user_hash == user_hash)
-                .first()
-                is None
-            ):
-                user = UserOverride(**user_dict)
-                session.add(user)
-                session.commit()
-                return (
-                    jsonify(
-                        {
-                            "stateCode": user.state_code,
-                            "emailAddress": user.email_address,
-                            "externalId": user.external_id,
-                            "role": user.role,
-                            "district": user.district,
-                            "firstName": user.first_name,
-                            "lastName": user.last_name,
-                            "userHash": user.user_hash,
-                        }
-                    ),
-                    HTTPStatus.OK,
-                )
-            session.execute(
-                Update(UserOverride)
-                .where(UserOverride.user_hash == user_hash)
-                .values(user_dict)
-            )
+            session.add(_create_user_override(session, user_dict))
+            session.commit()
             updated_user = (
                 session.query(UserOverride)
                 .filter(UserOverride.user_hash == user_hash)
