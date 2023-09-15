@@ -124,11 +124,17 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     def _trigger_task_scheduler(state_code_str: str) -> Tuple[str, HTTPStatus]:
         request_json = assert_type(request.json, dict)
         state_code = _get_state_code_from_str(state_code_str)
-        instance = request_json["instance"]
+        try:
+            instance = DirectIngestInstance(request_json["instance"].upper())
+        except ValueError:
+            return "invalid ingest instance provided", HTTPStatus.BAD_REQUEST
+
         get_ingest_operations_store().trigger_task_scheduler(state_code, instance)
         return "", HTTPStatus.OK
 
     # Start an ingest rerun in secondary
+    # TODO(#20930): Delete this endpoint once ingest in Dataflow is enabled for all
+    #  states.
     @bp.route(
         "/api/ingest_operations/<state_code_str>/start_ingest_rerun",
         methods=["POST"],
@@ -149,6 +155,23 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             get_ingest_operations_store().start_ingest_rerun(
                 state_code, ingest_instance, raw_data_source_instance
             )
+        except Exception as e:
+            # Catch all exceptions and display the errors associated.
+            return str(e), HTTPStatus.BAD_REQUEST
+
+        return "", HTTPStatus.OK
+
+    # TODO(#23872): Gate frontend to pick between this and start_ingest_rerun().
+    # Start a raw data reimport in secondary
+    @bp.route(
+        "/api/ingest_operations/<state_code_str>/start_raw_data_reimport",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _start_raw_data_reimport(state_code_str: str) -> Tuple[str, HTTPStatus]:
+        state_code = _get_state_code_from_str(state_code_str)
+        try:
+            get_ingest_operations_store().start_secondary_raw_data_reimport(state_code)
         except Exception as e:
             # Catch all exceptions and display the errors associated.
             return str(e), HTTPStatus.BAD_REQUEST
