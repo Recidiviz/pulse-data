@@ -38,19 +38,6 @@ module "direct_ingest_states_upload_testing" {
   oidc_audience = local.app_engine_iap_client
 }
 
-# Calls an endpoint to update Auth0 users with the updated user restrictions file from the
-# triggering bucket
-module "handle_state_dashboard_user_restrictions_file" {
-  source = "./modules/cloud-storage-notification"
-
-  bucket_name           = module.dashboard-user-restrictions-bucket.name
-  push_endpoint         = "${local.app_engine_url}/auth/handle_import_user_restrictions_csv_to_sql"
-  service_account_email = data.google_app_engine_default_service_account.default.email
-  # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
-  oidc_audience = local.app_engine_iap_client
-  filter        = "NOT hasPrefix(attributes.objectId, \"staging/\")"
-}
-
 module "import_ingested_product_users" {
   source = "./modules/cloud-storage-notification"
 

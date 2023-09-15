@@ -34,9 +34,9 @@ from recidiviz.cloud_sql.gcs_import_to_cloud_sql import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    DashboardUserRestrictions,
     ETLClient,
     ETLOpportunity,
+    Roster,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
@@ -50,7 +50,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.tests.auth.helpers import (
     add_entity_to_database_session,
-    generate_fake_user_restrictions,
+    generate_fake_rosters,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
@@ -128,12 +128,11 @@ class TestGCSImportToCloudSQL(TestCase):
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        self.table_name = DashboardUserRestrictions.__tablename__
-        self.model = DashboardUserRestrictions
-        self.columns = [col.name for col in DashboardUserRestrictions.__table__.columns]
-        self.dashboard_user_restrictions_uri = GcsfsFilePath.from_absolute_path(
-            "US_MO/dashboard_user_restrictions.csv"
-        )
+        self.table_name = Roster.__tablename__
+        self.model = Roster
+        self.columns = [col.name for col in Roster.__table__.columns]
+        self.roster_uri = GcsfsFilePath.from_absolute_path("US_MO/roster.csv")
+        self.now = "2023-08-30T13:33:09.109433"
 
     def tearDown(self) -> None:
         self.cloud_sql_client_patcher.stop()
@@ -146,7 +145,7 @@ class TestGCSImportToCloudSQL(TestCase):
     ) -> str:
         with SessionFactory.using_database(self.database_key) as session:
             csv_values = [
-                f"('US_MO', '{self.user_1_email}', '{{1}}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', false, '{self.user_1_email}::hashed')",
+                f"('{self.now}', '{self.now}', 'US_MO', '{self.user_1_email}', '12345', 'supervision_staff', 'ABCDE', 'fname', 'lname', '{self.user_1_email}::hashed')",
             ]
             if values:
                 csv_values = csv_values + values
@@ -198,46 +197,42 @@ class TestGCSImportToCloudSQL(TestCase):
         import_gcs_csv_to_cloud_sql(
             database_key=self.database_key,
             model=self.model,
-            gcs_uri=self.dashboard_user_restrictions_uri,
+            gcs_uri=self.roster_uri,
             columns=self.columns,
         )
         self.mock_cloud_sql_client.import_gcs_csv.assert_called_with(
             instance_name=self.mock_instance_id,
             db_name="postgres",
             table_name=f"tmp__{self.table_name}",
-            gcs_uri=self.dashboard_user_restrictions_uri,
+            gcs_uri=self.roster_uri,
             columns=self.columns,
         )
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            destination_table_rows = session.query(DashboardUserRestrictions).all()
+            destination_table_rows = session.query(Roster).all()
 
         self.assertEqual(len(destination_table_rows), 1)
-        self.assertEqual(
-            destination_table_rows[0].restricted_user_email, self.user_1_email
-        )
+        self.assertEqual(destination_table_rows[0].email_address, self.user_1_email)
 
     def test_import_gcs_csv_to_cloud_sql_with_region_code(self) -> None:
         """Assert that rows are copied to the temp table for every region code before being swapped to
         the destination table."""
-        user_1 = generate_fake_user_restrictions(
-            "US_PA",
-            "user-4@test.gov",
-            allowed_supervision_location_ids="1,2",
+        user_1 = generate_fake_rosters(
+            email="user-4@test.gov",
+            region_code="US_PA",
+            role="supervision_staff",
         )
-        user_2 = generate_fake_user_restrictions(
-            "US_PA",
-            "user-5@test.gov",
-            allowed_supervision_location_ids="AB",
+        user_2 = generate_fake_rosters(
+            email="user-5@test.gov", region_code="US_PA", role="leadership_user"
         )
         add_entity_to_database_session(self.database_key, [user_1, user_2])
 
         def _mock_side_effect(**_kwargs: Any) -> str:
             return self._mock_load_data_from_csv(
                 values=[
-                    "('US_MO', 'user-2@test.gov', '{2}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', true, 'user-2@test.gov::hashed')",
-                    "('US_MO', 'user-3@test.gov', '{3}', 'level_1_supervision_location', 'level_1_access_role', true, false, 'null', false, 'user-3@test.gov::hashed')",
+                    f"('{self.now}', '{self.now}', 'US_MO', 'user-2@test.gov', '23456', 'supervision_staff', 'ABCDE', 'fname2', 'lname2', 'user-2@test.gov::hashed')",
+                    f"('{self.now}', '{self.now}', 'US_MO', 'user-3@test.gov', '34567', 'leadership_user', 'BCDEF', 'fname3', 'lname3', 'user-3@test.gov::hashed')",
                 ]
             )
 
@@ -247,14 +242,14 @@ class TestGCSImportToCloudSQL(TestCase):
         import_gcs_csv_to_cloud_sql(
             database_key=self.database_key,
             model=self.model,
-            gcs_uri=self.dashboard_user_restrictions_uri,
+            gcs_uri=self.roster_uri,
             columns=self.columns,
             region_code="US_MO",
         )
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            destination_table_rows = session.query(DashboardUserRestrictions).all()
+            destination_table_rows = session.query(Roster).all()
             state_codes = [row.state_code for row in destination_table_rows]
             self.assertEqual(len(destination_table_rows), 5)
             self.assertEqual(set(state_codes), {"US_MO", "US_PA"})
@@ -264,10 +259,10 @@ class TestGCSImportToCloudSQL(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            user_1 = generate_fake_user_restrictions(
-                "US_PA",
-                "user-3@test.gov",
-                allowed_supervision_location_ids="1,2",
+            user_1 = generate_fake_rosters(
+                region_code="US_PA",
+                email="user-3@test.gov",
+                role="supervision_staff",
             )
             add_entity_to_database_session(self.database_key, [user_1])
             self.mock_cloud_sql_client.import_gcs_csv.side_effect = Exception(
@@ -281,10 +276,10 @@ class TestGCSImportToCloudSQL(TestCase):
                         SchemaType.CASE_TRIAGE
                     ),
                     model=self.model,
-                    gcs_uri=self.dashboard_user_restrictions_uri,
+                    gcs_uri=self.roster_uri,
                     columns=self.columns,
                 )
-            destination_table_rows = session.query(DashboardUserRestrictions).all()
+            destination_table_rows = session.query(Roster).all()
             self.assertEqual(len(destination_table_rows), 1)
 
     def test_import_gcs_csv_to_cloud_sql_session_error(self) -> None:
@@ -292,10 +287,10 @@ class TestGCSImportToCloudSQL(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            user_1 = generate_fake_user_restrictions(
-                "US_PA",
-                "user-3@test.gov",
-                allowed_supervision_location_ids="1,2",
+            user_1 = generate_fake_rosters(
+                region_code="US_PA",
+                email="user-3@test.gov",
+                role="supervision_staff",
             )
             add_entity_to_database_session(self.database_key, [user_1])
 
@@ -309,12 +304,12 @@ class TestGCSImportToCloudSQL(TestCase):
                     database_key=SQLAlchemyDatabaseKey.for_schema(
                         SchemaType.CASE_TRIAGE
                     ),
-                    model=DashboardUserRestrictions,
-                    gcs_uri=self.dashboard_user_restrictions_uri,
+                    model=Roster,
+                    gcs_uri=self.roster_uri,
                     columns=self.columns,
                 )
 
-            destination_table_rows = session.query(DashboardUserRestrictions).all()
+            destination_table_rows = session.query(Roster).all()
             self.assertEqual(len(destination_table_rows), 1)
 
     def test_additional_queries_etl_clients(self) -> None:
