@@ -25,7 +25,10 @@ import {
   updateUser,
   updateUserPermissions,
 } from "../../AdminPanelAPI";
-import { getStateRoleDefaultPermissions } from "../../AdminPanelAPI/LineStaffTools";
+import {
+  getStateRoleDefaultPermissions,
+  updateUsers,
+} from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
 import {
   AddUserRequest,
@@ -155,11 +158,12 @@ const StateUserPermissionsView = (): JSX.Element => {
     ...rest
   }: StateUserForm) => {
     const results: Promise<unknown>[] = [];
-    selectedRows.forEach((row: StateUserPermissionsResponse) => {
-      const editRow = async () => {
-        // update user info
-        if (role || district || externalId || firstName || lastName) {
-          const updatedUser = await updateUser({
+
+    // update user info as a bulk operation
+    if (role || district || externalId || firstName || lastName) {
+      const updatedUsers = await updateUsers(
+        selectedRows.map((row) => {
+          return {
             userHash: row.userHash,
             stateCode: row.stateCode,
             externalId,
@@ -168,10 +172,14 @@ const StateUserPermissionsView = (): JSX.Element => {
             firstName,
             lastName,
             reason,
-          });
-          await checkResponse(updatedUser);
-        }
+          };
+        })
+      );
+      results.push(checkResponse(updatedUsers));
+    }
 
+    selectedRows.forEach((row: StateUserPermissionsResponse) => {
+      const editRow = async () => {
         // delete user's custom permissions
         if (useCustomPermissions === false) {
           const deletedPermissions = await deleteCustomUserPermissions(

@@ -113,6 +113,18 @@ export const createNewUser = async (
   );
 };
 
+type UserUpdate = {
+  userHash: string;
+  stateCode: string;
+  externalId?: string;
+  role?: string;
+  district?: string;
+  firstName?: string;
+  lastName?: string;
+  blocked?: boolean;
+  reason: string;
+};
+
 export const updateUser = async ({
   userHash,
   stateCode,
@@ -123,17 +135,7 @@ export const updateUser = async ({
   lastName,
   blocked = false,
   reason,
-}: {
-  userHash: string;
-  stateCode: string;
-  externalId?: string;
-  role?: string;
-  district?: string;
-  firstName?: string;
-  lastName?: string;
-  blocked?: boolean;
-  reason: string;
-}): Promise<Response> => {
+}: UserUpdate): Promise<Response> => {
   return patchAuthWithURLAndBody(`/users/${encodeURIComponent(userHash)}`, {
     stateCode,
     externalId,
@@ -144,6 +146,12 @@ export const updateUser = async ({
     blocked,
     reason,
   });
+};
+
+export const updateUsers = async (
+  userUpdates: UserUpdate[]
+): Promise<Response> => {
+  return patchAuthWithURLAndBody(`/users`, userUpdates);
 };
 
 export const updateUserPermissions = async (

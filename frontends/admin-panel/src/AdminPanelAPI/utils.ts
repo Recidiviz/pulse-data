@@ -99,7 +99,7 @@ export const postAuthWithURLAndBody = async (
 
 export const patchAuthWithURLAndBody = async (
   url: string,
-  body: Record<string, unknown> = {}
+  body: Record<string, unknown> | Record<string, unknown>[] = {}
 ): Promise<Response> => {
   return fetch(`/auth${url}`, {
     method: "PATCH",

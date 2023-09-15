@@ -28,6 +28,8 @@ from recidiviz.case_triage.api_schemas_utils import (
 
 
 class UserSchema(CamelCaseSchema):
+    """Schema expected by /auth endpoints that take or return a user or list of users."""
+
     email_address = fields.Email(required=True)
     state_code = fields.Str(required=True)
     # Set allow_none on all non-required fields to allow returning instances of UserOverride where
@@ -48,11 +50,17 @@ class UserSchema(CamelCaseSchema):
         representation into python data types), but before it gets passed to our endpoints.
         """
         # Enforce casing for columns where we have a preference.
-        data["email_address"] = data["email_address"].lower()
-        data["state_code"] = data["state_code"].upper()
-        data["external_id"] = (
-            data["external_id"].upper() if data.get("external_id") is not None else None
-        )
+        # Even though email_address and state_code are defined as required here, they might not be
+        # set if the input to an endpoint declares the schema as partial (like in a PATCH)
+        if email_address := data.get("email_address"):
+            data["email_address"] = email_address.lower()
+
+        if state_code := data.get("state_code"):
+            data["state_code"] = state_code.upper()
+
+        if external_id := data.get("external_id"):
+            data["external_id"] = external_id.upper()
+
         return data
 
 
