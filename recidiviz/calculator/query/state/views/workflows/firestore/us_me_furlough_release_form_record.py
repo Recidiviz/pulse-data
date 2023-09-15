@@ -48,6 +48,7 @@ from recidiviz.task_eligibility.utils.us_me_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_FURLOUGH_NOTE_TITLE = "Furlough policy"
 _FURLOUGH_NOTE_TX_REGEX = "|".join(
     [
         "FURLOUGH",
@@ -112,8 +113,8 @@ case_notes_cte AS (
     -- Furlough pass frequency
     SELECT 
         external_id,
-        "Furlough frequency" AS criteria,
-        "Passes" AS note_title,
+        "{_FURLOUGH_NOTE_TITLE}" AS criteria,
+        "Passes (up to 6h)" AS note_title,
         CASE time_left
             WHEN "3y to 6mo" THEN "One pass a week. This person is between 3 years and 6 months away from expected release date."
             WHEN "6mo to 30days" THEN "Two passes a week. This person is less than 6 months away from expected release date."
@@ -128,8 +129,8 @@ case_notes_cte AS (
     -- Furlough leave frequency
     SELECT 
         external_id,
-        "Furlough frequency" AS criteria,
-        "Leaves" AS note_title,
+        "{_FURLOUGH_NOTE_TITLE}" AS criteria,
+        "Leaves (6h to 72h)" AS note_title,
         CASE time_left
             WHEN "3y to 6mo" THEN "One leave every 60 days. This person is between 3 years and 6 months away from expected release date."
             WHEN "6mo to 30days" THEN "One leave per month. This person is between 6 months and 30 days away from expected release date."
