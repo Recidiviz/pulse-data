@@ -188,7 +188,9 @@ def get_all_raw_file_metadata_rows_for_region(
     ]
 
 
-def stale_secondary_raw_data(region_code: str) -> bool:
+def stale_secondary_raw_data(
+    region_code: str, is_ingest_in_dataflow_enabled: bool
+) -> bool:
     """Returns whether there is stale raw data in secondary, as defined by there being non-invalidated instances of
     a given normalized_file_name that exists in PRIMARY after the timestamp of the start of a secondary rerun that
     does not exist in SECONDARY."""
@@ -196,20 +198,27 @@ def stale_secondary_raw_data(region_code: str) -> bool:
     secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
         region_code=region_code,
         ingest_instance=DirectIngestInstance.SECONDARY,
+        is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
     )
     secondary_rerun_start_timestamp = (
         secondary_status_manager.get_current_ingest_rerun_start_timestamp()
     )
-    # It is not possible to have stale SECONDARY raw data if there isn't a SECONDARY raw data import rerun in progress
-    # or if a start of a rerun was not found in SECONDARY
-    secondary_raw_data_source = secondary_status_manager.get_raw_data_source_instance()
-    if secondary_raw_data_source != DirectIngestInstance.SECONDARY:
-        logging.info(
-            "[stale_secondary_raw_data] Secondary raw data source is not SECONDARY: %s. Raw data in secondary cannot "
-            "be stale. Returning.",
-            secondary_raw_data_source,
+
+    # TODO(#20930): Delete this logic once ingest in dataflow has shipped - the concept
+    #  of a raw data source instance only applies in the pre-ingest in dataflow world.
+    if not is_ingest_in_dataflow_enabled:
+        # It is not possible to have stale SECONDARY raw data if there isn't a SECONDARY raw data import rerun in progress
+        # or if a start of a rerun was not found in SECONDARY
+        secondary_raw_data_source = (
+            secondary_status_manager.get_raw_data_source_instance()
         )
-        return False
+        if secondary_raw_data_source != DirectIngestInstance.SECONDARY:
+            logging.info(
+                "[stale_secondary_raw_data] Secondary raw data source is not SECONDARY: %s. Raw data in secondary cannot "
+                "be stale. Returning.",
+                secondary_raw_data_source,
+            )
+            return False
 
     if not secondary_rerun_start_timestamp:
         logging.info(

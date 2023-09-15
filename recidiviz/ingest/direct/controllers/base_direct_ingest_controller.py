@@ -59,6 +59,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     build_scheduler_task_id,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -127,6 +128,11 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
     ) -> None:
         """Initialize the controller."""
         self.region_module_override = region_module_override
+        # TODO(#23799): Use this elsewhere to gate controller logic
+        self.is_ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
+            state_code=self.state_code(),
+            instance=ingest_instance,
+        )
         self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
         self.ingest_instance = ingest_instance
         self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
@@ -144,6 +150,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             region_code=self.region.region_code,
             ingest_instance=self.ingest_instance,
             change_listener=self,
+            is_ingest_in_dataflow_enabled=self.is_ingest_in_dataflow_enabled,
         )
 
         self.temp_output_directory_path = (
@@ -483,7 +490,9 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             self.ingest_instance_status_manager.change_status_to(
                 DirectIngestStatus.UP_TO_DATE
             )
-        elif stale_secondary_raw_data(self.region_code()):
+        elif stale_secondary_raw_data(
+            self.region_code(), self.is_ingest_in_dataflow_enabled
+        ):
             logging.info(
                 "Controller's instance is SECONDARY. No tasks to schedule but secondary raw data is now "
                 "stale."

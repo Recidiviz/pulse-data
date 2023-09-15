@@ -50,6 +50,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     get_direct_ingest_queues_for_state,
 )
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
 )
@@ -312,6 +313,9 @@ class MoveFilesFromStorageController:
             secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
                 self.state_code.value,
                 DirectIngestInstance.SECONDARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                    self.state_code, DirectIngestInstance.SECONDARY
+                ),
             )
             with SessionFactory.for_proxy(
                 SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)

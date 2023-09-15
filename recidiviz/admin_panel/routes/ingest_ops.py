@@ -752,7 +752,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         status_manager = PostgresDirectIngestInstanceStatusManager(
-            state_code.value, ingest_instance
+            state_code.value,
+            ingest_instance,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                state_code, ingest_instance
+            ),
         )
         current_status: str = status_manager.get_current_status().value
         return (
@@ -773,7 +777,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
         status_manager = PostgresDirectIngestInstanceStatusManager(
-            state_code.value, ingest_instance
+            state_code.value,
+            ingest_instance,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                state_code, ingest_instance
+            ),
         )
         try:
             raw_data_source_instance: Optional[
@@ -815,7 +823,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         status_manager = PostgresDirectIngestInstanceStatusManager(
-            state_code.value, ingest_instance
+            state_code.value,
+            ingest_instance,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                state_code, ingest_instance
+            ),
         )
         current_status = status_manager.get_current_status_info()
         return (
@@ -843,7 +855,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             status_manager = PostgresDirectIngestInstanceStatusManager(
-                state_code.value, ingest_instance
+                state_code.value,
+                ingest_instance,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                    state_code, ingest_instance
+                ),
             )
             status_manager.change_status_to(ingest_instance_status)
         except ValueError:
@@ -867,7 +883,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         status_manager = PostgresDirectIngestInstanceStatusManager(
-            state_code.value, DirectIngestInstance.PRIMARY
+            state_code.value,
+            DirectIngestInstance.PRIMARY,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                state_code, DirectIngestInstance.PRIMARY
+            ),
         )
         statuses = status_manager.get_statuses_since(
             datetime.datetime.now() - datetime.timedelta(days=180)

@@ -45,6 +45,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import
     DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
@@ -167,10 +168,14 @@ class DirectIngestRegionDirStructureBase:
         allow_unlaunched: bool,
         region_module_override: Optional[ModuleType],
     ) -> BaseDirectIngestController:
+        state_code = StateCode(region_code.upper())
         # Seed the DB with an initial status
         PostgresDirectIngestInstanceStatusManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                state_code, ingest_instance
+            ),
         ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
         controller = DirectIngestControllerFactory.build(
