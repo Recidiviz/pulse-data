@@ -14,13 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Spans when sentences were being served or pending served and already imposed"""
+"""Sessionized view of continuous periods of stay on absconsion/bench warrant status"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
-    create_sub_sessions_with_attributes,
-)
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,53 +27,25 @@ ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_NAME = "absconsion_bench_warrant_sessions
 ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of continuous periods of stay on absconsion/bench warrant status"""
 
 ABSCONSION_BENCH_WARRANT_SESSIONS_QUERY_TEMPLATE = f"""
-    WITH
-    /*
-    Combine absconsion/BW sessions from `compartment_sessions` and `supervision_level_sessions`
-    */
-    absconsion_periods AS (
+    WITH absconsion_periods AS (
             -- via compartment change
         SELECT
             state_code,
             person_id,
             start_date,
             end_date_exclusive,
-            "SESSIONS" AS source,
         FROM
             `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` a
         WHERE
             compartment_level_1 = "SUPERVISION"
             AND compartment_level_2 IN ("ABSCONSION", "BENCH_WARRANT")
-            
-        UNION ALL
-        
-        -- via supervision level change
-        SELECT
-            state_code,
-            person_id,
-            start_date,
-            end_date_exclusive,
-            "SUPERVISION_LEVELS" AS source,
-        FROM
-            `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized` a
-        WHERE
-            supervision_level IN ("ABSCONDED", "WARRANT")
-    ),
-    {create_sub_sessions_with_attributes("absconsion_periods", end_date_field_name='end_date_exclusive')}
-    , absconsion_sub_sessions_cte AS (
-        SELECT DISTINCT
-            state_code,
-            person_id,
-            start_date,
-            end_date_exclusive,
-        FROM sub_sessions_with_attributes
     )
     SELECT 
         *,
         end_date_exclusive AS end_date,
     FROM (
         {aggregate_adjacent_spans(
-            table_name="absconsion_sub_sessions_cte",
+            table_name="absconsion_periods",
             session_id_output_name='absconsion_bench_warrant_session_id',
             end_date_field_name='end_date_exclusive'
         )}
