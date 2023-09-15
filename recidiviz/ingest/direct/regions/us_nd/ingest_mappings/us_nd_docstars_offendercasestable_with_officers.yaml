@@ -133,6 +133,12 @@ output:
                       external_id: CASE_NUMBER
                       response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
                       response_date: REV_DATE
+                      deciding_staff_external_id:
+                        $conditional:
+                          - $if:
+                              $not_null: terminating_officer_id
+                            $then: terminating_officer_id
+                      deciding_staff_external_id_type: $literal("US_ND_DOCSTARS_OFFICER")
                       supervision_violation_response_decisions:
                         - StateSupervisionViolationResponseDecisionEntry:
                             decision:
