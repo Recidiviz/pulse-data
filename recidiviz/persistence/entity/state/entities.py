@@ -1393,6 +1393,13 @@ class StateSupervisionViolationResponse(
         default=None, validator=attr_validators.is_opt_str
     )
 
+    deciding_staff_external_id: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    deciding_staff_external_id_type: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     supervision_violation_response_id: Optional[int] = attr.ib(

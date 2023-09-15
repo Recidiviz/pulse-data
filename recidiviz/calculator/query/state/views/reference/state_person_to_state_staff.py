@@ -97,6 +97,9 @@ FROM (
     pa.state_code = sid.state_code AND
     pa.referring_staff_external_id = sid.external_id AND 
     pa.referring_staff_external_id_type = sid.id_type
+    
+  # TODO(#23948): Pull deciding_staff_external_ids in here once we're ready to hydrate
+  #  staff_ids for these in the calc pipelines.
 )
 """
 STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER = SimpleBigQueryViewBuilder(

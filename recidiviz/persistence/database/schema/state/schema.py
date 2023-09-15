@@ -2308,6 +2308,12 @@ class StateSupervisionViolationResponse(StateBase, _ReferencesStatePersonSharedC
             deferrable=True,
             initially="DEFERRED",
         ),
+        CheckConstraint(
+            "(deciding_staff_external_id IS NULL AND deciding_staff_external_id_type IS NULL) "
+            "OR (deciding_staff_external_id IS NOT NULL AND deciding_staff_external_id_type "
+            "IS NOT NULL)",
+            name="deciding_staff_external_id_fields_consistent",
+        ),
         {
             "comment": "The StateSupervisionViolationResponse object represents the official responses to a"
             " particular StateSupervisionViolation. These can be positive, neutral, or negative, but they "
@@ -2363,6 +2369,21 @@ class StateSupervisionViolationResponse(StateBase, _ReferencesStatePersonSharedC
         comment="The raw text value of the supervision violation "
         "deciding body type.",
     )
+    deciding_staff_external_id = Column(
+        String(255),
+        comment="The external id of the staff member who made the decision(s) "
+        "associated with this response. This field with the "
+        "deciding_staff_external_id_type field make up a primary key for the "
+        "state_staff_external_id table.",
+    )
+    deciding_staff_external_id_type = Column(
+        String(255),
+        comment="The ID type associated with the external id of the staff member who "
+        "made the decision(s) associated with this response. This field with the "
+        "deciding_staff_external_id field make up a primary key for the "
+        "state_staff_external_id table.",
+    )
+
     is_draft = Column(
         Boolean,
         comment="Whether or not this is response is still a draft, i.e. is not yet "
