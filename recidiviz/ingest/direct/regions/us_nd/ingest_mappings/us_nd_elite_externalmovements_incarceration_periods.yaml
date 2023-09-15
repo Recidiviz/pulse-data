@@ -16,21 +16,14 @@ output:
   StatePerson:
     external_ids:
       - StatePersonExternalId:
-          external_id:
-            $custom:
-              $function: us_nd_custom_parsers.decimal_str_as_int_str
-              $args:
-                dec_str: offender_book_id
+          external_id: offender_book_id
           id_type: $literal("US_ND_ELITE_BOOKING")
     incarceration_periods:
       - StateIncarcerationPeriod:
           external_id:
             $concat:
               $values:
-                - $custom:
-                    $function: us_nd_custom_parsers.decimal_str_as_int_str
-                    $args:
-                      dec_str: offender_book_id
+                - offender_book_id
                 - period_sequence
           admission_date: admission_date
           release_date: release_date
@@ -182,13 +175,13 @@ output:
                   - RPRB
                 StateIncarcerationPeriodReleaseReason.COURT_ORDER:
                   - CO
+                  - CRT
                 StateIncarcerationPeriodReleaseReason.DEATH:
                   - DECE
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                   - XSNT
                 StateIncarcerationPeriodReleaseReason.TRANSFER:
                   - CONF
-                  - CRT
                   - DETOX
                   - HOSP
                   - HOSPS
