@@ -42,6 +42,7 @@ US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
                 inc.incident_date,
                 inc.incident_type,
                 inc.incident_type_raw_text,
+                inc.incident_details,
                 JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.Class") AS incident_class,
                 JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.InjuryLevel") AS injury_level,
                 JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.Disposition") AS disposition,
@@ -56,7 +57,7 @@ US_TN_INCARCERATION_INCIDENTS_PREPROCESSED_QUERY_TEMPLATE = """
           INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.Disciplinary_latest` disc
             ON pei.external_id = disc.OffenderID
             AND SPLIT(inc.external_id,'-')[SAFE_OFFSET(1)] = disc.IncidentID
-        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8      
+        GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9      
     )
     SELECT *,
         CASE 

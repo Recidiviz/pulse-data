@@ -291,9 +291,10 @@ def us_tn_classification_forms(
                  ELSE incident_type_raw_text
                  END AS note_title,
             injury_level,
-            incident_class AS note_body,
+            CONCAT('Class ', incident_class, '  Incident Details:', incident_details) AS note_body,
             disposition,
             assault_score,
+            incident_details,
         FROM 
             `{{project_id}}.{{analyst_dataset}}.incarceration_incidents_preprocessed_materialized` dis
         WHERE
@@ -358,6 +359,7 @@ def us_tn_classification_forms(
                 ARRAY_AGG(
                     STRUCT(event_date, note_body)
                 )
+            
             ) AS form_information_q7_notes
         FROM 
             ( 
@@ -424,7 +426,6 @@ def us_tn_classification_forms(
         LEFT JOIN
             guilty_disciplinary_history
         USING(person_id)
-    
     ),
     level_care AS (
         SELECT
@@ -482,7 +483,6 @@ def us_tn_classification_forms(
         GROUP BY 1
     
     )
-    -- TODO(#23800): Add additional fields
     SELECT tes.state_code,
            tes.reasons,
            pei.external_id,
@@ -513,6 +513,9 @@ def us_tn_classification_forms(
            latest_vantage.RiskLevel AS form_information_latest_vantage_risk_level,
            latest_vantage.CompletedDate AS form_information_latest_vantage_completed_date,
            active_vantage_recommendations.active_recommendations AS form_information_active_recommendations,
+           incompatible.incompatible_array AS form_information_incompatible_array,
+           CASE WHEN ARRAY_LENGTH(incompatible.incompatible_array)>0 THEN TRUE ELSE FALSE END AS form_information_has_incompatibles,
+           health.HealthRelatedClassification AS form_information_health_classification,
     FROM
         `{{project_id}}.{{task_eligibility_dataset}}.{tes_view}_materialized` tes
     INNER JOIN
@@ -559,6 +562,20 @@ def us_tn_classification_forms(
         QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY DATE(StartDateTime) DESC) = 1     
     ) seg
         ON pei.external_id = seg.OffenderID
+    LEFT JOIN (
+        SELECT OffenderID, ARRAY_AGG(STRUCT(IncompatibleOffenderID AS incompatible_offender_id,
+                                            IncompatibleType AS incompatible_type)) AS incompatible_array
+        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.IncompatiblePair_latest`
+        WHERE IncompatibleRemovedDate IS NULL
+        GROUP BY 1
+    ) incompatible
+        ON pei.external_id = incompatible.OffenderID
+    LEFT JOIN (
+        SELECT OffenderID, HealthRelatedClassification 
+        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.HealthExam_latest`
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(ExamNumber AS INT) DESC) = 1  
+    ) health
+        ON pei.external_id = health.OffenderID
     LEFT JOIN vantage latest_vantage
         ON pei.external_id = latest_vantage.OffenderID
         AND latest_vantage.latest_row = 1
