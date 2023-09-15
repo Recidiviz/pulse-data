@@ -31,6 +31,11 @@ data "google_secret_manager_secret_version" "airflow_sendgrid_api_key" {
   secret = "airflow_sendgrid_api_key"
 }
 
+data "external" "airflow_source_files" {
+  working_dir = "${dirname(local.recidiviz_root)}/../.."
+  program     = ["pipenv", "run", "python", "-m", "recidiviz.tools.airflow.get_airflow_source_files", "--dry-run", "False"]
+}
+
 resource "google_composer_environment" "default_v2" {
   provider = google-beta
   name     = "orchestration-v2"
@@ -107,16 +112,9 @@ resource "google_composer_environment" "default_v2" {
 
 }
 
-resource "google_storage_bucket_object" "recidiviz_airflow_file" {
-  for_each = fileset("${local.recidiviz_root}/airflow/dags", "*dag*.py")
-  name     = "dags/${each.key}"
-  bucket   = local.composer_dag_bucket
-  source   = "${local.recidiviz_root}/airflow/dags/${each.key}"
-}
-
 resource "google_storage_bucket_object" "recidiviz_source_file" {
-  for_each = local.source_files_to_copy_to_bucket
-  name     = "dags/${each.key}"
+  for_each = toset(keys(data.external.airflow_source_files.result))
+  name     = "dags/${data.external.airflow_source_files.result[each.key]}"
   bucket   = local.composer_dag_bucket
   source   = "${local.recidiviz_root}/${trimprefix(each.key, "recidiviz/")}"
 }
