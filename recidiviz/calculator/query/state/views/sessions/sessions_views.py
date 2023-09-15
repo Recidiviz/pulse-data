@@ -282,9 +282,6 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentences_prepr
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_supervision_population_metrics_preprocessed import (
     US_TN_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_supervision_projected_completion_date_spans import (
-    US_TN_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.violation_responses import (
     VIOLATION_RESPONSES_VIEW_BUILDER,
 )
@@ -377,7 +374,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
     SENTENCE_SPANS_VIEW_BUILDER,
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
-    US_TN_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
     CUSTODY_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
     CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
 ]

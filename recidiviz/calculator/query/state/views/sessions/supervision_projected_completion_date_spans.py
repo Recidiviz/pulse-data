@@ -30,7 +30,6 @@ from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
     STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
     STATES_WITH_NO_INFERRED_OPEN_SPANS,
-    STATES_WITH_SEPARATE_SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -62,7 +61,6 @@ WITH projected_completion_date_spans AS (
         -- Exclude incarceration sentences for states that store all supervision sentence data (including parole)
         -- separately in supervision sentences
         (sent.state_code NOT IN ({{excluded_incarceration_states}}) OR sent.sentence_type = "SUPERVISION")
-        AND sent.state_code NOT IN ({{states_with_separate_query}})
     GROUP BY 1, 2, 3, 4
 
     UNION ALL
@@ -86,7 +84,6 @@ WITH projected_completion_date_spans AS (
     UNNEST (sentence_deadline_id_array) AS sentence_deadline_id
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentence_deadline_spans_materialized` sent
         USING (state_code, person_id, sentence_deadline_id)
-    WHERE sent.state_code NOT IN ({{states_with_separate_query}})
     GROUP BY 1, 2, 3, 4
 ),
 prioritized_projected_completion_dates AS (
@@ -130,7 +127,6 @@ supervision_sessions AS (
         end_date_exclusive IS NULL AS open_supervision_session,
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized`
     WHERE compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
-        AND state_code NOT IN ({{states_with_separate_query}})
 ),
 overlapping_supervision_sessions AS (
 -- Left join the supervision projected completion date spans onto the supervision sessions so that every supervision
@@ -153,9 +149,6 @@ SELECT
     projected_completion_date_max,
 FROM overlapping_supervision_sessions
 
-UNION ALL
-
-SELECT * FROM `{{project_id}}.{{sessions_dataset}}.us_tn_supervision_projected_completion_date_spans_materialized`
 """
 
 SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -166,10 +159,6 @@ SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBui
     sessions_dataset=SESSIONS_DATASET,
     excluded_incarceration_states=list_to_query_string(
         string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
-        quoted=True,
-    ),
-    states_with_separate_query=list_to_query_string(
-        string_list=STATES_WITH_SEPARATE_SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS,
         quoted=True,
     ),
     no_inferred_open_span_states=list_to_query_string(
