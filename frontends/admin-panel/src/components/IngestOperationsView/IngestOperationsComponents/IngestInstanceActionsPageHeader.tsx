@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { PageHeader, Popover } from "antd";
+import { PageHeader, Popover, Tag } from "antd";
 import classNames from "classnames";
 import { useEffect, useState } from "react";
 import { getCurrentIngestInstanceStatusInformation } from "../../../AdminPanelAPI/IngestOperations";
@@ -34,10 +34,11 @@ import IngestActionButton from "./IngestActionButton";
 interface IngestActionsPageHeaderProps {
   stateCode: string;
   instance: DirectIngestInstance;
+  dataflowEnabled: boolean;
 }
 
 const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
-  ({ stateCode, instance }) => {
+  ({ stateCode, instance, dataflowEnabled }) => {
     const [statusInfo, setStatusInfo] =
       useState<IngestInstanceStatusInfo | undefined>();
 
@@ -65,7 +66,7 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
     return (
       <PageHeader
         title={instance}
-        tags={
+        tags={[
           statusInfo ? (
             <Popover content={IngestInstanceStatusPopoverContent}>
               <div
@@ -80,17 +81,21 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
             </Popover>
           ) : (
             <></>
-          )
-        }
+          ),
+          dataflowEnabled ? <Tag color="green">DATAFLOW ENABLED</Tag> : <></>,
+        ]}
         extra={
           <>
-            <IngestActionButton
-              style={{ marginRight: 5 }}
-              action={RegionAction.ExportToGCS}
-              buttonText={regionActionNames[RegionAction.ExportToGCS]}
-              instance={instance}
-              stateCode={stateCode}
-            />
+            {/* TODO(#20930): Delete button once ingest in dataflow enabled for all states */}
+            {!dataflowEnabled ? (
+              <IngestActionButton
+                style={{ marginRight: 5 }}
+                action={RegionAction.ExportToGCS}
+                buttonText={regionActionNames[RegionAction.ExportToGCS]}
+                instance={instance}
+                stateCode={stateCode}
+              />
+            ) : null}
             <IngestActionButton
               style={{ marginRight: 5 }}
               action={RegionAction.TriggerTaskScheduler}

@@ -15,8 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Alert } from "antd";
+import { Alert, Spin } from "antd";
+import { useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
+import { useFetchedDataJSON } from "../../hooks";
 import IngestInstanceCard from "./IngestInstanceCard";
 import IngestInstanceActionsPageHeader from "./IngestOperationsComponents/IngestInstanceActionsPageHeader";
 import { DirectIngestInstance } from "./constants";
@@ -32,9 +35,29 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
     useParams<{ stateCode: string; instance: string }>();
 
   const directInstance = getInstance(instance);
+  const fetchDataflowEnabled = useCallback(async () => {
+    if (directInstance === undefined) {
+      throw new Error("Invalid instance");
+    }
+    return isIngestInDataflowEnabled(stateCode, directInstance);
+  }, [stateCode, directInstance]);
+  const { loading, data: dataflowEnabled } =
+    useFetchedDataJSON<boolean>(fetchDataflowEnabled);
 
   if (!directInstance) {
     return <Alert message="Invalid instance" type="error" />;
+  }
+
+  if (loading) {
+    return (
+      <div className="center">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (dataflowEnabled === undefined) {
+    return <Alert message="Unable to load dataflow gating info" type="error" />;
   }
 
   return (
@@ -42,6 +65,7 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
       <IngestInstanceActionsPageHeader
         instance={directInstance}
         stateCode={stateCode}
+        dataflowEnabled={dataflowEnabled}
       />
       {env === "development" ? (
         <>
@@ -63,6 +87,7 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
           instance={directInstance}
           env={env}
           stateCode={stateCode}
+          dataflowEnabled={dataflowEnabled}
         />
       </div>
     </>
