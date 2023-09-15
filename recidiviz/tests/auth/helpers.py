@@ -23,7 +23,6 @@ from sqlalchemy import sql
 from recidiviz.auth.helpers import generate_user_hash
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseTriageBase,
-    DashboardUserRestrictions,
     PermissionsOverride,
     Roster,
     StateRolePermissions,
@@ -31,31 +30,6 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-
-
-def generate_fake_user_restrictions(
-    region_code: str,
-    email: str,
-    allowed_supervision_location_ids: str = "",
-    allowed_supervision_location_level: str = "level_1_supervision_location",
-    can_access_leadership_dashboard: bool = True,
-    can_access_case_triage: bool = False,
-    should_see_beta_charts: bool = False,
-    routes: Optional[dict] = None,
-    include_hash: bool = True,
-) -> DashboardUserRestrictions:
-    return DashboardUserRestrictions(
-        state_code=region_code,
-        restricted_user_email=email,
-        allowed_supervision_location_ids=allowed_supervision_location_ids,
-        allowed_supervision_location_level=allowed_supervision_location_level,
-        internal_role="supervision_staff",
-        can_access_leadership_dashboard=can_access_leadership_dashboard,
-        can_access_case_triage=can_access_case_triage,
-        should_see_beta_charts=should_see_beta_charts,
-        routes=routes,
-        user_hash=f"{email}::hashed" if include_hash else None,
-    )
 
 
 def add_entity_to_database_session(

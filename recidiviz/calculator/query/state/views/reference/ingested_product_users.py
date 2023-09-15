@@ -39,8 +39,8 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
             'US_MO' AS state_code,
             LOWER(email) AS email_address,
             IF(STRING_AGG(DISTINCT district, ',') IS NOT NULL, 'supervision_staff', 'leadership_role') as role,
-            -- dashboard_user_restrictions uses an empty string for no district instead of NULL, so
-            -- keep that behavior here.
+            -- the old dashboard_user_restrictions views used an empty string for no district
+            -- instead of NULL, so keep that behavior here.
             IFNULL(STRING_AGG(DISTINCT district, ','), '') AS district,
             emp_info.BDGNO as external_id,
             ARRAY_AGG(first_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS first_name,

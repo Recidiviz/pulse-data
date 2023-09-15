@@ -56,9 +56,6 @@ from recidiviz.calculator.query.state.views.outliers.outliers_views import (
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
-    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
 )
@@ -182,9 +179,6 @@ DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-dashboard-data"
 DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-dashboard-event-level-data"
 )
-DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI = (
-    "gs://{project_id}-dashboard-user-restrictions"
-)
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
 JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-justice-counts-data"
 PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-product-user-import"
@@ -239,15 +233,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="VITALS",
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
-    ),
-    # User Restrictions
-    ExportViewCollectionConfig(
-        view_builders_to_export=[DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER],
-        output_directory_uri_template=DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
-        export_name="DASHBOARD_USER_RESTRICTIONS",
-        export_output_formats_and_validations={
-            ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
-        },
     ),
     # All modules for the Pathways product
     ExportViewCollectionConfig(

@@ -21,9 +21,6 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
-    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
-)
 from recidiviz.case_triage.views.client_contact_info import (
     CLIENT_CONTACT_INFO_VIEW_BUILDER,
 )
@@ -38,7 +35,6 @@ from recidiviz.case_triage.views.last_known_date_of_employment import (
 )
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    DashboardUserRestrictions,
     ETLClient,
     ETLClientEvent,
     ETLOpportunity,
@@ -56,7 +52,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
 
 # Map from ETL Schema to associated view builder
 ETL_TABLES: Dict[Type[CaseTriageBase], SelectedColumnsBigQueryViewBuilder] = {
-    DashboardUserRestrictions: DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
     ETLClient: CLIENT_LIST_VIEW_BUILDER,
     ETLOpportunity: TOP_OPPORTUNITIES_VIEW_BUILDER,
     ETLClientEvent: CLIENT_EVENTS_VIEW_BUILDER,
