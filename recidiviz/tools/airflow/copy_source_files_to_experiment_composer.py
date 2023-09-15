@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,10 +31,13 @@ source files to the Airflow experiment environment in staging.
        --files recidiviz/airflow/dags/calculation_dag.py recidiviz/airflow/dags/operators/recidiviz_dataflow_operator.py
 """
 import argparse
+import ast
 import logging
 import os
+from collections import deque
 from glob import glob
 from multiprocessing.pool import ThreadPool
+from typing import Deque, List, Set, Tuple
 
 import yaml
 
@@ -48,15 +51,139 @@ from recidiviz.utils.params import str_to_bool
 DAGS_FOLDER = "dags"
 ROOT = os.path.dirname(recidiviz.__file__)
 
-OTHER_SOURCE_FILES = os.path.join(
+SOURCE_FILE_YAML_PATH = os.path.join(
     ROOT,
     "tools/deploy/terraform/config/cloud_composer_source_files_to_copy.yaml",
 )
 
-SOURCE_FILE_YAML_PATHS = [OTHER_SOURCE_FILES]
-
 EXPERIMENT = "us-central1-experiment-eecbc35e-bucket"
 EXPERIMENT_2 = "us-central1-experiment-2-8bb6ce5a-bucket"
+
+
+def _get_file_module_dependencies(
+    file_path: str,
+    root_modules_to_include: Set[str],
+) -> Set[str]:
+    """
+    Returns a set of all modules that the given file depends on. It does this by
+    parsing the file and looking for import statements.
+    """
+    with open(file_path, encoding="utf-8") as fh:
+        root = ast.parse(fh.read(), file_path)
+
+    module_dependencies: Set[str] = set()
+    for node in ast.iter_child_nodes(root):
+        if not (
+            isinstance(node, ast.ImportFrom)
+            and node.module
+            and any(
+                {
+                    node.module.startswith(root_module)
+                    for root_module in root_modules_to_include
+                }
+            )
+        ):
+            continue
+
+        module_path = _convert_module_to_path(node.module)
+        if os.path.isdir(module_path):
+            for name in node.names:
+                module_dependencies.add(f"{node.module}.{name.name}")
+        else:
+            module_dependencies.add(node.module)
+
+    return module_dependencies
+
+
+def _convert_module_to_path(module_dependency: str) -> str:
+    return module_dependency.replace(".", "/").replace("recidiviz", ROOT, 1)
+
+
+def _get_init_file_paths_for_module_dependency(
+    module_path: str,
+    all_path_dependencies: Set[str],
+    root_module: str,
+) -> Set[str]:
+    """
+    Returns a set of all __init__.py files that the given module depends on that hasn't already been explored.
+    """
+    dependency_paths: Set[str] = set()
+    init_path = os.path.join(module_path, "__init__.py")
+    if init_path not in all_path_dependencies:
+        dependency_paths.add(init_path)
+        if not module_path.endswith(root_module):
+            dependency_paths.update(
+                _get_init_file_paths_for_module_dependency(
+                    os.path.dirname(module_path),
+                    all_path_dependencies,
+                    root_module,
+                )
+            )
+    return dependency_paths
+
+
+def _convert_modules_to_paths(
+    module_dependencies: Set[str],
+    all_path_dependencies: Set[str],
+) -> Set[str]:
+    """
+    Converts a set of modules to a set of paths including all __init__.py files
+    that the module depends on.
+    """
+    dependency_paths: Set[str] = set()
+    for module_dependency in module_dependencies:
+        module_dependency_path = _convert_module_to_path(module_dependency)
+        root_module = module_dependency.split(".")[0]
+
+        if os.path.isdir(module_dependency_path):
+            dependency_paths.update(
+                _get_init_file_paths_for_module_dependency(
+                    module_dependency_path,
+                    all_path_dependencies & dependency_paths,
+                    root_module,
+                )
+            )
+        else:
+            dependency_path = module_dependency_path + ".py"
+            dependency_paths.update(
+                _get_init_file_paths_for_module_dependency(
+                    os.path.dirname(dependency_path),
+                    all_path_dependencies & dependency_paths,
+                    root_module,
+                )
+            )
+            dependency_paths.add(dependency_path)
+
+    return dependency_paths
+
+
+# TODO(#23809): Update function to be usable by `validate_source_visibility.py` to determine source visibility
+def get_file_module_dependencies(path: str, dependencies: Set[str]) -> Set[str]:
+    """
+    Returns a set of all files that the given file depends on. It does this by
+    parsing the file and looking for recidiviz package import statements. It then
+    repeats the process on each of the dependencies it finds.
+    """
+    dependencies_not_visited: Deque[str] = deque([path])
+
+    while len(dependencies_not_visited) > 0:
+        current_file = dependencies_not_visited.popleft()
+
+        module_dependencies = _get_file_module_dependencies(
+            current_file,
+            root_modules_to_include={"recidiviz"},
+        )
+
+        module_dependency_paths = _convert_modules_to_paths(
+            module_dependencies, dependencies
+        )
+
+        for dependency_path in module_dependency_paths:
+            if dependency_path not in dependencies:
+                dependencies_not_visited.append(dependency_path)
+                dependencies.add(dependency_path)
+
+    return dependencies
 
 
 def gcloud_path_for_local_path(local_path: str) -> str:
@@ -75,6 +202,33 @@ def upload_file(local_path: str, gcs_url: str, message: str) -> None:
     gsutil_cp(local_path, gcs_url)
 
 
+def _get_paths_list_from_file_pattern(file_pattern: Tuple[str, str]) -> List[str]:
+    path, pattern = file_pattern
+    return glob(f"{path.replace('recidiviz', ROOT)}/{pattern}")
+
+
+def get_airflow_source_file_paths() -> List[str]:
+    dag_files: List[str] = _get_paths_list_from_file_pattern(
+        ("recidiviz/airflow/dags", "*dag*.py")
+    )
+    non_python_source_files: List[str] = []
+
+    with open(SOURCE_FILE_YAML_PATH, encoding="utf-8") as f:
+        file_patterns = yaml.safe_load(f)
+        for file_pattern in file_patterns:
+            non_python_source_files.extend(
+                _get_paths_list_from_file_pattern(file_pattern)
+            )
+
+    explored_python_dependencies: Set[str] = set()
+    for dag_file in dag_files:
+        explored_python_dependencies = get_file_module_dependencies(
+            dag_file, explored_python_dependencies
+        )
+
+    return dag_files + non_python_source_files + list(explored_python_dependencies)
+
+
 def main(files: list[str], environment: str, dry_run: bool) -> None:
     """
     Takes in arguments and copies appropriate files to the appropriate environment.
@@ -91,16 +245,10 @@ def main(files: list[str], environment: str, dry_run: bool) -> None:
             f"{ROOT}/{file.removeprefix('recidiviz/')}" for file in files
         ]
     else:
-        local_path_list = []
-        for source_file_yaml in SOURCE_FILE_YAML_PATHS:
-            with open(source_file_yaml, encoding="utf-8") as f:
-                file_patterns = yaml.safe_load(f) + [
-                    ("recidiviz/airflow/dags", "*dag*.py")
-                ]
-                for path, pattern in file_patterns:
-                    local_path_list.extend(
-                        glob(f"{path.replace('recidiviz', ROOT)}/{pattern}")
-                    )
+        local_path_list = get_airflow_source_file_paths()
+
+    logging.info("Copying %s files to bucket", len(local_path_list))
+    # TODO(#23871): Add ability to delete files from bucket that are no longer in source.
 
     for local_path in local_path_list:
         gcloud_path = gcloud_path_for_local_path(local_path)
