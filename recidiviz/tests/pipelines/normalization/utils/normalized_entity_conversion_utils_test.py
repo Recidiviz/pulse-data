@@ -473,6 +473,8 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 {
                     "deciding_body_type": "SUPERVISION_OFFICER",
                     "deciding_body_type_raw_text": None,
+                    "deciding_staff_external_id": None,
+                    "deciding_staff_external_id_type": None,
                     "external_id": "svr1",
                     "is_draft": None,
                     "violation_response_metadata": None,
@@ -502,6 +504,8 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                 {
                     "deciding_body_type": "SUPERVISION_OFFICER",
                     "deciding_body_type_raw_text": None,
+                    "deciding_staff_external_id": None,
+                    "deciding_staff_external_id_type": None,
                     "external_id": "svr2",
                     "is_draft": None,
                     "violation_response_metadata": None,
