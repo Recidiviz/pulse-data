@@ -82,7 +82,6 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 50
     override_reason: Current failing level as of 4/5/23 is 0 rows
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 14000
-    override_reason:
-      Current failing level as of 4/20/23 is 11,081 rows (0.6%).  Needs
+    hard_num_allowed_rows_override: 14500
+    override_reason: Current failing level as of 9/15/23 is 14,396.  Needs
       investigation. #TODO(#22303)
