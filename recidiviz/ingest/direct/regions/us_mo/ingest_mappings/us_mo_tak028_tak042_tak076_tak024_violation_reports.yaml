@@ -66,7 +66,6 @@ unused_columns:
   - CZ_SEO # Sentence Key Sequence Number
   - CZ_FSO # Field Sentence Sequence Number
   - FINAL_FORMED_UPDATE_DATE # Unused - Finally formed last update date (E6_* cols)
-  - BDGNO
   - CLSTTL
   - LNAME
   - FNAME
@@ -145,6 +144,12 @@ output:
                       - $literal("R")
                       - BY_VSN
                 deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                deciding_staff_external_id: BDGNO
+                deciding_staff_external_id_type:
+                  $conditional:
+                    - $if:
+                        $not_null: BDGNO
+                      $then: $literal("US_MO_STAFF_BADGE_NUMBER")
                 is_draft:
                   $is_null: FINAL_FORMED_CREATE_DATE
                 response_date:
