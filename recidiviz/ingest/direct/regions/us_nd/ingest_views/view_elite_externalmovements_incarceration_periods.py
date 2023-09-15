@@ -24,10 +24,26 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH in_edges AS (
-    SELECT * FROM {elite_externalmovements}
+    SELECT 
+        REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
+        DIRECTION_CODE,
+        FROM_AGY_LOC_ID,
+        MOVEMENT_SEQ,
+        MOVEMENT_REASON_CODE,
+        MOVEMENT_DATE,
+        TO_AGY_LOC_ID
+    FROM {elite_externalmovements}
     WHERE DIRECTION_CODE = 'IN'
 ), out_edges AS (
-    SELECT * FROM {elite_externalmovements}
+    SELECT 
+        REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
+        DIRECTION_CODE,
+        FROM_AGY_LOC_ID,
+        MOVEMENT_SEQ,
+        MOVEMENT_REASON_CODE,
+        MOVEMENT_DATE,
+        TO_AGY_LOC_ID
+    FROM {elite_externalmovements}
     WHERE DIRECTION_CODE = 'OUT'
 ), full_periods AS (
     SELECT
