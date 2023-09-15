@@ -145,15 +145,24 @@ class TestDao(TestCase):
                 )
             )
 
-    def test_stale_secondary_raw_data_no_primary_file_after_frozen_discovery_date(
+    # TODO(#20930): Delete this test once ingest in dataflow is enabled for all states
+    def test_stale_secondary_raw_data_no_primary_file_after_frozen_discovery_date_legacy(
         self,
     ) -> None:
+        is_ingest_in_dataflow_enabled = False
         discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
         with freeze_time(discovery_date):
             PostgresDirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.PRIMARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
             ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
+
+            PostgresDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
+            ).add_instance_status(DirectIngestStatus.NO_RERUN_IN_PROGRESS)
 
             normalized_path_str = to_normalized_unprocessed_raw_file_path(
                 original_file_path="bucket/file_tag.csv", dt=discovery_date
@@ -170,13 +179,56 @@ class TestDao(TestCase):
             # Mark the file as discovered in PRIMARY on frozen `discovery_date`
             raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
 
-            # Assert that secondary raw data is not stale, because no file in PRIMARY is found after
-            # `discovery_date`
-            self.assertFalse(stale_secondary_raw_data("us_xx"))
+            # Assert that secondary raw data is not stale, because no rerun in progress
+            # in secondary
+            self.assertFalse(
+                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
+            )
 
-    def test_stale_secondary_raw_data_rerun_start_before_discovery_present_in_both(
+    def test_stale_secondary_raw_data_no_primary_file_after_frozen_discovery_date(
         self,
     ) -> None:
+        is_ingest_in_dataflow_enabled = True
+        discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
+        with freeze_time(discovery_date):
+            PostgresDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.PRIMARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
+            ).add_instance_status(DirectIngestStatus.INITIAL_STATE)
+
+            PostgresDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
+            ).add_instance_status(DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS)
+
+            normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="bucket/file_tag.csv", dt=discovery_date
+            )
+            raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                normalized_path_str
+            )
+
+            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+            )
+
+            # Mark the file as discovered in PRIMARY on frozen `discovery_date`
+            raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+            # Assert that secondary raw data is not stale, because no rerun in progress
+            # in secondary
+            self.assertFalse(
+                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
+            )
+
+    # TODO(#20930): Delete this test once ingest in dataflow is enabled for all states
+    def test_stale_secondary_raw_data_rerun_start_before_discovery_present_in_both_legacy(
+        self,
+    ) -> None:
+        is_ingest_in_dataflow_enabled = False
         discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
         rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
 
@@ -215,16 +267,75 @@ class TestDao(TestCase):
             PostgresDirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
             ).add_instance_status(DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED)
 
             # Assert that raw data is not considered stale because the same file_tag is present and non-invalidated
             # in both instances, and the rerun in secondary started BEFORE the files were discovered in both
             # PRIMARY and SECONDARY
-            self.assertFalse(stale_secondary_raw_data("us_xx"))
+            self.assertFalse(
+                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
+            )
 
-    def test_stale_secondary_raw_data_standard_secondary_rerun(
+    def test_stale_secondary_raw_data_reimport_start_before_discovery_present_in_both(
         self,
     ) -> None:
+        is_ingest_in_dataflow_enabled = True
+        discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
+        rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
+
+        with freeze_time(discovery_date):
+            # Discover the same file_tag in both PRIMARY and SECONDARY at the `discovery_date`
+            normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="bucket/file_tag.csv", dt=discovery_date
+            )
+            raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                normalized_path_str
+            )
+
+            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+            )
+            raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+            secondary_normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="secondary_bucket/file_tag.csv", dt=discovery_date
+            )
+            secondary_raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                secondary_normalized_path_str
+            )
+
+            secondary_raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.SECONDARY,
+            )
+            secondary_raw_metadata_manager.mark_raw_file_as_discovered(
+                secondary_raw_unprocessed_path_1
+            )
+
+        with freeze_time(rerun_start_before_discovery_date):
+            # Start a secondary raw data import rerun BEFORE the discovery_date
+            PostgresDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
+            ).add_instance_status(DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED)
+
+            # Assert that raw data is not considered stale because the same file_tag is present and non-invalidated
+            # in both instances, and the rerun in secondary started BEFORE the files were discovered in both
+            # PRIMARY and SECONDARY
+            self.assertFalse(
+                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
+            )
+
+    # TODO(#20930): Delete this test once ingest in dataflow is enabled for all states
+    #  (note: this test case does not apply in the post-ingest in dataflow world because
+    #  there will be no reimports with a primary source raw data instance).
+    def test_stale_secondary_raw_data_standard_secondary_rerun_legacy(
+        self,
+    ) -> None:
+        is_ingest_in_dataflow_enabled = False
         discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0)
         rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
 
@@ -248,15 +359,20 @@ class TestDao(TestCase):
             PostgresDirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
             ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
 
             # Assert that raw data is not considered stale because there isn't a secondary raw data import in
             # progress in SECONDARY
-            self.assertFalse(stale_secondary_raw_data("us_xx"))
+            self.assertFalse(
+                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
+            )
 
-    def test_stale_secondary_raw_data_rerun_start_before_discovery_present_in_both_invalidated_in_secondary(
+    # TODO(#20930): Delete this test once ingest in dataflow is enabled for all states
+    def test_stale_secondary_raw_data_rerun_start_before_discovery_present_in_both_invalidated_in_secondary_legacy(
         self,
     ) -> None:
+        is_ingest_in_dataflow_enabled = False
         discovery_date = datetime.datetime(2022, 7, 1, tzinfo=pytz.UTC)
         rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
 
@@ -299,8 +415,66 @@ class TestDao(TestCase):
             PostgresDirectIngestInstanceStatusManager(
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
             ).add_instance_status(DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED)
 
             # Assert that raw data is considered stale because the same file_tag is present in both, but is
             # invalidated in SECONDARY
-            self.assertTrue(stale_secondary_raw_data("us_xx"))
+            self.assertTrue(
+                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
+            )
+
+    def test_stale_secondary_raw_data_reimport_start_before_discovery_present_in_both_invalidated_in_secondary(
+        self,
+    ) -> None:
+        is_ingest_in_dataflow_enabled = True
+        discovery_date = datetime.datetime(2022, 7, 1, tzinfo=pytz.UTC)
+        rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
+
+        with freeze_time(discovery_date):
+            # Discover the same file_tag in both PRIMARY and SECONDARY at the same time
+            normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="bucket/file_tag.csv", dt=discovery_date
+            )
+            raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                normalized_path_str
+            )
+
+            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+            )
+            raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+            secondary_normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="secondary_bucket/file_tag.csv", dt=discovery_date
+            )
+            secondary_raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                secondary_normalized_path_str
+            )
+
+            secondary_raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.SECONDARY,
+            )
+            secondary_raw_metadata_manager.mark_raw_file_as_discovered(
+                secondary_raw_unprocessed_path_1
+            )
+
+            # Mark secondary raw file tag as invalidated
+            secondary_raw_metadata_manager.mark_file_as_invalidated(
+                secondary_raw_unprocessed_path_1
+            )
+
+        with freeze_time(rerun_start_before_discovery_date):
+            PostgresDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
+            ).add_instance_status(DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED)
+
+            # Assert that raw data is considered stale because the same file_tag is present in both, but is
+            # invalidated in SECONDARY
+            self.assertTrue(
+                stale_secondary_raw_data("us_xx", is_ingest_in_dataflow_enabled)
+            )

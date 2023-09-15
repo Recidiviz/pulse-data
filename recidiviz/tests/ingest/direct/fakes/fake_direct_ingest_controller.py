@@ -398,10 +398,12 @@ def build_fake_direct_ingest_controller(
         region_code: str,
         ingest_instance: DirectIngestInstance,
         change_listener: DirectIngestInstanceStatusChangeListener,
+        is_ingest_in_dataflow_enabled: bool,
     ) -> PostgresDirectIngestInstanceStatusManager:
         status_manager = PostgresDirectIngestInstanceStatusManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
             change_listener=change_listener,
         )
         for status in initial_statuses:

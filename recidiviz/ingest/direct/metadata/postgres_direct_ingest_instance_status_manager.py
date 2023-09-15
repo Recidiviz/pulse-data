@@ -26,9 +26,9 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_instance_status_manager import (
-    VALID_START_OF_RERUN_STATUSES,
     DirectIngestInstanceStatusChangeListener,
     DirectIngestInstanceStatusManager,
+    get_invalid_statuses,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
@@ -43,6 +43,23 @@ from recidiviz.persistence.entity.operations.entities import DirectIngestInstanc
 from recidiviz.utils import environment
 
 
+def get_initial_status_for_instance(
+    instance: DirectIngestInstance, ingest_in_dataflow_enabled: bool
+) -> DirectIngestStatus:
+    if not ingest_in_dataflow_enabled:
+        return (
+            DirectIngestStatus.STANDARD_RERUN_STARTED
+            if instance is DirectIngestInstance.PRIMARY
+            else DirectIngestStatus.NO_RERUN_IN_PROGRESS
+        )
+
+    return (
+        DirectIngestStatus.INITIAL_STATE
+        if instance is DirectIngestInstance.PRIMARY
+        else DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS
+    )
+
+
 class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
     """An interface for reading and updating DirectIngestInstanceStatuses. For a
     visualization of valid instance statuses transitions, please refer to
@@ -53,9 +70,14 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         self,
         region_code: str,
         ingest_instance: DirectIngestInstance,
+        is_ingest_in_dataflow_enabled: bool,
         change_listener: Optional[DirectIngestInstanceStatusChangeListener] = None,
     ):
-        super().__init__(region_code=region_code, ingest_instance=ingest_instance)
+        super().__init__(
+            region_code=region_code,
+            ingest_instance=ingest_instance,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
+        )
         self.db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.change_listener = change_listener
 
@@ -163,12 +185,18 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 new_status=new_status,
             )
 
+    # TODO(#20930): Rename this to _get_status_rows_of_current_raw_data_reimport once
+    #  ingest in dataflow is shipped to all states.
     def _get_status_rows_of_current_rerun(
         self, session: Session
     ) -> Optional[List[DirectIngestInstanceStatus]]:
         """Returns all the rows associated with a current rerun, if applicable."""
         # Return all statuses for PRIMARY, since there is no concept of individual reruns in PRIMARY.
         if self.ingest_instance == DirectIngestInstance.PRIMARY:
+            if self.is_ingest_in_dataflow_enabled:
+                raise ValueError(
+                    "No concept of a raw data reimport for the PRIMARY instance."
+                )
             return self._get_rows_after_timestamp(
                 session=session, status_timestamp=datetime.min
             )
@@ -176,7 +204,9 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         most_recent_completed = self._get_most_recent_row_with_status(
             session=session,
             # Terminating status is NO_RERUN_IN_PROGRESS in SECONDARY.
-            status=DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+            status=DirectIngestStatus.NO_RERUN_IN_PROGRESS
+            if not self.is_ingest_in_dataflow_enabled
+            else DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
         )
         if most_recent_completed:
             current_rerun_status_rows: List[
@@ -191,12 +221,20 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             session=session, status_timestamp=datetime.min
         )
 
+    # TODO(#20930): Delete this function once ingest in Dataflow is shipped for all
+    #  states.
     def get_raw_data_source_instance(
         self, session: Optional[Session] = None
     ) -> Optional[DirectIngestInstance]:
         """Returns the current raw data source of the ingest instance associated with
         this status manager.
         """
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "The raw_data_source_instance is not a valid concept for ingest in "
+                "Dataflow states. This should not be called."
+            )
+
         # Raw data source can only be PRIMARY for PRIMARY instances.
         if self.ingest_instance == DirectIngestInstance.PRIMARY:
             return DirectIngestInstance.PRIMARY
@@ -206,29 +244,63 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         with SessionFactory.using_database(self.db_key) as query_session:
             return self._get_raw_data_source_instance(query_session)
 
+    # TODO(#20930): Rename this to _get_current_raw_data_reimport_start_status once
+    #  ingest in dataflow is shipped to all states.
     def _get_current_rerun_start_status(
         self, query_session: Session
     ) -> Optional[DirectIngestInstanceStatus]:
+        """Returns the status that indicates the start of a rerun / raw data reimport."""
+        if (
+            self.is_ingest_in_dataflow_enabled
+            and self.ingest_instance is not DirectIngestInstance.SECONDARY
+        ):
+            raise ValueError(
+                "A reimport is not a valid concept for PRIMARY instances. This should "
+                "not be called."
+            )
+
         current_rerun_status_rows = self._get_status_rows_of_current_rerun(
             session=query_session
         )
         if not current_rerun_status_rows:
             return None
 
-        current_rerun_start_instance_status = one(
+        if not self.is_ingest_in_dataflow_enabled:
+            if self.ingest_instance is DirectIngestInstance.PRIMARY:
+                valid_start_statuses = [
+                    DirectIngestStatus.STANDARD_RERUN_STARTED,
+                ]
+            elif self.ingest_instance is DirectIngestInstance.SECONDARY:
+                valid_start_statuses = [
+                    DirectIngestStatus.STANDARD_RERUN_STARTED,
+                    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
+                ]
+            else:
+                raise ValueError(f"Unexpected ingest instance {self.ingest_instance}")
+
+        else:
+            valid_start_statuses = [DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED]
+
+        return one(
             row
             for row in current_rerun_status_rows
-            if row.status in VALID_START_OF_RERUN_STATUSES[self.ingest_instance]
+            if row.status in valid_start_statuses
         )
 
-        return current_rerun_start_instance_status
-
+    # TODO(#20930): Delete this function once ingest in Dataflow is shipped for all
+    #  states.
     def _get_raw_data_source_instance(
         self, query_session: Session
     ) -> Optional[DirectIngestInstance]:
         """Returns the current raw data source of the ingest instance associated with
         this status manager.
         """
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "The raw_data_source_instance is not a valid concept for ingest in "
+                "Dataflow states. This should not be called."
+            )
+
         # Raw data source can be PRIMARY or SECONDARY for SECONDARY instances,
         # depending on the configurations of the secondary rerun.
         current_rerun_start_instance_status: Optional[
@@ -249,22 +321,39 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         return DirectIngestInstance.SECONDARY
 
     def get_current_ingest_rerun_start_timestamp(self) -> Optional[datetime]:
+        if (
+            self.is_ingest_in_dataflow_enabled
+            and self.ingest_instance is not DirectIngestInstance.SECONDARY
+        ):
+            raise ValueError(
+                "A reimport is not a valid concept for PRIMARY instances. This should "
+                "not be called."
+            )
+
         with SessionFactory.using_database(self.db_key) as session:
             current_rerun_start_status = self._get_current_rerun_start_status(session)
-            return (
-                current_rerun_start_status.status_timestamp
-                if current_rerun_start_status
-                else None
-            )
+            if not current_rerun_start_status:
+                # Check for current status - this will throw if there isn't one set
+                self._get_current_status_row(session)
+                return None
+            return current_rerun_start_status.status_timestamp
 
     def change_status_to(self, new_status: DirectIngestStatus) -> None:
         """Change status to the passed in status."""
-        prev_raw_data_source_instance = self.get_raw_data_source_instance()
+        # TODO(#20930): Remove raw data source instance change notifications once ingest
+        #  in dataflow is shipped in all states.
+        prev_raw_data_source_instance = (
+            self.get_raw_data_source_instance()
+            if not self.is_ingest_in_dataflow_enabled
+            else None
+        )
         self._validate_status_transition_from_current_status(new_status=new_status)
         previous_status = self._add_new_status_row(status=new_status)
         if self.change_listener is not None:
-            if prev_raw_data_source_instance != (
-                raw_data_source_instance := self.get_raw_data_source_instance()
+            if (
+                not self.is_ingest_in_dataflow_enabled
+                and prev_raw_data_source_instance
+                != (raw_data_source_instance := self.get_raw_data_source_instance())
             ):
                 self.change_listener.on_raw_data_source_instance_change(
                     raw_data_source_instance
@@ -275,11 +364,31 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 )
 
     @environment.test_only
+    def add_initial_status(self) -> None:
+        """Seeds the DB with the expected initial status that would normally be set
+        via a migration in production environments.
+        """
+        self.add_instance_status(
+            get_initial_status_for_instance(
+                self.ingest_instance, self.is_ingest_in_dataflow_enabled
+            )
+        )
+
+    @environment.test_only
     def add_instance_status(
         self,
         status: DirectIngestStatus,
     ) -> None:
         """Add a status (without any validations). Used for testing purposes."""
+
+        if status in get_invalid_statuses(
+            self.ingest_instance, self.is_ingest_in_dataflow_enabled
+        ):
+            raise ValueError(
+                f"Cannot add invalid status [{status.value}] for instance "
+                f"[{self.ingest_instance.value}]."
+            )
+
         with SessionFactory.using_database(self.db_key) as session:
             new_row = schema.DirectIngestInstanceStatus(
                 region_code=self.region_code,
