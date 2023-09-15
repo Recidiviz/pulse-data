@@ -20,9 +20,12 @@ electronic monitoring
 from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -55,6 +58,21 @@ includes electronic monitoring */
         ON SPLIT(sls.correctional_level_raw_text, '##')[OFFSET(0)] = coms_map.supervision_level_raw_text and coms_map.source = 'COMS'
     WHERE state_code = "US_MI"
     AND compartment_level_1 = 'SUPERVISION' 
+    
+    /* additional electronic monitoring can now be found in a separate COMS table as well */
+    UNION ALL 
+    SELECT
+        'US_MI' AS state_code, 
+        pei.person_id, 
+        SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) AS start_date,
+        SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE) AS end_date,  
+        TRUE AS is_electronic_monitoring
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.COMS_Specialties_latest`
+    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON LTRIM(Offender_Number, '0')= pei.external_id
+        AND pei.state_code = 'US_MI'
+        AND pei.id_type = "US_MI_DOC"
+    WHERE Specialty = 'GPS Monitoring'
 ),
 /* This boolean is then used to aggregate electronic monitoring supervision levels and non electronic monitoring
 supervision levels */
@@ -81,6 +99,11 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
         analyst_data_dataset=ANALYST_VIEWS_DATASET,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MI,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
         meets_criteria_default=True,
     )
 )
