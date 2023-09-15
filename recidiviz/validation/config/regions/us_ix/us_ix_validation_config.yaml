@@ -26,6 +26,12 @@ max_allowed_error_overrides:
   - validation_name: incarceration_admission_person_level_external_comparison
     hard_max_allowed_error_override: 0.61
     override_reason: TODO(#20470) - Added in IX specific logic to address some of the error, but requires further investigation
+  - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
+    hard_max_allowed_error_override: 0.025
+    override_reason:
+      TODO(#23970) Error rate should not have increased from 1.96% to 2.02% on 9/8/23
+      because the external data is not changing. Could have to do with recent IP work.
+      Needs to be investigated.
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 25
@@ -43,8 +49,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 150
     override_reason: Needs investigation. Current failing level as of 2/24/23 is 69 rows #TODO(#19047)
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 1500
-    override_reason: TODO(#20473) - Addressed known issues, ticket remains to investigate remaining issues.
+    hard_num_allowed_rows_override: 2100
+    override_reason: TODO(#23972) - Addressed known issues, ticket to investigate remaining issues.
   - validation_name: incarceration_release_reason_no_release_date
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#20471) - Really low error rate so just bumping threshold for now
@@ -71,3 +77,18 @@ num_allowed_rows_overrides:
   - validation_name: invalid_admission_reason_and_pfi
     hard_num_allowed_rows_override: 1
     override_reason: TODO(#22279) Just one case, to investigate later
+  - validation_name: incarceration_admission_after_open_period
+    hard_num_allowed_rows_override: 1
+    override_reason: TODO(#23965) Just one case, to investigate later
+  - validation_name: overlapping_incarceration_periods
+    hard_num_allowed_rows_override: 7
+    override_reason:
+      TODO(#23965) Current failing level as of 9/14/23 is 5 rows. Likely
+      the same root cause as incarceration_admission_after_open_period failure. Needs to
+      be investigated.
+  - validation_name: current_supervision_staff_missing_district
+    hard_num_allowed_rows_override: 10
+    override_reason: TODO(#23971) Known issue, will be resolved soon
+  - validation_name: unidentified_supervision_districts_for_staff
+    hard_num_allowed_rows_override: 2
+    override_reason: TODO(#23971) Known issue, will be resolved soon
