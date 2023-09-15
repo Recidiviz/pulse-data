@@ -34,11 +34,6 @@ STATES_WITH_SEPARATE_INCARCERATION_SENTENCES_PREPROCESSED = [
     StateCode.US_ND.name,
 ]
 
-# States with a separate processing file to create supervision sentence completion date spans
-STATES_WITH_SEPARATE_SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS = [
-    StateCode.US_TN.name,
-]
-
 # Only include supervision sentences & supervision projected completion dates in states that solely use supervision
 # sentences for all clients on supervision (including parole)
 STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client has a supervision session that overlaps with a sentence span.
+"""Describes the spans of time when a client has a supervision session that overlaps with a sentence span.
 Those who are on supervision without an overlapping span almost certainly have erroneous expiration dates
 and can be surfaced as a separate "data quality" issue rather than eligible for discharge.
 """
@@ -29,7 +29,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "HAS_ACTIVE_SENTENCE"
 
-_DESCRIPTION = """Describes the spans of time when a TN client has a supervision session that overlaps with a sentence span.
+_DESCRIPTION = """Describes the spans of time when a client has a supervision session that overlaps with a sentence span.
 Those who are on supervision without an overlapping span almost certainly have erroneous expiration dates
 and can be surfaced as a separate "data quality" issue rather than eligible for discharge.
 """
@@ -42,15 +42,17 @@ _QUERY_TEMPLATE = f"""
             sess.person_id,
             sess.start_date,
             sess.end_date_exclusive,
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` span
+        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
-            ON span.state_code = sess.state_code
-            AND span.person_id = sess.person_id
+            ON sent.state_code = sess.state_code
+            AND sent.person_id = sess.person_id
             -- Restrict to spans that overlap with supervision sessions
             AND sess.compartment_level_1 = "SUPERVISION"
             -- Use strictly less than for exclusive end_dates
-            AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
-            AND sess.start_date < {nonnull_end_date_clause('span.projected_completion_date_max')}
+            AND sent.date_imposed < {nonnull_end_date_clause('sess.end_date_exclusive')}
+            -- If both dates are NULL, the span would be excluded. Since missing projected_completion_date_max should only happen for
+            -- life sentences, other NULLs likely reflect missing data 
+            AND sess.start_date < COALESCE(sent.completion_date, sent.projected_completion_date_max)
     )
     SELECT 
         state_code,
