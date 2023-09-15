@@ -109,6 +109,25 @@ output:
                       $json_extract:
                         $key: _response_date
                         $json: $iter_item
+                    deciding_staff_external_id:
+                      $conditional:
+                        - $if:
+                            $not_null:
+                              $json_extract:
+                                $key: _decision_agent_id
+                                $json: $iter_item
+                          $then:
+                            $json_extract:
+                              $key: _decision_agent_id
+                              $json: $iter_item
+                    deciding_staff_external_id_type:
+                      $conditional:
+                        - $if:
+                            $not_null:
+                              $json_extract:
+                                $key: _decision_agent_id
+                                $json: $iter_item
+                          $then: $literal("US_MI_OMNI_USER")
                     deciding_body_type:
                       $conditional:
                         - $if:
