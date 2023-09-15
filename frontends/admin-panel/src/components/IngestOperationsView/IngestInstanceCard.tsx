@@ -43,12 +43,14 @@ interface IngestInstanceCardProps {
   instance: DirectIngestInstance;
   env: string;
   stateCode: string;
+  dataflowEnabled: boolean;
 }
 
 const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   instance,
   env,
   stateCode,
+  dataflowEnabled,
 }) => {
   const logsEnv = env === "production" ? "prod" : "staging";
   const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
@@ -146,11 +148,18 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
         ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
       />
       <br />
-      <Title id={ANCHOR_INGEST_VIEWS} level={4}>
-        Ingest views
-      </Title>
-      <InstanceIngestViewMetadata stateCode={stateCode} instance={instance} />
-      <br />
+      {/* TODO(#20930): Delete section once ingest in dataflow enabled for all states */}
+      {!dataflowEnabled ? (
+        <div>
+          <Title id={ANCHOR_INGEST_VIEWS} level={4}>
+            Ingest views
+          </Title>
+          <InstanceIngestViewMetadata
+            stateCode={stateCode}
+            instance={instance}
+          />
+        </div>
+      ) : null}
       <Title id={ANCHOR_INGEST_RESOURCES} level={4}>
         Resources
       </Title>
@@ -181,9 +190,16 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
             </NewTabLink>
           )}
         </Descriptions.Item>
-        <Descriptions.Item label="Postgres database" span={3}>
-          {!ingestInstanceResources ? <Spin /> : ingestInstanceResources.dbName}
-        </Descriptions.Item>
+        {/* TODO(#20930): Delete section once ingest in dataflow enabled for all states */}
+        {!dataflowEnabled ? (
+          <Descriptions.Item label="Postgres database" span={3}>
+            {!ingestInstanceResources ? (
+              <Spin />
+            ) : (
+              ingestInstanceResources.dbName
+            )}
+          </Descriptions.Item>
+        ) : null}
       </Descriptions>
       <br />
       <Title id={ANCHOR_INGEST_LOGS} level={4}>

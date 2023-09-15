@@ -59,19 +59,10 @@ const IngestInstanceCurrentStatusSummary = (): JSX.Element => {
       getAllIngestInstanceStatuses
     );
 
-  const [stateDataflowEnabledStatuses, setStateDataflowEnabledStatuses] =
-    useState<IngestInstanceDataflowEnabledStatusResponse | undefined>(
-      undefined
+  const { data: stateDataflowEnabledStatuses } =
+    useFetchedDataJSON<IngestInstanceDataflowEnabledStatusResponse>(
+      getAllIngestInstanceDataflowEnabledStatuses
     );
-
-  useEffect(() => {
-    const loadAllStateDataflowEnabledStatuses = async () => {
-      const result = await getAllIngestInstanceDataflowEnabledStatuses();
-      const newData = await result.json();
-      setStateDataflowEnabledStatuses(newData);
-    };
-    loadAllStateDataflowEnabledStatuses();
-  }, []);
 
   const [stateIngestQueueStatuses, setStateIngestQueueStatuses] =
     useState<StateIngestQueuesStatuses | undefined>(undefined);
