@@ -51,7 +51,11 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     # examples:
                     # StateCode.US_PA: [date(2023, 2, 1), date(2023, 3, 1)],
                     # StateCode.US_MI: [date(2023, 4, 1)]
-                    StateCode.US_CA: [date(2023, 1, 1)]
+                    StateCode.US_CA: [date(2023, 1, 1)],
+                    StateCode.US_IX: [
+                        date(2022, 11, 1),
+                        date(2022, 12, 1),
+                    ],  # Known issue that we don't observe as many violations in Atlas as we did in their old system
                 },
             )
         ]
@@ -104,6 +108,19 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_OR: [
                         date(2023, 8, 1)
                     ],  # TODO(#23918): Remove once OR sends data
+                    StateCode.US_MI: [
+                        date(2023, 8, 1)
+                    ],  # This was the month of the COMS migration and the refactor started a bunch of periods on 8/14/23
+                    StateCode.US_IX: [
+                        # The Atlas migration happened in 11/2022 and leading up to it there was a data cleanup effort, and following it there as a data correction effort, so this might be related to that.
+                        # There is also a lot of fluctuation in start date in these months, which supports this theory.
+                        # In addition, the actual supervision population seems stable across this time, so it seems like it's just due to more status changes during this time.
+                        date(2022, 9, 1),
+                        date(2022, 10, 1),
+                        date(2022, 11, 1),
+                        date(2022, 12, 1),
+                        date(2023, 1, 1),
+                    ],
                 },
             ),
             DateCol(
@@ -115,9 +132,21 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 2, 1),
                         date(2022, 12, 1),
                     ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
-                    StateCode.US_OR: [
+                    StateCode.US_MI: [
                         date(2023, 8, 1)
-                    ],  # TODO(#23918): Remove once OR sends data
+                    ],  # This was the month of the COMS migration and the refactor ended a bunch of periods on 8/14/23
+                    StateCode.US_IX: [
+                        # The Atlas migration happened in 11/2022 and leading up to it there was a data cleanup effort, and following it there as a data correction effort, so this might be related to that.
+                        # There is also a lot of fluctuation in start date in these months, which supports this theory.
+                        # In addition, the actual supervision population seems stable across this time, so it seems like it's just due to more status changes during this time.
+                        date(2022, 9, 1),
+                        date(2022, 10, 1),
+                        date(2022, 11, 1),
+                        date(2022, 12, 1),
+                        date(2023, 1, 1),
+                        # Not sure why there was these fluctuations for 4/2023, but it's only 25.4% (so just barely over the threshold) so I think it's part of normal fluctuations
+                        date(2023, 4, 1),
+                    ],
                 },
             ),
         ]
@@ -128,7 +157,12 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
         date_columns_to_check=[
             DateCol(
                 date_column_name="response_date",
-                exemptions={StateCode.US_CA: [date(2023, 1, 1)]},
+                exemptions={
+                    StateCode.US_CA: [date(2023, 1, 1)],
+                    StateCode.US_MI: [
+                        date(2023, 8, 1)
+                    ],  # This is probably because we haven't ingested decision responses from COMS yet.  Check this again when we have TODO(#23960)
+                },
             )
         ]
     ),
