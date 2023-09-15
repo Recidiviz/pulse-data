@@ -171,20 +171,14 @@ class IngestOperationsStore(AdminPanelStore):
                 f"cleaned up. Cannot proceed with ingest rerun."
             )
 
-    def trigger_task_scheduler(self, state_code: StateCode, instance_str: str) -> None:
+    def trigger_task_scheduler(
+        self, state_code: StateCode, instance: DirectIngestInstance
+    ) -> None:
         """This function creates a cloud task to schedule the next job for a given state code and instance.
         Requires:
         - state_code: (required) State code to start ingest for (i.e. "US_ID")
         - instance: (required) Which instance to start ingest for (either PRIMARY or SECONDARY)
         """
-        try:
-            instance = DirectIngestInstance[instance_str]
-        except KeyError as e:
-            logging.error("Received an invalid instance: %s.", instance_str)
-            raise ValueError(
-                f"Invalid instance [{instance_str}] received",
-            ) from e
-
         can_start_ingest = state_code in self.state_codes_launched_in_env
 
         formatted_state_code = state_code.value.lower()
@@ -238,6 +232,8 @@ class IngestOperationsStore(AdminPanelStore):
             for queue_info in ingest_queue_states
         ]
 
+    # TODO(#20930): Delete this function once ingest in Dataflow is enabled for all
+    #  states.
     def start_ingest_rerun(
         self,
         state_code: StateCode,
@@ -250,6 +246,12 @@ class IngestOperationsStore(AdminPanelStore):
         - instance: (required) Ingest instance to start ingest rerun for (i.e. SECONDARY)
         - raw_data_source_instance: (required)  Source instance of raw data (i.e. PRIMARY)
         """
+        if is_ingest_in_dataflow_enabled(state_code, instance):
+            raise ValueError(
+                f"Cannot start an ingest rerun for a state with ingest in Dataflow "
+                f"enabled: {state_code.value}"
+            )
+
         formatted_state_code = state_code.value.lower()
 
         # TODO(#13406): remove check once this rerun endpoint can be triggered in
@@ -292,7 +294,51 @@ class IngestOperationsStore(AdminPanelStore):
             else DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
         )
 
-        self.trigger_task_scheduler(state_code, instance.value)
+        self.trigger_task_scheduler(state_code, instance)
+
+    def start_secondary_raw_data_reimport(self, state_code: StateCode) -> None:
+        """Enables the SECONDARY instance for |state_code| so that it can import
+        any raw files in the SECONDARY GCS ingest bucket to the us_xx_raw_data_secondary
+        dataset in BigQuery.
+        """
+        instance = DirectIngestInstance.SECONDARY
+
+        if not is_ingest_in_dataflow_enabled(state_code, instance):
+            raise ValueError(
+                f"Cannot start a secondary raw data reimport for a state without ingest"
+                f"in Dataflow enabled: {state_code.value}"
+            )
+
+        formatted_state_code = state_code.value.lower()
+
+        region = direct_ingest_regions.get_direct_ingest_region(
+            region_code=formatted_state_code
+        )
+        if not self.cloud_task_manager.all_ingest_instance_queues_are_empty(
+            region, instance
+        ):
+            raise DirectIngestInstanceError(
+                "Cannot kick off raw datat reimport because not all related Cloud Task "
+                "queues are empty. Please check queues on Ingest Operations Admin "
+                "Panel to see which have remaining tasks."
+            )
+
+        self._verify_clean_secondary_raw_data_state(state_code)
+
+        instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+            region_code=formatted_state_code,
+            ingest_instance=instance,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                state_code, instance
+            ),
+        )
+        # Validation that this is a valid status transition is handled within the
+        # instance manager.
+        instance_status_manager.change_status_to(
+            DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED
+        )
+
+        self.trigger_task_scheduler(state_code, instance)
 
     def get_ingest_instance_resources(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
