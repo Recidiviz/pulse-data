@@ -37,7 +37,7 @@ someone is incarcerated within 7 years of their parole eligibility date.
 
 _QUERY_TEMPLATE = f"""
 {is_past_full_term_completion_date(compartment_level_1_filter='INCARCERATION',
-                                   meets_criteria_leading_window_days=1825,
+                                   meets_criteria_leading_window_days=2555,
                                    critical_date_column='parole_eligibility_date',
                                    critical_date_name_in_reason='parole_eligibility_date')}
 """
