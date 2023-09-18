@@ -47,7 +47,7 @@ resource "google_monitoring_uptime_check_config" "spotlight" {
   }
 
   content_matchers {
-    content = "\"Recidiviz\""
+    content = "Recidiviz"
   }
 
   checker_type = "STATIC_IP_CHECKERS"
@@ -75,7 +75,7 @@ resource "google_monitoring_uptime_check_config" "dashboard" {
   }
 
   content_matchers {
-    content = "\"Recidiviz Dashboard\""
+    content = "Recidiviz Dashboard"
   }
 
   checker_type = "STATIC_IP_CHECKERS"
@@ -129,7 +129,7 @@ resource "google_monitoring_uptime_check_config" "marketing-website" {
 
 
   content_matchers {
-    content = "\"Recidiviz\""
+    content = "Recidiviz"
   }
 
   checker_type = "STATIC_IP_CHECKERS"
