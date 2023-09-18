@@ -41,11 +41,11 @@ class AssociateRootEntitiesWithPrimaryKeys(beam.PTransform):
     After CoGroupByKey, we have a PCollection that is in the form of:
         (ExternalIdKey, {"primary_keys": Iterable[PrimaryKey], "merged_root_entities_with_dates": Iterable[Tuple[datetime, RootEntity]]})
     After Map(transform_joined_data), we have a PCollection that is:
-        (PrimaryKey, {datetime: Iterable[RootEntity]}) but there may be multiple instances of PrimaryKey
+        (PrimaryKey, Dict[datetime: Iterable[RootEntity]]) but there may be multiple instances of PrimaryKey
     After GroupByKey, we have a PCollection that is:
-        (PrimaryKey, Iterable[{datetime: Iterable[RootEntity]}]) where PrimaryKey is now unique
+        (PrimaryKey, Iterable[Dict[datetime: Iterable[RootEntity]]]) where PrimaryKey is now unique
     After Map(merge_date_to_root_entity_dictionary_values), we have a PCollection that is:
-        (PrimaryKey, {datetime: Iterable[RootEntity]}) where PrimaryKey is now unique and
+        (PrimaryKey, Dict[datetime: Iterable[RootEntity]]) where PrimaryKey is now unique and
         the values are merged.
     """
 

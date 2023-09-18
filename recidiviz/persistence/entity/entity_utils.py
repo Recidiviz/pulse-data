@@ -51,6 +51,7 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
+    RootEntity,
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
@@ -1025,3 +1026,85 @@ def deep_entity_update(
         )
 
     return updated_entity
+
+
+def set_backedges(element: RootEntity) -> RootEntity:
+    """Set the backedges of the root entity tree using DFS traversal of the root
+    entity tree."""
+    field_index = CoreEntityFieldIndex()
+    root = cast(Entity, element)
+    root_entity_cls = root.__class__
+    stack: List[Entity] = [root]
+    while stack:
+        current_parent = stack.pop()
+        current_parent_cls = current_parent.__class__
+        forward_fields = sorted(
+            field_index.get_all_core_entity_fields(
+                current_parent_cls, EntityFieldType.FORWARD_EDGE
+            )
+        )
+        for field in forward_fields:
+            related_entities: List[Entity] = current_parent.get_field_as_list(field)
+            if not related_entities:
+                continue
+
+            related_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
+                current_parent_cls, field
+            )
+            if not related_entity_cls_name:
+                # In the context of a FORWARD_EDGE type field, this should always
+                # be nonnull.
+                raise ValueError(
+                    f"Could not extract the referenced class name from field "
+                    f"[{field}] on class [{current_parent_cls}]."
+                )
+
+            related_entity_cls = get_entity_class_in_module_with_name(
+                state_entities, related_entity_cls_name
+            )
+            reverse_relationship_field = attr_field_name_storing_referenced_cls_name(
+                base_cls=related_entity_cls,
+                referenced_cls_name=current_parent_cls.__name__,
+            )
+            if not reverse_relationship_field:
+                # In the context of a FORWARD_EDGE type field, this should always
+                # be nonnull.
+                raise ValueError(
+                    f"Found no field on [{related_entity_cls}] referencing objects "
+                    f"of type [{current_parent_cls}]"
+                )
+
+            reverse_relationship_field_type = attr_field_type_for_field_name(
+                related_entity_cls, reverse_relationship_field
+            )
+            update_reverse_references_on_related_entities(
+                updated_entity=current_parent,
+                new_related_entities=related_entities,
+                reverse_relationship_field=reverse_relationship_field,
+                reverse_relationship_field_type=reverse_relationship_field_type,
+            )
+
+            root_reverse_relationship_field = (
+                attr_field_name_storing_referenced_cls_name(
+                    base_cls=related_entity_cls,
+                    referenced_cls_name=root_entity_cls.__name__,
+                )
+            )
+
+            if not root_reverse_relationship_field:
+                raise ValueError(
+                    f"Found no field on [{related_entity_cls}] referencing root "
+                    f"entities of type [{root_entity_cls}]"
+                )
+
+            root_reverse_relationship_field_type = attr_field_type_for_field_name(
+                related_entity_cls, root_reverse_relationship_field
+            )
+            update_reverse_references_on_related_entities(
+                updated_entity=root,
+                new_related_entities=related_entities,
+                reverse_relationship_field=root_reverse_relationship_field,
+                reverse_relationship_field_type=root_reverse_relationship_field_type,
+            )
+            stack.extend(related_entities)
+    return element

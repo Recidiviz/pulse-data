@@ -15,13 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility classes for validating state entities and entity trees."""
-from typing import Any, Iterable, Tuple
+from typing import Any, Iterable, Tuple, cast
 
 import apache_beam as beam
 
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.persistence.database.schema_utils import get_state_entity_names
-from recidiviz.persistence.entity.base_entity import Entity, UniqueConstraint
+from recidiviz.persistence.entity.base_entity import (
+    Entity,
+    RootEntity,
+    UniqueConstraint,
+)
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
@@ -36,9 +40,8 @@ class RunValidations(beam.PTransform):
     """A PTransform that validates root entities and their attached children entities."""
 
     def expand(
-        self, input_or_inputs: beam.PCollection[Entity]
+        self, input_or_inputs: beam.PCollection[RootEntity]
     ) -> beam.PCollection[Entity]:
-
         # Execute individual root entity validations
         _ = input_or_inputs | "Validate root entities" >> beam.Map(validate_root_entity)
 
@@ -47,7 +50,11 @@ class RunValidations(beam.PTransform):
         all_entities = (
             input_or_inputs
             | "Extract all entities from root entity trees"
-            >> beam.FlatMap(get_all_entities_from_tree, field_index=field_index)
+            >> beam.FlatMap(
+                lambda element: get_all_entities_from_tree(
+                    cast(Entity, element), field_index=field_index
+                ),
+            )
         )
 
         # Validate that entities have unique ids by type
@@ -99,16 +106,13 @@ class RunValidations(beam.PTransform):
         except StopIteration as exc:
             raise ValueError(f"No entities found for id {entity_id}") from exc
 
-        if entity_id is None:
-            raise ValueError(f"{entity.get_entity_name()} entity found with None id.")
-
         try:
             next(entity_iterator)
         except StopIteration:
             pass
         else:
             raise ValueError(
-                f"More than one {entity.get_entity_name()} entity found with {entity.get_class_id_name()} {entity_id}"
+                f"More than one {entity.get_entity_name()} entity found with {entity.get_class_id_name()} {entity_id}: {grouped_entities}"
             )
 
     @staticmethod

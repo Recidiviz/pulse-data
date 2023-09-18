@@ -32,7 +32,6 @@ from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
 )
 from recidiviz.pipelines.ingest.state.constants import ExternalIdKey
-from recidiviz.utils.types import assert_type
 
 
 @attr.s
@@ -74,7 +73,7 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
             | f"Extract entities from {self.ingest_view} entity metadata"
             >> beam.MapTuple(
                 lambda key, values: (
-                    (cast(ExternalIdKey, key[0]), assert_type(key[1], datetime)),
+                    (cast(ExternalIdKey, key[0]), cast(datetime, key[1])),
                     [cast(RootEntity, value.root_entity) for value in values],
                 )
             )
