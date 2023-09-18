@@ -59,6 +59,9 @@ from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_vi
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.product_failed_logins_monthly import (
+    PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
@@ -186,6 +189,9 @@ PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboar
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
 WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
 OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-outliers-etl-data"
+PRODUCT_FAILED_LOGINS_MONTHLY_VIEWS_OUTPUT_DIRECTORY_URI = (
+    "gs://{project_id}-product-failed-logins-monthly"
+)
 
 
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
@@ -349,6 +355,15 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=IMPACT_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="IMPACT",
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV: []
+        },
+    ),
+    # Product failed logins monthly view
+    ExportViewCollectionConfig(
+        view_builders_to_export=[PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER],
+        output_directory_uri_template=PRODUCT_FAILED_LOGINS_MONTHLY_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="PRODUCT_FAILED_LOGINS",
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: []
         },

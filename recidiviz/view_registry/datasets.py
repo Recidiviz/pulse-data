@@ -24,6 +24,7 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 )
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
+    AUTH0_PROD_ACTION_LOGS,
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
     EXPORT_ARCHIVES_DATASET,
@@ -124,6 +125,7 @@ NORMALIZED_DATASETS = set(NORMALIZED_DATASETS_TO_DESCRIPTIONS.keys())
 VERA_DATASET: str = "vera_data"
 
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
+    AUTH0_PROD_ACTION_LOGS: "Stores events logged from Auth0 actions via Segment",
     CASE_TRIAGE_FEDERATED_DATASET: "Case Triage data. This dataset is a copy of the case-triage postgres database.",
     CASE_TRIAGE_SEGMENT_DATASET: "Stores metrics about users on case triage",
     COVID_DASHBOARD_REFERENCE_DATASET: "Reference tables used by the COVID dashboard. Updated manually.",
