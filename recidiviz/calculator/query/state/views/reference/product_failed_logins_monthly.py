@@ -18,7 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_NAME = "product_failed_logins_monthly"
@@ -29,7 +29,7 @@ PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_DESCRIPTION = (
 
 PRODUCT_FAILED_LOGINS_MONTHLY_QUERY_TEMPLATE = """
     SELECT email, state_code, original_timestamp
-    FROM `{auth0_project_name}.auth0_prod_action_logs.failed_login`
+    FROM `{project_id}.auth0_prod_action_logs.failed_login`
     WHERE DATE(original_timestamp) >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 1 MONTH)
     ORDER BY original_timestamp DESC
 """
@@ -41,7 +41,6 @@ PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_DESCRIPTION,
     # The auth_prod_action dataset only exists in production, so hard coding the project here.
     # This means that the view and export in staging will also have production data
-    auth0_project_name=GCP_PROJECT_PRODUCTION,
     should_materialize=True,
 )
 
