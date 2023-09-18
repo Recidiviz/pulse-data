@@ -15,13 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility function for generating primary keys from external id(s)."""
+import json
 from hashlib import sha256
-from typing import Set
+from typing import Any, Dict, List, Set, Union, cast
 
+from recidiviz.big_query.big_query_utils import MAX_BQ_INT
+from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, RootEntity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    EntityFieldType,
+)
+from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.state.constants import ExternalIdKey, PrimaryKey
-
-MAXIMUM_INTEGER_SUPPORTED_BY_BIGQUERY = 2**63 - 1
+from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
+    json_serializable_dict,
+)
+from recidiviz.utils.types import assert_type, non_optional
 
 
 def generate_primary_key(
@@ -36,23 +47,28 @@ def generate_primary_key(
         probability_of_hash_collision = 1 - e^(-k(k-1)/2^56) wher k is the number of elements.
         For k = 30000000, the probability of a hash collision is ~1%.
     """
-    hex_digest_64_bits = sha256(
-        _string_representation(external_id_keys).encode()
-    ).hexdigest()[
-        :16
-    ]  # 16 hex chars = 64-bits
-    int_64_bits = int.from_bytes(bytes.fromhex(hex_digest_64_bits), "little")
+    int_64_bits = generate_64_int_from_hex_digest(
+        _string_representation(external_id_keys)
+    )
     # Shift down 8 bits to create a 56 bit integer
     int_56_bits = int_64_bits >> 8
     # Generate integer that is fips code with 17 0s trailing (a 56 bit integer is no
     # longer than 17 decimal places).
     fips_code_mask = state_code.get_state_fips_mask(places=17)
     primary_key = fips_code_mask + int_56_bits
-    if primary_key > MAXIMUM_INTEGER_SUPPORTED_BY_BIGQUERY:
+    if primary_key > MAX_BQ_INT:
         raise ValueError(
             f"Primary key {primary_key} is greater than the maximum integer supported by BigQuery"
         )
     return fips_code_mask + int_56_bits
+
+
+def generate_64_int_from_hex_digest(string_representation: str) -> int:
+    """Generate a 64 bit integer from a hex digest."""
+    hex_digest_64_bits = sha256(string_representation.encode()).hexdigest()[
+        :16
+    ]  # 16 hex chars = 64-bits
+    return int.from_bytes(bytes.fromhex(hex_digest_64_bits), "little")
 
 
 def _string_representation(external_id_keys: Set[ExternalIdKey]) -> str:
@@ -68,3 +84,71 @@ def _string_representation(external_id_keys: Set[ExternalIdKey]) -> str:
 def _string_representation_of_key(external_id_key: ExternalIdKey) -> str:
     external_id, external_id_type = external_id_key
     return f"{external_id_type}|{external_id}"
+
+
+def serialize_entity_into_json(entity: CoreEntity) -> Dict[str, Any]:
+    """Generate a JSON string of an entity's serialized flat field and backedge values."""
+    flat_fields = CoreEntityFieldIndex().get_all_core_entity_fields(
+        entity.__class__, EntityFieldType.FLAT_FIELD
+    )
+    back_edges = CoreEntityFieldIndex().get_all_core_entity_fields(
+        entity.__class__, EntityFieldType.BACK_EDGE
+    )
+    entity_field_dict = {
+        **{field_name: getattr(entity, field_name) for field_name in flat_fields},
+        # This would not work for entities with multiple parents (like StateCharge), but
+        # because StateCharge has an external_id, we assume it doesn't reach this code.
+        **{
+            getattr(entity, field_name)
+            .get_class_id_name(): getattr(entity, field_name)
+            .get_id()
+            for field_name in back_edges
+        },
+    }
+    return json_serializable_dict(entity_field_dict)
+
+
+def generate_primary_keys_for_root_entity_tree(
+    root_primary_key: PrimaryKey, root_entity: RootEntity, state_code: StateCode
+) -> RootEntity:
+    """Generate primary keys for a root entity tree by doing a Queue BFS traversal of the tree."""
+    field_index = CoreEntityFieldIndex()
+
+    queue: List[Union[RootEntity, Entity]] = [root_entity]
+
+    while queue:
+        entity = cast(Entity, queue.pop(0))
+        if isinstance(entity, (StatePerson, StateStaff)):
+            entity.set_id(root_primary_key)
+        elif hasattr(entity, "external_id"):
+            external_id = assert_type(entity.get_external_id(), str)
+            entity.set_id(
+                generate_primary_key(
+                    {
+                        (
+                            external_id,
+                            entity.get_class_id_name(),
+                        )
+                    },
+                    state_code,
+                ),
+            )
+        else:
+            entity.set_id(
+                generate_64_int_from_hex_digest(
+                    json.dumps(
+                        serialize_entity_into_json(assert_type(entity, CoreEntity)),
+                        sort_keys=True,
+                    )
+                )
+            )
+
+        forward_fields = field_index.get_all_core_entity_fields(
+            entity.__class__, EntityFieldType.FORWARD_EDGE
+        )
+        for field in forward_fields:
+            _ = non_optional(
+                attr_field_referenced_cls_name_for_field_name(entity.__class__, field)
+            )
+            queue.extend(entity.get_field_as_list(field))
+    return root_entity

@@ -19,7 +19,18 @@ import unittest
 from typing import Set
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.pipelines.ingest.state.generate_primary_keys import generate_primary_key
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_all_entities_from_tree,
+)
+from recidiviz.pipelines.ingest.state.generate_primary_keys import (
+    generate_primary_key,
+    generate_primary_keys_for_root_entity_tree,
+)
+from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+    generate_full_graph_state_person,
+    generate_full_graph_state_staff,
+)
 
 
 class TestGeneratePrimaryKey(unittest.TestCase):
@@ -64,3 +75,49 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         self.assertEqual(
             generate_primary_key({external_id}, StateCode.US_PA), 4225259285447670540
         )
+
+    def test_generate_primary_keys_for_root_entity_tree_person(self) -> None:
+        person = generate_full_graph_state_person(
+            set_back_edges=True,
+            include_person_back_edges=True,
+            set_ids=False,
+        )
+        all_entities = get_all_entities_from_tree(person, CoreEntityFieldIndex())
+        person_primary_key = generate_primary_key(
+            {
+                (external_id.external_id, external_id.id_type)
+                for external_id in person.external_ids
+            },
+            state_code=StateCode(person.state_code),
+        )
+        _ = generate_primary_keys_for_root_entity_tree(
+            root_primary_key=person_primary_key,
+            root_entity=person,
+            state_code=StateCode(person.state_code),
+        )
+        for entity in all_entities:
+            if isinstance(entity, person.__class__):
+                self.assertEqual(entity.get_id(), person_primary_key)
+            else:
+                self.assertIsNotNone(entity.get_id())
+
+    def test_generate_primary_keys_for_root_entity_tree_staff(self) -> None:
+        staff = generate_full_graph_state_staff(set_back_edges=True, set_ids=False)
+        all_entities = get_all_entities_from_tree(staff, CoreEntityFieldIndex())
+        staff_primary_key = generate_primary_key(
+            {
+                (external_id.external_id, external_id.id_type)
+                for external_id in staff.external_ids
+            },
+            state_code=StateCode(staff.state_code),
+        )
+        _ = generate_primary_keys_for_root_entity_tree(
+            root_primary_key=staff_primary_key,
+            root_entity=staff,
+            state_code=StateCode(staff.state_code),
+        )
+        for entity in all_entities:
+            if isinstance(entity, staff.__class__):
+                self.assertEqual(entity.get_id(), staff_primary_key)
+            else:
+                self.assertIsNotNone(entity.get_id())

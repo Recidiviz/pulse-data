@@ -71,23 +71,31 @@ from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.database.schema_utils import get_state_database_entities
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     SchemaEdgeDirectionChecker,
     deep_entity_update,
+    get_all_entities_from_tree,
     is_placeholder,
     is_reference_only_entity,
+    set_backedges,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
     StateIncarcerationSentence,
     StatePerson,
+    StateStaff,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
+)
+from recidiviz.tests.persistence.entity.state.entities_test_utils import (
+    generate_full_graph_state_person,
+    generate_full_graph_state_staff,
 )
 
 _ID = 1
@@ -1184,3 +1192,35 @@ class TestBidirectionalUpdates(TestCase):
         ]
 
         self.assertEqual(expected_updated_ssvr, updated_entity)
+
+    def test_set_backedges_person(self) -> None:
+        person = generate_full_graph_state_person(
+            set_back_edges=False, include_person_back_edges=False, set_ids=False
+        )
+        _ = set_backedges(person)
+        field_index = CoreEntityFieldIndex()
+        all_entities = get_all_entities_from_tree(person, field_index)
+        for entity in all_entities:
+            if isinstance(entity, StatePerson):
+                continue
+            related_entities: List[Entity] = []
+            for field in field_index.get_all_core_entity_fields(
+                entity.__class__, EntityFieldType.BACK_EDGE
+            ):
+                related_entities += entity.get_field_as_list(field)
+            self.assertGreater(len(related_entities), 0)
+
+    def test_set_backedges_staff(self) -> None:
+        staff = generate_full_graph_state_staff(set_back_edges=False, set_ids=True)
+        _ = set_backedges(staff)
+        field_index = CoreEntityFieldIndex()
+        all_entities = get_all_entities_from_tree(staff, field_index)
+        for entity in all_entities:
+            if isinstance(entity, StateStaff):
+                continue
+            related_entities: List[Entity] = []
+            for field in field_index.get_all_core_entity_fields(
+                entity.__class__, EntityFieldType.BACK_EDGE
+            ):
+                related_entities += entity.get_field_as_list(field)
+            self.assertGreater(len(related_entities), 0)

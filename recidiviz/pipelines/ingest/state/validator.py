@@ -38,9 +38,6 @@ def validate_root_entity(root_entity: RootEntityT) -> RootEntityT:
     """The assumed input is a root entity with hydrated children entities attached to it.
     This function checks if the root entity does not violate any entity tree specific
     constraints. If the root entity constraints are not met, an exception should be thrown.
-
-    TODO(#21564): Check that the root entities do not violate any entity tree constraints.
-    This function should replicate the database_invariant_validator checks.
     """
     if len(root_entity.external_ids) == 0:
         raise ValueError(
@@ -93,13 +90,3 @@ def validate_root_entity(root_entity: RootEntityT) -> RootEntityT:
                 raise ValueError(error_msg)
 
     return root_entity
-
-
-def validate_entity(entity: Entity) -> Entity:
-    """The assumed input is a child entity of a root entity. This function checks if the
-    entity does not violate any entity-specific constraints. If the constraints are not
-    met, an exception should be thrown.
-
-    TODO(#21564): Check that the entity does not violate any entity-level constraints.
-    This function should replicate the CheckConstraints in the entity schema."""
-    return entity

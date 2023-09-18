@@ -111,7 +111,7 @@ class WriteToBigQuery(beam.io.WriteToBigQuery):
 
 
 def json_serializable_dict(
-    metric_key: Dict[str, Any],
+    element: Dict[str, Any],
     list_serializer: Optional[Callable[[str, List[Any]], str]] = None,
 ) -> Dict[str, Any]:
     """Converts a dictionary into a format that is JSON serializable.
@@ -124,7 +124,7 @@ def json_serializable_dict(
     """
     serializable_dict: Dict[str, Any] = {}
 
-    for key, v in metric_key.items():
+    for key, v in element.items():
         if isinstance(v, Enum) and v is not None:
             serializable_dict[key] = v.value
         elif isinstance(v, datetime.date) and v is not None:

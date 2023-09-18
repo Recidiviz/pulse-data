@@ -65,6 +65,10 @@ from recidiviz.pipelines.ingest.state.get_root_external_ids import (
 from recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees import (
     MergeIngestViewRootEntityTrees,
 )
+from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
+    MergeRootEntitiesAcrossDates,
+)
+from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
 
@@ -83,11 +87,12 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
     # TODO(#20928) Replace with actual pipeline logic.
     def run_pipeline(self, p: Pipeline) -> None:
         ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
+        state_code = StateCode(self.pipeline_parameters.state_code)
         materialization_method = MaterializationMethod(
             self.pipeline_parameters.materialization_method
         )
         region = direct_ingest_regions.get_direct_ingest_region(
-            region_code=self.pipeline_parameters.state_code
+            region_code=state_code.value
         )
         ingest_manifest_collector = IngestViewManifestCollector(
             region=region,
@@ -118,7 +123,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 Dict[str, Any]
             ] = p | f"Materialize {ingest_view} results" >> GenerateIngestViewResults(
                 project_id=self.pipeline_parameters.project,
-                state_code=self.pipeline_parameters.state_code,
+                state_code=state_code.value,
                 ingest_view_name=ingest_view,
                 raw_data_tables=raw_data_tables,
                 ingest_instance=ingest_instance,
@@ -139,7 +144,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 ingest_view_results
                 | f"Generate {ingest_view} entities."
                 >> GenerateEntities(
-                    state_code=self.pipeline_parameters.state_code,
+                    state_code=state_code.value,
                     ingest_instance=ingest_instance,
                     ingest_view_name=ingest_view,
                 )
@@ -170,13 +175,21 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     root_external_id,
                     generate_primary_key(
                         cluster,
-                        state_code=StateCode(self.pipeline_parameters.state_code),
+                        state_code=state_code,
                     ),
                 )
             )
         )
 
-        _ = {
-            PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
-            MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
-        } | AssociateRootEntitiesWithPrimaryKeys()
+        merged_root_entities = (
+            {
+                PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
+                MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+            }
+            | AssociateRootEntitiesWithPrimaryKeys()
+            | MergeRootEntitiesAcrossDates(state_code=state_code)
+        )
+
+        # pylint: disable=unused-variable
+        final_entities = merged_root_entities | RunValidations()
+        # TODO(#23163) Write out entities to BigQuery.
