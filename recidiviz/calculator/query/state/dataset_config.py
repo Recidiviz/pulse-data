@@ -110,6 +110,9 @@ EXTERNAL_REFERENCE_VIEWS_DATASET = "external_reference_views"
 # Views that power outliers
 OUTLIERS_VIEWS_DATASET: str = "outliers_views"
 
+# Views that contain events logged from Auth0 actions via Segment
+AUTH0_PROD_ACTION_LOGS: str = "auth0_prod_action_logs"
+
 
 def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
     """Where the output of state-specific entity normalization pipelines is stored."""

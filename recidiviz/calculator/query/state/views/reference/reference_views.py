@@ -42,6 +42,9 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.us_tn_lo
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.product_failed_logins_monthly import (
+    PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.product_roster import (
     PRODUCT_ROSTER_VIEW_BUILDER,
 )
@@ -85,6 +88,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
     TASK_TO_COMPLETION_EVENT_VIEW_BUILDER,
+    PRODUCT_FAILED_LOGINS_MONTHLY_VIEW_BUILDER,
     PRODUCT_ROSTER_VIEW_BUILDER,
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
     LOCATION_METADATA_VIEW_BUILDER,

@@ -127,3 +127,9 @@ products:
     states:
       - state_code: US_TN
         environment: staging
+  - name: Product failed logins
+    description: Tracks the failed logins from the dashboard product over the last 30 days to enhance our user support
+    is_state_agnostic: True
+    exports:
+      - PRODUCT_FAILED_LOGINS
+    environment: production
