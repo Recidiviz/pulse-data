@@ -8,7 +8,6 @@ custom_line_terminator: ‡
 encoding: WINDOWS-1252
 always_historical_export: False
 primary_key_cols:
-  - Probation_Violation_Id
   - Violation_Incident_Id
 columns:
   - name: Probation_Violation_Id

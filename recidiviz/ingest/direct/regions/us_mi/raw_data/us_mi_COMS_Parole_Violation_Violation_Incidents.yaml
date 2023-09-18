@@ -9,7 +9,6 @@ encoding: WINDOWS-1252
 always_historical_export: False
 primary_key_cols:
   - Violation_Incident_Id
-  - Parole_Violation_Id
 columns:
   - name: Parole_Violation_Id
     description:
