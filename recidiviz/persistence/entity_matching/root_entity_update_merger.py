@@ -17,8 +17,9 @@
 """Class responsible for merging a root entity tree with new / updated child entities
 into an existing version of that root entity.
 """
+from collections import defaultdict
 from enum import Enum
-from typing import List, Optional, Set
+from typing import Dict, List, Optional, Set, Type
 
 from more_itertools import one
 
@@ -36,16 +37,23 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
+    SchemaEdgeDirectionChecker,
     get_all_entities_from_tree,
     is_reference_only_entity,
 )
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StatePersonAlias
+from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
     enum_entity_key,
     external_id_key,
 )
 from recidiviz.persistence.persistence_utils import RootEntityT
+from recidiviz.pipelines.ingest.state.constants import ExternalId
 from recidiviz.utils.types import assert_type
+
+# Schema classes that can have multiple parents of different types.
+_MULTI_PARENT_ENTITY_TYPES = [entities.StateCharge]
 
 
 class RootEntityUpdateMerger:
@@ -60,16 +68,19 @@ class RootEntityUpdateMerger:
         self, old_root_entity: Optional[RootEntityT], root_entity_updates: RootEntityT
     ) -> RootEntityT:
         self._check_root_entity_meets_prerequisites(root_entity_updates)
+        all_updated_entity_ids = {
+            id(e)
+            for e in get_all_entities_from_tree(
+                root_entity_updates, field_index=self.field_index
+            )
+        }
         if old_root_entity:
             self._check_root_entity_meets_prerequisites(old_root_entity)
             result = self._merge_matched_entities(old_root_entity, root_entity_updates)
         else:
             result = root_entity_updates
 
-        # TODO(#20936): Merge multi-parent entities (i.e. StateCharge)
-
-        # TODO(#20936): Should back edges get set here (e.g. person field on
-        #  StateSupervisionPeriod)?
+        result = self._merge_multi_parent_entities(result, all_updated_entity_ids)
         return result
 
     def _check_root_entity_meets_prerequisites(self, root_entity: RootEntityT) -> None:
@@ -286,3 +297,123 @@ class RootEntityUpdateMerger:
         fields_to_update.update(new_fields)
 
         return fields_to_update
+
+    def _merge_multi_parent_entities(
+        self, root_entity: RootEntityT, all_updated_entity_ids: Set[int]
+    ) -> RootEntityT:
+        r"""Scans the whole graph of entities connected to |root_entity| and merges any
+        entities together if they share the same external_id but do not have the same
+        parent entities.
+
+        For example, this:
+                               StatePerson
+                             /           \
+          StateIncarcerationSentence    StateSupervisionSentence
+                external_id="ABC"            external_id="DEF"
+                      |                           |
+                  StateCharge                StateCharge
+               external_id="123"           external_id="123"
+
+        ...would become:
+
+                              StatePerson
+                             /           \
+          StateIncarcerationSentence    StateSupervisionSentence
+                external_id="ABC"            external_id="DEF"
+                              \            /
+                                StateCharge
+                              external_id="123"
+
+        Args:
+            root_entity: The root Entity to perform the internal merging within.
+            all_updated_entity_ids: The set of Python object ids of entities that were
+                present in the |root_entity_updates| entity originally passed to
+                merge_root_entity_trees. This is used to inform the merging order, so
+                newer updates are preserved.
+        """
+        direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
+        # Assert the list of multi-parent entity types is listed in order from closest
+        # to the root entity to farthest away, so we merge from root downwards.
+        direction_checker.assert_sorted(_MULTI_PARENT_ENTITY_TYPES)
+        for multi_parent_entity_cls in _MULTI_PARENT_ENTITY_TYPES:
+            root_entity = self._merge_multi_parent_entities_of_type(
+                root_entity, multi_parent_entity_cls, all_updated_entity_ids
+            )
+
+        return root_entity
+
+    def _merge_multi_parent_entities_of_type(
+        self,
+        root_entity: RootEntityT,
+        multi_parent_entity_cls: Type[Entity],
+        all_updated_entity_ids: Set[int],
+    ) -> RootEntityT:
+        """Scans the whole graph of entities connected to |root_entity| and merges any
+        entities of type |multi_parent_entity_cls| together if they share the same
+        external_id. This function should be used to merge entities where they may not
+        have the same parents but still share the same external id.
+        """
+
+        edges_by_entity_external_id = self.get_edges_by_child_external_id(
+            root_entity, child_cls=multi_parent_entity_cls
+        )
+        for edges_to_parents in edges_by_entity_external_id.values():
+            # Sort edges with children from the original |root_entity_updates| entity
+            # last so that any updated field values are preserved.
+            edges_to_parents = sorted(
+                edges_to_parents,
+                key=lambda edge: id(edge.child) in all_updated_entity_ids,
+            )
+
+            # Iterate over each edge from parent -> multi-parent entity and merge
+            # children into a single child entity (e.g. a single StateCharge).
+            merged_multi_parent_entity = edges_to_parents[0].child
+            for edge_to_parent in edges_to_parents[1:]:
+                merged_multi_parent_entity = self._merge_matched_entities(
+                    merged_multi_parent_entity, edge_to_parent.child
+                )
+
+            # For every parent, replace the old child with the new, merged child.
+            for edge_to_parent in edges_to_parents:
+                list_on_parent: List[Entity] = getattr(
+                    edge_to_parent.parent,
+                    edge_to_parent.parent_reference_to_child_field,
+                )
+                list_on_parent.remove(edge_to_parent.child)
+                list_on_parent.append(merged_multi_parent_entity)
+
+        return root_entity
+
+    def get_edges_by_child_external_id(
+        self, root_entity: RootEntityT, child_cls: Type[Entity]
+    ) -> Dict[str, List[EntityDagEdge]]:
+        """Returns all edges in the |root_entity| relationship graph where the child is
+        of type |child_cls|, grouped by the external_id of the child entity.
+        """
+        edges_by_child_external_id: Dict[ExternalId, List[EntityDagEdge]] = defaultdict(
+            list
+        )
+
+        def find_multi_parent_entities(
+            entity: Entity, path_from_root: List[EntityDagEdge]
+        ) -> None:
+            if not isinstance(entity, child_cls):
+                return
+            if not path_from_root:
+                raise ValueError(
+                    f"Found multi-parent entity of type [{type(entity)}] with empty "
+                    f"path to the root entity, i.e. it is the root of the entity graph."
+                    f"Multi-parent entities cannot also be root entities."
+                )
+            direct_parent_edge = path_from_root[-1]
+            edges_by_child_external_id[
+                assert_type(entity.get_external_id(), str)
+            ].append(direct_parent_edge)
+
+        walk_entity_dag(
+            root_entity,
+            self.field_index,
+            find_multi_parent_entities,
+            explore_all_paths=True,
+        )
+        return edges_by_child_external_id

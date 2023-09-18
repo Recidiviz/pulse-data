@@ -761,12 +761,9 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             ],
         )
 
-        # TODO(#20936): Test should no longer fail once multi-parent merging is
-        #  implemented.
-        with self.assertRaises(AssertionError):
-            self.assert_expected_matches_result(
-                expected_result=expected_result, result=result
-            )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
 
     def test_merge_multi_parent_charge_both_parents_new(self) -> None:
         # Arrange
@@ -802,7 +799,7 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
         )
 
         # Assert
-        expected_charge = attr.evolve(charge, description="Charge description")
+        expected_charge = attr.evolve(charge)
 
         # Both the incarceration and supervision sentence should reference the same
         # charge.
@@ -816,9 +813,76 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             ],
         )
 
-        # TODO(#20936): Test should no longer fail once multi-parent merging is
-        #  implemented.
-        with self.assertRaises(AssertionError):
-            self.assert_expected_matches_result(
-                expected_result=expected_result, result=result
-            )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_multi_parent_charge_on_update_original_was_already_multi_parent(
+        self,
+    ) -> None:
+        # Arrange
+        charge = make_state_charge(external_id="CHARGE_A", ncic_code="3599")
+        original_charge = attr.evolve(charge)
+        incarceration_sentence = make_incarceration_sentence(
+            external_id="A",
+            status=StateSentenceStatus.SERVING,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            min_length_days=365,
+            max_length_days=365 * 2,
+            charges=[original_charge],
+        )
+        supervision_sentence = make_supervision_sentence(
+            external_id="B",
+            status=StateSentenceStatus.SERVING,
+            supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
+            min_length_days=90,
+            max_length_days=365,
+            charges=[original_charge],
+        )
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[attr.evolve(incarceration_sentence)],
+            supervision_sentences=[attr.evolve(supervision_sentence)],
+        )
+
+        updated_charge = attr.evolve(charge, description="Charge description")
+        supervision_sentence_2 = make_supervision_sentence(
+            external_id="C",
+            status=StateSentenceStatus.SERVING,
+            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
+            min_length_days=180,
+            max_length_days=400,
+            # Separate, updated copy of charge also attached to this supervision
+            # sentence
+            charges=[updated_charge],
+        )
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            supervision_sentences=[attr.evolve(supervision_sentence_2)],
+        )
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert
+        expected_charge = attr.evolve(charge, description="Charge description")
+
+        # Both the incarceration and supervision sentence should reference the same
+        # charge.
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            incarceration_sentences=[
+                attr.evolve(incarceration_sentence, charges=[expected_charge])
+            ],
+            supervision_sentences=[
+                attr.evolve(supervision_sentence, charges=[expected_charge]),
+                attr.evolve(supervision_sentence_2, charges=[expected_charge]),
+            ],
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
