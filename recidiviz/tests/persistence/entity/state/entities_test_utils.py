@@ -80,6 +80,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity
@@ -535,6 +536,15 @@ def generate_full_graph_state_person(
 
     person.supervision_periods = [supervision_period]
 
+    task_deadline = entities.StateTaskDeadline(
+        state_code="US_XX",
+        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+        eligible_date=datetime.date(2020, 9, 11),
+        update_datetime=datetime.datetime(2023, 2, 1, 11, 19),
+        task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+    )
+    person.task_deadlines = [task_deadline]
+
     if set_back_edges:
         incarceration_sentence_children: Sequence[Entity] = (
             *incarceration_sentence.charges,
@@ -597,6 +607,7 @@ def generate_full_graph_state_person(
         *person.supervision_sentences,
         *person.incarceration_periods,
         *person.supervision_periods,
+        *person.task_deadlines,
         *incarceration_sentence.charges,
         *incarceration_sentence.early_discharges,
         *supervision_sentence.early_discharges,

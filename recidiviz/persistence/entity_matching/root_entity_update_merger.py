@@ -19,7 +19,7 @@ into an existing version of that root entity.
 """
 from collections import defaultdict
 from enum import Enum
-from typing import Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 from more_itertools import one
 
@@ -27,9 +27,7 @@ from recidiviz.persistence.entity.base_entity import (
     Entity,
     EntityT,
     EnumEntity,
-    EnumEntityT,
     ExternalIdEntity,
-    ExternalIdEntityT,
     HasExternalIdEntity,
     HasExternalIdEntityT,
     RootEntity,
@@ -42,7 +40,10 @@ from recidiviz.persistence.entity.entity_utils import (
     is_reference_only_entity,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StatePersonAlias
+from recidiviz.persistence.entity.state.entities import (
+    StatePersonAlias,
+    StateTaskDeadline,
+)
 from recidiviz.persistence.entity.walk_entity_dag import EntityDagEdge, walk_entity_dag
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
     enum_entity_key,
@@ -54,6 +55,20 @@ from recidiviz.utils.types import assert_type
 
 # Schema classes that can have multiple parents of different types.
 _MULTI_PARENT_ENTITY_TYPES = [entities.StateCharge]
+
+
+def state_person_alias_key(alias: StatePersonAlias) -> str:
+    return f"{type(alias)}#{alias.full_name}|{alias.alias_type}"
+
+
+def state_task_deadline_key(deadline: StateTaskDeadline) -> str:
+    key_parts = [
+        deadline.task_type.value,
+        deadline.task_subtype or "",
+        deadline.update_datetime.isoformat(),
+    ]
+
+    return f"{type(deadline)}#{'|'.join(key_parts)}"
 
 
 class RootEntityUpdateMerger:
@@ -124,28 +139,29 @@ class RootEntityUpdateMerger:
 
             if not new_or_updated_children:
                 all_children = old_children
-            elif issubclass(child_cls, EnumEntity):
-                all_children = self._merge_enum_entity_children(
-                    old_children, new_or_updated_children
-                )
-            elif issubclass(child_cls, ExternalIdEntity):
-                all_children = self._merge_external_id_entity_children(
-                    old_children, new_or_updated_children
-                )
             elif issubclass(child_cls, HasExternalIdEntity):
                 all_children = self._merge_has_external_id_entity_children(
                     old_children, new_or_updated_children
                 )
-            # TODO(#20936): Update so this doesn't special-case StateAlias
-            # TODO(#20936): Update so this properly handles StateTaskDeadline.
-            elif issubclass(child_cls, StatePersonAlias):
-                all_children = self._merge_state_person_alias_children(
-                    old_children, new_or_updated_children
-                )
             else:
-                raise ValueError(
-                    f"Unexpected child class type [{child_cls}] for field "
-                    f"[{child_field}]"
+                key_fn: Callable[[Any], str]
+                if issubclass(child_cls, EnumEntity):
+
+                    def _enum_entity_key(entity: EnumEntity) -> str:
+                        return enum_entity_key(entity, self.field_index)
+
+                    key_fn = _enum_entity_key
+                elif issubclass(child_cls, ExternalIdEntity):
+                    key_fn = external_id_key
+                elif issubclass(child_cls, StatePersonAlias):
+                    key_fn = state_person_alias_key
+                elif issubclass(child_cls, StateTaskDeadline):
+                    key_fn = state_task_deadline_key
+                else:
+                    raise ValueError(f"Unexpected leaf node class [{child_cls}]")
+
+                all_children = self._merge_leaf_node_children_based_on_key(
+                    old_children, new_or_updated_children, key_fn
                 )
 
             old_entity.set_field(child_field, all_children)
@@ -163,38 +179,17 @@ class RootEntityUpdateMerger:
 
         return old_entity
 
-    def _merge_enum_entity_children(
-        self,
-        old_children: List[EnumEntityT],
-        new_or_updated_children: List[EnumEntityT],
-    ) -> List[EnumEntityT]:
-        """Given two lists of EnumEntity of the same type, returns a merged single list
-        that applies updates.
-        """
-        new_keys = {
-            enum_entity_key(e, self.field_index) for e in new_or_updated_children
-        }
-
-        return [
-            *new_or_updated_children,
-            *[
-                e
-                for e in old_children
-                # If the key matches a key in the new children, that means this old
-                # EnumEntity is identical, and we exclude it to avoid duplicates.
-                if enum_entity_key(e, self.field_index) not in new_keys
-            ],
-        ]
-
     @staticmethod
-    def _merge_state_person_alias_children(
-        old_children: List[StatePersonAlias],
-        new_or_updated_children: List[StatePersonAlias],
-    ) -> List[StatePersonAlias]:
-        def state_person_alias_key(alias: StatePersonAlias) -> str:
-            return f"{type(alias)}#{alias.full_name}|{alias.alias_type}"
-
-        new_keys = {state_person_alias_key(e) for e in new_or_updated_children}
+    def _merge_leaf_node_children_based_on_key(
+        old_children: List[EntityT],
+        new_or_updated_children: List[EntityT],
+        key_fn: Callable[[EntityT], str],
+    ) -> List[EntityT]:
+        """Given two lists of leaf node entities of the same type, returns a merged
+        single list that applies updates. Any children with the same |key_fn| result
+        will be merged together.
+        """
+        new_keys = {key_fn(e) for e in new_or_updated_children}
 
         return [
             *new_or_updated_children,
@@ -202,8 +197,8 @@ class RootEntityUpdateMerger:
                 e
                 for e in old_children
                 # If the key matches a key in the new children, that means this old
-                # StatePersonAlias is identical, and we exclude it to avoid duplicates.
-                if state_person_alias_key(e) not in new_keys
+                # entity is identical, and we exclude it to avoid duplicates.
+                if key_fn(e) not in new_keys
             ],
         ]
 
@@ -239,21 +234,6 @@ class RootEntityUpdateMerger:
                 )
             )
         return merged_children
-
-    @staticmethod
-    def _merge_external_id_entity_children(
-        old_children: List[ExternalIdEntityT],
-        new_or_updated_children: List[ExternalIdEntityT],
-    ) -> List[ExternalIdEntityT]:
-        """Given two lists of ExternalIdEntity of the same type, returns a merged single
-        list that applies updates.
-        """
-        old_keys = {external_id_key(e) for e in old_children}
-        return [
-            *old_children,
-            # Add any new external ids that are not already in the old list
-            *[e for e in new_or_updated_children if external_id_key(e) not in old_keys],
-        ]
 
     def _flat_fields_to_merge(self, new_or_updated_entity: Entity) -> Set[str]:
         """Returns the names of the fields on the new/updated entity which contain
