@@ -1509,6 +1509,38 @@ TASK_COMPLETED_METRICS_SUPERVISION = [
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
+TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION = [
+    EventCountMetric(
+        name=f"task_completions_while_eligible_{b.task_type_name.lower()}",
+        display_name=f"Task Completions While Eligible: {b.task_title}",
+        description=f"Number of task completions of type: {b.task_title.lower()} "
+        "occurring while eligible for opportunity",
+        event_types=[EventType.TASK_COMPLETED],
+        event_attribute_filters={
+            "task_type": [b.task_type_name],
+            "is_eligible": ["true"],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+]
+
+TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION = [
+    EventCountMetric(
+        name=f"task_completions_while_eligible_{b.task_type_name.lower()}",
+        display_name=f"Task Completions While Eligible: {b.task_title}",
+        description=f"Number of task completions of type: {b.task_title.lower()}"
+        "occurring while eligible for opportunity",
+        event_types=[EventType.TASK_COMPLETED],
+        event_attribute_filters={
+            "task_type": [b.task_type_name],
+            "is_eligible": ["true"],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+]
+
 TREATMENT_REFERRALS = EventCountMetric(
     name="treatment_referrals",
     display_name="Treatment Referrals",

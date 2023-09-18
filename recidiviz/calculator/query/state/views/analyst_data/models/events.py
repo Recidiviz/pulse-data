@@ -45,7 +45,8 @@ _TASK_ELIGIBILITY_SPANS_CTE = """
         end_reason,
         is_eligible,
         task_name,
-        completion_event_type AS task_type
+        completion_event_type AS task_type,
+        ARRAY_TO_STRING(ineligible_criteria, ";") AS ineligible_criteria,
     FROM
         `{project_id}.task_eligibility.all_tasks_materialized`
     INNER JOIN
@@ -56,37 +57,6 @@ _TASK_ELIGIBILITY_SPANS_CTE = """
         -- remove any spans that start after the current millennium, e.g.
         -- eligibility following a life sentence
         start_date < "3000-01-01"
-"""
-
-# CTE for additional task eligibility spans and completion events that are not included in TES
-_TASK_ELIGIBILITY_SPANS_PA_CTE = """
--- TODO(#14994): remove once PA downgrades are added to `all_tasks_materialized`
-SELECT
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    "SUPERVISION_LEVEL_DOWNGRADE" AS task_name,
-    "SUPERVISION_LEVEL_DOWNGRADE" AS task_type,
-    mismatch_corrected,
-    recommended_supervision_downgrade_level,
-FROM
-    `{project_id}.sessions.supervision_downgrade_sessions_materialized`
-WHERE state_code = "US_PA"
-"""
-
-_TASK_ELIGIBILITY_SPANS_TN_CTE = """
--- TODO(#17706): remove once TN compliant reporting transfers are added to `all_tasks_materialized`
-SELECT
-    state_code,
-    person_id,
-    NULL AS start_date,
-    completion_event_date AS end_date,
-    "COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM" AS task_name,
-    "TRANSFER_TO_LIMITED_SUPERVISION" AS task_type
-FROM
-    `{project_id}.task_eligibility_completion_events_general.transfer_to_limited_supervision_materialized`
-WHERE state_code = "US_TN"
 """
 
 
@@ -122,18 +92,6 @@ def get_task_eligible_event_query_builder(
         task_type,
     FROM ({_TASK_ELIGIBILITY_SPANS_CTE})
     WHERE is_eligible{date_condition_query_str}
-
-    UNION ALL
-
-    SELECT
-        state_code,
-        person_id,
-        DATE_ADD(start_date, INTERVAL {days_overdue} DAY) AS overdue_date,
-        task_name,
-        task_type,
-    FROM ({_TASK_ELIGIBILITY_SPANS_PA_CTE})
-    WHERE recommended_supervision_downgrade_level IS NOT NULL{date_condition_query_str}
-
     """,
         attribute_cols=[
             "task_name",
@@ -833,43 +791,8 @@ QUALIFY ROW_NUMBER() OVER (
         event_type=EventType.TASK_COMPLETED,
         description="Task completion events for all Workflows opportunities",
         unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
-        sql_source=f"""
-SELECT
-    state_code,
-    person_id,
-    end_date,
-    task_name,
-    task_type,
-FROM ({_TASK_ELIGIBILITY_SPANS_CTE})
-WHERE end_reason = "TASK_COMPLETED"
-
-UNION ALL
-
-SELECT
-    state_code,
-    person_id,
-    end_date,
-    task_name,
-    task_type,
-FROM ({_TASK_ELIGIBILITY_SPANS_PA_CTE})
-WHERE
-    mismatch_corrected
-
-UNION ALL
-
-SELECT
-    state_code,
-    person_id,
-    end_date,
-    task_name,
-    task_type,
-FROM ({_TASK_ELIGIBILITY_SPANS_TN_CTE})
-
-""",
-        attribute_cols=[
-            "task_name",
-            "task_type",
-        ],
+        sql_source=f'SELECT * FROM ({_TASK_ELIGIBILITY_SPANS_CTE}) WHERE end_reason = "TASK_COMPLETED"',
+        attribute_cols=["task_name", "task_type", "is_eligible", "ineligible_criteria"],
         event_date_col="end_date",
     ),
     get_task_eligible_event_query_builder(
