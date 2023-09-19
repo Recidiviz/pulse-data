@@ -714,6 +714,18 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
+    def set_table_expiration(
+        self, dataset_id: str, table_id: str, expiration: datetime.datetime
+    ) -> None:
+        """Set the table expiration to `expiration` for the given table.
+
+        Args:
+            dataset_id: The name of the dataset where the table lives.
+            table_id: The name of the table to update.
+            expiration: The datetime when the table should expire.
+        """
+
+    @abc.abstractmethod
     def copy_dataset_tables_across_regions(
         self,
         source_dataset_id: str,
@@ -1439,7 +1451,6 @@ class BigQueryClientImpl(BigQueryClient):
         destination_client: BigQueryClient,
         destination_dataset_ref: bigquery.DatasetReference,
     ) -> bigquery.Table:
-
         if destination_client.table_exists(destination_dataset_ref, view.view_id):
             raise ValueError(f"Table [{view.view_id}] already exists in dataset!")
 
@@ -1642,7 +1653,6 @@ class BigQueryClientImpl(BigQueryClient):
         allow_field_additions: bool = False,
         write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.QueryJob:
-
         return self._insert_into_table_from_table_async(
             source_dataset_id=source_dataset_id,
             source_table_id=source_table_id,
@@ -1817,6 +1827,14 @@ class BigQueryClientImpl(BigQueryClient):
 
         logging.info("Creating table %s.%s", dataset_id, table_id)
         return self.client.create_table(table)
+
+    def set_table_expiration(
+        self, dataset_id: str, table_id: str, expiration: datetime.datetime
+    ) -> None:
+        dataset_ref = self.dataset_ref_for_id(dataset_id)
+        table = self.get_table(dataset_ref=dataset_ref, table_id=table_id)
+        table.expires = expiration
+        self.client.update_table(table, fields=["expires"])
 
     @staticmethod
     def _get_excess_schema_fields(
