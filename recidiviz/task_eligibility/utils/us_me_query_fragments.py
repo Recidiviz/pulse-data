@@ -320,8 +320,7 @@ def cis_201_case_plan_case_notes() -> str:
         str: Query that surfaces case plan goals for incarcerated individuals in ME.
     """
 
-    _FINAL_SELECT = """
-    SELECT  
+    _FINAL_SELECT = """SELECT
         Cis_200_Cis_100_Client_Id AS external_id,
         "Case Plan Goals" AS criteria,
         CONCAT(Domain_Goal_Desc,' - ', Goal_Status_Desc) AS note_title,
@@ -383,3 +382,39 @@ def me_time_left_in_sentence_in_categories() -> str:
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id`
             USING(person_id)
         """
+
+
+def cis_300_relevant_property_case_notes(
+    criteria_name: str = "Relevant property",
+) -> str:
+    """
+    Returns:
+        str: Query that surfaces relevant property for ME.
+    """
+
+    return f"""
+    SELECT 
+        pp.CIS_100_CLIENT_ID AS external_id,
+        '{criteria_name}' AS criteria,
+        ppit.E_PP_ITEM_TYPE_DESC AS note_title,
+        pp.DESCRIPTION_TX AS note_body,
+        SAFE_CAST(LEFT(pp.ENTRY_DATE, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_300_Personal_Property_latest` pp
+    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_3030_PP_Item_Type_latest` ppit
+        ON CIS_3030_PP_ITEM_TYPE_CD = PP_ITEM_TYPE_CD
+    -- Inner join to the latest admission ID
+    INNER JOIN (
+        SELECT 
+            CIS_100_CLIENT_ID,
+            CIS_301_ADMISSION_ID,
+            MIN(ENTRY_DATE) AS entry_date
+        FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_300_Personal_Property_latest`
+        WHERE CIS_3030_PP_ITEM_TYPE_CD IN ('18', '172')
+        GROUP BY 1,2
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY CIS_100_CLIENT_ID ORDER BY entry_date DESC) =1 
+        ORDER BY 1,2
+    )
+        USING (CIS_100_CLIENT_ID, CIS_301_ADMISSION_ID)
+    WHERE E_PP_ITEM_TYPE_DESC IN ("Legal Documents", "ID's", "Personal ID's", "Legal Materials")
+        AND LOGICAL_DELETE_IND != 'Y'
+        AND ADULT_IND = 'Y'"""

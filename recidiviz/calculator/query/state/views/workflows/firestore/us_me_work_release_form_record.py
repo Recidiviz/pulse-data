@@ -39,6 +39,7 @@ from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
     cis_201_case_plan_case_notes,
     cis_204_notes_cte,
+    cis_300_relevant_property_case_notes,
     cis_425_program_enrollment_notes,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -92,7 +93,12 @@ case_notes_cte AS (
     WHERE 
         REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{_WORK_RELEASE_NOTE_TX_REGEX}') 
         OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{_WORK_RELEASE_NOTE_TX_REGEX}')
-    GROUP BY 1,2,3,4,5  
+    GROUP BY 1,2,3,4,5
+
+    UNION ALL
+
+    -- Relevant property notes
+    {cis_300_relevant_property_case_notes()}
 ), 
 
 {json_to_array_cte('current_incarceration_pop_cte')}, 
