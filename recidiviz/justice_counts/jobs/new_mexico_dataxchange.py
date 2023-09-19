@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script to retrieve and upload data for New Mexico Administrative Office of the Courts.
-Data is retrieved from the dataXchange API.
+Script to retrieve and upload data for New Mexico Administrative Office of the Courts
+for the previous month/year combination. This script is intended to run once per month.
+Data is retrieved from the dataXchange API. If a given job fails, we can also pass in
+month and year as arguments.
 
 python -m recidiviz.justice_counts.jobs.new_mexico_dataxchange \
     --year=2023 \
@@ -53,14 +55,16 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--year",
         help="The year in which you want to retrieve data for.",
-        required=True,
-        default=datetime.datetime.now(tz=datetime.timezone.utc).year,
+        required=False,
+        default=datetime.datetime.now(tz=datetime.timezone.utc).year
+        if datetime.datetime.now(tz=datetime.timezone.utc).month > 1
+        else datetime.datetime.now(tz=datetime.timezone.utc).year - 1,
         type=int,
     )
     parser.add_argument(
         "--month",
         help="The month in which you want to retrieve data for.",
-        required=True,
+        required=False,
         default=datetime.datetime.now(tz=datetime.timezone.utc).month - 1
         if datetime.datetime.now(tz=datetime.timezone.utc).month > 1
         else 12,
@@ -159,3 +163,4 @@ if __name__ == "__main__":
             metric=global_metric,
             dry_run=args.dry_run,
         )
+        logging.info("%s, %s called", args.month, args.year)
