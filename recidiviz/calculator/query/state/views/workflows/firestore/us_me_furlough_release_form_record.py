@@ -42,6 +42,7 @@ from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
     cis_201_case_plan_case_notes,
     cis_204_notes_cte,
+    cis_300_relevant_property_case_notes,
     cis_425_program_enrollment_notes,
     me_time_left_in_sentence_in_categories,
 )
@@ -139,6 +140,11 @@ case_notes_cte AS (
         SAFE_CAST(NULL AS DATE) AS event_date,
     FROM ({me_time_left_in_sentence_in_categories()}
     )
+
+    UNION ALL
+
+    -- Relevant property
+    {cis_300_relevant_property_case_notes()}
 ), 
 
 {json_to_array_cte('current_incarceration_pop_cte')}, 
