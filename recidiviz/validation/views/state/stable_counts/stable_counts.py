@@ -132,6 +132,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 2, 1),
                         date(2022, 12, 1),
                     ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    StateCode.US_OR: [
+                        date(2023, 8, 1)
+                    ],  # TODO(#23918): Remove once OR sends data
                     StateCode.US_MI: [
                         date(2023, 8, 1)
                     ],  # This was the month of the COMS migration and the refactor ended a bunch of periods on 8/14/23
