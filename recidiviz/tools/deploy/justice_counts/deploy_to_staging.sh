@@ -155,9 +155,14 @@ run_cmd git push origin "${TAG}"
 echo "Adding version tags to the Docker image..."
 run_cmd gcloud -q container images add-tag "${LATEST_DOCKER_TAG}" "${REMOTE_IMAGE_BASE}:${TAG}"
 
+# Step 8: Update Image for Cloud Run Jobs
+echo "Updating Image for Cloud Run Jobs"
+run_cmd gcloud run jobs update justice-counts-recurring-reports --image "${LATEST_DOCKER_TAG}" --region "us-central1"
+run_cmd gcloud run jobs update justice-counts-staging-recurring-new-mexico-courts-dataxchange --image "${LATEST_DOCKER_TAG}" --region "us-central1"
+
 # TODO(#16325): Create release candidate branches to facilitate cherry-picks.
 
-# Step 8: Check out main in both justice-counts repo (where we are now) and pulse-data repo,
+# Step 9: Check out main in both justice-counts repo (where we are now) and pulse-data repo,
 # so we avoid being in a 'detached head' state
 run_cmd git checkout main
 cd ../pulse-data || exit
