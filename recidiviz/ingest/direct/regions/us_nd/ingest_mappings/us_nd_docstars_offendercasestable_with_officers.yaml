@@ -138,7 +138,11 @@ output:
                           - $if:
                               $not_null: terminating_officer_id
                             $then: terminating_officer_id
-                      deciding_staff_external_id_type: $literal("US_ND_DOCSTARS_OFFICER")
+                      deciding_staff_external_id_type:
+                        $conditional:
+                          - $if:
+                              $not_null: terminating_officer_id
+                            $then: $literal("US_ND_DOCSTARS_OFFICER")
                       supervision_violation_response_decisions:
                         - StateSupervisionViolationResponseDecisionEntry:
                             decision:
