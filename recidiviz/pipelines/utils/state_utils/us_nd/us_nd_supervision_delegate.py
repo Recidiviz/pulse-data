@@ -65,6 +65,7 @@ LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING = {
     "20": None,
     "21": None,
     "22": None,
+    "23": None,
 }
 
 
