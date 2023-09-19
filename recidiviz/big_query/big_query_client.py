@@ -21,11 +21,13 @@ import abc
 import datetime
 import json
 import logging
+import os
 import time
 from collections import defaultdict
 from concurrent import futures
-from typing import IO, Any, Callable, Dict, Iterator, List, Optional, Sequence
+from typing import IO, Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple
 
+import __main__
 import pandas as pd
 import pytz
 import requests
@@ -66,6 +68,8 @@ BQ_CLIENT_MAX_POOL_SIZE = 128
 
 # Maximum length for any column description on any column.
 BQ_TABLE_COLUMN_DESCRIPTION_MAX_LENGTH = 1024
+
+DEFAULT_VANTA_DATASET_OWNER = "joshua"
 
 
 def client(project_id: str, region: str) -> bigquery.Client:
@@ -864,14 +868,62 @@ class BigQueryClientImpl(BigQueryClient):
                 )
                 dataset.default_table_expiration_ms = default_table_expiration_ms
 
-            return self.client.create_dataset(
+            dataset = self.client.create_dataset(
                 dataset,
                 # Do not fail if another process has already created this dataset
                 # between the get_dataset() call and now.
                 exists_ok=True,
             )
 
+            # Set labels to keep Vanta happy.
+            owner, description = self._get_owner_and_description(dataset)
+            dataset.description = description
+            description_label = description.replace(" ", "-").lower()
+            if len(description_label) > 64:
+                description_label = description_label[:64]
+            dataset.labels = {
+                "vanta-owner": owner or DEFAULT_VANTA_DATASET_OWNER,
+                "vanta-description": description_label,
+            }
+            self.client.update_dataset(dataset, ["description", "labels"])
+
+            return dataset
+
         return dataset
+
+    def _get_owner_and_description(
+        self, dataset: bigquery.Dataset
+    ) -> Tuple[Optional[str], str]:
+        """Gets the individual owner (if there is one) and a description of the dataset.
+
+        The dataset must already exist, otherwise there will not be any owners.
+        """
+        date = datetime.date.today().isoformat()
+        script_name = os.path.splitext(os.path.basename(__main__.__file__))[0]
+        # Get "individual" (non service account) owners of the dataset
+        owner_emails = [
+            entry.entity_id
+            for entry in dataset.access_entries
+            if entry.role == "OWNER"
+            and entry.entity_type == bigquery.enums.EntityTypes.USER_BY_EMAIL
+            and entry.entity_id
+        ]
+
+        # If there are any, then we know it was created manually by an individual.
+        if owner_emails:
+            owner_usernames = [
+                email.split("@")[0]
+                for email in owner_emails
+                if email.endswith("@recidiviz.org")
+            ]
+            owner = owner_usernames[0] if owner_usernames else None
+            return (
+                owner,
+                f"Generated from {script_name} by {owner or 'unknown'} on {date}",
+            )
+
+        # Otherwise, it was created by infrastructure.
+        return None, f"Generated automatically by infrastructure on {date}"
 
     def dataset_exists(self, dataset_ref: bigquery.DatasetReference) -> bool:
         try:

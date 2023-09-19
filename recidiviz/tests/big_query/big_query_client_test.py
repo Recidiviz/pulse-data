@@ -26,6 +26,7 @@ from concurrent import futures
 from typing import Any, Iterator, List
 from unittest import mock
 
+import __main__
 import pandas as pd
 from freezegun import freeze_time
 from google.api_core.future.polling import DEFAULT_RETRY, PollingFuture
@@ -71,6 +72,11 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
+        self.main_patcher = mock.patch.object(
+            __main__, "__file__", "a/b/fake_script.py", create=True
+        )
+        self.mock_main = self.main_patcher.start()
+
         self.client_patcher = mock.patch(
             "recidiviz.big_query.big_query_client.bigquery.Client"
         )
@@ -100,11 +106,13 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
+        self.main_patcher.stop()
         self.metadata_patcher.stop()
 
     def test_create_dataset_if_necessary(self) -> None:
         """Check that a dataset is created if it does not exist."""
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+        self.mock_client.create_dataset.return_value.access_entries = []
         self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
         self.mock_client.create_dataset.assert_called()
 
@@ -118,10 +126,103 @@ class BigQueryClientImplTest(unittest.TestCase):
         """Check that the dataset is created with a set table expiration if the dataset does not exist and the
         new_dataset_table_expiration_ms is specified."""
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+        self.mock_client.create_dataset.return_value.access_entries = []
+
         self.bq_client.create_dataset_if_necessary(
             self.mock_dataset_ref, default_table_expiration_ms=6000
         )
+
         self.mock_client.create_dataset.assert_called()
+
+    def test_create_dataset_if_necessary_sets_labels(self) -> None:
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+        self.mock_client.create_dataset.return_value.access_entries = []
+
+        with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+
+        call_args_list = self.mock_client.update_dataset.call_args_list
+        self.assertEqual(1, len(call_args_list))
+        [(args, _kwargs)] = call_args_list
+        self.assertEqual(
+            {
+                "vanta-owner": "joshua",
+                "vanta-description": "generated-automatically-by-infrastructure-on-2020-01-01",
+            },
+            args[0].labels,
+        )
+
+    def test_create_dataset_if_necessary_sets_labels_manual(self) -> None:
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+        self.mock_client.create_dataset.return_value.access_entries = [
+            bigquery.AccessEntry(
+                role="OWNER",
+                entity_type=bigquery.enums.EntityTypes.USER_BY_EMAIL,
+                entity_id="foo@recidiviz.org",
+            )
+        ]
+
+        with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+
+        call_args_list = self.mock_client.update_dataset.call_args_list
+        self.assertEqual(1, len(call_args_list))
+        [(args, _kwargs)] = call_args_list
+        self.assertEqual(
+            {
+                "vanta-owner": "foo",
+                "vanta-description": "generated-from-fake_script-by-foo-on-2020-01-01",
+            },
+            args[0].labels,
+        )
+
+    def test_create_dataset_if_necessary_sets_labels_manual_non_recidiviz(self) -> None:
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+        self.mock_client.create_dataset.return_value.access_entries = [
+            bigquery.AccessEntry(
+                role="OWNER",
+                entity_type=bigquery.enums.EntityTypes.USER_BY_EMAIL,
+                entity_id="bar@gmail.com",
+            )
+        ]
+
+        with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+
+        call_args_list = self.mock_client.update_dataset.call_args_list
+        self.assertEqual(1, len(call_args_list))
+        [(args, _kwargs)] = call_args_list
+        self.assertEqual(
+            {
+                "vanta-owner": "joshua",
+                "vanta-description": "generated-from-fake_script-by-unknown-on-2020-01-01",
+            },
+            args[0].labels,
+        )
+
+    def test_create_dataset_if_necessary_sets_labels_truncate(self) -> None:
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+        self.mock_client.create_dataset.return_value.access_entries = [
+            bigquery.AccessEntry(
+                role="OWNER",
+                entity_type=bigquery.enums.EntityTypes.USER_BY_EMAIL,
+                entity_id="1234567890123456789012345@recidiviz.org",
+            )
+        ]
+
+        with freeze_time(datetime.datetime(2020, 1, 1, 1, 1, 1)):
+            self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
+
+        call_args_list = self.mock_client.update_dataset.call_args_list
+        self.assertEqual(1, len(call_args_list))
+        [(args, _kwargs)] = call_args_list
+        self.assertEqual(
+            {
+                "vanta-owner": "1234567890123456789012345",
+                "vanta-description": "generated-from-fake_script-by-1234567890123456789012345-on-2020-",
+            },
+            args[0].labels,
+        )
 
     def test_multiple_client_locations(self) -> None:
         other_location_bq_client = BigQueryClientImpl(region_override="us-east1")
