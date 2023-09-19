@@ -624,6 +624,7 @@ def add_supervision_violation_to_person(
         List[entities.StateSupervisionViolatedConditionEntry]
     ] = None,
     violation_date: Optional[datetime.date] = None,
+    violation_metadata: Optional[str] = None,
 ) -> None:
     """Append a supervision violation to the person (updates the person entity in place)."""
 
@@ -634,6 +635,7 @@ def add_supervision_violation_to_person(
         supervision_violation_types=supervision_violation_types or [],
         supervision_violated_conditions=supervision_violated_conditions or [],
         violation_date=violation_date,
+        violation_metadata=violation_metadata,
         person=person,
     )
 

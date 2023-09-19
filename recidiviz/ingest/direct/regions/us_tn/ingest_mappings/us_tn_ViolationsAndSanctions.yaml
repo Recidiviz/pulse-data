@@ -141,6 +141,16 @@ output:
                       $json_extract:
                         $key: ImposedDate
                         $json: $iter_item
+                    violation_response_metadata:
+                      $json_dict:
+                        SanctionLevel:
+                          $json_extract:
+                            $key: SanctionLevel
+                            $json: $iter_item
+                        SanctionStatus:
+                          $json_extract:
+                            $key: SanctionStatus
+                            $json: $iter_item
                     supervision_violation_response_decisions:
                       - StateSupervisionViolationResponseDecisionEntry:
                           decision:
