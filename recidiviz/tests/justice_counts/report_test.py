@@ -412,7 +412,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             month=7,
             frequency=schema.ReportingFrequency.ANNUAL.value,
         )
-        self.assertEqual(report.date_range_end, datetime.date(2023, 7, 1))
+        self.assertEqual(report.date_range_end, datetime.date(2022, 7, 1))
         self.assertEqual(
             ReportInterface.get_reporting_frequency(report),
             schema.ReportingFrequency.ANNUAL,
