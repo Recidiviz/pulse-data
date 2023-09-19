@@ -175,10 +175,10 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 new_annual_report.type, schema.ReportingFrequency.ANNUAL.value
             )
             self.assertEqual(
-                new_annual_report.date_range_start, datetime.date(2022, 3, 1)
+                new_annual_report.date_range_start, datetime.date(2021, 3, 1)
             )
             self.assertEqual(
-                new_annual_report.date_range_end, datetime.date(2023, 3, 1)
+                new_annual_report.date_range_end, datetime.date(2022, 3, 1)
             )
 
     def test_create_new_reports_null_user_account_id(self) -> None:

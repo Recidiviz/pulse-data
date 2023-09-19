@@ -637,9 +637,8 @@ class ReportInterface:
                 1,
             )
         else:
-            if month == 7:
-                # Fiscal Years will run from July 1 of one year to June 30 of the next.
-                # For annual fiscal-year metrics, the year column
+            if month != 1:
+                # For non-calendar year annual reports, the year column
                 # matches the end year of the record, not the start year.
                 date_range_start = datetime.date(year - 1, month, 1)
                 date_range_end = datetime.date(year, month, 1)
