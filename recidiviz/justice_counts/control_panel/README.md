@@ -8,10 +8,9 @@ To run the app locally, you need to spin up both the backend and frontend simult
 
 ## Helpful Links
 
-- GCP Cloud Run [[staging](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)]
-- GCP Gloud Run [[prod](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)]
-- Auth0 [[staging](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts-staging/)]
-- Auth0 [[prod](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts/)]
+- Publisher GCP Cloud Run [[staging](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)], [[prod](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)]
+- Dashboard GCP Cloud Run [[staging](https://console.cloud.google.com/run/detail/us-central1/agency-dashboard-web/revisions?project=justice-counts-staging)], [[prod](https://console.cloud.google.com/run/detail/us-central1/agency-dashboard-web/revisions?project=justice-counts-production)]
+- Auth0 [[staging](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts-staging/)], [[prod](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts/)]
 - [Sentry](https://recidiviz-inc.sentry.io/issues/?project=4504532096516096&referrer=sidebar)
 - [Oncall doc](go/jc-oncall)
 
@@ -23,8 +22,6 @@ To run the app locally, you need to spin up both the backend and frontend simult
 - Set up your [frontend developer environment](https://docs.google.com/document/d/1y-yJwZN6yM1s5OKqTDCk56FN2p7ZA62buwph1YdnJAc)
 
 ### Set up gcloud CLI
-
-Run
 
 ```
 gcloud auth login
@@ -53,24 +50,28 @@ Run this script from the root of the repository (i.e. `pulse-data`) to set up th
 
 See the [[scripts] section of our Pipfile](https://github.com/Recidiviz/pulse-data/blob/71d117466a7a1a07ed1dc0157bb0f8952abdd62d/Pipfile#L200) for some useful aliases, all of which can be run via `pipenv run <name>` (e.g. `pipenv run docker-jc`).
 
-## Running locally
+### Build our Docker image
 
-1. Build the Recidiviz Base Docker image using the command below:
+1. Pull the Recidiviz base Docker image:
 
 ```bash
-pipenv run docker-build-base
+docker pull us.gcr.io/recidiviz-staging/recidiviz-base:latest
 ```
 
-2. Build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 7, which will take precedence over the frontend that is bundled in the docker image.)
+2. Build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally, which will take precedence over the frontend that is bundled in the docker image.)
 
 ```bash
-pipenv run docker-build-jc-publisher \
-  --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz \
+pipenv run docker-build-jc \
+  --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz
 ```
 
 NOTE: If you get a 401 Unauthorized permissions error, run `gcloud auth configure-docker us-docker.pkg.dev` and then retry.
 
-2. Now run the Justice Counts Docker image using `docker-compose`:
+## Running Locally
+
+1. Make sure you've followed the steps above to build our Docker image.
+
+2. Run the Justice Counts Docker image using `docker-compose`:
 
 ```bash
 pipenv run docker-jc
@@ -82,7 +83,7 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
 
-3. In another tab, while `docker-compose` is running, load fake data into your local database:
+3. [Only needs to be done once] In another tab, while `docker-compose` is running, load fake data into your local database:
 
 ```bash
 pipenv run fixtures-jc
@@ -96,9 +97,21 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 
 4. In another tab, clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory.
 
-5. Run `yarn install`, `cp .env.example .env`, and `yarn run dev`. (Note: the `.env` file determines which backend the frontend will run against. It defaults to your local backend, which you started running via `docker-compose`. If you want the frontend to use a staging backend, adjust the file to point to the corresponding URL.)
+5. [Only needs to be done once] Run `cp .env.example .env` and `yarn install`. (Note: the `.env` file determines which backend the frontend will run against. It defaults to your local backend, which you started running via `docker-compose`. If you want the frontend to use a staging backend, adjust the file to point to the corresponding URL.)
 
-6. You should see the application running on `localhost:3000`!
+6. Run `yarn run dev`
+
+7. You should see the application running on `localhost:3000`!
+
+### Help! I'm seeing an error
+
+Try rebuilding our Docker image:
+
+```
+docker pull us.gcr.io/recidiviz-staging/recidiviz-base:latest
+pipenv run docker-build-jc \
+  --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz
+```
 
 ## Databases
 
@@ -113,9 +126,9 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 1. Run `brew install jq` (this only has to be done once).
 2. From within `pulse-data`, run `pipenv run cloudsql`.
 3. This will launch an interactive script.\
-   a. To connect to the staging database select `recidiviz-staging`\
-   b. To connect to the production database select `recidiviz-123`
-4. Next, select `justice-counts`.
+   a. To connect to the staging database select `justice-counts-staging`\
+   b. To connect to the production database select `justice-counts-production`
+4. Next, select `justice_counts_v2`.
 5. Select `y` when asked if you want write access.
 6. You should see a `postgres=>` prompt. Run `\dt` to see a list of tables.
 7. To exit the database, type 'quit' and enter.
@@ -141,12 +154,16 @@ Use the `./deploy_to_staging.sh`, `deploy_to_production.sh`, and `deploy_for_pla
 ```
 ./recidiviz/tools/deploy/justice_counts/deploy_for_playtesting.sh -b <name of backend branch> -f <name of frontend branch> -a publisher -t playtesting
 
-./recidiviz/tools/deploy/justice_counts/deploy_to_staging.sh -a publisher
+./recidiviz/tools/deploy/justice_counts/deploy_to_staging.sh
 
-./recidiviz/tools/deploy/justice_counts/deploy_to_prod.sh -b v1.0.0 -f v1.0.0 -a publisher
+./recidiviz/tools/deploy/justice_counts/deploy_to_prod.sh -v v1.0.0
 ```
 
-The versions we've deployed to prod are tracked [here](https://paper.dropbox.com/doc/Justice-Counts-Deploy-Log--ByP1W00sWJCrBjelmL9_TVD_Ag-rxYzPkYw2yDQzobnXYM3f).
+To determine what commits will be included in a deploy to production, run the following, passing in the version of the staging deploy that is the upcoming production candidate:
+
+```
+./recidiviz/tools/deploy/justice_counts/commits_to_be_deployed.sh -v v1.0.0
+```
 
 ## Creating Users and Agencies
 
@@ -156,7 +173,6 @@ The versions we've deployed to prod are tracked [here](https://paper.dropbox.com
    1. Enter the Agency Name, System(s), State, and (optional) County (You may be able to infer the agency's system / state / county from its name + a Google search; if not, ask CSG)
    2. Click Submit
    3. The Agency should now appear in the Agency Provisioning table (this table is searchable)
-   4. Add the agency to the [Production Agencies Table](https://www.notion.so/recidiviz/7238b9d041b64e2cb356ba9aab9a0686?v=2d57b9c201de49f8a75303144aa3f55e) in Notion with all of the relevant information.
 4. To create a new User, navigate to the User Provisioning page and scroll to "Add User"
    1. Enter the User's Name and Email (You may be able to infer the user's name from their email; if not, ask CSG)
    2. Click Submit
@@ -167,9 +183,6 @@ The versions we've deployed to prod are tracked [here](https://paper.dropbox.com
    2. Click the "Team Member Roles" link
    3. Find the given user in the Agency Team Members table
    4. Within the user's row, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)
-   5. Note: By default, all @recidiviz or @csg emails should become Justice Counts Admin, and everyone else should become Agency Admin
-
-**NOTE: Moving forward, whenever an agency is created in production, all CSG users (accounts that are associated with @csg email) should be added to the agency with the 'READ_ONLY' role.**
 
 ## SQLAlchemy Primer
 
