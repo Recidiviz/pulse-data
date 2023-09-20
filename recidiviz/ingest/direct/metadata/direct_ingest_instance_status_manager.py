@@ -188,8 +188,11 @@ def get_valid_current_status_transitions(
                 DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
                     DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
                 ],
-                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: [
+                    *LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
+                        DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
+                    ],
+                    DirectIngestStatus.UP_TO_DATE,
                 ],
                 DirectIngestStatus.FLASH_COMPLETED: LEGACY_SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
                     DirectIngestStatus.FLASH_COMPLETED

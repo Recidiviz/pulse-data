@@ -727,6 +727,19 @@ class LegacyIngestPostgresDirectIngestStatusManagerTest(
                 expected_raw_data_source=DirectIngestInstance.PRIMARY,
             )
 
+    def test_primary_partial_rerun_extract_and_merge_only(self) -> None:
+        self._run_test_for_status_transitions(
+            self.us_xx_primary_manager,
+            [
+                DirectIngestStatus.STANDARD_RERUN_STARTED,
+                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.UP_TO_DATE,
+                # This could happen in a rerun where we just invalidate ingest view
+                # results batches and reprocess (i.e. for a mappings-only change).
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+            ],
+        )
+
     def test_any_secondary_status_valid_to_rerun_cancellation_in_progress(self) -> None:
         valid_secondary_statuses = list(
             (set(DirectIngestStatus))
