@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,9 @@ my_enum_field:
 import re
 from typing import Optional
 
+from recidiviz.common.constants.state.state_employment_period import (
+    StateEmploymentPeriodEmploymentStatus,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
@@ -86,3 +89,68 @@ def parse_supervision_violation_response_decision_type(
         return StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN
 
     return None
+
+
+def parse_employment_status(
+    raw_text: str,
+) -> StateEmploymentPeriodEmploymentStatus:
+    """
+    Parses a given raw text to determine the employment status based on keywords.
+
+    Args:
+        raw_text (str): The input text to be parsed for employment status.
+
+    Returns:
+        StateEmploymentPeriodEmploymentStatus: An enumeration representing the employment status.
+
+    This function analyzes the `raw_text` to determine the employment status of an individual.
+    It checks for specific keywords and patterns in the text to classify the employment status.
+
+    Possible return values:
+    - UNEMPLOYED: If "UNEMPLOYED" or "UN-EMPLOYED" is found in the text.
+    - STUDENT: If the text exactly matches "STUDENT".
+    - INTERNAL_UNKNOWN: If the text exactly matches "RETIRED".
+    - EMPLOYED: If the text matches specific employment-related keywords, such as
+      "SSI OFFICE", "SOCIAL SECURITY OFFICE", or "SOCIAL SECURITY ADMINISTRATION".
+    - ALTERNATE_INCOME_SOURCE: If the text contains keywords related to alternate income sources,
+      such as "GENERAL RELIEF", "BENEFITS", "GENERAL ASSISTANCE", "GEN ASSISTANCE",
+      "VA ASSISTANCE", "DISABILITY ASSISTANCE", "SSI", "SOCIAL SECURITY", or "UNEMPLOYMENT".
+
+    If none of the above conditions are met, it defaults to EMPLOYED as a conservative estimate.
+    """
+    if "UNEMPLOYED" in raw_text or "UN-EMPLOYED" in raw_text:
+        return StateEmploymentPeriodEmploymentStatus.UNEMPLOYED
+
+    if raw_text == "STUDENT":
+        return StateEmploymentPeriodEmploymentStatus.STUDENT
+
+    if raw_text == "RETIRED":
+        return StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN
+
+    # it appears some people are employed by the Social Security Administration
+    # so we identify them as employed here to simplify the logic below
+    if raw_text in (
+        "SSI OFFICE",
+        "SOCIAL SECURITY OFFICE",
+        "SOCIAL SECURITY ADMINISTRATION",
+    ):
+        return StateEmploymentPeriodEmploymentStatus.EMPLOYED
+
+    is_general_relief = "GENERAL RELIEF" in raw_text or "GENERALRELIEF" in raw_text
+    is_benefits = "BENEFITS" in raw_text
+    is_general_assistance = (
+        "GENERAL ASSISTANCE" in raw_text
+        or "GEN ASSISTANCE" in raw_text
+        or "VA ASSISTANCE" in raw_text
+        or "DISABILITY ASSISTANCE" in raw_text
+    )
+    is_ssi = (
+        raw_text[:3] == "SSI"
+        or "SOCIAL SECURITY" in raw_text
+        or raw_text == "UNEMPLOYMENT"
+    )
+
+    if is_general_relief or is_benefits or is_general_assistance or is_ssi:
+        return StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE
+
+    return StateEmploymentPeriodEmploymentStatus.EMPLOYED

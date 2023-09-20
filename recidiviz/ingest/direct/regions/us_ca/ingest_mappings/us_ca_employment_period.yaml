@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_sentences` to the corresponding
+# This file associates the columns outputted from the query in `view_employment_period` to the corresponding
 # Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
@@ -8,8 +8,15 @@ input_columns:
   - EMPSTARTDATE
   - EMPLENDDATE
   - EMPLOYMENTTYPE
+  - EmployerName
   - address
 unused_columns: []
+variables:
+  - is_employed:
+      $custom:
+        $function: us_ca_custom_parsers.is_employed
+        $args:
+          employer_name: EmployerName
 output:
   StatePerson:
     external_ids:
@@ -25,6 +32,24 @@ output:
                 - sequence_number
           start_date: EMPSTARTDATE
           end_date: EMPLENDDATE
-          employer_address: address
-          job_title: EMPLOYMENTTYPE
-          employment_status: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED)
+          employer_address:
+            $conditional:
+              - $if: $variable(is_employed)
+                $then: address
+          job_title:
+            $conditional:
+              - $if: $variable(is_employed)
+                $then: EMPLOYMENTTYPE
+          employer_name:
+            $conditional:
+              - $if: $variable(is_employed)
+                $then: EmployerName
+          employment_status:
+            $conditional:
+              - $if:
+                  $is_null: EmployerName
+                $then: $literal_enum(StateEmploymentPeriodEmploymentStatus.EMPLOYED)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: EmployerName
+                    $custom_parser: us_ca_custom_enum_parsers.parse_employment_status
