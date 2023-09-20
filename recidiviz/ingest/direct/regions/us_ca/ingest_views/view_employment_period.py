@@ -31,6 +31,7 @@ SELECT
   EMPSTARTDATE,
   IF(CAST(EMPLENDDATE AS DATETIME) = CAST('9999-12-31 00:00:00' AS DATETIME), NULL, EMPLENDDATE) AS EMPLENDDATE,
   EMPLOYMENTTYPE,
+  UPPER(TRIM(EmployerName)) AS EmployerName,
   CASE WHEN EmpAddress is not null and EmpCityState is not null 
     THEN CONCAT(EmpAddress, ', ', EmpCityState)
     ELSE COALESCE(EmpAddress, EmpCityState)
