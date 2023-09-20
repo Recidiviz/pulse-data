@@ -17,6 +17,7 @@
 """Interface for working with the Agency model."""
 
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -46,6 +47,7 @@ class AgencyInterface:
             fips_county_code=fips_county_code,
             is_superagency=is_superagency,
             super_agency_id=super_agency_id,
+            created_at=datetime.now(tz=timezone.utc),
         )
         session.add(agency)
         session.commit()

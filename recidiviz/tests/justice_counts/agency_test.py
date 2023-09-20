@@ -16,6 +16,9 @@
 # =============================================================================
 """This class implements tests for the Justice Counts AgencyInterface."""
 
+from datetime import datetime, timezone
+
+from freezegun import freeze_time
 from sqlalchemy.exc import IntegrityError
 
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -90,6 +93,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                     names=["Agency Alpha", "Agency Beta"],
                 )
 
+    @freeze_time("2023-09-17 12:00:01", tz_offset=0)
     def test_create_agency(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = UserAccountInterface.create_or_update_user(
@@ -122,6 +126,14 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
         self.assertEqual(
             {a.name for a in agencies},
             {"Agency Alpha", "Beta Initiative", "Agency Gamma", "Agency Delta"},
+        )
+        self.assertEqual(
+            {
+                a.created_at
+                for a in agencies
+                if a.name in ["Agency Gamma", "Agency Delta"]
+            },
+            {datetime.now(tz=timezone.utc)},
         )
 
         # Test to_json

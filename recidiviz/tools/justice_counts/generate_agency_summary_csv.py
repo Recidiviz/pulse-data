@@ -194,18 +194,21 @@ def generate_agency_summary_csv() -> None:
 
             for agency in agencies:
                 users = agency_id_to_users[agency["id"]]
-                created_at = None
+                agency_created_at = agency["created_at"]
                 last_login = None
+                first_user_created_at = None
                 for user in users:
-                    # For now, we assume that an agency's created_at date is the
-                    # earliest creation date of any of its users.
-                    # TODO(#22371) Add created_at to schema.Agency and use that instead
-                    user_created_at = datetime.datetime.strptime(
-                        user["created_at"].split("T")[0], "%Y-%m-%d"
-                    ).date()
-                    if not created_at or (user_created_at < created_at):
-                        created_at = user_created_at
-
+                    # If the agency was created before the agency.created_at field was
+                    # added to our schema, we use the date of the first created user
+                    # that belongs to that agency
+                    if agency_created_at is None:
+                        user_created_at = datetime.datetime.strptime(
+                            user["created_at"].split("T")[0], "%Y-%m-%d"
+                        ).date()
+                        if first_user_created_at is None or (
+                            user_created_at < first_user_created_at
+                        ):
+                            first_user_created_at = user_created_at
                     # The agency's last_login is the most recent login date of
                     # any of its users.
                     if "last_login" not in user:
@@ -217,7 +220,7 @@ def generate_agency_summary_csv() -> None:
                         last_login = user_last_login
 
                 agency[LAST_LOGIN] = last_login or ""
-                agency[CREATED_AT] = created_at or ""
+                agency[CREATED_AT] = agency_created_at or first_user_created_at or ""
                 agency[LAST_UPDATE] = ""
                 agency[NUM_RECORDS_WITH_DATA] = 0
                 agency[NUM_METRICS_WITH_DATA] = 0
