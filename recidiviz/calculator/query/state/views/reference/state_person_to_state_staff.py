@@ -98,8 +98,22 @@ FROM (
     pa.referring_staff_external_id = sid.external_id AND 
     pa.referring_staff_external_id_type = sid.id_type
     
-  # TODO(#23948): Pull deciding_staff_external_ids in here once we're ready to hydrate
-  #  staff_ids for these in the calc pipelines.
+  UNION ALL 
+
+  SELECT
+    svr.person_id,
+    sid.staff_id,
+    svr.deciding_staff_external_id AS staff_external_id,
+    svr.deciding_staff_external_id_type AS staff_external_id_type,
+    svr.state_code
+  FROM 
+    `{project_id}.{state_base_dataset}.state_supervision_violation_response` svr
+  JOIN
+    `{project_id}.{state_base_dataset}.state_staff_external_id` sid
+  ON 
+    svr.state_code = sid.state_code AND
+    svr.deciding_staff_external_id = sid.external_id AND 
+    svr.deciding_staff_external_id_type = sid.id_type    
 )
 """
 STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER = SimpleBigQueryViewBuilder(
