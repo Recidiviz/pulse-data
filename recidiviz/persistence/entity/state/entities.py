@@ -129,6 +129,7 @@ PeriodType = TypeVar(
     "PeriodType", bound=Union["StateSupervisionPeriod", "StateIncarcerationPeriod"]
 )
 
+
 # **** Entity ordering template *****:
 
 # State Code
@@ -550,6 +551,20 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Only optional when hydrated in the parsing layer, before we have written this
     # entity to the persistence layer
     person: Optional["StatePerson"] = attr.ib(default=None)
+
+    def __attrs_post_init__(self):
+        if (
+            self.conducting_staff_external_id is None
+            and self.conducting_staff_external_id_type is not None
+        ) or (
+            self.conducting_staff_external_id is not None
+            and self.conducting_staff_external_id_type is None
+        ):
+            raise ValueError(
+                f"Found inconsistent conducting_staff_external_id* fields for StateAssessment with id {self.assessment_id}. "
+                f"conducting_staff_external_id: {self.conducting_staff_external_id} conducting_staff_external_id_type: {self.conducting_staff_external_id_type}. "
+                "Either both must be null or both must be nonnull."
+            )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1027,6 +1042,20 @@ class StateSupervisionPeriod(
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.termination_date
 
+    def __attrs_post_init__(self):
+        if (
+            self.supervising_officer_staff_external_id is None
+            and self.supervising_officer_staff_external_id_type is not None
+        ) or (
+            self.supervising_officer_staff_external_id is not None
+            and self.supervising_officer_staff_external_id_type is None
+        ):
+            raise ValueError(
+                f"Found inconsistent supervising_officer_staff_external_id* fields for StateSupervisionPeriod with id {self.supervision_period_id}. "
+                f"supervising_officer_staff_external_id: {self.supervising_officer_staff_external_id} supervising_officer_staff_external_id_type: {self.supervising_officer_staff_external_id_type}. "
+                "Either both must be null or both must be nonnull."
+            )
+
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
@@ -1422,6 +1451,20 @@ class StateSupervisionViolationResponse(
             )
         ]
 
+    def __attrs_post_init__(self):
+        if (
+            self.deciding_staff_external_id is None
+            and self.deciding_staff_external_id_type is not None
+        ) or (
+            self.deciding_staff_external_id is not None
+            and self.deciding_staff_external_id_type is None
+        ):
+            raise ValueError(
+                f"Found inconsistent deciding_staff_external_id* fields for StateSupervisionViolationResponse with id {self.supervision_violation_response_id}. "
+                f"deciding_staff_external_id: {self.deciding_staff_external_id} deciding_staff_external_id_type: {self.deciding_staff_external_id_type}. "
+                "Either both must be null or both must be nonnull."
+            )
+
 
 @attr.s(eq=False, kw_only=True)
 class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
@@ -1486,6 +1529,20 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
                 fields=["state_code", "external_id"],
             )
         ]
+
+    def __attrs_post_init__(self):
+        if (
+            self.referring_staff_external_id is None
+            and self.referring_staff_external_id_type is not None
+        ) or (
+            self.referring_staff_external_id is not None
+            and self.referring_staff_external_id_type is None
+        ):
+            raise ValueError(
+                f"Found inconsistent referring_staff_external_id* fields for StateProgramAssignment with id {self.program_assignment_id}. "
+                f"referring_staff_external_id: {self.referring_staff_external_id} referring_staff_external_id_type: {self.referring_staff_external_id_type}. "
+                "Either both must be null or both must be nonnull."
+            )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1648,6 +1705,20 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
                 fields=["state_code", "external_id"],
             )
         ]
+
+    def __attrs_post_init__(self):
+        if (
+            self.contacting_staff_external_id is None
+            and self.contacting_staff_external_id_type is not None
+        ) or (
+            self.contacting_staff_external_id is not None
+            and self.contacting_staff_external_id_type is None
+        ):
+            raise ValueError(
+                f"Found inconsistent contacting_staff_external_id* fields for StateSupervisionContact with id {self.supervision_contact_id}. "
+                f"contacting_staff_external_id: {self.contacting_staff_external_id} contacting_staff_external_id_type: {self.contacting_staff_external_id_type}. "
+                "Either both must be null or both must be nonnull."
+            )
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1828,6 +1899,13 @@ class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
                 ],
             )
         ]
+
+    def __attrs_post_init__(self):
+        if self.eligible_date and self.due_date and self.eligible_date > self.due_date:
+            raise ValueError(
+                f"Found StateTaskDeadline with id [{self.task_deadline_id}] with eligible_date [{self.eligible_date}] "
+                f"after due_date [{self.due_date}]"
+            )
 
 
 @attr.s(eq=False, kw_only=True)
