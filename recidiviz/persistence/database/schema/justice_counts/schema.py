@@ -48,6 +48,7 @@ from sqlalchemy.sql.schema import (
 )
 from sqlalchemy.sql.sqltypes import (
     ARRAY,
+    TIMESTAMP,
     Boolean,
     Date,
     DateTime,
@@ -335,6 +336,8 @@ class Agency(Source):
     systems = Column(ARRAY(String(255)))
     state_code = Column(String(255))
     fips_county_code = Column(String(255))
+    # The date in which the Agency was created in our platform
+    created_at = Column(TIMESTAMP(timezone=True), nullable=True)
 
     @validates("state_code")
     def validate_state_code(self, _: Any, state_code: str) -> str:
