@@ -99,6 +99,18 @@ names as (
             Email,
             ROW_NUMBER() OVER(PARTITION BY StaffId ORDER BY CASE Source WHEN 'ATLAS' THEN 1 WHEN 'CIS' THEN 2 END, LPAD(SourceId, 8, '0') DESC) as priority
         FROM unioned
+        WHERE (
+            UPPER(FirstName) NOT LIKE '%NAMCHG%' AND 
+            UPPER(FirstName) NOT LIKE '%NMCHG%' AND 
+            UPPER(FirstName) NOT LIKE '%- NC' AND
+            UPPER(FirstName) NOT LIKE '%NMCGH%' AND
+            UPPER(FirstName) NOT LIKE '%NMCH%' AND
+            UPPER(FirstName) NOT LIKE '%- WRONG%' AND
+            UPPER(FirstName) NOT LIKE '%- HISTORY%' AND
+            UPPER(FirstName) NOT LIKE '%- DUPLICATE%' AND
+            UPPER(FirstName) NOT LIKE '%- OLD%'
+        ) 
+        OR UPPER(FirstName) IS NULL
     ) sub_all_names
     WHERE priority = 1
 )
