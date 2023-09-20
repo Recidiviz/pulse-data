@@ -879,8 +879,8 @@ class BigQueryClientImpl(BigQueryClient):
             owner, description = self._get_owner_and_description(dataset)
             dataset.description = description
             description_label = description.replace(" ", "-").lower()
-            if len(description_label) > 64:
-                description_label = description_label[:64]
+            if len(description_label) > 63:
+                description_label = description_label[:63]
             dataset.labels = {
                 "vanta-owner": owner or DEFAULT_VANTA_DATASET_OWNER,
                 "vanta-description": description_label,

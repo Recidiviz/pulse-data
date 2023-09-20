@@ -219,7 +219,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.assertEqual(
             {
                 "vanta-owner": "1234567890123456789012345",
-                "vanta-description": "generated-from-fake_script-by-1234567890123456789012345-on-2020-",
+                "vanta-description": "generated-from-fake_script-by-1234567890123456789012345-on-2020",
             },
             args[0].labels,
         )
