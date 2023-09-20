@@ -46,7 +46,7 @@ function get_next_version {
 echo "Checking script is executing in a pipenv shell..."
 run_cmd check_running_in_pipenv_shell
 
-echo "Checking for clean git status..."
+echo "Checking for clean git status in pulse-data..."
 run_cmd verify_clean_git_status
 
 # This is where Cloud Build will put the new Docker image
@@ -59,6 +59,8 @@ REMOTE_IMAGE_BASE=us.gcr.io/${RECIDIVIZ_PROJECT_ID}/${SUBDIRECTORY}
 # This prevents us from  getting into a weird state where a new commit is checked in during the deploy.
 # note: can't use run_cmd here because of the way cd works in shell scripts
 cd ../justice-counts || exit
+echo "Checking for clean git status in justice-counts..."
+run_cmd verify_clean_git_status
 JUSTICE_COUNTS_COMMIT_HASH=$(git fetch && git rev-parse origin/main) || exit_on_fail
 cd ../pulse-data || exit
 
