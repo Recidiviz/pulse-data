@@ -27,8 +27,6 @@ from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_not_max,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
-    at_least_6_months_since_most_recent_incarceration_incident,
-    has_had_at_least_1_incarceration_incident_past_year,
     ineligible_for_annual_reclassification,
     latest_caf_assessment_not_override,
 )
@@ -52,9 +50,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         ineligible_for_annual_reclassification.VIEW_BUILDER,
         custody_level_higher_than_recommended.VIEW_BUILDER,
         custody_level_is_not_max.VIEW_BUILDER,
-        # TODO(#23614): Remove these two criteria as part of widening the funnel for special downgrades
-        has_had_at_least_1_incarceration_incident_past_year.VIEW_BUILDER,
-        at_least_6_months_since_most_recent_incarceration_incident.VIEW_BUILDER,
     ],
     completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
 )
