@@ -17,6 +17,7 @@
 """SuperSimulation composed object for validating simulation results."""
 from typing import Dict, List, Optional, Tuple, Union
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -93,7 +94,7 @@ class Validator:
         simulation_title: str,
         fig_size: Tuple[int, int],
         by_simulation_group: bool,
-    ) -> List[plt.subplot]:
+    ) -> List[matplotlib.axes.Axes]:
         """
         Generates admissions forecast plots broken up by compartment and outflow.
         `simulation_title` should be the tag of the PopulationSimulation of interest

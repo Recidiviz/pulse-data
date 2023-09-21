@@ -20,6 +20,7 @@
 from typing import List, Optional, Union
 
 import matplotlib
+from matplotlib import axes
 import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.formula.api as smf
@@ -101,8 +102,8 @@ def binned_scatterplot(
     plot_bar: bool = False,
     ax: Optional[matplotlib.axes.Axes] = None,
     label: Optional[str] = None,
-    ylim: Optional[tuple] = None,
-    xlim: Optional[tuple] = None,
+    ylim: Optional[tuple[float, float]] = None,
+    xlim: Optional[tuple[float, float]] = None,
     title: Optional[str] = None,
     xlabel: Optional[str] = None,
     ylabel: Optional[str] = None,
@@ -248,23 +249,22 @@ def binned_scatterplot(
         )
 
     # init plot
-    if not ax:
-        _, ax = plt.subplots()
+    axis: axes.Axes = ax or plt.subplots()[1]
 
     # plotting a scatter plot
     if plot_bar:
         if percentile:
             # quantile percentages on x-axis
-            ax.bar("x_quantile", y_column, data=plot_df, label=label)
+            axis.bar("x_quantile", y_column, data=plot_df, label=label)
         else:
-            ax.bar(x_column, y_column, data=plot_df, label=label)
+            axis.bar(x_column, y_column, data=plot_df, label=label)
     else:
         if percentile:
             # quantile percentages on x-axis
-            ax.scatter(x=plot_df["x_quantile"], y=plot_df[y_column], label=label)
+            axis.scatter(x=plot_df["x_quantile"], y=plot_df[y_column], label=label)
         else:
             # x_column units on the x-axis
-            ax.scatter(x=plot_df[x_column], y=plot_df[y_column], label=label)
+            axis.scatter(x=plot_df[x_column], y=plot_df[y_column], label=label)
 
     # plotting best fitted (OLS) line
     if best_fit_line:
@@ -280,7 +280,7 @@ def binned_scatterplot(
         y_hat_max = intercept + slope * x_max
 
         # plotting the regression line
-        ax.plot(
+        axis.plot(
             [x_min, x_max],
             [y_hat_min, y_hat_max],
             color="r",
@@ -288,13 +288,16 @@ def binned_scatterplot(
         )
 
     # setting x and y axis limits
-    ax.set_ylim(ylim)
-    ax.set_xlim(xlim)
+    axis.set_ylim(ylim)
+    axis.set_xlim(xlim)
 
     # labels for the figure
-    ax.set_title(title)
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel(xlabel)
+    if title:
+        axis.set_title(title)
+    if ylabel:
+        axis.set_ylabel(ylabel)
+    if xlabel:
+        axis.set_xlabel(xlabel)
 
     # legend
     if legend:
