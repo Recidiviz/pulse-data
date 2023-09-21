@@ -22,6 +22,7 @@ from apache_beam.pvalue import PBegin
 from dateutil import parser
 from google.cloud import bigquery
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
@@ -96,7 +97,7 @@ class GenerateIngestViewResults(beam.PTransform):
     def __init__(
         self,
         project_id: str,
-        state_code: str,
+        state_code: StateCode,
         ingest_view_name: str,
         raw_data_tables: List[str],
         ingest_instance: DirectIngestInstance,
@@ -137,7 +138,7 @@ class GenerateIngestViewResults(beam.PTransform):
     @staticmethod
     def generate_date_bound_tuples_query(
         project_id: str,
-        state_code: str,
+        state_code: StateCode,
         raw_data_tables: List[str],
         materialization_method: MaterializationMethod = MaterializationMethod.ORIGINAL,
     ) -> str:
@@ -147,7 +148,7 @@ class GenerateIngestViewResults(beam.PTransform):
             StrictStringFormatter().format(
                 INDIVIDUAL_TABLE_QUERY_TEMPLATE,
                 project_id=project_id,
-                state_code=state_code.lower(),
+                state_code=state_code.value.lower(),
                 file_tag=table,
             )
             for table in raw_data_tables
@@ -166,12 +167,14 @@ class GenerateIngestViewResults(beam.PTransform):
     @staticmethod
     def get_ingest_view_date_diff_query(
         date_pair: Dict[str, Any],
-        state_code: str,
+        state_code: StateCode,
         ingest_view_name: str,
         ingest_instance: DirectIngestInstance,
     ) -> beam.io.ReadFromBigQueryRequest:
         """Returns a query that calculates the date diff between the upper and lower bound dates."""
-        region = direct_ingest_regions.get_direct_ingest_region(region_code=state_code)
+        region = direct_ingest_regions.get_direct_ingest_region(
+            region_code=state_code.value
+        )
         view_builder: DirectIngestViewQueryBuilder = (
             DirectIngestViewQueryBuilderCollector(
                 region, [ingest_view_name]

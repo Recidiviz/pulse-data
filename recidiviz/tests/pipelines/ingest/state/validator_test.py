@@ -19,6 +19,7 @@ import unittest
 from datetime import date, datetime
 
 import sqlalchemy
+from more_itertools import one
 
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.schema.state import schema
@@ -40,171 +41,163 @@ class TestEntityValidations(unittest.TestCase):
     """Tests validations functions"""
 
     def test_valid_external_id_state_staff_entities(self) -> None:
-        entities = [
-            state_entities.StateStaff(
-                state_code="US_XX",
-                external_ids=[
-                    StateStaffExternalId(
-                        external_id="100",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                    StateStaffExternalId(
-                        external_id="200",
-                        state_code="US_XX",
-                        id_type="US_EMP",
-                    ),
-                ],
-            )
-        ]
+        entity = state_entities.StateStaff(
+            state_code="US_XX",
+            staff_id=1111,
+            external_ids=[
+                StateStaffExternalId(
+                    external_id="100",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+                StateStaffExternalId(
+                    external_id="200",
+                    state_code="US_XX",
+                    id_type="US_EMP",
+                ),
+            ],
+        )
 
-        for entity in entities:
-            validate_root_entity(entity)
+        _, error_messages = validate_root_entity(entity)
+        self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_staff_entities(self) -> None:
-        entities = [state_entities.StateStaff(state_code="US_XX", external_ids=[])]
+        entity = state_entities.StateStaff(
+            state_code="US_XX", staff_id=1111, external_ids=[]
+        )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Found \[StateStaff\] with id \[None\] missing an external_id:",
-        ):
-            for entity in entities:
-                validate_root_entity(entity)
+        _, error_messages = validate_root_entity(entity)
+        self.assertRegex(
+            one(error_messages),
+            r"^Found \[StateStaff\] with id \[1111\] missing an external_id:",
+        )
 
     def test_two_external_ids_same_type_state_staff_entities(self) -> None:
-        entities = [
-            state_entities.StateStaff(
-                state_code="US_XX",
-                external_ids=[
-                    StateStaffExternalId(
-                        external_id="100",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                    StateStaffExternalId(
-                        external_id="200",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                ],
-            )
-        ]
+        entity = state_entities.StateStaff(
+            state_code="US_XX",
+            staff_id=1111,
+            external_ids=[
+                StateStaffExternalId(
+                    external_id="100",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+                StateStaffExternalId(
+                    external_id="200",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+            ],
+        )
 
-        with self.assertRaisesRegex(
-            ValueError,
+        _, error_messages = validate_root_entity(entity)
+        self.assertRegex(
+            one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
-            r"\[None\]: US_XX_EMPLOYEE",
-        ):
-            for entity in entities:
-                validate_root_entity(entity)
+            r"\[1111\]: US_XX_EMPLOYEE",
+        )
 
     def test_two_external_ids_exact_same_state_staff_entities(self) -> None:
-        entities = [
-            state_entities.StateStaff(
-                state_code="US_XX",
-                external_ids=[
-                    StateStaffExternalId(
-                        external_id="100",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                    StateStaffExternalId(
-                        external_id="100",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                ],
-            )
-        ]
+        entity = state_entities.StateStaff(
+            state_code="US_XX",
+            staff_id=1111,
+            external_ids=[
+                StateStaffExternalId(
+                    external_id="100",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+                StateStaffExternalId(
+                    external_id="100",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+            ],
+        )
 
-        with self.assertRaisesRegex(
-            ValueError,
+        _, error_messages = validate_root_entity(entity)
+        self.assertRegex(
+            one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
-            r"\[None\]: US_XX_EMPLOYEE",
-        ):
-            for entity in entities:
-                validate_root_entity(entity)
+            r"\[1111\]: US_XX_EMPLOYEE",
+        )
 
     def test_valid_external_id_state_person_entities(self) -> None:
-        entities = [
-            state_entities.StatePerson(
-                state_code="US_XX",
-                external_ids=[
-                    StatePersonExternalId(
-                        external_id="100",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                ],
-            )
-        ]
+        entity = state_entities.StatePerson(
+            state_code="US_XX",
+            person_id=1111,
+            external_ids=[
+                StatePersonExternalId(
+                    external_id="100",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+            ],
+        )
 
-        for entity in entities:
-            validate_root_entity(entity)
+        _, error_messages = validate_root_entity(entity)
+        self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_person_entities(self) -> None:
-        entities = [state_entities.StatePerson(state_code="US_XX", external_ids=[])]
+        entity = state_entities.StatePerson(
+            state_code="US_XX", person_id=1111, external_ids=[]
+        )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"^Found \[StatePerson\] with id \[None\] missing an external_id:",
-        ):
-            for entity in entities:
-                validate_root_entity(entity)
+        _, error_messages = validate_root_entity(entity)
+        self.assertRegex(
+            one(error_messages),
+            r"^Found \[StatePerson\] with id \[1111\] missing an external_id:",
+        )
 
     def test_two_external_ids_same_type_state_person_entities(self) -> None:
-        entities = [
-            state_entities.StatePerson(
-                state_code="US_XX",
-                external_ids=[
-                    StatePersonExternalId(
-                        external_id="100",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                    StatePersonExternalId(
-                        external_id="200",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                ],
-            )
-        ]
+        entity = state_entities.StatePerson(
+            state_code="US_XX",
+            person_id=1111,
+            external_ids=[
+                StatePersonExternalId(
+                    external_id="100",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+                StatePersonExternalId(
+                    external_id="200",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+            ],
+        )
 
-        with self.assertRaisesRegex(
-            ValueError,
+        _, error_messages = validate_root_entity(entity)
+        self.assertRegex(
+            one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
-            r"\[None\]: US_XX_EMPLOYEE",
-        ):
-            for entity in entities:
-                validate_root_entity(entity)
+            r"\[1111\]: US_XX_EMPLOYEE",
+        )
 
     def test_two_external_ids_exact_same_state_person_entities(self) -> None:
-        entities = [
-            state_entities.StatePerson(
-                state_code="US_XX",
-                external_ids=[
-                    StatePersonExternalId(
-                        external_id="100",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                    StatePersonExternalId(
-                        external_id="100",
-                        state_code="US_XX",
-                        id_type="US_XX_EMPLOYEE",
-                    ),
-                ],
-            )
-        ]
+        entity = state_entities.StatePerson(
+            state_code="US_XX",
+            person_id=1111,
+            external_ids=[
+                StatePersonExternalId(
+                    external_id="100",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+                StatePersonExternalId(
+                    external_id="100",
+                    state_code="US_XX",
+                    id_type="US_XX_EMPLOYEE",
+                ),
+            ],
+        )
 
-        with self.assertRaisesRegex(
-            ValueError,
+        _, error_messages = validate_root_entity(entity)
+        self.assertRegex(
+            one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
-            r"\[None\]: US_XX_EMPLOYEE",
-        ):
-            for entity in entities:
-                validate_root_entity(entity)
+            r"\[1111\]: US_XX_EMPLOYEE",
+        )
 
     def test_entity_tree_unique_constraints_simple_valid(self) -> None:
         person = state_entities.StatePerson(
@@ -244,7 +237,8 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        validate_root_entity(person)
+        _, error_messages = validate_root_entity(person)
+        self.assertTrue(len(list(error_messages)) == 0)
 
     def test_entity_tree_unique_constraints_simple_invalid(self) -> None:
         person = state_entities.StatePerson(
@@ -294,11 +288,62 @@ class TestEntityValidations(unittest.TestCase):
                 person=person,
             )
         )
-        with self.assertRaisesRegex(
-            ValueError,
+
+        _, error_messages = validate_root_entity(person)
+        self.assertRegex(
+            one(error_messages),
             r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",
-        ):
-            validate_root_entity(person)
+        )
+
+    def test_multiple_errors_returned_for_root_enities(self) -> None:
+        person = state_entities.StatePerson(
+            state_code="US_XX",
+            person_id=3111,
+            external_ids=[],
+        )
+
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=1,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=2,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=3,
+                state_code="US_XX",
+                task_type=StateTaskType.INTERNAL_UNKNOWN,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+
+        _, error_messages = validate_root_entity(person)
+        expected_regexes = [
+            r"^Found \[StatePerson\] with id \[3111\] missing an external_id:",
+            r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",
+        ]
+        for i, error_message in enumerate(error_messages):
+            self.assertRegex(error_message, expected_regexes[i])
 
 
 class TestUniqueConstraintValid(unittest.TestCase):

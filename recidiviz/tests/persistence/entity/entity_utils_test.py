@@ -78,6 +78,7 @@ from recidiviz.persistence.entity.entity_utils import (
     SchemaEdgeDirectionChecker,
     deep_entity_update,
     get_all_entities_from_tree,
+    get_many_to_many_relationships,
     is_placeholder,
     is_reference_only_entity,
     set_backedges,
@@ -1224,3 +1225,31 @@ class TestBidirectionalUpdates(TestCase):
             ):
                 related_entities += entity.get_field_as_list(field)
             self.assertGreater(len(related_entities), 0)
+
+    def test_get_many_to_many_relationships_person(self) -> None:
+        person = generate_full_graph_state_person(
+            set_back_edges=True, include_person_back_edges=True, set_ids=True
+        )
+        field_index = CoreEntityFieldIndex()
+        all_entities = get_all_entities_from_tree(person, field_index)
+        for entity in all_entities:
+            many_to_many_relationships = get_many_to_many_relationships(
+                entity.__class__, field_index
+            )
+            if isinstance(entity, StateCharge):
+                self.assertSetEqual(
+                    many_to_many_relationships,
+                    {"incarceration_sentences", "supervision_sentences"},
+                )
+            else:
+                self.assertEqual(len(many_to_many_relationships), 0)
+
+    def test_get_many_to_many_relationships_staff(self) -> None:
+        staff = generate_full_graph_state_staff(set_back_edges=True, set_ids=True)
+        field_index = CoreEntityFieldIndex()
+        all_entities = get_all_entities_from_tree(staff, field_index)
+        for entity in all_entities:
+            many_to_many_relationships = get_many_to_many_relationships(
+                entity.__class__, field_index
+            )
+            self.assertEqual(len(many_to_many_relationships), 0)

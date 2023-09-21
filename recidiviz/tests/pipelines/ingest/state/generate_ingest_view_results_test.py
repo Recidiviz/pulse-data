@@ -70,7 +70,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
 
         output = self.test_pipeline | pipeline.GenerateIngestViewResults(
             project_id=BQ_EMULATOR_PROJECT_ID,
-            state_code="US_DD",
+            state_code=self.region_code,
             ingest_view_name="ingest12",
             raw_data_tables=["table1", "table2"],
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -78,7 +78,9 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         )
         assert_that(
             output,
-            self.validate_ingest_view_results(expected_ingest_view_output),
+            self.validate_ingest_pipeline_results(
+                expected_ingest_view_output, "ingest12"
+            ),
         )
         self.test_pipeline.run()
 
@@ -94,7 +96,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
 
         output = self.test_pipeline | pipeline.GenerateIngestViewResults(
             project_id=BQ_EMULATOR_PROJECT_ID,
-            state_code="US_DD",
+            state_code=self.region_code,
             ingest_view_name="ingest12",
             raw_data_tables=["table1", "table2"],
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -102,7 +104,9 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         )
         assert_that(
             output,
-            self.validate_ingest_view_results(expected_latest_ingest_view_output),
+            self.validate_ingest_pipeline_results(
+                expected_latest_ingest_view_output, "ingest12"
+            ),
         )
         self.test_pipeline.run()
 
@@ -119,7 +123,7 @@ class TestGenerateDateBoundTuplesQuery(StateIngestPipelineTestCase):
     def test_generate_date_bound_tuples_query(self) -> None:
         result = pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
             project_id="test-project",
-            state_code="US_DD",
+            state_code=self.region_code,
             raw_data_tables=["table1", "table2"],
         )
         expected = """
@@ -207,7 +211,7 @@ ORDER BY 1;"""
 
         self.run_query_test(
             query_str=pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
-                BQ_EMULATOR_PROJECT_ID, "US_DD", ["table1", "table2"]
+                BQ_EMULATOR_PROJECT_ID, self.region_code, ["table1", "table2"]
             ),
             expected_result=expected_results,
         )
@@ -215,7 +219,7 @@ ORDER BY 1;"""
     def test_generate_date_bound_tuples_query_latest_method(self) -> None:
         result = pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
             project_id="test-project",
-            state_code="US_DD",
+            state_code=self.region_code,
             raw_data_tables=["table1", "table2"],
             materialization_method=MaterializationMethod.LATEST,
         )
@@ -285,7 +289,7 @@ UNION ALL
         self.run_query_test(
             query_str=pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
                 BQ_EMULATOR_PROJECT_ID,
-                "US_DD",
+                self.region_code,
                 ["table1", "table2"],
                 MaterializationMethod.LATEST,
             ),

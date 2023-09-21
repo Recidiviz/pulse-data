@@ -26,7 +26,10 @@ from apache_beam.testing.util import matches_all
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.ingest.state import pipeline
-from recidiviz.pipelines.ingest.state.generate_primary_keys import generate_primary_key
+from recidiviz.pipelines.ingest.state.generate_primary_keys import (
+    generate_primary_key,
+    string_representation,
+)
 from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
 
 
@@ -57,19 +60,27 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
         )
 
         primary_key_person_1 = generate_primary_key(
-            {(person_external_id_1.external_id, person_external_id_1.id_type)},
+            string_representation(
+                {(person_external_id_1.external_id, person_external_id_1.id_type)}
+            ),
             StateCode.US_DD,
         )
         primary_key_person_2 = generate_primary_key(
-            {(person_external_id_2.external_id, person_external_id_2.id_type)},
+            string_representation(
+                {(person_external_id_2.external_id, person_external_id_2.id_type)}
+            ),
             StateCode.US_DD,
         )
         primary_key_staff_1 = generate_primary_key(
-            {(staff_external_id_1.external_id, staff_external_id_1.id_type)},
+            string_representation(
+                {(staff_external_id_1.external_id, staff_external_id_1.id_type)}
+            ),
             StateCode.US_DD,
         )
         primary_key_staff_2 = generate_primary_key(
-            {(staff_external_id_1.external_id, staff_external_id_1.id_type)},
+            string_representation(
+                {(staff_external_id_1.external_id, staff_external_id_1.id_type)}
+            ),
             StateCode.US_DD,
         )
 
@@ -163,7 +174,9 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 person_external_id_1,
                 person=person_1,
                 person_external_id_id=generate_primary_key(
-                    {(person_external_id_1.external_id, "person_external_id_id")},
+                    string_representation(
+                        {(person_external_id_1.external_id, "person_external_id_id")}
+                    ),
                     StateCode.US_DD,
                 ),
             )
@@ -173,7 +186,9 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 incarceration_period,
                 person=person_1,
                 incarceration_period_id=generate_primary_key(
-                    {(incarceration_period.external_id, "incarceration_period_id")},
+                    string_representation(
+                        {(incarceration_period.external_id, "incarceration_period_id")}
+                    ),
                     StateCode.US_DD,
                 ),
             )
@@ -184,7 +199,9 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 supervision_period,
                 person=person_1,
                 supervision_period_id=generate_primary_key(
-                    {(supervision_period.external_id, "supervision_period_id")},
+                    string_representation(
+                        {(supervision_period.external_id, "supervision_period_id")}
+                    ),
                     StateCode.US_DD,
                 ),
             )
@@ -199,7 +216,9 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 person_external_id_2,
                 person=person_2,
                 person_external_id_id=generate_primary_key(
-                    {(person_external_id_2.external_id, "person_external_id_id")},
+                    string_representation(
+                        {(person_external_id_2.external_id, "person_external_id_id")}
+                    ),
                     StateCode.US_DD,
                 ),
             )
@@ -209,7 +228,9 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 incarceration_period,
                 person=person_2,
                 incarceration_period_id=generate_primary_key(
-                    {(incarceration_period.external_id, "incarceration_period_id")},
+                    string_representation(
+                        {(incarceration_period.external_id, "incarceration_period_id")}
+                    ),
                     StateCode.US_DD,
                 ),
             )
@@ -220,7 +241,9 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 supervision_period,
                 person=person_2,
                 supervision_period_id=generate_primary_key(
-                    {(supervision_period.external_id, "supervision_period_id")},
+                    string_representation(
+                        {(supervision_period.external_id, "supervision_period_id")}
+                    ),
                     StateCode.US_DD,
                 ),
             )
@@ -235,7 +258,9 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 staff_external_id_1,
                 staff=staff_1,
                 staff_external_id_id=generate_primary_key(
-                    {(staff_external_id_1.external_id, "staff_external_id_id")},
+                    string_representation(
+                        {(staff_external_id_1.external_id, "staff_external_id_id")}
+                    ),
                     StateCode.US_DD,
                 ),
             )
@@ -249,7 +274,9 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 staff_external_id_2,
                 staff=staff_2,
                 staff_external_id_id=generate_primary_key(
-                    {(staff_external_id_2.external_id, "staff_external_id_id")},
+                    string_representation(
+                        {(staff_external_id_2.external_id, "staff_external_id_id")}
+                    ),
                     StateCode.US_DD,
                 ),
             )

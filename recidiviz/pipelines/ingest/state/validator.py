@@ -17,7 +17,7 @@
 """Utility classes for validating state entities and entity trees."""
 
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple, Type
+from typing import Any, Dict, Iterable, List, Set, Tuple, Type
 
 from recidiviz.persistence.database_invariant_validator.state.state_person_invariant_validators import (
     state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_person,
@@ -32,15 +32,20 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.persistence_utils import RootEntityT
+from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
+from recidiviz.utils.types import assert_type
 
 
-def validate_root_entity(root_entity: RootEntityT) -> RootEntityT:
+def validate_root_entity(root_entity: RootEntityT) -> Tuple[EntityKey, Iterable[Error]]:
     """The assumed input is a root entity with hydrated children entities attached to it.
     This function checks if the root entity does not violate any entity tree specific
     constraints. If the root entity constraints are not met, an exception should be thrown.
     """
+    entity_key = get_entity_key(root_entity)
+    error_messages: List[Error] = []
+
     if len(root_entity.external_ids) == 0:
-        raise ValueError(
+        error_messages.append(
             f"Found [{type(root_entity).__name__}] with id [{root_entity.get_id()}] missing an "
             f"external_id: {root_entity}"
         )
@@ -54,13 +59,15 @@ def validate_root_entity(root_entity: RootEntityT) -> RootEntityT:
             state_allows_multiple_ids_same_type_for_state_staff(root_entity.state_code)
         )
     else:
-        raise ValueError(f"Unexpected root entity type: {type(root_entity).__name__}")
+        error_messages.append(
+            f"Unexpected root entity type: {type(root_entity).__name__}"
+        )
 
     if not allows_multiple_ids_same_type:
         external_id_types = set()
         for external_id in root_entity.external_ids:
             if external_id.id_type in external_id_types:
-                raise ValueError(
+                error_messages.append(
                     f"Duplicate external id types for [{type(root_entity).__name__}] with id "
                     f"[{root_entity.get_id()}]: {external_id.id_type}"
                 )
@@ -87,6 +94,13 @@ def validate_root_entity(root_entity: RootEntityT) -> RootEntityT:
                 for i, field in enumerate(constraint.fields):
                     error_msg += f"{field}={value_tup[i]}, "
                 error_msg += f"first entity found: [{entity.get_class_id_name()} {entity.get_id()}]"
-                raise ValueError(error_msg)
+                error_messages.append(error_msg)
 
-    return root_entity
+    return entity_key, error_messages
+
+
+def get_entity_key(entity: Entity) -> EntityKey:
+    return (
+        assert_type(entity.get_id(), int),
+        assert_type(entity.get_entity_name(), str),
+    )

@@ -26,6 +26,7 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_key,
     generate_primary_keys_for_root_entity_tree,
+    string_representation,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
@@ -41,7 +42,9 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         generated_primary_keys: Set[int] = set()
         for _ in range(10000):
             generated_primary_keys.add(
-                generate_primary_key({external_id_1}, StateCode.US_DD)
+                generate_primary_key(
+                    string_representation({external_id_1}), StateCode.US_DD
+                )
             )
         self.assertEqual(len(generated_primary_keys), 1)
 
@@ -51,7 +54,10 @@ class TestGeneratePrimaryKey(unittest.TestCase):
         for _ in range(2000):
             generated_primary_keys.add(
                 generate_primary_key(
-                    {external_id_1, external_id_2, external_id_3}, StateCode.US_DD
+                    string_representation(
+                        {external_id_1, external_id_2, external_id_3}
+                    ),
+                    StateCode.US_DD,
                 )
             )
         self.assertEqual(len(generated_primary_keys), 1)
@@ -62,7 +68,9 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             if state_code == StateCode.US_OZ:
                 # OZ has a fips mask of 00, so we skip it.
                 continue
-            primary_key = generate_primary_key({external_id}, state_code)
+            primary_key = generate_primary_key(
+                string_representation({external_id}), state_code
+            )
             self.assertTrue(
                 str(primary_key).startswith(str(int(state_code.get_state().fips)))
             )
@@ -70,10 +78,12 @@ class TestGeneratePrimaryKey(unittest.TestCase):
     def test_generate_primary_key_deterministic(self) -> None:
         external_id = ("ID", "TYPE")
         self.assertEqual(
-            generate_primary_key({external_id}, StateCode.US_MO), 2925259285447670540
+            generate_primary_key(string_representation({external_id}), StateCode.US_MO),
+            2925259285447670540,
         )
         self.assertEqual(
-            generate_primary_key({external_id}, StateCode.US_PA), 4225259285447670540
+            generate_primary_key(string_representation({external_id}), StateCode.US_PA),
+            4225259285447670540,
         )
 
     def test_generate_primary_keys_for_root_entity_tree_person(self) -> None:
@@ -82,42 +92,52 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             include_person_back_edges=True,
             set_ids=False,
         )
+        state_code = StateCode(person.state_code)
         all_entities = get_all_entities_from_tree(person, CoreEntityFieldIndex())
         person_primary_key = generate_primary_key(
-            {
-                (external_id.external_id, external_id.id_type)
-                for external_id in person.external_ids
-            },
-            state_code=StateCode(person.state_code),
+            string_representation(
+                {
+                    (external_id.external_id, external_id.id_type)
+                    for external_id in person.external_ids
+                }
+            ),
+            state_code=state_code,
         )
         _ = generate_primary_keys_for_root_entity_tree(
             root_primary_key=person_primary_key,
             root_entity=person,
-            state_code=StateCode(person.state_code),
+            state_code=state_code,
         )
         for entity in all_entities:
             if isinstance(entity, person.__class__):
                 self.assertEqual(entity.get_id(), person_primary_key)
-            else:
-                self.assertIsNotNone(entity.get_id())
+            self.assertIsNotNone(entity.get_id())
+            self.assertTrue(
+                str(entity.get_id()).startswith(str(int(state_code.get_state().fips)))
+            )
 
     def test_generate_primary_keys_for_root_entity_tree_staff(self) -> None:
         staff = generate_full_graph_state_staff(set_back_edges=True, set_ids=False)
+        state_code = StateCode(staff.state_code)
         all_entities = get_all_entities_from_tree(staff, CoreEntityFieldIndex())
         staff_primary_key = generate_primary_key(
-            {
-                (external_id.external_id, external_id.id_type)
-                for external_id in staff.external_ids
-            },
-            state_code=StateCode(staff.state_code),
+            string_representation(
+                {
+                    (external_id.external_id, external_id.id_type)
+                    for external_id in staff.external_ids
+                }
+            ),
+            state_code=state_code,
         )
         _ = generate_primary_keys_for_root_entity_tree(
             root_primary_key=staff_primary_key,
             root_entity=staff,
-            state_code=StateCode(staff.state_code),
+            state_code=state_code,
         )
         for entity in all_entities:
             if isinstance(entity, staff.__class__):
                 self.assertEqual(entity.get_id(), staff_primary_key)
-            else:
-                self.assertIsNotNone(entity.get_id())
+            self.assertIsNotNone(entity.get_id())
+            self.assertTrue(
+                str(entity.get_id()).startswith(str(int(state_code.get_state().fips)))
+            )

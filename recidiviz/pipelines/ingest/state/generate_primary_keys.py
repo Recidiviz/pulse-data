@@ -17,7 +17,7 @@
 """Utility function for generating primary keys from external id(s)."""
 import json
 from hashlib import sha256
-from typing import Any, Dict, List, Set, Union, cast
+from typing import List, Set, Union, cast
 
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
@@ -29,15 +29,13 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.pipelines.ingest.state.constants import ExternalIdKey, PrimaryKey
-from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
-    json_serializable_dict,
+from recidiviz.pipelines.ingest.state.serialize_entities import (
+    serialize_entity_into_json,
 )
 from recidiviz.utils.types import assert_type, non_optional
 
 
-def generate_primary_key(
-    external_id_keys: Set[ExternalIdKey], state_code: StateCode
-) -> PrimaryKey:
+def generate_primary_key(str_rep: str, state_code: StateCode) -> PrimaryKey:
     """Generate a primary key from a set of external ids. We first generate a hex digest
     from the SHA256 hash of the string representation of external IDs. We then take the
     first 56 bits of the 64bit integer representation of the hex digest. Then, we apply
@@ -47,9 +45,7 @@ def generate_primary_key(
         probability_of_hash_collision = 1 - e^(-k(k-1)/2^56) wher k is the number of elements.
         For k = 30000000, the probability of a hash collision is ~1%.
     """
-    int_64_bits = generate_64_int_from_hex_digest(
-        _string_representation(external_id_keys)
-    )
+    int_64_bits = generate_64_int_from_hex_digest(str_rep)
     # Shift down 8 bits to create a 56 bit integer
     int_56_bits = int_64_bits >> 8
     # Generate integer that is fips code with 17 0s trailing (a 56 bit integer is no
@@ -63,15 +59,15 @@ def generate_primary_key(
     return fips_code_mask + int_56_bits
 
 
-def generate_64_int_from_hex_digest(string_representation: str) -> int:
+def generate_64_int_from_hex_digest(str_rep: str) -> int:
     """Generate a 64 bit integer from a hex digest."""
-    hex_digest_64_bits = sha256(string_representation.encode()).hexdigest()[
+    hex_digest_64_bits = sha256(str_rep.encode()).hexdigest()[
         :16
     ]  # 16 hex chars = 64-bits
     return int.from_bytes(bytes.fromhex(hex_digest_64_bits), "little")
 
 
-def _string_representation(external_id_keys: Set[ExternalIdKey]) -> str:
+def string_representation(external_id_keys: Set[ExternalIdKey]) -> str:
     """Get a string representation of a set of external ids."""
     return ",".join(
         sorted(
@@ -84,28 +80,6 @@ def _string_representation(external_id_keys: Set[ExternalIdKey]) -> str:
 def _string_representation_of_key(external_id_key: ExternalIdKey) -> str:
     external_id, external_id_type = external_id_key
     return f"{external_id_type}|{external_id}"
-
-
-def serialize_entity_into_json(entity: CoreEntity) -> Dict[str, Any]:
-    """Generate a JSON string of an entity's serialized flat field and backedge values."""
-    flat_fields = CoreEntityFieldIndex().get_all_core_entity_fields(
-        entity.__class__, EntityFieldType.FLAT_FIELD
-    )
-    back_edges = CoreEntityFieldIndex().get_all_core_entity_fields(
-        entity.__class__, EntityFieldType.BACK_EDGE
-    )
-    entity_field_dict = {
-        **{field_name: getattr(entity, field_name) for field_name in flat_fields},
-        # This would not work for entities with multiple parents (like StateCharge), but
-        # because StateCharge has an external_id, we assume it doesn't reach this code.
-        **{
-            getattr(entity, field_name)
-            .get_class_id_name(): getattr(entity, field_name)
-            .get_id()
-            for field_name in back_edges
-        },
-    }
-    return json_serializable_dict(entity_field_dict)
 
 
 def generate_primary_keys_for_root_entity_tree(
@@ -124,22 +98,27 @@ def generate_primary_keys_for_root_entity_tree(
             external_id = assert_type(entity.get_external_id(), str)
             entity.set_id(
                 generate_primary_key(
-                    {
-                        (
-                            external_id,
-                            entity.get_class_id_name(),
-                        )
-                    },
+                    string_representation(
+                        {
+                            (
+                                external_id,
+                                entity.get_class_id_name(),
+                            )
+                        }
+                    ),
                     state_code,
                 ),
             )
         else:
             entity.set_id(
-                generate_64_int_from_hex_digest(
+                generate_primary_key(
                     json.dumps(
-                        serialize_entity_into_json(assert_type(entity, CoreEntity)),
+                        serialize_entity_into_json(
+                            assert_type(entity, CoreEntity), field_index
+                        ),
                         sort_keys=True,
-                    )
+                    ),
+                    state_code,
                 )
             )
 

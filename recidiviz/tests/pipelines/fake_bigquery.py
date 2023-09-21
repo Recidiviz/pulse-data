@@ -43,11 +43,13 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
+from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entities_by_association_table,
     get_database_entity_by_table_name,
     get_state_table_classes,
+    get_table_class_by_name,
     is_association_table,
 )
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -190,6 +192,30 @@ class FakeBigQueryAssertMatchers:
                     )
 
         return _validate_normalized_association_entity_output
+
+    @staticmethod
+    def validate_entity_output(
+        entity_name: str,
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
+        """Asserts that the pipeline produces dictionaries with the expected keys
+        corresponding to the column names in the table into which the output will be
+        written."""
+
+        def _validate_entity_output(output: Iterable[Dict[str, Any]]) -> None:
+            # TODO(#24080) Transition to using entities.py to get the expected column names
+            schema_for_entity = schema_for_sqlalchemy_table(
+                get_table_class_by_name(entity_name, list(get_state_table_classes()))
+            )
+            expected_column_names = {field.name for field in schema_for_entity}
+            for output_dict in output:
+                if set(output_dict.keys()) != expected_column_names:
+                    raise BeamAssertException(
+                        "Output dictionary does not have "
+                        f"the expected keys. Expected: [{expected_column_names}], "
+                        f"found: [{list(output_dict.keys())}]."
+                    )
+
+        return _validate_entity_output
 
 
 class FakeReadFromBigQuery(apache_beam.PTransform):
@@ -694,7 +720,7 @@ class FakeWriteOutputToBigQueryWithValidator(FakeWriteToBigQuery):
         expected_output_tags: Collection[str],
         expected_output: Dict[str, List[Dict[str, Any]]],
         validator_fn_generator: Callable[
-            [List[Dict[str, Any]]], Callable[[List[Dict[str, Any]]], None]
+            [List[Dict[str, Any]], str], Callable[[List[Dict[str, Any]]], None]
         ],
     ) -> None:
         super().__init__(output_table, expected_output_tags)
@@ -706,7 +732,9 @@ class FakeWriteOutputToBigQueryWithValidator(FakeWriteToBigQuery):
     def expand(self, input_or_inputs: PCollection) -> Any:
         assert_that(
             input_or_inputs,
-            self._validator_fn_generator(self._expected_output[self._output_table]),
+            self._validator_fn_generator(
+                self._expected_output.get(self._output_table, []), self._output_table
+            ),
         )
 
 
@@ -744,7 +772,7 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
             ] = None,
             validator_fn_generator: Optional[  # pylint: disable=unused-argument
                 Callable[
-                    [List[Dict[str, Any]]],
+                    [List[Dict[str, Any]], str],
                     Callable[[List[Dict[str, Any]]], None],
                 ]
             ] = None,

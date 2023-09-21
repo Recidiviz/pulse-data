@@ -35,6 +35,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_state_entity_names
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.pipeline_parameters import (
@@ -58,7 +59,10 @@ from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     GenerateIngestViewResults,
 )
-from recidiviz.pipelines.ingest.state.generate_primary_keys import generate_primary_key
+from recidiviz.pipelines.ingest.state.generate_primary_keys import (
+    generate_primary_key,
+    string_representation,
+)
 from recidiviz.pipelines.ingest.state.get_root_external_ids import (
     GetRootExternalIdClusterEdges,
 )
@@ -69,6 +73,7 @@ from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
     MergeRootEntitiesAcrossDates,
 )
 from recidiviz.pipelines.ingest.state.run_validations import RunValidations
+from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
 
@@ -84,7 +89,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
     def pipeline_name(cls) -> str:
         return "INGEST"
 
-    # TODO(#20928) Replace with actual pipeline logic.
     def run_pipeline(self, p: Pipeline) -> None:
         ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
         state_code = StateCode(self.pipeline_parameters.state_code)
@@ -123,7 +127,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 Dict[str, Any]
             ] = p | f"Materialize {ingest_view} results" >> GenerateIngestViewResults(
                 project_id=self.pipeline_parameters.project,
-                state_code=state_code.value,
+                state_code=state_code,
                 ingest_view_name=ingest_view,
                 raw_data_tables=raw_data_tables,
                 ingest_instance=ingest_instance,
@@ -144,7 +148,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 ingest_view_results
                 | f"Generate {ingest_view} entities."
                 >> GenerateEntities(
-                    state_code=state_code.value,
+                    state_code=state_code,
                     ingest_instance=ingest_instance,
                     ingest_view_name=ingest_view,
                 )
@@ -174,22 +178,31 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 lambda root_external_id, cluster: (
                     root_external_id,
                     generate_primary_key(
-                        cluster,
+                        string_representation(cluster),
                         state_code=state_code,
                     ),
                 )
             )
         )
-
-        merged_root_entities = (
+        all_state_tables = list(get_state_entity_names())
+        final_entities: beam.PCollection[Dict[str, Any]] = (
             {
                 PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
                 MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
             }
             | AssociateRootEntitiesWithPrimaryKeys()
             | MergeRootEntitiesAcrossDates(state_code=state_code)
+            | RunValidations()
+            | beam.ParDo(SerializeEntities(state_code=state_code)).with_outputs(
+                *all_state_tables
+            )
         )
 
-        # pylint: disable=unused-variable
-        final_entities = merged_root_entities | RunValidations()
-        # TODO(#23163) Write out entities to BigQuery.
+        for table_name in all_state_tables:
+            _ = getattr(
+                final_entities, table_name
+            ) | f"Write {table_name} to BigQuery" >> WriteToBigQuery(
+                output_dataset=self.pipeline_parameters.output,
+                output_table=table_name,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
+            )

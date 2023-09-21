@@ -1108,3 +1108,65 @@ def set_backedges(element: RootEntity) -> RootEntity:
             )
             stack.extend(related_entities)
     return element
+
+
+def get_many_to_many_relationships(
+    entity_cls: Type[CoreEntity], field_index: CoreEntityFieldIndex
+) -> Set[str]:
+    """Returns the set of fields on |entity| that connect that entity to a parent where
+    there is a potential many-to-many relationship between entity and that parent entity type.
+    """
+    many_to_many_relationships = set()
+    back_edges = field_index.get_all_core_entity_fields(
+        entity_cls, EntityFieldType.BACK_EDGE
+    )
+    for back_edge in back_edges:
+        relationship_field_type = attr_field_type_for_field_name(entity_cls, back_edge)
+
+        parent_cls = get_entity_class_in_module_with_name(
+            entities_module=state_entities,
+            class_name=attr_field_referenced_cls_name_for_field_name(
+                entity_cls, back_edge
+            ),
+        )
+
+        inverse_relationship_field_name = attr_field_name_storing_referenced_cls_name(
+            base_cls=parent_cls,
+            referenced_cls_name=entity_cls.__name__,
+        )
+        inverse_relationship_field_type = (
+            attr_field_type_for_field_name(parent_cls, inverse_relationship_field_name)
+            if inverse_relationship_field_name
+            else None
+        )
+        if (
+            relationship_field_type == BuildableAttrFieldType.LIST
+            and inverse_relationship_field_type == BuildableAttrFieldType.LIST
+        ):
+            many_to_many_relationships.add(back_edge)
+    return many_to_many_relationships
+
+
+def is_one_to_one_relationship(entity_cls: Type[CoreEntity], back_edge: str) -> bool:
+    """Returns whether a certain backedge on a entity class indicates a one-to-one
+    relationship with the parent (aka, the parent has the corresponding forward edge
+    be a forward ref)."""
+    relationship_field_type = attr_field_type_for_field_name(entity_cls, back_edge)
+    parent_cls = get_entity_class_in_module_with_name(
+        entities_module=state_entities,
+        class_name=attr_field_referenced_cls_name_for_field_name(entity_cls, back_edge),
+    )
+
+    inverse_relationship_field_name = attr_field_name_storing_referenced_cls_name(
+        base_cls=parent_cls,
+        referenced_cls_name=entity_cls.__name__,
+    )
+    inverse_relationship_field_type = (
+        attr_field_type_for_field_name(parent_cls, inverse_relationship_field_name)
+        if inverse_relationship_field_name
+        else None
+    )
+    return (
+        relationship_field_type != BuildableAttrFieldType.LIST
+        and inverse_relationship_field_type == BuildableAttrFieldType.FORWARD_REF
+    )
