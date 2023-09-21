@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ A script to run the calculation DAG for a specific state. If running for the SEC
 a sandbox-prefix will be generated if none is provided.
 
 Run:
-    python -m recidiviz.tools.trigger_state_specific_calculation_dag \
+    python -m recidiviz.tools.airflow.trigger_state_specific_calculation_dag \
        --state-code [state_code] \
        --ingest-instance [ingest_instance] \
        --sandbox-prefix [SANDBOX_PREFIX] (Optional)
