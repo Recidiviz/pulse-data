@@ -96,8 +96,9 @@ def get_task_query(
     # Define the SQL query
     current_query = f"""
     SELECT 
-        * EXCEPT (end_date, end_reason, task_name, task_eligibility_span_id),
-        IFNULL(end_date, CURRENT_DATE) AS end_date,
+        * EXCEPT (end_date, start_date, end_reason, task_name, task_eligibility_span_id),
+        IFNULL( IF(start_date > '3000-01-01', NULL, start_date), CURRENT_DATE) AS start_date,
+        IFNULL( IF(end_date > '3000-01-01', NULL, end_date), CURRENT_DATE) AS end_date,
     FROM `{project_id}.task_eligibility.all_tasks_materialized` s
     WHERE state_code = '{state_code}'
         AND task_name = '{task_name}'
