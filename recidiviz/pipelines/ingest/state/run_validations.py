@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility classes for validating state entities and entity trees."""
-from typing import Any, Iterable, Tuple, cast
+import logging
+from typing import Any, Dict, Iterable, List, Tuple, cast
 
 import apache_beam as beam
+from more_itertools import one
 
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.persistence.database.schema_utils import get_state_entity_names
@@ -32,8 +34,24 @@ from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.pipelines.ingest.state.validator import validate_root_entity
-from recidiviz.utils.types import assert_type
+from recidiviz.pipelines.ingest.state.constants import (
+    EntityClassName,
+    EntityKey,
+    Error,
+    UniqueConstraintName,
+)
+from recidiviz.pipelines.ingest.state.validator import (
+    get_entity_key,
+    validate_root_entity,
+)
+
+ROOT_ENTITY_VALIDATION_ERRORS = "root_entity_validation_errors"
+ENTITY_UNIQUE_ID_VALIDATION_ERRORS = "entity_unique_id_validation_errors"
+ENTITY_UNIQUE_CONSTRAINT_VALIDATION_ERRORS = (
+    "entity_unique_constraint_validation_errors"
+)
+ENTITIES_BY_ENTITY_KEY = "entities_by_entity_key"
+FINAL_ERRORS = "final_errors"
 
 
 class RunValidations(beam.PTransform):
@@ -43,7 +61,9 @@ class RunValidations(beam.PTransform):
         self, input_or_inputs: beam.PCollection[RootEntity]
     ) -> beam.PCollection[Entity]:
         # Execute individual root entity validations
-        _ = input_or_inputs | "Validate root entities" >> beam.Map(validate_root_entity)
+        root_entity_to_validation_errors: beam.PCollection[
+            Tuple[EntityKey, Iterable[Error]]
+        ] = input_or_inputs | "Validate root entities" >> beam.Map(validate_root_entity)
 
         field_index = CoreEntityFieldIndex()
 
@@ -72,13 +92,22 @@ class RunValidations(beam.PTransform):
             )
         )
 
+        unique_id_validation_errors: Dict[
+            EntityClassName, beam.PCollection[Tuple[EntityKey, Iterable[Error]]]
+        ] = {}
+        unique_constraint_validation_errors: Dict[
+            Tuple[EntityClassName, UniqueConstraintName],
+            beam.PCollection[Tuple[EntityKey, Iterable[Error]]],
+        ] = {}
         for i, partition in enumerate(entity_type_partitions):
             entity_name = entity_names[i]
 
-            _ = (
+            unique_id_validation_errors[entity_name] = (
                 partition
                 | f"Group {entity_name} entities by primary key"
-                >> beam.GroupBy(lambda entity: assert_type(entity.get_id(), int))
+                >> beam.GroupBy(
+                    lambda entity: get_entity_key(cast(Entity, entity)),
+                )
                 | f"Check for {entity_name} primary key duplicates"
                 >> beam.MapTuple(self.check_id)
             )
@@ -88,38 +117,88 @@ class RunValidations(beam.PTransform):
             )
 
             for constraint in entity_cls.global_unique_constraints():
-                _ = (
+                unique_constraint_validation_errors[(entity_name, constraint.name)] = (
                     partition
                     | f"Group {entity_name} by {constraint.fields}"
                     >> beam.GroupBy(*constraint.fields)
                     | f"Check for {entity_name} duplicates"
-                    >> beam.Map(self.check_for_duplicates, constraint=constraint)
+                    >> beam.FlatMap(self.check_for_duplicates, constraint=constraint)
                 )
 
-        return all_entities
+        unique_id_errors: beam.PCollection[Tuple[EntityKey, Iterable[Error]]] = (
+            unique_id_validation_errors.values()
+            | "Flatten all unique id errors" >> beam.Flatten()
+        )
+        unique_constraint_errors: beam.PCollection[
+            Tuple[EntityKey, Iterable[Error]]
+        ] = (
+            unique_constraint_validation_errors.values()
+            | "Flatten all unique constraint errors" >> beam.Flatten()
+        )
+
+        entities_by_entity_key: beam.PCollection[
+            Tuple[EntityKey, Entity]
+        ] = all_entities | beam.Map(
+            lambda entity: (
+                get_entity_key(cast(Entity, entity)),
+                cast(Entity, entity),
+            )
+        )
+
+        errors = (
+            {
+                ROOT_ENTITY_VALIDATION_ERRORS: root_entity_to_validation_errors,
+                ENTITY_UNIQUE_ID_VALIDATION_ERRORS: unique_id_errors,
+                ENTITY_UNIQUE_CONSTRAINT_VALIDATION_ERRORS: unique_constraint_errors,
+            }
+            | "CoGroup errors by Key" >> beam.CoGroupByKey()
+            # TODO(#24140) Add the ability to sample errors for logging
+            | beam.Map(self.log_any_errors)
+            | beam.MapTuple(self.raise_if_errors)
+        )
+
+        # In order for writes to BigQuery to be explicit dependencies on the validations
+        # and error handling, we need to re-collect all entities after errors are handled
+        # to return to the rest of the pipeline execution.
+        final_entities = (
+            {ENTITIES_BY_ENTITY_KEY: entities_by_entity_key, FINAL_ERRORS: errors}
+            | "CoGroup to get final entities" >> beam.CoGroupByKey()
+            | beam.MapTuple(
+                lambda _, grouped_items: one(grouped_items[ENTITIES_BY_ENTITY_KEY])
+            )
+        )
+
+        return final_entities
 
     @staticmethod
-    def check_id(entity_id: int, grouped_entities: Iterable[Entity]) -> None:
+    def check_id(
+        entity_id_with_class_name: EntityKey,
+        grouped_entities: Iterable[Entity],
+    ) -> Tuple[EntityKey, Iterable[Error]]:
+        entity_id, _ = entity_id_with_class_name
         entity_iterator = iter(grouped_entities)
+        error_messages: List[Error] = []
         try:
             entity = next(entity_iterator)
-        except StopIteration as exc:
-            raise ValueError(f"No entities found for id {entity_id}") from exc
+        except StopIteration:
+            return entity_id_with_class_name, [f"No entities found for id {entity_id}"]
 
         try:
             next(entity_iterator)
         except StopIteration:
-            pass
-        else:
-            raise ValueError(
-                f"More than one {entity.get_entity_name()} entity found with {entity.get_class_id_name()} {entity_id}: {grouped_entities}"
-            )
+            return entity_id_with_class_name, error_messages
+        error_messages.append(
+            f"More than one {entity.get_entity_name()} entity found with {entity.get_class_id_name()} {entity_id}: {grouped_entities}"
+        )
+
+        return entity_id_with_class_name, error_messages
 
     @staticmethod
     def check_for_duplicates(
         element: Tuple[Any, Iterable[Entity]], *, constraint: UniqueConstraint
-    ) -> None:
+    ) -> Iterable[Tuple[EntityKey, Iterable[Error]]]:
         field_names_to_values_obj, grouped_entities = element
+        error_messages = []
         if len(list(grouped_entities)) > 1:
             entity = list(grouped_entities)[0]
             error_msg = f"More than one {entity.get_entity_name()} entity found with "
@@ -135,4 +214,46 @@ class RunValidations(beam.PTransform):
                 )
 
             error_msg += "This may indicate an error with the raw data."
-            raise ValueError(error_msg)
+            error_messages.append(error_msg)
+        return [
+            (
+                get_entity_key(entity),
+                error_messages,
+            )
+            for entity in grouped_entities
+        ]
+
+    @staticmethod
+    def log_any_errors(
+        element: Tuple[EntityKey, Dict[str, Iterable[Iterable[Error]]]]
+    ) -> Tuple[EntityKey, List[Error]]:
+        entity_key, grouped_elements = element
+        errors = (
+            [
+                error
+                for l in grouped_elements[ROOT_ENTITY_VALIDATION_ERRORS]
+                for error in l
+            ]
+            + [
+                error
+                for l in grouped_elements[ENTITY_UNIQUE_ID_VALIDATION_ERRORS]
+                for error in l
+            ]
+            + [
+                error
+                for l in grouped_elements[ENTITY_UNIQUE_CONSTRAINT_VALIDATION_ERRORS]
+                for error in l
+            ]
+        )
+        if errors:
+            error_str = "\n".join(errors)
+            logging.error("Found errors for entity %s\n%s", entity_key, error_str)
+        return (entity_key, errors)
+
+    @staticmethod
+    def raise_if_errors(
+        entity_key: EntityKey, errors: List[Error]
+    ) -> Tuple[EntityKey, bool]:
+        if errors:
+            raise ValueError(f"Found errors for entity {entity_key}\n{errors}")
+        return (entity_key, True)

@@ -22,6 +22,7 @@ from typing import Any, Dict, Tuple
 import apache_beam as beam
 from more_itertools import one
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
@@ -48,7 +49,7 @@ class GenerateEntities(beam.PTransform):
 
     def __init__(
         self,
-        state_code: str,
+        state_code: StateCode,
         ingest_instance: DirectIngestInstance,
         ingest_view_name: IngestViewName,
     ):
@@ -87,7 +88,7 @@ class GenerateEntities(beam.PTransform):
     def generate_entity(
         self, upperbound_date: datetime, row: Dict[str, str]
     ) -> Tuple[datetime, RootEntity]:
-        region = direct_ingest_regions.get_direct_ingest_region(self._state_code)
+        region = direct_ingest_regions.get_direct_ingest_region(self._state_code.value)
         ingest_manifest_collector = IngestViewManifestCollector(
             region=region,
             delegate=IngestViewResultsParserDelegateImpl(

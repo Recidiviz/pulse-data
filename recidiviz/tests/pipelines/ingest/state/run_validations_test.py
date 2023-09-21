@@ -315,7 +315,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"^Found \[StateStaff\] with id \[1234\] missing an external_id:",
+            r".*Found \[StateStaff\] with id \[1234\] missing an external_id:.*",
         ):
             self.test_pipeline.run()
 
@@ -331,7 +331,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"^Found \[StatePerson\] with id \[1234\] missing an external_id:",
+            r".*Found \[StatePerson\] with id \[1234\] missing an external_id:.*",
         ):
             self.test_pipeline.run()
 
@@ -406,7 +406,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_staff entity found with staff_id 1234",
+            r".*More than one state_staff entity found with staff_id 1234.*",
         ):
             self.test_pipeline.run()
 
@@ -481,7 +481,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_person entity found with person_id 3000",
+            r".*More than one state_person entity found with person_id 3000.*",
         ):
             self.test_pipeline.run()
 
@@ -837,7 +837,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_staff_role_period entity found with staff_role_period_id 1111",
+            r".*More than one state_staff_role_period entity found with staff_role_period_id 1111.*",
         ):
             self.test_pipeline.run()
 
@@ -944,7 +944,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_supervision_period entity found with supervision_period_id 300",
+            r".*More than one state_supervision_period entity found with supervision_period_id 300.*",
         ):
             self.test_pipeline.run()
 
@@ -1076,7 +1076,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_supervision_period entity found with supervision_period_id 311",
+            r".*More than one state_supervision_period entity found with supervision_period_id 311.*",
         ):
             self.test_pipeline.run()
 
@@ -1119,9 +1119,9 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_person_external_id entity found with state_code=US_XX, id_type=US_XX_TYPE, external_id=12345, "
+            r".*More than one state_person_external_id entity found with state_code=US_XX, id_type=US_XX_TYPE, external_id=12345, "
             r"entities found: \[StatePersonExternalId: person_external_id_id 11111, associated with root entity: StatePerson id 1234\], "
-            r"\[StatePersonExternalId: person_external_id_id 11112, associated with root entity: StatePerson id 1235\], This may indicate an error with the raw data.",
+            r"\[StatePersonExternalId: person_external_id_id 11112, associated with root entity: StatePerson id 1235\], This may indicate an error with the raw data..*",
         ):
             self.test_pipeline.run()
 
@@ -1249,10 +1249,10 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_supervision_contact entity found with state_code=US_XX, external_id=c2, entities found: "
+            r".*More than one state_supervision_contact entity found with state_code=US_XX, external_id=c2, entities found: "
             r"\[StateSupervisionContact: supervision_contact_id 102, associated with root entity: StatePerson id 1237\], "
             r"\[StateSupervisionContact: supervision_contact_id 105, associated with root entity: StatePerson id 3000\], "
-            r"This may indicate an error with the raw data.",
+            r"This may indicate an error with the raw data..*",
         ):
             self.test_pipeline.run()
 
@@ -1315,6 +1315,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",
+            r".*More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\].*",
         ):
             self.test_pipeline.run()

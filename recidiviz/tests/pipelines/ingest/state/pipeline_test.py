@@ -43,6 +43,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
     def run_test_pipeline(
         self,
         ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
+        expected_entity_types: Iterable[str],
     ) -> None:
         """Runs a test version of the state ingest pipeline."""
         project = BQ_EMULATOR_PROJECT_ID
@@ -50,18 +51,19 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
 
         read_from_bq_constructor = self.create_fake_bq_read_source_constructor
         read_all_from_bq_constructor = self.create_fake_bq_read_all_source_constructor
+        # TODO(#24067) Rather than combine the constructors, we should have separate ones.
         write_to_bq_constructor = (
             self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
                 expected_dataset=dataset,
-                expected_output_tags=[],
+                expected_output_tags=list(expected_entity_types),
                 expected_output=ingest_view_results,
-                validator_fn_generator=self.validate_ingest_view_results,
+                validator_fn_generator=self.validate_ingest_pipeline_results,
             )
         )
 
         run_test_pipeline(
             pipeline_cls=self.pipeline_class,
-            state_code=self.region_code.upper(),
+            state_code=self.region_code.value,
             project_id=project,
             dataset_id=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
@@ -73,9 +75,16 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         self.setup_region_raw_data_bq_tables(test_name="ingest_integration")
         expected_ingest_view_output = {
             ingest_view: self.get_expected_ingest_view_results(
-                ingest_view_name=ingest_view, test_name=ingest_view
+                ingest_view_name=ingest_view, test_name="ingest_integration"
             )
             for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
         }
+        expected_entity_types = {
+            entity_type
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+            for entity_type in self.get_expected_output_entity_types(
+                ingest_view_name=ingest_view, test_name="ingest_integration"
+            )
+        }
 
-        self.run_test_pipeline(expected_ingest_view_output)
+        self.run_test_pipeline(expected_ingest_view_output, list(expected_entity_types))

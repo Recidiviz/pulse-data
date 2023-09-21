@@ -27,6 +27,10 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
 )
 from recidiviz.pipelines.ingest.state import pipeline
+from recidiviz.pipelines.ingest.state.generate_primary_keys import (
+    generate_primary_key,
+    string_representation,
+)
 from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
 
 
@@ -44,25 +48,25 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
         self.external_id_3 = ("ID3", "TYPE1")
 
         self.person12 = StatePerson(
-            state_code=self.region_code.upper(),
+            state_code=self.region_code.value,
             external_ids=[
                 StatePersonExternalId(
-                    state_code=self.region_code.upper(),
+                    state_code=self.region_code.value,
                     external_id=self.external_id_1[0],
                     id_type=self.external_id_1[1],
                 ),
                 StatePersonExternalId(
-                    state_code=self.region_code.upper(),
+                    state_code=self.region_code.value,
                     external_id=self.external_id_2[0],
                     id_type=self.external_id_2[1],
                 ),
             ],
         )
         self.person3 = StatePerson(
-            state_code=self.region_code.upper(),
+            state_code=self.region_code.value,
             external_ids=[
                 StatePersonExternalId(
-                    state_code=self.region_code.upper(),
+                    state_code=self.region_code.value,
                     external_id=self.external_id_3[0],
                     id_type=self.external_id_3[1],
                 )
@@ -73,12 +77,13 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
         self.date2 = datetime(2020, 1, 2)
         self.date3 = datetime(2020, 1, 3)
 
-        self.primary_key_12 = pipeline.generate_primary_key(
-            {self.external_id_1, self.external_id_2},
-            StateCode(self.region_code.upper()),
+        self.primary_key_12 = generate_primary_key(
+            string_representation({self.external_id_1, self.external_id_2}),
+            StateCode(self.region_code.value),
         )
-        self.primary_key_3 = pipeline.generate_primary_key(
-            {self.external_id_3}, StateCode(self.region_code.upper())
+        self.primary_key_3 = generate_primary_key(
+            string_representation({self.external_id_3}),
+            StateCode(self.region_code.value),
         )
 
     def test_associate_root_entities_with_primary_keys(self) -> None:

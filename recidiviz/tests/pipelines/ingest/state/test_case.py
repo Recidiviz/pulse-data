@@ -18,9 +18,9 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterable, Tuple, List
+from typing import Any, Callable, Dict, Iterable, List, Set, Tuple
 
-from apache_beam.testing.util import BeamAssertException
+from apache_beam.testing.util import BeamAssertException, equal_to
 from dateutil import parser
 from mock import patch
 from more_itertools import one
@@ -49,7 +49,15 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import (
+    get_state_entity_names,
+    is_association_table,
+)
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_all_entities_from_tree,
+)
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
     LOWER_BOUND_DATETIME_COL_NAME,
@@ -66,6 +74,7 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     load_dataframe_from_path,
 )
 from recidiviz.tests.pipelines.fake_bigquery import (
+    FakeBigQueryAssertMatchers,
     FakeReadAllFromBigQueryWithEmulator,
     FakeReadFromBigQueryWithEmulator,
 )
@@ -77,12 +86,12 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.region_code = StateCode.US_DD.value.lower()
+        self.region_code = StateCode.US_DD
         self.raw_data_tables_dataset = raw_tables_dataset_for_region(
             StateCode.US_DD, DirectIngestInstance.PRIMARY
         )
         self.region = fake_region(
-            region_code=self.region_code,
+            region_code=self.region_code.value.lower(),
             environment="staging",
             region_module=fake_regions,
         )
@@ -250,6 +259,19 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             )
         return results
 
+    def get_expected_output_entity_types(
+        self, *, ingest_view_name: str, test_name: str
+    ) -> Set[str]:
+        return {
+            entity.get_entity_name()
+            for root_entity in self.get_expected_root_entities(
+                ingest_view_name=ingest_view_name, test_name=test_name
+            )
+            for entity in get_all_entities_from_tree(
+                root_entity, CoreEntityFieldIndex()
+            )
+        }
+
     def create_fake_bq_read_source_constructor(
         self,
         query: str,
@@ -262,8 +284,8 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
         return FakeReadAllFromBigQueryWithEmulator()
 
     @staticmethod
-    def validate_ingest_view_results(
-        expected_output: Iterable[Dict[str, Any]]
+    def validate_ingest_pipeline_results(
+        expected_output: Iterable[Dict[str, Any]], output_table: str
     ) -> Callable[[Iterable[Dict[str, Any]]], None]:
         """Allows for validating the output of ingest view results without worrying about
         the output of the materialization time."""
@@ -290,5 +312,10 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
                 raise BeamAssertException(
                     f"Output does not match expected output: output is {copy_of_output}, expected is {copy_of_expected_output}"
                 )
+
+        if is_association_table(table_name=output_table):
+            return equal_to([])
+        if output_table in get_state_entity_names():
+            return FakeBigQueryAssertMatchers.validate_entity_output(output_table)
 
         return _validate_ingest_view_results_output

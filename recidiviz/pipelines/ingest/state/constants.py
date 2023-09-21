@@ -26,3 +26,8 @@ ExternalIdClusterEdge = Tuple[ExternalIdKey, Optional[ExternalIdKey]]
 ExternalIdCluster = Tuple[ExternalIdKey, Set[ExternalIdKey]]
 
 PrimaryKey = int
+
+EntityClassName = str
+EntityKey = Tuple[PrimaryKey, EntityClassName]
+Error = str
+UniqueConstraintName = str
