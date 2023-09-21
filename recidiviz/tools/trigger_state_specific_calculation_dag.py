@@ -19,7 +19,7 @@ A script to run the calculation DAG for a specific state. If running for the SEC
 a sandbox-prefix will be generated if none is provided.
 
 Run:
-    python -m recidiviz.tools.run_state_specific_calculation_dag \
+    python -m recidiviz.tools.trigger_state_specific_calculation_dag \
        --state-code [state_code] \
        --ingest-instance [ingest_instance] \
        --sandbox-prefix [SANDBOX_PREFIX] (Optional)
@@ -76,7 +76,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(
+def trigger_state_specific_calculation_dag(
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
     sandbox_prefix: Optional[str] = None,
@@ -97,4 +97,6 @@ if __name__ == "__main__":
 
     args = create_parser().parse_args()
     with local_project_id_override(GCP_PROJECT_STAGING):
-        main(args.state_code, args.ingest_instance, args.sandbox_prefix)
+        trigger_state_specific_calculation_dag(
+            args.state_code, args.ingest_instance, args.sandbox_prefix
+        )

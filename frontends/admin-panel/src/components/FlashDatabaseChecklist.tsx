@@ -50,6 +50,7 @@ import {
   getIngestRawFileProcessingStatus,
   purgeIngestQueues,
   deleteTablesInPruningDatasets,
+  runCalculationDAGForState,
 } from "../AdminPanelAPI/IngestOperations";
 import {
   DirectIngestInstance,
@@ -1496,35 +1497,17 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             description={
               <>
                 <p>
-                  Trigger a BigQuery refresh and run the historical DAG by
-                  running this script locally inside a pipenv shell:
-                </p>
-                <p>
-                  <CodeBlock
-                    enabled={
-                      currentStepSection ===
-                      FlashChecklistStepSection.TRIGGER_PIPELINES
-                    }
-                  >
-                    python -m recidiviz.tools.deploy.trigger_post_deploy_tasks
-                    --project-id {projectId}
-                  </CodeBlock>
-                </p>
-                <p>
-                  Visit{" "}
-                  <a
-                    href={`http://go/airflow-${
-                      isProduction ? "prod" : "staging"
-                    }`}
-                  >
-                    go/airflow-{isProduction ? "prod" : "staging"}
-                  </a>{" "}
-                  and wait for the historical DAG to finish before continuing.
-                  Note that the historical DAG may not start for ~10 minutes
-                  while the BigQuery refresh is still in progress.
+                  Trigger a BigQuery refresh and run the Calculation DAG for{" "}
+                  {stateCode} in <code>PRIMARY</code>.
                 </p>
               </>
             }
+            actionButtonTitle="Start Calculation DAG Run"
+            actionButtonEnabled
+            onActionButtonClick={async () =>
+              runCalculationDAGForState(stateCode)
+            }
+            nextSection={FlashChecklistStepSection.DONE}
           />
         </ChecklistSection>
         <ChecklistSection

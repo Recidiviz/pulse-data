@@ -483,3 +483,12 @@ export const deleteTablesInPruningDatasets = async (
     }
   );
 };
+
+// Run Calculation DAG For State
+export const runCalculationDAGForState = async (
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody("/api/ingest_operations/trigger_calculation_dag", {
+    stateCode,
+  });
+};

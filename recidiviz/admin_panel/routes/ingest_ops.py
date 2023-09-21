@@ -81,6 +81,7 @@ from recidiviz.ingest.flash_database_tools import (
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
+from recidiviz.utils.trigger_dag_helpers import trigger_calculation_dag_pubsub
 from recidiviz.utils.types import assert_type
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
@@ -1137,6 +1138,29 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             delete_tables_in_pruning_datasets(
                 state_code, ingest_instance, BigQueryClientImpl()
             )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/trigger_calculation_dag",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _trigger_calculation_dag() -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            trigger_calculation_dag_pubsub(DirectIngestInstance.PRIMARY, state_code)
             return (
                 "",
                 HTTPStatus.OK,

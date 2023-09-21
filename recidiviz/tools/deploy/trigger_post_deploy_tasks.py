@@ -22,9 +22,9 @@ from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tools.deploy.trigger_dag_helpers import trigger_calculation_dag_pubsub
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.trigger_dag_helpers import trigger_calculation_dag_pubsub
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
