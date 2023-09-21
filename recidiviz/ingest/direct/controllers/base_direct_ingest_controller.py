@@ -47,7 +47,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
     DirectIngestRegionLockManager,
 )
 from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer import (
-    ExtractAndMergeJobPrioritizer,
     ExtractAndMergeJobPrioritizerImpl,
 )
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
@@ -128,7 +127,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
     ) -> None:
         """Initialize the controller."""
         self.region_module_override = region_module_override
-        # TODO(#23799): Use this elsewhere to gate controller logic
         self.is_ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
             state_code=self.state_code(),
             instance=ingest_instance,
@@ -159,48 +157,67 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
         self.big_query_client = BigQueryClientImpl()
 
-        self.view_collector = DirectIngestViewQueryBuilderCollector(
-            self.region, self.get_ingest_view_rank_list()
-        )
+        if not self.is_ingest_in_dataflow_enabled:
+            self.view_collector = DirectIngestViewQueryBuilderCollector(
+                self.region, self.get_ingest_view_rank_list()
+            )
 
-        self.job_prioritizer: ExtractAndMergeJobPrioritizer
-
-        self.view_materialization_metadata_manager = (
-            DirectIngestViewMaterializationMetadataManagerImpl(
+            self.view_materialization_metadata_manager = (
+                DirectIngestViewMaterializationMetadataManagerImpl(
+                    region_code=self.region_code(),
+                    ingest_instance=self.ingest_instance,
+                )
+            )
+            self.ingest_view_contents: Optional[
+                InstanceIngestViewContentsImpl
+            ] = InstanceIngestViewContentsImpl(
+                big_query_client=self.big_query_client,
                 region_code=self.region_code(),
                 ingest_instance=self.ingest_instance,
+                dataset_prefix=None,
             )
-        )
-        self.ingest_view_contents = InstanceIngestViewContentsImpl(
-            big_query_client=self.big_query_client,
-            region_code=self.region_code(),
-            ingest_instance=self.ingest_instance,
-            dataset_prefix=None,
-        )
-        self.job_prioritizer = ExtractAndMergeJobPrioritizerImpl(
-            ingest_view_contents=self.ingest_view_contents,
-            ingest_view_rank_list=self.get_ingest_view_rank_list(),
-        )
+            self.job_prioritizer = ExtractAndMergeJobPrioritizerImpl(
+                ingest_view_contents=self.ingest_view_contents,
+                ingest_view_rank_list=self.get_ingest_view_rank_list(),
+            )
+        else:
+            self.ingest_view_contents = None
 
         # We cannot set these objects until we know the raw data source instance, which
         # may not be set at instantiation time (i.e. if there is no rerun in progress
         # for this instance).
+        # TODO(#20930): Delete when ingest in dataflow is shipped for all states - once
+        #  this controller class is only responsible for raw data import, there
+        #  will be no code *reading* from imported raw data, so we can just use the
+        #  ingest_instance everywhere.
         self._raw_data_source_instance: Optional[DirectIngestInstance] = None
         self._raw_file_metadata_manager: Optional[
             PostgresDirectIngestRawFileMetadataManager
         ] = None
+
+        # TODO(#20930): Initialize this in the constructor when ingest in dataflow is
+        #  shipped for all states and the raw_data_source_instance field is deleted.
         self._raw_file_import_manager: Optional[DirectIngestRawFileImportManager] = None
+
+        # TODO(#20930): Delete when ingest in dataflow is shipped for all states
         self._ingest_view_materialization_args_generator: Optional[
             IngestViewMaterializationArgsGenerator
         ] = None
+        # TODO(#20930): Delete when ingest in dataflow is shipped for all states
         self._ingest_view_materializer: Optional[IngestViewMaterializerImpl] = None
 
         self.on_raw_data_source_instance_change(
-            self.ingest_instance_status_manager.get_raw_data_source_instance()
+            self.ingest_instance
+            if self.is_ingest_in_dataflow_enabled
+            else self.ingest_instance_status_manager.get_raw_data_source_instance()
         )
 
     @property
     def raw_data_source_instance(self) -> DirectIngestInstance:
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Raw data source instance is not a valid concept for ingest in Dataflow"
+            )
         if not self._raw_data_source_instance:
             raise ValueError("Expected nonnull raw data source instance.")
         return self._raw_data_source_instance
@@ -244,11 +261,15 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
     @property
     def raw_data_bucket_path(self) -> GcsfsBucketPath:
-        if not self._raw_data_source_instance:
-            raise ValueError("Expected nonnull raw data source instance.")
+        if self.is_ingest_in_dataflow_enabled:
+            ingest_instance = self.ingest_instance
+        else:
+            if not self._raw_data_source_instance:
+                raise ValueError("Expected nonnull raw data source instance.")
+            ingest_instance = self._raw_data_source_instance
         return gcsfs_direct_ingest_bucket_for_state(
             region_code=self.region.region_code,
-            ingest_instance=self._raw_data_source_instance,
+            ingest_instance=ingest_instance,
         )
 
     @property
@@ -296,6 +317,8 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             self._ingest_view_materializer = None
             return
 
+        # TODO(#20930): Set self._raw_file_metadata_manager / self._raw_file_import_manager
+        #  directly in the constructor once ingest in dataflow is enabled for all states.
         # Update all fields to rely on the new raw_data_source_instance.
         self._raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code=self.region.region_code,
@@ -311,26 +334,29 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             instance=self._raw_data_source_instance,
         )
 
-        self._ingest_view_materializer = IngestViewMaterializerImpl(
-            region=self.region,
-            ingest_instance=self.ingest_instance,
-            raw_data_source_instance=self.raw_data_source_instance,
-            ingest_view_contents=self.ingest_view_contents,
-            metadata_manager=self.view_materialization_metadata_manager,
-            big_query_client=self.big_query_client,
-            view_collector=self.view_collector,
-            launched_ingest_views=self.get_ingest_view_rank_list(),
-        )
-
-        self._ingest_view_materialization_args_generator = (
-            IngestViewMaterializationArgsGenerator(
+        if not self.is_ingest_in_dataflow_enabled:
+            if not self.ingest_view_contents:
+                raise ValueError("Expected ingest_view_contents to be set")
+            self._ingest_view_materializer = IngestViewMaterializerImpl(
                 region=self.region,
+                ingest_instance=self.ingest_instance,
+                raw_data_source_instance=self.raw_data_source_instance,
+                ingest_view_contents=self.ingest_view_contents,
                 metadata_manager=self.view_materialization_metadata_manager,
-                raw_file_metadata_manager=self.raw_file_metadata_manager,
+                big_query_client=self.big_query_client,
                 view_collector=self.view_collector,
                 launched_ingest_views=self.get_ingest_view_rank_list(),
             )
-        )
+
+            self._ingest_view_materialization_args_generator = (
+                IngestViewMaterializationArgsGenerator(
+                    region=self.region,
+                    metadata_manager=self.view_materialization_metadata_manager,
+                    raw_file_metadata_manager=self.raw_file_metadata_manager,
+                    view_collector=self.view_collector,
+                    launched_ingest_views=self.get_ingest_view_rank_list(),
+                )
+            )
 
     @property
     def region(self) -> DirectIngestRegion:
@@ -353,11 +379,17 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         the current environment and whose results can be processed and committed to
         our central data model.
         """
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Cannot call this method for an ingest in dataflow enabled state."
+            )
         return self._get_ingest_view_rank_list(self.ingest_instance)
 
     # TODO(#10128): Once we are fully on v2, we should turn the state specific
     # controllers into delegates that just implement this and region code, instead of
     # letting them inherit from the base controller.
+    # TODO(#20930): Delete this function once ingest in Dataflow is enabled for all
+    #  states.
     @classmethod
     @abc.abstractmethod
     def _get_ingest_view_rank_list(
@@ -370,6 +402,10 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
     @property
     def ingest_database_key(self) -> SQLAlchemyDatabaseKey:
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Cannot call this method for an ingest in dataflow enabled state."
+            )
         return database_key_for_state(
             self.ingest_instance,
             self.state_code(),
@@ -451,7 +487,10 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
         if self._schedule_raw_data_import_tasks():
             # If raw data source instance is different from the ingest instance, update the status accordingly.
-            if self.ingest_instance != self.raw_data_source_instance:
+            if (
+                not self.is_ingest_in_dataflow_enabled
+                and self.ingest_instance != self.raw_data_source_instance
+            ):
                 self.ingest_instance_status_manager.change_status_to(
                     DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT
                 )
@@ -464,22 +503,23 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             )
             return
 
-        if self._schedule_ingest_view_materialization_tasks():
-            self.ingest_instance_status_manager.change_status_to(
-                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
-            )
-            logging.info(
-                "Found ingest view materialization tasks to schedule - returning."
-            )
-            return
+        if not self.is_ingest_in_dataflow_enabled:
+            if self._schedule_ingest_view_materialization_tasks():
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
+                )
+                logging.info(
+                    "Found ingest view materialization tasks to schedule - returning."
+                )
+                return
 
-        if self._schedule_extract_and_merge_tasks(just_finished_job):
-            self.ingest_instance_status_manager.change_status_to(
-                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
-            )
+            if self._schedule_extract_and_merge_tasks(just_finished_job):
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
+                )
 
-            logging.info("Found extract and merge tasks to schedule - returning.")
-            return
+                logging.info("Found extract and merge tasks to schedule - returning.")
+                return
 
         # If there aren't any more tasks to schedule for the region, update to the appropriate next
         # status, based on the ingest instance.
@@ -488,7 +528,9 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
                 "Controller's instance is PRIMARY. No tasks to schedule and instance is now up to date."
             )
             self.ingest_instance_status_manager.change_status_to(
-                DirectIngestStatus.UP_TO_DATE
+                DirectIngestStatus.RAW_DATA_UP_TO_DATE
+                if self.is_ingest_in_dataflow_enabled
+                else DirectIngestStatus.UP_TO_DATE
             )
         elif stale_secondary_raw_data(
             self.region_code(), self.is_ingest_in_dataflow_enabled
@@ -515,9 +557,17 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         returns True. Otherwise, if it's safe to proceed with next steps of ingest,
         returns False.
         """
+        # TODO(#20930): Delete this variable and just use self.ingest_instance directly
+        #  once ingest in dataflow is shipped.
+        raw_data_source_instance = (
+            self.ingest_instance
+            if self.is_ingest_in_dataflow_enabled
+            else self.raw_data_source_instance
+        )
+
         # Fetch the queue information for where the raw data is being processed.
         queue_info = self.cloud_task_manager.get_raw_data_import_queue_info(
-            region=self.region, ingest_instance=self.raw_data_source_instance
+            region=self.region, ingest_instance=raw_data_source_instance
         )
 
         raw_files_pending_import = (
@@ -543,7 +593,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             if not queue_info.is_raw_data_import_task_already_queued(task_args):
                 # Fetch the queue information for where the raw data is being processed.
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(
-                    self.region, self.raw_data_source_instance, task_args
+                    self.region, raw_data_source_instance, task_args
                 )
                 did_schedule = True
 
@@ -555,12 +605,17 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             )
         return queue_info.has_raw_data_import_jobs_queued() or did_schedule
 
+    # TODO(#20930): Delete when ingest in dataflow is shipped for all states
     def _schedule_ingest_view_materialization_tasks(self) -> bool:
         """Schedules all pending ingest view materialization tasks for launched ingest
         view tags, if they have not been scheduled. If tasks are scheduled or are still
         running, returns True. Otherwise, if it's safe to proceed with next steps of
         ingest, returns False.
         """
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Cannot call this method for an ingest in dataflow enabled state."
+            )
         queue_info = self.cloud_task_manager.get_ingest_view_materialization_queue_info(
             self.region,
             self.ingest_instance,
@@ -608,11 +663,16 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
         return did_schedule
 
+    # TODO(#20930): Delete when ingest in dataflow is shipped for all states
     def _schedule_extract_and_merge_tasks(self, just_finished_job: bool) -> bool:
         """Schedules the next pending extract and merge task, if it has not been
         scheduled. If there is still extract and merge work to do, returns True.
         Otherwise, if it's safe to proceed with next steps of ingest, returns False.
         """
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Cannot call this method for an ingest in dataflow enabled state."
+            )
         extract_and_merge_queue_info = (
             self.cloud_task_manager.get_extract_and_merge_queue_info(
                 self.region,
@@ -686,9 +746,18 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         will de facto relinquish their hold on the acquired lock."""
         return 3600
 
+    # TODO(#20930): Delete when ingest in dataflow is shipped for all states
     def run_extract_and_merge_job_and_kick_scheduler_on_completion(
         self, args: ExtractAndMergeArgs
     ) -> None:
+        """
+        Runs the full extract and merge process for this controller and triggers
+        scheduler upon completion, if necessary.
+        """
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Cannot call this method for an ingest in dataflow enabled state."
+            )
         check_is_region_launched_in_env(self.region)
 
         if self._ingest_is_not_running():
@@ -714,6 +783,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             self.kick_scheduler(just_finished_job=True)
             logging.info("Done running task. Returning.")
 
+    # TODO(#20930): Delete when ingest in dataflow is shipped for all states
     def _run_extract_and_merge_job(self, args: ExtractAndMergeArgs) -> bool:
         """
         Runs the full extract and merge process for this controller - reading and
@@ -723,6 +793,12 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             True if we should try to schedule the next job on completion. False,
              otherwise.
         """
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Cannot call this method for an ingest in dataflow enabled state."
+            )
+        if not self.ingest_view_contents:
+            raise ValueError("Expected ingest_view_contents to be set")
         check_is_region_launched_in_env(self.region)
 
         if args.upper_bound_datetime_inclusive.tzinfo is not None:
@@ -779,6 +855,11 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         Runs the full ingest process for this controller for files with
         non-empty contents.
         """
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Cannot call this method for an ingest in dataflow enabled state."
+            )
+
         processor = IngestViewProcessor(
             ingest_view_file_parser=IngestViewResultsParser(
                 delegate=IngestViewResultsParserDelegateImpl(
@@ -816,6 +897,8 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         Will return None if the contents could not be read (i.e. if they no
         longer exist).
         """
+        if not self.ingest_view_contents:
+            raise ValueError("Expected ingest_view_contents to be set")
         return self.ingest_view_contents.get_unprocessed_rows_for_batch(
             ingest_view_name=args.ingest_view_name,
             upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
@@ -990,9 +1073,14 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         if should_schedule:
             self.kick_scheduler(just_finished_job=True)
 
+    # TODO(#20930): Delete when ingest in dataflow is shipped for all states
     def do_ingest_view_materialization(
         self, ingest_view_materialization_args: IngestViewMaterializationArgs
     ) -> None:
+        if self.is_ingest_in_dataflow_enabled:
+            raise ValueError(
+                "Cannot call this method for an ingest in dataflow enabled state."
+            )
         check_is_region_launched_in_env(self.region)
 
         if self._ingest_is_not_running():

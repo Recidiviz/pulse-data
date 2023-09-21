@@ -97,10 +97,14 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
         self.can_start_ingest = can_start_ingest
 
     def on_file_added(self, path: GcsfsFilePath) -> None:
-        # We can only handle a file if there is a rerun currently in progress, as indicated by there being a
-        # raw data source instance.
+        # We can only handle a file if there is a rerun currently in progress.
+        instance_is_running = (
+            self.controller.ingest_instance == DirectIngestInstance.PRIMARY
+            or self.controller.ingest_instance_status_manager.get_current_ingest_rerun_start_timestamp()
+        )
+
         if (
-            self.controller.ingest_instance_status_manager.get_raw_data_source_instance()
+            instance_is_running
             and path.bucket_path == self.controller.raw_data_bucket_path
         ):
             self.controller.handle_file(path, start_ingest=self.can_start_ingest)
@@ -302,6 +306,7 @@ class _MockBigQueryClientForControllerTests:
         self.fs = fs
 
 
+# TODO(#20930): Delete this once ingest in Dataflow is enabled for all states
 class FakeIngestViewMaterializer(IngestViewMaterializer):
     """A fake implementation of IngestViewMaterializer for use in tests."""
 
