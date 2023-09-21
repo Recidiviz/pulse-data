@@ -20,7 +20,7 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Callable, Dict, List, Optional, Tuple
 
-import matplotlib.pyplot as plt
+import matplotlib.axes
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.full_compartment import (
@@ -234,7 +234,7 @@ class SuperSimulation:
         simulation_title: str,
         fig_size: Tuple[int, int] = (8, 6),
         by_simulation_group: bool = False,
-    ) -> List[plt.subplot]:
+    ) -> List[matplotlib.axes.Axes]:
         return self.validator.gen_arima_output_plots(
             simulation_title, fig_size, by_simulation_group
         )

@@ -241,12 +241,14 @@ def plot_timeline_cohort_survival_curves(
             c_ix = c_ix + 1
         plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left", handles=legend_patches)
 
-    plt.title(title_text)
-    plt.xlabel(x_text)
+    if title_text:
+        plt.title(title_text)
+    if x_text:
+        plt.xlabel(x_text)
 
     # Align x-axis date labels with date cohorts
     x_axis_labels = [
-        min_date + relativedelta(months=+x)
+        np.datetime64(min_date + relativedelta(months=+x))
         for x in range(0, date_range + plot_timespan, cohort_spacing)
         if min_date + relativedelta(months=+x) <= datetime.date.today()
     ]
