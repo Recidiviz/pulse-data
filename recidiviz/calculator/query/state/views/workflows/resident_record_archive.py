@@ -44,7 +44,7 @@ RESIDENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
         split_path.* EXCEPT (path_parts, all_eligible_opportunities, person_id),
         ARRAY_TO_STRING(all_eligible_opportunities, ",") AS all_eligible_opportunities,
         DATE(path_parts[SAFE_OFFSET(1)]) AS export_date,
-        path_parts[SAFE_OFFSET(2)] AS state_code,
+        IF(path_parts[SAFE_OFFSET(2)]="US_ID", "US_IX", path_parts[SAFE_OFFSET(2)]) AS state_code,
         latest_person_id.person_id,
     FROM split_path
     -- Pull the person_id from the latest version of ingested data
