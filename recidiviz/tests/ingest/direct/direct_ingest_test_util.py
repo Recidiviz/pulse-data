@@ -15,9 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for direct ingest tests."""
+from typing import Optional
+
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (
     FakeAsyncDirectIngestCloudTaskManager,
 )
@@ -26,15 +29,34 @@ from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_ta
 )
 
 
+# TODO(#20930): Remove this once is_ingest_in_dataflow_enabled=True everywhere and just
+#   use ingest_instance.
+def _get_raw_data_source_instance(
+    controller: BaseDirectIngestController,
+) -> Optional[DirectIngestInstance]:
+    if controller.is_ingest_in_dataflow_enabled:
+        return controller.ingest_instance
+    return controller.ingest_instance_status_manager.get_raw_data_source_instance()
+
+
 def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
     """Runs task queues until they are all empty."""
     # If there isn't a rerun in progress, as indicated by there not being a raw data source instance, there are no
     # tasks to run.
-    if not controller.ingest_instance_status_manager.get_raw_data_source_instance():
+    raw_data_source_instance = _get_raw_data_source_instance(controller)
+    instance_is_running = (
+        controller.ingest_instance == DirectIngestInstance.PRIMARY
+        or controller.ingest_instance_status_manager.get_current_ingest_rerun_start_timestamp()
+    )
+    if not instance_is_running:
         return
+    if not raw_data_source_instance:
+        raise ValueError(
+            "Expected to find nonnull raw_data_source_instance if instance is running."
+        )
     if isinstance(controller.cloud_task_manager, FakeAsyncDirectIngestCloudTaskManager):
         controller.cloud_task_manager.wait_for_all_tasks_to_run(
-            controller.ingest_instance, controller.raw_data_source_instance
+            controller.ingest_instance, raw_data_source_instance
         )
     elif isinstance(
         controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager
@@ -49,7 +71,7 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
             # Fetch the queue information for where the raw data is being processed.
             or tm.get_raw_data_import_queue_info(
                 region=controller.region,
-                ingest_instance=controller.raw_data_source_instance,
+                ingest_instance=raw_data_source_instance,
             ).size()
             or tm.get_ingest_view_materialization_queue_info(
                 *queue_args,
@@ -58,14 +80,10 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
             # Fetch the queue information for where the raw data is being processed.
             if tm.get_raw_data_import_queue_info(
                 region=controller.region,
-                ingest_instance=controller.raw_data_source_instance,
+                ingest_instance=raw_data_source_instance,
             ).size():
-                tm.test_run_next_raw_data_import_task(
-                    controller.raw_data_source_instance
-                )
-                tm.test_pop_finished_raw_data_import_task(
-                    controller.raw_data_source_instance
-                )
+                tm.test_run_next_raw_data_import_task(raw_data_source_instance)
+                tm.test_pop_finished_raw_data_import_task(raw_data_source_instance)
             if tm.get_ingest_view_materialization_queue_info(
                 *queue_args,
             ).size():
