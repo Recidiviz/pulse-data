@@ -78,7 +78,9 @@ output:
               $raw_text: HOUSING_TYPE
               $mappings:
                 StateIncarcerationPeriodHousingUnitCategory.GENERAL: "GNP" # General Population
-                StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN: "HOS" # Hospitalized
+                StateIncarcerationPeriodHousingUnitCategory.INTERNAL_UNKNOWN:
+                  - "HOS" # Hospitalized
+                  - "***" # UNKNOWN
                 StateIncarcerationPeriodHousingUnitCategory.SOLITARY_CONFINEMENT:
                   - "ADS" # Administrative Segregation
                   - "DIS" # Disciplinary Segregation
@@ -97,3 +99,4 @@ output:
                 StateIncarcerationPeriodHousingUnitType.ADMINISTRATIVE_SOLITARY_CONFINEMENT:
                   - "ADS"
                   - "NOC"
+                StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN: "***"
