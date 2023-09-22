@@ -63,14 +63,13 @@ output:
                         - "12" # New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
                         - "14" # New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
                         - "15" # New Commitment - Probation Technical Violator (Rec Ctr Only)
+                        - "17" # Returned as Parole Technical Rule Violator
                       StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE:
                         - "80" # Escaper Returned to the Institution
                       StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
                         - "81" # Returned from Temporary Release
                         - "84" # Returned from Limited Furlough
                         - "85" # Returned from Parole Furlough
-                      StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION:
-                        - "17" # Returned as Parole Technical Rule Violator
                       # Movement reasons that are for releases are often followed by actual releases
                       # therefore, we indicate this as a status change
                       StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
@@ -275,11 +274,6 @@ output:
           specialized_purpose_for_incarceration:
             $conditional:
               - $if:
-                  $equal:
-                    - movement_reason_id
-                    - $literal("17")
-                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
-              - $else_if:
                   $and:
                     - $equal:
                         - reporting_station_name
