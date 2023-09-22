@@ -4,17 +4,37 @@ region_code: US_ME
 dev_mode: False
 exclusions: []
 max_allowed_error_overrides:
+  - validation_name: state_supervision_violation_response_by_response_date_stable_counts
+    hard_max_allowed_error_override: 0.45
+    override_reason: >-
+      I think this is just typical variation. See #23399 for more info.
+  - validation_name: state_supervision_violation_by_violation_date_stable_counts
+    hard_max_allowed_error_override: 0.45
+    override_reason: >-
+      I think this is just typical variation.
+  - validation_name: state_supervision_period_by_start_date_stable_counts
+    hard_max_allowed_error_override: 0.50
+    override_reason: >-
+      I think this is just typical variation.
+  - validation_name: state_supervision_period_by_termination_date_stable_counts
+    hard_max_allowed_error_override: 0.50
+    override_reason: >-
+      I think this is just typical variation.
+  - validation_name: state_incarceration_period_by_release_date_stable_counts
+    hard_max_allowed_error_override: 0.40
+    override_reason: >-
+      I think this is just typical variation.
   - validation_name: incarceration_population_person_level_external_comparison
     hard_max_allowed_error_override: 0.04
     override_reason: >-
-      P2 we generally seem to be overcounting by a bit, so not so worried that
-      we're missing people. TODO(#19918)
+      P2 we generally seem to be overcounting by a bit, so not so worried that we're
+      missing people. TODO(#19918)
   - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison
     hard_max_allowed_error_override: 0.1
     override_reason: >-
       P1 Small-ish error, and we're overestimating the population, so not super
-      concerned that we are missing people. But worth looking at soon, along
-      with the other incarceration related issues. TODO(#19917)
+      concerned that we are missing people. But worth looking at soon, along with the
+      other incarceration related issues. TODO(#19917)
   - validation_name: supervision_termination_person_level_external_comparison
     hard_max_allowed_error_override: 0.65
     override_reason: >-
@@ -22,8 +42,8 @@ max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_district
     hard_max_allowed_error_override: 1.00
     override_reason: >-
-      P2 I think this is may be a simple mapping error with what we consider
-      districts internally and externally. More details here:
+      P2 I think this is may be a simple mapping error with what we consider districts
+      internally and externally. More details here:
       https://docs.google.com/document/d/1z3SSsvStnGZyOLE3ZUR4v2CCAuqseH03Y4AiWoa34FY/edit#bookmark=id.9cmtjvmc91wg.
   - validation_name: incarceration_release_person_level_external_comparison
     hard_max_allowed_error_override: 0.3
@@ -51,15 +71,13 @@ num_allowed_rows_overrides:
   - validation_name: sentences_undefined_relationship
     hard_num_allowed_rows_override: 150
     override_reason: >-
-      Needs investigation. Current failing level as of 2/24/23 is 62 rows
-      #TODO(#19047)
+      Needs investigation. Current failing level as of 2/24/23 is 62 rows #TODO(#19047)
   - validation_name: overlapping_supervision_periods
     hard_num_allowed_rows_override: 24000
     override_reason: >-
-      P1 Not relevant to any of our products currently as we mostly care about
-      just having an accurate population count (which we can see from
-      supervision_population_person_level_external_comparison we do), though
-      concerning.
+      P1 Not relevant to any of our products currently as we mostly care about just
+      having an accurate population count (which we can see from
+      supervision_population_person_level_external_comparison we do), though concerning.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 50
     override_reason: >-
