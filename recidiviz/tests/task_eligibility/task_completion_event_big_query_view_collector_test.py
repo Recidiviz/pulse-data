@@ -17,11 +17,14 @@
 """Tests for the TaskCompletionEventBigQueryViewCollector."""
 import unittest
 from collections import defaultdict
+from typing import Dict, List, Tuple
 from unittest.mock import Mock, patch
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     StateSpecificTaskCompletionEventBigQueryViewBuilder,
+    TaskCompletionEventType,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
@@ -56,15 +59,21 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
             except Exception as e:
                 raise ValueError(f"Failed to build view {builder.address}") from e
 
-    def test_unique_completion_event_types(self) -> None:
+    def test_unique_state_agnostic_completion_event_types(self) -> None:
+        """Checks that each StateAgnosticTaskCompletionEventBigQueryViewBuilder has a
+        distinct completion event type.
+        """
         collector = TaskCompletionEventBigQueryViewCollector()
         all_completion_event_builders = collector.collect_view_builders()
 
-        event_type_to_builders = defaultdict(list)
+        event_type_to_builders: Dict[
+            TaskCompletionEventType,
+            List[StateAgnosticTaskCompletionEventBigQueryViewBuilder],
+        ] = defaultdict(list)
         for builder in all_completion_event_builders:
+            if isinstance(builder, StateSpecificTaskCompletionEventBigQueryViewBuilder):
+                continue
             if not isinstance(
-                builder, StateSpecificTaskCompletionEventBigQueryViewBuilder
-            ) and not isinstance(
                 builder, StateAgnosticTaskCompletionEventBigQueryViewBuilder
             ):
                 raise ValueError(
@@ -76,7 +85,43 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
         for completion_event_name, builders in event_type_to_builders.items():
             if len(builders) > 1:
                 raise ValueError(
-                    f"Found reused completion event type [{completion_event_name}] for builders: "
+                    f"Found reused completion event type [{completion_event_name}] for "
+                    f"state-agnostic builders: {[b.address for b in builders]}"
+                )
+
+    def test_unique_state_specific_completion_event_types(self) -> None:
+        """Checks that each StateSpecificTaskCompletionEventBigQueryViewBuilder has a
+        distinct completion event type within a given state.
+        """
+        collector = TaskCompletionEventBigQueryViewCollector()
+        all_completion_event_builders = collector.collect_view_builders()
+
+        event_type_to_builders: Dict[
+            Tuple[TaskCompletionEventType, StateCode],
+            List[StateSpecificTaskCompletionEventBigQueryViewBuilder],
+        ] = defaultdict(list)
+        for builder in all_completion_event_builders:
+            if isinstance(builder, StateAgnosticTaskCompletionEventBigQueryViewBuilder):
+                continue
+            if not isinstance(
+                builder, StateSpecificTaskCompletionEventBigQueryViewBuilder
+            ):
+                raise ValueError(
+                    f"Found unexpected completion event view builder type [{type(builder)}]: {builder}"
+                )
+
+            event_type_to_builders[
+                (builder.completion_event_type, builder.state_code)
+            ].append(builder)
+
+        for (
+            completion_event_name,
+            state_code,
+        ), builders in event_type_to_builders.items():
+            if len(builders) > 1:
+                raise ValueError(
+                    f"Found reused completion event type [{completion_event_name}] for "
+                    f"state-specific builders for state [{state_code.value}]: "
                     f"{[b.address for b in builders]}"
                 )
 
