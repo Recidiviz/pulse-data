@@ -49,6 +49,8 @@ import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePer
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
+import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
+import { EnvironmentType } from "./types";
 
 type MenuItem = Required<MenuProps>["items"][number];
 type QueryString = {
@@ -76,8 +78,6 @@ interface EnvironmentOption {
   title: string;
   backgroundColor: string;
 }
-
-type EnvironmentType = "development" | "staging" | "production";
 
 const ENVIRONMENT_OPTIONS: Map<EnvironmentType, EnvironmentOption> = new Map([
   [
@@ -141,6 +141,7 @@ const items: MenuProps["items"] = [
       "State Role Default Permissions",
       LineStaffTools.STATE_ROLE_DEFAULT_PERMISSIONS_ROUTE
     ),
+    getItem("Demo App Management", LineStaffTools.DEMO_APP_MANAGEMENT_ROUTE),
   ]),
   getItem("Justice Counts", "justice_counts_group", null, [
     getItem(
@@ -280,6 +281,10 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.STATE_ROLE_DEFAULT_PERMISSIONS_ROUTE}
             component={StateRoleDefaultPermissionsView}
+          />
+          <Route
+            path={LineStaffTools.DEMO_APP_MANAGEMENT_ROUTE}
+            component={DemoAppManagementView}
           />
           <Route
             path={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}

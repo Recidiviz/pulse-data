@@ -17,6 +17,7 @@
 import { AddUserRequest, FeatureVariants, Routes } from "../types";
 import {
   deleteResource,
+  deleteWithUrlAndBody,
   getAuthResource,
   patchAuthWithURLAndBody,
   postAuthWithURLAndBody,
@@ -220,4 +221,12 @@ export const deleteStateRole = async (
   reason: string
 ): Promise<Response> => {
   return deleteResource(`/states/${stateCode}/roles/${role}`, { reason });
+};
+
+export const deleteDemoClientUpdatesV2 = async (
+  stateCode?: string
+): Promise<Response> => {
+  let url = "/api/line_staff_tools/demo_client_updates_v2";
+  if (stateCode) url += `/${stateCode.toLowerCase()}`;
+  return deleteWithUrlAndBody(url);
 };
