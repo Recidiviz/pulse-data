@@ -61,6 +61,9 @@ _TASK_TYPE_NAME_INCARCERATION = [
     "RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION",
     "RELEASE_TO_PAROLE",
     "SCHEDULED_HEARING_OCCURRED",
+    "GRANTED_WORK_RELEASE",
+    "GRANTED_FURLOUGH",
+    "TRANSFER_TO_REENTRY_CENTER",
 ]
 
 _VIOLATION_CATEGORY_TO_TYPES_DICT: Dict[str, List[str]] = {
@@ -509,6 +512,13 @@ AVG_DAILY_POPULATION_SUPERVISION_LEVEL_METRICS = [
     for level, conditions in _SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT.items()
 ]
 
+DEDUPED_TASK_COMPLETION_EVENT_VB = []
+preprocessed_task_types = set()
+for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders():
+    if b.task_type_name not in preprocessed_task_types:
+        preprocessed_task_types.add(b.task_type_name)
+        DEDUPED_TASK_COMPLETION_EVENT_VB.append(b)
+
 AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION = [
     DailyAvgSpanCountMetric(
         name=f"avg_population_task_eligible_{b.task_type_name.lower()}",
@@ -521,7 +531,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_INCARCERATION = [
             "task_type": [b.task_type_name],
         },
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
 ]
 
@@ -537,7 +547,7 @@ AVG_DAILY_POPULATION_TASK_ELIGIBLE_METRICS_SUPERVISION = [
             "task_type": [b.task_type_name],
         },
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
@@ -1120,7 +1130,7 @@ LATE_OPPORTUNITY_METRICS_INCARCERATION = [
             "task_type": [b.task_type_name],
         },
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
     for num_days in [7, 30]
 ]
@@ -1136,7 +1146,7 @@ LATE_OPPORTUNITY_METRICS_SUPERVISION = [
             "task_type": [b.task_type_name],
         },
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
     for num_days in [7, 30]
 ]
@@ -1344,7 +1354,7 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_INCARCERATION = [
             "task_type": [b.task_type_name],
         },
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
 ]
 
@@ -1360,7 +1370,7 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS_SUPERVISION = [
             "task_type": [b.task_type_name],
         },
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
@@ -1493,7 +1503,7 @@ TASK_COMPLETED_METRICS_INCARCERATION = [
         event_types=[EventType.TASK_COMPLETED],
         event_attribute_filters={"task_type": [b.task_type_name]},
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
 ]
 
@@ -1505,7 +1515,7 @@ TASK_COMPLETED_METRICS_SUPERVISION = [
         event_types=[EventType.TASK_COMPLETED],
         event_attribute_filters={"task_type": [b.task_type_name]},
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 
@@ -1521,7 +1531,7 @@ TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION = [
             "is_eligible": ["true"],
         },
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
 ]
 
@@ -1537,7 +1547,7 @@ TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION = [
             "is_eligible": ["true"],
         },
     )
-    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
 ]
 

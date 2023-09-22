@@ -23,7 +23,7 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.state_specific.us_ix import (
-    transfer_to_reentry_center,
+    granted_work_release,
 )
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_is_minimum,
@@ -56,10 +56,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_detainers_for_xcrc_and_crc.VIEW_BUILDER,
         not_serving_for_sexual_offense.VIEW_BUILDER,
         no_absconsion_escape_and_eluding_police_offenses_within_10_years.VIEW_BUILDER,
+        # TODO(#24043) - remove this criteria and add one where we only filter out those already on wr
         not_in_crc_facility.VIEW_BUILDER,
         crc_work_release_time_based_criteria.VIEW_BUILDER,
     ],
-    completion_event_builder=transfer_to_reentry_center.VIEW_BUILDER,
+    completion_event_builder=granted_work_release.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
