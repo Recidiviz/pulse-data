@@ -266,6 +266,16 @@ columns:
     description: |-
       Prior Inmate Number when an inmate rolls over into a new sentence without
       being released.
+  - name: Judge_Formatted_Name
+    is_pii: True
+    description: |-
+      Replacement for Judge field after update to PA system on 9/22/23 that moved this
+      field to be joined from dbo_Senrec_Extended.
+  - name: Crime_Code
+    is_pii: False
+    description: |-
+      Replacement for offense_code field after update to PA system on 9/22/23 that moved this
+      field to be joined from dbo_Senrec_Extended.
 separator: ‡
 custom_line_terminator: †
 ignore_quotes: True
