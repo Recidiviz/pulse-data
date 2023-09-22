@@ -48,6 +48,8 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
             AND dataflow.end_date_exclusive IS NULL
             AND NOT (dataflow.state_code = "US_TN"
                     AND locations.level_2_incarceration_location_external_id IN ({us_tn_excluded_facility_ids}))
+            AND NOT (dataflow.state_code = "US_IX"
+                    AND locations.level_2_incarceration_location_external_id IN ({us_ix_excluded_facility_types}))
     ),
 """
 
