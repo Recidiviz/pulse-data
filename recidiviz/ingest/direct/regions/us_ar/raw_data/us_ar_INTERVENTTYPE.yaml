@@ -3,9 +3,11 @@ file_tag: INTERVENTTYPE
 file_description: |-
   Intervention type
 data_classification: source
-# OFFENSESEQ is listed as a primary key in the metadata, but isn't in our version of the table.
-# Assuming that no_valid_primary_keys is True until we receive more information.
-primary_key_cols: []
+primary_key_cols:
+  - OFFENDERID
+  - INTERVENTIONDATE
+  - INTERVENTIONTIME
+  - INTERVENTIONTYPE
 # TODO(#23025): Encode join relationships
 columns:
   - name: OFFENDERID
