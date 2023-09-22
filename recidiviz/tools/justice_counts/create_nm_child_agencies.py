@@ -113,7 +113,9 @@ def create_child_agencies(all_agencies: set, dry_run: bool, project_id: str) -> 
         schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
     ):
         with SessionFactory.for_proxy(
-            database_key, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+            database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            autocommit=False,
         ) as session:
             for agency in all_agencies:
                 if dry_run is True:

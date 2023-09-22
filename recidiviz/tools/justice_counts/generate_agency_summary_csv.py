@@ -148,6 +148,7 @@ def generate_agency_summary_csv() -> None:
         with SessionFactory.for_proxy(
             database_key=database_key,
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            autocommit=False,
         ) as session:
             agencies = session.execute(
                 "select * from source where type = 'agency'"

@@ -91,7 +91,10 @@ def update_user_subscription(
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
     with cloudsql_proxy_control.connection(schema_type=schema_type):
-        with SessionFactory.for_proxy(database_key) as session:
+        with SessionFactory.for_proxy(
+            database_key,
+            autocommit=False,
+        ) as session:
             associations = (
                 AgencyUserAccountAssociationInterface.get_associations_by_ids(
                     user_account_ids=[user_account_id],

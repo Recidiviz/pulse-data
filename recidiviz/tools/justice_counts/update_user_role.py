@@ -100,6 +100,7 @@ def update_user_role(email: str, agency: str, role: str, dry_run: bool) -> None:
         with SessionFactory.for_proxy(
             database_key=database_key,
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            autocommit=False,
         ) as session:
             user = UserAccountInterface.get_user_by_email(session=session, email=email)
             if not user:
