@@ -18,13 +18,28 @@
 A subclass of DataflowTemplateOperator to ensure that the operator does not add a hash or
 unique id to the task_id name on Dataflow
 """
+import logging
 from typing import Any, Dict
 
-from airflow.providers.google.cloud.hooks.dataflow import DataflowHook
+from airflow.providers.google.cloud.hooks.dataflow import (
+    DataflowHook,
+    DataflowJobStatus,
+)
 from airflow.providers.google.cloud.operators.dataflow import (
     DataflowStartFlexTemplateOperator,
 )
 from airflow.utils.context import Context
+from google.cloud.logging import Client as LoggingClient
+
+from recidiviz.utils.string import StrictStringFormatter
+
+DATAFLOW_ERROR_LOGS_QUERY = """
+(log_id("dataflow.googleapis.com/job-message") OR log_id("dataflow.googleapis.com/launcher"))
+resource.type="dataflow_step"
+resource.labels.job_id="{job_id}"
+timestamp >= "{job_creation_time}"
+severity >= ERROR
+"""
 
 
 class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
@@ -43,25 +58,50 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
             delegate_to=self.delegate_to,
         )
 
-        # If the operator is on a retry loop, we ignore the start operation by checking
-        # if the job is running.
         region = self.location
-        if hook.is_job_dataflow_running(
-            name=self.task_id, project_id=self.project_id, location=region
-        ):
-            hook.wait_for_done(
-                job_name=self.task_id,
+
+        try:
+            # If the operator is on a retry loop, we ignore the start operation by checking
+            # if the job is running.
+            if hook.is_job_dataflow_running(
+                name=self.task_id, project_id=self.project_id, location=region
+            ):
+                hook.wait_for_done(
+                    job_name=self.task_id,
+                    project_id=self.project_id,
+                    location=region,
+                )
+                return hook.get_job(
+                    job_id=self.task_id,
+                    project_id=self.project_id,
+                    location=region,
+                )
+
+            return hook.start_flex_template(
+                location=self.location,
                 project_id=self.project_id,
-                location=region,
+                body=self.body,
             )
-            return hook.get_job(
+        # Dataflow `wait_for_done` methods do not raise an `Exception` subclass, they raise an `Exception` on failure
+        except Exception as e:
+            job = hook.get_job(
                 job_id=self.task_id,
                 project_id=self.project_id,
                 location=region,
             )
 
-        return hook.start_flex_template(
-            location=self.location,
-            project_id=self.project_id,
-            body=self.body,
-        )
+            if job["currentState"] == DataflowJobStatus.JOB_STATE_FAILED:
+                logging.info("Fetching logs for failed job...")
+                client = LoggingClient(project=self.project_id)
+
+                for entry in client.list_entries(
+                    resource_names=[f"projects/{self.project_id}"],
+                    filter_=StrictStringFormatter().format(
+                        DATAFLOW_ERROR_LOGS_QUERY,
+                        job_id=job["id"],
+                        job_creation_time=job["creationTime"],
+                    ),
+                ):
+                    logging.info(entry.payload)
+
+            raise e
