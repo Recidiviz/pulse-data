@@ -4,6 +4,7 @@ input_columns:
   - LNAME
   - FNAME
   - OFFICER
+  - EMAIL
 unused_columns: []
 output:
   StateStaff:
@@ -15,3 +16,4 @@ output:
       $person_name:
         $given_names: FNAME
         $surname: LNAME
+    email: EMAIL

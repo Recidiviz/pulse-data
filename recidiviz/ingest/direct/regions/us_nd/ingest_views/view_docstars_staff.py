@@ -29,15 +29,20 @@ SELECT
     CAST(OFFICER AS INT) AS OFFICER,
     LNAME,
     FNAME,
+    LOGINNAME,
     ROW_NUMBER() OVER (
         PARTITION BY CAST(OFFICER AS INT)
         ORDER BY CAST(RecDate AS DATETIME) DESC) AS recency_rank
 FROM {docstars_officers}
+-- Exclude service providers like "Bismarck Urban CS"
+WHERE LOGINNAME NOT LIKE '%% %%' 
+
 )
 SELECT 
     OFFICER,
     LNAME,
-    FNAME
+    FNAME,
+    CONCAT(LOWER(LOGINNAME), '@nd.gov') AS EMAIL
 FROM officers_with_recency_rank
 WHERE recency_rank = 1
 """
