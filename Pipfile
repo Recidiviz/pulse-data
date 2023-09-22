@@ -230,6 +230,7 @@ twilio = "*"
 twilio-stubs = "*"
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
+xlrd="*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
