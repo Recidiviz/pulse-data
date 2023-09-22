@@ -168,7 +168,7 @@ To determine what commits will be included in a deploy to production, run the fo
 ## Creating Users and Agencies
 
 1. Visit the Admin Panel at [go/admin](https://recidiviz-staging.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning) (staging) or [go/admin-prod](https://recidiviz-123.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning) (production)
-2. Navigate the the Justice Counts tab
+2. Navigate to the Justice Counts tab
 3. To create a new Agency, navigate to the Agency Provisioning page and scroll to "Add Agency"
    1. Enter the Agency Name, System(s), State, and (optional) County (You may be able to infer the agency's system / state / county from its name + a Google search; if not, ask CSG)
    2. Click Submit
@@ -184,11 +184,22 @@ To determine what commits will be included in a deploy to production, run the fo
    3. Find the given user in the Agency Team Members table
    4. Within the user's row, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)
 
+## Using Jupyter Notebooks
+
+Jupyter notebooks are a great way to interact with our code and database.
+
+1. Git clone the [recidiviz-research](https://github.com/Recidiviz/recidiviz-research) repository
+2. Follow the [Environment Setup instructions](https://github.com/Recidiviz/recidiviz-research#environment-setup)
+3. Run `jupyter-notebook`, which should open a file directory in your browser
+4. Navigate to `shared/justice-counts` and open `justice-counts-template.ipynb`
+5. Uncomment the print statements in the last two cells
+6. Run the notebook via Cell > Run All. You should see a list of all agencies printed twice at the end!
+
 ## SQLAlchemy Primer
 
 - A _session_ is a "holding zone" for all the objects you’ve loaded (via `session.query()`) or associated with it (via `session.add()`) during its lifespan.
 - Until you (or a context manager) calls `session.commit()`, any changes you've made are _temporary_.
 - Calling `session.commit()` will persist new data to the database, and also refresh objects with their new ID.
-- If you're operating in a `with SessionFactory.using_database` context manager (i.e. in our unit tests), then `session.commit()` will be called ._automatically_ for you at the end of the block. Try to take advantage of this functionality and avoid calling `session.commit()` yourself in unit tests.
+- If you're operating in a `with SessionFactory.using_database` or `SessionFactory.for_proxy` context manager (e.g. in our unit tests or scripts), then `session.commit()` will be called ._automatically_ for you at the end of the block. Try to take advantage of this functionality and avoid calling `session.commit()` yourself in unit tests.
 - In our API code, we don't the `with SessionFactory.using_database` context manager, so `session.commit()` will not be called for you automatically. Thus, at the end of any API method, you should explicitly call `current_session.commit()`.
 - You generally shouldn't need to call `session.flush()` or `session.refresh()`. If you think you need to, add a comment explaining what was going wrong without it.
