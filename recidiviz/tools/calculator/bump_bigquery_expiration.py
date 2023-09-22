@@ -30,101 +30,11 @@ python -m recidiviz.tools.calculator.bump_bigquery_expiration \
 import argparse
 import datetime
 import logging
-import threading
-from concurrent import futures
 
-from tqdm import tqdm
-
-from recidiviz.big_query.big_query_client import (
-    BQ_CLIENT_MAX_POOL_SIZE,
-    BigQueryClientImpl,
-)
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.tools.utils.bigquery_helpers import run_operation_for_tables
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-
-def bump_expiration_for_dataset_prefix(
-    client: BigQueryClientImpl, dataset_prefix: str, expiration: datetime.datetime
-) -> None:
-    """Bump expirations on all tables and views in matching datasets."""
-    print("Fetching all datasets...")
-    datasets = [
-        dataset_item
-        for dataset_item in client.list_datasets()
-        if dataset_item.dataset_id.startswith(f"{dataset_prefix}_")
-    ]
-
-    prompt_for_confirmation(
-        f"Extend the expiration for {len(datasets)} datasets to {expiration.isoformat()}?"
-    )
-
-    with futures.ThreadPoolExecutor(
-        # Conservatively allow only half as many workers as allowed connections.
-        # Lower this number if we see "urllib3.connectionpool:Connection pool is
-        # full, discarding connection" errors.
-        max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
-    ) as executor:
-        overall_progress = tqdm(desc="Updated datasets", total=len(datasets))
-        dataset_tables_futures = {
-            executor.submit(
-                client.list_tables, dataset_id=dataset_item.dataset_id
-            ): dataset_item
-            for dataset_item in datasets
-        }
-
-        def set_expiration(
-            dataset_id: str,
-            table_id: str,
-            dataset_progress: tqdm,
-            dataset_progress_lock: threading.Lock,
-        ) -> None:
-            client.set_table_expiration(
-                dataset_id=dataset_id,
-                table_id=table_id,
-                expiration=expiration,
-            )
-
-            # Prevent two threads from checking `n` when it has the same value.
-            with dataset_progress_lock:
-                dataset_progress.update()
-                dataset_completed = dataset_progress.n == dataset_progress.total
-
-            if dataset_completed:
-                dataset_progress.close()
-                overall_progress.update()
-
-        set_expiration_futures = []
-        for tables_future in futures.as_completed(dataset_tables_futures):
-            table_items = list(tables_future.result())
-            dataset_item = dataset_tables_futures[tables_future]
-
-            if not table_items:
-                overall_progress.update()
-                continue
-
-            dataset_progress = tqdm(
-                desc=dataset_item.dataset_id,
-                total=len(table_items),
-                leave=False,
-            )
-            dataset_progress_lock = threading.Lock()
-
-            set_expiration_futures.extend(
-                [
-                    executor.submit(
-                        set_expiration,
-                        dataset_id=dataset_item.dataset_id,
-                        table_id=table_item.table_id,
-                        dataset_progress=dataset_progress,
-                        dataset_progress_lock=dataset_progress_lock,
-                    )
-                    for table_item in table_items
-                ]
-            )
-
-        futures.wait(set_expiration_futures)
-        overall_progress.close()
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -157,8 +67,12 @@ if __name__ == "__main__":
     args = create_parser().parse_args()
 
     with local_project_id_override(args.project_id):
-        bump_expiration_for_dataset_prefix(
-            BigQueryClientImpl(),
+        expiration = datetime.datetime.now() + datetime.timedelta(days=args.days)
+        run_operation_for_tables(
+            client=BigQueryClientImpl(),
+            prompt=f"Extend the expiration to {expiration.isoformat()}",
+            operation=lambda client, dataset_id, table_id: client.set_table_expiration(
+                dataset_id, table_id, expiration
+            ),
             dataset_prefix=args.dataset_prefix,
-            expiration=datetime.datetime.now() + datetime.timedelta(days=args.days),
         )

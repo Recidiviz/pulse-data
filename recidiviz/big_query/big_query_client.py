@@ -268,6 +268,14 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
+    def drop_row_level_permissions(self, table: bigquery.Table) -> None:
+        """Removes all row access policies from the table."""
+
+    @abc.abstractmethod
+    def apply_row_level_permissions(self, table: bigquery.Table) -> None:
+        """Applies the relevant row access policies to the table."""
+
+    @abc.abstractmethod
     def load_table_from_cloud_storage_async(
         self,
         source_uris: List[str],
