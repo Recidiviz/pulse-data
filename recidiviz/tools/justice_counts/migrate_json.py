@@ -62,7 +62,10 @@ def migrate_json(dry_run: bool) -> None:
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
     with cloudsql_proxy_control.connection(schema_type=schema_type):
-        with SessionFactory.for_proxy(database_key) as session:
+        with SessionFactory.for_proxy(
+            database_key,
+            autocommit=False,
+        ) as session:
             production_spreadsheets = set(
                 spreadsheet_name_tuple[0]
                 for spreadsheet_name_tuple in session.query(

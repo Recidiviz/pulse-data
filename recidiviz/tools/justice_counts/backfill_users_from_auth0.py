@@ -70,10 +70,12 @@ def backfill_user_agencies(
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
     with cloudsql_proxy_control.connection(schema_type=schema_type):
-        with SessionFactory.for_proxy(database_key) as session:
+        with SessionFactory.for_proxy(
+            database_key,
+            autocommit=False,
+        ) as session:
             auth0_users = _get_auth0_client().get_all_users()
             for user in auth0_users:
-
                 existing_user = (
                     session.query(schema.UserAccount)
                     .filter(schema.UserAccount.auth0_user_id == user["user_id"])

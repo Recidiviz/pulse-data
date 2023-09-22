@@ -75,6 +75,7 @@ def copy_metric_settings(super_agency_id: int, dry_run: bool) -> None:
         with SessionFactory.for_proxy(
             database_key=database_key,
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            autocommit=False,
         ) as session:
             super_agency_list = AgencyInterface.get_agencies_by_id(
                 session=session, agency_ids=[super_agency_id]

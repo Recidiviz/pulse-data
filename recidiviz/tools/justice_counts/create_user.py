@@ -98,6 +98,7 @@ def create_user_account(dry_run: bool, email: str) -> None:
         with SessionFactory.for_proxy(
             database_key=database_key,
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            autocommit=False,
         ) as session:
             db_user = UserAccountInterface.get_user_by_email(
                 session=session, email=email

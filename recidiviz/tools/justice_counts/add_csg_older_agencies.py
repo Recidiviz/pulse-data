@@ -79,6 +79,7 @@ def add_csg_users_to_agencies(dry_run: bool, project_id: str) -> None:
         with SessionFactory.for_proxy(
             database_key=database_key,
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            autocommit=False,
         ) as session:
             all_agencies = AgencyInterface.get_agencies(
                 session=session, with_users=False, with_settings=False
