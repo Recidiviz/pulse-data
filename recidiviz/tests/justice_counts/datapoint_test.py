@@ -19,8 +19,6 @@
 
 import datetime
 
-from freezegun import freeze_time
-
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
@@ -70,31 +68,43 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             monthly_report = self.test_schema_objects.test_report_monthly
             created_datetime = datetime.datetime.now()
-            with freeze_time(created_datetime):
-                DatapointInterface.add_datapoint(
-                    session=session,
-                    report=monthly_report,
-                    existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
-                        reports=[monthly_report]
-                    ),
-                    value="123abc",
-                    metric_definition_key=law_enforcement.funding.key,
-                    current_time=created_datetime,
-                )
-                session.commit()
-                session.refresh(monthly_report)
-                report_id = monthly_report.id
+
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=monthly_report,
+                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                    reports=[monthly_report]
+                ),
+                value="123abc",
+                metric_definition_key=law_enforcement.funding.key,
+                current_time=created_datetime,
+            )
+            session.commit()
+            session.refresh(monthly_report)
+            report_id = monthly_report.id
+
+            # Update datapoint with new value
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=monthly_report,
+                existing_datapoints_dict=ReportInterface.get_existing_datapoints_dict(
+                    reports=[monthly_report]
+                ),
+                value="456def",
+                metric_definition_key=law_enforcement.funding.key,
+                current_time=created_datetime + datetime.timedelta(days=2),
+            )
 
         with SessionFactory.using_database(self.database_key) as session:
-            with freeze_time(created_datetime):
-                datapoints = DatapointInterface.get_datapoints_by_report_ids(
-                    session, [report_id]
-                )
-                self.assertEqual(len(datapoints), 1)
-                self.assertEqual(
-                    datapoints[0].created_at,
-                    created_datetime,
-                )
+            datapoints = DatapointInterface.get_datapoints_by_report_ids(
+                session, [report_id]
+            )
+            self.assertEqual(len(datapoints), 1)
+            self.assertEqual(datapoints[0].value, "456def")
+            self.assertEqual(
+                datapoints[0].created_at,
+                created_datetime,
+            )
 
     def test_save_agency_datapoints_turnoff_whole_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

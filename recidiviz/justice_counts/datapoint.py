@@ -407,7 +407,9 @@ class DatapointInterface:
             value_type=value_type,
             start_date=report.date_range_start,
             end_date=report.date_range_end,
-            created_at=current_time,
+            created_at=current_time
+            if existing_datapoint is None
+            else existing_datapoint.created_at,
             report=report,
             dimension_identifier_to_member={
                 dimension.dimension_identifier(): dimension.dimension_name
