@@ -337,14 +337,14 @@ class DatapointInterface:
         context_key: Optional[ContextKey] = None,
         value_type: Optional[ValueType] = None,
         dimension: Optional[DimensionBase] = None,
-        use_existing_aggregate_value: bool = False,
+        uploaded_via_breakdown_sheet: bool = False,
         user_account: Optional[schema.UserAccount] = None,
         agency: Optional[schema.Agency] = None,
     ) -> Optional[DatapointJson]:
         """Given a Report and a MetricInterface, add a row to the datapoint table.
         All datapoints associated with a metric are saved, even if the value is None.
 
-        The only exception to the above is if `use_existing_aggregate_value`
+        The only exception to the above is if `uploaded_via_breakdown_sheet`
         is True. in this case, if `datapoint.value` is None, we ignore it,
         and fallback to whatever value is already in the db. If `datapoint.value`
         is specified, prefer the existing value in the db, unless there isn't one,
@@ -382,20 +382,12 @@ class DatapointInterface:
             else None,
         )
         existing_datapoint = existing_datapoints_dict.get(datapoint_key)
-
-        if use_existing_aggregate_value:
-            # If this flag is set, and the incoming aggregate value does not match
-            # what's already in the DB, then keep the existing aggregate value.
-            if (
-                existing_datapoint is not None
-                and existing_datapoint.value is not None
-                and abs(float(existing_datapoint.value) - value) > 0
-            ):
+        if uploaded_via_breakdown_sheet:
+            # If this flag is set and there is an existing aggregate value, keep the
+            # existing aggregate value.
+            if existing_datapoint is not None and existing_datapoint.value is not None:
                 logging.info(
-                    "The incoming (read or inferred) aggregate value (%s) does not match "
-                    "the existing aggregate value (%s). Keeping the existing value.",
-                    value,
-                    existing_datapoint.value,
+                    "An aggregate value already exists in the database. Keeping the existing value."
                 )
                 return None
 

@@ -341,7 +341,6 @@ class SpreadsheetUploader:
                     agency=curr_agency,
                     rows_for_this_time_range=rows_for_this_time_range,
                     user_account=self.user_account,
-                    # TODO(#15499) Infer aggregate value only if total sheet was not provided.
                     existing_datapoints_dict=self.existing_datapoints_dict,
                     text_analyzer=self.text_analyzer,
                     metricfile=metricfile,
@@ -362,7 +361,7 @@ class SpreadsheetUploader:
                     reporting_frequency=reporting_frequency,
                     metric_key_to_errors=metric_key_to_errors,
                     metric_key=metricfile.definition.key,
-                )  # TODO(#15499) Infer aggregate value only if total sheet was not provided
+                )
                 self.agency_id_to_time_range_to_reports[curr_agency.id][time_range] = [
                     report
                 ]
