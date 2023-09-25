@@ -484,7 +484,7 @@ class ReportInterface:
         session: Session,
         report: schema.Report,
         report_metric: MetricInterface,
-        use_existing_aggregate_value: bool = False,
+        uploaded_via_breakdown_sheet: bool = False,
         existing_datapoints_dict: Optional[
             Dict[DatapointUniqueKey, schema.Datapoint]
         ] = None,
@@ -501,7 +501,7 @@ class ReportInterface:
         particular field, a new datapoint will be added to the datapoint table
         with a value of None.
 
-        The only exception to the above is if `use_existing_aggregate_value`
+        The only exception to the above is if `uploaded_via_breakdown_sheet`
         is True. in this case, if `datapoint.value` is None, we ignore it,
         and fallback to whatever value is already in the db. If `datapoint.value`
         is specified, prefer the existing value in the db, unless there isn't one,
@@ -522,7 +522,7 @@ class ReportInterface:
         # value but the incoming datapoint has its own value, we should still go
         # into this method, because if there is no existing value in the DB,
         # we should save the incoming one.
-        if not use_existing_aggregate_value or report_metric.value is not None:
+        if not uploaded_via_breakdown_sheet or report_metric.value is not None:
             datapoint_json_list.append(
                 DatapointInterface.add_datapoint(
                     session=session,
@@ -532,7 +532,7 @@ class ReportInterface:
                     metric_definition_key=metric_definition.key,
                     report=report,
                     value=report_metric.value,
-                    use_existing_aggregate_value=use_existing_aggregate_value,
+                    uploaded_via_breakdown_sheet=uploaded_via_breakdown_sheet,
                     agency=agency,
                 )
             )

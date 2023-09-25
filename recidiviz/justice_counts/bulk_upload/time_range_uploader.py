@@ -113,8 +113,7 @@ class TimeRangeUploader:
             report=report,
             report_metric=report_metric,
             user_account=self.user_account,
-            # TODO(#15499) Infer aggregate value only if total sheet was not provided.
-            use_existing_aggregate_value=self.metricfile.disaggregation is not None,
+            uploaded_via_breakdown_sheet=self.metricfile.disaggregation is not None,
             existing_datapoints_dict=self.existing_datapoints_dict,
             agency=self.agency,
         )
