@@ -44,7 +44,7 @@ class TestFullCompartment(unittest.TestCase):
         cls.test_supervision_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2, 2.5, 10],
-                "total_population": [4, 2, 2, 4, 3],
+                "cohort_portion": [4, 2, 2, 4, 3],
                 "outflow_to": ["jail", "prison", "jail", "prison", "prison"],
                 "compartment": ["test"] * 5,
             }
@@ -52,7 +52,7 @@ class TestFullCompartment(unittest.TestCase):
         cls.test_incarceration_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2, 2.5, 10],
-                "total_population": [4, 2, 2, 4, 3],
+                "cohort_portion": [4, 2, 2, 4, 3],
                 "outflow_to": [
                     "supervision",
                     "release",

@@ -134,28 +134,31 @@ class PopulationProjector:
             how="inner",
         )
         validation_error["error"] = (
-            validation_error.total_population - validation_error.total_population_actual
+            validation_error.compartment_population
+            - validation_error.compartment_population_actual
         )
         validation_error["percent_error"] = (
-            100 * validation_error["error"] / validation_error.total_population_actual
+            100
+            * validation_error["error"]
+            / validation_error.compartment_population_actual
         )
         return validation_error
 
     def get_historical_population_data(self) -> pd.DataFrame:
         """Format the historical data from the simulation to match the other tables"""
         simulation_data_inputs = self.simulation.initializer.get_data_inputs()
-        historical_population = simulation_data_inputs.total_population_data
+        historical_population = simulation_data_inputs.population_data
         # Drop the historical data outside the validation time period
-        last_ts = self.simulation.initializer.get_first_relevant_ts()
-        first_ts = last_ts - int(
+        last_time_step = self.simulation.initializer.get_first_relevant_time_step()
+        first_time_step = last_time_step - int(
             NUM_VALIDATION_YEARS / self.simulation.initializer.time_converter.time_step
         )
         historical_population = historical_population.loc[
             (historical_population.run_date == historical_population.run_date.max())
-            & (historical_population.time_step.between(first_ts, last_ts))
+            & (historical_population.time_step.between(first_time_step, last_time_step))
         ]
         historical_population = historical_population[
-            ["compartment", "gender", "time_step", "total_population"]
+            ["compartment", "gender", "time_step", "compartment_population"]
         ].copy()
 
         # Format the data to match the other tables
@@ -163,11 +166,11 @@ class PopulationProjector:
             "compartment",
             "simulation_group",
             "time_step",
-            "total_population_actual",
+            "compartment_population_actual",
         ]
         historical_population = self._format_data(
             df=historical_population,
-            total_population_col="total_population_actual",
+            population_col="compartment_population_actual",
         )
         return historical_population
 
@@ -214,11 +217,15 @@ class PopulationProjector:
             x_pred = group_projection.time_step.values
             lower_bound = [
                 max(y - x / 2, 0)
-                for x, y in zip(group_bounds.width, group_projection.total_population)
+                for x, y in zip(
+                    group_bounds.width, group_projection.compartment_population
+                )
             ]
             upper_bound = [
                 y + x / 2
-                for x, y in zip(group_bounds.width, group_projection.total_population)
+                for x, y in zip(
+                    group_bounds.width, group_projection.compartment_population
+                )
             ]
 
             # Append the results to the prediction_intervals df
@@ -228,9 +235,9 @@ class PopulationProjector:
                     "year": x_pred,
                     "compartment": [compartment] * n,
                     "simulation_group": [simulation_group] * n,
-                    "total_population": group_projection.total_population,
-                    "total_population_min": lower_bound,
-                    "total_population_max": upper_bound,
+                    "compartment_population": group_projection.compartment_population,
+                    "compartment_population_min": lower_bound,
+                    "compartment_population_max": upper_bound,
                 }
             )
             prediction_intervals = pd.concat([prediction_intervals, group_interval])
@@ -354,11 +361,11 @@ class PopulationProjector:
         )
 
     def _format_data(
-        self, df: pd.DataFrame, total_population_col: str = "total_population"
+        self, df: pd.DataFrame, population_col: str = "compartment_population"
     ) -> pd.DataFrame:
         df = PopulationProjector._convert_reincarceration(df)
         df = df[~df.index.get_level_values("compartment").isin(EXCLUDED_COMPARTMENTS)]
-        df = PopulationProjector._add_aggregate_rows(df, total_population_col)
+        df = PopulationProjector._add_aggregate_rows(df, population_col)
         self.convert_time_step(df)
         return df
 
@@ -372,16 +379,14 @@ class PopulationProjector:
             return compartment_name
 
         df["compartment"] = df["compartment"].apply(convert_compartment_name)
-        total_population_col = [col for col in df.columns if "total_population" in col]
-        if len(total_population_col) == 0:
+        population_col = [col for col in df.columns if "compartment_population" in col]
+        if len(population_col) == 0:
             raise ValueError(
-                f"Cannot determine total population column out of [{', '.join(df.columns)}]"
+                f"Cannot determine population column out of [{', '.join(df.columns)}]"
             )
-        all_other_columns = [
-            col for col in df.columns if col not in total_population_col
-        ]
+        all_other_columns = [col for col in df.columns if col not in population_col]
         df = (
-            df.groupby(all_other_columns)[total_population_col]
+            df.groupby(all_other_columns)[population_col]
             .sum()
             .reset_index("time_step", drop=False)
         )
@@ -389,15 +394,15 @@ class PopulationProjector:
 
     @staticmethod
     def _add_aggregate_rows(
-        df: pd.DataFrame, total_pop_col: str = "total_population"
+        df: pd.DataFrame, pop_col: str = "compartment_population"
     ) -> pd.DataFrame:
         """Add aggregate rows for simulation group 'ALL' and legal status 'ALL'"""
         if df.empty:
             raise ValueError("Cannot add aggregate rows to empty dataframe")
 
-        if total_pop_col not in df.columns:
+        if pop_col not in df.columns:
             raise ValueError(
-                f"'{total_pop_col}' total population column not available in dataframe: [{', '.join(df.columns)}]"
+                f"'{pop_col}' population column not available in dataframe: [{', '.join(df.columns)}]"
             )
 
         df = df.reset_index(drop=False)
@@ -405,11 +410,11 @@ class PopulationProjector:
         all_other_columns = [
             col
             for col in df.columns
-            if col not in [total_pop_col, "compartment", "simulation_group"]
+            if col not in [pop_col, "compartment", "simulation_group"]
         ]
         # Append rows for the "ALL" simulation_group
         simulation_group_all = pd.DataFrame(
-            df.groupby(["compartment"] + all_other_columns)[total_pop_col].sum()
+            df.groupby(["compartment"] + all_other_columns)[pop_col].sum()
         ).reset_index(drop=False)
         simulation_group_all.loc[:, "simulation_group"] = "ALL"
         df = pd.concat([df, simulation_group_all])
@@ -419,10 +424,10 @@ class PopulationProjector:
         df["compartment_level_1"] = [
             split[0] for split in df["compartment"].str.split(" - ")
         ]
-        # Sum the total population per sector
+        # Sum the population per sector
         legal_status_all = pd.DataFrame(
             df.groupby(["compartment_level_1", "simulation_group"] + all_other_columns)[
-                total_pop_col
+                pop_col
             ].sum()
         ).reset_index(drop=False)
         # Reformat the legal status "ALL" df and combine with the original df

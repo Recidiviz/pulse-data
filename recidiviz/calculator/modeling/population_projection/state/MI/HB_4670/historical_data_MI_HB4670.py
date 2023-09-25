@@ -28,6 +28,7 @@ ADDITIONAL NOTES: None
 """
 
 import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
@@ -50,8 +51,8 @@ population["total_population"] = population["total_population"].astype(float)
 transitions["total_population"] = transitions["total_population"].astype(float)
 
 # convert to monthly data
-outflows = yearly_to_monthly_data(outflows, True)
-population = yearly_to_monthly_data(population, False)
+outflows = yearly_to_monthly_data(outflows, "total_population")
+population = yearly_to_monthly_data(population, "total_population")
 transitions.compartment_duration *= 12
 
 upload_spark_model_inputs(

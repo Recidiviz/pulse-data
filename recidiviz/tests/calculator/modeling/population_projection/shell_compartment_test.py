@@ -15,16 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test the ShellCompartment object"""
+import unittest
 from functools import partial
 from typing import List
-import unittest
+
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.full_compartment import (
-    FullCompartment,
-)
 from recidiviz.calculator.modeling.population_projection.compartment_transitions import (
     CompartmentTransitions,
+)
+from recidiviz.calculator.modeling.population_projection.full_compartment import (
+    FullCompartment,
 )
 from recidiviz.calculator.modeling.population_projection.shell_compartment import (
     ShellCompartment,
@@ -39,16 +40,16 @@ class TestShellCompartment(unittest.TestCase):
         self.historical_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2, 2.5, 10],
-                "total_population": [4, 2, 2, 4, 3],
+                "cohort_portion": [4, 2, 2, 4, 3],
                 "outflow_to": ["jail", "prison", "jail", "prison", "prison"],
                 "compartment": ["test"] * 5,
             }
         )
 
-        self.test_outflow_data = pd.DataFrame(
+        self.test_admissions_data = pd.DataFrame(
             {
-                "total_population": [4, 2, 2, 4, 3],
-                "outflow_to": [
+                "cohort_population": [4, 2, 2, 4, 3],
+                "admission_to": [
                     "supervision",
                     "prison",
                     "supervision",
@@ -59,13 +60,13 @@ class TestShellCompartment(unittest.TestCase):
                 "time_step": [0, 0, 0, 0, 0],
             }
         )
-        self.test_outflow_data = self.test_outflow_data.groupby(
-            ["compartment", "outflow_to", "time_step"]
-        )["total_population"].sum()
+        self.test_admissions_data = self.test_admissions_data.groupby(
+            ["compartment", "admission_to", "time_step"]
+        )["cohort_population"].sum()
         # shadows logic in SubSimulationFactory._load_data()
-        self.test_outflow_data = (
-            self.test_outflow_data.unstack(level=["outflow_to", "time_step"])
-            .stack(level="outflow_to", dropna=False)
+        self.test_admissions_data = (
+            self.test_admissions_data.unstack(level=["admission_to", "time_step"])
+            .stack(level="admission_to", dropna=False)
             .loc["pretrial"]
             .fillna(0)
         )
@@ -77,14 +78,14 @@ class TestShellCompartment(unittest.TestCase):
             self.compartment_policies
         )
 
-        self.starting_ts = 2015
-        self.policy_ts = 2018
+        self.starting_time_step = 2015
+        self.policy_time_step = 2018
 
     def test_all_edges_fed_to(self) -> None:
-        """ShellCompartments require edges to the compartments defined in the outflows_data"""
+        """ShellCompartments require edges to the compartments defined in the admissions_data"""
         test_shell_compartment = ShellCompartment(
-            self.test_outflow_data,
-            starting_ts=self.starting_ts,
+            self.test_admissions_data,
+            starting_time_step=self.starting_time_step,
             tag="test_shell",
             constant_admissions=True,
             policy_list=[],
@@ -92,7 +93,7 @@ class TestShellCompartment(unittest.TestCase):
         test_full_compartment = FullCompartment(
             pd.DataFrame(),
             self.test_transition_table,
-            starting_ts=self.starting_ts,
+            starting_time_step=self.starting_time_step,
             tag="test_compartment",
         )
         with self.assertRaises(ValueError):
@@ -103,48 +104,50 @@ class TestShellCompartment(unittest.TestCase):
     def test_use_alternate_data_equal_to_differently_instantiated_shell_compartment(
         self,
     ) -> None:
-        alternate_outflow_data = pd.DataFrame(
+        alternate_admissions_data = pd.DataFrame(
             {
-                "total_population": [40, 21, 25, 30],
-                "outflow_to": ["supervision", "prison", "supervision", "prison"],
+                "cohort_population": [40, 21, 25, 30],
+                "admission_to": ["supervision", "prison", "supervision", "prison"],
                 "compartment": ["pretrial"] * 4,
                 "time_step": [1, 1, 2, 2],
             }
         )
-        preprocessed_alternate_outflows = alternate_outflow_data.groupby(
-            ["compartment", "outflow_to", "time_step"]
-        )["total_population"].sum()
+        preprocessed_alternate_admissions = alternate_admissions_data.groupby(
+            ["compartment", "admission_to", "time_step"]
+        )["cohort_population"].sum()
         # shadows logic in SubSimulationFactory._load_data()
-        preprocessed_alternate_outflows = (
-            preprocessed_alternate_outflows.unstack(level=["outflow_to", "time_step"])
-            .stack(level="outflow_to", dropna=False)
+        preprocessed_alternate_admissions = (
+            preprocessed_alternate_admissions.unstack(
+                level=["admission_to", "time_step"]
+            )
+            .stack(level="admission_to", dropna=False)
             .loc["pretrial"]
             .fillna(0)
         )
 
-        use_alternate_outflows = SparkPolicy(
+        use_alternate_admissions = SparkPolicy(
             partial(
-                ShellCompartment.use_alternate_outflows_data,
-                alternate_outflows_data=alternate_outflow_data,
+                ShellCompartment.use_alternate_admissions_data,
+                alternate_admissions_data=alternate_admissions_data,
                 tag="pretrial",
             ),
             spark_compartment="pretrial",
             sub_population={"subgroup": "test"},
-            policy_ts=self.policy_ts,
+            policy_time_step=self.policy_time_step,
             apply_retroactive=False,
         )
 
         policy_shell_compartment = ShellCompartment(
-            self.test_outflow_data,
-            starting_ts=self.starting_ts,
+            self.test_admissions_data,
+            starting_time_step=self.starting_time_step,
             tag="pretrial",
             constant_admissions=True,
-            policy_list=[use_alternate_outflows],
+            policy_list=[use_alternate_admissions],
         )
 
         alternate_shell_compartment = ShellCompartment(
-            preprocessed_alternate_outflows,
-            starting_ts=self.starting_ts,
+            preprocessed_alternate_admissions,
+            starting_time_step=self.starting_time_step,
             tag="pretrial",
             constant_admissions=True,
             policy_list=[],

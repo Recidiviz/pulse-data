@@ -256,8 +256,8 @@ policy_transitions.to_csv(raw_file_path + "S312/policy_transitions.csv", index=F
 upload_spark_model_inputs(
     project_id="recidiviz-staging",
     simulation_tag=simulation_tag,
-    outflows_data_df=outflows,
+    admissions_data_df=outflows,
     transitions_data_df=baseline_transitions,
-    total_population_data_df=population,
+    population_data_df=population,
     yaml_path=yaml_file_path,
 )

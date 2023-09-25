@@ -100,8 +100,8 @@ population_data = population_data.drop("population_date", axis=1)
 upload_spark_model_inputs(
     project_id="recidiviz-staging",
     simulation_tag=simulation_tag,
-    outflows_data_df=outflow_data,
+    admissions_data_df=outflow_data,
     transitions_data_df=transition_data,
-    total_population_data_df=population_data,
+    population_data_df=population_data,
     yaml_path=yaml_file_path,
 )

@@ -40,43 +40,37 @@ from recidiviz.calculator.modeling.population_projection.transition_table import
 class TestPopulationSimulation(unittest.TestCase):
     """Test the PopulationSimulation class runs correctly"""
 
-    test_outflows_data = pd.DataFrame()
+    test_admissions_data = pd.DataFrame()
     test_transitions_data = pd.DataFrame()
-    test_total_population_data = pd.DataFrame()
+    test_population_data = pd.DataFrame()
     user_inputs: UserInputs = cast(UserInputs, None)
     simulation_architecture: Dict[str, str] = {}
     macro_population_simulation: Optional[PopulationSimulation] = None
     macro_projection = pd.DataFrame()
 
     def setUp(self) -> None:
-        self.test_outflows_data = pd.DataFrame(
+        self.test_admissions_data = pd.DataFrame(
             {
-                "total_population": [4, 2, 2, 4, 3] * 2,
-                "crime": ["NAR"] * 5 + ["BUR"] * 5,
-                "outflow_to": [
+                "cohort_population": [4, 3] * 2,
+                "crime": ["NAR"] * 2 + ["BUR"] * 2,
+                "admission_to": [
                     "supervision",
-                    "prison",
-                    "supervision",
-                    "prison",
                     "prison",
                 ]
                 * 2,
                 "compartment": [
-                    "prison",
-                    "supervision",
-                    "prison",
                     "pretrial",
                     "pretrial",
                 ]
                 * 2,
-                "time_step": [0] * 10,
+                "time_step": [0] * 4,
             }
         )
 
         self.test_transitions_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2] * 2,
-                "total_population": [4, 2, 2] * 2,
+                "cohort_portion": [4, 2, 2] * 2,
                 "crime": ["NAR"] * 3 + ["BUR"] * 3,
                 "outflow_to": ["supervision", "prison", "supervision"] * 2,
                 "compartment": ["prison", "supervision", "prison"] * 2,
@@ -84,9 +78,9 @@ class TestPopulationSimulation(unittest.TestCase):
             }
         )
 
-        self.test_total_population_data = pd.DataFrame(
+        self.test_population_data = pd.DataFrame(
             {
-                "total_population": [10] * 10,
+                "compartment_population": [10] * 10,
                 "compartment": ["prison"] * 10,
                 "crime": ["NAR"] * 5 + ["BUR"] * 5,
                 "time_step": list(range(-4, 1)) * 2,
@@ -105,9 +99,9 @@ class TestPopulationSimulation(unittest.TestCase):
             "supervision": "full",
         }
         test_data_inputs = SimulationInputData(
-            outflows_data=self.test_outflows_data,
+            admissions_data=self.test_admissions_data,
             transitions_data=self.test_transitions_data,
-            total_population_data=self.test_total_population_data,
+            population_data=self.test_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
@@ -124,15 +118,15 @@ class TestPopulationSimulation(unittest.TestCase):
         self.macro_projection = self.macro_population_simulation.simulate_policies()
 
     def test_disaggregation_axes_must_be_in_data_dfs(self) -> None:
-        test_outflows_data = self.test_outflows_data.drop("crime", axis=1)
+        test_admissions_data = self.test_admissions_data.drop("crime", axis=1)
 
         test_transitions_data = self.test_transitions_data.drop("crime", axis=1)
 
         with self.assertRaises(ValueError):
             test_data_inputs = SimulationInputData(
-                outflows_data=test_outflows_data,
+                admissions_data=test_admissions_data,
                 transitions_data=self.test_transitions_data,
-                total_population_data=self.test_total_population_data,
+                population_data=self.test_population_data,
                 compartments_architecture=self.simulation_architecture,
                 disaggregation_axes=["crime"],
                 microsim=False,
@@ -147,9 +141,9 @@ class TestPopulationSimulation(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             test_data_inputs = SimulationInputData(
-                outflows_data=test_outflows_data,
+                admissions_data=test_admissions_data,
                 transitions_data=test_transitions_data,
-                total_population_data=self.test_total_population_data,
+                population_data=self.test_population_data,
                 compartments_architecture=self.simulation_architecture,
                 disaggregation_axes=["crime"],
                 microsim=False,
@@ -164,9 +158,9 @@ class TestPopulationSimulation(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             test_data_inputs = SimulationInputData(
-                outflows_data=self.test_outflows_data,
+                admissions_data=self.test_admissions_data,
                 transitions_data=test_transitions_data,
-                total_population_data=self.test_total_population_data,
+                population_data=self.test_population_data,
                 compartments_architecture=self.simulation_architecture,
                 disaggregation_axes=["crime"],
                 microsim=False,
@@ -181,9 +175,9 @@ class TestPopulationSimulation(unittest.TestCase):
 
     def test_simulation_forces_complete_user_inputs_dict(self) -> None:
         test_data_inputs = SimulationInputData(
-            outflows_data=self.test_outflows_data,
+            admissions_data=self.test_admissions_data,
             transitions_data=self.test_transitions_data,
-            total_population_data=self.test_total_population_data,
+            population_data=self.test_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
@@ -210,9 +204,9 @@ class TestPopulationSimulation(unittest.TestCase):
             )
         ]
         test_data_inputs = SimulationInputData(
-            outflows_data=self.test_outflows_data,
+            admissions_data=self.test_admissions_data,
             transitions_data=self.test_transitions_data,
-            total_population_data=self.test_total_population_data,
+            population_data=self.test_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
@@ -237,9 +231,9 @@ class TestPopulationSimulation(unittest.TestCase):
     def test_baseline_with_backcast_projection_off(self) -> None:
         """Assert that microsim simulation results only have positive time steps"""
         test_data_inputs = SimulationInputData(
-            outflows_data=self.test_outflows_data,
+            admissions_data=self.test_admissions_data,
             transitions_data=self.test_transitions_data,
-            total_population_data=self.test_total_population_data,
+            population_data=self.test_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
@@ -259,20 +253,20 @@ class TestPopulationSimulation(unittest.TestCase):
 
     def test_dropping_data_raises_warning(self) -> None:
         """Assert that PopulationSimulation throws an error when some input data goes unused"""
-        non_disaggregated_outflows_data = self.test_outflows_data.copy()
+        non_disaggregated_admissions_data = self.test_admissions_data.copy()
         non_disaggregated_transitions_data = self.test_transitions_data.copy()
 
-        non_disaggregated_outflows_data.loc[
-            non_disaggregated_outflows_data.compartment != "pretrial", "crime"
+        non_disaggregated_admissions_data.loc[
+            non_disaggregated_admissions_data.admission_to == "supervision", "crime"
         ] = None
         non_disaggregated_transitions_data.loc[
             non_disaggregated_transitions_data.index == 0, "crime"
         ] = None
 
         test_data_inputs = SimulationInputData(
-            outflows_data=self.test_outflows_data,
+            admissions_data=self.test_admissions_data,
             transitions_data=non_disaggregated_transitions_data,
-            total_population_data=self.test_total_population_data,
+            population_data=self.test_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
@@ -290,9 +284,9 @@ class TestPopulationSimulation(unittest.TestCase):
                 mock.mock_calls[0].args[0], "Some transitions data left unused: %s"
             )
         test_data_inputs = SimulationInputData(
-            outflows_data=non_disaggregated_outflows_data,
+            admissions_data=non_disaggregated_admissions_data,
             transitions_data=self.test_transitions_data,
-            total_population_data=self.test_total_population_data,
+            population_data=self.test_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
@@ -307,18 +301,18 @@ class TestPopulationSimulation(unittest.TestCase):
             )
             mock.assert_called_once()
             self.assertEqual(
-                mock.mock_calls[0].args[0], "Some outflows data left unused: %s"
+                mock.mock_calls[0].args[0], "Some admissions data left unused: %s"
             )
 
     def test_doubled_populations_doubles_simulation_populations(self) -> None:
         """Validates population scaling is actually scaling populations"""
 
-        doubled_population_data = self.test_total_population_data.copy()
-        doubled_population_data.total_population *= 2
+        doubled_population_data = self.test_population_data.copy()
+        doubled_population_data.compartment_population *= 2
         test_data_inputs = SimulationInputData(
-            outflows_data=self.test_outflows_data,
+            admissions_data=self.test_admissions_data,
             transitions_data=self.test_transitions_data,
-            total_population_data=doubled_population_data,
+            population_data=doubled_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
@@ -339,29 +333,29 @@ class TestPopulationSimulation(unittest.TestCase):
             baseline_pop = self.macro_projection.loc[
                 (self.macro_projection.compartment == row.compartment)
                 & (self.macro_projection.time_step == row.time_step),
-                "total_population",
+                "compartment_population",
             ].iloc[0]
             doubled_pop = doubled_projection.loc[
                 (doubled_projection.compartment == row.compartment)
                 & (doubled_projection.time_step == row.time_step),
-                "total_population",
+                "compartment_population",
             ].iloc[0]
             self.assertEqual(round(baseline_pop * 2), round(doubled_pop))
 
     def test_coarse_population_data(self) -> None:
         """
-        Test that PopulationSimulation can handle total_population_data with one less disaggregation axis
+        Test that PopulationSimulation can handle population_data with one less disaggregation axis
             than other data dfs
         """
         coarse_population_data = (
-            self.test_total_population_data.groupby(["compartment", "time_step"])
+            self.test_population_data.groupby(["compartment", "time_step"])
             .sum()
             .reset_index()
         )
         test_data_inputs = SimulationInputData(
-            outflows_data=self.test_outflows_data,
+            admissions_data=self.test_admissions_data,
             transitions_data=self.test_transitions_data,
-            total_population_data=coarse_population_data,
+            population_data=coarse_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["crime"],
             microsim=False,
@@ -385,12 +379,12 @@ class TestPopulationSimulation(unittest.TestCase):
         self,
     ) -> None:
         """Validate age cross function works as expected."""
-        age_outflows_data = pd.DataFrame(
+        age_admissions_data = pd.DataFrame(
             {
-                "total_population": [0] * 5,
+                "cohort_population": [0] * 5,
                 "age": ["0-24", "25-29", "30-34", "35-39", "40+"],
                 "compartment": ["pretrial"] * 5,
-                "outflow_to": ["prison"] * 5,
+                "admission_to": ["prison"] * 5,
                 "time_step": [0] * 5,
             }
         )
@@ -398,7 +392,7 @@ class TestPopulationSimulation(unittest.TestCase):
         age_transitions_data = pd.DataFrame(
             {
                 "compartment_duration": [1000, 1000, 1000] * 5,
-                "total_population": [4, 2, 2] * 5,
+                "cohort_portion": [4, 2, 2] * 5,
                 "age": ["0-24"] * 3
                 + ["25-29"] * 3
                 + ["30-34"] * 3
@@ -410,9 +404,9 @@ class TestPopulationSimulation(unittest.TestCase):
             }
         )
 
-        age_total_population_data = pd.DataFrame(
+        age_population_data = pd.DataFrame(
             {
-                "total_population": [10, 0, 0, 5, 0],
+                "compartment_population": [10, 0, 0, 5, 0],
                 "compartment": ["prison"] * 5,
                 "age": ["0-24", "25-29", "30-34", "35-39", "40+"],
                 "time_step": [0] * 5,
@@ -426,9 +420,9 @@ class TestPopulationSimulation(unittest.TestCase):
             cross_flow_function="update_attributes_age_recidiviz_schema",
         )
         age_data_inputs = SimulationInputData(
-            outflows_data=age_outflows_data,
+            admissions_data=age_admissions_data,
             transitions_data=age_transitions_data,
-            total_population_data=age_total_population_data,
+            population_data=age_population_data,
             compartments_architecture=self.simulation_architecture,
             disaggregation_axes=["age"],
             microsim=True,

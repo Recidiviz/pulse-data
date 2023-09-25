@@ -31,13 +31,13 @@ from recidiviz.utils.yaml_dict import YAMLDict
 SPARK_INPUT_PROJECT_ID = "recidiviz-staging"
 SPARK_INPUT_DATASET = "spark_public_input_data"
 
-OUTFLOWS_DATA_TABLE_NAME = "outflows_data_raw"
+ADMISSIONS_DATA_TABLE_NAME = "admissions_data_raw"
 OUTFLOWS_SCHEMA = [
     {"name": "simulation_tag", "type": "STRING", "mode": "REQUIRED"},
     {"name": "time_step", "type": "INTEGER", "mode": "REQUIRED"},
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "outflow_to", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "total_population", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "admission_to", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "cohort_population", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "crime", "type": "STRING", "mode": "NULLABLE"},
     {"name": "crime_type", "type": "STRING", "mode": "NULLABLE"},
     {"name": "age", "type": "STRING", "mode": "NULLABLE"},
@@ -52,7 +52,7 @@ TRANSITIONS_SCHEMA = [
     {"name": "compartment_duration", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
     {"name": "outflow_to", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "total_population", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "cohort_portion", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "crime", "type": "STRING", "mode": "NULLABLE"},
     {"name": "crime_type", "type": "STRING", "mode": "NULLABLE"},
     {"name": "age", "type": "STRING", "mode": "NULLABLE"},
@@ -60,12 +60,12 @@ TRANSITIONS_SCHEMA = [
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
 ]
 
-TOTAL_POPULATION_DATA_TABLE_NAME = "total_population_data_raw"
-TOTAL_POPULATION_SCHEMA = [
+POPULATION_DATA_TABLE_NAME = "population_data_raw"
+POPULATION_SCHEMA = [
     {"name": "simulation_tag", "type": "STRING", "mode": "REQUIRED"},
     {"name": "time_step", "type": "INTEGER", "mode": "REQUIRED"},
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "total_population", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "compartment_population", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "crime", "type": "STRING", "mode": "NULLABLE"},
     {"name": "crime_type", "type": "STRING", "mode": "NULLABLE"},
     {"name": "age", "type": "STRING", "mode": "NULLABLE"},
@@ -123,7 +123,7 @@ def _validate_data(project_id: str, uploads: List[Dict[str, Any]]) -> None:
             raise ValueError(f"Table '{table_name}' must not contain null values")
 
         # check that dataframe contains at least one of the required disaggregation axes
-        if params["table"] != TOTAL_POPULATION_DATA_TABLE_NAME:
+        if params["table"] != POPULATION_DATA_TABLE_NAME:
             missing_columns = {"crime", "crime_type", "age", "race"}.difference(
                 params["data_df"].columns
             )
@@ -166,11 +166,11 @@ def _validate_yaml(yaml_path: str, uploads: List[Dict[str, Any]]) -> None:
 
     for axis in disaggregation_axes:
         for upload in uploads:
-            if upload["table"] != "total_population_data_raw":
+            if upload["table"] != "population_data_raw":
                 df = upload["data_df"]
                 if axis not in df.columns:
                     raise ValueError(
-                        f"All disagregation axes must be included in the input dataframe columns\n"
+                        f"All disaggregation axes must be included in the input dataframe columns\n"
                         f"Expected: {disaggregation_axes}, Actual: {df.columns}"
                     )
 
@@ -178,9 +178,9 @@ def _validate_yaml(yaml_path: str, uploads: List[Dict[str, Any]]) -> None:
 def upload_spark_model_inputs(
     project_id: str,
     simulation_tag: str,
-    outflows_data_df: pd.DataFrame,
+    admissions_data_df: pd.DataFrame,
     transitions_data_df: pd.DataFrame,
-    total_population_data_df: pd.DataFrame,
+    population_data_df: pd.DataFrame,
     yaml_path: str,
 ) -> None:
     """Reformat the preprocessed model input data to match the table schema and upload them to BigQuery"""
@@ -189,9 +189,9 @@ def upload_spark_model_inputs(
 
     uploads = [
         {
-            "table": OUTFLOWS_DATA_TABLE_NAME,
+            "table": ADMISSIONS_DATA_TABLE_NAME,
             "schema": OUTFLOWS_SCHEMA,
-            "data_df": outflows_data_df.copy(),
+            "data_df": admissions_data_df.copy(),
         },
         {
             "table": TRANSITIONS_DATA_TABLE_NAME,
@@ -199,9 +199,9 @@ def upload_spark_model_inputs(
             "data_df": transitions_data_df.copy(),
         },
         {
-            "table": TOTAL_POPULATION_DATA_TABLE_NAME,
-            "schema": TOTAL_POPULATION_SCHEMA,
-            "data_df": total_population_data_df.copy(),
+            "table": POPULATION_DATA_TABLE_NAME,
+            "schema": POPULATION_SCHEMA,
+            "data_df": population_data_df.copy(),
         },
     ]
     # Validate that the dataframe data won't cause errors when running simulation

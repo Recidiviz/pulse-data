@@ -119,8 +119,8 @@ total_population["total_population"] = total_population["total_population"].asty
 upload_spark_model_inputs(
     project_id="recidiviz-staging",
     simulation_tag=simulation_tag,
-    outflows_data_df=outflows,
+    admissions_data_df=outflows,
     transitions_data_df=baseline_transitions,
-    total_population_data_df=total_population,
+    population_data_df=total_population,
     yaml_path=yaml_file_path,
 )

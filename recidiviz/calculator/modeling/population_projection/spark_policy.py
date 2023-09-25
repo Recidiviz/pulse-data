@@ -33,7 +33,7 @@ class SparkPolicy:
         policy_fn: Callable[[Any], Optional[pd.DataFrame]],
         spark_compartment: str,
         sub_population: Dict[str, str],
-        policy_ts: int,
+        policy_time_step: int,
         apply_retroactive: bool = False,
     ) -> None:
         """
@@ -42,14 +42,14 @@ class SparkPolicy:
         `policy_fn` the method to use for the transition object in order to simulate the policy change
         `spark_compartment` the name of the compartment where this policy applies
         `sub_population` the dictionary of disaggregated axes where this policy applies
-        `policy_ts` the time step at which the policy occurs
+        `policy_time_step` the time step at which the policy occurs
         `apply_retroactive` True if the policy should be applied retroactively to those already in the system
         """
 
         self.policy_fn = policy_fn
         self.spark_compartment = spark_compartment
         self.sub_population = sub_population
-        self.policy_ts = policy_ts
+        self.policy_time_step = policy_time_step
         self.apply_retroactive = apply_retroactive
 
     @staticmethod
@@ -89,8 +89,10 @@ class SparkPolicy:
         )
 
     @staticmethod
-    def get_ts_policies(
+    def get_time_step_policies(
         policy_list: List["SparkPolicy"], time_step: int
     ) -> List["SparkPolicy"]:
         """Return a list of SParkPolicy objects for the specific time step."""
-        return SparkPolicy._get_applicable_policies(policy_list, "policy_ts", time_step)
+        return SparkPolicy._get_applicable_policies(
+            policy_list, "policy_time_step", time_step
+        )

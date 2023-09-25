@@ -17,4 +17,4 @@
 """constants used in handling transition probabilities in population projection modeling"""
 
 SIG_FIGS = 7
-MIN_POSSIBLE_POLICY_TS = -9999
+MIN_POSSIBLE_POLICY_TIME_STEP = -9999

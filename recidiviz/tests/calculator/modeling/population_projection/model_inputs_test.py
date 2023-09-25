@@ -44,7 +44,7 @@ class TestModelInputs(unittest.TestCase):
         mock.MagicMock(return_value=pd.DataFrame(columns=["compartment"])),
     )
     @patch(
-        "recidiviz.calculator.modeling.population_projection.super_simulation.initializer.Initializer.fully_hydrate_outflows",
+        "recidiviz.calculator.modeling.population_projection.super_simulation.initializer.Initializer.fully_hydrate_admissions",
         mock.MagicMock(return_value=pd.DataFrame(columns=["compartment"])),
     )
     def test_existing_model_inputs(self) -> None:

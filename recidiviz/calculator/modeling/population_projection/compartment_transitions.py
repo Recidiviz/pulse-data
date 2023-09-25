@@ -26,7 +26,7 @@ from recidiviz.calculator.modeling.population_projection.transition_table import
     TransitionTable,
 )
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
-    MIN_POSSIBLE_POLICY_TS,
+    MIN_POSSIBLE_POLICY_TIME_STEP,
 )
 
 
@@ -50,7 +50,7 @@ class CompartmentTransitions:
             "outflow_to",
             "compartment",
             "compartment_duration",
-            "total_population",
+            "cohort_portion",
         ]
         missing_columns = [
             col for col in required_columns if col not in historical_outflows.columns
@@ -70,7 +70,7 @@ class CompartmentTransitions:
                 "Cannot create a transition table with an empty transitions_data dataframe"
             )
 
-        for column in ["total_population", "compartment_duration"]:
+        for column in ["cohort_portion", "compartment_duration"]:
             if historical_outflows[
                 historical_outflows["compartment_duration"] > 0
             ].empty:
@@ -91,24 +91,27 @@ class CompartmentTransitions:
 
     def initialize_transition_tables(self, policy_list: List[SparkPolicy]) -> None:
         """Populate the 'before' transition table and initializes the max_sentence from historical data"""
-        self.transition_tables[MIN_POSSIBLE_POLICY_TS] = TransitionTable(
-            MIN_POSSIBLE_POLICY_TS, []
+        self.transition_tables[MIN_POSSIBLE_POLICY_TIME_STEP] = TransitionTable(
+            MIN_POSSIBLE_POLICY_TIME_STEP, []
         )
-        self.transition_tables[MIN_POSSIBLE_POLICY_TS].generate_transition_tables(
-            [MIN_POSSIBLE_POLICY_TS], self.historical_outflows
+        self.transition_tables[
+            MIN_POSSIBLE_POLICY_TIME_STEP
+        ].generate_transition_tables(
+            [MIN_POSSIBLE_POLICY_TIME_STEP], self.historical_outflows
         )
 
-        policy_time_steps = sorted({policy.policy_ts for policy in policy_list})
+        policy_time_steps = sorted({policy.policy_time_step for policy in policy_list})
 
         if (
             len(policy_time_steps) > 0
-            and min(policy_time_steps) <= MIN_POSSIBLE_POLICY_TS
+            and min(policy_time_steps) <= MIN_POSSIBLE_POLICY_TIME_STEP
         ):
             raise ValueError(
-                f"Policy ts exceeds minimum allowable value ({MIN_POSSIBLE_POLICY_TS}): {min(policy_time_steps)}"
+                f"Policy time_step exceeds minimum allowable value ({MIN_POSSIBLE_POLICY_TIME_STEP}): \
+                {min(policy_time_steps)}"
             )
 
-        policy_time_steps.append(MIN_POSSIBLE_POLICY_TS)
+        policy_time_steps.append(MIN_POSSIBLE_POLICY_TIME_STEP)
         policy_time_steps.sort()
 
         for tsi, ts in enumerate(policy_time_steps[1:], 1):
@@ -116,16 +119,22 @@ class CompartmentTransitions:
                 self.transition_tables[policy_time_steps[tsi - 1]].tables
             )
             self.transition_tables[ts] = TransitionTable(
-                ts, SparkPolicy.get_ts_policies(policy_list, ts), prev_tables
+                ts, SparkPolicy.get_time_step_policies(policy_list, ts), prev_tables
             )
 
         # normalize all tables
         for _, transition_table in self.transition_tables.items():
             transition_table.normalize_transitions()
 
-    def get_per_ts_transition_table(self, current_ts: int) -> pd.DataFrame:
+    def get_per_time_step_transition_table(
+        self, current_time_step: int
+    ) -> pd.DataFrame:
         """function used by SparkCompartment to determine which of the state transition tables to pull from"""
 
-        # take transitions from the most recent table whose policy ts has already passed
-        policy_time_step = max(ts for ts in self.transition_tables if ts <= current_ts)
-        return self.transition_tables[policy_time_step].get_per_ts_table(current_ts)
+        # take transitions from the most recent table whose policy time_step has already passed
+        policy_time_step = max(
+            ts for ts in self.transition_tables if ts <= current_time_step
+        )
+        return self.transition_tables[policy_time_step].get_per_time_step_table(
+            current_time_step
+        )
