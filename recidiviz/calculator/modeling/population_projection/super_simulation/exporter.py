@@ -100,7 +100,7 @@ class Exporter:
             output_data["policy_simulation"]
             .reset_index(drop=False)
             .groupby(["year", "compartment"])[
-                ["policy_total_population", "control_total_population"]
+                ["policy_compartment_population", "control_compartment_population"]
             ]
             .sum()
             .reset_index()
@@ -163,9 +163,9 @@ class Exporter:
             )
 
         scaling_columns = [
-            "total_population",
-            "total_population_min",
-            "total_population_max",
+            "compartment_population",
+            "compartment_population_min",
+            "compartment_population_max",
         ]
         output_data.loc[:, scaling_columns] = output_data.loc[
             :, scaling_columns
@@ -195,7 +195,7 @@ class Exporter:
         for _index, row in excluded_pop.iterrows():
             # TODO(#9720): make this more generalized/customizable for other states
             if row.compartment == "INCARCERATION - ALL":
-                compartment_total_pop = total_pop[
+                compartment_pop = total_pop[
                     total_pop.compartment.isin(
                         [
                             "INCARCERATION - GENERAL",
@@ -204,16 +204,16 @@ class Exporter:
                             "INCARCERATION - PAROLE_BOARD_HOLD",
                         ]
                     )
-                ].total_population.sum()
+                ].compartment_population.sum()
             elif row.compartment == "INCARCERATION - GENERAL":
-                compartment_total_pop = total_pop[
+                compartment_pop = total_pop[
                     total_pop.compartment.isin(
                         [
                             "INCARCERATION - GENERAL",
                             "INCARCERATION - RE-INCARCERATION",
                         ]
                     )
-                ].total_population.sum()
+                ].compartment_population.sum()
                 excluded_general_pop = excluded_pop = excluded_pop[
                     excluded_pop.compartment.isin(
                         [
@@ -221,28 +221,28 @@ class Exporter:
                             "INCARCERATION - RE-INCARCERATION",
                         ]
                     )
-                ].total_population.sum()
+                ].compartment_population.sum()
                 scale_factors[row.compartment] = (
-                    1 - excluded_general_pop / compartment_total_pop
+                    1 - excluded_general_pop / compartment_pop
                 )
                 continue
             elif row.compartment == "SUPERVISION - ALL":
-                compartment_total_pop = total_pop[
+                compartment_pop = total_pop[
                     total_pop.compartment.isin(
                         ["SUPERVISION - PROBATION", "SUPERVISION - PAROLE"]
                     )
-                ].total_population.sum()
+                ].compartment_population.sum()
             elif row.compartment == "SUPERVISION - INTERNAL_UNKNOWN":
-                compartment_total_pop = row.total_population
+                compartment_pop = row.compartment_population
             else:
-                compartment_total_pop = total_pop[
+                compartment_pop = total_pop[
                     total_pop.compartment == row.compartment
-                ].total_population.sum()
+                ].compartment_population.sum()
 
-            if compartment_total_pop == 0:
-                raise ValueError(f"Total population for {row.compartment} cannot be 0")
+            if compartment_pop == 0:
+                raise ValueError(f"Population for {row.compartment} cannot be 0")
             scale_factors[row.compartment] = (
-                1 - row.total_population / compartment_total_pop
+                1 - row.compartment_population / compartment_pop
             )
 
         return scale_factors
@@ -280,14 +280,14 @@ class Exporter:
             for compartment_name, compartment_data in subgroup_data.groupby(
                 "compartment"
             ):
-                # Compute the total population difference with integer values
+                # Compute the population difference with integer values
                 # so compartments with fractional population differences (less than 1)
                 # do not indicate any cost changes
                 subgroup_life_years_diff.loc[
                     compartment_data.index.get_level_values("year"), compartment_name
                 ] = (
-                    compartment_data["control_total_population"].astype(int)
-                    - compartment_data["policy_total_population"].astype(int)
+                    compartment_data["control_compartment_population"].astype(int)
+                    - compartment_data["policy_compartment_population"].astype(int)
                 ) * self.time_converter.get_time_step()
 
             subgroup_spending_diff_non_cumulative = (

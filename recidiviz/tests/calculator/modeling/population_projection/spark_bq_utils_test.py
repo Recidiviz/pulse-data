@@ -38,38 +38,38 @@ class TestSparkBQUtils(unittest.TestCase):
     """Tests that the validation functions in the spark bq utils work correctly."""
 
     def setUp(self) -> None:
-        self.outflows_data = pd.DataFrame(
+        self.admissions_data = pd.DataFrame(
             {
                 "compartment": ["PRETRIAL"] * 12,
-                "outflow_to": ["PRISON"] * 12,
+                "admission_to": ["PRISON"] * 12,
                 "time_step": list(range(5, 11)) * 2,
                 "crime_type": ["NONVIOLENT"] * 6 + ["VIOLENT"] * 6,
-                "total_population": [100.0]
+                "cohort_population": [100.0]
                 + [100.0 + 2 * i for i in range(5)]
                 + [10]
                 + [10 + i for i in range(5)],
             }
         )
 
-        self.outflows_data_no_disaggregation_axis = pd.DataFrame(
+        self.admissions_data_no_disaggregation_axis = pd.DataFrame(
             {
                 "compartment": ["PRETRIAL"] * 12,
-                "outflow_to": ["PRISON"] * 12,
+                "admission_to": ["PRISON"] * 12,
                 "time_step": list(range(5, 11)) * 2,
-                "total_population": [100.0]
+                "cohort_population": [100.0]
                 + [100.0 + 2 * i for i in range(5)]
                 + [10]
                 + [10 + i for i in range(5)],
             }
         )
 
-        self.outflows_data_wrong_disaggregation_axis = pd.DataFrame(
+        self.admissions_data_wrong_disaggregation_axis = pd.DataFrame(
             {
                 "compartment": ["PRETRIAL"] * 12,
-                "outflow_to": ["PRISON"] * 12,
+                "admission_to": ["PRISON"] * 12,
                 "time_step": list(range(5, 11)) * 2,
                 "age": ["young"] * 6 + ["old"] * 6,
-                "total_population": [100.0]
+                "cohort_population": [100.0]
                 + [100.0 + 2 * i for i in range(5)]
                 + [10]
                 + [10 + i for i in range(5)],
@@ -82,7 +82,7 @@ class TestSparkBQUtils(unittest.TestCase):
                 "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
                 "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
                 "crime_type": ["NONVIOLENT"] * 4 + ["VIOLENT"] * 4,
-                "total_population": [0.6, 0.4, 0.3, 0.7] * 2,
+                "cohort_portion": [0.6, 0.4, 0.3, 0.7] * 2,
             }
         )
 
@@ -92,7 +92,7 @@ class TestSparkBQUtils(unittest.TestCase):
                 "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
                 "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
                 "crime_type": [nan] * 4 + ["VIOLENT"] * 4,  # type: ignore
-                "total_population": [0.6, 0.4, 0.3, 0.7] * 2,
+                "cohort_portion": [0.6, 0.4, 0.3, 0.7] * 2,
             }
         )
 
@@ -102,52 +102,52 @@ class TestSparkBQUtils(unittest.TestCase):
                 "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
                 "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
                 "age": ["young"] * 4 + ["old"] * 4,
-                "total_population": [0.6, 0.4, 0.3, 0.7] * 2,
+                "cohort_portion": [0.6, 0.4, 0.3, 0.7] * 2,
             }
         )
 
-        self.total_population_data = pd.DataFrame(
+        self.population_data = pd.DataFrame(
             {
                 "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
                 "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
-                "total_population": [300.0, 500.0, 30.0, 50.0],
+                "compartment_population": [300.0, 500.0, 30.0, 50.0],
             }
         )
 
-        self.total_population_data_wrong_disaggregation_axis = pd.DataFrame(
+        self.population_data_wrong_disaggregation_axis = pd.DataFrame(
             {
                 "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
                 "age": ["young"] * 2 + ["old"] * 2,
-                "total_population": [300.0, 500.0, 30.0, 50.0],
+                "compartment_population": [300.0, 500.0, 30.0, 50.0],
             }
         )
 
-        self.total_population_data_missing_column = pd.DataFrame(
+        self.population_data_missing_column = pd.DataFrame(
             {
                 "compartment": ["PRISON", "LIBERTY"] * 2,
                 "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
-                "total_population": [300.0, 500.0, 30.0, 50.0],
+                "compartment_population": [300.0, 500.0, 30.0, 50.0],
             }
         )
 
-        self.total_population_data_extra_column = pd.DataFrame(
+        self.population_data_extra_column = pd.DataFrame(
             {
                 "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
                 "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
-                "total_population": [300.0, 500.0, 30.0, 50.0],
+                "compartment_population": [300.0, 500.0, 30.0, 50.0],
                 "random_extra_column": [1, 1, 1, 1],
             }
         )
 
-        self.total_population_data_wrong_type = pd.DataFrame(
+        self.population_data_wrong_type = pd.DataFrame(
             {
                 "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
                 "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
-                "total_population": [300, 500, 30, 50],
+                "compartment_population": [300, 500, 30, 50],
             }
         )
 
@@ -156,9 +156,9 @@ class TestSparkBQUtils(unittest.TestCase):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
-                self.outflows_data,
+                self.admissions_data,
                 self.transitions_data,
-                self.total_population_data,
+                self.population_data,
                 get_inputs_path("super_simulation_missing_inputs.yaml"),
             )
 
@@ -167,9 +167,9 @@ class TestSparkBQUtils(unittest.TestCase):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
-                self.outflows_data,
+                self.admissions_data,
                 self.transitions_data,
-                self.total_population_data,
+                self.population_data,
                 get_inputs_path("super_simulation_unexpected_inputs.yaml"),
             )
 
@@ -178,15 +178,15 @@ class TestSparkBQUtils(unittest.TestCase):
     ) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            "^All disagregation axes must be included in the input dataframe columns\n"
-            r"Expected: \['crime_type'\], Actual: Index\(\['compartment', 'outflow_to', 'time_step', 'age', 'total_population'\], dtype='object'\)$",
+            "^All disaggregation axes must be included in the input dataframe columns\n"
+            r"Expected: \['crime_type'\], Actual: Index\(\['compartment', 'admission_to', 'time_step', 'age', 'cohort_population'\], dtype='object'\)$",
         ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
-                self.outflows_data_wrong_disaggregation_axis,
+                self.admissions_data_wrong_disaggregation_axis,
                 self.transitions_data_wrong_disaggregation_axis,
-                self.total_population_data_wrong_disaggregation_axis,
+                self.population_data_wrong_disaggregation_axis,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
 
@@ -197,23 +197,23 @@ class TestSparkBQUtils(unittest.TestCase):
             upload_spark_model_inputs(
                 "bad_project_id",
                 "test",
-                self.outflows_data,
+                self.admissions_data,
                 self.transitions_data,
-                self.total_population_data,
+                self.population_data,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
 
     def test_upload_spark_model_inputs_with_missing_disaggregation_axis(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Tables \['outflows_data'\] must have dissaggregation axis of 'crime', 'crime_type', 'age', or 'race'$",
+            r"^Tables \['admissions_data'\] must have dissaggregation axis of 'crime', 'crime_type', 'age', or 'race'$",
         ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
-                self.outflows_data_no_disaggregation_axis,
+                self.admissions_data_no_disaggregation_axis,
                 self.transitions_data,
-                self.total_population_data,
+                self.population_data,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
 
@@ -224,51 +224,51 @@ class TestSparkBQUtils(unittest.TestCase):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
-                self.outflows_data,
+                self.admissions_data,
                 self.transitions_data_with_null_values,
-                self.total_population_data,
+                self.population_data,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
 
     def test_upload_spark_model_inputs_with_missing_column(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Table 'total_population_data' missing required columns \{'time_step'\}$",
+            r"^Table 'population_data' missing required columns \{'time_step'\}$",
         ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
-                self.outflows_data,
+                self.admissions_data,
                 self.transitions_data,
-                self.total_population_data_missing_column,
+                self.population_data_missing_column,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
 
     def test_upload_spark_model_inputs_with_extra_column(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Table 'total_population_data' contains unexpected columns \{'random_extra_column'\}$",
+            r"^Table 'population_data' contains unexpected columns \{'random_extra_column'\}$",
         ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
-                self.outflows_data,
+                self.admissions_data,
                 self.transitions_data,
-                self.total_population_data_extra_column,
+                self.population_data_extra_column,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
 
     def test_upload_spark_model_inputs_with_column_wrong_type(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            "^Table 'total_population_data' has wrong type for column 'total_population'. Type 'int64' should be 'float64'$",
+            "^Table 'population_data' has wrong type for column 'compartment_population'. Type 'int64' should be 'float64'$",
         ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
-                self.outflows_data,
+                self.admissions_data,
                 self.transitions_data,
-                self.total_population_data_wrong_type,
+                self.population_data_wrong_type,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
 
@@ -279,9 +279,9 @@ class TestSparkBQUtils(unittest.TestCase):
         upload_spark_model_inputs(
             "recidiviz-staging",
             "test",
-            self.outflows_data,
+            self.admissions_data,
             self.transitions_data,
-            self.total_population_data,
+            self.population_data,
             get_inputs_path("super_simulation_data_ingest.yaml"),
         )
         assert mock_store.call_count == 3

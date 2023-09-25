@@ -17,23 +17,26 @@
 """Object representing a location in the justice system"""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List
 from copy import deepcopy
+from typing import Dict, List
+
 import pandas as pd
 
 
 class SparkCompartment(ABC):
     """Encapsulate all the logic for one compartment within the simulation"""
 
-    def __init__(self, outflows_data: pd.DataFrame, starting_ts: int, tag: str) -> None:
-        # the first ts of the projection
-        self.ts_start = starting_ts
+    def __init__(
+        self, outflows_data: pd.DataFrame, starting_time_step: int, tag: str
+    ) -> None:
+        # the first time_step of the projection
+        self.time_step_start = starting_time_step
 
-        # the current ts of the simulation
-        self.current_ts = starting_ts
+        # the current time_step of the simulation
+        self.current_time_step = starting_time_step
 
         # historical data of outflow from compartment
-        self.outflows_data = outflows_data
+        self.historical_outflows = outflows_data
 
         # SparkCompartments this compartment feeds to
         self.edges: List[SparkCompartment] = []
@@ -60,15 +63,15 @@ class SparkCompartment(ABC):
 
     @abstractmethod
     def ingest_incoming_cohort(self, influx: Dict[str, float]) -> None:
-        """Ingest the population coming from one compartment into another by the end of the `current_ts`
+        """Ingest the population coming from one compartment into another by the end of the `current_time_step`
 
         influx: dictionary of cohort type (str) to number of people revoked for the time period (int)
         """
 
     def prepare_for_next_step(self) -> None:
         """Clean up any data structures and move the time step 1 unit forward"""
-        # increase the `current_ts` by 1 to simulate the population at the beginning of the next ts
-        self.current_ts += 1
+        # increase the `current_time_step` by 1 to simulate the population at the beginning of the next time_step
+        self.current_time_step += 1
 
     def get_error(self, unit: str = "abs") -> pd.DataFrame:
         if unit == "abs":
@@ -78,7 +81,7 @@ class SparkCompartment(ABC):
             for outflow in mse_error:
                 mse_error[outflow] = (
                     mse_error[outflow] / 100
-                ) ** 2 * self.outflows_data[outflow]
+                ) ** 2 * self.historical_outflows[outflow]
             return mse_error.sort_index(axis=1).transpose()
 
         raise RuntimeError("unrecognized unit")

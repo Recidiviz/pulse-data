@@ -50,7 +50,7 @@ class FakeCompartment(FullCompartment):
     def get_cohort_df(self) -> pd.DataFrame:
         return pd.DataFrame([[1, 2, 3], [2, 3, 4]])
 
-    def get_per_ts_population(self) -> pd.Series:
+    def get_per_time_step_population(self) -> pd.Series:
         return pd.Series([1, 2, 3])
 
     def get_current_population(self) -> float:
@@ -60,7 +60,7 @@ class FakeCompartment(FullCompartment):
 class TestSubSimulation(unittest.TestCase):
     """Test the SubSimulation runs correctly"""
 
-    test_outflow_data = pd.DataFrame()
+    test_admissions_data = pd.DataFrame()
     test_transitions_data = pd.DataFrame()
     starting_cohort_sizes = pd.DataFrame()
     test_architecture: Dict[str, str] = {}
@@ -69,31 +69,25 @@ class TestSubSimulation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.test_outflow_data = pd.DataFrame(
+        cls.test_admissions_data = pd.DataFrame(
             {
-                "total_population": [4, 2, 2, 4, 3],
-                "outflow_to": [
+                "cohort_population": [4, 3],
+                "admission_to": [
                     "supervision",
-                    "prison",
-                    "supervision",
-                    "prison",
                     "prison",
                 ],
                 "compartment": [
-                    "prison",
-                    "supervision",
-                    "prison",
                     "pretrial",
                     "pretrial",
                 ],
-                "time_step": [0, 0, 0, 0, 0],
+                "time_step": [0, 0],
             }
         )
 
         cls.test_transitions_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 5],
-                "total_population": [4, 2, 2],
+                "cohort_portion": [4, 2, 2],
                 "outflow_to": ["supervision", "prison", "supervision"],
                 "compartment": ["prison", "supervision", "prison"],
             }
@@ -101,7 +95,7 @@ class TestSubSimulation(unittest.TestCase):
 
         cls.starting_cohort_sizes = pd.DataFrame(
             {
-                "total_population": [10],
+                "compartment_population": [10],
                 "compartment": ["prison"],
                 "time_step": [0],
             }
@@ -127,12 +121,12 @@ class TestSubSimulation(unittest.TestCase):
 
     def test_unused_outflows_raises_error(self) -> None:
         """Assert that SubSimulation throws an error when some outflows data goes unused"""
-        typo_outflows = self.test_outflow_data.copy()
-        typo_outflows.loc[typo_outflows.index == 4, "compartment"] = "pre-trial"
+        typo_admissions = self.test_admissions_data.copy()
+        typo_admissions.loc[typo_admissions.index == 0, "compartment"] = "pre-trial"
 
         with self.assertRaises(ValueError):
             _ = SubSimulationFactory.build_sub_simulation(
-                typo_outflows,
+                typo_admissions,
                 self.test_transitions_data,
                 self.test_architecture,
                 self.test_user_inputs,
@@ -149,7 +143,7 @@ class TestSubSimulation(unittest.TestCase):
 
         with patch("logging.Logger.warning") as mock:
             _ = SubSimulationFactory.build_sub_simulation(
-                self.test_outflow_data,
+                self.test_admissions_data,
                 typo_transitions,
                 self.test_architecture,
                 self.test_user_inputs,
@@ -204,6 +198,6 @@ class TestSubSimulation(unittest.TestCase):
             self.assertEqual(
                 current_populations[
                     current_populations.compartment == compartment_name
-                ].total_population.sum(),
+                ].compartment_population.sum(),
                 1,
             )

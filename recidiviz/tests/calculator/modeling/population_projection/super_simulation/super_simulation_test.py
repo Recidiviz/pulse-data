@@ -24,7 +24,7 @@ from typing import Optional
 
 import pandas as pd
 from mock import MagicMock, patch
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_index_equal
 
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
     PopulationSimulation,
@@ -40,14 +40,14 @@ from recidiviz.calculator.modeling.population_projection.transition_table import
 
 # pylint: disable=unused-argument
 
-outflows_data_macro = pd.DataFrame(
+admissions_data_macro = pd.DataFrame(
     {
         "compartment": ["PRETRIAL"] * 12,
-        "outflow_to": ["PRISON"] * 12,
+        "admission_to": ["PRISON"] * 12,
         "time_step": list(range(5, 11)) * 2,
         "simulation_tag": ["test_data"] * 12,
         "crime_type": ["NONVIOLENT"] * 6 + ["VIOLENT"] * 6,
-        "total_population": [100]
+        "cohort_population": [100]
         + [100 + 2 * i for i in range(5)]
         + [10]
         + [10 + i for i in range(5)],
@@ -61,28 +61,28 @@ transitions_data_macro = pd.DataFrame(
         "compartment_duration": [3, 5, 3, 50] * 2,
         "simulation_tag": ["test_data"] * 8,
         "crime_type": ["NONVIOLENT"] * 4 + ["VIOLENT"] * 4,
-        "total_population": [0.6, 0.4, 0.3, 0.7] * 2,
+        "cohort_portion": [0.6, 0.4, 0.3, 0.7] * 2,
     }
 )
 
-total_population_data_macro = pd.DataFrame(
+population_data_macro = pd.DataFrame(
     {
         "compartment": ["PRISON", "LIBERTY"] * 2,
         "time_step": [9] * 4,
         "simulation_tag": ["test_data"] * 4,
         "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
-        "total_population": [300, 500, 30, 50],
+        "compartment_population": [300, 500, 30, 50],
     }
 )
 
 data_dict_macro = {
-    "outflows_data_raw": outflows_data_macro,
+    "admissions_data_raw": admissions_data_macro,
     "transitions_data_raw": transitions_data_macro,
-    "total_population_data_raw": total_population_data_macro,
+    "population_data_raw": population_data_macro,
 }
 
-# total_population generated with np.random.randint(350, 400, 12)
-micro_total_population = [
+# population generated with np.random.randint(350, 400, 12)
+micro_population = [
     376,
     353,
     375,
@@ -108,29 +108,29 @@ micro_total_population = [
     389,
     392,
 ]
-outflows_data_micro = pd.DataFrame(
+admissions_data_micro = pd.DataFrame(
     {
         "compartment": ["PRETRIAL"] * 24,
-        "outflow_to": ["PRISON"] * 24,
+        "admission_to": ["PRISON"] * 24,
         "time_step": [datetime(2020, i, 1) for i in range(6, 12)] * 2
         + [datetime(2020, i, 1) for i in range(7, 13)] * 2,
         "state_code": ["test_state"] * 24,
         "run_date": [datetime(2020, 12, 1)] * 12 + [datetime(2021, 1, 1)] * 12,
         "gender": ["MALE"] * 6 + ["FEMALE"] * 6 + ["MALE"] * 6 + ["FEMALE"] * 6,
-        "total_population": micro_total_population,
+        "cohort_population": micro_population,
     }
 )
 
-outflows_data_micro_missing_time_steps = pd.DataFrame(
+admissions_data_micro_missing_time_steps = pd.DataFrame(
     {
         "compartment": ["PRETRIAL"] * 12,
-        "outflow_to": ["PRISON"] * 12,
+        "admission_to": ["PRISON"] * 12,
         "time_step": [datetime(2020, i, 1) for i in range(6, 12, 2)] * 2
         + [datetime(2020, i, 1) for i in range(7, 13, 2)] * 2,
         "state_code": ["test_state"] * 12,
         "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
         "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
-        "total_population": micro_total_population[:12],
+        "cohort_population": micro_population[:12],
     }
 )
 
@@ -142,7 +142,7 @@ transitions_data_micro = pd.DataFrame(
         "state_code": ["test_state"] * 12,
         "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
         "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
-        "total_population": [0.6, 0.4, 1] * 4,
+        "cohort_portion": [0.6, 0.4, 1] * 4,
     }
 )
 
@@ -154,29 +154,29 @@ remaining_sentence_data_micro = pd.DataFrame(
         "state_code": ["test_state"] * 12,
         "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
         "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
-        "total_population": [60, 40, 1] * 4,
+        "cohort_portion": [60, 40, 1] * 4,
     }
 )
 
-total_population_data_micro = pd.DataFrame(
+population_data_micro = pd.DataFrame(
     {
         "compartment": ["PRISON", "LIBERTY"] * 4,
         "time_step": [datetime(2020, 12, 1)] * 4 + [datetime(2021, 1, 1)] * 4,
         "state_code": ["test_state"] * 8,
         "run_date": [datetime(2021, 1, 1)] * 8,
         "gender": ["MALE"] * 2 + ["FEMALE"] * 2 + ["MALE"] * 2 + ["FEMALE"] * 2,
-        "total_population": [300, 500, 430, 410, 200, 250, 300, 350],
+        "compartment_population": [300, 500, 430, 410, 200, 250, 300, 350],
     }
 )
 
 data_dict_micro = {
-    "test_outflows": outflows_data_micro,
+    "test_admissions": admissions_data_micro,
     "test_transitions": transitions_data_micro,
-    "test_total_population": total_population_data_micro,
+    "test_population": population_data_micro,
     "test_remaining_sentences": remaining_sentence_data_micro,
     "test_excluded_population": pd.DataFrame(columns=["state_code", "time_step"]),
-    # outflows data with missing values for some time steps
-    "test_outflows_missing_time_steps": outflows_data_micro_missing_time_steps,
+    # admissions data with missing values for some time steps
+    "test_admissions_missing_time_steps": admissions_data_micro_missing_time_steps,
 }
 
 
@@ -211,11 +211,11 @@ def mock_load_table_from_big_query_micro(
     ]
 
 
-def mock_load_table_from_big_query_micro_outflows_missing_time_steps(
+def mock_load_table_from_big_query_micro_admissions_missing_time_steps(
     project_id: str, dataset: str, table_name: str, state_code: str
 ) -> pd.DataFrame:
-    if table_name == "test_outflows":
-        table_name = "test_outflows_missing_time_steps"
+    if table_name == "test_admissions":
+        table_name = "test_admissions_missing_time_steps"
     return data_dict_micro[table_name][
         data_dict_micro[table_name]["state_code"] == state_code
     ]
@@ -289,17 +289,17 @@ class TestSuperSimulation(unittest.TestCase):
         """Tests macrosimulation are properly ingesting data from BQ"""
         assert isinstance(self.macrosim, SuperSimulation)
         data_inputs = self.macrosim.initializer.get_data_inputs()
-        self.assertFalse(data_inputs.outflows_data.empty)
+        self.assertFalse(data_inputs.admissions_data.empty)
         self.assertFalse(data_inputs.transitions_data.empty)
-        self.assertFalse(data_inputs.total_population_data.empty)
+        self.assertFalse(data_inputs.population_data.empty)
 
     def test_microsim_data_hydrated(self) -> None:
         """Tests microsimulation are properly ingesting data from BQ"""
         assert isinstance(self.microsim, SuperSimulation)
         data_inputs = self.microsim.initializer.get_data_inputs()
-        self.assertFalse(data_inputs.outflows_data.empty)
+        self.assertFalse(data_inputs.admissions_data.empty)
         self.assertFalse(data_inputs.transitions_data.empty)
-        self.assertFalse(data_inputs.total_population_data.empty)
+        self.assertFalse(data_inputs.population_data.empty)
         self.assertFalse(data_inputs.microsim_data.empty)
 
     @patch(
@@ -335,7 +335,7 @@ class TestSuperSimulation(unittest.TestCase):
         transitions_data = self.microsim.initializer.get_data_inputs().transitions_data
         affected_time_frame = transitions_data[
             (transitions_data.compartment == "PRISON")
-            & (transitions_data.total_population > 0)
+            & (transitions_data.cohort_portion > 0)
         ].compartment_duration.max()
 
         # get projected prison population from simulation substituting transitions data for remaining sentences
@@ -357,7 +357,7 @@ class TestSuperSimulation(unittest.TestCase):
             ]
             .groupby("time_step")
             .sum()
-            .total_population
+            .compartment_population
         )
 
         # get projected prison population from regular simulation
@@ -379,7 +379,7 @@ class TestSuperSimulation(unittest.TestCase):
             ]
             .groupby("time_step")
             .sum()
-            .total_population
+            .compartment_population
         )
 
         self.assertTrue(
@@ -439,7 +439,7 @@ class TestSuperSimulation(unittest.TestCase):
                 policy_fn=policy_function,
                 spark_compartment="PRISON",
                 sub_population={"crime_type": crime_type},
-                policy_ts=self.macrosim.initializer.get_user_inputs().start_time_step
+                policy_time_step=self.macrosim.initializer.get_user_inputs().start_time_step
                 + 5,
                 apply_retroactive=True,
             )
@@ -505,7 +505,7 @@ class TestSuperSimulation(unittest.TestCase):
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
         mock_load_table_from_big_query_micro,
     )
-    def test_e_microsim_baseline_over_time_zero_error_for_first_ts(self) -> None:
+    def test_e_microsim_baseline_over_time_zero_error_for_first_time_step(self) -> None:
         """Tests the microsim is initialized with 0 percent error for each initial time step"""
         assert isinstance(self.microsim, SuperSimulation)
         # Run 2 simulations over different run dates
@@ -516,22 +516,22 @@ class TestSuperSimulation(unittest.TestCase):
 
         # Test each simulation has 0 percent error for the first time step
         for key, _ in self.microsim.simulator.pop_simulations.items():
-            total_population_error = self.microsim.get_full_error_output(key)
-            first_ts = total_population_error.index.get_level_values(
+            population_error = self.microsim.get_full_error_output(key)
+            first_time_step = population_error.index.get_level_values(
                 level="time_step"
             ).min()
-            initial_error = total_population_error.unstack("compartment").loc[
-                first_ts, "percent_error"
+            initial_error = population_error.unstack("compartment").loc[
+                first_time_step, "percent_error"
             ]
             # Error should be 0 for each compartment/simulation group on the first ts
             self.assertTrue((initial_error == 0).all())
 
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
-        mock_load_table_from_big_query_micro_outflows_missing_time_steps,
+        mock_load_table_from_big_query_micro_admissions_missing_time_steps,
     )
-    def test_initializer_fills_missing_time_steps_in_outflows(self) -> None:
-        """Tests the SuperSimulation initialization fills in missing outflows with 0s"""
+    def test_initializer_fills_missing_time_steps_in_admissions(self) -> None:
+        """Tests the SuperSimulation initialization fills in missing admissions with 0s"""
 
         microsim = SuperSimulationFactory.build_super_simulation(
             get_inputs_path("super_simulation_microsim_model_inputs.yaml")
@@ -541,15 +541,15 @@ class TestSuperSimulation(unittest.TestCase):
             "time_step",
             "gender",
             "compartment",
-            "outflow_to",
+            "admission_to",
             "run_date",
-            "total_population",
+            "cohort_population",
         ]
-        expected_outflows_data = (
+        expected_admissions_data = (
             pd.concat(
                 [
-                    outflows_data_micro_missing_time_steps[
-                        outflows_data_micro_missing_time_steps.run_date
+                    admissions_data_micro_missing_time_steps[
+                        admissions_data_micro_missing_time_steps.run_date
                         == datetime(2021, 1, 1)
                     ][comparison_columns],
                     pd.DataFrame(
@@ -558,9 +558,9 @@ class TestSuperSimulation(unittest.TestCase):
                             * 2,
                             "gender": ["FEMALE"] * 2 + ["MALE"] * 2,
                             "compartment": ["PRETRIAL"] * 4,
-                            "outflow_to": ["PRISON"] * 4,
+                            "admission_to": ["PRISON"] * 4,
                             "run_date": [datetime(2021, 1, 1)] * 4,
-                            "total_population": [0.0] * 4,
+                            "cohort_population": [0.0] * 4,
                         }
                     ),
                 ]
@@ -568,12 +568,12 @@ class TestSuperSimulation(unittest.TestCase):
             .sort_values(by=["gender", "time_step"])
             .reset_index(drop=True)
         )
-        expected_outflows_data["time_step"] = expected_outflows_data["time_step"].apply(
-            microsim.initializer.time_converter.convert_timestamp_to_time_step
-        )
+        expected_admissions_data["time_step"] = expected_admissions_data[
+            "time_step"
+        ].apply(microsim.initializer.time_converter.convert_timestamp_to_time_step)
         # Test the two dfs are the same but ignore the index
         assert_frame_equal(
-            data_inputs.outflows_data.reset_index(drop=True), expected_outflows_data
+            data_inputs.admissions_data.reset_index(drop=True), expected_admissions_data
         )
 
     @patch(
@@ -588,7 +588,7 @@ class TestSuperSimulation(unittest.TestCase):
             self.microsim.initializer.get_data_inputs().transitions_data[
                 ["compartment", "outflow_to"]
                 + self.microsim.initializer.get_data_inputs().disaggregation_axes
-                + ["compartment_duration", "total_population"]
+                + ["compartment_duration", "cohort_portion"]
             ]
         )
         transitions_returned = self.microsim.get_transitions_data_input()
@@ -610,4 +610,106 @@ class TestSuperSimulation(unittest.TestCase):
             expected_transitions_data[
                 expected_transitions_data.compartment.isin(["PRISON", "LIBERTY"])
             ],
+        )
+
+    def test_simulate_baseline_basic_functionality(self) -> None:
+        """Ensure baseline simulation runs without breaking and can return all expected outputs."""
+        self.macrosim.simulate_baseline([])  # type: ignore[union-attr]
+
+        # check you can extract pop projections and they are as expected
+        pop_projections = self.macrosim.get_population_projections(  # type: ignore[union-attr]
+            "baseline_projections"
+        )
+        assert_index_equal(
+            pop_projections.columns,
+            pd.Index(
+                [
+                    "compartment",
+                    "compartment_population",
+                    "time_step",
+                    "simulation_group",
+                ]
+            ),
+        )
+        assert set(pop_projections.compartment) == {"LIBERTY", "PRISON"}
+        assert set(pop_projections.simulation_group) == {"NONVIOLENT", "VIOLENT"}
+
+        # check that arima outputs can be extracted and are as expected
+        arimas = self.macrosim.get_arima_output_df("baseline_projections")  # type: ignore[union-attr]
+        assert_index_equal(arimas.columns, pd.Index(["actuals", "predictions"]))
+        assert set(arimas.index.get_level_values("compartment")) == {"PRETRIAL"}
+        assert set(arimas.index.get_level_values("simulation_group")) == {
+            "NONVIOLENT",
+            "VIOLENT",
+        }
+        assert set(arimas.index.get_level_values("admission_to")) == {"PRISON"}
+
+        # run just to make sure it isn't broken
+        self.macrosim.get_arima_output_plots("baseline_projections")  # type: ignore[union-attr]
+
+        # check that outflows output can be extracted and is as expected
+        outflows = self.macrosim.get_all_outflows_tables()  # type: ignore[union-attr]
+        assert_index_equal(
+            outflows.columns,
+            pd.Index(
+                [
+                    "policy_sim",
+                    "sub_sim",
+                    "compartment",
+                    "time_step",
+                    "outflow_to",
+                    "outflows",
+                ]
+            ),
+        )
+        assert set(outflows.compartment) == {"LIBERTY", "PRISON", "PRETRIAL"}
+        assert set(outflows.outflow_to) == {"LIBERTY", "PRISON"}
+        assert set(outflows.sub_sim) == {"NONVIOLENT", "VIOLENT"}
+
+        # check that admissions error output can be extracted and is as expected
+        admissions_error = self.macrosim.get_admissions_error("baseline_projections")  # type: ignore[union-attr]
+        assert_index_equal(admissions_error.columns, pd.Index(["model", "actual"]))
+        assert set(admissions_error.index.get_level_values("compartment")) == {
+            "PRETRIAL"
+        }
+        assert set(admissions_error.index.get_level_values("admission_to")) == {
+            "PRISON"
+        }
+
+        # check that population error output can be extracted and is as expected
+        population_error = self.macrosim.get_population_error("baseline_projections")  # type: ignore[union-attr]
+        assert_index_equal(population_error.columns, pd.Index(["PRISON", "LIBERTY"]))
+
+        # check that full error output can be extracted and is as expected
+        full_error = self.macrosim.get_full_error_output("baseline_projections")  # type: ignore[union-attr]
+        assert_index_equal(
+            full_error.columns,
+            pd.Index(
+                [
+                    "simulation_population",
+                    "historical_population",
+                    "percent_error",
+                    "compartment_type",
+                ]
+            ),
+        )
+        assert set(full_error.index.get_level_values("compartment")) == {
+            "LIBERTY",
+            "PRISON",
+        }
+
+        # TODO(#23946): No check for cohort hydration error because appears to be currently broken
+        #   --> fix that then add test
+
+    def test_input_data_access(self) -> None:
+        """Test that data inputs are accessible through a SuperSimulation object"""
+        transitions_input = transitions_data_macro.drop("simulation_tag", axis=1)
+        assert_frame_equal(
+            transitions_input,
+            self.macrosim.get_transitions_data_input()[transitions_input.columns],  # type: ignore[union-attr]
+        )
+        admissions_input = admissions_data_macro.drop("simulation_tag", axis=1)
+        assert_frame_equal(
+            admissions_input,
+            self.macrosim.get_admissions_data_input()[admissions_input.columns],  # type: ignore[union-attr]
         )

@@ -38,10 +38,10 @@ class TimeConverter:
 
     def convert_year_to_time_step(self, year: float) -> int:
         """converts units of years to units of time steps"""
-        ts = (year - self.reference_year) / self.time_step
-        if abs(ts - round(ts)) > 0.01:
-            raise ValueError(f"Cannot convert year {year} to time step {ts}")
-        return round(ts)
+        time_step = (year - self.reference_year) / self.time_step
+        if abs(time_step - round(time_step)) > 0.01:
+            raise ValueError(f"Cannot convert year {year} to time step {time_step}")
+        return round(time_step)
 
     def convert_time_steps_to_year(self, time_steps: pd.Series) -> pd.Series:
         """converts a number of time steps relative to reference date into absolute dates"""
@@ -58,14 +58,14 @@ class TimeConverter:
 
         reference_date_year = np.floor(self.reference_year)
         reference_date_month = TimeConverter.get_month_from_year(self.reference_year)
-        ts = (
+        time_step = (
             12 * (timestamp.year - reference_date_year)
             + timestamp.month
             - reference_date_month
         )
-        if abs(ts - round(ts)) > 0.01:
-            raise ValueError(f"Cannot convert date {timestamp} to integer {ts}")
-        return round(ts)
+        if abs(time_step - round(time_step)) > 0.01:
+            raise ValueError(f"Cannot convert date {timestamp} to integer {time_step}")
+        return round(time_step)
 
     def convert_time_steps_to_timestamp(self, time_steps: pd.Series) -> pd.Series:
         """Converts a Series of relative time steps into a Series of datetimes"""

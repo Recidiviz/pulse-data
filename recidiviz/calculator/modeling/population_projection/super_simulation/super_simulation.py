@@ -66,33 +66,39 @@ class SuperSimulation:
     def simulate_baseline(
         self,
         display_compartments: List[str],
-        first_relevant_ts: Optional[int] = None,
+        first_relevant_time_step: Optional[int] = None,
         reset: bool = True,
     ) -> None:
         """
         Calculates a baseline projection.
         `simulation_title` is the desired simulation tag for this baseline
-        `first_relevant_ts` is the ts at which to start initialization
+        `first_relevant_time_step` is the time_step at which to start initialization
         """
-        first_relevant_ts = self.initializer.get_first_relevant_ts(first_relevant_ts)
+        first_relevant_time_step = self.initializer.get_first_relevant_time_step(
+            first_relevant_time_step
+        )
         data_inputs = self.initializer.get_data_inputs()
         user_inputs = self.initializer.get_user_inputs()
         self.simulator.simulate_baseline(
-            user_inputs, data_inputs, display_compartments, first_relevant_ts, reset
+            user_inputs,
+            data_inputs,
+            display_compartments,
+            first_relevant_time_step,
+            reset,
         )
         self.validator.reset(self.simulator.get_population_simulations())
 
     def simulate_policy(
         self, policy_list: List[SparkPolicy], output_compartment: str
     ) -> pd.DataFrame:
-        first_relevant_ts = self.initializer.get_first_relevant_ts()
+        first_relevant_time_step = self.initializer.get_first_relevant_time_step()
         data_inputs = self.initializer.get_data_inputs()
         user_inputs = self.initializer.get_user_inputs()
 
         simulation_output = self.simulator.simulate_policy(
             user_inputs,
             data_inputs,
-            first_relevant_ts,
+            first_relevant_time_step,
             policy_list,
             output_compartment,
         )
@@ -115,13 +121,13 @@ class SuperSimulation:
         user_inputs = deepcopy(self.initializer.get_user_inputs())
         (
             data_inputs_dict,
-            first_relevant_ts_dict,
+            first_relevant_time_step_dict,
         ) = self.initializer.get_inputs_for_microsim_baseline_over_time(start_run_dates)
 
         self.simulator.microsim_baseline_over_time(
             user_inputs,
             data_inputs_dict,
-            first_relevant_ts_dict,
+            first_relevant_time_step_dict,
             projection_time_steps_override,
         )
         self.validator.reset(self.simulator.get_population_simulations())
@@ -148,11 +154,11 @@ class SuperSimulation:
         excluded_pop_data = data_inputs.excluded_population_data
         user_inputs = self.initializer.get_user_inputs()
 
-        # Use the total population from the starting time step to compute the
+        # Use the population from the starting time step to compute the
         # excluded population ratio
-        total_population_data = data_inputs.total_population_data
-        total_population_data = total_population_data[
-            total_population_data.time_step == user_inputs.start_time_step
+        population_data = data_inputs.population_data
+        population_data = population_data[
+            population_data.time_step == user_inputs.start_time_step
         ]
 
         # Format the projected outflows data before uploading it
@@ -173,8 +179,8 @@ class SuperSimulation:
         output_outflows_per_pop_sim.reset_index(
             level="time_step", drop=True, inplace=True
         )
-        output_outflows_per_pop_sim["total_population"] = output_outflows_per_pop_sim[
-            "total_population"
+        output_outflows_per_pop_sim["cohort_population"] = output_outflows_per_pop_sim[
+            "cohort_population"
         ].round(0)
         output_outflows_per_pop_sim = output_outflows_per_pop_sim.groupby(
             ["simulation_group", "compartment", "outflow_to", "year"]
@@ -190,7 +196,7 @@ class SuperSimulation:
             output_population_data=output_data,
             output_outflows_data=output_outflows_per_pop_sim,
             excluded_pop=excluded_pop_data,
-            total_pop=total_population_data,
+            total_pop=population_data,
         )
 
     def upload_policy_simulation_results_to_bq(
@@ -239,12 +245,14 @@ class SuperSimulation:
             simulation_title, fig_size, by_simulation_group
         )
 
-    def get_outflows_error(self, simulation_title: str) -> pd.DataFrame:
-        outflows_data = self.initializer.get_outflows_for_error()
-        return self.validator.calculate_outflows_error(simulation_title, outflows_data)
+    def get_admissions_error(self, simulation_title: str) -> pd.DataFrame:
+        admissions_data = self.initializer.get_admissions_for_error()
+        return self.validator.calculate_admissions_error(
+            simulation_title, admissions_data
+        )
 
-    def get_total_population_error(self, simulation_tag: str) -> pd.DataFrame:
-        return self.validator.gen_total_population_error(simulation_tag)
+    def get_population_error(self, simulation_tag: str) -> pd.DataFrame:
+        return self.validator.gen_population_error(simulation_tag)
 
     def get_full_error_output(self, simulation_tag: str) -> pd.DataFrame:
         return self.validator.gen_full_error_output(simulation_tag)
@@ -252,7 +260,7 @@ class SuperSimulation:
     def calculate_baseline_transition_error(
         self, validation_pairs: Dict[str, str]
     ) -> pd.DataFrame:
-        return self.validator.calculate_baseline_transition_error(validation_pairs)
+        return self.validator.calculate_baseline_admissions_error(validation_pairs)
 
     def calculate_cohort_hydration_error(
         self,
@@ -308,7 +316,7 @@ class SuperSimulation:
         columns_to_return = (
             ["compartment", "outflow_to"]
             + inputs.disaggregation_axes
-            + ["compartment_duration", "total_population"]
+            + ["compartment_duration", "cohort_portion"]
         )
         if not compartments_input:
             return inputs.transitions_data[columns_to_return]
@@ -324,29 +332,22 @@ class SuperSimulation:
             inputs.transitions_data.compartment.str.lower().isin(compartments)
         ][columns_to_return]
 
-    def get_outflows_data_input(self, *compartments_input: str) -> pd.DataFrame:
+    def get_admissions_data_input(self, *compartments_input: str) -> pd.DataFrame:
         """
-        Return user-inputted outflows data, supply 1 or more compartment string names (case-insensitive)
-        for specific compartment data, otherwise returns full transitions df
+        Return user-inputted admissions data, supply 1 or more compartment string names (case-insensitive)
+        for specific compartment data, otherwise returns full admissions df
         """
         inputs = self.initializer.get_data_inputs()
         columns_to_return = (
-            ["compartment", "outflow_to"]
+            ["compartment", "admission_to"]
             + inputs.disaggregation_axes
-            + ["time_step", "total_population"]
+            + ["time_step", "cohort_population"]
         )
         if not compartments_input:
-            return inputs.outflows_data[columns_to_return]
+            return inputs.admissions_data[columns_to_return]
         compartments = [c.lower() for c in compartments_input]
-        transition_compartments = [
-            c.lower() for c in inputs.compartments_architecture.keys()
-        ]
-        if any(c not in transition_compartments for c in compartments):
-            raise ValueError(
-                f"At least 1 requested compartment ('{compartments}') not in simulation architechture, available compartments are {transition_compartments}"
-            )
-        return inputs.transitions_data[
-            inputs.transitions_data.compartment.str.lower().isin(compartments)
+        return inputs.admissions_data[
+            inputs.admissions_data.compartment.str.lower().isin(compartments)
         ][columns_to_return]
 
     def get_all_outflows_tables(
@@ -389,6 +390,11 @@ class SuperSimulation:
             "outflows",
         ]
         return outflows_raw.drop(columns=["compartment_type"])
+
+    def get_population_projections(self, simulation_tag: str) -> pd.DataFrame:
+        return self.simulator.pop_simulations[
+            simulation_tag
+        ].get_population_projections()
 
     def get_all_sub_simulation_tags(self) -> List[str]:
         for _, pop_sim in self.get_population_simulations().items():

@@ -16,9 +16,9 @@
 # =============================================================================
 """Test the CompartmentTransitions object"""
 
+import logging
 import unittest
 from functools import partial
-import logging
 
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -39,7 +39,7 @@ class TestCompartmentTransitions(unittest.TestCase):
         self.test_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2, 2.5, 10],
-                "total_population": [4, 2, 2, 4, 3],
+                "cohort_portion": [4, 2, 2, 4, 3],
                 "outflow_to": ["jail", "prison", "jail", "prison", "prison"],
                 "compartment": ["test_compartment"] * 5,
             }
@@ -58,7 +58,7 @@ class TestCompartmentTransitions(unittest.TestCase):
         negative_duration_data = pd.DataFrame(
             {
                 "compartment_duration": [1, -1, 2, 2.5, 10],
-                "total_population": [4, 2, 2, 4, 3],
+                "cohort_portion": [4, 2, 2, 4, 3],
                 "outflow_to": ["jail", "prison", "jail", "prison", "prison"],
                 "compartment": ["test_compartment"] * 5,
             }
@@ -67,7 +67,7 @@ class TestCompartmentTransitions(unittest.TestCase):
         negative_population_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2, 2.5, 10],
-                "total_population": [4, 2, 2, -4, 3],
+                "cohort_portion": [4, 2, 2, -4, 3],
                 "outflow_to": ["jail", "prison", "jail", "prison", "prison"],
                 "compartment": ["test_compartment"] * 5,
             }
@@ -91,7 +91,7 @@ class TestCompartmentTransitions(unittest.TestCase):
                 ),
                 sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
-                policy_ts=i,
+                policy_time_step=i,
                 apply_retroactive=False,
             )
             for i in range(5)
@@ -103,14 +103,14 @@ class TestCompartmentTransitions(unittest.TestCase):
         split_transitions = CompartmentTransitions(self.test_data)
         split_transitions.initialize_transition_tables(identity_functions)
 
-        for ts in range(-3, 8):
+        for time_step in range(-3, 8):
             assert_frame_equal(
-                transitions.get_per_ts_transition_table(ts),
-                split_transitions.get_per_ts_transition_table(ts),
+                transitions.get_per_time_step_transition_table(time_step),
+                split_transitions.get_per_time_step_transition_table(time_step),
             )
 
     def test_multiple_policies(self) -> None:
-        """Ensure get_per_ts_transition_table returns the correct transistion
+        """Ensure get_per_time_step_transition_table returns the correct transistion
         table when there are multiple SparkPolicies that are applied at
         different time steps.
 
@@ -118,19 +118,21 @@ class TestCompartmentTransitions(unittest.TestCase):
         """
 
         # Generates historical_outflows such that initial_ratio goes to the moon
-        # at releast_ts and the rest (1 - initial_ratio) goes to the moon at
-        # releast_ts + 1
-        def test_data_n(release_ts: int, initial_ratio: float) -> pd.DataFrame:
+        # at release_time_step and the rest (1 - initial_ratio) goes to the moon at
+        # release_time_step + 1
+        def test_data_n(release_time_step: int, initial_ratio: float) -> pd.DataFrame:
             return pd.DataFrame(
                 {
-                    "compartment_duration": [release_ts, release_ts + 1],
-                    "total_population": [initial_ratio, (1 - initial_ratio)],
+                    "compartment_duration": [release_time_step, release_time_step + 1],
+                    "cohort_portion": [initial_ratio, (1 - initial_ratio)],
                     "outflow_to": ["moon"] * 2,
                     "compartment": ["test_compartment"] * 2,
                 }
             )
 
-        def policy_from_data(test_data: pd.DataFrame, start_ts: int) -> SparkPolicy:
+        def policy_from_data(
+            test_data: pd.DataFrame, start_time_step: int
+        ) -> SparkPolicy:
             return SparkPolicy(
                 policy_fn=partial(
                     TransitionTable.use_alternate_transitions_data,
@@ -139,7 +141,7 @@ class TestCompartmentTransitions(unittest.TestCase):
                 ),
                 sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
-                policy_ts=start_ts,
+                policy_time_step=start_time_step,
                 apply_retroactive=False,
             )
 
@@ -156,7 +158,7 @@ class TestCompartmentTransitions(unittest.TestCase):
         # Testing the default: no policies.
         transitions = CompartmentTransitions(test_data_7)
         transitions.initialize_transition_tables([])
-        tt = transitions.get_per_ts_transition_table(8)
+        tt = transitions.get_per_time_step_transition_table(8)
         logging.debug("Default (no policies) transition table:\n%s\n", tt)
         self.assertListEqual(list(tt["moon"]), [0, 0, 0, 0, 0, 0, 0.5, 1])
 
@@ -164,10 +166,10 @@ class TestCompartmentTransitions(unittest.TestCase):
         transitions = CompartmentTransitions(test_data_7)
         transitions.initialize_transition_tables(
             [
-                policy_from_data(test_data_4, start_ts=3),
+                policy_from_data(test_data_4, start_time_step=3),
             ]
         )
-        tt = transitions.get_per_ts_transition_table(8)
+        tt = transitions.get_per_time_step_transition_table(8)
         logging.debug("First policy only transition table:\n%s\n", tt)
         self.assertListEqual(list(tt["moon"]), [0, 0, 0, 0.25, 1, 0, 0.5, 1])
 
@@ -175,10 +177,10 @@ class TestCompartmentTransitions(unittest.TestCase):
         transitions = CompartmentTransitions(test_data_7)
         transitions.initialize_transition_tables(
             [
-                policy_from_data(test_data_1, start_ts=6),
+                policy_from_data(test_data_1, start_time_step=6),
             ]
         )
-        tt = transitions.get_per_ts_transition_table(8)
+        tt = transitions.get_per_time_step_transition_table(8)
         logging.debug("Second policy only transition table:\n%s\n", tt)
         self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0, 0, 0, 0.5, 1])
 
@@ -187,21 +189,21 @@ class TestCompartmentTransitions(unittest.TestCase):
         transitions = CompartmentTransitions(test_data_7)
         transitions.initialize_transition_tables(
             [
-                policy_from_data(test_data_4, start_ts=3),
-                policy_from_data(test_data_1, start_ts=6),
+                policy_from_data(test_data_4, start_time_step=3),
+                policy_from_data(test_data_1, start_time_step=6),
             ]
         )
-        tt = transitions.get_per_ts_transition_table(8)
+        tt = transitions.get_per_time_step_transition_table(8)
         logging.debug("Both policies transition table:\n%s\n", tt)
         self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0.25, 1, 0, 0.5, 1])
 
-        tt = transitions.get_per_ts_transition_table(10)
+        tt = transitions.get_per_time_step_transition_table(10)
         logging.debug(
             "Transition table just before old policies have aged out:\n%s\n", tt
         )
         self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0, 1, 0, 0, 1])
 
-        tt = transitions.get_per_ts_transition_table(11)
+        tt = transitions.get_per_time_step_transition_table(11)
         logging.debug("Transition table after old policies have aged out:\n%s\n", tt)
         self.assertListEqual(list(tt["moon"]), [0.125, 1, 0, 0, 0, 0, 0, 0])
 
@@ -211,7 +213,7 @@ class TestCompartmentTransitions(unittest.TestCase):
         default_test_data = pd.DataFrame(
             {
                 "compartment_duration": [5, 5],
-                "total_population": [1, 1],
+                "cohort_portion": [1, 1],
                 "outflow_to": ["moon", "mars"],
                 "compartment": ["test_compartment"] * 2,
             }
@@ -219,10 +221,10 @@ class TestCompartmentTransitions(unittest.TestCase):
 
         transitions = CompartmentTransitions(default_test_data)
         transitions.initialize_transition_tables([])
-        tt = transitions.get_per_ts_transition_table(3)
+        tt = transitions.get_per_time_step_transition_table(3)
         self.assertListEqual(list(tt["moon"]), [0, 0, 0, 0, 0.5])
         self.assertListEqual(list(tt["mars"]), [0, 0, 0, 0, 0.5])
-        tt = transitions.get_per_ts_transition_table(4)
+        tt = transitions.get_per_time_step_transition_table(4)
         self.assertListEqual(list(tt["moon"]), [0, 0, 0, 0, 0.5])
         self.assertListEqual(list(tt["mars"]), [0, 0, 0, 0, 0.5])
 
@@ -231,7 +233,7 @@ class TestCompartmentTransitions(unittest.TestCase):
         retroactive_test_data = pd.DataFrame(
             {
                 "compartment_duration": [2, 5],
-                "total_population": [1, 1],
+                "cohort_portion": [1, 1],
                 "outflow_to": ["moon", "mars"],
                 "compartment": ["test_compartment"] * 2,
             }
@@ -245,26 +247,26 @@ class TestCompartmentTransitions(unittest.TestCase):
             ),
             sub_population={"compartment": "test_compartment"},
             spark_compartment="test_compartment",
-            policy_ts=3,
+            policy_time_step=3,
             apply_retroactive=True,
         )
 
         transitions = CompartmentTransitions(default_test_data)
         transitions.initialize_transition_tables([retroactive_policy])
         # Our retroactive policy is applied at timestep 3, so
-        # get_per_ts_transition_table should return a transitory table that makes
+        # get_per_time_step_transition_table should return a transitory table that makes
         # half of all people who have been here >=2 years to go to the moon.
         # The half of people that go to mars still wait 5 years.
-        before = transitions.get_per_ts_transition_table(2)
+        before = transitions.get_per_time_step_transition_table(2)
         self.assertEqual(list(before["mars"]), [0, 0, 0, 0, 0.5])
         self.assertEqual(list(before["moon"]), [0, 0, 0, 0, 0.5])
 
         # Verify the transitory table is sending 50% of those who have been here at
         # least 2 time steps to the moon, and only those at least 5 time steps to mars
-        tt = transitions.get_per_ts_transition_table(3)
+        tt = transitions.get_per_time_step_transition_table(3)
         self.assertListEqual(list(tt["moon"]), [0, 0.5, 0.5, 0.5, 0.5])
         self.assertListEqual(list(tt["mars"]), [0, 0, 0, 0, 0.5])
         # Time step 4 should use the "after" table
-        tt = transitions.get_per_ts_transition_table(4)
+        tt = transitions.get_per_time_step_transition_table(4)
         self.assertListEqual(list(tt["moon"]), [0, 0.5, 0, 0, 0])
         self.assertListEqual(list(tt["mars"]), [0, 0, 0, 0, 1])

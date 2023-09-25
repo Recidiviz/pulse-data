@@ -26,23 +26,27 @@ from recidiviz.calculator.modeling.population_projection.utils.transitions_utils
 class CohortTable:
     """Store population counts for one cohort of people that enter one category in the same year"""
 
-    def __init__(self, starting_ts: int) -> None:
-        self.cohort_df = pd.DataFrame({starting_ts - 1: 0.0}, index=[starting_ts - 1])
-        self.cohort_df.index.name = "start_ts"
-        self.cohort_df.columns.name = "simulation_ts"
+    def __init__(self, starting_time_step: int) -> None:
+        self.cohort_df = pd.DataFrame(
+            {starting_time_step - 1: 0.0}, index=[starting_time_step - 1]
+        )
+        self.cohort_df.index.name = "start_time_step"
+        self.cohort_df.columns.name = "simulation_time_step"
 
     def get_latest_population(self) -> pd.Series:
         return self.cohort_df.iloc[:, -1]
 
-    def get_per_ts_population(self) -> pd.Series:
+    def get_per_time_step_population(self) -> pd.Series:
         return self.cohort_df.sum(axis=0)
 
-    def append_ts_end_count(self, cohort_sizes: pd.Series, projection_ts: int) -> None:
-        """Append the cohort sizes for the end of the projection ts"""
+    def append_time_step_end_count(
+        self, cohort_sizes: pd.Series, projection_time_step: int
+    ) -> None:
+        """Append the cohort sizes for the end of the projection time_step"""
         latest_population = self.get_latest_population()
-        for ts in latest_population.index:
-            if ts not in cohort_sizes:
-                cohort_sizes.loc[ts] = 0
+        for time_step in latest_population.index:
+            if time_step not in cohort_sizes:
+                cohort_sizes.loc[time_step] = 0
                 cohort_sizes.sort_index(inplace=True)
 
         if (round(cohort_sizes, SIG_FIGS) > round(latest_population, SIG_FIGS)).any():
@@ -52,24 +56,26 @@ class CohortTable:
                 f"Attempting to append: {cohort_sizes[cohort_sizes > latest_population]}"
             )
 
-        if projection_ts in self.cohort_df.columns:
-            raise ValueError(f"Cannot overwrite cohort for time {projection_ts}")
+        if projection_time_step in self.cohort_df.columns:
+            raise ValueError(f"Cannot overwrite cohort for time {projection_time_step}")
 
-        self.cohort_df.loc[:, projection_ts] = cohort_sizes
+        self.cohort_df.loc[:, projection_time_step] = cohort_sizes
 
-    def append_cohort(self, cohort_size: float, projection_ts: int) -> None:
+    def append_cohort(self, cohort_size: float, projection_time_step: int) -> None:
         """Add a new cohort to the bottom of the cohort table"""
-        if projection_ts not in self.cohort_df.columns:
+        if projection_time_step not in self.cohort_df.columns:
             raise ValueError(
-                f"Cannot append cohort with start time {projection_ts} outside of CohortTable timeline "
+                f"Cannot append cohort with start time {projection_time_step} outside of CohortTable timeline "
                 f"{self.cohort_df.columns}"
             )
-        if projection_ts in self.cohort_df.index:
-            raise ValueError(f"Cannot overwrite cohort for time {projection_ts}")
+        if projection_time_step in self.cohort_df.index:
+            raise ValueError(f"Cannot overwrite cohort for time {projection_time_step}")
         self.cohort_df = pd.concat(
             [
                 self.cohort_df,
-                pd.DataFrame({projection_ts: [cohort_size]}, index=[projection_ts]),
+                pd.DataFrame(
+                    {projection_time_step: [cohort_size]}, index=[projection_time_step]
+                ),
             ]
         ).fillna(0)
 

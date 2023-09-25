@@ -50,7 +50,7 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
                         "compartment": terminal_compartment,
                         "outflow_to": terminal_compartment,
                         "gender": gender,
-                        "total_population": 1,
+                        "cohort_portion": 1,
                         "compartment_duration": 1,
                         "run_date": run_date,
                     }
@@ -60,7 +60,7 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
         )
         long_sentences = 1 - np.round(
             run_date_transitions.groupby(["compartment", "gender"])[
-                "total_population"
+                "cohort_portion"
             ].sum(),
             6,
         )
@@ -97,7 +97,7 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.Dat
                         "compartment": terminal_compartment,
                         "outflow_to": terminal_compartment,
                         "gender": gender,
-                        "total_population": 1,
+                        "cohort_portion": 1,
                         "compartment_duration": 1,
                         "run_date": run_date,
                     }
@@ -135,7 +135,7 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.Dat
                         "compartment": [infrequent_compartment] * num_rows,
                         "outflow_to": [infrequent_compartment] * num_rows,
                         "gender": missing_gender,
-                        "total_population": [1] * num_rows,
+                        "cohort_portion": [1] * num_rows,
                         "compartment_duration": [1] * num_rows,
                         "run_date": [run_date] * num_rows,
                     }

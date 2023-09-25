@@ -81,7 +81,7 @@ def transitions_uniform(
     transitions_uniform('parole', 'release',
                         12, 0.8, 5, 119, 'x') produces a dataframe with:
 
-    compartment, outflow_to, crime_type, compartment_duration, total_population
+    compartment, outflow_to, crime_type, compartment_duration, cohort_portion
     parole,release,x,1,0.03478
     parole,release,x,2,0.03478
     ...
@@ -133,7 +133,7 @@ def transitions_uniform(
             "outflow_to": c_to,
             disagg_label: disagg_value,
             "compartment_duration": months,
-            "total_population": [prob_u] * len(months),
+            "cohort_portion": [prob_u] * len(months),
         },
         index=range(len(months)),
     )
@@ -369,7 +369,7 @@ def transitions_lognorm(
     transitions_lognorm('parole', 'release', mean, std, x_months, p_x_months,
                         120, 5, 'crime_type', 'x', False) produces a dataframe with:
 
-    compartment, outflow_to, crime_type, compartment_duration, total_population
+    compartment, outflow_to, crime_type, compartment_duration, cohort_portion
     parole,release,x,1,0.01838
     parole,release,x,2,0.02078
     ...
@@ -426,7 +426,7 @@ def transitions_lognorm(
             "outflow_to": c_to,
             disagg_label: disagg_value,
             "compartment_duration": months,
-            "total_population": pdf,
+            "cohort_portion": pdf,
         },
         index=range(len(months)),
     )
@@ -586,7 +586,7 @@ def transitions_interpolation(
             "outflow_to": c_to,
             disagg_label: disagg_value,
             "compartment_duration": months,
-            "total_population": pdf_output,
+            "cohort_portion": pdf_output,
         },
         index=range(len(months)),
     )
@@ -615,14 +615,15 @@ def transitions_interpolation(
 
 
 def yearly_to_monthly_data(
-    df: pd.DataFrame, split_total_population: bool = True
+    df: pd.DataFrame, population_col: str, split_population: bool = True
 ) -> pd.DataFrame:
     """
-    Convert yearly outflows or total_population data to monthly granularity.
+    Convert yearly outflows or population data to monthly granularity.
     Same as transitions_interpolation with `uniform`=True, but takes a df instead of raw data.
-    `df` should be the df of yearly data. Must include `total_population` and `time_step` as columns.
-    `split_total_population` tells the method whether to divide up the `total_population` column by month.
-        Generally, this should be true for outflows_data and false for total_population_data.
+    `df` should be the df of yearly data.
+    `population_col` should be the name of the `population` column in `df`.
+    `split_population` tells the method whether to divide up the population column by month.
+        Generally, this should be true for admissions_data and false for population_data.
     """
     final_df = pd.DataFrame()
     for ts_original in df.time_step.unique():
@@ -630,8 +631,8 @@ def yearly_to_monthly_data(
         for ts_month in range(12):
             month_df = df_ts.copy()
             month_df.time_step = 12 * month_df.time_step + ts_month
-            if split_total_population:
-                month_df.total_population /= 12
+            if split_population:
+                month_df[population_col] /= 12
             final_df = pd.concat([final_df, month_df])
     return final_df
 

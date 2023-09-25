@@ -47,12 +47,12 @@ class SubSimulationFactory:
     @classmethod
     def build_sub_simulation(
         cls,
-        outflows_data: pd.DataFrame,
+        admissions_data: pd.DataFrame,
         transitions_data: pd.DataFrame,
         compartments_architecture: Dict[str, str],
         user_inputs: UserInputs,
         policy_list: List[SparkPolicy],
-        first_relevant_ts: int,
+        first_relevant_time_step: int,
         should_single_cohort_initialize_compartments: bool,
         starting_cohort_sizes: pd.DataFrame,
     ) -> SubSimulation:
@@ -62,17 +62,19 @@ class SubSimulationFactory:
             transitions_data, compartments_architecture, policy_list
         )
 
-        # Preprocess the historical data into separate pieces per compartment
-        historical_outflows = cls._load_data(compartments_architecture, outflows_data)
+        # Preprocess the historical admissions data into separate pieces per compartment
+        historical_admissions = cls._load_admissions_data(
+            compartments_architecture, admissions_data
+        )
 
         # Initialize the compartment classes
         simulation_compartments = cls._build_compartments(
-            historical_outflows,
+            historical_admissions,
             transitions_per_compartment,
             shell_policies,
             user_inputs,
             compartments_architecture,
-            first_relevant_ts,
+            first_relevant_time_step,
             starting_cohort_sizes,
             should_single_cohort_initialize_compartments,
         )
@@ -97,9 +99,7 @@ class SubSimulationFactory:
         if len(unused_transitions_data) > 0:
             logging.warning(
                 "Some transitions data not fed to a compartment:\n%s",
-                unused_transitions_data.groupby("compartment")[
-                    "total_population"
-                ].sum(),
+                unused_transitions_data.groupby("compartment")["cohort_portion"].sum(),
             )
 
         # Initialize a default transition class for each compartment to represent the no-policy scenario
@@ -155,46 +155,48 @@ class SubSimulationFactory:
         return transitions_per_compartment, shell_policies
 
     @classmethod
-    def _load_data(
-        cls, compartments_architecture: Dict[str, str], outflows_data: pd.DataFrame
+    def _load_admissions_data(
+        cls, compartments_architecture: Dict[str, str], admissions_data: pd.DataFrame
     ) -> pd.DataFrame:
-        """pre-process historical outflows data to produce a dictionary of formatted DataFrames containing
+        """pre-process historical admissions data to produce a dictionary of formatted DataFrames containing
         outflow data for each compartment"""
 
-        # Check that the outflows data has the compartments needed
+        # Check that the admissions data has the compartments needed
         simulation_architecture = compartments_architecture.keys()
-        outflow_compartments = outflows_data["compartment"].unique()
+        admissions_compartments = admissions_data["compartment"].unique()
         missing_compartment_data = [
             compartment
-            for compartment in outflow_compartments
+            for compartment in admissions_compartments
             if compartment not in simulation_architecture
         ]
         if len(missing_compartment_data) != 0:
             raise ValueError(
-                f"Simulation architecture is missing compartments for the outflows: "
+                f"Simulation architecture is missing compartments for the admissions: "
                 f"{missing_compartment_data}"
             )
 
-        # get counts of population from historical data aggregated by compartment, outflow, and year
-        preprocessed_data = outflows_data.groupby(
-            ["compartment", "outflow_to", "time_step"]
-        )["total_population"].sum()
+        # get counts of population from historical admissions data aggregated by compartment, admission_to, and year
+        preprocessed_admissions_data = admissions_data.groupby(
+            ["compartment", "admission_to", "time_step"]
+        )["cohort_population"].sum()
 
-        preprocessed_data = preprocessed_data.unstack(level=["outflow_to", "time_step"])
-        preprocessed_data = preprocessed_data.reindex(simulation_architecture).stack(
-            level="outflow_to", dropna=False
+        preprocessed_admissions_data = preprocessed_admissions_data.unstack(
+            level=["admission_to", "time_step"]
         )
-        return preprocessed_data
+        preprocessed_admissions_data = preprocessed_admissions_data.reindex(
+            simulation_architecture
+        ).stack(level="admission_to", dropna=False)
+        return preprocessed_admissions_data
 
     @classmethod
     def _build_compartments(
         cls,
-        preprocessed_data: pd.DataFrame,
+        preprocessed_admissions_data: pd.DataFrame,
         transition_tables_by_compartment: Dict[str, CompartmentTransitions],
         shell_policies: Dict[str, List[SparkPolicy]],
         user_inputs: UserInputs,
         simulation_architecture: Dict[str, str],
-        first_relevant_ts: int,
+        first_relevant_time_step: int,
         starting_cohort_sizes: pd.DataFrame,
         should_initialize_compartment_populations: bool,
     ) -> Dict[str, SparkCompartment]:
@@ -203,20 +205,20 @@ class SubSimulationFactory:
         simulation_compartments: Dict[str, SparkCompartment] = {}
         for compartment, compartment_type in simulation_architecture.items():
             outflows_data = (
-                preprocessed_data.loc[compartment]
+                preprocessed_admissions_data.loc[compartment]
                 .dropna(axis=1, how="all")
                 .dropna(axis=0, how="all")
             )
 
-            # if no transition table, initialize as shell compartment
+            # initialize shell compartment
             if compartment_type == "shell":
                 if outflows_data.empty:
                     raise ValueError(
-                        f"outflows_data for shell compartment {compartment} cannot be empty"
+                        f"admissions_data for shell compartment {compartment} cannot be empty"
                     )
                 simulation_compartments[compartment] = ShellCompartment(
                     outflows_data=outflows_data,
-                    starting_ts=first_relevant_ts,
+                    starting_time_step=first_relevant_time_step,
                     # Default `constant_admissions` to False if not set
                     constant_admissions=user_inputs.constant_admissions
                     if user_inputs.constant_admissions is not None
@@ -224,13 +226,20 @@ class SubSimulationFactory:
                     tag=compartment,
                     policy_list=shell_policies[compartment],
                 )
-            elif compartment in transition_tables_by_compartment:
+            # initialize full compartment
+            elif compartment_type == "full":
+
+                if compartment not in transition_tables_by_compartment.keys():
+                    raise ValueError(
+                        f"no transitions data for compartment: {compartment}"
+                    )
+
                 simulation_compartments[compartment] = FullCompartment(
                     outflow_data=outflows_data,
                     compartment_transitions=transition_tables_by_compartment[
                         compartment
                     ],
-                    starting_ts=first_relevant_ts,
+                    starting_time_step=first_relevant_time_step,
                     tag=compartment,
                 )
             else:
@@ -275,8 +284,8 @@ class SubSimulationFactory:
                 else:
                     compartment_population = compartment_population.iloc[
                         0
-                    ].total_population
-                compartment_obj.single_cohort_intitialize(compartment_population)
+                    ].compartment_population
+                compartment_obj.single_cohort_initialize(compartment_population)
 
             elif (
                 not should_initialize_compartment_populations

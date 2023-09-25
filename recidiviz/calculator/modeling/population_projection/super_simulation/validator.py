@@ -50,11 +50,11 @@ class Validator:
             self.output_data = {}
         self.pop_simulations = pop_simulations
 
-    def calculate_baseline_transition_error(
+    def calculate_baseline_admissions_error(
         self, validation_pairs: Dict[str, str]
     ) -> pd.DataFrame:
-        """Calculates baseline transition error."""
-        self.output_data["baseline_transition_error"] = pd.DataFrame(
+        """Calculates baseline admissions error."""
+        self.output_data["baseline_admissions_error"] = pd.DataFrame(
             columns=["compartment", "outflow", "subgroup", "year", "error"]
         )
         for compartment, outflow_to in validation_pairs.items():
@@ -71,20 +71,20 @@ class Validator:
                 error["compartment"] = compartment
                 error["subgroup"] = sub_group
 
-                self.output_data["baseline_transition_error"] = pd.concat(
-                    [self.output_data["baseline_transition_error"], error]
+                self.output_data["baseline_admissions_error"] = pd.concat(
+                    [self.output_data["baseline_admissions_error"], error]
                 )
 
         self.output_data[
-            "baseline_transition_error"
+            "baseline_admissions_error"
         ].year = self.time_converter.convert_time_steps_to_year(
-            self.output_data["baseline_transition_error"].year
+            self.output_data["baseline_admissions_error"].year
         )
 
         self.output_data["baseline_population_error"] = self.pop_simulations[
             "baseline_projections"
         ].gen_scale_factors_df()
-        return self.output_data["baseline_population_error"]
+        return self.output_data["baseline_admissions_error"]
 
     def gen_arima_output_df(self, simulation_title: str) -> pd.DataFrame:
         return self.pop_simulations[simulation_title].gen_arima_output_df()
@@ -96,15 +96,15 @@ class Validator:
         by_simulation_group: bool,
     ) -> List[matplotlib.axes.Axes]:
         """
-        Generates admissions forecast plots broken up by compartment and outflow.
+        Generates admissions forecast plots broken up by compartment and admission_to.
         `simulation_title` should be the tag of the PopulationSimulation of interest
-        If by_simulation_group = False, plots are generated for each shell compartment and outflow_to compartment
+        If by_simulation_group = False, plots are generated for each shell compartment and admission_to compartment
         If by_simulation_group = True these are further subdivided by simulation group
         """
         arima_output_df = self.gen_arima_output_df(simulation_title)
         if not by_simulation_group:
             arima_output_df = arima_output_df.groupby(
-                level=["compartment", "outflow_to", "time_step"]
+                level=["compartment", "admission_to", "time_step"]
             ).apply(lambda x: x.sum(skipna=False))
         levels_to_plot = [x for x in arima_output_df.index.names if x != "time_step"]
         dfs_to_plot = arima_output_df.groupby(levels_to_plot)
@@ -129,26 +129,24 @@ class Validator:
             axes.append(ax)
         return axes
 
-    def calculate_outflows_error(
-        self, simulation_title: str, outflows_data: pd.DataFrame
+    def calculate_admissions_error(
+        self, simulation_title: str, admissions_data: pd.DataFrame
     ) -> pd.DataFrame:
-        raw_outflows = self.gen_arima_output_df(simulation_title).groupby(
-            ["compartment", "outflow_to", "time_step"]
+        raw_admissions = self.gen_arima_output_df(simulation_title).groupby(
+            ["compartment", "admission_to", "time_step"]
         )
 
-        outflows = pd.DataFrame()
-        outflows["model"] = raw_outflows["predictions"].sum()
-        outflows["actual"] = outflows_data.groupby(
-            ["compartment", "outflow_to", "time_step"]
-        ).total_population.sum()
+        admissions = pd.DataFrame()
+        admissions["model"] = raw_admissions["predictions"].sum()
+        admissions["actual"] = admissions_data.groupby(
+            ["compartment", "admission_to", "time_step"]
+        ).cohort_population.sum()
 
-        return outflows.fillna(0)
+        return admissions.fillna(0)
 
-    def gen_total_population_error(self, simulation_tag: str) -> pd.DataFrame:
+    def gen_population_error(self, simulation_tag: str) -> pd.DataFrame:
         # Convert the index from relative time steps to floating point years
-        error_results = self.pop_simulations[
-            simulation_tag
-        ].gen_total_population_error()
+        error_results = self.pop_simulations[simulation_tag].gen_population_error()
         error_results.index = self.time_converter.convert_time_steps_to_year(
             pd.Series(error_results.index)
         )
@@ -178,7 +176,7 @@ class Validator:
         unit: str,
     ) -> pd.DataFrame:
         """
-        `output_compartment` is the compartment whose error you want to get
+        `output_compartment` is the compartment whose error you want to get, must be a shell compartment
         `outflow_to` is the outflow from that compartment you want to get the error on
         `unit is either mse or abs`
         """
@@ -198,23 +196,23 @@ class Validator:
 
         cohort_population_error = cohort_population_error.transpose()
         cohort_population_error.index = np.arange(range_start, range_end, step_size)
-        # skip first step because can't calculate ts-over-ts error differential from previous ts
+        # skip first step because can't calculate time_step-over-time_step error differential from previous time_step
         error_differential = pd.DataFrame(
             index=np.arange(range_start + step_size, range_end, step_size),
             columns=cohort_population_error.columns,
         )
-        # compute the ts-over-ts error differential
-        for ts in range(len(error_differential.index)):
+        # compute the time_step-over-time_step error differential
+        for time_step in range(len(error_differential.index)):
             for sub_group in error_differential.columns:
-                error_differential.iloc[ts][sub_group] = (
-                    cohort_population_error.iloc[ts + 1][sub_group]
-                    - cohort_population_error.iloc[ts][sub_group]
+                error_differential.iloc[time_step][sub_group] = (
+                    cohort_population_error.iloc[time_step + 1][sub_group]
+                    - cohort_population_error.iloc[time_step][sub_group]
                 )
 
         error_differential.plot(
             ylabel=f"time_step-over-time_step differential in {unit}",
             xlabel="number of max_sentences of back-filling",
-            title=f"error in releases from {output_compartment}",
+            title=f"error in outflows from {output_compartment}",
         )
 
         return cohort_population_error

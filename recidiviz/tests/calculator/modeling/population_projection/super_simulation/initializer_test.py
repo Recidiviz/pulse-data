@@ -30,9 +30,9 @@ from recidiviz.calculator.modeling.population_projection.super_simulation.initia
 class TestInitializer(unittest.TestCase):
     """Test the SuperSimulation Initializer object runs correctly"""
 
-    def test_fully_hydrate_outflows_happy_path_microsim(self) -> None:
+    def test_fully_hydrate_admissions_happy_path_microsim(self) -> None:
         """Test the Initializer adds rows for all missing time steps for each run date"""
-        test_outflows = (
+        test_admissions = (
             pd.DataFrame(
                 {
                     "time_step": [6, 7, 8] * 2 + [7, 8, 9] * 2,
@@ -41,20 +41,22 @@ class TestInitializer(unittest.TestCase):
                     + ["FEMALE"] * 3
                     + ["MALE"] * 3,
                     "compartment": ["earth"] * 12,
-                    "outflow_to": ["moon"] * 12,
+                    "admission_to": ["moon"] * 12,
                     "run_date": [datetime(2020, 12, 1)] * 6
                     + [datetime(2021, 1, 1)] * 6,
-                    "total_population": [3.0, 0.0, 4.0] * 4,
+                    "cohort_population": [3.0, 0.0, 4.0] * 4,
                 }
             )
             .sort_values(by=["gender"])
             .reset_index(drop=True)
         )
         # Remove the rows with 0 total population and test that the method adds them back
-        outflows_missing_events = test_outflows[test_outflows["total_population"] > 0]
-        hydrated_outflows = Initializer.fully_hydrate_outflows(
-            outflows_data=outflows_missing_events,
+        admissions_missing_events = test_admissions[
+            test_admissions["cohort_population"] > 0
+        ]
+        hydrated_admissions = Initializer.fully_hydrate_admissions(
+            admissions_data=admissions_missing_events,
             disaggregation_axes=["gender"],
             microsim=True,
         )
-        assert_frame_equal(hydrated_outflows, test_outflows)
+        assert_frame_equal(hydrated_admissions, test_admissions)

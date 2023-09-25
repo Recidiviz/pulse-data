@@ -40,14 +40,14 @@ class FullCompartment(SparkCompartment):
         self,
         outflow_data: pd.DataFrame,
         compartment_transitions: CompartmentTransitions,
-        starting_ts: int,
+        starting_time_step: int,
         tag: str,
     ) -> None:
 
-        super().__init__(outflow_data, starting_ts, tag)
+        super().__init__(outflow_data, starting_time_step, tag)
 
-        # store all population cohorts with their population counts per ts
-        self.cohorts: CohortTable = CohortTable(starting_ts)
+        # store all population cohorts with their population counts per time-step
+        self.cohorts: CohortTable = CohortTable(starting_time_step)
 
         # separate incoming cohorts that should be processed after .step_forward()
         self.incoming_cohorts: float = 0
@@ -55,75 +55,81 @@ class FullCompartment(SparkCompartment):
         # transition tables object from compartment out
         self.compartment_transitions = compartment_transitions
 
-        # Series containing compartment population at the end of each ts in the simulation
-        self.end_ts_populations = pd.Series(dtype=float)
+        # Series containing compartment population at the end of each time_step in the simulation
+        self.end_time_step_populations = pd.Series(dtype=float)
 
-    def single_cohort_intitialize(self, total_population: int) -> None:
+    def single_cohort_initialize(self, compartment_population: int) -> None:
         """Populate cohort table with single starting cohort"""
-        self.cohorts.append_ts_end_count(
-            self.cohorts.get_latest_population(), self.current_ts
+        self.cohorts.append_time_step_end_count(
+            self.cohorts.get_latest_population(), self.current_time_step
         )
-        self.ingest_incoming_cohort({self.tag: total_population})
+        self.ingest_incoming_cohort({self.tag: compartment_population})
         self.create_new_cohort()
         self.prepare_for_next_step()
 
     def _generate_outflow_dict(self) -> Dict[str, float]:
         """step forward all cohorts one time step and generate outflow dict"""
 
-        per_ts_transitions = self.compartment_transitions.get_per_ts_transition_table(
-            self.current_ts
+        per_time_step_transitions = (
+            self.compartment_transitions.get_per_time_step_transition_table(
+                self.current_time_step
+            )
         )
 
-        latest_ts_pop = self.cohorts.get_latest_population()
+        latest_time_step_pop = self.cohorts.get_latest_population()
 
         # convert index from starting year to years in compartment
-        latest_ts_pop.index = self.current_ts - latest_ts_pop.index
+        latest_time_step_pop.index = self.current_time_step - latest_time_step_pop.index
 
         # no cohort should start in cohort after current_ts
-        if any(latest_ts_pop.index < 0):
+        if any(latest_time_step_pop.index < 0):
             raise ValueError(
                 "Cohort cannot start after current time step\n"
-                f"Current time step: {self.current_ts}\n"
-                f"Cohort start times: {self.current_ts - latest_ts_pop.index}"
+                f"Current time step: {self.current_time_step}\n"
+                f"Cohort start times: {self.current_time_step - latest_time_step_pop.index}"
             )
 
         # Handle long/life-sentences separately from shorter sentences, assume the people on longer
         # sentences will never outflow from the compartment during the simulation and only compute
         # the outflows for the people on (relatively) shorter sentences
-        latest_ts_pop_short = latest_ts_pop[
-            latest_ts_pop.index <= len(per_ts_transitions)
+        latest_time_step_pop_short = latest_time_step_pop[
+            latest_time_step_pop.index <= len(per_time_step_transitions)
         ]
-        latest_ts_pop_long = latest_ts_pop[
-            latest_ts_pop.index > len(per_ts_transitions)
+        latest_time_step_pop_long = latest_time_step_pop[
+            latest_time_step_pop.index > len(per_time_step_transitions)
         ]
-        if not np.isclose(latest_ts_pop_long.fillna(0), 0, SIG_FIGS).all():
+        if not np.isclose(latest_time_step_pop_long.fillna(0), 0, SIG_FIGS).all():
             raise ValueError(
-                f"cohorts not empty after max sentence: {latest_ts_pop_long}"
+                f"cohorts not empty after max sentence: {latest_time_step_pop_long}"
             )
 
         # broadcast latest cohort populations onto transition table
-        latest_ts_pop_short = per_ts_transitions.mul(
-            latest_ts_pop_short, axis=0
+        latest_time_step_pop_short = per_time_step_transitions.mul(
+            latest_time_step_pop_short, axis=0
         ).dropna(how="all")
 
-        latest_ts_pop = pd.concat([latest_ts_pop_long, latest_ts_pop_short.remaining])
+        latest_time_step_pop = pd.concat(
+            [latest_time_step_pop_long, latest_time_step_pop_short.remaining]
+        )
 
         # convert index back to starting year from years in compartment
-        latest_ts_pop.index = self.current_ts - latest_ts_pop.index
+        latest_time_step_pop.index = self.current_time_step - latest_time_step_pop.index
 
-        self.cohorts.append_ts_end_count(latest_ts_pop.sort_index(), self.current_ts)
+        self.cohorts.append_time_step_end_count(
+            latest_time_step_pop.sort_index(), self.current_time_step
+        )
 
         outflow_dict = {
-            outflow: latest_ts_pop_short.sum(axis=0)[outflow]
-            for outflow in latest_ts_pop_short.columns
+            outflow: latest_time_step_pop_short.sum(axis=0)[outflow]
+            for outflow in latest_time_step_pop_short.columns
             if outflow != "remaining"
         }
         return outflow_dict
 
     def ingest_incoming_cohort(self, influx: Dict[str, float]) -> None:
-        """Ingest the population coming from one compartment into another by the end of the `current_ts`
+        """Ingest the population coming from one compartment into another by the end of the `current_time_step`
 
-        influx: dictionary of cohort type (str) to number of people revoked for the ts (int)
+        influx: dictionary of cohort type (str) to number of people revoked for the time_step (int)
         """
         if self.tag in influx.keys() and influx[self.tag] != 0:
             self.incoming_cohorts += influx[self.tag]
@@ -153,21 +159,23 @@ class FullCompartment(SparkCompartment):
             self.outflows = pd.concat([self.outflows, new_rows]).sort_index()
 
         # if historical data available, use that instead
-        if self.current_ts in self.outflows_data.columns:
+        if self.current_time_step in self.historical_outflows.columns:
             model_outflow = pd.Series(outflow_dict, dtype=float)
-            outflow_dict = self.outflows_data[self.current_ts].to_dict()
-            self.error[self.current_ts] = (
+            outflow_dict = self.historical_outflows[self.current_time_step].to_dict()
+            self.error[self.current_time_step] = (
                 100
-                * (model_outflow - self.outflows_data[self.current_ts])
-                / self.outflows_data[self.current_ts]
+                * (model_outflow - self.historical_outflows[self.current_time_step])
+                / self.historical_outflows[self.current_time_step]
             )
 
         # if prior to historical data, interpolate from earliest ts of data
-        elif not self.outflows_data.empty and self.current_ts < min(
-            self.outflows_data.columns
+        elif not self.historical_outflows.empty and self.current_time_step < min(
+            self.historical_outflows.columns
         ):
             # TODO(#5431): replace outflows during initialization with better backward projection
-            outflow_dict = self.outflows_data[min(self.outflows_data.columns)].to_dict()
+            outflow_dict = self.historical_outflows[
+                min(self.historical_outflows.columns)
+            ].to_dict()
 
         # if no outflow, don't ingest to edges
         if not bool(outflow_dict):
@@ -175,28 +183,28 @@ class FullCompartment(SparkCompartment):
 
         # Store the outflows with the previous time step since transitions from the last
         # time step get us the total population for this time step
-        self.outflows.loc[:, self.current_ts - 1] = outflow_dict
+        self.outflows.loc[:, self.current_time_step - 1] = outflow_dict
 
         for edge in self.edges:
             edge.ingest_incoming_cohort(outflow_dict)
 
     def create_new_cohort(self) -> None:
         """Create a new cohort from new admissions from other compartments"""
-        self.cohorts.append_cohort(self.incoming_cohorts, self.current_ts)
+        self.cohorts.append_cohort(self.incoming_cohorts, self.current_time_step)
         self.incoming_cohorts = 0
 
     def prepare_for_next_step(self) -> None:
         """Clean up any data structures and move the time step 1 unit forward"""
         # move the incoming cohort into the cohorts list
-        if self.current_ts in self.end_ts_populations:
+        if self.current_time_step in self.end_time_step_populations:
             raise ValueError(
                 f"Cannot prepare_for_next_step() if population already recorded for this time step \n"
-                f"time step {self.current_ts} already in end_ts_populations {self.end_ts_populations}"
+                f"time step {self.current_time_step} already in end_time_step_populations"
             )
-        self.end_ts_populations = pd.concat(
+        self.end_time_step_populations = pd.concat(
             [
-                self.end_ts_populations,
-                pd.Series({self.current_ts: self.get_current_population()}),
+                self.end_time_step_populations,
+                pd.Series({self.current_time_step: self.get_current_population()}),
             ]
         )
 
@@ -205,9 +213,9 @@ class FullCompartment(SparkCompartment):
     def scale_cohorts(self, scale_factor: float) -> None:
         self.cohorts.scale_cohort_size(scale_factor)
 
-    def get_per_ts_population(self) -> pd.Series:
-        """Return the per_ts projected population as a pd.Series of counts per EOTS"""
-        return self.end_ts_populations
+    def get_per_time_step_population(self) -> pd.Series:
+        """Return the per_time_step projected population as a pd.Series of counts per EOTS"""
+        return self.end_time_step_populations
 
     def get_current_population(self) -> float:
         return self.cohorts.get_latest_population().sum()

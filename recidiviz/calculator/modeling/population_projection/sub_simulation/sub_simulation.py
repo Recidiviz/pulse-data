@@ -40,7 +40,7 @@ class SubSimulation:
     ) -> None:
 
         # A DataFrame with total population errors at all time steps with population data
-        self.end_ts_scale_factors = pd.DataFrame()
+        self.end_time_step_scale_factors = pd.DataFrame()
 
         # A dict of compartment tag (pre-trial, jail, prison, release...) to the corresponding SparkCompartment object
         self.simulation_compartments = simulation_compartments
@@ -49,7 +49,7 @@ class SubSimulation:
         return self.simulation_compartments[compartment].get_error(unit=unit)
 
     def get_scale_factors(self) -> pd.DataFrame:
-        return self.end_ts_scale_factors
+        return self.end_time_step_scale_factors
 
     def gen_arima_output_df(self) -> pd.DataFrame:
         arima_output_df = pd.concat(
@@ -67,7 +67,7 @@ class SubSimulation:
         for compartment in self.simulation_compartments.values():
             compartment.step_forward()
 
-    def scale_cohorts(self, scale_factors: pd.DataFrame, ts: int) -> None:
+    def scale_cohorts(self, scale_factors: pd.DataFrame, time_step: int) -> None:
         """Scale cohort sizes to match historical data"""
         if len(scale_factors.compartment.unique()) != len(scale_factors):
             raise ValueError(f"Duplicate compartment scale factors: {scale_factors}")
@@ -81,7 +81,9 @@ class SubSimulation:
                     .scale_factor
                 )
                 compartment_obj.scale_cohorts(scale_factor)
-                self.end_ts_scale_factors.loc[ts, compartment_tag] = scale_factor
+                self.end_time_step_scale_factors.loc[
+                    time_step, compartment_tag
+                ] = scale_factor
 
     def create_new_cohort(self) -> None:
         """Create a new cohort from new admissions from other compartments"""
@@ -120,7 +122,8 @@ class SubSimulation:
         for compartment_name, compartment in self.simulation_compartments.items():
             if isinstance(compartment, FullCompartment):
                 compartment_results = pd.DataFrame(
-                    compartment.get_per_ts_population(), columns=["total_population"]
+                    compartment.get_per_time_step_population(),
+                    columns=["compartment_population"],
                 )
                 compartment_results["compartment"] = compartment_name
                 compartment_results["time_step"] = compartment_results.index
@@ -139,9 +142,10 @@ class SubSimulation:
                 compartment_populations.append(
                     {
                         "compartment": compartment_name,
-                        "total_population": compartment.get_current_population(),
+                        "compartment_population": compartment.get_current_population(),
                     },
                 )
         return pd.DataFrame(
-            columns=["compartment", "total_population"], data=compartment_populations
+            columns=["compartment", "compartment_population"],
+            data=compartment_populations,
         )

@@ -62,9 +62,9 @@ total_population_data = pd.read_csv(
 upload_spark_model_inputs(
     project_id="recidiviz-staging",
     simulation_tag="FL_SB_1378",
-    outflows_data_df=outflows_data,
+    admissions_data_df=outflows_data,
     transitions_data_df=transitions_data,
-    total_population_data_df=total_population_data,
+    population_data_df=total_population_data,
     yaml_path=(
         # DIRECTORY_PATH +
         "FL_SB_1378_model_inputs.yaml"

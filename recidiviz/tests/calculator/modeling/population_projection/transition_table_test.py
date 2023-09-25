@@ -28,7 +28,7 @@ from recidiviz.calculator.modeling.population_projection.transition_table import
     TransitionTable,
 )
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
-    MIN_POSSIBLE_POLICY_TS,
+    MIN_POSSIBLE_POLICY_TIME_STEP,
     SIG_FIGS,
 )
 
@@ -40,14 +40,14 @@ class TestTransitionTable(unittest.TestCase):
         self.test_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 1, 2, 2.5, 10],
-                "total_population": [4, 2, 2, 4, 3],
+                "cohort_portion": [4, 2, 2, 4, 3],
                 "outflow_to": ["jail", "prison", "jail", "prison", "prison"],
                 "compartment": ["test_compartment"] * 5,
             }
         )
-        self.prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        self.prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TIME_STEP, [])
         self.prev_table.generate_transition_tables(
-            [MIN_POSSIBLE_POLICY_TS], self.test_data
+            [MIN_POSSIBLE_POLICY_TIME_STEP], self.test_data
         )
 
 
@@ -57,15 +57,17 @@ class TestInitialization(TestTransitionTable):
     def test_normalize_transitions_requires_non_normalized_before_table(self) -> None:
         """Tests that transitory transitions table rejects a pre-normalized 'previous' table"""
         # uses its own prev_table because we don't want to normalize the general-use one
-        prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
-        prev_table.generate_transition_tables([MIN_POSSIBLE_POLICY_TS], self.test_data)
+        prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TIME_STEP, [])
+        prev_table.generate_transition_tables(
+            [MIN_POSSIBLE_POLICY_TIME_STEP], self.test_data
+        )
         prev_table.normalize_transitions()
 
         with self.assertRaises(ValueError):
             TransitionTable(
                 0,
                 [],
-                {MIN_POSSIBLE_POLICY_TS: prev_table.get_after_table()},
+                {MIN_POSSIBLE_POLICY_TIME_STEP: prev_table.get_after_table()},
             )
 
     def test_results_independent_of_data_order(self) -> None:
@@ -75,27 +77,27 @@ class TestInitialization(TestTransitionTable):
                 policy_fn=TransitionTable.test_retroactive_policy,
                 sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=True,
             ),
             SparkPolicy(
                 policy_fn=TransitionTable.test_non_retroactive_policy,
                 sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=False,
             ),
         ]
         transition_table_default = TransitionTable(
             5,
             compartment_policies,
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
         transition_table_shuffled = TransitionTable(
             5,
             compartment_policies,
             {
-                MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table().sample(
+                MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table().sample(
                     frac=1, axis=1
                 )
             },
@@ -107,7 +109,7 @@ class TestInitialization(TestTransitionTable):
         test_data = pd.DataFrame(
             {
                 "compartment_duration": [1, 3, 1, 2],
-                "total_population": [1, 4, 2, 3],
+                "cohort_portion": [1, 4, 2, 3],
                 "outflow_to": [
                     "mars",
                     "mars",
@@ -116,11 +118,13 @@ class TestInitialization(TestTransitionTable):
                 ],
             }
         )
-        transition_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
-        transition_table.generate_transition_tables([MIN_POSSIBLE_POLICY_TS], test_data)
+        transition_table = TransitionTable(MIN_POSSIBLE_POLICY_TIME_STEP, [])
+        transition_table.generate_transition_tables(
+            [MIN_POSSIBLE_POLICY_TIME_STEP], test_data
+        )
         transition_table.normalize_transitions()
         unnormalized_table = TransitionTable.unnormalized_table(
-            transition_table.tables[MIN_POSSIBLE_POLICY_TS]
+            transition_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP]
         )
         expected_cdf = pd.DataFrame(
             {
@@ -142,7 +146,7 @@ class TestPolicyFunctions(TestTransitionTable):
                 policy_fn=TransitionTable.test_retroactive_policy,
                 sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=False,
             )
         ]
@@ -151,24 +155,26 @@ class TestPolicyFunctions(TestTransitionTable):
             TransitionTable(
                 5,
                 compartment_policies,
-                {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+                {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
             )
 
     def test_unnormalized_table_inverse_of_normalize_table(self) -> None:
         transition_table = TransitionTable(
             5,
             [],
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
-        original_before_table = transition_table.tables[MIN_POSSIBLE_POLICY_TS].copy()
+        original_before_table = transition_table.tables[
+            MIN_POSSIBLE_POLICY_TIME_STEP
+        ].copy()
         # 'normalize' table (in the classical, mathematical sense) to match scale of unnormalized table
         original_before_table /= original_before_table.sum().sum()
 
-        transition_table.normalize_table(MIN_POSSIBLE_POLICY_TS)
-        transition_table.unnormalize_table(MIN_POSSIBLE_POLICY_TS)
+        transition_table.normalize_table(MIN_POSSIBLE_POLICY_TIME_STEP)
+        transition_table.unnormalize_table(MIN_POSSIBLE_POLICY_TIME_STEP)
         assert_frame_equal(
             pd.DataFrame(original_before_table),
-            pd.DataFrame(transition_table.tables[MIN_POSSIBLE_POLICY_TS]),
+            pd.DataFrame(transition_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP]),
         )
 
     def test_alternate_transitions_data_equal_to_differently_instantiated_transition_table(
@@ -176,7 +182,7 @@ class TestPolicyFunctions(TestTransitionTable):
     ) -> None:
         alternate_data = self.test_data.copy()
         alternate_data.compartment_duration *= 2
-        alternate_data.total_population = 10 - alternate_data.total_population
+        alternate_data.cohort_portion = 10 - alternate_data.cohort_portion
 
         policy_function = SparkPolicy(
             policy_fn=partial(
@@ -186,25 +192,25 @@ class TestPolicyFunctions(TestTransitionTable):
             ),
             spark_compartment="test_compartment",
             sub_population={"sub_group": "test_population"},
-            policy_ts=5,
+            policy_time_step=5,
             apply_retroactive=False,
         )
 
         transition_table = TransitionTable(
             5,
             [policy_function],
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
-        alternate_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        alternate_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TIME_STEP, [])
         alternate_prev_table.generate_transition_tables(
-            [MIN_POSSIBLE_POLICY_TS], alternate_data
+            [MIN_POSSIBLE_POLICY_TIME_STEP], alternate_data
         )
 
         alternate_data_table = TransitionTable(
             5,
             [],
-            {MIN_POSSIBLE_POLICY_TS: alternate_prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: alternate_prev_table.get_after_table()},
         )
 
         assert_frame_equal(
@@ -220,18 +226,18 @@ class TestPolicyFunctions(TestTransitionTable):
                 policy_fn=TransitionTable.test_retroactive_policy,
                 sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=True,
             ),
             SparkPolicy(
                 policy_fn=partial(
                     TransitionTable.preserve_normalized_outflow_behavior,
                     outflows=["prison"],
-                    ts=MIN_POSSIBLE_POLICY_TS,
+                    time_step=MIN_POSSIBLE_POLICY_TIME_STEP,
                 ),
                 sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=True,
             ),
         ]
@@ -239,21 +245,21 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
         baseline_transitions = TransitionTable(
             5,
             [],
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
         transition_table.normalize_transitions()
         baseline_transitions.normalize_transitions()
 
         assert_series_equal(
-            baseline_transitions.tables[MIN_POSSIBLE_POLICY_TS]["prison"],
-            transition_table.tables[MIN_POSSIBLE_POLICY_TS]["prison"],
+            baseline_transitions.tables[MIN_POSSIBLE_POLICY_TIME_STEP]["prison"],
+            transition_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP]["prison"],
         )
 
     def test_apply_reduction_with_trivial_reductions_doesnt_change_transition_table(
@@ -306,11 +312,11 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
         assert_frame_equal(
-            transition_table.previous_tables[MIN_POSSIBLE_POLICY_TS],
+            transition_table.previous_tables[MIN_POSSIBLE_POLICY_TIME_STEP],
             transition_table.tables[5],
         )
 
@@ -331,7 +337,7 @@ class TestPolicyFunctions(TestTransitionTable):
                 ),
                 sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=True,
             )
         ]
@@ -339,7 +345,7 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policy,
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
         expected_result = pd.DataFrame(
@@ -354,7 +360,7 @@ class TestPolicyFunctions(TestTransitionTable):
         expected_result.columns.name = "outflow_to"
 
         assert_frame_equal(
-            round(transition_table.tables[MIN_POSSIBLE_POLICY_TS], SIG_FIGS),
+            round(transition_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP], SIG_FIGS),
             round(expected_result, SIG_FIGS),
         )
 
@@ -378,7 +384,7 @@ class TestPolicyFunctions(TestTransitionTable):
                 ),
                 sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=False,
             )
         ]
@@ -386,15 +392,17 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policy,
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
         assert_frame_equal(
             round(transition_table.tables[5].loc[6:], SIG_FIGS),
-            round(self.prev_table.tables[MIN_POSSIBLE_POLICY_TS].loc[6:], SIG_FIGS),
+            round(
+                self.prev_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP].loc[6:], SIG_FIGS
+            ),
         )
 
-    def test_reallocate_outflow_preserves_total_population(self) -> None:
+    def test_reallocate_outflow_preserves_cohort_portion(self) -> None:
         compartment_policies = [
             SparkPolicy(
                 policy_fn=partial(
@@ -411,7 +419,7 @@ class TestPolicyFunctions(TestTransitionTable):
                 ),
                 sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=True,
             )
         ]
@@ -419,15 +427,15 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
         if not transition_table.previous_tables:
             raise ValueError("previous tables are not populated")
 
         assert_series_equal(
-            transition_table.tables[MIN_POSSIBLE_POLICY_TS].sum(axis=1),
-            transition_table.previous_tables[MIN_POSSIBLE_POLICY_TS].sum(axis=1),
+            transition_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP].sum(axis=1),
+            transition_table.previous_tables[MIN_POSSIBLE_POLICY_TIME_STEP].sum(axis=1),
         )
 
     def test_extend_table_extends_table(self) -> None:
@@ -435,24 +443,26 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             [],
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
-        expected_df_columns = transition_table.tables[MIN_POSSIBLE_POLICY_TS].columns
+        expected_df_columns = transition_table.tables[
+            MIN_POSSIBLE_POLICY_TIME_STEP
+        ].columns
         expected_df_index_name = transition_table.tables[
-            MIN_POSSIBLE_POLICY_TS
+            MIN_POSSIBLE_POLICY_TIME_STEP
         ].index.name
         transition_table.extend_tables(15)
         self.assertEqual(
-            set(transition_table.tables[MIN_POSSIBLE_POLICY_TS].index),
+            set(transition_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP].index),
             set(range(1, 16)),
         )
         # Test the DataFrame multi-index was not changed during the extend
         assert_index_equal(
-            transition_table.tables[MIN_POSSIBLE_POLICY_TS].columns,
+            transition_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP].columns,
             expected_df_columns,
         )
         self.assertEqual(
-            transition_table.tables[MIN_POSSIBLE_POLICY_TS].index.name,
+            transition_table.tables[MIN_POSSIBLE_POLICY_TIME_STEP].index.name,
             expected_df_index_name,
         )
 
@@ -471,7 +481,7 @@ class TestPolicyFunctions(TestTransitionTable):
                 ),
                 sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=False,
             )
         ]
@@ -479,13 +489,13 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
         baseline_transitions = TransitionTable(
             5,
             [],
-            {MIN_POSSIBLE_POLICY_TS: self.prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: self.prev_table.get_after_table()},
         )
 
         transition_table.normalize_transitions()
@@ -506,14 +516,14 @@ class TestPolicyFunctions(TestTransitionTable):
         normal_data = pd.DataFrame(
             {
                 "compartment_duration": range(4, 17),
-                "total_population": [1, 4, 9, 16, 25, 36, 100, 36, 25, 16, 9, 4, 1],
+                "cohort_portion": [1, 4, 9, 16, 25, 36, 100, 36, 25, 16, 9, 4, 1],
             }
         )
         normal_data["outflow_to"] = "release"
 
         normal_prev_table = TransitionTable(-9999, [])
         normal_prev_table.generate_transition_tables(
-            [MIN_POSSIBLE_POLICY_TS], normal_data
+            [MIN_POSSIBLE_POLICY_TIME_STEP], normal_data
         )
 
         compartment_policies = [
@@ -527,7 +537,7 @@ class TestPolicyFunctions(TestTransitionTable):
                 ),
                 sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
-                policy_ts=5,
+                policy_time_step=5,
                 apply_retroactive=False,
             )
         ]
@@ -535,7 +545,7 @@ class TestPolicyFunctions(TestTransitionTable):
         transition_table = TransitionTable(
             5,
             compartment_policies,
-            {MIN_POSSIBLE_POLICY_TS: normal_prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: normal_prev_table.get_after_table()},
         )
 
         expected_mean = 10 - 2 * 0.5 / 2
@@ -549,16 +559,16 @@ class TestPolicyFunctions(TestTransitionTable):
         one_outflow_df = pd.DataFrame(
             {
                 "compartment_duration": range(1, 11),
-                "total_population": [1] * 10,
+                "cohort_portion": [1] * 10,
                 "outflow_to": "outflow",
             }
         )
 
-        normal_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        normal_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TIME_STEP, [])
         normal_prev_table.generate_transition_tables(
-            [MIN_POSSIBLE_POLICY_TS], one_outflow_df
+            [MIN_POSSIBLE_POLICY_TIME_STEP], one_outflow_df
         )
-        policy_ts = 5
+        policy_time_step = 5
         compartment_policies = [
             SparkPolicy(
                 policy_fn=partial(
@@ -575,15 +585,15 @@ class TestPolicyFunctions(TestTransitionTable):
                 ),
                 sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
-                policy_ts=policy_ts,
+                policy_time_step=policy_time_step,
                 apply_retroactive=False,
             )
         ]
 
         transition_table = TransitionTable(
-            policy_ts,
+            policy_time_step,
             compartment_policies,
-            {MIN_POSSIBLE_POLICY_TS: normal_prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: normal_prev_table.get_after_table()},
         )
 
         expected_policy_table = pd.DataFrame(
@@ -593,7 +603,9 @@ class TestPolicyFunctions(TestTransitionTable):
         expected_policy_table.columns = pd.Index(
             expected_policy_table.columns, name="outflow_to"
         )
-        assert_frame_equal(transition_table.tables[policy_ts], expected_policy_table)
+        assert_frame_equal(
+            transition_table.tables[policy_time_step], expected_policy_table
+        )
 
     def test_apply_reductions_two_outflows(self) -> None:
         """
@@ -604,25 +616,25 @@ class TestPolicyFunctions(TestTransitionTable):
                 pd.DataFrame(
                     {
                         "compartment_duration": range(1, 11),
-                        "total_population": [1] * 10,
+                        "cohort_portion": [1] * 10,
                         "outflow_to": "outflow",
                     }
                 ),
                 pd.DataFrame(
                     {
                         "compartment_duration": range(1, 11),
-                        "total_population": [0.5] * 10,
+                        "cohort_portion": [0.5] * 10,
                         "outflow_to": "other_outflow",
                     }
                 ),
             ]
         )
 
-        normal_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        normal_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TIME_STEP, [])
         normal_prev_table.generate_transition_tables(
-            [MIN_POSSIBLE_POLICY_TS], two_outflows_df
+            [MIN_POSSIBLE_POLICY_TIME_STEP], two_outflows_df
         )
-        policy_ts = 5
+        policy_time_step = 5
         compartment_policies = [
             SparkPolicy(
                 policy_fn=partial(
@@ -639,15 +651,15 @@ class TestPolicyFunctions(TestTransitionTable):
                 ),
                 sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
-                policy_ts=policy_ts,
+                policy_time_step=policy_time_step,
                 apply_retroactive=False,
             )
         ]
 
         transition_table = TransitionTable(
-            policy_ts,
+            policy_time_step,
             compartment_policies,
-            {MIN_POSSIBLE_POLICY_TS: normal_prev_table.get_after_table()},
+            {MIN_POSSIBLE_POLICY_TIME_STEP: normal_prev_table.get_after_table()},
         )
 
         expected_policy_table = pd.DataFrame(
@@ -660,4 +672,6 @@ class TestPolicyFunctions(TestTransitionTable):
         expected_policy_table.columns = pd.Index(
             expected_policy_table.columns, name="outflow_to"
         )
-        assert_frame_equal(transition_table.tables[policy_ts], expected_policy_table)
+        assert_frame_equal(
+            transition_table.tables[policy_time_step], expected_policy_table
+        )

@@ -46,7 +46,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
                 "outflow_to": ["to"] * 23,
                 "type": ["x"] * 23,
                 "compartment_duration": list(range(1, 23 + 1)),
-                "total_population": [0.03478] * 23,
+                "cohort_portion": [0.03478] * 23,
             }
         )
 
@@ -101,7 +101,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
                 "outflow_to": ["to"] * periods,
                 "type": ["x"] * periods,
                 "compartment_duration": list(range(1, periods + 1)),
-                "total_population": total_pop,
+                "cohort_portion": total_pop,
             }
         )
 
@@ -141,7 +141,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
                 "outflow_to": ["to"] * 12,
                 "type": ["x"] * 12,
                 "compartment_duration": list(range(1, 12 + 1)),
-                "total_population": total_pop,
+                "cohort_portion": total_pop,
             }
         )
 
@@ -168,7 +168,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
                 "outflow_to": ["to"] * 12,
                 "type": ["x"] * 12,
                 "compartment_duration": list(range(1, 12 + 1)),
-                "total_population": total_pop,
+                "cohort_portion": total_pop,
             }
         )
 

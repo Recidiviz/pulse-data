@@ -63,9 +63,9 @@ BASELINE_PROJECTED_POPULATION_SCHEMA = [
     {"name": "simulation_date", "type": "DATE", "mode": "REQUIRED"},
     {"name": "simulation_group", "type": "STRING", "mode": "REQUIRED"},
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "total_population", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "total_population_min", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "total_population_max", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "compartment_population", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "compartment_population_min", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "compartment_population_max", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
 ]
 
@@ -76,7 +76,7 @@ BASELINE_PROJECTED_OUTFLOWS_SCHEMA = [
     {"name": "simulation_group", "type": "STRING", "mode": "REQUIRED"},
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
     {"name": "outflow_to", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "total_population", "type": "INT64", "mode": "REQUIRED"},
+    {"name": "cohort_population", "type": "INT64", "mode": "REQUIRED"},
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
 ]
 
@@ -86,7 +86,7 @@ VALIDATION_SCHEMA = [
     {"name": "simulation_date", "type": "DATE", "mode": "REQUIRED"},
     {"name": "simulation_group", "type": "STRING", "mode": "REQUIRED"},
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
-    {"name": "total_population", "type": "FLOAT", "mode": "REQUIRED"},
+    {"name": "compartment_population", "type": "FLOAT", "mode": "REQUIRED"},
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
     {"name": "run_date", "type": "DATE", "mode": "REQUIRED"},
 ]
