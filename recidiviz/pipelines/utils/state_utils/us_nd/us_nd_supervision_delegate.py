@@ -58,14 +58,13 @@ LEVEL_1_TO_LEVEL_2_SUPERVISION_LOCATION_MAPPING = {
     "14": "Region 2",
     "15": "Region 2",
     "16": "Region 4",
-    "17": None,
+    "17": "Central Office",
     "18": "Region 5",
-    # TODO(#23161): Ask ND about all location IDs below
-    "19": None,
-    "20": None,
-    "21": None,
-    "22": None,
-    "23": None,
+    "19": "Region 1",
+    "20": "Region 5",
+    "21": "Region 2",
+    "22": "Region 1",
+    "23": "Region 6",
 }
 
 
