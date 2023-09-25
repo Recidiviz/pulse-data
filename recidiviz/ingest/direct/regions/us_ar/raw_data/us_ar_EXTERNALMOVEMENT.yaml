@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: EXTERNALMOVEMENT
+file_description: |-
+  EXTERNAL MOVEMENT
+data_classification: source
+primary_key_cols:
+  - OFFENDERID
+  - EXTERNALMOVEMENTDATE
+  - EXTERNALMOVEMENTTIME
+columns:
+  - name: OFFENDERID
+    description: |-
+      Offender ID
+    is_pii: True
+  - name: EXTERNALMOVEMENTDATE
+    description: |-
+      Movement date
+    field_type: datetime
+  - name: EXTERNALMOVEMENTTIME
+    description: |-
+      Movement time
+  - name: LOCATIONREPORTMOVEMENT
+    description: |-
+      Location reporting movement
+  - name: EXTERNALMOVEMENTCODE
+    description: |-
+      Movement code
+  - name: OTHERLOCATIONCODE
+    description: |-
+      Code of other location
+  - name: REASONFORMOVEMENT
+    description: |-
+      Movement reason
+  - name: EXTERNALMVMTCOMMENTS
+    description: |-
+      Movement comments
+    is_pii: True
+  - name: DATELASTUPDATE
+    description: |-
+      Date last updated
+    field_type: datetime
+  - name: TIMELASTUPDATE
+    description: |-
+      Time last updated
+  - name: STAFFLASTUPDATE
+    description: |-
+      Staff last updated
+    is_pii: True
+encoding: cp1252
+separator: "‡"
