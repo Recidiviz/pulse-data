@@ -1185,7 +1185,11 @@ class BigQueryClientImpl(BigQueryClient):
     def create_table(
         self, table: bigquery.Table, overwrite: bool = False
     ) -> bigquery.Table:
-        return self.client.create_table(table, exists_ok=overwrite)
+        created_table = self.client.create_table(table, exists_ok=overwrite)
+        # Applying row-level permissions is fail-closed. If applying the row-level permissions
+        # fails, the table creation process should fail
+        self.apply_row_level_permissions(created_table)
+        return created_table
 
     def create_or_update_view(
         self, view: BigQueryView, might_exist: bool = True
@@ -1941,6 +1945,9 @@ class BigQueryClientImpl(BigQueryClient):
             "Updating schema of table %s to: %s", table.table_id, desired_schema_fields
         )
         table.schema = desired_schema_fields
+        # Applying row-level permissions is fail-closed. If applying the row-level permissions
+        # fails, the table update process should fail
+        self.apply_row_level_permissions(table)
         self.client.update_table(table, ["schema"])
 
     def _remove_unused_fields_from_schema(
