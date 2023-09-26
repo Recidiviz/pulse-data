@@ -182,7 +182,14 @@ class GCSFileSystemImpl(GCSFileSystem):
                 "File rewrite failed. Attempting to delete partially written file: %s",
                 dst_path.uri(),
             )
-            self.delete(dst_path)
+            dest_blob_path = GcsfsPath.from_blob(blob=dest_blob)
+            if not isinstance(dest_blob_path, GcsfsFilePath):
+                logging.error(
+                    "Destination is not a GcsfsFilePath, got %s", dest_blob_path
+                )
+                raise e
+
+            self.delete(dest_blob_path)
             raise e
 
     @retry.Retry(predicate=google_api_retry_predicate)

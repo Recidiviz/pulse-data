@@ -15,14 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Google API Retry Predicate to be used throughout the Recidiviz codebase."""
-from typing import Callable
 
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.api_core import retry
 
 
-def google_api_retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
-    """ "A function that will determine whether we should retry a given Google exception."""
+def google_api_retry_predicate(exception: BaseException) -> bool:
+    """A function that will determine whether we should retry a given Google exception."""
     return (
         retry.if_transient_error(exception)
         or retry.if_exception_type(exceptions.GatewayTimeout)(exception)
