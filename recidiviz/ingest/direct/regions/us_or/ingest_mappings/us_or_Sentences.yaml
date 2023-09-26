@@ -25,6 +25,7 @@ input_columns:
   - CONSEC_TO
   - MERGE_SENTENCE
   - CRIME_COMMITTED_DATE # offense_date
+  - CRIME_DESCRIPTION
   - CONVICTED_DATE # date_charged
   - COUNTY
   - ORS_NUMBER # statute # need to link to NCIC table for NCIC_CODE
@@ -252,6 +253,7 @@ output:
                       county_code: COUNTY
                       ncic_code: NCIC_CODE
                       statute: ORS_NUMBER
+                      description: CRIME_DESCRIPTION
                       classification_type:
                         $enum_mapping:
                           $raw_text: CRIME_CLASS

@@ -59,7 +59,7 @@ WITH sentence AS (
     ADMISSION_NUMBER, 
     OFFENSE_NUMBER, 
     ARREST_DATE, 
-    CONVICTED_DATE,
+    DATE(CONVICTED_DATE) AS CONVICTED_DATE,
     COUNTY, 
     COURT_CASE_NUMBER,
     (DATE(CRIME_COMMITTED_DATE)) AS CRIME_COMMITTED_DATE,
@@ -127,6 +127,7 @@ WITH sentence AS (
   SELECT
     ORS_NUMBER,
     ORS_SUBCLASS, 
+    ORS_ABBREVIATION,
     ORS_DESCRIPTION, 
     CRIME_TYPE,
     CRIME_CLASS, 
@@ -168,12 +169,13 @@ final AS (
     CONDITIONS_LIST,
     -- charge --
     charge.CRIME_COMMITTED_DATE, 
-    charge.CONVICTED_DATE, 
+    IFNULL(descriptions.ORS_DESCRIPTION, CRIME_ABBREVIATION) AS CRIME_DESCRIPTION,
+    IF(charge.CONVICTED_DATE = '1901-01-01', SENTENCE_BEGIN_DATE, charge.CONVICTED_DATE) AS CONVICTED_DATE,
     charge.COUNTY,
     NCIC_CODE,
     charge.ORS_NUMBER,
     charge.CRIME_CLASS, 
-    ORS_DESCRIPTION, 
+    crime_info.ORS_DESCRIPTION, 
     sentence.DANG_OFFENDER, 
     crime_info.SEX_ASSAULT_CRIME, 
     COURT_CASE_COUNT, 
@@ -186,13 +188,15 @@ final AS (
   LEFT JOIN crime_info 
   ON additional_info.ORS_NUMBER = crime_info.ORS_NUMBER
   AND additional_info.ORS_PARAGRAPH = crime_info.ORS_SUBCLASS
+  LEFT JOIN crime_info descriptions # join twice to get crime descriptions since OR_subclass not properly filled in
+  ON charge.CRIME_ABBREVIATION = descriptions.ORS_ABBREVIATION
   LEFT JOIN ncic_info 
   ON additional_info.ORS_NUMBER = ncic_info.ORS_NUMBER
   AND additional_info.ORS_PARAGRAPH = ncic_info.ORS_SUBCLASS
   LEFT JOIN conditions
   USING (RECORD_KEY, CUSTODY_NUMBER, ADMISSION_NUMBER, COURT_CASE_NUMBER)
 )
-SELECT * FROM final
+SELECT DISTINCT * FROM final
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
