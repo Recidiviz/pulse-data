@@ -54,6 +54,7 @@ from recidiviz.pipelines.ingest.state.constants import (
     ExternalIdKey,
     IngestViewName,
     PrimaryKey,
+    UpperBoundDate,
 )
 from recidiviz.pipelines.ingest.state.generate_entities import GenerateEntities
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
@@ -113,7 +114,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         )
         merged_root_entities_with_dates_per_ingest_view: Dict[
             IngestViewName,
-            beam.PCollection[Tuple[ExternalIdKey, Tuple[datetime, RootEntity]]],
+            beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]],
         ] = {}
         for ingest_view in ingest_manifest_collector.launchable_ingest_views():
             raw_data_tables = [
@@ -157,7 +158,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             )
 
         merged_root_entities_with_dates: beam.PCollection[
-            Tuple[ExternalIdKey, Tuple[datetime, RootEntity]]
+            Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]
         ] = (merged_root_entities_with_dates_per_ingest_view.values() | beam.Flatten())
 
         # pylint: disable=no-value-for-parameter
@@ -184,6 +185,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 )
             )
         )
+
         all_state_tables = list(get_state_entity_names())
         final_entities: beam.PCollection[Dict[str, Any]] = (
             {

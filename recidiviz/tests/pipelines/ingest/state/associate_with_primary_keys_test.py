@@ -73,9 +73,9 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             ],
         )
 
-        self.date1 = datetime(2020, 1, 1)
-        self.date2 = datetime(2020, 1, 2)
-        self.date3 = datetime(2020, 1, 3)
+        self.date1 = datetime(2020, 1, 1).timestamp()
+        self.date2 = datetime(2020, 1, 2).timestamp()
+        self.date3 = datetime(2020, 1, 3).timestamp()
 
         self.primary_key_12 = generate_primary_key(
             string_representation({self.external_id_1, self.external_id_2}),

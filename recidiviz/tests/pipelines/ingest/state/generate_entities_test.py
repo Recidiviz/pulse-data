@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Testing the GenerateEntities PTransform."""
+from datetime import datetime
+
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
@@ -40,7 +42,7 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
     def test_generate_entities(self) -> None:
         expected_output = [
             (
-                "2022-07-02T00:00:00",
+                datetime.fromisoformat("2022-07-02T00:00:00").timestamp(),
                 StatePerson(
                     state_code="US_DD",
                     external_ids=[
@@ -54,7 +56,7 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
                 ),
             ),
             (
-                "2022-07-04T00:00:00",
+                datetime.fromisoformat("2022-07-04T00:00:00").timestamp(),
                 StatePerson(
                     state_code="US_DD",
                     external_ids=[

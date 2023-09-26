@@ -46,7 +46,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                 ("ID1", "US_DD_ID_TYPE"),
                 (
                     (
-                        datetime(2022, 7, 1, 0, 0),
+                        datetime(2022, 7, 1, 0, 0).timestamp(),
                         StatePerson(
                             state_code=self.region_code.value,
                             external_ids=[
@@ -73,7 +73,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                 ("ID1", "US_DD_ID_TYPE"),
                 (
                     (
-                        datetime(2022, 7, 3, 0, 0),
+                        datetime(2022, 7, 3, 0, 0).timestamp(),
                         StatePerson(
                             state_code=self.region_code.value,
                             external_ids=[
@@ -100,7 +100,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                 ("ID1", "US_DD_ID_TYPE"),
                 (
                     (
-                        datetime(2022, 7, 4, 0, 0),
+                        datetime(2022, 7, 4, 0, 0).timestamp(),
                         StatePerson(
                             state_code=self.region_code.value,
                             external_ids=[

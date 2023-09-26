@@ -235,15 +235,17 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
 
     def get_expected_root_entities_with_upperbound_dates(
         self, *, ingest_view_name: str, test_name: str
-    ) -> Iterable[Tuple[datetime, Entity]]:
+    ) -> Iterable[Tuple[float, Entity]]:
         rows = list(
             self.get_expected_ingest_view_results(
                 ingest_view_name=ingest_view_name, test_name=test_name
             )
         )
-        results: List[Tuple[datetime, Entity]] = []
+        results: List[Tuple[float, Entity]] = []
         for row in rows:
-            upper_bound_date = parser.isoparse(row[UPPER_BOUND_DATETIME_COL_NAME])
+            upper_bound_date = parser.isoparse(
+                row[UPPER_BOUND_DATETIME_COL_NAME]
+            ).timestamp()
             for column in ADDITIONAL_SCHEMA_COLUMNS:
                 row.pop(column.name)
             results.append(
@@ -257,7 +259,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
                     ),
                 )
             )
-        return results
+        return iter(results)
 
     def get_expected_output_entity_types(
         self, *, ingest_view_name: str, test_name: str
@@ -302,12 +304,12 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
                     raise BeamAssertException("Missing materialization time column")
                 record.pop(MATERIALIZATION_TIME_COL_NAME)
                 if record[LOWER_BOUND_DATETIME_COL_NAME]:
-                    record[LOWER_BOUND_DATETIME_COL_NAME] = datetime.isoformat(
+                    record[LOWER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
                         record[LOWER_BOUND_DATETIME_COL_NAME]
-                    )
-                record[UPPER_BOUND_DATETIME_COL_NAME] = datetime.isoformat(
+                    ).isoformat()
+                record[UPPER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
                     record[UPPER_BOUND_DATETIME_COL_NAME]
-                )
+                ).isoformat()
             if copy_of_output != copy_of_expected_output:
                 raise BeamAssertException(
                     f"Output does not match expected output: output is {copy_of_output}, expected is {copy_of_expected_output}"

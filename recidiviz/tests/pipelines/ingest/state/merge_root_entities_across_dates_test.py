@@ -43,8 +43,8 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
 
     def test_merge_root_entities_across_dates(self) -> None:
-        date_1 = datetime(2020, 1, 1)
-        date_2 = datetime(2020, 1, 2)
+        date_1 = datetime(2020, 1, 1).timestamp()
+        date_2 = datetime(2020, 1, 2).timestamp()
 
         person_external_id_1 = entities.StatePersonExternalId(
             external_id="ID1", id_type="TYPE", state_code=StateCode.US_DD.value
