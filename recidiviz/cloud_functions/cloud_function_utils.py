@@ -21,6 +21,7 @@ Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
 import json
+import logging
 import urllib.parse
 from typing import Any, List
 
@@ -235,10 +236,17 @@ def trigger_dag(web_server_url: str, dag_id: str, data: dict) -> requests.Respon
     )
 
     if response.status_code == 403:
-        raise requests.HTTPError(
+        logging.warning(
             "You do not have a permission to perform this operation. "
             "Check Airflow RBAC roles for your account."
-            f"{response.headers} / {response.text}"
+            "%s / %s",
+            response.headers,
+            response.text,
+        )
+
+        raise requests.HTTPError(
+            request=response.request,
+            response=response,
         )
     return response
 

@@ -70,7 +70,7 @@ def get_trace_id_from_flask() -> Optional[str]:
 ReturnType = TypeVar("ReturnType")
 
 
-def log_retried_google_api_error(exception: Exception) -> None:
+def log_retried_google_api_error(exception: BaseException) -> None:
     logging.warning("Retrying failed Google API request. Exception: %s", exception)
 
 

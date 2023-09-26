@@ -75,7 +75,7 @@ ADDITIONAL_DDL_QUERIES_BY_TABLE_NAME = {
 }
 
 
-def retry_predicate(exception: Exception) -> bool:
+def retry_predicate(exception: BaseException) -> bool:
     """A function that will determine whether we should retry a given Google exception."""
     return (
         isinstance(exception, errors.HttpError)

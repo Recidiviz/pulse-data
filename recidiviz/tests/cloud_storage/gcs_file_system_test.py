@@ -48,9 +48,7 @@ class TestGcsFileSystem(TestCase):
         ]
 
         # Should not crash!
-        self.assertTrue(
-            self.fs.exists(GcsfsBucketPath.from_absolute_path("gs://my-bucket"))
-        )
+        self.assertTrue(self.fs.exists(GcsfsBucketPath(bucket_name="my-bucket")))
         self.mock_storage_client.bucket.assert_called()
 
     def test_retry_with_fatal_error(self) -> None:
@@ -63,11 +61,11 @@ class TestGcsFileSystem(TestCase):
         ]
 
         with self.assertRaises(ValueError):
-            self.fs.exists(GcsfsBucketPath.from_absolute_path("gs://my-bucket"))
+            self.fs.exists(GcsfsBucketPath(bucket_name="my-bucket"))
         self.mock_storage_client.bucket.assert_called()
 
     def test_copy(self) -> None:
-        bucket_path = GcsfsBucketPath.from_absolute_path("gs://my-bucket")
+        bucket_path = GcsfsBucketPath(bucket_name="my-bucket")
         src_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "src.txt")
         dst_path = GcsfsFilePath.from_directory_and_file_name(bucket_path, "dst.txt")
 
@@ -118,6 +116,9 @@ class TestGcsFileSystem(TestCase):
             exceptions.TooManyRequests("Too many requests!"),  # type: ignore [attr-defined]
         ]
         mock_dst_bucket = create_autospec(Bucket)
+        mock_dst_bucket.name = bucket_path.bucket_name
+        mock_dst_blob.name = dst_path.blob_name
+        mock_dst_blob.bucket = mock_dst_bucket
 
         def mock_get_blob(blob_name: str) -> Blob:
             if blob_name == src_path.file_name:

@@ -146,7 +146,8 @@ cssselect = "*"
 grpcio = "*"
 gunicorn = "*"
 gevent = ">=20.5.1"
-google-api-core = ">=2.0.0"
+google-api-core = ">=2.12.0"
+google-cloud-core = ">=2.3.0"
 # TODO(#4287): Versions >= 3.0.0 create namespace conflicts with other cloud libraries
 #  (and resulting mypy errors). We should revisit upgrade when we've updated all
 #  google-cloud* libraries to >= 2.0.0.
