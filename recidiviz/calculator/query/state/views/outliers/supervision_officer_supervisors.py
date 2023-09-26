@@ -41,13 +41,7 @@ us_pa_additional_supervisors AS (
 )
 
 SELECT 
-    state_code,
-    external_id,
-    staff_id,
-    full_name,
-    email,
-    supervisor_external_id,
-    supervision_district
+    {{columns}}
 FROM supervision_officer_supervisors
 
 UNION ALL 
@@ -72,9 +66,8 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
         "external_id",
         "staff_id",
         "full_name",
-        "email",
-        "supervisor_external_id",
         "supervision_district",
+        "email",
     ],
 )
 
