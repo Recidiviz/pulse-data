@@ -17,7 +17,7 @@
 """
 Helper functions for creating branches based on state codes.
 """
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from airflow.decorators import task
 from airflow.exceptions import AirflowFailException
@@ -27,10 +27,6 @@ from airflow.operators.python import BranchPythonOperator, PythonOperator
 from airflow.utils.state import TaskInstanceState
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
-
-from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
-    get_state_code_filter,
-)
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -46,60 +42,55 @@ def _get_id_for_operator_or_group(
     )
 
 
-def create_state_code_branching(
-    branch_by_state_code: Dict[str, Union[BaseOperator, TaskGroup]],
+def create_branching_by_key(
+    branch_by_key: Dict[str, Union[BaseOperator, TaskGroup]],
+    get_key_filter: Callable[[DagRun], Optional[str]],
 ) -> Tuple[BaseOperator, BaseOperator]:
     r"""
-    Given a map of all possible branches by state code, creates a BranchPythonOperator, that
-    selects only the branches for a given state if the DAG was launched with a `state_code_filter`
-    parameter. If no `state_code_filter` parameter is supplied, creates a BranchPythonOperator
-    that runs all the branches.
+    Given a map of all possible branches and a key filter, creates a BranchPythonOperator, that
+    selects only the branches that the get_key_filter returns.
 
     The resulting structure looks like this:
 
                                                     US_XX
                                                /                   \
-                      state_code_branch_start                        state_code_branch_end
+                                    branch_start                    branch_end
                                                \                   /
                                                     US_YY
 
     If no branches are selected, the end node will fail.
     """
-    branch_ids_by_state_code: Dict[str, str] = {}
-    start_branch_by_state_code: Dict[str, EmptyOperator] = {}
+    branch_ids_by_key: Dict[str, str] = {}
+    start_branch_by_key: Dict[str, EmptyOperator] = {}
 
-    for state_code, branch in branch_by_state_code.items():
-        branch_ids_by_state_code[state_code] = _get_id_for_operator_or_group(branch)
+    for key, branch in branch_by_key.items():
+        branch_ids_by_key[key] = _get_id_for_operator_or_group(branch)
         # Airflow does not allow branch operators to branch to TaskGroups, only Tasks,
         # so we insert an empty task before a TaskGroup if it is the branch result
         # to ensure we're able to go forward.
-        start_branch_by_state_code[state_code] = EmptyOperator(
-            task_id=f"{state_code}_start"
-        )
+        start_branch_by_key[key] = EmptyOperator(task_id=f"{key}_start")
 
-    @task.branch(task_id="state_code_branch_start")
+    @task.branch(task_id="branch_start")
     def get_selected_branch_ids(dag_run: Optional[DagRun] = None) -> Any:
         if not dag_run:
             raise ValueError(
                 "Dag run not passed to task. Should be automatically set due to function being a task."
             )
 
-        state_code_filter = get_state_code_filter(dag_run)
-        selected_state_codes = (
-            [state_code_filter] if state_code_filter else branch_by_state_code.keys()
-        )
+        key_filter = get_key_filter(dag_run)
+        selected_keys = [key_filter] if key_filter else branch_by_key.keys()
         return [
-            start_branch_by_state_code[state_code].task_id
-            for state_code in selected_state_codes
+            start_branch_by_key[selected_key].task_id
+            for selected_key in selected_keys
             # If the selected state does not have a branch in this branching,
             # we just skip it and select no branches for that state.
-            if state_code in branch_ids_by_state_code
+            if selected_key in branch_ids_by_key
         ]
 
     branch_start: BranchPythonOperator = get_selected_branch_ids()
 
-    @task(task_id="state_code_branch_end", trigger_rule=TriggerRule.ALL_DONE)
-    def state_code_branch_end(dag_run: Optional[DagRun] = None, **kwargs: Any) -> Any:
+    @task(task_id="branch_end", trigger_rule=TriggerRule.ALL_DONE)
+    def create_branch_end(dag_run: Optional[DagRun] = None, **kwargs: Any) -> Any:
         if not dag_run:
             raise ValueError(
                 "Dag run not passed to task. Should be automatically set due to function being a task."
@@ -119,7 +110,7 @@ def create_state_code_branching(
                 f"Failing - upstream nodes failed: {failed_upstream_task_ids}"
             )
 
-    branch_end: PythonOperator = state_code_branch_end()
-    for state_code, branch in branch_by_state_code.items():
-        branch_start >> start_branch_by_state_code[state_code] >> branch >> branch_end
+    branch_end: PythonOperator = create_branch_end()
+    for key, branch in branch_by_key.items():
+        branch_start >> start_branch_by_key[key] >> branch >> branch_end
     return branch_start, branch_end

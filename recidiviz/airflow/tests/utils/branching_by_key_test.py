@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Unit test to test the state_code_branch.py helper functions.
+Unit test to test the branching_by_key.py helper functions.
 """
 from datetime import datetime
 from typing import Optional
@@ -26,7 +26,10 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 
-from recidiviz.airflow.dags.utils.state_code_branch import create_state_code_branching
+from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+    get_state_code_filter,
+)
+from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
@@ -40,10 +43,10 @@ def raise_task_failure(message: Optional[str] = None) -> None:
     raise AirflowFailException(message or "Task failed")
 
 
-class TestStateCodeBranch(AirflowIntegrationTest):
-    """Test the state_code_branch.py helper function."""
+class TestBranchingByKey(AirflowIntegrationTest):
+    """Test the branching_by_key.py helper function."""
 
-    def test_state_code_branch_creates_branches(self) -> None:
+    def test_creates_branches(self) -> None:
         @task_group(group_id="US_ZZ_group")
         def us_zz_task_group() -> None:
             operator1 = EmptyOperator(task_id="US_ZZ_1")
@@ -58,11 +61,11 @@ class TestStateCodeBranch(AirflowIntegrationTest):
                 "US_ZZ": us_zz_task_group(),
             }
 
-            create_state_code_branching(state_codes)
+            create_branching_by_key(state_codes, get_state_code_filter)
 
         test_dag = create_test_dag()
-        branching_start = test_dag.get_task("state_code_branch_start")
-        branching_end = test_dag.get_task("state_code_branch_end")
+        branching_start = test_dag.get_task("branch_start")
+        branching_end = test_dag.get_task("branch_end")
 
         self.assertEqual(len(test_dag.tasks), 9)
         self.assertEqual(branching_end.trigger_rule, TriggerRule.ALL_DONE)
@@ -74,6 +77,7 @@ class TestStateCodeBranch(AirflowIntegrationTest):
             branching_end.upstream_task_ids, {"US_XX", "US_YY", "US_ZZ_group.US_ZZ_2"}
         )
 
+    # TODO(#22762): Update test to use new AirflowIntegrationTest helper functions
     def test_all_states_succeed(self) -> None:
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
         def create_test_dag() -> None:
@@ -83,12 +87,12 @@ class TestStateCodeBranch(AirflowIntegrationTest):
                 "US_ZZ": EmptyOperator(task_id="US_ZZ"),
             }
 
-            create_state_code_branching(state_codes)
+            create_branching_by_key(state_codes, get_state_code_filter)
 
         test_dag = create_test_dag()
         test_dag.test()
 
-    # TODO(##22762): This test currently fails ath the python operator script, but what we really want to test is that the end task fails
+    # TODO(#22762): This test currently fails ath the python operator script, but what we really want to test is that the end task fails
     def test_all_states_one_fails(self) -> None:
         @dag(start_date=datetime(2021, 1, 1), schedule=None, catchup=False)
         def create_test_dag() -> None:
@@ -100,7 +104,7 @@ class TestStateCodeBranch(AirflowIntegrationTest):
                 ),
             }
 
-            create_state_code_branching(state_codes)
+            create_branching_by_key(state_codes, get_state_code_filter)
 
         test_dag = create_test_dag()
         with self.assertRaises(AirflowFailException):

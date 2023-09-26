@@ -35,6 +35,7 @@ from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import 
     STATE_CODE_FILTER_JINJA_ARG,
     get_ingest_instance,
     get_sandbox_prefix,
+    get_state_code_filter,
     initialize_calculation_dag_group,
 )
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
@@ -44,11 +45,11 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     RecidivizKubernetesPodOperator,
     build_kubernetes_pod_task,
 )
+from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
 from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
-from recidiviz.airflow.dags.utils.state_code_branch import create_state_code_branching
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
@@ -224,7 +225,13 @@ def build_dataflow_pipeline_task_group(
                 raise ValueError(
                     "dag_run not provided. This should be automatically set by Airflow."
                 )
+
             ingest_instance = get_ingest_instance(dag_run)
+            if not ingest_instance:
+                raise ValueError(
+                    "[ingest_instance] must be set in dag_run configuration"
+                )
+
             sandbox_prefix = get_sandbox_prefix(dag_run)
 
             config = pipeline_config.get()
@@ -387,7 +394,9 @@ def create_calculation_dag() -> None:
     )
 
     with TaskGroup(group_id="normalization") as normalization_task_group:
-        create_state_code_branching(normalization_pipeline_branches_by_state_code())
+        create_branching_by_key(
+            normalization_pipeline_branches_by_state_code(), get_state_code_filter
+        )
 
     update_normalized_state = execute_update_normalized_state()
 
@@ -401,7 +410,9 @@ def create_calculation_dag() -> None:
         post_normalization_pipelines_by_state = (
             post_normalization_pipeline_branches_by_state_code()
         )
-        create_state_code_branching(post_normalization_pipelines_by_state)
+        create_branching_by_key(
+            post_normalization_pipelines_by_state, get_state_code_filter
+        )
 
     # This ensures that all of the normalization pipelines for a state will
     # run and the normalized_state dataset will be updated before the
@@ -412,20 +423,22 @@ def create_calculation_dag() -> None:
     post_normalization_pipelines >> trigger_update_all_views
 
     with TaskGroup(group_id="validations") as validations:
-        create_state_code_branching(
+        create_branching_by_key(
             validation_branches_by_state_code(
                 post_normalization_pipelines_by_state.keys()
             ),
+            get_state_code_filter,
         )
 
     trigger_update_all_views >> validations
 
     with TaskGroup(group_id="metric_exports") as metric_exports:
         with TaskGroup(group_id="state_specific_metric_exports"):
-            create_state_code_branching(
+            create_branching_by_key(
                 metric_export_branches_by_state_code(
                     post_normalization_pipelines_by_state
                 ),
+                get_state_code_filter,
             )
 
         for export in PIPELINE_AGNOSTIC_EXPORTS:

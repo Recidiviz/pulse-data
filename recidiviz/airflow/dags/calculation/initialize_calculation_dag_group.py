@@ -132,17 +132,14 @@ def get_sandbox_prefix(dag_run: DagRun) -> Optional[str]:
     return dag_run.conf.get(SANDBOX_PREFIX)
 
 
-def get_ingest_instance(dag_run: DagRun) -> str:
-    return dag_run.conf.get(INGEST_INSTANCE).upper()
+def get_ingest_instance(dag_run: DagRun) -> Optional[str]:
+    ingest_instance = dag_run.conf.get(INGEST_INSTANCE)
+    return ingest_instance.upper() if ingest_instance else None
 
 
 def get_state_code_filter(dag_run: DagRun) -> Optional[str]:
     state_code_filter = dag_run.conf.get(STATE_CODE_FILTER)
-
-    if state_code_filter:
-        return state_code_filter.upper()
-
-    return None
+    return state_code_filter.upper() if state_code_filter else None
 
 
 @task.short_circuit(trigger_rule=TriggerRule.ALL_DONE)
@@ -215,6 +212,10 @@ class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
         )
 
         ingest_instance = get_ingest_instance(dag_run)
+
+        if not ingest_instance:
+            raise ValueError("[ingest_instance] must be set in dag_run configuration")
+
         primary_dag_runs = _get_all_active_primary_dag_runs(dag_run.dag_id)
 
         logging.info(
