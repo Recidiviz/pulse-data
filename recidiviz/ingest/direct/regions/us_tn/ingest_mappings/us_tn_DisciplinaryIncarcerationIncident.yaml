@@ -287,6 +287,7 @@ output:
                   - ANM # ARREST-PROBATIONER-NEWS MEDIA (B)
                   - UFT # UNAUTH FIN OBLIG/TRANS (C)
                   - RPS # REFUSED TO ADEQUATE PARTIC-SAIU (C)
+                  - SXB # TODO(#24236): Investigate this unknown incident type
 
                 StateIncarcerationIncidentType.VIOLENCE:
                   - AOO # ASSAULT OFFENDER - WITHOUT WEAPON (A) (Y - indicates it's required to fill in level of injury)
