@@ -20,7 +20,7 @@ pipelines."""
 import datetime
 from collections import defaultdict
 from copy import deepcopy
-from typing import Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -31,6 +31,7 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     AdditionalAttributesMap,
     copy_entities_and_add_unique_ids,
     get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
     update_normalized_entity_with_globally_unique_id,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -96,10 +97,12 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
         person_id: int,
         violation_responses: List[StateSupervisionViolationResponse],
         delegate: StateSpecificViolationResponseNormalizationDelegate,
+        staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
     ):
         self.person_id = person_id
         self._violation_responses = deepcopy(violation_responses)
         self.delegate = delegate
+        self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
         self._normalized_violation_responses_and_additional_attributes: Optional[
             Tuple[List[StateSupervisionViolationResponse], AdditionalAttributesMap]
         ] = None
@@ -308,13 +311,50 @@ class ViolationResponseNormalizationManager(EntityNormalizationManager):
             updated_responses.append(updated_response)
         return updated_responses
 
-    @classmethod
     def additional_attributes_map_for_normalized_vrs(
-        cls,
+        self,
         violation_responses: List[StateSupervisionViolationResponse],
     ) -> AdditionalAttributesMap:
-        return get_shared_additional_attributes_map_for_entities(
-            entities=violation_responses
+        """Get additional attributes for each StateProgramAssignment."""
+        shared_additional_attributes_map = (
+            get_shared_additional_attributes_map_for_entities(
+                entities=violation_responses
+            )
+        )
+        violation_response_additional_attributes_map: Dict[
+            str, Dict[int, Dict[str, Any]]
+        ] = {StateSupervisionViolationResponse.__name__: {}}
+
+        for violation_response in violation_responses:
+            if not violation_response.supervision_violation_response_id:
+                raise ValueError(
+                    "Expected non-null supervision_violation_response_id values"
+                    f"at this point. Found {violation_response}."
+                )
+            deciding_staff_id = None
+            if violation_response.deciding_staff_external_id:
+                if not violation_response.deciding_staff_external_id_type:
+                    raise ValueError(
+                        f"Found no deciding_staff_external_id_type for deciding_staff_external_id "
+                        f"{violation_response.deciding_staff_external_id} on person "
+                        f"{violation_response.person}"
+                    )
+                deciding_staff_id = self.staff_external_id_to_staff_id[
+                    (
+                        violation_response.deciding_staff_external_id,
+                        violation_response.deciding_staff_external_id_type,
+                    )
+                ]
+            violation_response_additional_attributes_map[
+                StateSupervisionViolationResponse.__name__
+            ][violation_response.supervision_violation_response_id] = {
+                "deciding_staff_id": deciding_staff_id,
+            }
+        return merge_additional_attributes_maps(
+            [
+                shared_additional_attributes_map,
+                violation_response_additional_attributes_map,
+            ]
         )
 
     @staticmethod

@@ -309,6 +309,9 @@ class NormalizedStateSupervisionViolationResponse(
     """Stores instances of StateSupervisionViolationResponse entities that have been
     normalized and are prepared to be used in calculations."""
 
+    # StateStaff id foreign key for the deciding officer
+    deciding_staff_id: Optional[int] = attr.ib(default=None)
+
 
 @attr.s(
     eq=False,

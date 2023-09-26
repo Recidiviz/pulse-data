@@ -39,9 +39,33 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
+from recidiviz.pipelines.utils.execution_utils import (
+    build_staff_external_id_to_staff_id_map,
+)
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
     UsXxViolationResponseNormalizationDelegate,
 )
+
+STATE_PERSON_TO_STATE_STAFF_LIST = [
+    {
+        "person_id": 123,
+        "staff_id": 10000,
+        "staff_external_id": "EMP1",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+    {
+        "person_id": 123,
+        "staff_id": 20000,
+        "staff_external_id": "EMP2",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+    {
+        "person_id": 123,
+        "staff_id": 30000,
+        "staff_external_id": "EMP3",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+]
 
 
 class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
@@ -61,6 +85,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             person_id=self.person_id,
             violation_responses=violation_responses,
             delegate=self.delegate,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         (
@@ -71,6 +98,62 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         )
 
         return processed_vrs
+
+    def test_single_violation(self) -> None:
+        # Arrange
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123,
+            external_id="123",
+            state_code=self.state_code,
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=self.state_code,
+                    violation_type=StateSupervisionViolationType.ABSCONDED,
+                ),
+            ],
+        )
+
+        ssvr = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=self.state_code,
+            external_id="123",
+            supervision_violation_response_id=123,
+            supervision_violation=supervision_violation,
+            response_date=datetime.date(2008, 12, 1),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            deciding_staff_external_id="EMP1",
+            deciding_staff_external_id_type="US_XX_STAFF_ID",
+        )
+
+        # Hydrate bidirectional relationships
+        hydrate_bidirectional_relationships_on_expected_response(ssvr)
+
+        # Act
+        entity_normalization_manager = ViolationResponseNormalizationManager(
+            person_id=self.person_id,
+            violation_responses=[ssvr],
+            delegate=self.delegate,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
+        )
+
+        (
+            processed_svrs,
+            additional_attributes,
+        ) = (
+            entity_normalization_manager.normalized_violation_responses_for_calculations()
+        )
+
+        # Assert
+        self.assertEqual([ssvr], processed_svrs)
+        self.assertEqual(
+            {
+                StateSupervisionViolationResponse.__name__: {
+                    123: {"deciding_staff_id": 10000, "sequence_num": 0}
+                }
+            },
+            additional_attributes,
+        )
 
     def test_default_filtered_violation_responses_for_violation_history_draft(
         self,
@@ -351,6 +434,8 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             supervision_violation=supervision_violation,
             response_date=datetime.date(2008, 12, 1),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            deciding_staff_external_id="EMP2",
+            deciding_staff_external_id_type="US_XX_STAFF_ID",
         )
 
         other_supervision_violation = StateSupervisionViolation.new_with_defaults(
@@ -387,7 +472,15 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         violation_responses = [other_ssvr, ssvr]
 
         # Act
-        additional_attributes = ViolationResponseNormalizationManager.additional_attributes_map_for_normalized_vrs(
+        normalization_manager = ViolationResponseNormalizationManager(
+            person_id=self.person_id,
+            violation_responses=violation_responses,
+            delegate=self.delegate,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
+        )
+        additional_attributes = normalization_manager.additional_attributes_map_for_normalized_vrs(
             violation_responses=self._normalized_violation_responses_for_calculations(
                 violation_responses=violation_responses
             )
@@ -395,8 +488,8 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         expected_additional_attributes = {
             StateSupervisionViolationResponse.__name__: {
-                123: {"sequence_num": 0},
-                456: {"sequence_num": 1},
+                123: {"deciding_staff_id": 20000, "sequence_num": 0},
+                456: {"deciding_staff_id": None, "sequence_num": 1},
             }
         }
 
