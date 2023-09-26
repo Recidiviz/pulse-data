@@ -74,6 +74,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                     StateCode.US_OR: [
                         date(2023, 8, 1)
                     ],  # TODO(#23918): Remove once OR sends data
+                    StateCode.US_ND: [
+                        date(2023, 4, 1)
+                    ],  # Not sure why there was these fluctuations for 4/2023, but it's only 29.5% so I think it's part of normal fluctuations
                 },
             ),
             DateCol(
@@ -100,6 +103,17 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                 date_column_name="start_date",
                 exemptions={
                     StateCode.US_CA: [date(2023, 1, 1)],
+                    StateCode.US_PA: [
+                        date(2023, 1, 1),
+                        date(2023, 2, 1),
+                        date(2023, 3, 1),
+                        date(2022, 12, 1),
+                        date(2022, 11, 1),
+                    ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
+                    StateCode.US_ND: [
+                        date(2023, 2, 1),
+                        date(2023, 3, 1),
+                    ],  # Unknown fluctuations in the month of 2/2023, but returned back to the normal rate 3/23 and has been stable since then.
                     StateCode.US_TN: [
                         date(2023, 1, 1),
                         date(2023, 2, 1),
@@ -127,6 +141,12 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                 date_column_name="termination_date",
                 exemptions={
                     StateCode.US_CA: [date(2023, 1, 1)],
+                    StateCode.US_PA: [
+                        date(2023, 1, 1),
+                        date(2023, 2, 1),
+                        date(2023, 3, 1),
+                        date(2022, 12, 1),
+                    ],  # Unknown fluctuations around the end of the year/beginning of the next seen here. However, the counts have remained stable the past 6 months, so we exclude these dates for now.
                     StateCode.US_TN: [
                         date(2023, 1, 1),
                         date(2023, 2, 1),
