@@ -54,6 +54,7 @@ KNOWN_CONFIGURATION_PARAMETERS: Dict[str, Set[str]] = {
     },
     f"{_project_id}_hourly_monitoring_dag": set(),
     f"{_project_id}_sftp_dag": set(),
+    f"{_project_id}_ingest_dag": set(),
 }
 
 # The list of parameters that cause DAG Run history to partition into discrete sets of runs
@@ -62,6 +63,7 @@ DISCRETE_CONFIGURATION_PARAMETERS: Dict[str, List[str]] = {
     f"{_project_id}_calculation_dag": ["ingest_instance", "state_code"],
     f"{_project_id}_hourly_monitoring_dag": [],
     f"{_project_id}_sftp_dag": [],
+    f"{_project_id}_ingest_dag": [],
 }
 
 DAGS_TO_IGNORE_IN_ALERTING = ["airflow_monitoring"]

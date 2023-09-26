@@ -59,7 +59,7 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
 )
 
 _UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "update_managed_views_all"
-_VALIDATIONS_STATE_CODE_BRANCH_START = "validations.state_code_branch_start"
+_VALIDATIONS_BRANCH_START = "validations.branch_start"
 _REFRESH_BQ_DATASET_TASK_ID = "bq_refresh.refresh_bq_dataset_STATE"
 _EXPORT_METRIC_VIEW_DATA_TASK_ID = "metric_exports.INGEST_METADATA_metric_exports.export_ingest_metadata_metric_view_data"
 
@@ -274,9 +274,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        validations_start: BaseOperator = dag.get_task(
-            _VALIDATIONS_STATE_CODE_BRANCH_START
-        )
+        validations_start: BaseOperator = dag.get_task(_VALIDATIONS_BRANCH_START)
         view_materialization: BaseOperator = dag.get_task(
             _UPDATE_ALL_MANAGED_VIEWS_TASK_ID
         )
