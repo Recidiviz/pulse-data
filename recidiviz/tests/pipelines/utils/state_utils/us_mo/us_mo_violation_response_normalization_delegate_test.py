@@ -44,6 +44,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
+from recidiviz.pipelines.utils.execution_utils import (
+    build_staff_external_id_to_staff_id_map,
+)
 from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violation_response_normalization_delegate import (
     UsMoViolationResponseNormalizationDelegate,
 )
@@ -51,6 +54,7 @@ from recidiviz.pipelines.utils.state_utils.us_mo.us_mo_violations_delegate impor
     LAW_CITATION_SUBTYPE_STR,
 )
 from recidiviz.tests.pipelines.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager_test import (
+    STATE_PERSON_TO_STATE_STAFF_LIST,
     hydrate_bidirectional_relationships_on_expected_response,
 )
 
@@ -82,6 +86,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             person_id=self.person_id,
             violation_responses=violation_responses,
             delegate=self.delegate,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         (
@@ -97,6 +104,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            supervision_violation_id=123,
             external_id="sv1",
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
@@ -110,6 +118,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         supervision_violation_response = (
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                supervision_violation_response_id=123,
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 supervision_violation=supervision_violation,
@@ -154,12 +163,14 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            supervision_violation_id=123,
             external_id="sv1",
         )
 
         supervision_violation_response = (
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                supervision_violation_response_id=123,
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.CITATION,
                 supervision_violation=supervision_violation,
@@ -197,6 +208,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         # Arrange
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             state_code=self.state_code,
+            supervision_violation_id=123,
             external_id="sv1",
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
@@ -210,6 +222,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
         supervision_violation_response = (
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=self.state_code,
+                supervision_violation_response_id=123,
                 external_id="svr1",
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 supervision_violation=supervision_violation,

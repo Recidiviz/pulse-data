@@ -244,6 +244,7 @@ class TestNormalizeEntities(unittest.TestCase):
                 StateSupervisionViolationResponse.__name__: {
                     vr.supervision_violation_response_id: {
                         "sequence_num": index,
+                        "deciding_staff_id": None,
                     }
                     for index, vr in enumerate(violation_responses)
                     if vr.supervision_violation_response_id

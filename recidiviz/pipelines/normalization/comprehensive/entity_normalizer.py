@@ -264,6 +264,7 @@ def all_normalized_person_entities(
         person_id=person_id,
         delegate=violation_response_normalization_delegate,
         violation_responses=violation_responses,
+        staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     )
 
     (
