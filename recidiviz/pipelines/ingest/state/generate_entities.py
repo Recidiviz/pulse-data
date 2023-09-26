@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import Any, Dict, Tuple
 
 import apache_beam as beam
+from dateutil import parser
 from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
@@ -37,7 +38,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
-from recidiviz.pipelines.ingest.state.constants import IngestViewName
+from recidiviz.pipelines.ingest.state.constants import IngestViewName, UpperBoundDate
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
     UPPER_BOUND_DATETIME_COL_NAME,
@@ -61,7 +62,7 @@ class GenerateEntities(beam.PTransform):
 
     def expand(
         self, input_or_inputs: beam.PCollection[Dict[str, Any]]
-    ) -> beam.PCollection[Tuple[datetime, RootEntity]]:
+    ) -> beam.PCollection[Tuple[UpperBoundDate, RootEntity]]:
         return (
             input_or_inputs
             | f"Strip {self._ingest_view_name} rows of date metadata columns, returning in a tuple with the upper bound date."
@@ -72,9 +73,11 @@ class GenerateEntities(beam.PTransform):
 
     def strip_off_dates(
         self, element: Dict[str, Any]
-    ) -> Tuple[datetime, Dict[str, str]]:
+    ) -> Tuple[UpperBoundDate, Dict[str, str]]:
         """Generates a tuple of (upperbound_date, row_without_dates) from a row in the ingest view results."""
-        upperbound_date = element[UPPER_BOUND_DATETIME_COL_NAME]
+        upperbound_date = parser.isoparse(
+            element[UPPER_BOUND_DATETIME_COL_NAME]
+        ).timestamp()
 
         row_without_date_metadata_cols = deepcopy(element)
         for column in ADDITIONAL_SCHEMA_COLUMNS:
@@ -86,8 +89,8 @@ class GenerateEntities(beam.PTransform):
         return (upperbound_date, row_without_date_metadata_cols)
 
     def generate_entity(
-        self, upperbound_date: datetime, row: Dict[str, str]
-    ) -> Tuple[datetime, RootEntity]:
+        self, upperbound_date: UpperBoundDate, row: Dict[str, str]
+    ) -> Tuple[UpperBoundDate, RootEntity]:
         region = direct_ingest_regions.get_direct_ingest_region(self._state_code.value)
         ingest_manifest_collector = IngestViewManifestCollector(
             region=region,
@@ -95,7 +98,7 @@ class GenerateEntities(beam.PTransform):
                 region=region,
                 schema_type=SchemaType.STATE,
                 ingest_instance=self._ingest_instance,
-                results_update_datetime=upperbound_date,
+                results_update_datetime=datetime.fromtimestamp(upperbound_date),
             ),
         )
 

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A DoFn that merges entity trees together via entity matching."""
-from datetime import datetime
 from typing import Dict, Iterable, Tuple
 
 import apache_beam as beam
@@ -29,7 +28,7 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
     RootEntityUpdateMerger,
 )
-from recidiviz.pipelines.ingest.state.constants import PrimaryKey
+from recidiviz.pipelines.ingest.state.constants import PrimaryKey, UpperBoundDate
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_keys_for_root_entity_tree,
 )
@@ -46,7 +45,7 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
     def expand(
         self,
         input_or_inputs: beam.PCollection[
-            Tuple[PrimaryKey, Dict[datetime, Iterable[RootEntity]]]
+            Tuple[PrimaryKey, Dict[UpperBoundDate, Iterable[RootEntity]]]
         ],
     ) -> beam.PCollection[RootEntity]:
         return (
@@ -70,13 +69,13 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
 
     @staticmethod
     def entity_match(
-        element: Tuple[PrimaryKey, Dict[datetime, Iterable[RootEntity]]]
+        element: Tuple[PrimaryKey, Dict[UpperBoundDate, Iterable[RootEntity]]]
     ) -> Tuple[PrimaryKey, RootEntity]:
         root_entity_merger = RootEntityUpdateMerger(CoreEntityFieldIndex())
         primary_key, root_entity_dictionary = element
         merged_root_entity = None
-        for date in sorted(root_entity_dictionary.keys()):
-            root_entities = list(root_entity_dictionary[date])
+        for date_timestamp in sorted(root_entity_dictionary.keys()):
+            root_entities = list(root_entity_dictionary[date_timestamp])
             for root_entity in root_entities:
                 merged_root_entity = root_entity_merger.merge_root_entity_trees(
                     merged_root_entity, root_entity  # type: ignore

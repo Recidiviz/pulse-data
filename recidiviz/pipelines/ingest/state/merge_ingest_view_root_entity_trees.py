@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A PTransform that merges root entity trees together."""
-from datetime import datetime
 from typing import List, Tuple, Union, cast
 
 import apache_beam as beam
@@ -31,13 +30,13 @@ from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
 )
-from recidiviz.pipelines.ingest.state.constants import ExternalIdKey
+from recidiviz.pipelines.ingest.state.constants import ExternalIdKey, UpperBoundDate
 
 
 @attr.s
 class RootEntityWithEntityMetadata:
     external_id_key: ExternalIdKey = attr.ib()
-    upperbound_date: datetime = attr.ib()
+    upperbound_date: UpperBoundDate = attr.ib()
     root_entity: RootEntity = attr.ib()
 
 
@@ -62,8 +61,8 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
         self.ingest_view = ingest_view_name
 
     def expand(
-        self, input_or_inputs: beam.PCollection[Tuple[datetime, RootEntity]]
-    ) -> beam.PCollection[Tuple[ExternalIdKey, Tuple[datetime, RootEntity]]]:
+        self, input_or_inputs: beam.PCollection[Tuple[UpperBoundDate, RootEntity]]
+    ) -> beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]]:
         return (
             input_or_inputs
             | f"Obtain {self.ingest_view} entity metadata from entities with dates"
@@ -73,7 +72,7 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
             | f"Extract entities from {self.ingest_view} entity metadata"
             >> beam.MapTuple(
                 lambda key, values: (
-                    (cast(ExternalIdKey, key[0]), cast(datetime, key[1])),
+                    (cast(ExternalIdKey, key[0]), cast(UpperBoundDate, key[1])),
                     [cast(RootEntity, value.root_entity) for value in values],
                 )
             )
@@ -81,7 +80,7 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
         )
 
     def get_entity_metadata(
-        self, element: Tuple[datetime, RootEntity]
+        self, element: Tuple[UpperBoundDate, RootEntity]
     ) -> List[RootEntityWithEntityMetadata]:
         upperbound_date, root_entity = element
         if not isinstance(root_entity, HasMultipleExternalIdsEntity):
@@ -107,8 +106,8 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
 
     def merge_entities(
         self,
-        element: Tuple[Tuple[ExternalIdKey, datetime], List[RootEntity]],
-    ) -> Tuple[ExternalIdKey, Tuple[datetime, RootEntity]]:
+        element: Tuple[Tuple[ExternalIdKey, UpperBoundDate], List[RootEntity]],
+    ) -> Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]:
         key, entities = element
         external_id_key, upperbound_date = key
 

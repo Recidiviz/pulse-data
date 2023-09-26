@@ -276,6 +276,7 @@ class FakeReadAllFromBigQueryWithEmulator(apache_beam.PTransform):
             input_or_inputs
             | "Querying table against BQ Emulator"
             >> apache_beam.FlatMap(self._query_against_emulator)
+            | "Cleaning values" >> apache_beam.Map(change_datetime_to_str)
         )
 
     def _query_against_emulator(
