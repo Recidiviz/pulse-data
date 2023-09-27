@@ -54,7 +54,7 @@ class UsMiController(BaseDirectIngestController):
             "supervision_violations_probation",
             "incarceration_periods_v3",
             "state_staff",
-            "state_staff_role_period",
+            "state_staff_role_location_period",
             "assessments_v3",
             "employment_period_coms",
             "supervision_violations_coms",
