@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_CMCROH
+file_description: |-
+  This file contains information about contact standards.
+data_classification: source
+primary_key_cols:
+  - CASELOAD
+  - RECORD_KEY
+columns:
+  - name: CASELOAD
+    description: |-
+      Caseload number.
+  - name: SIGNIFICANT_CONTACT_YES_NO
+    description: |-
+      Yes or no for if significant contact was made.
+  - name: MONTHLY_REPORT_YES_NO
+    description: |-
+      Yes or no for if monthly report.
+  - name: NEXT_NUMBER
+    description: |-
+      Number generated for row.
+  - name: CHRONO_WHAT
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: CHRONO_WHO
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    is_pii: True
+  - name: CHRONO_TYPE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: RECORD_KEY
+    description: |-
+      Unique number generated for all Adult in Custody (AIC).
+    is_pii: True
+  - name: LAST_UPDATED_WHEN
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    description: |-
+      Date when last updated.
+  - name: ENTRY_DATE
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    description: |-
+      Date of entry.
+  - name: CHRONO_DATE
+    field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: LAST_UPDATE_LOCATION
+    description: |-
+      Location of last update.
