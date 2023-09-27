@@ -24,73 +24,44 @@ from flask import request
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.case_triage.authorization_utils import (
+    on_successful_authorization_requested_state,
+)
 from recidiviz.common.str_field_utils import capitalize_first
 from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.flask_exception import FlaskException
-
-CSG_ALLOWED_STATES = ["US_MI", "US_MO", "US_PA", "US_TN"]
 
 
 def on_successful_authorization(
     claims: Dict[str, Any], offline_mode: Optional[bool] = False
 ) -> None:
-    """No-ops if either:
-    1. A recidiviz user is requesting a pathways enabled state and the state is in their list of allowedStates
-    2. A state user is requesting their own pathways enabled state
-    Otherwise, raises an AuthorizationError
     """
-    # All pathways routes are expected to require a `state_code` in their view args
-    if not request.view_args or "state" not in request.view_args:
-        raise FlaskException(
-            code="state_required",
-            description="A state must be passed to the route",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
+    First, authorizes checks on the requested state.
+    """
+    on_successful_authorization_requested_state(
+        claims=claims,
+        enabled_states=get_pathways_enabled_states(),
+        offline_mode=offline_mode,
+        check_csg=True,
+    )
 
-    requested_state = request.view_args["state"].upper()
-
-    if not StateCode.is_state_code(requested_state):
-        raise FlaskException(
-            code="valid_state_required",
-            description="A valid state must be passed to the route",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
-
+    # If in offline mode, skip endpoint checks
     if offline_mode:
-        if requested_state != "US_OZ":
-            raise FlaskException(
-                code="offline_state_required",
-                description="Offline mode requests may only be for US_OZ",
-                status_code=HTTPStatus.BAD_REQUEST,
-            )
         return
-
-    enabled_states = get_pathways_enabled_states()
-
-    if requested_state not in enabled_states:
-        raise FlaskException(
-            code="pathways_not_enabled",
-            description="Pathways is not enabled for this state",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
 
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     user_state_code = app_metadata["stateCode"].upper()
-    recidiviz_allowed_states = app_metadata.get("allowedStates", [])
 
+    # If the user is a recidiviz user, skip endpoint checks
     if user_state_code == "RECIDIVIZ":
-        if requested_state not in recidiviz_allowed_states:
-            raise FlaskException(
-                code="recidiviz_user_not_authorized",
-                description="Recidiviz user does not have authorization for this state",
-                status_code=HTTPStatus.UNAUTHORIZED,
-            )
         return
 
-    state_allowed = user_state_code == requested_state or (
-        user_state_code == "CSG" and requested_state in CSG_ALLOWED_STATES
-    )
+    if not request.view_args or "metric_name" not in request.view_args:
+        raise FlaskException(
+            code="metric_name",
+            description="A metric name was expected in the route",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
 
     requested_endpoint = request.view_args["metric_name"]
     enabled_endpoints = [
@@ -106,7 +77,7 @@ def on_successful_authorization(
         for endpoint in enabled_endpoints
     )
 
-    if state_allowed and endpoint_allowed:
+    if endpoint_allowed:
         return
 
     raise AuthorizationError(code="not_authorized", description="Access denied")

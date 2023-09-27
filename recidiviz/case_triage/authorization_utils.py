@@ -15,15 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-This module contains a helper for authenticating users accessing pathways and workflows APIs hosted on the Case Triage
+This module contains a helper for authenticating users accessing product APIs hosted on the Case Triage
 backend.
 """
 import json
-from typing import Callable
+import os
+from http import HTTPStatus
+from typing import Any, Callable, Dict, List, Optional
 
-from recidiviz.utils.auth.auth0 import Auth0Config, build_auth0_authorization_handler
+from flask import request
+
+from recidiviz.common.constants.states import StateCode
+from recidiviz.utils.auth.auth0 import (
+    Auth0Config,
+    AuthorizationError,
+    build_auth0_authorization_handler,
+)
 from recidiviz.utils.environment import in_offline_mode
+from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.secrets import get_secret
+
+CSG_ALLOWED_STATES = ["US_MI", "US_MO", "US_PA", "US_TN"]
 
 
 def build_auth_config(secret_name: str) -> Auth0Config:
@@ -52,3 +64,76 @@ def build_authorization_handler(
     return build_auth0_authorization_handler(
         authorization_config, on_successful_authorization
     )
+
+
+def on_successful_authorization_requested_state(
+    claims: Dict[str, Any],
+    enabled_states: List[str],
+    offline_mode: Optional[bool] = False,
+    check_csg: Optional[bool] = False,
+) -> None:
+    """
+    No-ops if:
+    1. A recidiviz user is requesting an enabled state and is authorized for that state
+    2. A state user is making an request for their own enabled state
+    3. check_csg is True and a CSG user is making a request for a CSG allowed state
+    Otherwise, raises an AuthorizationError
+    """
+    if not request.view_args or "state" not in request.view_args:
+        raise FlaskException(
+            code="state_required",
+            description="A state must be passed to the route",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
+
+    requested_state = request.view_args["state"].upper()
+
+    if not StateCode.is_state_code(requested_state):
+        raise FlaskException(
+            code="valid_state_required",
+            description="A valid state must be passed to the route",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
+
+    if offline_mode:
+        if requested_state != "US_OZ":
+            raise FlaskException(
+                code="offline_state_required",
+                description="Offline mode requests may only be for US_OZ",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+        return
+
+    if requested_state not in enabled_states:
+        raise FlaskException(
+            code="state_not_enabled",
+            description="These routes are not enabled for this state",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
+
+    app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
+    user_state_code = app_metadata["stateCode"].upper()
+    recidiviz_allowed_states = app_metadata.get("allowedStates", [])
+
+    if user_state_code == "RECIDIVIZ":
+        if requested_state not in recidiviz_allowed_states:
+            raise FlaskException(
+                code="recidiviz_user_not_authorized",
+                description="Recidiviz user does not have authorization for this state",
+                status_code=HTTPStatus.UNAUTHORIZED,
+            )
+        return
+
+    if check_csg and user_state_code == "CSG":
+        if requested_state not in CSG_ALLOWED_STATES:
+            raise FlaskException(
+                code="csg_user_not_authorized",
+                description="CSG user does not have authorization for this state",
+                status_code=HTTPStatus.UNAUTHORIZED,
+            )
+        return
+
+    if user_state_code == requested_state and user_state_code in enabled_states:
+        return
+
+    raise AuthorizationError(code="not_authorized", description="Access denied")
