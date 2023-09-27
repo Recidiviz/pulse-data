@@ -978,8 +978,8 @@ class BigQueryClientImplTest(unittest.TestCase):
         # We should only have to get the table once to update it
         self.mock_client.get_table.assert_called_once()
         self.mock_client.get_table.assert_called_with(table_ref)
-        # We did not remove any fields, but we did have to update row-level permissions
-        self.mock_client.query.assert_called_once()
+        # We did not remove any fields
+        self.mock_client.query.assert_not_called()
 
         self.mock_client.update_table.assert_called_once()
         self.mock_client.update_table.assert_called_with(
@@ -1052,11 +1052,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 pass
 
         def mock_query(query: str, **kwargs: Any) -> FakeQueryJob:
-            has_valid_query_string = (
-                "SELECT * EXCEPT(field_2)" in query
-                or "DROP ALL ROW ACCESS POLICIES" in query
-            )
-            self.assertTrue(has_valid_query_string)
+            self.assertTrue("SELECT * EXCEPT(field_2)" in query)
             fields_have_been_removed[0] = True
             return FakeQueryJob()
 
@@ -1073,9 +1069,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.mock_dataset_id, self.mock_table_id, new_schema_fields
         )
 
-        # We call get_table() twice - once at the beginnigit statusng and once after we have
+        # We call get_table() twice - once at the beginning and once after we have
         # removed fields.
         self.mock_client.get_table.assert_has_calls([call(table_ref), call(table_ref)])
+
+        # Query called to remove field_2
+        self.mock_client.query.assert_called_once()
 
         # Update called to add/update new fields
         self.mock_client.update_table.assert_called_once()
@@ -2140,8 +2139,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                     ),
                     exists_ok=False,
                 ),
-            ],
-            any_order=True,
+            ]
         )
 
     def test_copy_dataset_tables_overwrite(self) -> None:
@@ -2165,8 +2163,6 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         # Destination already exists
         self.mock_client.get_dataset.return_value = mock.MagicMock()
-
-        self.mock_client.create_table.return_value = mock.MagicMock()
 
         def mock_list_tables(dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
             if dataset_id == destination_dataset_id:
