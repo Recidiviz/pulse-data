@@ -305,7 +305,9 @@ module "processed-state-aggregates" {
   uniform_bucket_level_access = false
 
   labels = {
-    "recidiviz_service" = "scrapers"
+    "recidiviz_service" = "scrapers",
+    "vanta-owner"       = "joshua",
+    "vanta-description" = "Terraform managed GCS bucket"
   }
 
   lifecycle_rules = [
