@@ -16,14 +16,15 @@
 # =============================================================================
 """Implements user validations for workflows APIs. """
 import os
-from http import HTTPStatus
 from typing import Any, Dict, List
 
-from flask import g, request
+from flask import g
 
+from recidiviz.case_triage.authorization_utils import (
+    on_successful_authorization_requested_state,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.auth.auth0 import AuthorizationError
-from recidiviz.utils.flask_exception import FlaskException
 
 
 def on_successful_authorization_recidiviz_only(claims: Dict[str, Any]) -> None:
@@ -47,55 +48,14 @@ def on_successful_authorization_recidiviz_only(claims: Dict[str, Any]) -> None:
 
 def on_successful_authorization(claims: Dict[str, Any]) -> None:
     """
-    No-ops if:
-    1. A recidiviz user is requesting a workflows enabled state and is authorized for that state
-    2. A state user is making an external system request for their own state
-    Otherwise, raises an AuthorizationError
+    Saves the user email, given the requested state authorization is a no-op.
     """
-    app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
-    user_state_code = app_metadata["stateCode"].upper()
+    on_successful_authorization_requested_state(
+        claims, get_workflows_external_request_enabled_states()
+    )
     g.authenticated_user_email = claims.get(
         f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
     )
-    recidiviz_allowed_states = app_metadata.get("allowedStates", [])
-
-    if not request.view_args or "state" not in request.view_args:
-        raise FlaskException(
-            code="state_required",
-            description="A state must be passed to the route",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
-
-    enabled_states = get_workflows_external_request_enabled_states()
-    requested_state = request.view_args["state"].upper()
-
-    if user_state_code == "RECIDIVIZ":
-        if requested_state not in recidiviz_allowed_states:
-            raise FlaskException(
-                code="recidiviz_user_not_authorized",
-                description="Recidiviz user does not have authorization for this state",
-                status_code=HTTPStatus.UNAUTHORIZED,
-            )
-        return
-
-    if not StateCode.is_state_code(requested_state):
-        raise FlaskException(
-            code="valid_state_required",
-            description="A valid state must be passed to the route",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
-
-    if requested_state not in enabled_states:
-        raise FlaskException(
-            code="external_requests_not_enabled",
-            description="Workflows external system requests are not enabled for this state",
-            status_code=HTTPStatus.BAD_REQUEST,
-        )
-
-    if user_state_code == requested_state and user_state_code in enabled_states:
-        return
-
-    raise AuthorizationError(code="not_authorized", description="Access denied")
 
 
 def get_workflows_external_request_enabled_states() -> List[str]:
