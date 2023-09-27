@@ -25,6 +25,10 @@ my_enum_field:
 import re
 from typing import Optional
 
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
@@ -394,5 +398,38 @@ def map_supervision_type_based_on_coms_level(
 
     if raw_text:
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
+    return None
+
+
+def parse_staff_role_type(
+    raw_text: str,
+) -> Optional[StateStaffRoleType]:
+
+    if "parole" in raw_text.lower() and (
+        "probation" in raw_text.lower() or "prbtn" in raw_text.lower()
+    ):
+        return StateStaffRoleType.SUPERVISION_OFFICER
+
+    if raw_text:
+        # currently we only have role_type enums for supervision officer related roles
+        return StateStaffRoleType.INTERNAL_UNKNOWN
+
+    return None
+
+
+def parse_staff_role_subtype(
+    raw_text: str,
+) -> Optional[StateStaffRoleSubtype]:
+
+    if parse_staff_role_type(raw_text) == StateStaffRoleType.SUPERVISION_OFFICER:
+        if "manager" in raw_text.lower():
+            return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
+
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER
+
+    if raw_text:
+        # we'll ingest all other roles (like leadership roles) via a separate view/mapping using a roster
+        return StateStaffRoleSubtype.INTERNAL_UNKNOWN
 
     return None

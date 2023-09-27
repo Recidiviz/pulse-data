@@ -30,6 +30,9 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.location
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_ix_location_metadata import (
     US_IX_LOCATION_METADATA_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.location_metadata.us_mi_location_metadata import (
+    US_MI_LOCATION_METADATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_nd_location_metadata import (
     US_ND_LOCATION_METADATA_VIEW_BUILDER,
 )
@@ -96,6 +99,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_PA_LOCATION_METADATA_VIEW_BUILDER,
     US_TN_LOCATION_METADATA_VIEW_BUILDER,
     US_IX_LOCATION_METADATA_VIEW_BUILDER,
+    US_MI_LOCATION_METADATA_VIEW_BUILDER,
     WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,
     STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
     STATE_STAFF_WITH_NAMES_VIEW_BUILDER,

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - employee_id_omni
+  - position
+  - default_location_id
+  - start_date
+  - end_date
+  - period_id
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: employee_id_omni
+          id_type: $literal("US_MI_OMNI_USER")
+    # if this period has a non-NULL position value, create a position period
+    role_periods:
+      - $conditional:
+          - $if:
+              $not_null: position
+            $then:
+              StateStaffRolePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - employee_id_omni
+                      - period_id
+                start_date: start_date
+                end_date: end_date
+                role_type:
+                  $enum_mapping:
+                    $raw_text: position
+                    $custom_parser: us_mi_custom_enum_parsers.parse_staff_role_type
+                role_subtype:
+                  $enum_mapping:
+                    $raw_text: position
+                    $custom_parser: us_mi_custom_enum_parsers.parse_staff_role_subtype
+    # if this period has a non-NULL default_location_id value, create a location period
+    location_periods:
+      - $conditional:
+          - $if:
+              $not_null: default_location_id
+            $then:
+              StateStaffLocationPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - employee_id_omni
+                      - period_id
+                start_date: start_date
+                end_date: end_date
+                location_external_id: default_location_id
