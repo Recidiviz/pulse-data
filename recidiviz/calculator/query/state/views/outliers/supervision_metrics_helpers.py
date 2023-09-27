@@ -22,6 +22,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     MetricUnitOfAnalysis,
 )
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
+from recidiviz.outliers.types import OutliersMetricValueType
 
 
 def supervision_metric_query_template(
@@ -46,24 +47,38 @@ SELECT
     end_date,
     "avg_daily_population" AS metric_id,
     avg_daily_population AS metric_value,
+    "{OutliersMetricValueType.AVERAGE.value}" AS value_type
 FROM {source_table}
 WHERE state_code = '{state_code.value}'
         """
         )
 
         for metric in config.metrics:
-            subqueries.append(
-                f"""
+            count_subquery = f"""
 SELECT
     {list_to_query_string(unit_of_analysis.primary_key_columns)},
     period,
     end_date,
     "{metric.name}" AS metric_id,
     {metric.name} AS metric_value,
+    "{OutliersMetricValueType.COUNT.value}" AS value_type
 FROM {source_table}
 WHERE state_code = '{state_code.value}'
 """
-            )
+
+            rate_subquery = f"""
+SELECT
+    {list_to_query_string(unit_of_analysis.primary_key_columns)},
+    period,
+    end_date,
+    "{metric.name}" AS metric_id,
+    {metric.name} / avg_daily_population AS metric_value,
+    "{OutliersMetricValueType.RATE.value}" AS value_type
+FROM {source_table}
+WHERE state_code = '{state_code.value}'
+"""
+
+            subqueries.extend([rate_subquery, count_subquery])
 
     query = "\nUNION ALL\n".join(subqueries)
     return query

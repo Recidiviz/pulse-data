@@ -66,6 +66,7 @@ SUPERVISION_OFFICER_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "period",
         "end_date",
         "officer_id",
+        "value_type",
     ],
 )
 

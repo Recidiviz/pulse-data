@@ -48,6 +48,13 @@ class OutliersAggregationType(Enum):
     SUPERVISION_OFFICER_SUPERVISOR = "SUPERVISION_OFFICER_SUPERVISOR"
 
 
+class OutliersMetricValueType(Enum):
+    COUNT = "COUNT"
+    AVERAGE = "AVERAGE"
+    # Implies that the value is divided by the avg_daily_population
+    RATE = "RATE"
+
+
 def _optional_name_converter(name: Optional[str]) -> Optional[str]:
     return None if name is None else person_name_case(name)
 

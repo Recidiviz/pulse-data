@@ -117,6 +117,8 @@ class MetricBase:
         primary_key=True,
         nullable=False,
     )
+    # The type of the value, e.g. "RATE" or "COUNT". (see recidiviz.outliers.types.OutliersMetricValueType)
+    value_type = Column(String, primary_key=True, nullable=False)
 
 
 class SupervisionOfficerMetric(MetricBase, OutliersBase):
