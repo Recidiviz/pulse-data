@@ -68,7 +68,8 @@ shellcheck-py = "*"
 # We do not rely on appnope directly, but we have to include it here because
 # otherwise it will be dropped from the lock file since we do our locking on a Linux 
 # machine and appnope is Mac specific.
-appnope = {version = "*", markers="sys_platform == 'darwin'"}
+# TODO(#24261): Remove pin after pipenv sync issue with appnope=* is fixed
+appnope = {version = "0.1.3", markers="sys_platform == 'darwin'"}
 # the following packages are ported over from the recidiviz-research pipfile and
 # imported in at least one file in that repo and do *not* exist elsewhere here
 censusdata = "*"
@@ -155,6 +156,7 @@ google-cloud-bigquery = "<3.0.0"
 google-cloud-bigquery-datatransfer = "<3.0.0"
 google-cloud-bigquery-storage = "*"
 google-cloud-build = "*"
+google-cloud-dataflow-client = "*"
 google-cloud-datastore = "*"
 google-cloud-firestore = "*"
 google-cloud-logging = "*"
@@ -199,7 +201,8 @@ seaborn = "*"
 statsmodels = "*"
 openpyxl = "*"
 analytics-python = "*"
-astroid = "*"
+# TODO(#24244): Remove pin once TryExcept attribute errors are fixed
+astroid = "2.15.7"
 # TODO(#11759): Remove version pin once fakeredis supports 4.2.0+
 redis = "<4.6.0"
 pyarrow = "*"
