@@ -22,7 +22,7 @@ from typing import Callable, Dict, Optional, Union
 from airflow.models import BaseOperator, DagRun
 from airflow.utils.task_group import TaskGroup
 
-from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+from recidiviz.airflow.dags.utils.config_utils import (
     get_ingest_instance,
     get_state_code_filter,
 )

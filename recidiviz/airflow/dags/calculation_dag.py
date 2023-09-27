@@ -33,9 +33,6 @@ from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import 
     INGEST_INSTANCE_JINJA_ARG,
     SANDBOX_PREFIX_JINJA_ARG,
     STATE_CODE_FILTER_JINJA_ARG,
-    get_ingest_instance,
-    get_sandbox_prefix,
-    get_state_code_filter,
     initialize_calculation_dag_group,
 )
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
@@ -47,6 +44,11 @@ from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
 )
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
 from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
+from recidiviz.airflow.dags.utils.config_utils import (
+    get_ingest_instance,
+    get_sandbox_prefix,
+    get_state_code_filter,
+)
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS

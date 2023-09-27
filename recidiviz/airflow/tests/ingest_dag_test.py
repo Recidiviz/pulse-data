@@ -17,6 +17,7 @@
 """
 Unit tests to test the ingest DAG.
 """
+import os
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -26,13 +27,27 @@ from airflow.operators.empty import EmptyOperator
 from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
+from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
+    KNOWN_CONFIGURATION_PARAMETERS,
+)
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 _PROJECT_ID = "recidiviz-testing"
 
+_VERIFY_PARAMETERS_TASK_ID = "initialize_ingest_dag.verify_parameters"
+_CHECK_FOR_RUNNING_DAGS_TASK_ID = "initialize_ingest_dag.check_for_running_dags"
 
+
+@patch.dict(
+    KNOWN_CONFIGURATION_PARAMETERS,
+    {
+        f"{_PROJECT_ID}_ingest_dag": KNOWN_CONFIGURATION_PARAMETERS[
+            f"{os.getenv('GCP_PROJECT')}_ingest_dag"
+        ]
+    },
+)
 class TestIngestDagIntegration(AirflowIntegrationTest):
     """
     Integration test to test the Ingest DAG logic.
@@ -48,27 +63,37 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         )
         self.environment_patcher.start()
 
+        test_state_code_and_instance_pairs = [
+            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
+            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+        ]
+
+        self.ingest_branching_get_all_enabled_state_and_instance_pairs_patcher = patch(
+            "recidiviz.airflow.dags.ingest.ingest_branching.get_all_enabled_state_and_instance_pairs",
+            return_value=test_state_code_and_instance_pairs,
+        )
+        self.ingest_branching_get_all_enabled_state_and_instance_pairs_patcher.start()
+
+        self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher = patch(
+            "recidiviz.airflow.dags.ingest.initialize_ingest_dag_group.get_all_enabled_state_and_instance_pairs",
+            return_value=test_state_code_and_instance_pairs,
+        )
+        self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher.start()
+
         # Need to import ingest_dag inside test suite so environment variables are set before importing,
         # otherwise ingest_dag will raise an Error and not import.
         from recidiviz.airflow.dags.ingest_dag import (  # pylint: disable=import-outside-toplevel
             create_ingest_dag,
         )
 
-        self.get_all_enabled_state_and_instance_pairs_patcher = patch(
-            "recidiviz.airflow.dags.ingest.ingest_branching.get_all_enabled_state_and_instance_pairs",
-            return_value=[
-                (StateCode.US_XX, DirectIngestInstance.PRIMARY),
-                (StateCode.US_XX, DirectIngestInstance.SECONDARY),
-                (StateCode.US_YY, DirectIngestInstance.PRIMARY),
-                (StateCode.US_YY, DirectIngestInstance.SECONDARY),
-            ],
-        )
-        self.get_all_enabled_state_and_instance_pairs_patcher.start()
         self.dag = create_ingest_dag()
 
     def tearDown(self) -> None:
         self.environment_patcher.stop()
-        self.get_all_enabled_state_and_instance_pairs_patcher.stop()
+        self.ingest_branching_get_all_enabled_state_and_instance_pairs_patcher.stop()
+        self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher.stop()
         super().tearDown()
 
     def test_ingest_dag(self) -> None:
@@ -110,12 +135,16 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 run_conf={
                     "state_code_filter": StateCode.US_XX.value,
                 },
-                expected_failure_ids=[".*ingest_branching.*"],
+                expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
+                expected_skipped_ids=[
+                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    ".*ingest_branching.*",
+                ],
             )
-            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
             self.assertIn(
-                "expected state code and ingest instance to be set together",
-                result.failure_messages["ingest_branching.branch_start"],
+                "[ingest_instance] and [state_code_filter] must both be set or both be unset",
+                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
             )
 
     def test_ingest_dag_with_filter_ingest_instance_only(self) -> None:
@@ -126,12 +155,16 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "PRIMARY",
                 },
-                expected_failure_ids=[".*ingest_branching.*"],
+                expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
+                expected_skipped_ids=[
+                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    ".*ingest_branching.*",
+                ],
             )
-            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
             self.assertIn(
-                "expected state code and ingest instance to be set together",
-                result.failure_messages["ingest_branching.branch_start"],
+                "[ingest_instance] and [state_code_filter] must both be set or both be unset",
+                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
             )
 
     # TODO(#23984): Update to mock to EmptyOperator and update side effect to extract and use the state code and instance args

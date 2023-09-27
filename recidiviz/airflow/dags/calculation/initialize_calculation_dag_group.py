@@ -26,10 +26,18 @@ from airflow.sensors.base import BaseSensorOperator
 from airflow.triggers.temporal import TimeDeltaTrigger
 from airflow.utils.context import Context
 from airflow.utils.state import State
-from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     KNOWN_CONFIGURATION_PARAMETERS,
+)
+from recidiviz.airflow.dags.utils.config_utils import (
+    INGEST_INSTANCE,
+    SANDBOX_PREFIX,
+    STATE_CODE_FILTER,
+    get_ingest_instance,
+    get_sandbox_prefix,
+    get_state_code_filter,
+    handle_params_check,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -41,11 +49,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 
 
 INITIALIZE_DAG_GROUP_ID = "initialize_dag"
-
-
-INGEST_INSTANCE = "ingest_instance"
-SANDBOX_PREFIX = "sandbox_prefix"
-STATE_CODE_FILTER = "state_code_filter"
 
 
 def templated_argument_from_conf(
@@ -125,34 +128,6 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
                 "[sandbox_prefix] must be set in dag_run configuration for SECONDARY "
                 "ingest_instance"
             )
-    return True
-
-
-def get_sandbox_prefix(dag_run: DagRun) -> Optional[str]:
-    return dag_run.conf.get(SANDBOX_PREFIX)
-
-
-def get_ingest_instance(dag_run: DagRun) -> Optional[str]:
-    ingest_instance = dag_run.conf.get(INGEST_INSTANCE)
-    return ingest_instance.upper() if ingest_instance else None
-
-
-def get_state_code_filter(dag_run: DagRun) -> Optional[str]:
-    state_code_filter = dag_run.conf.get(STATE_CODE_FILTER)
-    return state_code_filter.upper() if state_code_filter else None
-
-
-@task.short_circuit(trigger_rule=TriggerRule.ALL_DONE)
-def handle_params_check(
-    variables_verified: bool,
-) -> bool:
-    """Returns True if the DAG should continue, otherwise short circuits."""
-    if not variables_verified:
-        logging.info(
-            "variables_verified did not return true, indicating that the params check task sensor "
-            "failed (crashed) - do not continue."
-        )
-        return False
     return True
 
 
