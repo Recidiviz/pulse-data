@@ -23,6 +23,7 @@ US_CA_MOST_RECENT_AGENT_DATA = """
     ParoleDistrict,
     ParoleUnit,
     AgentClassification,
+    EMAILADDRESS
   FROM `{project_id}.{us_ca_raw_data_dataset}.AgentParole`
   WHERE BadgeNumber IS NOT NULL
   QUALIFY file_id = FIRST_VALUE(file_id) OVER (

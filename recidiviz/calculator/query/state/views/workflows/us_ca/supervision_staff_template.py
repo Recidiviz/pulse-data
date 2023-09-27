@@ -46,7 +46,7 @@ US_CA_SUPERVISION_STAFF_TEMPLATE = f"""
         JSON_VALUE(full_name, "$.given_names") AS given_names,
         JSON_VALUE(full_name, "$.surname") AS surname,
         UPPER(JSON_VALUE(full_name, "$.given_names") || " " || JSON_VALUE(full_name, "$.middle_names") || JSON_VALUE(full_name, "$.surname")) AS name,
-        LOWER(JSON_VALUE(full_name, "$.given_names") || "." || JSON_VALUE(full_name, "$.surname") || "@cdcr.ca.gov") AS email,
+        LOWER(agents.EMAILADDRESS) AS email,
         TRUE AS has_caseload,
         FALSE AS has_facility_caseload,
         caseload_districts.district,
