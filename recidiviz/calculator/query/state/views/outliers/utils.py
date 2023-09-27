@@ -33,6 +33,8 @@ def format_state_specific_officer_aggregated_metric_filters() -> str:
         ON m.state_code = o.state_code AND m.officer_id = o.external_id
     WHERE 
         m.state_code = '{state_code.value}' {config.supervision_officer_metric_exclusions if config.supervision_officer_metric_exclusions else ""}
+        -- currently, the Outliers product only references metrics for 12-month periods
+        AND m.period = 'YEAR'
 """
         )
 
