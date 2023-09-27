@@ -58,6 +58,7 @@ class UsMiController(BaseDirectIngestController):
             "assessments_v3",
             "employment_period_coms",
             "supervision_violations_coms",
+            "state_staff_supervisor_period",
         ]
 
         return tags
