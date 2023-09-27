@@ -19,12 +19,14 @@ The DAG configuration to run ingest.
 """
 
 from airflow.models.dag import dag
-from airflow.operators.empty import EmptyOperator
 from airflow.utils.task_group import TaskGroup
 
 from recidiviz.airflow.dags.ingest.ingest_branching import (
     create_ingest_branch_map,
     get_state_code_and_ingest_instance_key,
+)
+from recidiviz.airflow.dags.ingest.initialize_ingest_dag_group import (
+    create_initialize_ingest_dag,
 )
 from recidiviz.airflow.dags.ingest.state_dataflow_pipeline import (
     create_single_ingest_pipeline_group,
@@ -54,17 +56,13 @@ def create_ingest_dag() -> None:
     The DAG configuration to run ingest.
     """
 
-    with TaskGroup("initialize_dag") as initialize_dag:
-        # TODO(#23963): Implement waiting for or short-circuiting if the another airflow dag is already running
-        EmptyOperator(task_id="check_for_running_dag")
-
     with TaskGroup("ingest_branching") as ingest_branching:
         create_branching_by_key(
             create_ingest_branch_map(create_single_ingest_pipeline_group),
             get_state_code_and_ingest_instance_key,
         )
 
-    initialize_dag >> ingest_branching
+    create_initialize_ingest_dag() >> ingest_branching
 
 
 create_ingest_dag()

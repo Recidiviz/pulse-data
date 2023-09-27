@@ -26,10 +26,8 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 
-from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
-    get_state_code_filter,
-)
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
+from recidiviz.airflow.dags.utils.config_utils import get_state_code_filter
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
