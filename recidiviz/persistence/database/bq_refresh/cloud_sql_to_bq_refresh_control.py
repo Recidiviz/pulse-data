@@ -35,10 +35,59 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     federated_bq_schema_refresh,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 from recidiviz.utils.environment import gcp_only
 
 LOCK_WAIT_SLEEP_INTERVAL_SECONDS = 60  # 1 minute
 LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT = 60 * 60 * 4  # 4 hours
+
+
+def _lock_sql_to_bq_refresh(
+    lock_manager: CloudSqlToBQLockManager,
+    schema_type: SchemaType,
+    ingest_instance: DirectIngestInstance,
+) -> None:
+    """
+    Acquires the lock for the Cloud SQL to BQ refresh for a given schema_type and
+    ingest_instance. Will try up to LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT seconds to
+    acquire the lock.
+    """
+    secs_waited = 0
+    lock_acquired = False
+    can_proceed = False
+    while secs_waited < LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT:
+        try:
+            if not lock_acquired:
+                lock_manager.acquire_lock(
+                    lock_id=str(uuid.uuid4()),
+                    schema_type=schema_type,
+                    ingest_instance=ingest_instance,
+                )
+                lock_acquired = True
+            if can_proceed := lock_manager.can_proceed(schema_type, ingest_instance):
+                break
+        except GCSPseudoLockAlreadyExists:
+            logging.warning(
+                "Found lock already exists for schema type [%s] and instance [%s]. "
+                "This may happen if another sandbox DAG is running at the same "
+                "time. Will wait to attempt to acquire the lock again.",
+                schema_type.value,
+                ingest_instance.value,
+            )
+        finally:
+            if not can_proceed:
+                logging.info(
+                    "Waiting to acquire lock for schema type [%s] and instance [%s]...",
+                    schema_type.value,
+                    ingest_instance.value,
+                )
+                time.sleep(LOCK_WAIT_SLEEP_INTERVAL_SECONDS)
+                secs_waited += LOCK_WAIT_SLEEP_INTERVAL_SECONDS
+
+    if not can_proceed:
+        raise ValueError(
+            f"Could not acquire lock after waiting {LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT} seconds for {schema_type} in {ingest_instance}."
+        )
 
 
 @gcp_only
@@ -52,48 +101,18 @@ def execute_cloud_sql_to_bq_refresh(
     if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
         raise ValueError(f"Unsupported schema type: [{schema_type}]")
 
-    lock_manager = CloudSqlToBQLockManager()
+    cloud_sql_to_bq_lock_manager = CloudSqlToBQLockManager()
+    state_update_lock_manager = StateUpdateLockManager(ingest_instance)
 
     try:
-        secs_waited = 0
-        lock_acquired = False
-        can_proceed = False
-        lock_id = str(uuid.uuid4())
-        while secs_waited < LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT:
-            try:
-                if not lock_acquired:
-                    lock_manager.acquire_lock(
-                        lock_id=lock_id,
-                        schema_type=schema_type,
-                        ingest_instance=ingest_instance,
-                    )
-                    lock_acquired = True
-                if can_proceed := lock_manager.can_proceed(
-                    schema_type, ingest_instance
-                ):
-                    break
-            except GCSPseudoLockAlreadyExists:
-                logging.warning(
-                    "Found lock already exists for schema type [%s] and instance [%s]. "
-                    "This may happen if another sandbox DAG is running at the same "
-                    "time. Will wait to attempt to acquire the lock again.",
-                    schema_type.value,
-                    ingest_instance.value,
-                )
-            finally:
-                if not can_proceed:
-                    logging.info(
-                        "Waiting to acquire lock for schema type [%s] and instance [%s]...",
-                        schema_type.value,
-                        ingest_instance.value,
-                    )
-                    time.sleep(LOCK_WAIT_SLEEP_INTERVAL_SECONDS)
-                    secs_waited += LOCK_WAIT_SLEEP_INTERVAL_SECONDS
-
-        if not can_proceed:
-            raise ValueError(
-                f"Could not acquire lock after waiting {LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT} seconds for {schema_type} in {ingest_instance}."
-            )
+        # TODO(#20930): Remove once all states no longer writing to postgres
+        _lock_sql_to_bq_refresh(
+            cloud_sql_to_bq_lock_manager, schema_type, ingest_instance
+        )
+        state_update_lock_manager.acquire_lock(
+            lock_id=str(uuid.uuid4()),
+            lock_wait_timeout=LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT,
+        )
         start = datetime.datetime.now()
         federated_bq_schema_refresh(
             schema_type=schema_type,
@@ -114,4 +133,5 @@ def execute_cloud_sql_to_bq_refresh(
             runtime_sec=runtime_sec,
         )
     finally:
-        lock_manager.release_lock(schema_type, ingest_instance)
+        cloud_sql_to_bq_lock_manager.release_lock(schema_type, ingest_instance)
+        state_update_lock_manager.release_lock()
