@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: noDocumentedPrimaryKeys
+file_description: |-
+  This file does not have any primary_key_cols filled out and does not have `no_valid_primary_keys: True` set, so no 
+  LookML view should be generated.
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: col_name_1a
+    description: |-
+      First column.
+    known_values:
+      - value: A
+        description: A description
+      - value: B
+  - name: col_name_1b
+  - name: undocumented_column
+encoding: ISO-456-7

@@ -10,9 +10,9 @@ columns:
   - name: col_name_1a
     description: |-
       First column.
-    is_pii: True
     field_type: person_external_id
     external_id_type: US_OZ_EG
+    is_pii: True
   - name: col_name_1b
     description: |-
       A column description that is long enough to take up
@@ -21,7 +21,7 @@ columns:
   - name: undocumented_column
 encoding: ISO-456-7
 table_relationships:
-  - foreign_table: noPrimaryKeys
+  - foreign_table: noValidPrimaryKeys
     join_logic:
-      - manyPrimaryKeys.col_name_1b = noPrimaryKeys.col_name_1b
+      - manyPrimaryKeys.col_name_1b = noValidPrimaryKeys.col_name_1b
       - manyPrimaryKeys.col_name_1b = "test value"

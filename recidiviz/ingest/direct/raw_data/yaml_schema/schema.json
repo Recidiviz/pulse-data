@@ -116,6 +116,24 @@
               "type": "string",
               "pattern": "([^=]+)=([^=]+)"
             }
+          },
+          "transforms": {
+            "description": "A list of dictionaries representing transformations/pre-processing that should be done on columns within this join relationship.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["column", "transformation"],
+              "properties": {
+                "column": {
+                  "description": "The column under transformation, formatted as table_name.column_name.",
+                  "type": "string"
+                },
+                "transformation": {
+                  "description": "The transformation to apply, a string including {col_name}.",
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }

@@ -363,6 +363,14 @@ class DirectIngestRawFileConfig:
     def has_primary_external_id_col(self) -> bool:
         return any(column.is_primary_for_external_id_type for column in self.columns)
 
+    @property
+    def has_primary_person_external_id_col(self) -> bool:
+        return any(
+            column.is_primary_for_external_id_type
+            and column.field_type == RawTableColumnFieldType.PERSON_EXTERNAL_ID
+            for column in self.columns
+        )
+
     def get_primary_external_id_cols(self) -> List[RawTableColumnInfo]:
         """Return a list of all the columns that are primary for some external id type"""
         return [
@@ -448,7 +456,7 @@ class DirectIngestRawFileConfig:
 
     @property
     def is_undocumented(self) -> bool:
-        """Returns true if the raw file config provides enough information for this
+        """Returns true if the raw file config does not provide enough information for this
         table to be used in ingest views or *latest views.
         """
         return not self.documented_columns or (

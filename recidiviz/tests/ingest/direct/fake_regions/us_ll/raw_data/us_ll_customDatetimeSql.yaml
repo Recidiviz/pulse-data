@@ -8,7 +8,8 @@ primary_key_cols:
 columns:
   - name: COL1
   - name: COL2
-    description: Datetime description here
+    description: |-
+      Datetime description here
     field_type: datetime
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d.*', ''))"

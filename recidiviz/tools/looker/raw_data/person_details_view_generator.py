@@ -246,6 +246,11 @@ def _get_dimensions_for_raw_file_view(
         if column.name in config.primary_key_cols:
             col_params.append(LookMLFieldParameter.group_label("Primary Key"))
 
+        if column.is_primary_for_external_id_type:
+            # We need to include a 'full suggestions' parameter on these dimensions
+            # to ensure that suggestions show up on the dashboard filter
+            col_params.append(LookMLFieldParameter.full_suggestions(True))
+
         dimensions.append(
             DimensionLookMLViewField(
                 field_name=_label_name_for_column(column),
@@ -439,6 +444,9 @@ def _generate_state_raw_data_views() -> Dict[StateCode, Dict[str, LookMLView]]:
             )
             for file_tag in files_in_explore:
                 raw_file_config = all_tables[file_tag]
+                # Skip if the file doesn't have enough info to be used in ingest views
+                if raw_file_config.is_undocumented:
+                    continue
                 view = _generate_raw_file_view(
                     state_code, raw_file_config, primary_person_view_name
                 )

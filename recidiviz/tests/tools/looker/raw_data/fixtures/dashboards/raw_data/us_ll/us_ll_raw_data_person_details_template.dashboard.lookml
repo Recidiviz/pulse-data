@@ -97,16 +97,16 @@
     width: 24
     height: 6
 
-  - name: noPrimaryKeys
-    title: noPrimaryKeys
+  - name: noValidPrimaryKeys
+    title: noValidPrimaryKeys
     explore: us_ll_raw_data
     type: looker_grid
-    fields: [us_ll_noPrimaryKeys.primary_key,
-      us_ll_noPrimaryKeys.col_name_1a,
-      us_ll_noPrimaryKeys.col_name_1b,
-      us_ll_noPrimaryKeys.undocumented_column,
-      us_ll_noPrimaryKeys.file_id,
-      us_ll_noPrimaryKeys.is_deleted]
+    fields: [us_ll_noValidPrimaryKeys.primary_key,
+      us_ll_noValidPrimaryKeys.col_name_1a,
+      us_ll_noValidPrimaryKeys.col_name_1b,
+      us_ll_noValidPrimaryKeys.undocumented_column,
+      us_ll_noValidPrimaryKeys.file_id,
+      us_ll_noValidPrimaryKeys.is_deleted]
     sorts: []
     note_display: hover
     note_text: "First raw file."

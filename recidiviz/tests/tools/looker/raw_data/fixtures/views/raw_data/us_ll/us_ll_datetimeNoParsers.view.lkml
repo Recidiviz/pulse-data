@@ -20,9 +20,8 @@ view: us_ll_datetimeNoParsers {
   dimension: COL1 {
     label: "COL1"
     type: string
-    sql: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} ${TABLE}.COL1
-      {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} NULL
-      {% endif %} ;;
+    description: "Test description"
+    sql: ${TABLE}.COL1 ;;
     group_label: "Primary Key"
   }
 

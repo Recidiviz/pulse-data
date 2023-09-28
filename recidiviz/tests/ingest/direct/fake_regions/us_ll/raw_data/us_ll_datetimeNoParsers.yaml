@@ -7,9 +7,11 @@ primary_key_cols:
   - COL1
 columns:
   - name: COL1
-    is_pii: True
+    description: |-
+      Test description
     field_type: person_external_id
     external_id_type: US_OZ_EG
+    is_pii: True
   - name: COL2
     field_type: datetime
 custom_line_terminator: "\n"

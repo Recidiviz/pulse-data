@@ -22,7 +22,7 @@
   - name: datetimeNoParsers
     model: recidiviz-123
 
-  - name: noPrimaryKeys
+  - name: noValidPrimaryKeys
     model: recidiviz-123
 
   - name: customDatetimeSql
