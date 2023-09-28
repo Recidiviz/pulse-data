@@ -49,10 +49,10 @@ variable "uniform_bucket_level_access" {
 
 # A map of key/value label pairs to assign to the bucket.
 variable "labels" {
-  type    = map(string)
+  type = map(string)
   default = {
-    "vanta-owner" = "joshua",
-    "vanta-description" = "Terraform managed GCS bucket"
+    "vanta-owner"       = "joshua",
+    "vanta-description" = "terraform-managed-gcs-bucket"
   }
 }
 
@@ -84,7 +84,7 @@ resource "google_storage_bucket" "bucket" {
   location                    = var.location
   storage_class               = var.storage_class
   uniform_bucket_level_access = var.uniform_bucket_level_access
-  
+
   labels = var.labels
 
   logging {
