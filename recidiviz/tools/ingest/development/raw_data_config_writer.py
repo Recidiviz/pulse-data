@@ -21,6 +21,7 @@ from typing import List, Optional
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
+    RawTableColumnFieldType,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
@@ -64,8 +65,13 @@ class RawDataConfigWriter:
         if column.description:
             column_description_string = "\n      ".join(column.description.splitlines())
             column_string += f"\n    description: |-\n      {column_description_string}"
-        if column.is_datetime:
-            column_string += "\n    field_type: datetime"
+
+        if column.field_type != RawTableColumnFieldType.STRING:
+            column_string += f"\n    field_type: {column.field_type.value}"
+        if column.external_id_type:
+            column_string += f"\n    external_id_type: {column.external_id_type}"
+        if column.is_primary_for_external_id_type:
+            column_string += f"\n    is_primary_for_external_id_type: {column.is_primary_for_external_id_type}"
         if column.datetime_sql_parsers:
             column_string += "\n    datetime_sql_parsers:"
             for parser in column.datetime_sql_parsers:
@@ -119,7 +125,8 @@ class RawDataConfigWriter:
             f"{self._get_primary_key_config_string(raw_file_config)}\n"
             f"{self._generate_columns_string(raw_file_config.columns)}\n"
         )
-
+        if raw_file_config.is_primary_person_table:
+            config += "is_primary_person_table: True\n"
         if raw_file_config.supplemental_order_by_clause:
             config += "supplemental_order_by_clause: True\n"
         if raw_file_config.infer_columns_from_config:
@@ -160,6 +167,13 @@ class RawDataConfigWriter:
                     f"      - {c.to_sql()}" for c in relationship.join_clauses
                 )
                 relationship_lines.append(f"    join_logic:\n{join_list_str}")
+
+                if relationship.transforms:
+                    transforms_list_str = "\n".join(
+                        f"      - column: {t.column}\n        transform: {t.transformation}"
+                        for t in relationship.transforms
+                    )
+                    relationship_lines.append(f"    transforms:\n{transforms_list_str}")
 
                 table_relationships_lines.append("\n".join(relationship_lines))
             config += "\n".join(table_relationships_lines) + "\n"

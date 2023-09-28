@@ -24,6 +24,7 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     ColumnFilterJoinBooleanClause,
     JoinBooleanClause,
     JoinColumn,
+    JoinTransform,
     RawDataJoinCardinality,
     RawTableRelationshipInfo,
 )
@@ -52,6 +53,17 @@ class TestRawTableColumn(unittest.TestCase):
         self.assertIsNone(
             JoinColumn.parse_from_string("this.is.invalid"),
         )
+
+
+class TestJoinTransform(unittest.TestCase):
+    def test_invalid_transform(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"Transformation .* does not include the string \{col_name\}"
+        ):
+            _ = JoinTransform(
+                column=JoinColumn(file_tag="my_table", column="my_col"),
+                transformation="invalid transformation",
+            )
 
 
 class TestJoinBooleanClause(unittest.TestCase):
@@ -345,6 +357,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                     column_2=JoinColumn(file_tag="my_table_2", column="my_col"),
                 )
             ],
+            transforms=[],
         )
         self.assertEqual("my_table.my_col = my_table_2.my_col", relationship.join_sql())
         self.assertEqual(
@@ -370,6 +383,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                     filter_value='"SOME_VAL"',
                 ),
             ],
+            transforms=[],
         )
         self.assertEqual(
             'my_table.my_col = my_table_2.my_col AND my_table.my_col_b = my_table_2.my_col_b AND my_table.my_col_b = "SOME_VAL"',
@@ -390,6 +404,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                     column_2=JoinColumn(file_tag="my_table_2", column="my_col"),
                 )
             ],
+            transforms=[],
         )
         self.assertEqual(
             RawTableRelationshipInfo(
@@ -402,6 +417,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                         column_2=JoinColumn(file_tag="my_table_2", column="my_col"),
                     )
                 ],
+                transforms=[],
             ),
             one_to_one_relationship.invert(),
         )
@@ -416,6 +432,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                     column_2=JoinColumn(file_tag="my_table_2", column="my_col"),
                 )
             ],
+            transforms=[],
         )
         self.assertEqual(
             RawTableRelationshipInfo(
@@ -428,6 +445,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                         column_2=JoinColumn(file_tag="my_table_2", column="my_col"),
                     )
                 ],
+                transforms=[],
             ),
             many_to_one_relationship.invert(),
         )
@@ -449,6 +467,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                     column_2=JoinColumn(file_tag="my_table_2", column="my_col_b"),
                 ),
             ],
+            transforms=[],
         )
 
         relationship_reversed = RawTableRelationshipInfo(
@@ -465,6 +484,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                     column_2=JoinColumn(file_tag="my_table", column="my_col"),
                 ),
             ],
+            transforms=[],
         )
         self.assertEqual(relationship, relationship_reversed)
 
@@ -485,6 +505,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                     column_2=JoinColumn(file_tag="my_table_2", column="my_col_b"),
                 ),
             ],
+            transforms=[],
         )
 
         relationship_reversed = RawTableRelationshipInfo(
@@ -501,6 +522,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                     column_2=JoinColumn(file_tag="my_table", column="my_col"),
                 ),
             ],
+            transforms=[],
         )
         self.assertNotEqual(relationship, relationship_reversed)
 
@@ -527,6 +549,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                         column_2=JoinColumn(file_tag="my_table_2", column="my_col"),
                     )
                 ],
+                transforms=[],
             )
 
     def test_joins_reference_other_table_fails_2(self) -> None:
@@ -552,6 +575,7 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                         column_2=JoinColumn(file_tag="my_table_3", column="my_col"),
                     ),
                 ],
+                transforms=[],
             )
 
     def test_no_column_equality_clause_fails(self) -> None:
@@ -571,5 +595,53 @@ class TestRawTableRelationshipInfo(unittest.TestCase):
                         column=JoinColumn(file_tag="my_table", column="my_col"),
                         filter_value='"SOME_VAL"',
                     ),
+                ],
+                transforms=[],
+            )
+
+    def test_transform_from_valid_columns(self) -> None:
+        # Should lead to no errors
+        col1 = JoinColumn(file_tag="my_table", column="my_col")
+        col2 = JoinColumn(file_tag="my_table_2", column="my_col")
+        _ = RawTableRelationshipInfo(
+            file_tag="my_table",
+            foreign_table="my_table_2",
+            cardinality=RawDataJoinCardinality.ONE_TO_ONE,
+            join_clauses=[
+                ColumnEqualityJoinBooleanClause(
+                    column_1=col1,
+                    column_2=col2,
+                ),
+                ColumnEqualityJoinBooleanClause(
+                    column_1=JoinColumn(file_tag="my_table", column="my_col_b"),
+                    column_2=JoinColumn(file_tag="my_table_2", column="my_col_b"),
+                ),
+            ],
+            transforms=[
+                JoinTransform(col1, "REPLACE({col_name}, 'a', 'b')"),
+                JoinTransform(col2, "CAST({col_name} AS INT)"),
+            ],
+        )
+
+    def test_transform_from_invalid_column_fails(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"...",
+        ):
+            RawTableRelationshipInfo(
+                file_tag="my_table",
+                foreign_table="my_table_2",
+                cardinality=RawDataJoinCardinality.MANY_TO_MANY,
+                join_clauses=[
+                    ColumnEqualityJoinBooleanClause(
+                        column_1=JoinColumn(file_tag="my_table", column="my_col_b"),
+                        column_2=JoinColumn(file_tag="my_table_2", column="my_col_b"),
+                    ),
+                ],
+                transforms=[
+                    JoinTransform(
+                        JoinColumn(file_tag="my_table", column="column_not_in_table"),
+                        "REPLACE({col_name}, 'a', 'b')",
+                    )
                 ],
             )

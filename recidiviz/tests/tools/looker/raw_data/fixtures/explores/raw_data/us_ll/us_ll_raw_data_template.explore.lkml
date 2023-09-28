@@ -18,17 +18,17 @@ explore: us_ll_raw_data_template {
   }
 
   join: us_ll_datetimeNoParsers {
-    sql_on: ${us_ll_basicData.COL1} = ${us_ll_datetimeNoParsers.COL1};;
+    sql_on: REPLACE(${us_ll_basicData.COL1}, "a", "b") = REPLACE(${us_ll_datetimeNoParsers.COL1}, "x", "y");;
     type: full_outer
     relationship: many_to_many
     view_label: "us_ll_datetimeNoParsers"
   }
 
-  join: us_ll_noPrimaryKeys {
-    sql_on: ${us_ll_basicData.COL1} = ${us_ll_noPrimaryKeys.col_name_1a};;
+  join: us_ll_noValidPrimaryKeys {
+    sql_on: ${us_ll_basicData.COL1} = ${us_ll_noValidPrimaryKeys.col_name_1a};;
     type: full_outer
     relationship: many_to_one
-    view_label: "us_ll_noPrimaryKeys"
+    view_label: "us_ll_noValidPrimaryKeys"
   }
 
   join: us_ll_customDatetimeSql {

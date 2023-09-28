@@ -2,12 +2,12 @@
 # To regenerate, see `recidiviz/tools/looker/raw_data/person_details_view_generator.py`.
 
 include: "us_ll_raw_data_shared_fields.view"
-view: us_ll_noPrimaryKeys {
+view: us_ll_noValidPrimaryKeys {
   extends: [
     us_ll_raw_data_shared_fields
   ]
-  sql_table_name: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} us_ll_raw_data.noPrimaryKeys
-    {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} us_ll_raw_data_up_to_date_views.noPrimaryKeys_latest
+  sql_table_name: {% if us_ll_basicData.view_type._parameter_value == 'raw_data' %} us_ll_raw_data.noValidPrimaryKeys
+    {% elsif us_ll_basicData.view_type._parameter_value == 'raw_data_up_to_date_views' %} us_ll_raw_data_up_to_date_views.noValidPrimaryKeys_latest
     {% endif %} ;;
 
   dimension: primary_key {

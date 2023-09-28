@@ -109,6 +109,10 @@ class LookMLFieldParameter:
         return FieldParameterAllowedValue(label, value)
 
     @classmethod
+    def full_suggestions(cls, value: bool) -> "LookMLFieldParameter":
+        return FieldParameterFullSuggestions(value)
+
+    @classmethod
     def convert_tz(cls, value: bool) -> "LookMLFieldParameter":
         return FieldParameterConvertTz(value)
 
@@ -288,6 +292,32 @@ class FieldParameterDefaultValue(LookMLFieldParameter):
         return field_category in (
             LookMLFieldCategory.PARAMETER,
             LookMLFieldCategory.FILTER,
+        )
+
+
+@attr.define
+class FieldParameterFullSuggestions(LookMLFieldParameter):
+    """
+    Generates a `full_suggestions` field parameter
+    (see https://cloud.google.com/looker/docs/reference/param-field-full-suggestions)
+    """
+
+    value: bool
+
+    @property
+    def key(self) -> str:
+        return "full_suggestions"
+
+    @property
+    def value_text(self) -> str:
+        return "yes" if self.value else "no"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category in (
+            LookMLFieldCategory.DIMENSION,
+            LookMLFieldCategory.DIMENSION_GROUP,
+            LookMLFieldCategory.FILTER,
+            LookMLFieldCategory.PARAMETER,
         )
 
 

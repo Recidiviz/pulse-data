@@ -19,6 +19,7 @@ import os
 import tempfile
 import unittest
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
@@ -36,9 +37,13 @@ class RawDataConfigWriterTest(unittest.TestCase):
         self.maxDiff = None
 
     def test_output_to_file(self) -> None:
+        for state_code in [StateCode.US_XX, StateCode.US_LL]:
+            self._run_test_for_region(state_code)
 
+    def _run_test_for_region(self, state_code: StateCode) -> None:
+        """Tests that for a given state the generator produces identical raw data YAMLs."""
         region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
+            region_code=state_code.value.lower(),
             region_module=fake_regions_module,
         )
 
@@ -50,6 +55,12 @@ class RawDataConfigWriterTest(unittest.TestCase):
             for file_tag, config in region_config._read_configs_from_disk().items():
                 with open(config.file_path, "r", encoding="utf-8") as f:
                     expected_contents = f.read()
+
+                # Support cardinality being explicitly set or not (generation will not
+                # set it)
+                expected_contents = expected_contents.replace(
+                    "    cardinality: MANY_TO_MANY\n", ""
+                )
 
                 test_output_path = os.path.join(tmpdirname, f"{file_tag}.yaml")
                 config_writer = RawDataConfigWriter()

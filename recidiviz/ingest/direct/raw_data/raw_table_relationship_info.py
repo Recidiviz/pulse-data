@@ -79,6 +79,21 @@ class JoinColumn:
 
 
 @attr.define(frozen=True)
+class JoinTransform:
+    """Defines a way to transform a raw table column that is involved in a join clause."""
+
+    column: JoinColumn = attr.ib()
+    transformation: str = attr.ib()
+
+    def __attrs_post_init__(self) -> None:
+        if not "{col_name}" in self.transformation:
+            raise ValueError(
+                f"Transformation {self.transformation} does not include "
+                f"the string {{col_name}}"
+            )
+
+
+@attr.define(frozen=True)
 class JoinBooleanClause:
     """An abstract interface which represents one boolean clause that makes up part of
     a join condition between two raw data tables. Multiple boolean clauses can be joined
@@ -234,6 +249,7 @@ class RawTableRelationshipInfo:
 
     join_clauses: List[JoinBooleanClause]
     cardinality: RawDataJoinCardinality = attr.ib()
+    transforms: List[JoinTransform]
 
     def __attrs_post_init__(self) -> None:
         for join_clause in self.join_clauses:
@@ -258,6 +274,24 @@ class RawTableRelationshipInfo:
                 f"expressing equality between two different columns."
             )
 
+        cols_being_transformed = [transform.column for transform in self.transforms]
+        if len(cols_being_transformed) != len(set(cols_being_transformed)):
+            raise ValueError(
+                f"Found table relationship defined for table(s) "
+                f"{self.get_referenced_tables()} which has multiple transforms "
+                f"defined for one column."
+            )
+        for col in cols_being_transformed:
+            if not any(
+                col in join_clause.get_referenced_columns()
+                for join_clause in self.join_clauses
+            ):
+                raise ValueError(
+                    f"Found transformation on {col} defined for table(s) "
+                    f"{self.get_referenced_tables()} which does not reference "
+                    f"that column."
+                )
+
     def get_referenced_tables(self) -> Tuple[str, ...]:
         """Returns a sorted tuple of the file tags for the tables involved in this
         table relationship.
@@ -276,6 +310,7 @@ class RawTableRelationshipInfo:
             foreign_table=self.file_tag,
             cardinality=self.cardinality.invert(),
             join_clauses=self.join_clauses,
+            transforms=self.transforms,
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -284,6 +319,9 @@ class RawTableRelationshipInfo:
 
         # Order of join clauses doesn't matter as all clauses are joined with AND.
         if set(self.join_clauses) != set(other.join_clauses):
+            return False
+        # Order of transforms also doesn't matter
+        if set(self.transforms) != set(other.transforms):
             return False
 
         if (
@@ -305,6 +343,11 @@ class RawTableRelationshipInfo:
     def build_from_table_relationship_yaml(
         cls, file_tag: str, table_relationship: YAMLDict
     ) -> "RawTableRelationshipInfo":
+        """
+        Builds a RawTableRelationshipInfo object for the given file tag
+        from a YAMLDict with required keys `foreign_table` and `join_logic`
+        and optional keys `cardinality` and `transforms`
+        """
         foreign_table = table_relationship.pop("foreign_table", str)
 
         cardinality_str = table_relationship.pop_optional("cardinality", str)
@@ -319,6 +362,22 @@ class RawTableRelationshipInfo:
             for join_clause_str in table_relationship.pop_list("join_logic", str)
         ]
 
+        transforms_list = table_relationship.pop_dicts_optional("transforms")
+        transforms = []
+        if transforms_list:
+            for join_transform in transforms_list:
+                col = JoinColumn.parse_from_string(join_transform.pop("column", str))
+                if col is None:
+                    raise ValueError(
+                        f"Could not parse column in transform for raw file"
+                        f"[{file_tag}]: {col}"
+                    )
+                transforms.append(
+                    JoinTransform(
+                        column=col, transformation=join_transform.pop("transform", str)
+                    )
+                )
+
         if len(table_relationship) > 0:
             raise ValueError(
                 f"Found unexpected related_tables config values for raw file"
@@ -330,4 +389,5 @@ class RawTableRelationshipInfo:
             foreign_table=foreign_table,
             join_clauses=join_clauses,
             cardinality=cardinality,
+            transforms=transforms,
         )

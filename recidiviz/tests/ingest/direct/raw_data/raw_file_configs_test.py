@@ -567,6 +567,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                                 column_2=JoinColumn(file_tag="myFile2", column="col2"),
                             )
                         ],
+                        transforms=[],
                     ),
                     RawTableRelationshipInfo(
                         file_tag="myFile1",
@@ -578,6 +579,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                                 column_2=JoinColumn(file_tag="myFile1", column="col1"),
                             )
                         ],
+                        transforms=[],
                     ),
                 ],
             )
@@ -629,6 +631,7 @@ class TestDirectIngestRawFileConfig(unittest.TestCase):
                                 column_2=JoinColumn(file_tag="myFile2", column="col2"),
                             )
                         ],
+                        transforms=[],
                     ),
                 ],
             )
@@ -938,6 +941,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 )
             ],
             cardinality=RawDataJoinCardinality.ONE_TO_MANY,
+            transforms=[],
         )
         expected_config_1_config_3_relationship = RawTableRelationshipInfo(
             file_tag="file_tag_first",
@@ -951,6 +955,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 )
             ],
             cardinality=RawDataJoinCardinality.MANY_TO_MANY,
+            transforms=[],
         )
         # Tests that a self-join relationship is valid
         expected_config_1_config_1_relationship = RawTableRelationshipInfo(
@@ -967,6 +972,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                 )
             ],
             cardinality=RawDataJoinCardinality.MANY_TO_MANY,
+            transforms=[],
         )
         self.assertEqual(
             [
@@ -1164,6 +1170,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                             column_2=JoinColumn(file_tag="myFile2", column="col2"),
                         )
                     ],
+                    transforms=[],
                 )
             ],
         )
@@ -1226,6 +1233,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                             column_2=JoinColumn(file_tag="myFile2", column="col1"),
                         )
                     ],
+                    transforms=[],
                 )
             ],
         )
@@ -1252,6 +1260,7 @@ class TestDirectIngestRegionRawFileConfig(unittest.TestCase):
                             column_2=JoinColumn(file_tag="myFile2", column="col1"),
                         )
                     ],
+                    transforms=[],
                 )
             ],
         )

@@ -5,15 +5,17 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - COL1
-is_primary_person_table: True
 columns:
   - name: COL1
-    is_pii: True
+    description: |-
+      Test description
     field_type: person_external_id
     external_id_type: US_OZ_EG
     is_primary_for_external_id_type: True
+    is_pii: True
   - name: COL2
   - name: COL3
+is_primary_person_table: True
 custom_line_terminator: "\n"
 table_relationships:
   - foreign_table: manyPrimaryKeys
@@ -24,10 +26,15 @@ table_relationships:
     cardinality: MANY_TO_MANY
     join_logic:
       - basicData.COL1 = datetimeNoParsers.COL1
-  - foreign_table: noPrimaryKeys
+    transforms:
+      - column: basicData.COL1
+        transform: REPLACE({col_name}, "a", "b")
+      - column: datetimeNoParsers.COL1
+        transform: REPLACE({col_name}, "x", "y")
+  - foreign_table: noValidPrimaryKeys
     cardinality: MANY_TO_ONE
     join_logic:
-      - basicData.COL1 = noPrimaryKeys.col_name_1a
+      - basicData.COL1 = noValidPrimaryKeys.col_name_1a
   - foreign_table: customDatetimeSql
     cardinality: ONE_TO_MANY
     join_logic:

@@ -18,7 +18,8 @@
 Used inside person_details_lookml_writer
 """
 import os
-from collections import deque
+from collections import defaultdict, deque
+from functools import cache
 from typing import Dict, List
 
 from recidiviz.common.constants.states import StateCode
@@ -46,6 +47,36 @@ from recidiviz.looker.lookml_explore_parameter import (
 )
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.tools.looker.script_helpers import remove_lookml_files_from
+from recidiviz.utils.string import StrictStringFormatter
+
+
+def _get_parent_child_relationships(
+    primary_person_table: DirectIngestRawFileConfig,
+    all_tables: Dict[str, DirectIngestRawFileConfig],
+) -> Dict[str, List[str]]:
+    """
+    Do BFS first to generate the hierarchy of table relationships determined by BFS
+    ordering from the primary person table.
+
+    Returns a dictionary mapping from table file_tag to list of child table file_tags.
+    """
+    all_parent_child_relationships: defaultdict[str, list[str]] = defaultdict(list)
+
+    bfs_tables: deque[DirectIngestRawFileConfig] = deque()
+    bfs_visited_tables: set[str] = set()
+    bfs_tables.append(primary_person_table)
+    bfs_visited_tables.add(primary_person_table.file_tag)
+
+    while bfs_tables:
+        cur_table = bfs_tables.popleft()
+        for relationship in cur_table.table_relationships:
+            foreign_tag = relationship.foreign_table
+            if foreign_tag not in bfs_visited_tables:
+                bfs_visited_tables.add(foreign_tag)
+                foreign_table = all_tables[foreign_tag]
+                bfs_tables.append(foreign_table)
+                all_parent_child_relationships[cur_table.file_tag].append(foreign_tag)
+    return all_parent_child_relationships
 
 
 def get_table_relationship_edges(
@@ -56,30 +87,51 @@ def get_table_relationship_edges(
     Return a list of edges in the table relationship tree for the region
     with given primary person table and dict of all tables.
     Edges will be returned in breadth first search order.
+    Only edges connecting tables, which have a column that is primary for some
+    external ID type, or which have such a column in their subtree,
+    will be returned.
     """
+    all_parent_child_relationships = _get_parent_child_relationships(
+        primary_person_table, all_tables
+    )
 
-    # Do breadth-first-search
-    result = []
-    tables: deque[DirectIngestRawFileConfig] = deque()
-    visited_tables: set[str] = set()
-    tables.append(primary_person_table)
-    visited_tables.add(primary_person_table.file_tag)
-    while tables:
-        cur_table = tables.popleft()
-        # we don't include any tables that aren't directly linked to a primary table
-        if not cur_table.has_primary_external_id_col:
-            continue
+    @cache
+    def _has_primary_person_col_in_subtree(file_tag: str) -> bool:
+        """
+        Returns true if the given table has a column that is primary for some
+        external ID type or one of its child tables does.
+        Also requires a dict from file tags to all the tables in the region
+        and a dictionary of parent-child relationships in the table relationship tree,
+        i.e. table relationships where the parent is the table closer to the
+        region's primary person table via BFS.
+        """
+        table = all_tables[file_tag]
+        children = all_parent_child_relationships[file_tag]
+        return table.has_primary_person_external_id_col or any(
+            _has_primary_person_col_in_subtree(child_tag) for child_tag in children
+        )
 
+    # Do BFS again to generate the final list of table relationships
+    primary_table_relationships = []
+    bfs_tables: deque[DirectIngestRawFileConfig] = deque()
+    bfs_tables.append(primary_person_table)
+    bfs_visited_tables = set([primary_person_table.file_tag])
+    while bfs_tables:
+        cur_table = bfs_tables.popleft()
         for relationship in cur_table.table_relationships:
             foreign_tag = relationship.foreign_table
-            if foreign_tag not in visited_tables:
-                visited_tables.add(foreign_tag)
+            if foreign_tag not in bfs_visited_tables:
+                bfs_visited_tables.add(foreign_tag)
                 foreign_table = all_tables[foreign_tag]
-                tables.append(foreign_table)
+                # Skip undocumented tables
+                if foreign_table.is_undocumented:
+                    continue
+                # Only explore subtrees with a primary person col
+                if _has_primary_person_col_in_subtree(foreign_tag):
+                    bfs_tables.append(foreign_table)
+                primary_table_relationships.append(relationship)
 
-                result.append(relationship)
-
-    return result
+    return primary_table_relationships
 
 
 def _generate_base_explore(
@@ -113,10 +165,24 @@ def _generate_base_explore(
 
 
 def _join_clause_to_lookml(
-    join_clause: JoinBooleanClause, views_by_file_tag: Dict[str, LookMLView]
+    join_clause: JoinBooleanClause,
+    views_by_file_tag: Dict[str, LookMLView],
+    transforms: Dict[JoinColumn, str],
 ) -> str:
+    """
+    Returns a string version suitable for adding to LookML
+    """
+
     def column_lookml(col: JoinColumn) -> str:
-        return f"${{{views_by_file_tag[col.file_tag].view_name}.{col.column}}}"
+        formatted_col_name = (
+            f"${{{views_by_file_tag[col.file_tag].view_name}.{col.column}}}"
+        )
+        if col in transforms:
+            format_str = transforms[col]
+            return StrictStringFormatter().format(
+                format_str, col_name=formatted_col_name
+            )
+        return formatted_col_name
 
     if isinstance(join_clause, ColumnEqualityJoinBooleanClause):
         return f"{column_lookml(join_clause.column_1)} = {column_lookml(join_clause.column_2)}"
@@ -132,8 +198,10 @@ def _build_join_parameter(
     """
     Convert the provided RawTableRelationshipInfo into an ExploreParameterJoin
     """
+    col_to_transform = {t.column: t.transformation for t in relationship.transforms}
     sql_on_text = " AND ".join(
-        _join_clause_to_lookml(j, views_by_file_tag) for j in relationship.join_clauses
+        _join_clause_to_lookml(j, views_by_file_tag, col_to_transform)
+        for j in relationship.join_clauses
     )
     sql_on = LookMLJoinParameter.sql_on(sql_on_text)
 

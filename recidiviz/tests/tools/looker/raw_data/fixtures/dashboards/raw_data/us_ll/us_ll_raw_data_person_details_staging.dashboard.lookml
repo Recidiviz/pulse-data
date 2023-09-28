@@ -22,7 +22,7 @@
   - name: datetimeNoParsers
     model: recidiviz-staging
 
-  - name: noPrimaryKeys
+  - name: noValidPrimaryKeys
     model: recidiviz-staging
 
   - name: customDatetimeSql

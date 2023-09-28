@@ -25,6 +25,7 @@ from freezegun import freeze_time
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
     RawDataClassification,
     RawTableColumnFieldType,
     RawTableColumnInfo,
@@ -34,6 +35,9 @@ from recidiviz.ingest.direct.raw_data.raw_table_relationship_info import (
     JoinColumn,
     RawDataJoinCardinality,
     RawTableRelationshipInfo,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
 )
 from recidiviz.tests.tools.looker.raw_data.person_details_generator_test_utils import (
     PersonDetailsLookMLGeneratorTest,
@@ -58,15 +62,24 @@ class RawDataTreeEdgesTest(unittest.TestCase):
     """
 
     def setUp(self) -> None:
+        self.maxDiff = None
         # Basic raw file info
+        # We need at least one column with a description to get tree edges
         self.sparse_config = DirectIngestRawFileConfig(
             file_tag="myFile",
             file_path="/path/to/myFile.yaml",
             file_description="This is a raw data file",
             data_classification=RawDataClassification.SOURCE,
-            columns=[],
+            columns=[
+                RawTableColumnInfo(
+                    name="COL1",
+                    field_type=RawTableColumnFieldType.STRING,
+                    description="test description",
+                    is_pii=False,
+                )
+            ],
             custom_line_terminator=None,
-            primary_key_cols=[],
+            primary_key_cols=["COL1"],
             supplemental_order_by_clause="",
             encoding="UTF-8",
             separator=",",
@@ -90,6 +103,8 @@ class RawDataTreeEdgesTest(unittest.TestCase):
                     is_primary_for_external_id_type=True,
                 )
             ],
+            primary_key_cols=["primary column"],
+            no_valid_primary_keys=False,
             is_primary_person_table=True,
         )
         # Basic relationship between two raw data tables
@@ -103,6 +118,7 @@ class RawDataTreeEdgesTest(unittest.TestCase):
                     column_2=JoinColumn(file_tag="myFile2", column="my_col"),
                 )
             ],
+            transforms=[],
         )
 
     def test_no_relationships(self) -> None:
@@ -267,6 +283,72 @@ class RawDataTreeEdgesTest(unittest.TestCase):
             },
         )
         self.assertEqual(no_relationships, [])
+
+    def test_unlinked_primary_tables(self) -> None:
+        # North Dakota-like case: two primary tables with a table between them
+        file1_file2_edge = self.sparse_relationship
+        file2_file3_edge = attr.evolve(
+            self.sparse_relationship,
+            file_tag="myFile2",
+            foreign_table="myFile3",
+            join_clauses=[
+                ColumnEqualityJoinBooleanClause(
+                    column_1=JoinColumn(file_tag="myFile2", column="my_col"),
+                    column_2=JoinColumn(file_tag="myFile3", column="my_col"),
+                )
+            ],
+        )
+        file1 = attr.evolve(
+            self.primary_person_table_config, table_relationships=[file1_file2_edge]
+        )
+        file2 = attr.evolve(
+            self.sparse_config,
+            file_tag="myFile2",
+            table_relationships=[file1_file2_edge.invert(), file2_file3_edge],
+        )
+        file3 = attr.evolve(
+            self.primary_person_table_config,
+            file_tag="myFile3",
+            table_relationships=[file2_file3_edge.invert()],
+        )
+        relationships = get_table_relationship_edges(
+            file1, {"myFile": file1, "myFile2": file2, "myFile3": file3}
+        )
+        self.assertEqual(relationships, [file1_file2_edge, file2_file3_edge])
+
+    def test_region_structure(self) -> None:
+        # Ensure that we get the right relationship edges for every real state
+        for state_code in get_existing_direct_ingest_states():
+            region_config = DirectIngestRegionRawFileConfig(
+                region_code=state_code.value
+            )
+            all_tables = region_config.raw_file_configs
+
+            # Skip if we don't have any person external id types filled in or a primary table
+            all_primary_for_id_type_tables = [
+                config.file_tag
+                for config in all_tables.values()
+                if config.has_primary_person_external_id_col
+            ]
+            primary_table = region_config.get_primary_person_table()
+            if not all_primary_for_id_type_tables or not primary_table:
+                continue
+
+            relationships = get_table_relationship_edges(primary_table, all_tables)
+
+            for table in all_tables.values():
+                if table.is_undocumented:
+                    continue
+                is_primary_table = table.has_primary_person_external_id_col
+                for relationship in table.table_relationships:
+                    foreign_table = all_tables[relationship.foreign_table]
+                    if foreign_table.is_undocumented:
+                        continue
+                    foreign_is_primary_table = (
+                        foreign_table.has_primary_person_external_id_col
+                    )
+                    if is_primary_table or foreign_is_primary_table:
+                        self.assertIn(relationship, relationships)
 
 
 class LookMLExploreTest(PersonDetailsLookMLGeneratorTest):
