@@ -108,7 +108,6 @@ output:
                   - Segregation -Administration
                   - Segregation -Mental Health
                   - Segregation -Protective Custody
-                  - Status Change
                 StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY:
                   - Mental Health Treatment
                   - Substance Abuse And Therapeutic Program Assignment
@@ -122,6 +121,7 @@ output:
                   - Return From Court
                   - Returned To Jail
                   - Transfer To Hospital
+                  - Housing Unit Transfer
                 StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   - Assigned
                   - Contract In
@@ -182,7 +182,6 @@ output:
                   - Segregation -Administration
                   - Segregation -Mental Health
                   - Segregation -Protective Custody
-                  - Status Change
                 StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE:
                   - Authorized Temporary Release
                   - Temporary Remand To Community
@@ -194,6 +193,7 @@ output:
                   - Return From Court
                   - Returned To Jail
                   - Transfer To Hospital
+                  - Housing Unit Transfer
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - Assigned # Transferred to other state
                   - Contract Out

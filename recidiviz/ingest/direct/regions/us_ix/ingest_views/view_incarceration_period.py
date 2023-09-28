@@ -86,10 +86,10 @@ transfer_periods_with_legal_status_with_beds AS (
         -- periods following the actual transfer when the actual admission reason is due
         -- to some other attribute changing, like supervision level or supervising officer
         CASE WHEN p.period_start = tls.Start_TransferDate THEN tls.Start_TransferReasonDesc
-             ELSE 'Status Change'
+             ELSE 'Housing Unit Transfer'
              END AS Start_TransferReasonDesc,
         CASE WHEN p.period_end = tls.End_TransferDate THEN tls.End_TransferReasonDesc
-             ELSE 'Status Change'
+             ELSE 'Housing Unit Transfer'
              END AS End_TransferReasonDesc,
         -- We use Start_TransferTypeDesc to determine whether this period is an incarceration period or not, 
         -- so we keep this valued for all rows
