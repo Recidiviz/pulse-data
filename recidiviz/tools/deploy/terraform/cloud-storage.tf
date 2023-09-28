@@ -307,7 +307,7 @@ module "processed-state-aggregates" {
   labels = {
     "recidiviz_service" = "scrapers",
     "vanta-owner"       = "joshua",
-    "vanta-description" = "Terraform managed GCS bucket"
+    "vanta-description" = "terraform-managed-gcs-bucket"
   }
 
   lifecycle_rules = [
