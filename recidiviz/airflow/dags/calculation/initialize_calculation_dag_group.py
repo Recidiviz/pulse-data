@@ -15,20 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Handles queueing of calculation dags."""
-import logging
-from datetime import timedelta
-from typing import Any, List, Optional, Set
+from typing import Any, List, Optional
 
 from airflow.decorators import task, task_group
-from airflow.exceptions import TaskDeferred
 from airflow.models import DagRun
-from airflow.sensors.base import BaseSensorOperator
-from airflow.triggers.temporal import TimeDeltaTrigger
-from airflow.utils.context import Context
-from airflow.utils.state import State
 
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     KNOWN_CONFIGURATION_PARAMETERS,
+)
+from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async import (
+    WaitUntilCanContinueOrCancelDelegate,
+    WaitUntilCanContinueOrCancelSensorAsync,
 )
 from recidiviz.airflow.dags.utils.config_utils import (
     INGEST_INSTANCE,
@@ -38,6 +35,7 @@ from recidiviz.airflow.dags.utils.config_utils import (
     get_sandbox_prefix,
     get_state_code_filter,
     handle_params_check,
+    handle_queueing_result,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -131,117 +129,57 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     return True
 
 
-def _get_all_active_primary_dag_runs(dag_id: str) -> List[DagRun]:
-    """Returns all active primary dag runs for a given dag_id."""
-    running_dags: Set[DagRun] = DagRun.find(dag_id=dag_id, state=State.RUNNING)
-    primary_dag_runs = [
-        dag_run
-        for dag_run in running_dags
-        if dag_run.conf["ingest_instance"].upper() == "PRIMARY"
-    ]
-    return sorted(primary_dag_runs, key=lambda dag_run: dag_run.execution_date)
-
-
-def _this_dag_run_should_be_canceled(
-    ingest_instance: str, run_id: str, primary_dag_runs: List[DagRun]
-) -> bool:
-    """Returns True if this dag run should be canceled. Will cancel if it is a PRIMARY
-    dag run and is not the first or last dag run in the queue.
+class CalcDagWaitUntilCanContinueOrCancelDelegate(WaitUntilCanContinueOrCancelDelegate):
     """
-    return (
-        ingest_instance == "PRIMARY"
-        and primary_dag_runs[0].run_id != run_id
-        and primary_dag_runs[-1].run_id != run_id
-    )
-
-
-def _this_dag_run_can_continue(
-    ingest_instance: str, run_id: str, primary_dag_runs: List[DagRun]
-) -> bool:
-    """Returns True if this dag run can continue. Will continue if it is a SECONDARY dag
-    run or if it is the first dag run in the queue.
+    Delegate for the WaitUntilCanContinueOrCancelSensorAsync that determines if a
+    dag run can continue or should be canceled.
     """
-    return ingest_instance == "SECONDARY" or primary_dag_runs[0].run_id == run_id
 
-
-class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
-    """Sensor that waits until a dag run can either continue or needs to be canceled."""
-
-    DEFER_WAIT_TIME_SECONDS = 60
-
-    def execute(
-        self, context: Context, event: Any = None  # pylint: disable=unused-argument
-    ) -> str:
-        """Acts as a queue until the dag run can either continue or needs to be
-        canceled.
+    def this_dag_run_can_continue(
+        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+    ) -> bool:
+        """Returns True if this dag run can continue. Will continue if it is a SECONDARY
+        dag run or if it is the first dag run in the queue.
         """
-        dag_run = context["dag_run"]
-        if not dag_run:
-            raise ValueError(
-                "Dag run not passed to task. Should be automatically set due to "
-                "function being a task."
-            )
-
-        logging.info(
-            "Checking if DAG can continue with configuration: %s", dag_run.conf
-        )
-
         ingest_instance = get_ingest_instance(dag_run)
-
         if not ingest_instance:
             raise ValueError("[ingest_instance] must be set in dag_run configuration")
-
-        primary_dag_runs = _get_all_active_primary_dag_runs(dag_run.dag_id)
-
-        logging.info(
-            "Found current active primary dag runs: %s",
-            [d.run_id for d in primary_dag_runs],
+        primary_dag_runs = self._filter_to_primary_dag_runs(all_active_dag_runs)
+        return (
+            ingest_instance == "SECONDARY"
+            or primary_dag_runs[0].run_id == dag_run.run_id
         )
 
-        if _this_dag_run_should_be_canceled(
-            ingest_instance=ingest_instance,
-            run_id=dag_run.run_id,
-            primary_dag_runs=primary_dag_runs,
-        ):
-            logging.info("Cancelling DAG...")
-            return "CANCEL"
-
-        if _this_dag_run_can_continue(
-            ingest_instance=ingest_instance,
-            run_id=dag_run.run_id,
-            primary_dag_runs=primary_dag_runs,
-        ):
-            logging.info("Continuing DAG...")
-            return "CONTINUE"
-
-        logging.info(
-            "Cannot continue or cancel this DAG - deferring for %s seconds",
-            self.DEFER_WAIT_TIME_SECONDS,
-        )
-        raise TaskDeferred(
-            trigger=TimeDeltaTrigger(timedelta(seconds=self.DEFER_WAIT_TIME_SECONDS)),
-            method_name="execute",
+    def this_dag_run_should_be_canceled(
+        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+    ) -> bool:
+        """Returns True if this dag run should be canceled. Will cancel if it is a
+        PRIMARY dag run and is not the first or last dag run in the queue.
+        """
+        ingest_instance = get_ingest_instance(dag_run)
+        if not ingest_instance:
+            raise ValueError("[ingest_instance] must be set in dag_run configuration")
+        primary_dag_runs = self._filter_to_primary_dag_runs(all_active_dag_runs)
+        return (
+            ingest_instance == "PRIMARY"
+            and primary_dag_runs[0].run_id != dag_run.run_id
+            and primary_dag_runs[-1].run_id != dag_run.run_id
         )
 
-
-@task.short_circuit
-def handle_queueing_result(action_type: Optional[str]) -> bool:
-    """Returns True if the DAG should continue, otherwise short circuits."""
-    if action_type is None:
-        logging.info(
-            "Found null action_type, indicating that the queueing sensor failed "
-            "(crashed) failed - do not continue."
-        )
-        return False
-
-    logging.info("Found action_type [%s]", action_type)
-    return action_type == "CONTINUE"
+    @staticmethod
+    def _filter_to_primary_dag_runs(dag_runs: List[DagRun]) -> List[DagRun]:
+        return [
+            dag_run
+            for dag_run in dag_runs
+            if dag_run.conf["ingest_instance"].upper() == "PRIMARY"
+        ]
 
 
 @task_group(group_id=INITIALIZE_DAG_GROUP_ID)
 def initialize_calculation_dag_group() -> Any:
     wait_to_continue_or_cancel = WaitUntilCanContinueOrCancelSensorAsync(
-        task_id="wait_to_continue_or_cancel"
+        delegate=CalcDagWaitUntilCanContinueOrCancelDelegate(),
+        task_id="wait_to_continue_or_cancel",
     )
     (
         handle_params_check(verify_parameters())
