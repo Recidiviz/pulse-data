@@ -358,7 +358,7 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
             ON state_ids.state_name = state.LocationName
             WHERE {today_between_start_date_and_nullable_end_date_clause('start_date', 'end_date')}
         )
-        WHERE state_code IN ("US_IX")
+        WHERE state_code IN ("US_IX", "US_CA")
         GROUP BY state_code, person_id
     ),
 """
@@ -547,6 +547,71 @@ _CLIENT_RECORD_MILESTONES_CTE = f"""
                     {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
                     AND is_eligible
 
+            UNION ALL
+                SELECT
+                state_code,
+                person_id,
+                "Gained employment" || (
+                    -- When there is only one employer during the period, surface that employer name in the milestone
+                    -- text by concatenating the employer name. Otherwise, ignore employer name.
+                    case when array_length(json_value_array(reasons[0], '$.reason.status_employer_start_date')) = 1
+                    then " with " || 
+                    split(
+                        json_value_array(reasons[0], '$.reason.status_employer_start_date')[SAFE_OFFSET(0)], '@@'
+                    )[SAFE_OFFSET(1)]
+                    else ""
+                    end
+                ) as milestone_text,
+                "GAINED_EMPLOYMENT" as milestone_type,
+                1 AS milestone_priority
+                FROM `task_eligibility_spans_us_ca.kudos_employment_0_to_2_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+
+            UNION ALL
+                SELECT
+                state_code,
+                person_id,
+                "Employed for 6+ months" || (
+                    -- When there is only one employer during the period, surface that employer name in the milestone
+                    -- text by concatenating the employer name. Otherwise, ignore employer name.
+                    case when array_length(json_value_array(reasons[0], '$.reason.status_employer_start_date')) = 1
+                    then " with " || 
+                    split(
+                        json_value_array(reasons[0], '$.reason.status_employer_start_date')[SAFE_OFFSET(0)], '@@'
+                    )[SAFE_OFFSET(1)]
+                    else ""
+                    end
+                ) as milestone_text,
+                "EMPLOYED_6_MONTHS" as milestone_type,
+                1 AS milestone_priority
+                FROM `task_eligibility_spans_us_ca.kudos_employment_6_to_8_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
+
+            UNION ALL
+                SELECT
+                state_code,
+                person_id,
+                "Employed for 1 year" || (
+                    -- When there is only one employer during the period, surface that employer name in the milestone
+                    -- text by concatenating the employer name. Otherwise, ignore employer name.
+                    case when array_length(json_value_array(reasons[0], '$.reason.status_employer_start_date')) = 1
+                    then " with " || 
+                    split(
+                        json_value_array(reasons[0], '$.reason.status_employer_start_date')[SAFE_OFFSET(0)], '@@'
+                    )[SAFE_OFFSET(1)]
+                    else ""
+                    end
+                ) as milestone_text,
+                "EMPLOYED_12_MONTHS" as milestone_type,
+                1 AS milestone_priority
+                FROM `task_eligibility_spans_us_ca.kudos_employment_12_to_14_months_materialized`
+                WHERE
+                    {today_between_start_date_and_nullable_end_date_clause("start_date", "end_date")}
+                    AND is_eligible
         )
         WHERE state_code in ({{workflows_milestones_states}})
         AND milestone_text IS NOT NULL
