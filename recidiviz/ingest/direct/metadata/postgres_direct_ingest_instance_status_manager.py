@@ -81,19 +81,6 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         self.db_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.change_listener = change_listener
 
-    @staticmethod
-    def _direct_ingest_instance_status_as_entity(
-        schema_metadata: schema.DirectIngestInstanceStatus,
-    ) -> DirectIngestInstanceStatus:
-        entity_metadata = convert_schema_object_to_entity(schema_metadata)
-
-        if not isinstance(entity_metadata, DirectIngestInstanceStatus):
-            raise ValueError(
-                f"Unexpected metadata entity type: {type(entity_metadata)}"
-            )
-
-        return entity_metadata
-
     def _get_current_status_row(self, session: Session) -> DirectIngestInstanceStatus:
         """Returns the most recent status row for this instance."""
         results = (
@@ -112,7 +99,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 "migration. There should always be a current row for ingest instance statuses."
             )
 
-        return self._direct_ingest_instance_status_as_entity(results)
+        return convert_schema_object_to_entity(results, DirectIngestInstanceStatus)
 
     def _get_most_recent_row_with_status(
         self, session: Session, status: DirectIngestStatus
@@ -131,7 +118,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         )
 
         if results:
-            return self._direct_ingest_instance_status_as_entity(results)
+            return convert_schema_object_to_entity(results, DirectIngestInstanceStatus)
 
         return None
 
@@ -156,7 +143,8 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         ).all()
 
         return [
-            self._direct_ingest_instance_status_as_entity(result) for result in results
+            convert_schema_object_to_entity(result, DirectIngestInstanceStatus)
+            for result in results
         ]
 
     def _add_new_status_row(self, status: DirectIngestStatus) -> DirectIngestStatus:

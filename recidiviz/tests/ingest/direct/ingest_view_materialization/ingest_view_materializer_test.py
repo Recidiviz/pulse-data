@@ -49,7 +49,6 @@ from recidiviz.persistence.database.schema_entity_converter import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestViewMaterializationMetadata,
 )
@@ -252,9 +251,13 @@ class IngestViewMaterializerTest(unittest.TestCase):
         self.uuid_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
-    def to_entity(self, schema_obj: DatabaseEntity) -> Entity:
+    def to_entity(
+        self, schema_obj: DatabaseEntity
+    ) -> DirectIngestViewMaterializationMetadata:
         return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=False
+            schema_obj,
+            DirectIngestViewMaterializationMetadata,
+            populate_back_edges=False,
         )
 
     @staticmethod

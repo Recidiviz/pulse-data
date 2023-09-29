@@ -19,7 +19,7 @@ Contains a set of convenience helpers for converting Entity objects to their
 corresponding schema Base objects and vice versa.
 """
 from types import ModuleType
-from typing import Any, List, Sequence
+from typing import Any, List, Sequence, Type, TypeVar
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
@@ -103,12 +103,22 @@ def convert_entity_to_schema_object(entity: Entity) -> DatabaseEntity:
     return result_list[0]
 
 
+EntityT = TypeVar("EntityT", bound=Entity)
+
+
 def convert_schema_object_to_entity(
-    schema_object: DatabaseEntity, populate_back_edges: bool = True
-) -> Entity:
+    schema_object: DatabaseEntity,
+    entity_type: Type[EntityT],
+    populate_back_edges: bool = True,
+) -> EntityT:
     result_list = convert_schema_objects_to_entity([schema_object], populate_back_edges)
     if len(result_list) != 1:
         raise AssertionError(
             "Call to convert object should have only returned one result."
         )
-    return result_list[0]
+
+    entity = result_list[0]
+    if not isinstance(entity, entity_type):
+        raise ValueError(f"Unexpected type: {type(entity)}")
+
+    return entity

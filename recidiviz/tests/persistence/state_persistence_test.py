@@ -186,9 +186,9 @@ class TestStatePersistence(TestCase):
             cls.temp_db_dir
         )
 
-    def to_entity(self, schema_obj):
+    def to_person_entity(self, schema_obj):
         return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=True
+            schema_obj, entities.StatePerson, populate_back_edges=True
         )
 
     @patch(
@@ -294,8 +294,8 @@ class TestStatePersistence(TestCase):
         db_person_2.incarceration_periods = [db_incarceration_period_3]
 
         # No updates
-        expected_person = self.to_entity(db_person)
-        expected_person_2 = self.to_entity(db_person_2)
+        expected_person = self.to_person_entity(db_person)
+        expected_person_2 = self.to_person_entity(db_person_2)
 
         with SessionFactory.using_database(self.database_key) as session:
             session.add(db_person)
@@ -428,8 +428,8 @@ class TestStatePersistence(TestCase):
         db_person_2.incarceration_periods = [db_incarceration_period_3]
 
         # No updates
-        expected_person = self.to_entity(db_person)
-        expected_person_2 = self.to_entity(db_person_2)
+        expected_person = self.to_person_entity(db_person)
+        expected_person_2 = self.to_person_entity(db_person_2)
 
         with SessionFactory.using_database(self.database_key) as session:
             session.add(db_person)

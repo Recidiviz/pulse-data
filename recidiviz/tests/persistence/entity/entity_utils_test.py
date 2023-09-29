@@ -67,9 +67,6 @@ from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_entity_converter import (
-    schema_entity_converter as converter,
-)
 from recidiviz.persistence.database.schema_utils import get_state_database_entities
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
@@ -873,12 +870,6 @@ class TestEntityUtils(TestCase):
 
     def setUp(self) -> None:
         self.field_index = CoreEntityFieldIndex()
-
-    @staticmethod
-    def to_entity(schema_obj):
-        return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=False
-        )
 
     def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()

@@ -45,17 +45,6 @@ class DirectIngestSftpIngestReadyFileMetadataManager:
         self.region_code = region_code.upper()
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
-    @staticmethod
-    def _schema_object_to_entity(
-        schema_metadata: schema.DirectIngestSftpIngestReadyFileMetadata,
-    ) -> DirectIngestSftpIngestReadyFileMetadata:
-        entity_metadata = convert_schema_object_to_entity(schema_metadata)
-
-        if not isinstance(entity_metadata, DirectIngestSftpIngestReadyFileMetadata):
-            raise ValueError(f"Unexpected metadata type: {type(entity_metadata)}")
-
-        return entity_metadata
-
     def has_ingest_ready_file_been_discovered(
         self, post_processed_normalized_file: GcsfsFilePath, remote_file_path: str
     ) -> bool:
@@ -134,7 +123,9 @@ class DirectIngestSftpIngestReadyFileMetadataManager:
                 )
                 .one()
             )
-            return self._schema_object_to_entity(metadata)
+            return convert_schema_object_to_entity(
+                metadata, DirectIngestSftpIngestReadyFileMetadata
+            )
 
     def get_not_uploaded_ingest_ready_files(
         self,
@@ -147,4 +138,9 @@ class DirectIngestSftpIngestReadyFileMetadataManager:
             results = session.query(
                 schema.DirectIngestSftpIngestReadyFileMetadata
             ).filter_by(region_code=self.region_code, file_upload_time=None)
-            return [self._schema_object_to_entity(result) for result in results]
+            return [
+                convert_schema_object_to_entity(
+                    result, DirectIngestSftpIngestReadyFileMetadata
+                )
+                for result in results
+            ]

@@ -610,7 +610,10 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             for metadata in all_metadata:
                 # Check here that found_metadata has expected items and all are marked as invalidated.
                 self.assertEqual(
-                    expected_metadata, convert_schema_object_to_entity(metadata)
+                    expected_metadata,
+                    convert_schema_object_to_entity(
+                        metadata, DirectIngestViewMaterializationMetadata
+                    ),
                 )
 
     def test_mark_instance_data_invalidated_secondary_instance(self) -> None:
@@ -670,7 +673,10 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             )
             # Check here that found_metadata has expected items and all are marked as invalidated.
             self.assertEqual(
-                expected_metadata, convert_schema_object_to_entity(metadata)
+                expected_metadata,
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestViewMaterializationMetadata
+                ),
             )
 
     def test_mark_instance_data_invalidated_multiple_instances(self) -> None:
@@ -763,7 +769,9 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             # Check here that found_metadata has expected items and all are marked as invalidated.
             self.assertEqual(
                 expected_primary_metadata,
-                convert_schema_object_to_entity(primary_metadata),
+                convert_schema_object_to_entity(
+                    primary_metadata, DirectIngestViewMaterializationMetadata
+                ),
             )
 
             secondary_metadata = (
@@ -777,7 +785,9 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             # Check here that found_metadata has expected items and are NOT marked as invalidated.
             self.assertEqual(
                 expected_secondary_metadata,
-                convert_schema_object_to_entity(secondary_metadata),
+                convert_schema_object_to_entity(
+                    secondary_metadata, DirectIngestViewMaterializationMetadata
+                ),
             )
 
     def test_transfer_metadata_to_new_instance_secondary_to_primary(self) -> None:
@@ -839,7 +849,10 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             )
             # Check here that found_metadata has expected items and all instances are marked primary
             self.assertEqual(
-                expected_metadata, convert_schema_object_to_entity(metadata)
+                expected_metadata,
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestViewMaterializationMetadata
+                ),
             )
 
             # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
@@ -913,7 +926,10 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             )
             # Check here that found_metadata has expected items and all instances are marked primary
             self.assertEqual(
-                expected_metadata, convert_schema_object_to_entity(metadata)
+                expected_metadata,
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestViewMaterializationMetadata
+                ),
             )
 
             # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
@@ -1024,7 +1040,10 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             # Check here that found_metadata has expected items and all instances are marked primary
             for metadata in all_metadata:
                 self.assertEqual(
-                    expected_metadata, convert_schema_object_to_entity(metadata)
+                    expected_metadata,
+                    convert_schema_object_to_entity(
+                        metadata, DirectIngestViewMaterializationMetadata
+                    ),
                 )
 
             # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
@@ -1095,7 +1114,10 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             )
             # Check here that origin database is same
             self.assertEqual(
-                expected_metadata, convert_schema_object_to_entity(metadata)
+                expected_metadata,
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestViewMaterializationMetadata
+                ),
             )
 
     def test_transfer_metadata_to_new_instance_different_states(self) -> None:
@@ -1153,7 +1175,10 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             )
             # Check here that origin database is same
             self.assertEqual(
-                expected_metadata, convert_schema_object_to_entity(metadata)
+                expected_metadata,
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestViewMaterializationMetadata
+                ),
             )
 
     def test_transfer_data_to_new_instance_multiple_raise_exception(self) -> None:
@@ -1243,7 +1268,10 @@ class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
             )
             # Check here that origin database is same
             self.assertEqual(
-                expected_secondary_metadata, convert_schema_object_to_entity(metadata)
+                expected_secondary_metadata,
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestViewMaterializationMetadata
+                ),
             )
 
     def test_get_instance_summary(self) -> None:
