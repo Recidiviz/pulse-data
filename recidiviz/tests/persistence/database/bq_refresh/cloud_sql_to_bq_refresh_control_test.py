@@ -471,4 +471,9 @@ class ExecuteCloudSqlToBQRefreshTest(unittest.TestCase):
             schema_type=schema_called_with,
             ingest_instance=instance_called_with,
         )
-        self.mock_state_update_lock_manager.release_lock.assert_called_once()
+        if schema_called_with == SchemaType.STATE:
+            self.mock_state_update_lock_manager.acquire_lock.assert_called_once()
+            self.mock_state_update_lock_manager.release_lock.assert_called_once()
+        else:
+            self.mock_state_update_lock_manager.acquire_lock.assert_not_called()
+            self.mock_state_update_lock_manager.release_lock.assert_not_called()
