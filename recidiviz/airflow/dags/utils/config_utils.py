@@ -43,6 +43,20 @@ def handle_params_check(
     return True
 
 
+@task.short_circuit
+def handle_queueing_result(action_type: Optional[str]) -> bool:
+    """Returns True if the DAG should continue, otherwise short circuits."""
+    if action_type is None:
+        logging.info(
+            "Found null action_type, indicating that the queueing sensor failed "
+            "(crashed) failed - do not continue."
+        )
+        return False
+
+    logging.info("Found action_type [%s]", action_type)
+    return action_type == "CONTINUE"
+
+
 def get_ingest_instance(dag_run: DagRun) -> Optional[str]:
     ingest_instance = dag_run.conf.get(INGEST_INSTANCE)
     return ingest_instance.upper() if ingest_instance else None

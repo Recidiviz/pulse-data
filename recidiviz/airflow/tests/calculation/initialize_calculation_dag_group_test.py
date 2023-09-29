@@ -31,6 +31,7 @@ from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.calculation.initialize_calculation_dag_group import (
+    CalcDagWaitUntilCanContinueOrCancelDelegate,
     WaitUntilCanContinueOrCancelSensorAsync,
     initialize_calculation_dag_group,
 )
@@ -231,18 +232,24 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
             )
 
 
-class TestWaitUntilCanContinueOrCancelSensorAsync(unittest.TestCase):
+class TestCalcDagWaitUntilCanContinueOrCancelDelegate(unittest.TestCase):
     """
-    Tests for the WaitUntilCanContinueOrCancelSensorAsync sensor.
+    Tests to validate CalcDagWaitUntilCanContinueOrCancelDelegate queueing logic.
     """
 
     def setUp(self) -> None:
-        self.operator = WaitUntilCanContinueOrCancelSensorAsync(task_id="test_task")
+        self.get_all_active_dag_runs_patcher = mock.patch(
+            "recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async._get_all_active_dag_runs"
+        )
+        self.mock_get_all_active_dag_runs = self.get_all_active_dag_runs_patcher.start()
+        self.operator = WaitUntilCanContinueOrCancelSensorAsync(
+            task_id="test_task", delegate=CalcDagWaitUntilCanContinueOrCancelDelegate()
+        )
 
-    @mock.patch(
-        "recidiviz.airflow.dags.calculation.initialize_calculation_dag_group._get_all_active_primary_dag_runs"
-    )
-    def test_first_in_queue(self, get_all_active_primary_dag_runs: Mock) -> None:
+    def tearDown(self) -> None:
+        self.get_all_active_dag_runs_patcher.stop()
+
+    def test_first_in_queue(self) -> None:
         dag_run = Mock()
         dag_run.conf = {"ingest_instance": "PRIMARY"}
         dag_run.dag_id = "test_dag"
@@ -250,19 +257,19 @@ class TestWaitUntilCanContinueOrCancelSensorAsync(unittest.TestCase):
 
         dag_run_2 = Mock()
         dag_run_2.run_id = "test_run_2"
+        dag_run_2.conf = {"ingest_instance": "PRIMARY"}
 
-        get_all_active_primary_dag_runs.return_value = [dag_run, dag_run_2]
+        dag_run_3 = Mock()
+        dag_run_3.run_id = "test_run_3"
+        dag_run_3.conf = {"ingest_instance": "SECONDARY"}
+
+        self.mock_get_all_active_dag_runs.return_value = [dag_run, dag_run_2, dag_run_3]
 
         results = self.operator.execute(context={"dag_run": dag_run})
 
         self.assertEqual(results, "CONTINUE")
 
-    @mock.patch(
-        "recidiviz.airflow.dags.calculation.initialize_calculation_dag_group._get_all_active_primary_dag_runs"
-    )
-    def test_defers_if_last_in_queue(
-        self, get_all_active_primary_dag_runs: Mock
-    ) -> None:
+    def test_defers_if_last_in_queue(self) -> None:
         dag_run = Mock()
         dag_run.conf = {"ingest_instance": "PRIMARY"}
         dag_run.dag_id = "test_dag"
@@ -270,16 +277,18 @@ class TestWaitUntilCanContinueOrCancelSensorAsync(unittest.TestCase):
 
         dag_run_2 = Mock()
         dag_run_2.run_id = "test_run_2"
+        dag_run_2.conf = {"ingest_instance": "PRIMARY"}
 
-        get_all_active_primary_dag_runs.return_value = [dag_run_2, dag_run]
+        dag_run_3 = Mock()
+        dag_run_3.run_id = "test_run_3"
+        dag_run_3.conf = {"ingest_instance": "SECONDARY"}
+
+        self.mock_get_all_active_dag_runs.return_value = [dag_run_2, dag_run, dag_run_3]
 
         with self.assertRaises(TaskDeferred):
             self.operator.execute(context={"dag_run": dag_run})
 
-    @mock.patch(
-        "recidiviz.airflow.dags.calculation.initialize_calculation_dag_group._get_all_active_primary_dag_runs"
-    )
-    def test_middle_of_queue(self, get_all_active_primary_dag_runs: Mock) -> None:
+    def test_middle_of_queue(self) -> None:
         dag_run = Mock()
         dag_run.conf = {"ingest_instance": "PRIMARY"}
         dag_run.dag_id = "test_dag"
@@ -287,20 +296,19 @@ class TestWaitUntilCanContinueOrCancelSensorAsync(unittest.TestCase):
 
         dag_run_2 = Mock()
         dag_run_2.run_id = "test_run_2"
+        dag_run_2.conf = {"ingest_instance": "PRIMARY"}
 
         dag_run_3 = Mock()
         dag_run_3.run_id = "test_run_3"
+        dag_run_3.conf = {"ingest_instance": "PRIMARY"}
 
-        get_all_active_primary_dag_runs.return_value = [dag_run_2, dag_run, dag_run_3]
+        self.mock_get_all_active_dag_runs.return_value = [dag_run_2, dag_run, dag_run_3]
 
         results = self.operator.execute(context={"dag_run": dag_run})
 
         self.assertEqual(results, "CANCEL")
 
-    @mock.patch(
-        "recidiviz.airflow.dags.calculation.initialize_calculation_dag_group._get_all_active_primary_dag_runs"
-    )
-    def test_secondary_dag_run(self, get_all_active_primary_dag_runs: Mock) -> None:
+    def test_secondary_dag_run(self) -> None:
         dag_run = Mock()
         dag_run.conf = {"ingest_instance": "SECONDARY"}
         dag_run.dag_id = "test_dag"
@@ -308,11 +316,27 @@ class TestWaitUntilCanContinueOrCancelSensorAsync(unittest.TestCase):
 
         dag_run_2 = Mock()
         dag_run_2.run_id = "test_run_2"
+        dag_run_2.conf = {"ingest_instance": "PRIMARY"}
 
         dag_run_3 = Mock()
         dag_run_3.run_id = "test_run_3"
+        dag_run_3.conf = {"ingest_instance": "PRIMARY"}
 
-        get_all_active_primary_dag_runs.return_value = [dag_run_2, dag_run, dag_run_3]
+        dag_run_4 = Mock()
+        dag_run_4.run_id = "test_run_4"
+        dag_run_4.conf = {"ingest_instance": "SECONDARY"}
+
+        dag_run_5 = Mock()
+        dag_run_5.run_id = "test_run_5"
+        dag_run_5.conf = {"ingest_instance": "SECONDARY"}
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            dag_run_2,
+            dag_run_4,
+            dag_run,
+            dag_run_3,
+            dag_run_5,
+        ]
 
         results = self.operator.execute(context={"dag_run": dag_run})
 
