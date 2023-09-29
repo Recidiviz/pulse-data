@@ -102,6 +102,9 @@ from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_sessions import (
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessions import (
+    HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
@@ -313,6 +316,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     DISTRICT_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
+    HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_BUILDER,
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
     JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER,
