@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - employee_id
+  - Role
+  - start_date
+  - end_date
+  - period_seq_num
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: employee_id
+          id_type: $literal("US_MI_OMNI_USER")
+    role_periods:
+      - StateStaffRolePeriod:
+          external_id:
+            $concat:
+              $values:
+                - employee_id
+                - $literal("LEADERSHIP")
+                - period_seq_num
+          start_date: start_date
+          end_date: end_date
+          role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
+          role_subtype:
+            $enum_mapping:
+              $raw_text: Role
+              $mappings:
+                # This is a difference in terminology between Recidiviz and MI DOC.
+                # MI DOC "Regional Managers" are Recidiviz "District Managers".
+                # There are no employees at the MI DOC that Recidiviz would consider a
+                # "Regional Manager" (i.e. someone who supervises multiple districts and
+                # district managers)
+                StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER: "Regional Manager"
+                StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP: "State Leadership"
