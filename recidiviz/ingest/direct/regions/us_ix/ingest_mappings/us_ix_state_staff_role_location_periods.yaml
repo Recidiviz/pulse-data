@@ -67,6 +67,7 @@ output:
             $then:
               StateStaffCaseloadTypePeriod:
                 state_staff_specialized_caseload_type: $literal_enum(StateStaffSpecializedCaseloadType.OTHER)
+                caseload_type: $literal_enum(StateStaffCaseloadType.OTHER)
                 external_id:
                   $concat:
                     $values:

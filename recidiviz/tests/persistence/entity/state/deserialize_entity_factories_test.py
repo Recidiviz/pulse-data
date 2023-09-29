@@ -72,6 +72,7 @@ from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleType,
 )
 from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
+    StateStaffCaseloadType,
     StateStaffSpecializedCaseloadType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -1010,6 +1011,8 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             end_date="2022-05-10",
             state_staff_specialized_caseload_type=StateStaffSpecializedCaseloadType.ADMINISTRATIVE_SUPERVISION,
             state_staff_specialized_caseload_type_raw_text="ADMINSTRATIVE",
+            caseload_type=StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION,
+            caseload_type_raw_text="ADMINSTRATIVE",
         )
 
         # Assert
@@ -1020,6 +1023,8 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             end_date=datetime.date(2022, 5, 10),
             state_staff_specialized_caseload_type=StateStaffSpecializedCaseloadType.ADMINISTRATIVE_SUPERVISION,
             state_staff_specialized_caseload_type_raw_text="ADMINSTRATIVE",
+            caseload_type=StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION,
+            caseload_type_raw_text="ADMINSTRATIVE",
         )
 
         self.assertEqual(expected_result, result)

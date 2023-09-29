@@ -137,6 +137,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_staff_role_type": state_staff_role_period.StateStaffRoleType,
             "state_staff_role_subtype": state_staff_role_period.StateStaffRoleSubtype,
             "state_staff_specialized_caseload_type": state_staff_specialized_caseload_type.StateStaffSpecializedCaseloadType,
+            "state_staff_caseload_type": state_staff_specialized_caseload_type.StateStaffCaseloadType,
             "state_supervision_case_type": state_case_type.StateSupervisionCaseType,
             "state_supervision_contact_location": state_supervision_contact.StateSupervisionContactLocation,
             "state_supervision_contact_reason": state_supervision_contact.StateSupervisionContactReason,
