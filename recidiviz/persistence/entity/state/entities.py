@@ -83,6 +83,7 @@ from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleType,
 )
 from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
+    StateStaffCaseloadType,
     StateStaffSpecializedCaseloadType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
@@ -2124,13 +2125,15 @@ class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAt
 
 @attr.s(eq=False, kw_only=True)
 class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Represents information about a staff member’s specialized caseload type over a period."""
+    """Represents information about a staff member’s caseload type over a period."""
 
     # State Code
     # State providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # The specialized case type that the officer supervises
+    # TODO(#24278): Delete these "_specialized_" fields once caseload_type is appropriately
+    # hydrated.
     state_staff_specialized_caseload_type: StateStaffSpecializedCaseloadType = attr.ib(
         validator=attr_validators.is_opt(StateStaffSpecializedCaseloadType),
     )
@@ -2138,6 +2141,13 @@ class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, Defaultab
         default=None, validator=attr_validators.is_opt_str
     )
 
+    # The caseload type that the officer supervises
+    caseload_type: StateStaffCaseloadType = attr.ib(
+        validator=attr_validators.is_opt(StateStaffCaseloadType),
+    )
+    caseload_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
     # Attributes
     #   - When
     # The beginning of the period where this officer had this type of specialized caseload

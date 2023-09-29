@@ -74,3 +74,55 @@ output:
                   - FTTD # ?
                   - HBG PD LIAISON # Harrisburg PD Liaison
                   - K9
+          caseload_type:
+            $enum_mapping:
+              $raw_text: AgentType
+              $mappings:
+                StateStaffCaseloadType.SEX_OFFENSE:
+                  - SEX OFFENDER
+                StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION:
+                  - ADMINISTRATIVE
+                  - ADMINSTRATIVE
+                  - ADMINISTRATIVE / COURT LIAISON
+                StateStaffCaseloadType.ALCOHOL_AND_DRUG:
+                  - AOD
+                  - INTENSIVE DRUG
+                StateStaffCaseloadType.INTENSIVE:
+                  - INTENSIVE CASELOAD
+                  - INTENSIVE
+                  - INTENSIVE SUPERVISION
+                StateStaffCaseloadType.MENTAL_HEALTH:
+                  - MENTAL HEALTH
+                  - MENTAL HEALTH (MIXED)
+                StateStaffCaseloadType.ELECTRONIC_MONITORING:
+                  - GPS
+                  - ADMINISTRATIVE & MONITOR CASES
+                  - ADMINISTRATIVE/MON/SPECIAL CIRCUMSTANCE
+                StateStaffCaseloadType.OTHER_COURT:
+                  - HEARING
+                StateStaffCaseloadType.DRUG_COURT:
+                  - DRUG COURT LIASON
+                StateStaffCaseloadType.VETERANS_COURT:
+                  - VETERANS (MIXED)
+                StateStaffCaseloadType.COMMUNITY_FACILITY:
+                  - CCC AGENT
+                  - REENTRY
+                StateStaffCaseloadType.INTERNAL_UNKNOWN:
+                  - TASK FORCE AGENT
+                  - TRANSPORT
+                  - JUVENILE LIFER/VICTIM WRAPAROUND
+                  - JUVENILE LIFERS
+                  - JUVENILE LIFER
+                  - JUVENILE LIFER/WRAP AROUNDS
+                  - JUVENILE LIFER/PSN # Project Safe Neighborhoods
+                  - PROJECT SAFE NEIGHBORHOODS
+                  - STREET CRIME
+                  - STREET CRIMES
+                  - FTA # Field Training Agent
+                  - FIELD TRAINING AGENT
+                  - INTELLIGENCE AGENT
+                  - INTERSTATE
+                  - FAST # Fugitive Apprehension Search Teams
+                  - FTTD # ?
+                  - HBG PD LIAISON # Harrisburg PD Liaison
+                  - K9
