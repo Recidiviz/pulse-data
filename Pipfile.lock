@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c60653598da93fc398bcaae8caa657f92110a8bfca1a8f9a4eb1be013d24da49"
+            "sha256": "260f6f995e179b69e81923544262f5a902435632a10d014d5911d710a33d65c2"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1452,7 +1452,7 @@
                 "sha256:f82d4d717d8ef19188687aa32b8363e96062911e63ba22a0cff7802a8e58e5f1",
                 "sha256:fc3a569657468b6f3fb60587e48356fe512c1754ca05a564f11366ac9e306526"
             ],
-            "markers": "python_version >= '3' and platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32')))))",
+            "markers": "python_version < '3.11' and platform_python_implementation == 'CPython'",
             "version": "==2.0.2"
         },
         "grpc-google-iam-v1": {
@@ -4142,11 +4142,12 @@
         },
         "traitlets": {
             "hashes": [
-                "sha256:07ab9c5bf8a0499fd7b088ba51be899c90ffc936ffc797d7b6907fc516bcd116",
-                "sha256:db9c4aa58139c3ba850101913915c042bdba86f7c8a0dda1c6f7f92c5da8e542"
+                "sha256:9e6ec080259b9a5940c797d58b613b5e31441c2257b87c2e795c5228ae80d2d8",
+                "sha256:f6cde21a9c68cf756af02035f72d5a723bf607e862e7be33ece505abf4a3bad9"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==5.10.1"
+            "index": "pypi",
+            "markers": "python_version >= '3.7'",
+            "version": "==5.9.0"
         },
         "transaction": {
             "hashes": [
@@ -5891,7 +5892,7 @@
                 "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330",
                 "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"
             ],
-            "markers": "python_version < '3.11' and python_version >= '3.7'",
+            "markers": "python_version >= '3.5'",
             "version": "==5.1.1"
         },
         "defusedxml": {
@@ -6539,7 +6540,7 @@
                 "sha256:f82d4d717d8ef19188687aa32b8363e96062911e63ba22a0cff7802a8e58e5f1",
                 "sha256:fc3a569657468b6f3fb60587e48356fe512c1754ca05a564f11366ac9e306526"
             ],
-            "markers": "python_version >= '3' and platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32')))))",
+            "markers": "python_version < '3.11' and platform_python_implementation == 'CPython'",
             "version": "==2.0.2"
         },
         "grpc-google-iam-v1": {
@@ -9580,11 +9581,12 @@
         },
         "traitlets": {
             "hashes": [
-                "sha256:07ab9c5bf8a0499fd7b088ba51be899c90ffc936ffc797d7b6907fc516bcd116",
-                "sha256:db9c4aa58139c3ba850101913915c042bdba86f7c8a0dda1c6f7f92c5da8e542"
+                "sha256:9e6ec080259b9a5940c797d58b613b5e31441c2257b87c2e795c5228ae80d2d8",
+                "sha256:f6cde21a9c68cf756af02035f72d5a723bf607e862e7be33ece505abf4a3bad9"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==5.10.1"
+            "index": "pypi",
+            "markers": "python_version >= '3.7'",
+            "version": "==5.9.0"
         },
         "typeguard": {
             "hashes": [
