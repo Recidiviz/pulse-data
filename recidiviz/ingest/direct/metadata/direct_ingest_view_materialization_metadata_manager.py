@@ -185,17 +185,6 @@ class DirectIngestViewMaterializationMetadataManagerImpl(
     def ingest_instance(self) -> DirectIngestInstance:
         return self._ingest_instance
 
-    @staticmethod
-    def _schema_object_to_entity(
-        schema_metadata: schema.DirectIngestViewMaterializationMetadata,
-    ) -> DirectIngestViewMaterializationMetadata:
-        entity_metadata = convert_schema_object_to_entity(schema_metadata)
-
-        if not isinstance(entity_metadata, DirectIngestViewMaterializationMetadata):
-            raise ValueError(f"Unexpected metadata type: {type(entity_metadata)}")
-
-        return entity_metadata
-
     def register_ingest_materialization_job(
         self, job_args: IngestViewMaterializationArgs
     ) -> DirectIngestViewMaterializationMetadata:
@@ -215,7 +204,9 @@ class DirectIngestViewMaterializationMetadataManagerImpl(
             )
             session.add(metadata)
             session.commit()
-            return self._schema_object_to_entity(metadata)
+            return convert_schema_object_to_entity(
+                metadata, DirectIngestViewMaterializationMetadata
+            )
 
     def get_job_completion_time_for_args(
         self, job_args: IngestViewMaterializationArgs
@@ -274,7 +265,9 @@ class DirectIngestViewMaterializationMetadataManagerImpl(
             if not metadata:
                 return None
 
-            return self._schema_object_to_entity(metadata)
+            return convert_schema_object_to_entity(
+                metadata, DirectIngestViewMaterializationMetadata
+            )
 
     def get_jobs_pending_completion(
         self,
@@ -295,7 +288,12 @@ class DirectIngestViewMaterializationMetadataManagerImpl(
                 )
                 .all()
             )
-            return [self._schema_object_to_entity(metadata) for metadata in results]
+            return [
+                convert_schema_object_to_entity(
+                    metadata, DirectIngestViewMaterializationMetadata
+                )
+                for metadata in results
+            ]
 
     def _get_metadata_for_job_args(
         self, job_args: IngestViewMaterializationArgs
@@ -315,7 +313,9 @@ class DirectIngestViewMaterializationMetadataManagerImpl(
                 )
                 .one()
             )
-            return self._schema_object_to_entity(metadata)
+            return convert_schema_object_to_entity(
+                metadata, DirectIngestViewMaterializationMetadata
+            )
 
     @environment.test_only
     def get_metadata_for_job_args(

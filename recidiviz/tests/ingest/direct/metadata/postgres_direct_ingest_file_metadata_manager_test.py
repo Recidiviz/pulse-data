@@ -516,7 +516,8 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             )
             # Check here that found_metadata has expected items and all instances are marked primary
             self.assertEqual(
-                expected_metadata, convert_schema_object_to_entity(metadata)
+                expected_metadata,
+                convert_schema_object_to_entity(metadata, DirectIngestRawFileMetadata),
             )
 
             # Assert that secondary instance was moved to primary instance, thus secondary no longer exists
@@ -571,7 +572,8 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             )
             # Check here that found_metadata has expected items and all instances are marked primary
             self.assertEqual(
-                expected_metadata, convert_schema_object_to_entity(metadata)
+                expected_metadata,
+                convert_schema_object_to_entity(metadata, DirectIngestRawFileMetadata),
             )
 
             # Assert that secondary instance was moved to primary instance, thus secondary no longer exists

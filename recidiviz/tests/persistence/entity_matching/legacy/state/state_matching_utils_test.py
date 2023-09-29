@@ -773,7 +773,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
                 self.assertFalse(can_atomically_merge_entity(entity, field_index))
             for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
-
                 if db_entity_cls in {
                     schema.StateEarlyDischarge,
                     schema.StateIncarcerationSentence,

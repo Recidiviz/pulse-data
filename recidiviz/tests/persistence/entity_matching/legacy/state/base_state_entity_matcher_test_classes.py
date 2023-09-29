@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Base classes for various state entity matcher test classes."""
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Type
 from unittest.case import TestCase
 
 import pytest
@@ -30,6 +30,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     print_entity_trees,
@@ -71,9 +72,11 @@ class BaseStateEntityMatcherTest(TestCase):
             cls.temp_db_dir
         )
 
-    def to_entity(self, schema_obj):
+    def to_entity(
+        self, schema_obj: DatabaseEntity, entity_type: Type[converter.EntityT]
+    ) -> converter.EntityT:
         return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=False
+            schema_obj, entity_type, populate_back_edges=False
         )
 
     def assert_no_errors(self, matched_entities: MatchedEntities) -> None:
@@ -173,28 +176,10 @@ class BaseStateMatchingUtilsTest(TestCase):
             cls.temp_db_dir
         )
 
-    def to_entity(self, schema_obj):
-        return converter.convert_schema_object_to_entity(
-            schema_obj, populate_back_edges=False
-        )
-
-    def to_entities(self, schema_objects):
-        return converter.convert_schema_objects_to_entity(
-            schema_objects, populate_back_edges=False
-        )
-
     def assert_schema_objects_equal(
         self, expected: StateBase, actual: StateBase
     ) -> None:
         self.assertEqual(
-            converter.convert_schema_object_to_entity(expected),
-            converter.convert_schema_object_to_entity(actual),
-        )
-
-    def assert_schema_object_lists_equal(
-        self, expected: List[StateBase], actual: List[StateBase]
-    ) -> None:
-        self.assertCountEqual(
-            converter.convert_schema_objects_to_entity(expected),
-            converter.convert_schema_objects_to_entity(actual),
+            converter.convert_schema_object_to_entity(expected, Entity),
+            converter.convert_schema_object_to_entity(actual, Entity),
         )

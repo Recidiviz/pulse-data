@@ -93,7 +93,9 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             metadata = dao.get_raw_file_metadata_row_for_path(
                 session, self.region_code, path, self.raw_data_instance
             )
-            return self._raw_file_schema_metadata_as_entity(metadata)
+            return convert_schema_object_to_entity(
+                metadata, DirectIngestRawFileMetadata
+            )
 
     def has_raw_file_been_processed(self, path: GcsfsFilePath) -> bool:
         try:
@@ -130,7 +132,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             )
 
             return [
-                self._raw_file_schema_metadata_as_entity(metadata)
+                convert_schema_object_to_entity(metadata, DirectIngestRawFileMetadata)
                 for metadata in results
             ]
 
@@ -145,19 +147,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 region_code=self.region_code,
                 raw_data_instance=self.raw_data_instance,
             )
-
-    @staticmethod
-    def _raw_file_schema_metadata_as_entity(
-        schema_metadata: schema.DirectIngestRawFileMetadata,
-    ) -> DirectIngestRawFileMetadata:
-        entity_metadata = convert_schema_object_to_entity(schema_metadata)
-
-        if not isinstance(entity_metadata, DirectIngestRawFileMetadata):
-            raise ValueError(
-                f"Unexpected metadata entity type: {type(entity_metadata)}"
-            )
-
-        return entity_metadata
 
     def get_unprocessed_raw_files_eligible_for_import(
         self,
@@ -195,9 +184,11 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
               WHERE recency_rank = 1
             """
             results = session.execute(sqlalchemy.text(query))
+
             return [
-                self._raw_file_schema_metadata_as_entity(
-                    schema.DirectIngestRawFileMetadata(**result)
+                convert_schema_object_to_entity(
+                    schema.DirectIngestRawFileMetadata(**result),
+                    DirectIngestRawFileMetadata,
                 )
                 for result in results
             ]
@@ -214,7 +205,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             results = query.all()
 
             return [
-                self._raw_file_schema_metadata_as_entity(metadata)
+                convert_schema_object_to_entity(metadata, DirectIngestRawFileMetadata)
                 for metadata in results
             ]
 

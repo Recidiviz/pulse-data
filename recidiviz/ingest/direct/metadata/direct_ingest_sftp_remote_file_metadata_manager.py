@@ -46,7 +46,9 @@ class DirectIngestSftpRemoteFileMetadataManager:
     def _schema_object_to_entity(
         schema_metadata: schema.DirectIngestSftpRemoteFileMetadata,
     ) -> DirectIngestSftpRemoteFileMetadata:
-        entity_metadata = convert_schema_object_to_entity(schema_metadata)
+        entity_metadata = convert_schema_object_to_entity(
+            schema_metadata, DirectIngestSftpRemoteFileMetadata
+        )
 
         if not isinstance(entity_metadata, DirectIngestSftpRemoteFileMetadata):
             raise ValueError(f"Unexpected metadata type: {type(entity_metadata)}")
@@ -69,7 +71,9 @@ class DirectIngestSftpRemoteFileMetadataManager:
                 )
                 .one()
             )
-            return self._schema_object_to_entity(metadata)
+            return convert_schema_object_to_entity(
+                metadata, DirectIngestSftpRemoteFileMetadata
+            )
 
     def has_remote_file_been_discovered(
         self, remote_file_path: str, sftp_timestamp: float
@@ -136,4 +140,9 @@ class DirectIngestSftpRemoteFileMetadataManager:
             results = session.query(
                 schema.DirectIngestSftpRemoteFileMetadata
             ).filter_by(region_code=self.region_code, file_download_time=None)
-            return [self._schema_object_to_entity(result) for result in results]
+            return [
+                convert_schema_object_to_entity(
+                    result, DirectIngestSftpRemoteFileMetadata
+                )
+                for result in results
+            ]
