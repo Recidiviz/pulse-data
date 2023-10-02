@@ -40,8 +40,8 @@ WITH contacts_with_split_supervisor_name AS (
     C5 AS CONTACT_CODE_5,
     C6 AS CONTACT_CODE_6,
     CATEGORY,
-    SPLIT(ORIGINATOR, ', ')[OFFSET(0)] LNAME,
-    SPLIT(ORIGINATOR, ', ')[OFFSET(1)] FNAME,
+    NULLIF(TRIM(SPLIT(ORIGINATOR, ',')[OFFSET(0)]), '') AS LNAME,
+    NULLIF(TRIM(SPLIT(ORIGINATOR, ',')[OFFSET(1)]), '') AS FNAME,
   FROM {docstars_contacts}
   WHERE CONTACT_CODE IS NOT NULL
   -- Exclude system generated entries, as those don't represent contacts.
