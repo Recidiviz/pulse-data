@@ -976,14 +976,14 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
             self.us_xx_secondary_manager,
             [
                 DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
                 DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
                 DirectIngestStatus.FLASH_IN_PROGRESS,
                 DirectIngestStatus.FLASH_COMPLETED,
                 DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
                 # Test that we can start a reimport again after
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
             ],
         )
 
@@ -992,7 +992,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
             self.us_xx_secondary_manager,
             [
                 DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
                 DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
                 DirectIngestStatus.RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS,
@@ -1017,7 +1017,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
             self.us_xx_secondary_manager,
             [
                 DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
             ],
         )
 
@@ -1026,7 +1026,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
             self.us_xx_secondary_manager,
             [
                 DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
                 # This would happen if a reimport was started but we hadn't transferred
                 # raw data to secondary yet.
                 DirectIngestStatus.STALE_RAW_DATA,
@@ -1049,7 +1049,7 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
         self._run_test_for_status_transitions(
             self.us_xx_secondary_manager,
             [
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
                 DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
                 # Some raw data could come in PRIMARY, making SECONDARY stale
@@ -1139,13 +1139,13 @@ class RawDataImportOnlyPostgresDirectIngestStatusManagerTest(
         start_timestamp = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, pytz.UTC)
         statuses = [
             DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
-            DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+            DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
             DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
             DirectIngestStatus.RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS,
             DirectIngestStatus.RAW_DATA_REIMPORT_CANCELED,
             DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
             # Start a second reimport after cancelling a flash -- this is 6 statuses after start timestamp
-            DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+            DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
             DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
             DirectIngestStatus.READY_TO_FLASH,
         ]

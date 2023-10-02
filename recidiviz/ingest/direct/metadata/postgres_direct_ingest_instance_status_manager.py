@@ -267,7 +267,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                 raise ValueError(f"Unexpected ingest instance {self.ingest_instance}")
 
         else:
-            valid_start_statuses = [DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED]
+            valid_start_statuses = [DirectIngestStatus.RAW_DATA_REIMPORT_STARTED]
 
         return one(
             row

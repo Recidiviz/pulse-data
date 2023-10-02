@@ -40,6 +40,7 @@ const statusFormattingInfo: {
     message:
       "Scheduler in SECONDARY found no more work to do - flash to PRIMARY is ready to take place",
   },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   EXTRACT_AND_MERGE_IN_PROGRESS: {
     status: "EXTRACT_AND_MERGE_IN_PROGRESS",
     color: "ingest-status-cell-grey",
@@ -53,6 +54,7 @@ const statusFormattingInfo: {
     sortRank: 2,
     message: "Flash of data from SECONDARY to PRIMARY is in progress",
   },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   RERUN_CANCELLATION_IN_PROGRESS: {
     status: "RERUN_CANCELLATION_IN_PROGRESS",
     color: "ingest-status-cell-grey",
@@ -60,68 +62,113 @@ const statusFormattingInfo: {
     message:
       "Cancellation of flash of data from SECONDARY to PRIMARY is in progress",
   },
+  RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS: {
+    status: "RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS",
+    color: "ingest-status-cell-grey",
+    sortRank: 4,
+    message: "Cancellation of raw data reimport in SECONDARY is in progress",
+  },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: {
     status: "INGEST_VIEW_MATERIALIZATION_IN_PROGRESS",
     color: "ingest-status-cell-grey",
-    sortRank: 4,
+    sortRank: 5,
     message: "Ingest view materialization is in progress",
   },
   RAW_DATA_IMPORT_IN_PROGRESS: {
     status: "RAW_DATA_IMPORT_IN_PROGRESS",
     color: "ingest-status-cell-grey",
-    sortRank: 5,
+    sortRank: 6,
     message: "Raw data import from GCS to BQ is in progress",
   },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT: {
     status: "BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT",
     color: "ingest-status-cell-grey",
-    sortRank: 6,
+    sortRank: 7,
     message: "Raw data import from GCS to BQ is in progress in primary",
   },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   RERUN_WITH_RAW_DATA_IMPORT_STARTED: {
     status: "RERUN_WITH_RAW_DATA_IMPORT_STARTED",
     color: "ingest-status-cell-grey",
-    sortRank: 7,
+    sortRank: 8,
     message:
       "Rerun with both raw data import and ingest vew materialization has been kicked off",
+  },
+  RAW_DATA_REIMPORT_STARTED: {
+    status: "RAW_DATA_REIMPORT_STARTED",
+    color: "ingest-status-cell-grey",
+    sortRank: 9,
+    message: "A reimport of raw data in SECONDARY has been kicked off",
   },
   STALE_RAW_DATA: {
     status: "STALE_RAW_DATA",
     color: "ingest-status-cell-grey",
-    sortRank: 8,
+    sortRank: 10,
     message:
       "Raw data in PRIMARY is more up to date than raw data in SECONDARY",
   },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   STANDARD_RERUN_STARTED: {
     status: "STANDARD_RERUN_STARTED",
     color: "ingest-status-cell-grey",
-    sortRank: 9,
+    sortRank: 11,
     message:
       "Standard rerun with only ingest view materialization has been kicked off",
   },
+  INITIAL_STATE: {
+    status: "INITIAL_STATE",
+    color: "ingest-status-cell-grey",
+    sortRank: 12,
+    message:
+      "Raw data import has been enabled in PRIMARY but nothing has processed yet",
+  },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   RERUN_CANCELED: {
     status: "RERUN_CANCELED",
     color: "ingest-status-cell-grey",
-    sortRank: 10,
+    sortRank: 13,
     message: "Flash from SECONDARY to PRIMARY has been canceled",
+  },
+  RAW_DATA_REIMPORT_CANCELED: {
+    status: "RAW_DATA_REIMPORT_CANCELED",
+    color: "ingest-status-cell-grey",
+    sortRank: 14,
+    message: "Raw data reimport in SECONDARY has been canceled",
   },
   FLASH_COMPLETED: {
     status: "FLASH_COMPLETED",
     color: "ingest-status-cell-green",
-    sortRank: 11,
+    sortRank: 15,
     message: "Flash of data from SECONDARY to PRIMARY is completed",
   },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   NO_RERUN_IN_PROGRESS: {
     status: "NO_RERUN_IN_PROGRESS",
     color: "ingest-status-cell-green",
-    sortRank: 12,
+    sortRank: 16,
     message: "No rerun is currently in progress in SECONDARY",
   },
+  NO_RAW_DATA_REIMPORT_IN_PROGRESS: {
+    status: "NO_RAW_DATA_REIMPORT_IN_PROGRESS",
+    color: "ingest-status-cell-green",
+    sortRank: 17,
+    message: "No raw data reimport is currently in progress in SECONDARY",
+  },
+  // TODO(#20930) : Delete this status once ingest in dataflow is fully launched
   UP_TO_DATE: {
     status: "UP_TO_DATE",
     color: "ingest-status-cell-green",
-    sortRank: 13,
+    sortRank: 18,
     message: "Scheduler in PRIMARY found no more work to do and is up to date",
+  },
+  RAW_DATA_UP_TO_DATE: {
+    status: "RAW_DATA_UP_TO_DATE",
+    color: "ingest-status-cell-green",
+    sortRank: 19,
+    message:
+      "Scheduler in PRIMARY found no more raw data import work to do and is up to date",
   },
 };
 

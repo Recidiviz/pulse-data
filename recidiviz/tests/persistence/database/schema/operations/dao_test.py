@@ -320,7 +320,7 @@ class TestDao(TestCase):
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
-            ).add_instance_status(DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED)
+            ).add_instance_status(DirectIngestStatus.RAW_DATA_REIMPORT_STARTED)
 
             # Assert that raw data is not considered stale because the same file_tag is present and non-invalidated
             # in both instances, and the rerun in secondary started BEFORE the files were discovered in both
@@ -471,7 +471,7 @@ class TestDao(TestCase):
                 region_code="us_xx",
                 ingest_instance=DirectIngestInstance.SECONDARY,
                 is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled,
-            ).add_instance_status(DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED)
+            ).add_instance_status(DirectIngestStatus.RAW_DATA_REIMPORT_STARTED)
 
             # Assert that raw data is considered stale because the same file_tag is present in both, but is
             # invalidated in SECONDARY

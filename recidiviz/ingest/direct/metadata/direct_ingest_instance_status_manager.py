@@ -44,7 +44,7 @@ LEGACY_PRE_DATAFLOW_STATUSES = [
 NEW_POST_DATAFLOW_STATUSES = [
     DirectIngestStatus.INITIAL_STATE,
     DirectIngestStatus.RAW_DATA_UP_TO_DATE,
-    DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+    DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
     DirectIngestStatus.RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS,
     DirectIngestStatus.RAW_DATA_REIMPORT_CANCELED,
     DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
@@ -83,7 +83,7 @@ def get_invalid_statuses(
             DirectIngestStatus.RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS,
             DirectIngestStatus.RAW_DATA_REIMPORT_CANCELED,
             DirectIngestStatus.STALE_RAW_DATA,
-            DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+            DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
             DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
         ]
 
@@ -132,7 +132,7 @@ def get_human_intervention_statuses(
             DirectIngestStatus.RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS,
             DirectIngestStatus.RAW_DATA_REIMPORT_CANCELED,
             DirectIngestStatus.FLASH_IN_PROGRESS,
-            DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+            DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
         ]
 
     raise ValueError(
@@ -327,13 +327,13 @@ def get_valid_current_status_transitions(
         }
     if ingest_instance is DirectIngestInstance.SECONDARY:
         return {
-            DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED: [
+            DirectIngestStatus.RAW_DATA_REIMPORT_STARTED: [
                 DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
             ],
             # SECONDARY specific check for FLASH_IN_PROGRESS.
             DirectIngestStatus.FLASH_IN_PROGRESS: [DirectIngestStatus.READY_TO_FLASH],
             DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
                 DirectIngestStatus.STALE_RAW_DATA,
                 DirectIngestStatus.READY_TO_FLASH,
             ],
@@ -354,7 +354,7 @@ def get_valid_current_status_transitions(
                 )
             ),
             DirectIngestStatus.STALE_RAW_DATA: [
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED,
                 DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
             ],

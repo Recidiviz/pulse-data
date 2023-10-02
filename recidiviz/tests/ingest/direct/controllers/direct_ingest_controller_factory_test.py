@@ -168,7 +168,7 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                     DirectIngestStatus.NO_RERUN_IN_PROGRESS
                 )
             status_manager.add_instance_status(
-                DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED
+                DirectIngestStatus.RAW_DATA_REIMPORT_STARTED
                 if ingest_in_dataflow_enabled
                 else DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
             )
