@@ -17,6 +17,7 @@
 """Tests for the DirectIngestCloudTaskQueueManagerImpl."""
 import datetime
 import json
+import unittest
 from unittest import TestCase
 from urllib.parse import urlencode
 
@@ -31,13 +32,17 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
-from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct import (
+    direct_ingest_cloud_task_queue_manager,
+    direct_ingest_regions,
+)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
     ExtractAndMergeCloudTaskQueueInfo,
     IngestViewMaterializationCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
     _build_task_id,
+    get_direct_ingest_queues_for_state,
 )
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
@@ -68,6 +73,8 @@ _SECONDARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_state(
     region_code=_REGION.region_code,
     ingest_instance=DirectIngestInstance.SECONDARY,
 )
+
+QUEUE_MANAGER_MODULE = direct_ingest_cloud_task_queue_manager.__name__
 
 
 class TestRawDataImportQueueInfo(TestCase):
@@ -328,7 +335,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
+    @patch(f"{QUEUE_MANAGER_MODULE}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_scheduler_queue_task(
@@ -383,7 +390,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
+    @patch(f"{QUEUE_MANAGER_MODULE}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_scheduler_queue_task_secondary(
@@ -438,7 +445,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
+    @patch(f"{QUEUE_MANAGER_MODULE}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_extract_and_merge_task(
@@ -507,7 +514,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
+    @patch(f"{QUEUE_MANAGER_MODULE}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_extract_and_merge_task_secondary(
@@ -577,7 +584,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
+    @patch(f"{QUEUE_MANAGER_MODULE}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_raw_data_import_task(
@@ -644,7 +651,7 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
             )
         )
 
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
+    @patch(f"{QUEUE_MANAGER_MODULE}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-07-20")
     def test_create_direct_ingest_ingest_view_materialization_task(
@@ -738,3 +745,42 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
 
         impl.update_ingest_queue_states_str(StateCode.US_CA, "RUNNING")
         client_mock.return_value.resume_queue.assert_called()
+
+
+class TestDirectIngestQueuesForState(unittest.TestCase):
+    # TODO(#20930): Delete this test when ingest in Dataflow is fully shipped.
+    def test_get_direct_ingest_queues_for_state_legacy(self) -> None:
+        with patch(
+            f"{QUEUE_MANAGER_MODULE}.is_ingest_in_dataflow_enabled",
+            return_value=False,
+        ):
+            queue_names = get_direct_ingest_queues_for_state(StateCode.US_XX)
+        self.assertEqual(
+            [
+                "direct-ingest-state-us-xx-scheduler",
+                "direct-ingest-state-us-xx-scheduler-secondary",
+                "direct-ingest-state-us-xx-extract-and-merge",
+                "direct-ingest-state-us-xx-extract-and-merge-secondary",
+                "direct-ingest-state-us-xx-raw-data-import",
+                "direct-ingest-state-us-xx-raw-data-import-secondary",
+                "direct-ingest-state-us-xx-materialize-ingest-view",
+                "direct-ingest-state-us-xx-materialize-ingest-view-secondary",
+            ],
+            queue_names,
+        )
+
+    def test_get_direct_ingest_queues_for_state(self) -> None:
+        with patch(
+            f"{QUEUE_MANAGER_MODULE}.is_ingest_in_dataflow_enabled",
+            return_value=True,
+        ):
+            queue_names = get_direct_ingest_queues_for_state(StateCode.US_XX)
+        self.assertEqual(
+            [
+                "direct-ingest-state-us-xx-scheduler",
+                "direct-ingest-state-us-xx-scheduler-secondary",
+                "direct-ingest-state-us-xx-raw-data-import",
+                "direct-ingest-state-us-xx-raw-data-import-secondary",
+            ],
+            queue_names,
+        )
