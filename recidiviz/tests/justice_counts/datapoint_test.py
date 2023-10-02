@@ -23,6 +23,7 @@ from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.dimensions.prisons import FundingType
+from recidiviz.justice_counts.dimensions.supervision import DailyPopulationType
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonFundingTimeframeIncludesExcludes,
@@ -221,7 +222,6 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 datapoints[2].dimension_identifier_to_member,
                 {CallType.dimension_identifier(): "UNKNOWN"},
             )
-
             self.assertEqual(datapoints[3].enabled, False)
             self.assertEqual(
                 datapoints[3].dimension_identifier_to_member,
@@ -770,3 +770,323 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     "is_published": False,
                 },
             )
+
+    def test_report_datapoints_last_updated(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_C
+            user = self.test_schema_objects.test_user_C
+            report = self.test_schema_objects.test_report_supervision
+            session.add_all([user, agency, report])
+
+            current_time = datetime.datetime.now(tz=datetime.timezone.utc)
+            # Add 4 datapoints to the report
+            existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
+                reports=[report]
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=100,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=current_time,
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=50,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=current_time,
+                dimension=DailyPopulationType["ACTIVE"],
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=20,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=current_time,
+                dimension=DailyPopulationType["ADMINISTRATIVE"],
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=30,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=current_time,
+                dimension=DailyPopulationType["ABSCONDED"],
+            )
+
+            # Make sure datapoints are there
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 4)
+            self.assertEqual(int(datapoints[0].value), 100)
+            self.assertEqual(datapoints[0].created_at, current_time)
+            self.assertEqual(datapoints[0].last_updated, current_time)
+            self.assertEqual(int(datapoints[1].value), 50)
+            self.assertEqual(datapoints[1].created_at, current_time)
+            self.assertEqual(datapoints[1].last_updated, current_time)
+            self.assertEqual(int(datapoints[2].value), 20)
+            self.assertEqual(datapoints[2].created_at, current_time)
+            self.assertEqual(datapoints[2].last_updated, current_time)
+            self.assertEqual(int(datapoints[3].value), 30)
+            self.assertEqual(datapoints[3].created_at, current_time)
+            self.assertEqual(datapoints[3].last_updated, current_time)
+
+            # Update datapoint values
+            updated_time = datetime.datetime.now(tz=datetime.timezone.utc)
+            existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
+                reports=[report]
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=90,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=updated_time,
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=40,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=updated_time,
+                dimension=DailyPopulationType["ACTIVE"],
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=15,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=updated_time,
+                dimension=DailyPopulationType["ADMINISTRATIVE"],
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=35,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=updated_time,
+                dimension=DailyPopulationType["ABSCONDED"],
+            )
+
+            # Make sure values and last_updated have changed
+            # created_at should have remained the same
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 4)
+            self.assertEqual(int(datapoints[0].value), 90)
+            self.assertEqual(datapoints[0].created_at, current_time)
+            self.assertEqual(datapoints[0].last_updated, updated_time)
+            self.assertEqual(int(datapoints[1].value), 40)
+            self.assertEqual(datapoints[1].created_at, current_time)
+            self.assertEqual(datapoints[1].last_updated, updated_time)
+            self.assertEqual(int(datapoints[2].value), 15)
+            self.assertEqual(datapoints[2].created_at, current_time)
+            self.assertEqual(datapoints[2].last_updated, updated_time)
+            self.assertEqual(int(datapoints[3].value), 35)
+            self.assertEqual(datapoints[3].created_at, current_time)
+            self.assertEqual(datapoints[3].last_updated, updated_time)
+
+            # If we update datapoints but they have the same values, ensure that
+            # both created_at and last_updated do not change
+            updated_time_2 = datetime.datetime.now(tz=datetime.timezone.utc)
+            self.assertGreater(updated_time_2, updated_time)
+            existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
+                reports=[report]
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=90,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=updated_time_2,
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=40,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=updated_time_2,
+                dimension=DailyPopulationType["ACTIVE"],
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=15,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=updated_time_2,
+                dimension=DailyPopulationType["ADMINISTRATIVE"],
+            )
+            DatapointInterface.add_datapoint(
+                session=session,
+                report=report,
+                existing_datapoints_dict=existing_datapoints_dict,
+                value=35,
+                metric_definition_key="SUPERVISION_POPULATION",
+                current_time=updated_time_2,
+                dimension=DailyPopulationType["ABSCONDED"],
+            )
+
+            # Since new values are the same as old values, last_updated should not have
+            # changed
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 4)
+            self.assertEqual(int(datapoints[0].value), 90)
+            self.assertEqual(datapoints[0].created_at, current_time)
+            self.assertEqual(datapoints[0].last_updated, updated_time)
+            self.assertEqual(int(datapoints[1].value), 40)
+            self.assertEqual(datapoints[1].created_at, current_time)
+            self.assertEqual(datapoints[1].last_updated, updated_time)
+            self.assertEqual(int(datapoints[2].value), 15)
+            self.assertEqual(datapoints[2].created_at, current_time)
+            self.assertEqual(datapoints[2].last_updated, updated_time)
+            self.assertEqual(int(datapoints[3].value), 35)
+            self.assertEqual(datapoints[3].created_at, current_time)
+            self.assertEqual(datapoints[3].last_updated, updated_time)
+
+    def test_agency_datapoints_last_updated(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_C
+            user = self.test_schema_objects.test_user_C
+            session.add_all([user, agency])
+
+            # First, test enabled/disabled metric
+            agency_metric_enabled = (
+                self.test_schema_objects.get_agency_metric_interface(
+                    include_contexts=False,
+                    include_disaggregation=False,
+                    use_partially_disabled_disaggregation=False,
+                    is_metric_enabled=True,
+                )
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric_enabled,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            # Make sure datapoint is there
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 1)
+            self.assertEqual(datapoints[0].value, None)
+
+            # sqlalchemy reads datetimes back using local timezone
+            # need to convert these to utc
+            first_created_at = (
+                datapoints[0]
+                .created_at.replace(tzinfo=None)
+                .astimezone(tz=datetime.timezone.utc)
+            )
+            first_updated_at = (
+                datapoints[0]
+                .last_updated.replace(tzinfo=None)
+                .astimezone(tz=datetime.timezone.utc)
+            )
+            self.assertEqual(first_created_at, first_updated_at)
+
+            # Disabled the metric
+            # created_at should stay the same
+            # last_updated should change
+            agency_metric_disabled = (
+                self.test_schema_objects.get_agency_metric_interface(
+                    include_contexts=False,
+                    include_disaggregation=False,
+                    use_partially_disabled_disaggregation=False,
+                    is_metric_enabled=False,
+                )
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric_disabled,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 4)  # now includes disaggregations as well
+            self.assertEqual(datapoints[0].value, None)
+
+            # sqlalchemy reads datetimes back using local timezone
+            # need to convert these to utc
+            second_created_at = (
+                datapoints[0]
+                .created_at.replace(tzinfo=None)
+                .astimezone(tz=datetime.timezone.utc)
+            )
+            self.assertEqual(first_created_at, second_created_at)
+            second_updated_at = (
+                datapoints[0]
+                .last_updated.replace(tzinfo=None)
+                .astimezone(tz=datetime.timezone.utc)
+            )
+            self.assertGreater(second_updated_at, first_updated_at)
+
+            # Second, test Context datapoint
+            agency_metric_context = (
+                self.test_schema_objects.get_agency_metric_interface(
+                    include_contexts=True,
+                    include_disaggregation=False,
+                    use_partially_disabled_disaggregation=False,
+                    is_metric_enabled=True,
+                )
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric_context,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+
+            # Make sure datapoint is there
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 5)
+            self.assertEqual(
+                datapoints[4].value, "our metrics are different because xyz"
+            )
+            first_context_created_at = (
+                datapoints[4]
+                .created_at.replace(tzinfo=None)
+                .astimezone(tz=datetime.timezone.utc)
+            )
+            first_context_updated_at = (
+                datapoints[4]
+                .last_updated.replace(tzinfo=None)
+                .astimezone(tz=datetime.timezone.utc)
+            )
+            self.assertEqual(first_context_created_at, first_context_updated_at)
+
+            # change the context value
+            # created_at should stay the same
+            # last_updated should change
+            agency_metric_context.contexts[0].value = "new additional contexts."
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric_context,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
+            datapoints = session.query(Datapoint).all()
+            self.assertEqual(len(datapoints), 5)
+            self.assertEqual(datapoints[4].value, "new additional contexts.")
+
+            second_context_created_at = (
+                datapoints[4]
+                .created_at.replace(tzinfo=None)
+                .astimezone(tz=datetime.timezone.utc)
+            )
+            second_context_updated_at = (
+                datapoints[4]
+                .last_updated.replace(tzinfo=None)
+                .astimezone(tz=datetime.timezone.utc)
+            )
+            self.assertEqual(first_context_created_at, second_context_created_at)
+            self.assertGreater(second_context_updated_at, first_context_updated_at)

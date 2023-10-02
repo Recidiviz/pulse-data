@@ -79,13 +79,15 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
 
     last_update = None
     for datapoint in datapoints:
-        # For now, an agency's last_update is the max(dp["created_at"])
-        # over all of its datapoints. That means if a user edits an existing datapoint,
-        # it won't count towards last_update.
-        # TODO(#22370) Add updated_at to schema.Datapoint and use that instead
-        if datapoint["created_at"]:
+        datapoint_last_update = datapoint.get("last_updated")
+        # If the agency's true last_update was prior to the new last_update field was
+        # added to our schema, use the most recent created_at field
+        if datapoint_last_update is not None:
+            if last_update is None or (datapoint_last_update.date() > last_update):
+                last_update = datapoint_last_update.date()
+        elif datapoint["created_at"] is not None:
             datapoint_created_at = datapoint["created_at"].date()
-            if not last_update or (last_update and datapoint_created_at > last_update):
+            if last_update is None or (datapoint_created_at > last_update):
                 last_update = datapoint_created_at
 
         # Process report datapoints (i.e. those that contain data for a time period)
