@@ -49,6 +49,7 @@ class CloudTaskArgs:
         return converter.structure(serializable, cls)
 
 
+# TODO(#20930): Delete this class when ingest in Dataflow is fully shipped.
 @attr.s(frozen=True)
 class ExtractAndMergeArgs(CloudTaskArgs):
     # The time this extract and merge task was scheduled.
@@ -89,6 +90,7 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
         )
 
 
+# TODO(#20930): Delete this class when ingest in Dataflow is fully shipped.
 @attr.s(frozen=True)
 class IngestViewMaterializationArgs(CloudTaskArgs):
     """Arguments for an ingest view materialization job."""

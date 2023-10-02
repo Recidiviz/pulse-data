@@ -32,6 +32,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     SingleCloudTaskQueueManager,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.types.cloud_task_args import (
     CloudTaskArgs,
     ExtractAndMergeArgs,
@@ -121,6 +122,7 @@ def build_raw_data_import_task_id(
     )
 
 
+# TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
 def build_ingest_view_materialization_task_id(
     region: DirectIngestRegion,
     materialization_args: IngestViewMaterializationArgs,
@@ -133,6 +135,7 @@ def build_ingest_view_materialization_task_id(
     )
 
 
+# TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
 def build_extract_and_merge_task_id(
     region: DirectIngestRegion, extract_and_merge_args: ExtractAndMergeArgs
 ) -> str:
@@ -146,8 +149,12 @@ def build_extract_and_merge_task_id(
 
 class DirectIngestQueueType(Enum):
     SCHEDULER = "scheduler"
+    # TODO(#20930): Delete this queue type (and associated queues) when ingest in
+    #  Dataflow is fully shipped.
     EXTRACT_AND_MERGE = "extract-and-merge"
     RAW_DATA_IMPORT = "raw-data-import"
+    # TODO(#20930): Delete this queue type (and associated queues) when ingest in
+    #  Dataflow is fully shipped.
     MATERIALIZE_INGEST_VIEW = "materialize-ingest-view"
 
 
@@ -188,6 +195,14 @@ def get_direct_ingest_queues_for_state(state_code: StateCode) -> List[str]:
     queue_names = []
     for queue_type in DirectIngestQueueType:
         for ingest_instance in DirectIngestInstance:
+            if is_ingest_in_dataflow_enabled(
+                state_code, ingest_instance
+            ) and queue_type in {
+                DirectIngestQueueType.EXTRACT_AND_MERGE,
+                DirectIngestQueueType.MATERIALIZE_INGEST_VIEW,
+            }:
+                continue
+
             queue_names.append(
                 _queue_name_for_queue_type(
                     queue_type, state_code.value, ingest_instance
@@ -229,6 +244,7 @@ class SchedulerCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     pass
 
 
+# TODO(#20930): Delete this class when ingest in Dataflow is fully shipped.
 @attr.s
 class ExtractAndMergeCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     """Class containing information about tasks in a given region's extract and merge
@@ -277,6 +293,7 @@ class RawDataImportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
         )
 
 
+# TODO(#20930): Delete this class when ingest in Dataflow is fully shipped.
 @attr.s
 class IngestViewMaterializationCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     """Class containing information about tasks in a given region's ingest view
@@ -299,6 +316,7 @@ class DirectIngestCloudTaskQueueManager:
         """Returns information about the tasks in the raw data import queue for
         the given region."""
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     @abc.abstractmethod
     def get_extract_and_merge_queue_info(
         self,
@@ -315,6 +333,7 @@ class DirectIngestCloudTaskQueueManager:
         """Returns information about the tasks in the job scheduler queue for
         the given region."""
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     @abc.abstractmethod
     def get_ingest_view_materialization_queue_info(
         self,
@@ -324,6 +343,7 @@ class DirectIngestCloudTaskQueueManager:
         """Returns information about the tasks in the raw data import queue for
         the given region."""
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     @abc.abstractmethod
     def create_direct_ingest_extract_and_merge_task(
         self,
@@ -382,6 +402,7 @@ class DirectIngestCloudTaskQueueManager:
     ) -> None:
         pass
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     @abc.abstractmethod
     def create_direct_ingest_view_materialization_task(
         self,
@@ -488,6 +509,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             cloud_tasks_client=self.cloud_tasks_client,
         )
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     def _get_ingest_view_export_queue_manager(
         self,
         region: DirectIngestRegion,
@@ -505,6 +527,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             cloud_tasks_client=self.cloud_tasks_client,
         )
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     def _get_extract_and_merge_queue_manager(
         self,
         region: DirectIngestRegion,
@@ -520,6 +543,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             cloud_tasks_client=self.cloud_tasks_client,
         )
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     def get_extract_and_merge_queue_info(
         self,
         region: DirectIngestRegion,
@@ -544,6 +568,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             region, ingest_instance
         ).get_queue_info(task_id_prefix=region.region_code)
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     def get_ingest_view_materialization_queue_info(
         self,
         region: DirectIngestRegion,
@@ -554,6 +579,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             ingest_instance,
         ).get_queue_info(task_id_prefix=region.region_code)
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: DirectIngestRegion,
@@ -646,6 +672,7 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             body=body,
         )
 
+    # TODO(#20930): Delete this function when ingest in Dataflow is fully shipped.
     def create_direct_ingest_view_materialization_task(
         self,
         region: DirectIngestRegion,
@@ -748,20 +775,22 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         )
         self.cloud_tasks_client.purge_queue(name=full_queue_path)
 
+    # TODO(#20930): Update this docstring to delete legacy queues when ingest in
+    #  Dataflow is fully shipped.
     def update_ingest_queue_states(
         self, state_code: StateCode, new_queue_state: tasks_v2.Queue.State
     ) -> None:
         """
          It updates the state of the following queues by either pausing or resuming the
         queues:
-         - direct-ingest-state-<region_code>-extract-and-merge
-         - direct-ingest-state-<region_code>-extract-and-merge-queue-secondary
+         - direct-ingest-state-<region_code>-extract-and-merge (pre-ingest in Dataflow)
+         - direct-ingest-state-<region_code>-extract-and-merge-queue-secondary (pre-ingest in Dataflow)
          - direct-ingest-state-<region_code>-scheduler
          - direct-ingest-state-<region_code>-scheduler-secondary
          - direct-ingest-state-<region_code>-raw-data-import
          - direct-ingest-state-<region_code>-raw-data-import-secondary
-         - direct-ingest-state-<region_code>-materialize-ingest-view
-         - direct-ingest-state-<region_code>-materialize-ingest-view-secondary
+         - direct-ingest-state-<region_code>-materialize-ingest-view (pre-ingest in Dataflow)
+         - direct-ingest-state-<region_code>-materialize-ingest-view-secondary (pre-ingest in Dataflow)
 
         Requires:
         - state_code: (required) State code to pause queues for
