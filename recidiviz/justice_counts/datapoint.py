@@ -425,6 +425,7 @@ class DatapointInterface:
         if existing_datapoint is None:
             existing_datapoint_value = None
             equal_to_existing = False
+            new_datapoint.last_updated = current_time
             session.add(new_datapoint)
         else:
             # Save existing datapoint value before it gets overwritten in merge
@@ -434,6 +435,10 @@ class DatapointInterface:
                 datapoint=existing_datapoint
             )
             new_datapoint.id = existing_datapoint.id
+            if equal_to_existing:
+                new_datapoint.last_updated = existing_datapoint.last_updated
+            else:
+                new_datapoint.last_updated = current_time
             new_datapoint = session.merge(new_datapoint)
             if not equal_to_existing:
                 session.add(
@@ -557,6 +562,7 @@ class DatapointInterface:
            settings describe what data is used to make up aggregate or disaggregation values.
         """
 
+        current_time = datetime.datetime.now(tz=datetime.timezone.utc)
         # 1. Enable / disable top level metric
         if agency_metric.is_metric_enabled is not None:
             # Only enable/disable metric if the frontend explicitly specifies an
@@ -570,7 +576,7 @@ class DatapointInterface:
                     is_report_datapoint=False,
                 ),
                 session=session,
-                created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                current_time=current_time,
             )
 
         # 2. Set default contexts
@@ -585,7 +591,7 @@ class DatapointInterface:
                     is_report_datapoint=False,
                 ),
                 session,
-                created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                current_time=current_time,
             )
 
         # 3. Set top-level includes/excludes
@@ -622,7 +628,7 @@ class DatapointInterface:
                     is_report_datapoint=False,
                 ),
                 session,
-                created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                current_time=current_time,
             )
 
         # 4. Add datapoints to record that metric is disaggregated_by_supervision_subsystems
@@ -652,7 +658,7 @@ class DatapointInterface:
                             is_report_datapoint=False,
                         ),
                         session,
-                        created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                        current_time=current_time,
                     )
                     # Then, update the enabled/disabled statuses accordingly. If the metric
                     # is Supervision and we are *not* disaggregating, the metric should be
@@ -668,7 +674,7 @@ class DatapointInterface:
                                 is_report_datapoint=False,
                             ),
                             session=session,
-                            created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                            current_time=current_time,
                         )
                     elif (
                         schema.System[system] in schema.System.supervision_subsystems()
@@ -682,7 +688,7 @@ class DatapointInterface:
                                 is_report_datapoint=False,
                             ),
                             session=session,
-                            created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                            current_time=current_time,
                         )
 
         for aggregated_dimension in agency_metric.aggregated_dimensions:
@@ -702,7 +708,7 @@ class DatapointInterface:
                             is_report_datapoint=False,
                         ),
                         session=session,
-                        created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                        current_time=current_time,
                     )
 
             for (
@@ -727,7 +733,7 @@ class DatapointInterface:
                             is_report_datapoint=False,
                         ),
                         session=session,
-                        created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                        current_time=current_time,
                     )
 
                 # 3b. Set disaggregation-level includes/excludes
@@ -763,7 +769,7 @@ class DatapointInterface:
 
         if setting is None:
             return
-
+        current_time = datetime.datetime.now(tz=datetime.timezone.utc)
         datapoint, existing_datapoint = update_existing_or_create(
             ingested_entity=schema.Datapoint(
                 metric_definition_key=agency_metric.key,
@@ -774,7 +780,7 @@ class DatapointInterface:
                 is_report_datapoint=False,
             ),
             session=session,
-            created_at=datetime.datetime.now(tz=datetime.timezone.utc),
+            current_time=current_time,
         )
         if existing_datapoint is not None:
             if existing_datapoint.value != datapoint.value:
@@ -784,7 +790,7 @@ class DatapointInterface:
                         user_account_id=user_account.id
                         if user_account is not None
                         else None,
-                        timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+                        timestamp=current_time,
                         old_value=existing_datapoint.value,
                         new_value=setting.value,
                     )

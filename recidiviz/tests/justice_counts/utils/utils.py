@@ -562,10 +562,12 @@ class JusticeCountsSchemaTestObjects:
                 {
                     "key": prisons.funding.key,
                     "enabled": False,
+                    "last_update": None,
                 },
                 {
                     "key": prisons.staff.key,
                     "enabled": True,
+                    "last_updated": None,
                     "settings": [
                         {
                             "key": PrisonStaffIncludesExcludes.VOLUNTEER.name,
@@ -674,6 +676,7 @@ class JusticeCountsSchemaTestObjects:
                 {
                     "key": prisons.grievances_upheld.key,
                     "enabled": True,
+                    "last_updated": None,
                     "contexts": [
                         {
                             "key": ContextKey.ADDITIONAL_CONTEXT.name,
