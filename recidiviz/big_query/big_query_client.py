@@ -866,7 +866,7 @@ class BigQueryClientImpl(BigQueryClient):
             dataset = self.client.get_dataset(dataset_ref)
         except exceptions.NotFound:
             logging.info("Dataset [%s] does not exist. Creating...", str(dataset_ref))
-            dataset = bigquery.Dataset(dataset_ref)
+            dataset_to_create = bigquery.Dataset(dataset_ref)
 
             if default_table_expiration_ms:
                 logging.info(
@@ -874,28 +874,35 @@ class BigQueryClientImpl(BigQueryClient):
                     default_table_expiration_ms,
                     str(dataset_ref),
                 )
-                dataset.default_table_expiration_ms = default_table_expiration_ms
+                dataset_to_create.default_table_expiration_ms = (
+                    default_table_expiration_ms
+                )
 
-            dataset = self.client.create_dataset(
-                dataset,
+            created_dataset = self.client.create_dataset(
+                dataset_to_create,
                 # Do not fail if another process has already created this dataset
                 # between the get_dataset() call and now.
                 exists_ok=True,
             )
 
             # Set labels to keep Vanta happy.
-            owner, description = self._get_owner_and_description(dataset)
-            dataset.description = description
+            # Note: It is possible that another process is creating and adding labels to
+            # the dataset at the same time. We use a new `dataset_to_update` instead of
+            # the `created_dataset` so that the `etag` is None and we overwrite the
+            # labels no matter what (i.e. last writer wins).
+            dataset_to_update = bigquery.Dataset(dataset_ref)
+            owner, description = self._get_owner_and_description(created_dataset)
+            dataset_to_update.description = description
             description_label = description.replace(" ", "-").lower()
             if len(description_label) > 63:
                 description_label = description_label[:63]
-            dataset.labels = {
+            dataset_to_update.labels = {
                 "vanta-owner": owner or DEFAULT_VANTA_DATASET_OWNER,
                 "vanta-description": description_label,
             }
-            self.client.update_dataset(dataset, ["description", "labels"])
-
-            return dataset
+            return self.client.update_dataset(
+                dataset_to_update, ["description", "labels"]
+            )
 
         return dataset
 
