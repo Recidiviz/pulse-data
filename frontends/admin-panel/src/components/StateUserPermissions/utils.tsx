@@ -285,6 +285,7 @@ export const getPermissionsTableColumns = (
       dataIndex: "district",
       width: 250,
       key: "district",
+      ...getColumnSearchProps("district"),
       render: (text: string, record) => {
         return formatText(text, record);
       },
