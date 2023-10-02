@@ -27,13 +27,13 @@ from recidiviz.common.constants.operations.operations_enum import OperationsEnum
 class DirectIngestStatus(OperationsEnum):
     """The status of a direct ingest instance."""
 
-    # TODO(#20930): Delete this in favor of RAW_DATA_REIMPORT_IMPORT_STARTED once ingest
+    # TODO(#20930): Delete this in favor of RAW_DATA_REIMPORT_STARTED once ingest
     #  in Dataflow has shipped to all states (but keep legacy values in database for
     #  history?).
     RERUN_WITH_RAW_DATA_IMPORT_STARTED = (
         operations_enum_strings.direct_ingest_status_rerun_with_raw_data_import_started
     )
-    RAW_DATA_REIMPORT_IMPORT_STARTED = (
+    RAW_DATA_REIMPORT_STARTED = (
         operations_enum_strings.direct_ingest_status_raw_data_reimport_started
     )
     # TODO(#20930): Delete this in favor of INITIAL_STATE once ingest
@@ -122,7 +122,7 @@ _DIRECT_INGEST_INSTANCE_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
         "importing a new (or modified) set of raw data before generating ingest view "
         "results and committing that data to Postgres."
     ),
-    DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED: (
+    DirectIngestStatus.RAW_DATA_REIMPORT_STARTED: (
         "[Post-Ingest in Dataflow only] Rows are added with this status (in SECONDARY "
         "only) when a SECONDARY rerun is triggered from the Admin Panel that involves "
         "importing a new (or modified) set of raw data before generating ingest view "

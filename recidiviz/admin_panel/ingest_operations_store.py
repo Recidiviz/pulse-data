@@ -335,7 +335,7 @@ class IngestOperationsStore(AdminPanelStore):
         # Validation that this is a valid status transition is handled within the
         # instance manager.
         instance_status_manager.change_status_to(
-            DirectIngestStatus.RAW_DATA_REIMPORT_IMPORT_STARTED
+            DirectIngestStatus.RAW_DATA_REIMPORT_STARTED
         )
 
         self.trigger_task_scheduler(state_code, instance)
