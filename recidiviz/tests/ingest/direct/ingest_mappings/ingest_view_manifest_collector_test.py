@@ -80,3 +80,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
             self.ingest_view_manifest_collector._parse_ingest_view_name(
                 "my/test/path/us_xx_bad_view"
             )
+
+    def test_entities_to_be_ingested(self) -> None:
+        result = self.ingest_view_manifest_collector.hydrated_entity_names
+        self.assertSetEqual({"state_person", "state_person_external_id"}, result)
