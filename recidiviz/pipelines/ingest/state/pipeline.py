@@ -194,7 +194,10 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             }
             | AssociateRootEntitiesWithPrimaryKeys()
             | MergeRootEntitiesAcrossDates(state_code=state_code)
-            | RunValidations()
+            | RunValidations(
+                expected_output_entities=ingest_manifest_collector.hydrated_entity_names
+            )
+            # TODO(#24394) Update the write steps to only look at hydrated_entity_names
             | beam.ParDo(SerializeEntities(state_code=state_code)).with_outputs(
                 *all_state_tables
             )

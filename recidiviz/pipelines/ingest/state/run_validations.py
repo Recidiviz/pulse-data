@@ -57,6 +57,10 @@ FINAL_ERRORS = "final_errors"
 class RunValidations(beam.PTransform):
     """A PTransform that validates root entities and their attached children entities."""
 
+    def __init__(self, expected_output_entities: Iterable[str]) -> None:
+        super().__init__()
+        self.expected_output_entities = expected_output_entities
+
     def expand(
         self, input_or_inputs: beam.PCollection[RootEntity]
     ) -> beam.PCollection[Entity]:
@@ -92,6 +96,9 @@ class RunValidations(beam.PTransform):
             )
         )
 
+        entities_expected_to_be_hydrated_errors: Dict[
+            EntityClassName, beam.PCollection[int]
+        ] = {}
         unique_id_validation_errors: Dict[
             EntityClassName, beam.PCollection[Tuple[EntityKey, Iterable[Error]]]
         ] = {}
@@ -101,6 +108,11 @@ class RunValidations(beam.PTransform):
         ] = {}
         for i, partition in enumerate(entity_type_partitions):
             entity_name = entity_names[i]
+
+            entities_expected_to_be_hydrated_errors[entity_name] = (
+                partition
+                | f"Count {entity_name} objects" >> beam.combiners.Count.Globally()
+            )
 
             unique_id_validation_errors[entity_name] = (
                 partition
@@ -153,7 +165,13 @@ class RunValidations(beam.PTransform):
             }
             | "CoGroup errors by Key" >> beam.CoGroupByKey()
             # TODO(#24140) Add the ability to sample errors for logging
-            | beam.Map(self.log_any_errors)
+            | beam.Map(
+                self.log_any_errors,
+                **{
+                    entity_name: beam.pvalue.AsSingleton(rows)
+                    for entity_name, rows in entities_expected_to_be_hydrated_errors.items()
+                },
+            )
             | beam.MapTuple(self.raise_if_errors)
         )
 
@@ -223,12 +241,14 @@ class RunValidations(beam.PTransform):
             for entity in grouped_entities
         ]
 
-    @staticmethod
     def log_any_errors(
-        element: Tuple[EntityKey, Dict[str, Iterable[Iterable[Error]]]]
-    ) -> Tuple[EntityKey, List[Error]]:
+        self,
+        element: Tuple[EntityKey, Dict[str, Iterable[Iterable[Error]]]],
+        **kwargs: Dict[str, Any],
+    ) -> Tuple[EntityKey, List[Error], List[Error]]:
+        """This logs both entity-level and entity-type-level errors."""
         entity_key, grouped_elements = element
-        errors = (
+        entity_level_errors = (
             [
                 error
                 for l in grouped_elements[ROOT_ENTITY_VALIDATION_ERRORS]
@@ -245,15 +265,30 @@ class RunValidations(beam.PTransform):
                 for error in l
             ]
         )
-        if errors:
-            error_str = "\n".join(errors)
+
+        entity_type_level_errors = [
+            f"Expected non-zero {entity_name} entities to be ingested, but none were ingested."
+            for entity_name in self.expected_output_entities
+            if kwargs[entity_name] == 0
+        ]
+        if entity_level_errors:
+            error_str = "\n".join(entity_level_errors)
             logging.error("Found errors for entity %s\n%s", entity_key, error_str)
-        return (entity_key, errors)
+        if entity_type_level_errors:
+            error_str = "\n".join(entity_type_level_errors)
+            logging.error(error_str)
+        return (entity_key, entity_level_errors, entity_type_level_errors)
 
     @staticmethod
     def raise_if_errors(
-        entity_key: EntityKey, errors: List[Error]
+        entity_key: EntityKey,
+        entity_level_errors: List[Error],
+        entity_type_level_errors: List[Error],
     ) -> Tuple[EntityKey, bool]:
-        if errors:
-            raise ValueError(f"Found errors for entity {entity_key}\n{errors}")
+        if entity_level_errors:
+            raise ValueError(
+                f"Found errors for entity {entity_key}\n{entity_level_errors}"
+            )
+        if entity_type_level_errors:
+            raise ValueError(f"Found errors: {entity_type_level_errors}")
         return (entity_key, True)

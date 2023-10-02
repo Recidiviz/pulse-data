@@ -87,7 +87,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             ),
         ]
 
-        output = input_entities | RunValidations()
+        output = input_entities | RunValidations(expected_output_entities=[])
         assert_that(output, matches_all(expected_entities))
         self.test_pipeline.run()
 
@@ -130,7 +130,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 id_type="US_XX_TYPE",
             ),
         ]
-        output = input_entities | RunValidations()
+        output = input_entities | RunValidations(expected_output_entities=[])
         assert_that(output, matches_all(expected_entities))
         self.test_pipeline.run()
 
@@ -299,7 +299,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 id_type="US_YY_TYPE",
             ),
         ]
-        output = input_entities | RunValidations()
+        output = input_entities | RunValidations(expected_output_entities=[])
         assert_that(output, matches_all(expected_entities))
         self.test_pipeline.run()
 
@@ -311,7 +311,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             expected_entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -327,7 +327,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             expected_entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -402,7 +402,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             expected_entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -477,7 +477,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             expected_entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -721,7 +721,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 id_type="US_YY_TYPE",
             ),
         ]
-        output = input_entities | RunValidations()
+        output = input_entities | RunValidations(expected_output_entities=[])
         assert_that(output, matches_all(expected_entities))
         self.test_pipeline.run()
 
@@ -833,7 +833,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             expected_entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -940,7 +940,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             expected_entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -1072,7 +1072,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             expected_entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -1115,7 +1115,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -1245,7 +1245,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -1311,10 +1311,42 @@ class TestRunValidations(StateIngestPipelineTestCase):
             entities
         )
 
-        _ = input_entities | RunValidations()
+        _ = input_entities | RunValidations(expected_output_entities=[])
 
         with self.assertRaisesRegex(
             ValueError,
             r".*More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\].*",
+        ):
+            self.test_pipeline.run()
+
+    def test_validate_non_zero_entities(self) -> None:
+        entities = [
+            StateStaff(
+                state_code="US_XX",
+                staff_id=1234,
+                external_ids=[
+                    StateStaffExternalId(
+                        staff_external_id_id=22222,
+                        state_code="US_XX",
+                        external_id="12345",
+                        id_type="US_ZZ_TYPE",
+                    )
+                ],
+            )
+        ]
+        input_entities = self.test_pipeline | "Create test input" >> beam.Create(
+            entities
+        )
+
+        _ = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_staff",
+                "state_staff_external_id",
+                "state_staff_role_period",
+            ]
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r".*Expected non-zero state_staff_role_period entities to be ingested, but none were ingested.",
         ):
             self.test_pipeline.run()

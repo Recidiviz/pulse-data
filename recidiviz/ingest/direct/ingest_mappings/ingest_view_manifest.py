@@ -119,6 +119,17 @@ class ManifestNode(Generic[ManifestNodeT]):
         that this node references.
         """
 
+    def all_nodes_referenced(self) -> List["ManifestNode"]:
+        """Returns all ManifestNodes referenced by this ManifestNode or its descendants,
+        including this node."""
+        all_nodes = []
+        queue: List[ManifestNode] = [self]
+        while queue:
+            current_manifest = queue.pop()
+            all_nodes.append(current_manifest)
+            queue += current_manifest.child_manifest_nodes()
+        return all_nodes
+
 
 @attr.s(kw_only=True)
 class VariableManifestNode(ManifestNode[ManifestNodeT]):
