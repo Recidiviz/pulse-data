@@ -117,6 +117,7 @@ output:
                             - CUSTODY_NUMBER
                             - ADMISSION_NUMBER
                             - OFFENSE_NUMBER
+                            - SENTENCE_NUMBER
                       status: $literal_enum(StateChargeStatus.CONVICTED) # only have data for convictions
                       offense_date: CRIME_COMMITTED_DATE
                       date_charged: CONVICTED_DATE
@@ -247,6 +248,7 @@ output:
                             - CUSTODY_NUMBER
                             - ADMISSION_NUMBER
                             - OFFENSE_NUMBER
+                            - SENTENCE_NUMBER
                       status: $literal_enum(StateChargeStatus.CONVICTED) # only have data for convictions
                       offense_date: CRIME_COMMITTED_DATE
                       date_charged: CONVICTED_DATE
