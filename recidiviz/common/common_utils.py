@@ -20,7 +20,7 @@ import datetime
 import itertools
 import logging
 import uuid
-from typing import Any, Callable, Iterable, Optional, Set, Tuple, Type, TypeVar
+from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple, Type, TypeVar
 
 import flask
 
@@ -139,8 +139,8 @@ def pairwise(iterable: Iterable[Any]) -> Iterable[Any]:
 
 
 def convert_nested_dictionary_keys(
-    data: dict[str, Any], convert_function: Callable
-) -> dict[str, Any]:
+    data: Dict[str, Any], convert_function: Callable
+) -> Dict[str, Any]:
     """
     Convert keys of a nested dictionary from one convention to another.
     """
