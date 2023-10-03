@@ -90,6 +90,7 @@ class TestSchemaUtils(unittest.TestCase):
             "DirectIngestSftpRemoteFileMetadata",
             "DirectIngestSftpIngestReadyFileMetadata",
             "DirectIngestInstanceStatus",
+            "DirectIngestDataflowJob",
             "DirectIngestDataflowRawTableUpperBounds",
         ]
 
@@ -196,6 +197,7 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_sftp_ingest_ready_file_metadata",
             "direct_ingest_raw_file_metadata",
             "direct_ingest_instance_status",
+            "direct_ingest_dataflow_job",
             "direct_ingest_dataflow_raw_table_upper_bounds",
         ]
         outliers_table_names = [
@@ -294,7 +296,6 @@ class TestSchemaUtils(unittest.TestCase):
         self.assertEqual(len(set(schema_bases)), len(schema_bases))
 
     def test_get_database_entity_by_table_name(self) -> None:
-
         assert (
             get_database_entity_by_table_name(case_triage_schema, "etl_clients")
             == case_triage_schema.ETLClient
