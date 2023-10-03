@@ -8,8 +8,24 @@ To run the app locally, you need to spin up both the backend and frontend simult
 
 ## Helpful Links
 
-- Publisher GCP Cloud Run [[staging](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)], [[prod](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)]
-- Dashboard GCP Cloud Run [[staging](https://console.cloud.google.com/run/detail/us-central1/agency-dashboard-web/revisions?project=justice-counts-staging)], [[prod](https://console.cloud.google.com/run/detail/us-central1/agency-dashboard-web/revisions?project=justice-counts-production)]
+### Apps
+
+- Publisher [[staging](https://publisher-staging.justice-counts.org/), [prod](https://publisher.justice-counts.org/)]
+- Dashboard [[staging](https://dashboard-staging.justice-counts.org/), [prod](https://dashboard-demo.justice-counts.org/)]
+
+### GCP Infra
+
+- Publisher Cloud Run Service [[staging](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)], [[prod](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)]
+- Dashboard Cloud Run Service [[staging](https://console.cloud.google.com/run/detail/us-central1/agency-dashboard-web/revisions?project=justice-counts-staging)], [[prod](https://console.cloud.google.com/run/detail/us-central1/agency-dashboard-web/revisions?project=justice-counts-production)]
+- Cloud SQL database [[staging](https://console.cloud.google.com/sql/instances/dev-justice-counts-data/overview?project=justice-counts-staging), [prod](https://console.cloud.google.com/sql/instances?project=justice-counts-production)]
+- Cloud Build Trigger [[staging](https://console.cloud.google.com/cloud-build/triggers?project=justice-counts-staging)]
+- Cloud Run Jobs [[staging](https://console.cloud.google.com/run/jobs?project=justice-counts-staging), [prod](https://console.cloud.google.com/run/jobs?project=justice-counts-production)]
+- Cloud Scheduler Jobs [[staging](https://console.cloud.google.com/cloudscheduler?referrer=search&project=justice-counts-staging), [prod](https://console.cloud.google.com/cloudscheduler?project=justice-counts-production)]
+- Pub/Sub Topics [[staging](https://console.cloud.google.com/cloudpubsub/topic/list?project=justice-counts-staging), [prod](https://console.cloud.google.com/cloudpubsub/topic/list?referrer=search&project=justice-counts-production)]
+- Secret Manager [[staging](https://console.cloud.google.com/security/secret-manager?project=justice-counts-staging), [prod](https://console.cloud.google.com/security/secret-manager?project=justice-counts-production)]
+
+### Other
+
 - Auth0 [[staging](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts-staging/)], [[prod](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts/)]
 - [Sentry](https://recidiviz-inc.sentry.io/issues/?project=4504532096516096&referrer=sidebar)
 - [Oncall doc](go/jc-oncall)
