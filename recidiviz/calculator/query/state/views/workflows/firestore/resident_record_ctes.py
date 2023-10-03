@@ -263,6 +263,7 @@ _RESIDENTS_CTE = """
             officer_id,
             facility_id,
             unit_id,
+            CONCAT(facility_id, "‡", IFNULL(unit_id, "")) as facility_unit_id,
             custody_level,
             admission_date,
             release_date,

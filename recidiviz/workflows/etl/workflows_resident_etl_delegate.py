@@ -45,6 +45,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
             "officerId": data["officer_id"],
             "facilityId": data.get("facility_id"),
             "unitId": data.get("unit_id"),
+            "facilityUnitId": data.get("facility_unit_id"),
             "custodyLevel": data.get("custody_level"),
             "admissionDate": data.get("admission_date"),
             "releaseDate": data.get("release_date"),

@@ -60,8 +60,22 @@ LOCATION_RECORD_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names` locations
         ON rr.facility_id = locations.level_1_incarceration_location_external_id
             AND rr.state_code = locations.state_code
+    ),
+    facilityUnits AS (
+        SELECT DISTINCT
+            rr.state_code,
+            "INCARCERATION" AS system,
+            "facilityUnitId" AS id_type,
+            rr.facility_unit_id AS id,
+            IF(rr.unit_id IS NULL,
+                f.name,
+                CONCAT(f.name, " / ", rr.unit_id)) AS name
+        FROM `{project_id}.{workflows_dataset}.resident_record_materialized` rr
+        LEFT JOIN facilities f
+        ON f.state_code = rr.state_code AND f.id = rr.facility_id
     )
     SELECT {columns} FROM facilities
+    UNION ALL SELECT {columns} FROM facilityUnits
 """
 
 LOCATION_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
