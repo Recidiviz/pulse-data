@@ -19,7 +19,7 @@ import concurrent.futures
 import os
 from collections import defaultdict
 from concurrent import futures
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import attr
 from google.cloud import dataflow_v1beta3
@@ -49,6 +49,22 @@ class DataflowPipelineMetadataResponse:
     @property
     def duration(self) -> float:
         return self.termination_time - self.start_time
+
+    def for_api(self) -> Dict[str, Union[str, float]]:
+        """Serializes the instance status as a dictionary that can be passed to the
+        frontend.
+        """
+        return {
+            "id": self.id,
+            "projectId": self.project_id,
+            "name": self.name,
+            "createTime": self.create_time,
+            "startTime": self.start_time,
+            "terminationTime": self.termination_time,
+            "terminationState": self.termination_state,
+            "location": self.location,
+            "duration": self.duration,
+        }
 
 
 PIPELINE_CONFIG_YAML_PATH = os.path.join(
@@ -120,7 +136,7 @@ def get_all_latest_ingest_jobs() -> Dict[
     }
 
     # TODO(#24241) cache results inside the ingest operations store
-    with futures.ThreadPoolExecutor(max_workers=4) as executor:
+    with futures.ThreadPoolExecutor(max_workers=20) as executor:
         latest_job_by_name = {}
         locations_futures = [
             executor.submit(get_latest_jobs_from_location_by_name, location)

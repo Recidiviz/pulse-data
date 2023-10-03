@@ -217,3 +217,31 @@ tr.metadata-table-row > td.ant-table-cell > div {
   color: #ffffff;
   background-color: #f5222d;
 }
+
+.job-succeeded {
+  color: #ffffff;
+  background-color: #389e0d;
+  width: 150px;
+  text-align: center;
+}
+
+.job-failed {
+  color: #ffffff;
+  background-color: #f5222d;
+  width: 150px;
+  text-align: center;
+}
+
+.job-no-runs {
+  color: #ffffff;
+  background-color: #444444;
+  width: 150px;
+  text-align: center;
+}
+
+.job-dataflow-not-enabled {
+  color: #ffffff;
+  background-color: #000000;
+  width: 150px;
+  text-align: center;
+}

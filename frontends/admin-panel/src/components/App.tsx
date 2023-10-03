@@ -34,22 +34,23 @@ import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as OnCall from "../navigation/OnCall";
 import "../style/App.css";
-import OnCallLogsReview from "./OnCall/LogsReview";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./Datasets/DatasetView";
+import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
+import IngestDataflowView from "./IngestDataflow";
 import IngestOperationsView from "./IngestOperationsView";
 import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
 import SuperAgencyProvisioningView from "./JusticeCountsTools/SuperAgencyProvisioningView";
 import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
+import OnCallLogsReview from "./OnCall/LogsReview";
 import POEmailsView from "./POEmailsView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
-import DemoAppManagementView from "./DemoAppManagement/DemoAppManagementView";
 import { EnvironmentType } from "./types";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -109,6 +110,7 @@ const ENVIRONMENT_OPTIONS: Map<EnvironmentType, EnvironmentOption> = new Map([
 const items: MenuProps["items"] = [
   getItem("Ingest", "ingest_group", null, [
     getItem("Ingest Status", IngestOperations.INGEST_ACTIONS_ROUTE),
+    getItem("Ingest Pipelines Status", IngestOperations.INGEST_DATAFLOW_ROUTE),
     getItem("Flash Databases", IngestOperations.FLASH_DB_CHECKLIST_ROUTE),
     getItem(
       "Sandbox Raw Data Import",
@@ -260,6 +262,10 @@ const App = (): JSX.Element => {
             exact
             path={IngestOperations.DIRECT_SANDBOX_RAW_IMPORT}
             component={DirectSandboxRawImport}
+          />
+          <Route
+            path={IngestOperations.INGEST_DATAFLOW_ROUTE}
+            component={IngestDataflowView}
           />
           <Route
             exact

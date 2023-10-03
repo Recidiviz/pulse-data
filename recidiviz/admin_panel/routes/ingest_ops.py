@@ -27,6 +27,7 @@ from recidiviz.admin_panel.admin_stores import (
     fetch_state_codes,
     get_ingest_operations_store,
 )
+from recidiviz.admin_panel.ingest_dataflow_operations import get_all_latest_ingest_jobs
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     check_is_valid_sandbox_bucket,
     get_unprocessed_raw_files_in_bucket,
@@ -753,6 +754,26 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 {
                     instance_state_code.value: {
                         instance.value.lower(): curr_status_info
+                        for instance, curr_status_info in instances.items()
+                    }
+                    for instance_state_code, instances in all_instance_statuses.items()
+                }
+            ),
+            HTTPStatus.OK,
+        )
+
+    @bp.route("/api/ingest_operations/get_all_latest_ingest_dataflow_jobs")
+    @requires_gae_auth
+    def _all_dataflow_jobs() -> Tuple[Response, HTTPStatus]:
+        all_instance_statuses = get_all_latest_ingest_jobs()
+
+        return (
+            jsonify(
+                {
+                    instance_state_code.value: {
+                        instance.value.lower(): curr_status_info.for_api()
+                        if curr_status_info
+                        else None
                         for instance, curr_status_info in instances.items()
                     }
                     for instance_state_code, instances in all_instance_statuses.items()
