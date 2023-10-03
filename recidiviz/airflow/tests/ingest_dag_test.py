@@ -37,7 +37,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 _PROJECT_ID = "recidiviz-testing"
 
 _VERIFY_PARAMETERS_TASK_ID = "initialize_ingest_dag.verify_parameters"
-_CHECK_FOR_RUNNING_DAGS_TASK_ID = "initialize_ingest_dag.check_for_running_dags"
+_WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID = "initialize_ingest_dag.wait_to_continue_or_cancel"
+_HANDLE_QUEUEING_RESULT_TASK_ID = "initialize_ingest_dag.handle_queueing_result"
 
 
 @patch.dict(
@@ -137,7 +138,8 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
-                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
                     ".*ingest_branching.*",
                 ],
             )
@@ -157,7 +159,8 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
-                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
                     ".*ingest_branching.*",
                 ],
             )

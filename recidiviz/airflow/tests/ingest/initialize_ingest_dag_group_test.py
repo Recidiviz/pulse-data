@@ -17,19 +17,27 @@
 """
 Tests for the initialize_ingest_dag_group.py task group.
 """
+import unittest
 from datetime import datetime
-from unittest.mock import patch
+from typing import Optional
+from unittest import mock
+from unittest.mock import Mock, patch
 
+from airflow.exceptions import TaskDeferred
 from airflow.models.dag import dag
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.state import DagRunState
 from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.ingest.initialize_ingest_dag_group import (
+    IngestDagWaitUntilCanContinueOrCancelDelegate,
     create_initialize_ingest_dag,
 )
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     KNOWN_CONFIGURATION_PARAMETERS,
+)
+from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async import (
+    WaitUntilCanContinueOrCancelSensorAsync,
 )
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.common.constants.states import StateCode
@@ -43,7 +51,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 
 _TEST_DAG_ID = "test_initialize_ingest_dag"
 _VERIFY_PARAMETERS_TASK_ID = "initialize_ingest_dag.verify_parameters"
-_CHECK_FOR_RUNNING_DAGS_TASK_ID = "initialize_ingest_dag.check_for_running_dags"
+_WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID = "initialize_ingest_dag.wait_to_continue_or_cancel"
+_HANDLE_QUEUEING_RESULT_TASK_ID = "initialize_ingest_dag.handle_queueing_result"
 _DOWNSTREAM_TASK_ID = "downstream_task"
 
 
@@ -121,7 +130,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 run_conf={"unknown_key": "value"},
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
-                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -141,7 +151,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 run_conf={"ingest_instance": "PRIMARY"},
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
-                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -161,7 +172,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 run_conf={"state_code_filter": "US_XX"},
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
-                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -184,7 +196,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
-                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -207,7 +220,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
-                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -230,7 +244,8 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 },
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
-                    _CHECK_FOR_RUNNING_DAGS_TASK_ID,
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -240,3 +255,188 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 "'PRIMARY_ASDF' is not a valid",
                 result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
             )
+
+
+def _create_mock_dag_run(state_code: Optional[str], instance: Optional[str]) -> Mock:
+    mock_dag_run = Mock()
+    mock_dag_run.conf = {
+        "state_code_filter": state_code,
+        "ingest_instance": instance,
+    }
+    mock_dag_run.execution_date = datetime.now()
+    mock_dag_run.dag_id = "test_dag"
+    mock_dag_run.run_id = f"test_dag_run_{mock_dag_run.execution_date}"
+    return mock_dag_run
+
+
+class TestIngestDagWaitUntilCanContinueOrCancelDelegate(unittest.TestCase):
+    """
+    Tests to validate IngestDagWaitUntilCanContinueOrCancelDelegate queueing logic.
+    """
+
+    def setUp(self) -> None:
+        self.get_all_active_dag_runs_patcher = mock.patch(
+            "recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async._get_all_active_dag_runs"
+        )
+        self.mock_get_all_active_dag_runs = self.get_all_active_dag_runs_patcher.start()
+        self.operator = WaitUntilCanContinueOrCancelSensorAsync(
+            task_id="test_task",
+            delegate=IngestDagWaitUntilCanContinueOrCancelDelegate(),
+        )
+
+    def tearDown(self) -> None:
+        self.get_all_active_dag_runs_patcher.stop()
+
+    def test_state_agnostic_dag_run_should_continue(self) -> None:
+        test_dag_run = _create_mock_dag_run(state_code=None, instance=None)
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            test_dag_run,
+            _create_mock_dag_run(state_code="US_XX", instance="PRIMARY"),
+        ]
+
+        results = self.operator.execute(context={"dag_run": test_dag_run})
+
+        self.assertEqual(results, "CONTINUE")
+
+    def test_state_agnostic_dag_run_defers_if_state_agnostic_dag_before_it(
+        self,
+    ) -> None:
+        mock_state_agnostic_dag_run = _create_mock_dag_run(
+            state_code=None, instance=None
+        )
+        test_dag_run = _create_mock_dag_run(state_code=None, instance=None)
+        mock_filtered_dag_run = _create_mock_dag_run(
+            state_code="US_XX", instance="PRIMARY"
+        )
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            mock_state_agnostic_dag_run,
+            test_dag_run,
+            mock_filtered_dag_run,
+        ]
+
+        with self.assertRaises(TaskDeferred):
+            self.operator.execute(context={"dag_run": test_dag_run})
+
+    def test_state_agnostic_dag_run_cancel_if_state_agnostic_in_queue_after_it(
+        self,
+    ) -> None:
+        mock_filtered_dag_run = _create_mock_dag_run(
+            state_code="US_XX", instance="PRIMARY"
+        )
+        test_dag_run = _create_mock_dag_run(state_code=None, instance=None)
+        mock_state_agnostic_dag_run = _create_mock_dag_run(
+            state_code=None, instance=None
+        )
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            mock_filtered_dag_run,
+            test_dag_run,
+            mock_state_agnostic_dag_run,
+        ]
+
+        results = self.operator.execute(context={"dag_run": test_dag_run})
+        self.assertEqual(results, "CANCEL")
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            test_dag_run,
+            mock_state_agnostic_dag_run,
+        ]
+
+        results = self.operator.execute(context={"dag_run": test_dag_run})
+        self.assertEqual(results, "CANCEL")
+
+    def test_filtered_dag_run_should_continue(self) -> None:
+        test_dag_run = _create_mock_dag_run(state_code="US_XX", instance="PRIMARY")
+        mock_us_xx_secondary_dag_run = _create_mock_dag_run(
+            state_code="US_XX", instance="SECONDARY"
+        )
+        mock_us_yy_primary_dag_run = _create_mock_dag_run(
+            state_code="US_YY", instance="PRIMARY"
+        )
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            test_dag_run,
+            mock_us_xx_secondary_dag_run,
+            mock_us_yy_primary_dag_run,
+        ]
+
+        results = self.operator.execute(context={"dag_run": test_dag_run})
+
+        self.assertEqual(results, "CONTINUE")
+
+    def test_primary_filtered_dag_run_continues_if_not_same_filtered_dag_run_before_it(
+        self,
+    ) -> None:
+        mock_us_xx_secondary_dag_run = _create_mock_dag_run(
+            state_code="US_XX", instance="SECONDARY"
+        )
+        mock_us_yy_primary_dag_run = _create_mock_dag_run(
+            state_code="US_YY", instance="PRIMARY"
+        )
+        test_dag_run = _create_mock_dag_run(state_code="US_XX", instance="PRIMARY")
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            mock_us_xx_secondary_dag_run,
+            mock_us_yy_primary_dag_run,
+            test_dag_run,
+        ]
+
+        results = self.operator.execute(context={"dag_run": test_dag_run})
+
+        self.assertEqual(results, "CONTINUE")
+
+    def test_filtered_dag_run_defers_if_state_agnostic_dag_before_it(self) -> None:
+        mock_state_agnostic_dag_run = _create_mock_dag_run(
+            state_code=None, instance=None
+        )
+        test_dag_run = _create_mock_dag_run(state_code="US_XX", instance="PRIMARY")
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            mock_state_agnostic_dag_run,
+            test_dag_run,
+        ]
+
+        with self.assertRaises(TaskDeferred):
+            self.operator.execute(context={"dag_run": test_dag_run})
+
+    def test_filtered_dag_run_defers_if_equivalent_filtered_dag_before_it(self) -> None:
+        mock_us_xx_primary_dag_run = _create_mock_dag_run(
+            state_code="US_XX", instance="PRIMARY"
+        )
+        test_dag_run = _create_mock_dag_run(state_code="US_XX", instance="PRIMARY")
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            mock_us_xx_primary_dag_run,
+            test_dag_run,
+        ]
+
+        with self.assertRaises(TaskDeferred):
+            self.operator.execute(context={"dag_run": test_dag_run})
+
+    def test_filtered_dag_run_cancel_if_state_agnostic_in_queue_after_it(self) -> None:
+        mock_us_xx_primary_dag_run = _create_mock_dag_run(
+            state_code="US_XX", instance="PRIMARY"
+        )
+        test_dag_run = _create_mock_dag_run(state_code="US_XX", instance="PRIMARY")
+        mock_state_agnostic_dag_run = _create_mock_dag_run(
+            state_code=None, instance=None
+        )
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            mock_us_xx_primary_dag_run,
+            test_dag_run,
+            mock_state_agnostic_dag_run,
+        ]
+
+        results = self.operator.execute(context={"dag_run": test_dag_run})
+        self.assertEqual(results, "CANCEL")
+
+        self.mock_get_all_active_dag_runs.return_value = [
+            test_dag_run,
+            mock_state_agnostic_dag_run,
+        ]
+
+        results = self.operator.execute(context={"dag_run": test_dag_run})
+        self.assertEqual(results, "CANCEL")

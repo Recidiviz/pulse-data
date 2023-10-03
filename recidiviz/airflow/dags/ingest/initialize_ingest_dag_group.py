@@ -15,19 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Handles queueing of ingest dags."""
-from typing import Optional
+from typing import List, Optional
 
 from airflow.decorators import task, task_group
 from airflow.models import DagRun
-from airflow.operators.empty import EmptyOperator
 
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     KNOWN_CONFIGURATION_PARAMETERS,
+)
+from recidiviz.airflow.dags.operators.wait_until_can_continue_or_cancel_sensor_async import (
+    WaitUntilCanContinueOrCancelDelegate,
+    WaitUntilCanContinueOrCancelSensorAsync,
 )
 from recidiviz.airflow.dags.utils.config_utils import (
     get_ingest_instance,
     get_state_code_filter,
     handle_params_check,
+    handle_queueing_result,
 )
 from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
     get_all_enabled_state_and_instance_pairs,
@@ -84,13 +88,114 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     return True
 
 
+def _dag_run_is_state_agnostic(dag_run: DagRun) -> bool:
+    """Returns true if the dag run is state agnostic."""
+
+    state_code_filter = get_state_code_filter(dag_run)
+    ingest_instance = get_ingest_instance(dag_run)
+
+    if (not state_code_filter and ingest_instance) or (
+        state_code_filter and not ingest_instance
+    ):
+        raise ValueError(
+            f"Unexpected combination of parameters: [{ingest_instance=}], "
+            f"[{state_code_filter=}]. Expected either both to be set or both to be "
+            f"unset."
+        )
+
+    return not state_code_filter and not ingest_instance
+
+
+def _dag_runs_have_same_filter(dag_run_1: DagRun, dag_run_2: DagRun) -> bool:
+    """Returns true if the dag runs have the same filter."""
+    return get_state_code_filter(dag_run_1) == get_state_code_filter(
+        dag_run_2
+    ) and get_ingest_instance(dag_run_1) == get_ingest_instance(dag_run_2)
+
+
+def _get_state_agnostic_active_runs(active_dag_runs: List[DagRun]) -> List[DagRun]:
+    """Returns all state-agnostic DAG runs in the provided list"""
+    return [
+        dag_run for dag_run in active_dag_runs if _dag_run_is_state_agnostic(dag_run)
+    ]
+
+
+def _is_first(dag_runs: List[DagRun], dag_run: DagRun) -> bool:
+    """If True, the |dag_run| is the first DAG in the |dag_runs| list."""
+    return dag_runs[0].run_id == dag_run.run_id
+
+
+def _is_last(dag_runs: List[DagRun], dag_run: DagRun) -> bool:
+    """If True, the |dag_run| is the last DAG in the |dag_runs| list."""
+    return dag_runs[-1].run_id == dag_run.run_id
+
+
+def _dag_run_2_is_superset_of_1(dag_run_1: DagRun, dag_run_2: DagRun) -> bool:
+    """If True, |dag_run_2| will execute a superset of pipelines run in |dag_run_1|."""
+    return _dag_run_is_state_agnostic(dag_run_2) or _dag_runs_have_same_filter(
+        dag_run_1, dag_run_2
+    )
+
+
+class IngestDagWaitUntilCanContinueOrCancelDelegate(
+    WaitUntilCanContinueOrCancelDelegate
+):
+    """
+    Delegate for the WaitUntilCanContinueOrCancelSensorAsync that determines if a
+    dag run can continue or should be canceled.
+    """
+
+    def this_dag_run_can_continue(
+        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+    ) -> bool:
+        """Returns True if this dag run can continue. Will continue if it is a SECONDARY
+        dag run or if it is the first dag run in the queue.
+        """
+
+        if _dag_run_is_state_agnostic(dag_run):
+            return _is_first(all_active_dag_runs, dag_run)
+
+        state_agnostic_or_same_filter_dag_runs = [
+            other_dag_run
+            for other_dag_run in all_active_dag_runs
+            if _dag_run_2_is_superset_of_1(dag_run, other_dag_run)
+        ]
+
+        return _is_first(state_agnostic_or_same_filter_dag_runs, dag_run)
+
+    def this_dag_run_should_be_canceled(
+        self, dag_run: DagRun, all_active_dag_runs: List[DagRun]
+    ) -> bool:
+        """Returns True if this dag run should be canceled. Will cancel if it is a
+        PRIMARY dag run and is not the first or last dag run in the queue.
+        """
+
+        if _dag_run_is_state_agnostic(dag_run):
+            agnostic_dag_runs = _get_state_agnostic_active_runs(all_active_dag_runs)
+            return not _is_last(agnostic_dag_runs, dag_run)
+
+        state_agnostic_or_same_filter_dag_runs = [
+            other_dag_run
+            for other_dag_run in all_active_dag_runs
+            if _dag_run_2_is_superset_of_1(dag_run, other_dag_run)
+        ]
+
+        # Should be cancelled if this is not the most recently queued version of the
+        # DAG that runs this state.
+        return not _is_last(state_agnostic_or_same_filter_dag_runs, dag_run)
+
+
 @task_group(group_id="initialize_ingest_dag")
 def create_initialize_ingest_dag() -> None:
     """
     Creates the initialize ingest dag.
     """
+    wait_to_continue_or_cancel = WaitUntilCanContinueOrCancelSensorAsync(
+        task_id="wait_to_continue_or_cancel",
+        delegate=IngestDagWaitUntilCanContinueOrCancelDelegate(),
+    )
     (
         handle_params_check(verify_parameters())
-        # TODO(#23963): Implement waiting for or short-circuiting if the another airflow dag is already running
-        >> EmptyOperator(task_id="check_for_running_dags")  # type: ignore
+        >> wait_to_continue_or_cancel
+        >> handle_queueing_result(wait_to_continue_or_cancel.output)
     )
