@@ -96,17 +96,20 @@ from recidiviz.calculator.query.state.views.sessions.district_sessions import (
 from recidiviz.calculator.query.state.views.sessions.drug_screens_preprocessed import (
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessions import (
+    HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed_solitary_sessions import (
     HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_sessions import (
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.housing_unit_raw_text_sessions import (
-    HOUSING_UNIT_RAW_TEXT_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.incarceration_staff_assignment_sessions_preprocessed import (
+    INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.incarceration_super_sessions import (
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
@@ -267,6 +270,9 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_consecutive_sen
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_drug_screens_preprocessed import (
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_incarceration_staff_assignment_sessions_preprocessed import (
+    US_TN_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_judicial_district_sessions import (
     US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER,
 )
@@ -380,4 +386,6 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
     CUSTODY_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
     CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
+    US_TN_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+    INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
 ]
