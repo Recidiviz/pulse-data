@@ -82,6 +82,12 @@ POPULATION_PROJECTION_DATASET: str = "population_projection_data"
 # Where the population projection simulation output tables live
 POPULATION_PROJECTION_OUTPUT_DATASET: str = "population_projection_output_data"
 
+# Where the spark output data views live
+SPARK_OUTPUT_DATASET: str = "spark_public_output_data"
+
+# Where the most recent spark output data simulations live
+SPARK_OUTPUT_DATASET_MOST_RECENT: str = "spark_public_output_data_most_recent"
+
 # Where the views for the vitals report live
 VITALS_REPORT_DATASET: str = "vitals_report_views"
 
