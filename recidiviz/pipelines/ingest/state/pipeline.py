@@ -27,7 +27,11 @@ from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
+    IngestViewManifest,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    INGEST_VIEW_RESULTS_UPDATE_DATETIME,
     IngestViewResultsParserDelegateImpl,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -78,6 +82,18 @@ from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntitie
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
 
+def materialization_method_for_ingest_view(
+    ingest_view_manifest: IngestViewManifest,
+    default_materialization_method: MaterializationMethod,
+) -> MaterializationMethod:
+    return (
+        MaterializationMethod.ORIGINAL
+        if INGEST_VIEW_RESULTS_UPDATE_DATETIME
+        in ingest_view_manifest.output.env_properties_referenced()
+        else default_materialization_method
+    )
+
+
 class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
     """Defines the ingest pipeline that reads from raw data, creates ingest view results
     and then creates state entities based on those ingest view results."""
@@ -93,7 +109,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
     def run_pipeline(self, p: Pipeline) -> None:
         ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
         state_code = StateCode(self.pipeline_parameters.state_code)
-        materialization_method = MaterializationMethod(
+        default_materialization_method = MaterializationMethod(
             self.pipeline_parameters.materialization_method
         )
         region = direct_ingest_regions.get_direct_ingest_region(
@@ -123,6 +139,11 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     ingest_view
                 ).raw_table_dependency_configs
             ]
+
+            materialization_method = materialization_method_for_ingest_view(
+                ingest_manifest_collector.ingest_view_to_manifest[ingest_view],
+                default_materialization_method=default_materialization_method,
+            )
 
             ingest_view_results: beam.PCollection[
                 Dict[str, Any]
