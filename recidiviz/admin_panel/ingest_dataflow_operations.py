@@ -108,7 +108,7 @@ def get_latest_jobs_from_location_by_name(
                 name=response.name,
                 create_time=response.create_time.timestamp(),  # type: ignore[attr-defined]
                 start_time=response.start_time.timestamp(),  # type: ignore[attr-defined]
-                termination_time=response.create_time.timestamp(),  # type: ignore[attr-defined]
+                termination_time=response.current_state_time.timestamp(),  # type: ignore[attr-defined]
                 termination_state=response.current_state.name,
                 location=response.location,
             )

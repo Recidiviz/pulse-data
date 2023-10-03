@@ -49,3 +49,31 @@ export function scrollToAnchor(hash: string): void {
     }
   }
 }
+
+export const formatDatetime = (date?: Date): string | undefined => {
+  return date?.toLocaleString("en-US", { timeZoneName: "short" });
+};
+
+export const formatDatetimeFromTimestamp = (
+  timestampInSeconds?: number
+): string | undefined => {
+  if (timestampInSeconds) {
+    // convert seconds to milliseconds
+    return formatDatetime(new Date(timestampInSeconds * 1000));
+  }
+  return undefined;
+};
+
+export const formatSecondsToDisplay = (
+  seconds?: number
+): string | undefined => {
+  if (seconds) {
+    const displayHours = Math.floor(seconds / 3600);
+    const displayMins = Math.floor((seconds - displayHours * 3600) / 60);
+    const displaySecs = Math.floor(
+      seconds - displayHours * 3600 - displayMins * 60
+    );
+    return `${displayHours} hours ${displayMins} minutes ${displaySecs} seconds`;
+  }
+  return undefined;
+};

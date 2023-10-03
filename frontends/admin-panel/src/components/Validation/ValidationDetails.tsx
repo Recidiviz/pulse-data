@@ -46,6 +46,7 @@ import {
   IngestStatusRefreshInfo,
 } from "../IngestOperationsView/constants";
 import { gcpEnvironment } from "../Utilities/EnvironmentUtilities";
+import { formatDatetime } from "../Utilities/GeneralUtilities";
 import {
   RecordStatus,
   ValidationDetailsProps,
@@ -55,7 +56,6 @@ import SamenessPerRowDetails from "./SamenessPerRowDetails";
 import SamenessPerViewDetails from "./SamenessPerViewDetails";
 import {
   convertResultStatus,
-  formatDatetime,
   formatStatusAmount,
   getBadgeStatusForRecordStatus,
   getDaysActive,

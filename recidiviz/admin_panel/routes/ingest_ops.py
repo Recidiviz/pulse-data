@@ -27,7 +27,10 @@ from recidiviz.admin_panel.admin_stores import (
     fetch_state_codes,
     get_ingest_operations_store,
 )
-from recidiviz.admin_panel.ingest_dataflow_operations import get_all_latest_ingest_jobs
+from recidiviz.admin_panel.ingest_dataflow_operations import (
+    get_all_latest_ingest_jobs,
+    get_latest_job_for_state_instance,
+)
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     check_is_valid_sandbox_bucket,
     get_unprocessed_raw_files_in_bucket,
@@ -779,6 +782,27 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                     for instance_state_code, instances in all_instance_statuses.items()
                 }
             ),
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
+        "/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/<state_code_str>/<instance_str>"
+    )
+    @requires_gae_auth
+    def _get_latest_ingest_dataflow_job_by_instance(
+        state_code_str: str,
+        instance_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
+        try:
+            state_code = StateCode(state_code_str)
+            instance = DirectIngestInstance(instance_str)
+        except ValueError:
+            return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
+
+        job_info = get_latest_job_for_state_instance(state_code, instance)
+
+        return (
+            jsonify(job_info.for_api() if job_info else None),
             HTTPStatus.OK,
         )
 

@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2022 Recidiviz, Inc.
+// Copyright (C) 2023 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,13 +18,25 @@ import { Layout, Menu, MenuProps } from "antd";
 import Sider from "antd/lib/layout/Sider";
 import { Content } from "antd/lib/layout/layout";
 import * as React from "react";
-import { useHistory, useLocation, useParams } from "react-router-dom";
 import {
+  Redirect,
+  Route,
+  Switch,
+  useHistory,
+  useLocation,
+  useParams,
+  useRouteMatch,
+} from "react-router-dom";
+import {
+  INGEST_DATAFLOW_INSTANCE_ROUTE,
   INGEST_DATAFLOW_PRIMARY_ROUTE,
   INGEST_DATAFLOW_SECONDARY_ROUTE,
+  INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE,
 } from "../../navigation/IngestOperations";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 import StateSelectorPageHeader from "../general/StateSelectorPageHeader";
+import IngestDataflowStateSpecificInstanceMetadata from "./IngestDataflowStateSpecificInstanceMetadata";
+import { ANCHOR_DATAFLOW_LATEST_JOB } from "./constants";
 
 type MenuItem = Required<MenuProps>["items"][number];
 
@@ -45,12 +57,23 @@ function getItem(
 }
 
 const items: MenuProps["items"] = [
-  getItem("Primary Instance", INGEST_DATAFLOW_PRIMARY_ROUTE, null, []),
-  getItem("Secondary Instance", INGEST_DATAFLOW_SECONDARY_ROUTE, null, []),
+  getItem("Primary Instance", INGEST_DATAFLOW_PRIMARY_ROUTE, null, [
+    getItem(
+      "Latest Job",
+      `${INGEST_DATAFLOW_PRIMARY_ROUTE}#${ANCHOR_DATAFLOW_LATEST_JOB}`
+    ),
+  ]),
+  getItem("Secondary Instance", INGEST_DATAFLOW_SECONDARY_ROUTE, null, [
+    getItem(
+      "Latest Job",
+      `${INGEST_DATAFLOW_SECONDARY_ROUTE}#${ANCHOR_DATAFLOW_LATEST_JOB}`
+    ),
+  ]),
 ];
 
 const IngestDataflowStateSpecificMetadata = (): JSX.Element => {
   const history = useHistory();
+  const match = useRouteMatch();
 
   const location = useLocation();
 
@@ -67,7 +90,7 @@ const IngestDataflowStateSpecificMetadata = (): JSX.Element => {
   return (
     <>
       <StateSelectorPageHeader
-        title="Ingest Status"
+        title="Ingest Dataflow Pipeline Status"
         onChange={stateCodeChange}
         stateCode={stateCode}
       />
@@ -82,7 +105,17 @@ const IngestDataflowStateSpecificMetadata = (): JSX.Element => {
         </Sider>
         <Layout className="main-content">
           <Content>
-            <div>UNDER CONSTRUCTION</div>
+            <Switch>
+              <Route
+                path={INGEST_DATAFLOW_INSTANCE_ROUTE}
+                component={IngestDataflowStateSpecificInstanceMetadata}
+              />
+              <Redirect
+                exact
+                path={INGEST_DATAFLOW_WITH_STATE_CODE_ROUTE}
+                to={`${match.path}/instance/PRIMARY`}
+              />
+            </Switch>
           </Content>
         </Layout>
       </Layout>

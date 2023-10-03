@@ -16,8 +16,8 @@
 // =============================================================================
 
 import { Layout, List, Menu, MenuProps } from "antd";
-import { Content } from "antd/lib/layout/layout";
 import Sider from "antd/lib/layout/Sider";
+import { Content } from "antd/lib/layout/layout";
 import { FC, useEffect } from "react";
 import {
   Redirect,
@@ -37,21 +37,20 @@ import {
   ValidationStatusRecords,
 } from "../../../recidiviz/admin_panel/models/validation_pb";
 import { MetadataRecord } from "../../../types";
-import StateSelectorPageHeader from "../../general/StateSelectorPageHeader";
 import { StateCodeInfo } from "../../IngestOperationsView/constants";
-import { scrollToAnchor } from "../../Utilities/GeneralUtilities";
+import {
+  formatDatetime,
+  scrollToAnchor,
+} from "../../Utilities/GeneralUtilities";
 import uniqueStates from "../../Utilities/UniqueStates";
+import StateSelectorPageHeader from "../../general/StateSelectorPageHeader";
 import {
   ANCHOR_VALIDATION_FAILURE_SUMMARY,
   ANCHOR_VALIDATION_FULL_RESULTS,
   ANCHOR_VALIDATION_HARD_FAILURES,
   ANCHOR_VALIDATION_SOFT_FAILURES,
 } from "../constants";
-import {
-  chooseIdNameForCategory,
-  formatDatetime,
-  readableNameForCategoryId,
-} from "../utils";
+import { chooseIdNameForCategory, readableNameForCategoryId } from "../utils";
 import ValidationFailureSummary from "./ValidationFailureSummary";
 import ValidationFullResults from "./ValidationFullResults";
 

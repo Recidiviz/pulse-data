@@ -36,8 +36,9 @@ import {
   IngestStatusRefreshInfo,
 } from "../IngestOperationsView/constants";
 import ColorLegend from "../Utilities/ColorLegend";
+import { formatDatetime } from "../Utilities/GeneralUtilities";
 import { ValidationDetailsGraphProps } from "./constants";
-import { formatDate, formatDatetime, formatStatusAmount } from "./utils";
+import { formatDate, formatStatusAmount } from "./utils";
 
 const filterToRefreshesDuringWindow = (
   startTime: Date | undefined,

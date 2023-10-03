@@ -16,11 +16,11 @@
 // =============================================================================
 
 import { PresetStatusColorType } from "antd/lib/_util/colors";
-import { MouseEventHandler } from "react";
 import { History } from "history";
+import { MouseEventHandler } from "react";
+import { routeForValidationDetail } from "../../navigation/DatasetMetadata";
 import { ValidationStatusRecord } from "../../recidiviz/admin_panel/models/validation_pb";
 import { RecordStatus } from "./constants";
-import { routeForValidationDetail } from "../../navigation/DatasetMetadata";
 
 export const replaceInfinity = <T>(x: number, replacement: T): number | T => {
   return Number.isFinite(x) ? x : replacement;
@@ -41,10 +41,6 @@ export const getDaysActive = (record: ValidationStatusRecord): number => {
     return Infinity;
   }
   return daysBetweenDates(runDate, lastSuccessDate);
-};
-
-export const formatDatetime = (date?: Date): string | undefined => {
-  return date?.toLocaleString("en-US", { timeZoneName: "short" });
 };
 
 export const formatDate = (date?: Date): string | undefined => {
