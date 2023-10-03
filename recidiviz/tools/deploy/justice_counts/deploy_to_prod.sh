@@ -105,6 +105,7 @@ run_cmd gcloud -q run deploy "${DASHBOARD_CLOUD_RUN_SERVICE}" \
 
 # Update Image for Cloud Run Jobs
 echo "Updating Image for Cloud Run Jobs"
+run_cmd gcloud run jobs update recurring-report-creation --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
 run_cmd gcloud run jobs update csg-data-pull --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
 
 
