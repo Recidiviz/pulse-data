@@ -62,8 +62,6 @@ from recidiviz.utils.yaml_dict import YAMLDict
 
 ManifestNodeT = TypeVar("ManifestNodeT")
 
-ENV_PROPERTY_KEY = "$env"
-
 
 @attr.s(kw_only=True)
 class ManifestNode(Generic[ManifestNodeT]):
@@ -129,6 +127,18 @@ class ManifestNode(Generic[ManifestNodeT]):
             all_nodes.append(current_manifest)
             queue += current_manifest.child_manifest_nodes()
         return all_nodes
+
+    def env_properties_referenced(self) -> Set[str]:
+        """Returns a set of environment variables that this node references. Should not
+        be overridden by subclasses other than the LiteralManifestNodes that represent
+        these environment properties.
+        """
+        children = self.child_manifest_nodes()
+        return {
+            env_var
+            for child in children
+            for env_var in child.env_properties_referenced()
+        }
 
 
 @attr.s(kw_only=True)
@@ -706,6 +716,37 @@ class BooleanLiteralFieldManifest(ManifestNode[bool]):
 
     def columns_referenced(self) -> Set[str]:
         return set()
+
+
+@attr.s(kw_only=True)
+class EnvPropertyManifest(ManifestNode[ManifestNodeT]):
+    """Manifest describing a value that will be hydrated with the same value based on
+    some static environment state such as the project or instance.
+    """
+
+    ENV_PROPERTY_KEY = "$env"
+
+    env_property_name: str = attr.ib()
+    env_property_value: ManifestNodeT = attr.ib()
+
+    @property
+    def result_type(self) -> Type[ManifestNodeT]:
+        return type(self.env_property_value)
+
+    def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
+        return {}
+
+    def build_from_row(self, row: Dict[str, str]) -> ManifestNodeT:
+        return self.env_property_value
+
+    def child_manifest_nodes(self) -> List["ManifestNode"]:
+        return []
+
+    def columns_referenced(self) -> Set[str]:
+        return set()
+
+    def env_properties_referenced(self) -> Set[str]:
+        return {self.env_property_name}
 
 
 @attr.s(kw_only=True)
@@ -2205,16 +2246,14 @@ def build_manifest_from_raw(
                     expected_result_type=object,
                 ),
             )
-        if manifest_node_name == ENV_PROPERTY_KEY:
-            property_name = raw_field_manifest.pop(ENV_PROPERTY_KEY, str)
+        if manifest_node_name == EnvPropertyManifest.ENV_PROPERTY_KEY:
+            property_name = raw_field_manifest.pop(
+                EnvPropertyManifest.ENV_PROPERTY_KEY, str
+            )
             env_property = delegate.get_env_property(property_name=property_name)
-            if isinstance(env_property, bool):
-                return BooleanLiteralManifest(value=env_property)
-            if isinstance(env_property, str):
-                return StringLiteralFieldManifest(literal_value=env_property)
-            raise ValueError(
-                f"Unexpected env property value type [{type(env_property)}] for "
-                f"property [{property_name}]"
+            return EnvPropertyManifest(
+                env_property_name=property_name,
+                env_property_value=env_property,
             )
 
         if manifest_node_name == ExpandableListItemManifest.FOREACH_KEY:

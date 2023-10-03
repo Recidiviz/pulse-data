@@ -2538,3 +2538,20 @@ class IngestViewFileParserTest(unittest.TestCase):
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 is_production=True,
             )
+
+    def test_env_property_names_returned_string_env_property(self) -> None:
+        manifest = self._run_parse_manifest_for_ingest_view(
+            "string_datetime_env_property"
+        )
+        self.assertSetEqual(
+            manifest.env_properties_referenced(), {"test_results_update_datetime"}
+        )
+
+    def test_env_property_names_returned_bool_env_property(self) -> None:
+        manifest = self._run_parse_manifest_for_ingest_view(
+            "boolean_condition_env_property"
+        )
+        self.assertSetEqual(
+            manifest.env_properties_referenced(),
+            {"test_is_production", "test_is_primary_instance"},
+        )

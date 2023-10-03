@@ -211,7 +211,9 @@ ORDER BY 1;"""
 
         self.run_query_test(
             query_str=pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
-                BQ_EMULATOR_PROJECT_ID, self.region_code, ["table1", "table2"]
+                BQ_EMULATOR_PROJECT_ID,
+                self.region_code,
+                ["table1", "table2"],
             ),
             expected_result=expected_results,
         )
