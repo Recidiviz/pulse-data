@@ -299,7 +299,7 @@ export const getAllIngestInstanceStatuses = async (): Promise<Response> => {
   return getResource("/api/ingest_operations/all_ingest_instance_statuses");
 };
 
-// Get all ingest instance statuses
+// Get all ingest dataflow pipeline enabled statuses
 export const getAllIngestInstanceDataflowEnabledStatuses =
   async (): Promise<Response> => {
     return getResource(
@@ -307,6 +307,12 @@ export const getAllIngestInstanceDataflowEnabledStatuses =
     );
   };
 
+// Get all latest ingest dataflow pipeline statuses
+export const getAllLatestDataflowJobs = async (): Promise<Response> => {
+  return getResource(
+    "/api/ingest_operations/get_all_latest_ingest_dataflow_jobs"
+  );
+};
 export const getRecentIngestInstanceStatusHistory = async (
   stateCode: string
 ): Promise<Response> => {
