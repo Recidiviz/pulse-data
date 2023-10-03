@@ -85,6 +85,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "officerId": "100",
                     "facilityId": "ABC",
                     "unitId": "ABC 123",
+                    "facilityUnitId": "ABC‡ABC 123",
                     "admissionDate": "2023-01-01",
                     "releaseDate": "2027-03-28",
                     "allEligibleOpportunities": ["usMoRestrictiveHousingStatusHearing"],
@@ -115,6 +116,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "officerId": "100",
                     "facilityId": "FAKE CORRECTIONAL FACILITY",
                     "unitId": "UNIT 1",
+                    "facilityUnitId": "FAKE CORRECTIONAL FACILITY‡UNIT 1",
                     "admissionDate": "2023-01-01",
                     "releaseDate": "2024-03-28",
                     "allEligibleOpportunities": [
@@ -149,6 +151,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "officerId": "100",
                     "facilityId": "FAKE VIEW CORRECTIONAL FACILITY",
                     "unitId": "UNIT 1",
+                    "facilityUnitId": "FAKE VIEW CORRECTIONAL FACILITY‡UNIT 1",
                     "admissionDate": "2020-07-11",
                     "releaseDate": "2026-01-23",
                     "allEligibleOpportunities": [
@@ -182,6 +185,7 @@ class WorkflowsResidentETLDelegateTest(TestCase):
                     "officerId": "100",
                     "facilityId": "FACILITY NAME",
                     "unitId": None,
+                    "facilityUnitId": "FACILITY NAME‡",
                     "admissionDate": "2023-05-01",
                     "releaseDate": "2024-05-01",
                     "allEligibleOpportunities": ["usTnCustodyLevelDowngrade"],
