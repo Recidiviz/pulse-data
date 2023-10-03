@@ -48,6 +48,11 @@ def _get_all_active_dag_runs(dag_id: str) -> List[DagRun]:
     return sorted(running_dags, key=lambda dag_run: dag_run.execution_date)
 
 
+def _get_pretty_dag_run_identifier(dag_run: DagRun) -> str:
+    """Returns a pretty string representation of a dag run."""
+    return f"<{dag_run.run_id} {dag_run.conf}>"
+
+
 class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
     """Sensor that waits until a dag run can either continue or needs to be canceled."""
 
@@ -86,13 +91,21 @@ class WaitUntilCanContinueOrCancelSensorAsync(BaseSensorOperator):
         if self.delegate.this_dag_run_should_be_canceled(
             dag_run=dag_run, all_active_dag_runs=all_active_dag_runs
         ):
-            logging.info("Cancelling DAG...")
+            logging.info(
+                "Cancelling DAG %s. Current running DAGs: %s",
+                _get_pretty_dag_run_identifier(dag_run),
+                [_get_pretty_dag_run_identifier(d) for d in all_active_dag_runs],
+            )
             return "CANCEL"
 
         if self.delegate.this_dag_run_can_continue(
             dag_run=dag_run, all_active_dag_runs=all_active_dag_runs
         ):
-            logging.info("Continuing DAG...")
+            logging.info(
+                "Continuing DAG %s. Current running DAGs: %s",
+                _get_pretty_dag_run_identifier(dag_run),
+                [_get_pretty_dag_run_identifier(d) for d in all_active_dag_runs],
+            )
             return "CONTINUE"
 
         logging.info(
