@@ -25,7 +25,11 @@ import re
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
 
 import attr
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
+from apache_beam.options.pipeline_options import (
+    PipelineOptions,
+    SetupOptions,
+    WorkerOptions,
+)
 from attr import Attribute
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -170,6 +174,8 @@ class PipelineParameters:
             ],
         )
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
+        worker_options = apache_beam_pipeline_options.view_as(WorkerOptions)
+        worker_options.default_sdk_harness_log_level = "WARNING"
         # Collect all parsed arguments and filter out the ones that are not set
         set_kwargs = {k: v for k, v in vars(args).items() if v is not None}
         return cls(
