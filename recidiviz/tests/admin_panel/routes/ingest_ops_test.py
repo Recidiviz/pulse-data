@@ -247,3 +247,39 @@ class IngestOpsEndpointTests(TestCase):
                     },
                 },
             )
+
+    def test_get_latest_ingest_dataflow_job_by_instance(self) -> None:
+        mock_response = DataflowPipelineMetadataResponse(
+            id="1234",
+            project_id="recidiviz-456",
+            name="us-xx-ingest",
+            create_time=1695821110,
+            start_time=1695821110,
+            termination_time=1695821110,
+            termination_state="JOB_STATE_DONE",
+            location="us-west1",
+        )
+
+        with mock.patch(
+            "recidiviz.admin_panel.routes.ingest_ops.get_latest_job_for_state_instance",
+            return_value=mock_response,
+        ):
+            response = self.client.get(
+                "/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/US_XX/PRIMARY",
+                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            )
+
+            self.assertEqual(
+                response.json,
+                {
+                    "id": "1234",
+                    "projectId": "recidiviz-456",
+                    "name": "us-xx-ingest",
+                    "createTime": 1695821110,
+                    "startTime": 1695821110,
+                    "terminationTime": 1695821110,
+                    "terminationState": "JOB_STATE_DONE",
+                    "location": "us-west1",
+                    "duration": 0,
+                },
+            )

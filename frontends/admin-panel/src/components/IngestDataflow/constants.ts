@@ -31,7 +31,7 @@ export type DataflowIngestPipelineStatus = {
   terminationTime: number;
   terminationState: string;
   location: string;
-  duration: string;
+  duration: number;
 };
 
 export type DataflowIngestPipelineJobResponse = {
@@ -40,3 +40,5 @@ export type DataflowIngestPipelineJobResponse = {
     secondary: DataflowIngestPipelineStatus | null;
   };
 };
+
+export const ANCHOR_DATAFLOW_LATEST_JOB = "dataflow_latest_job";

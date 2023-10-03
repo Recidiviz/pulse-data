@@ -313,6 +313,17 @@ export const getAllLatestDataflowJobs = async (): Promise<Response> => {
     "/api/ingest_operations/get_all_latest_ingest_dataflow_jobs"
   );
 };
+
+// Get latest ingest dataflow pipeline status for the state and instance
+export const getLatestDataflowPipelineByInstance = async (
+  stateCode: string,
+  instance: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/${stateCode}/${instance}`
+  );
+};
+
 export const getRecentIngestInstanceStatusHistory = async (
   stateCode: string
 ): Promise<Response> => {
