@@ -63,17 +63,3 @@ export const formatDatetimeFromTimestamp = (
   }
   return undefined;
 };
-
-export const formatSecondsToDisplay = (
-  seconds?: number
-): string | undefined => {
-  if (seconds) {
-    const displayHours = Math.floor(seconds / 3600);
-    const displayMins = Math.floor((seconds - displayHours * 3600) / 60);
-    const displaySecs = Math.floor(
-      seconds - displayHours * 3600 - displayMins * 60
-    );
-    return `${displayHours} hours ${displayMins} minutes ${displaySecs} seconds`;
-  }
-  return undefined;
-};

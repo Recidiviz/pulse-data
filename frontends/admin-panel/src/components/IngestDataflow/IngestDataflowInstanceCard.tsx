@@ -16,15 +16,13 @@
 // =============================================================================
 import { Alert, Card, Descriptions, Spin } from "antd";
 import Title from "antd/lib/typography/Title";
+import moment from "moment";
 import { useCallback } from "react";
 import { getLatestDataflowPipelineByInstance } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import { DirectIngestInstance } from "../IngestOperationsView/constants";
 import NewTabLink from "../NewTabLink";
-import {
-  formatDatetimeFromTimestamp,
-  formatSecondsToDisplay,
-} from "../Utilities/GeneralUtilities";
+import { formatDatetimeFromTimestamp } from "../Utilities/GeneralUtilities";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
   DataflowIngestPipelineStatus,
@@ -99,15 +97,15 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
           {displayJobState(mostRecentPipelineInfo.terminationState)}
         </Descriptions.Item>
         <Descriptions.Item label="Start Time" span={3}>
-          {formatDatetimeFromTimestamp(mostRecentPipelineInfo.startTime * 1000)}
+          {formatDatetimeFromTimestamp(mostRecentPipelineInfo.startTime)}
         </Descriptions.Item>
         <Descriptions.Item label="End Time" span={3}>
-          {formatDatetimeFromTimestamp(
-            mostRecentPipelineInfo.terminationTime * 1000
-          )}
+          {formatDatetimeFromTimestamp(mostRecentPipelineInfo.terminationTime)}
         </Descriptions.Item>
         <Descriptions.Item label="Duration" span={3}>
-          {formatSecondsToDisplay(mostRecentPipelineInfo.duration)}
+          {moment
+            .utc(mostRecentPipelineInfo.duration * 1000)
+            .format("HH [hours] mm [minutes] ss [seconds]")}
         </Descriptions.Item>
         <Descriptions.Item label="Dataflow Job" span={3}>
           <NewTabLink
