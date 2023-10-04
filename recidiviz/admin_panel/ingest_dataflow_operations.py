@@ -39,6 +39,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.pipeline_utils import ingest_pipeline_name
 from recidiviz.utils import metadata
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -123,13 +124,6 @@ def get_latest_jobs_from_location_by_name(
             jobs_by_name[response.name] = job
 
     return jobs_by_name
-
-
-def ingest_pipeline_name(state_code: StateCode, instance: DirectIngestInstance) -> str:
-    state_code_part = state_code.value.lower().replace("_", "-")
-    instance_part = "-secondary" if instance is DirectIngestInstance.SECONDARY else ""
-    pipeline_type_part = "-ingest"
-    return f"{state_code_part}{pipeline_type_part}{instance_part}"
 
 
 # TODO(#23319): Refactor to use new database table

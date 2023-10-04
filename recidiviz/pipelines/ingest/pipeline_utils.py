@@ -14,25 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for run_sandbox_calculation_pipeline.py"""
-
-import os
-import unittest
-
-from recidiviz.tools.calculator.run_sandbox_calculation_pipeline import (
-    get_cloudbuild_path,
-    get_template_path,
-)
+"""Helper functions related to ingest pipelines."""
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
-class FlexPipelineSandboxPathsTest(unittest.TestCase):
-    """Tests to verify paths used in the sandbox script exist."""
-
-    def test_template_paths_exist_for_all_pipelines(self) -> None:
-        for pipeline_type in ["metrics", "supplemental", "normalization"]:
-            template_path = get_template_path(pipeline_type)
-            self.assertEqual(os.path.isfile(template_path), True)
-
-    def test_cloudbuild_files_exist(self) -> None:
-        cloudbuild_path = get_cloudbuild_path()
-        self.assertEqual(os.path.isfile(cloudbuild_path), True)
+def ingest_pipeline_name(state_code: StateCode, instance: DirectIngestInstance) -> str:
+    """Default ingest pipeline job_name to use for a given state/instance."""
+    state_code_part = state_code.value.lower().replace("_", "-")
+    instance_part = "-secondary" if instance is DirectIngestInstance.SECONDARY else ""
+    pipeline_type_part = "-ingest"
+    return f"{state_code_part}{pipeline_type_part}{instance_part}"

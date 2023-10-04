@@ -63,7 +63,7 @@ class IngestPipelineParameters(PipelineParameters):
         )
 
     materialization_method: str = attr.ib(
-        default=MaterializationMethod.ORIGINAL.value, validator=attr_validators.is_str
+        default=MaterializationMethod.LATEST.value, validator=attr_validators.is_str
     )
 
     @property
