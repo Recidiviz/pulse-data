@@ -112,6 +112,8 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.session.commit()
 
+    # UserAccount
+
     def test_get_all_users(self) -> None:
         self.load_users_and_agencies()
         response = self.client.get("/admin/user")
@@ -130,6 +132,23 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(user_json["agencies"]), 1)
             self.assertEqual(user_json["agencies"][0]["id"], agency.id)
             self.assertEqual(user_json["agencies"][0]["name"], agency.name)
+
+    def test_get_user(self) -> None:
+        self.load_users_and_agencies()
+        user = (
+            self.session.query(schema.UserAccount)
+            .filter(schema.UserAccount.auth0_user_id == "auth0_id_A")
+            .one()
+        )
+        response = self.client.get(f"/admin/user/{user.id}")
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["name"], user.name)
+        self.assertEqual(response_json["id"], user.id)
+        self.assertEqual(len(response_json["agencies"]), 1)
+        self.assertEqual(response_json["agencies"][0]["name"], "Agency Alpha")
+
+    # Agency
 
     def test_get_all_agencies(self) -> None:
         self.load_users_and_agencies()
