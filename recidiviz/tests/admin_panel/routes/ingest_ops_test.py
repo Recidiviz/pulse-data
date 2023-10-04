@@ -23,7 +23,7 @@ from unittest import TestCase, mock
 import pytz
 from flask import Blueprint, Flask
 from freezegun import freeze_time
-from mock import Mock
+from mock import Mock, patch
 
 from recidiviz.admin_panel.ingest_dataflow_operations import (
     DataflowPipelineMetadataResponse,
@@ -283,3 +283,26 @@ class IngestOpsEndpointTests(TestCase):
                     "duration": 0,
                 },
             )
+
+    @patch("recidiviz.admin_panel.routes.ingest_ops.get_latest_run_raw_data_watermarks")
+    def test_get_latest_ingest_dataflow_raw_data_watermarks(
+        self, mock_watermarks: mock.MagicMock
+    ) -> None:
+        # Arrange
+        mock_watermarks.return_value = {
+            "foo_tag": datetime(2020, 1, 1, 0, 0, 0),
+            "bar_tag": datetime(2023, 9, 29, 3, 50, 47),
+        }
+
+        # Act
+        response = self.client.get(
+            "/api/ingest_operations/get_latest_ingest_dataflow_raw_data_watermarks/US_XX/PRIMARY",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json,
+            {"foo_tag": "2020-01-01T00:00:00", "bar_tag": "2023-09-29T03:50:47"},
+        )

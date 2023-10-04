@@ -30,6 +30,7 @@ from recidiviz.admin_panel.admin_stores import (
 from recidiviz.admin_panel.ingest_dataflow_operations import (
     get_all_latest_ingest_jobs,
     get_latest_job_for_state_instance,
+    get_latest_run_raw_data_watermarks,
 )
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     check_is_valid_sandbox_bucket,
@@ -879,9 +880,9 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         methods=["POST"],
     )
     @requires_gae_auth
-    def _get_current_ingest_instance_status_information() -> Tuple[
-        Union[str, Response], HTTPStatus
-    ]:
+    def _get_current_ingest_instance_status_information() -> (
+        Tuple[Union[str, Response], HTTPStatus]
+    ):
         try:
             request_json = assert_type(request.json, dict)
             state_code = StateCode(request_json["stateCode"])
@@ -1163,6 +1164,32 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         return (
             jsonify(is_ingest_in_dataflow_enabled(state_code, ingest_instance)),
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
+        "/api/ingest_operations/get_latest_ingest_dataflow_raw_data_watermarks/<state_code_str>/<instance_str>"
+    )
+    @requires_gae_auth
+    def _get_latest_ingest_dataflow_raw_data_watermarks(
+        state_code_str: str,
+        instance_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
+        try:
+            state_code = StateCode(state_code_str)
+            instance = DirectIngestInstance(instance_str)
+        except ValueError:
+            return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
+
+        raw_data_watermarks = get_latest_run_raw_data_watermarks(state_code, instance)
+
+        return (
+            jsonify(
+                {
+                    file_tag: watermark.isoformat()
+                    for file_tag, watermark in raw_data_watermarks.items()
+                }
+            ),
             HTTPStatus.OK,
         )
 

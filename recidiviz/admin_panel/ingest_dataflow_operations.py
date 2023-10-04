@@ -16,6 +16,7 @@
 # =============================================================================
 """Functions and classes for calling the dataflow API for ingest pipeline metadata."""
 import concurrent.futures
+import datetime
 import os
 from collections import defaultdict
 from concurrent import futures
@@ -27,6 +28,9 @@ from google.cloud.dataflow_v1beta3 import JobState, ListJobsRequest
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_mananger import (
+    DirectIngestDataflowWatermarkManager,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
@@ -124,9 +128,13 @@ def ingest_pipeline_name(state_code: StateCode, instance: DirectIngestInstance) 
     return f"{state_code_part}{pipeline_type_part}{instance_part}"
 
 
-def get_all_latest_ingest_jobs() -> Dict[
-    StateCode, Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]]
-]:
+# TODO(#23319): Refactor to use new database table
+def get_all_latest_ingest_jobs() -> (
+    Dict[
+        StateCode,
+        Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
+    ]
+):
     """Get the latest job for each ingest pipeline."""
     pipeline_configs = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
@@ -157,6 +165,16 @@ def get_all_latest_ingest_jobs() -> Dict[
             latest_job = latest_job_by_name.get(pipeline_name)
             jobs_by_state_instance[state_code][instance] = latest_job
     return jobs_by_state_instance
+
+
+def get_latest_run_raw_data_watermarks(
+    state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> Dict[str, datetime.datetime]:
+    return (
+        DirectIngestDataflowWatermarkManager().get_raw_data_watermarks_for_latest_run(
+            state_code, ingest_instance
+        )
+    )
 
 
 def is_ingest_enabled_in_secondary(
