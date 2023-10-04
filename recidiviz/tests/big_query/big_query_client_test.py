@@ -260,6 +260,43 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
         self.assertFalse(table_exists)
 
+    @mock.patch("google.cloud.bigquery.QueryJobConfig")
+    def test_get_row_counts_for_tables(self, mock_job_config: mock.MagicMock) -> None:
+        # Arrange
+        self.mock_client.query.return_value = [
+            {"table_id": "foo", "num_rows": 120},
+            {"table_id": "bar", "num_rows": 0},
+        ]
+
+        # Act
+        results = self.bq_client.get_row_counts_for_tables(self.mock_dataset_id)
+
+        # Assert
+        self.assertEqual(results, {"foo": 120, "bar": 0})
+        self.mock_client.get_dataset.assert_called()
+        self.mock_client.query.assert_called_with(
+            query="""
+                SELECT _TABLE_SUFFIX as table_id, COUNT(*) as num_rows
+                FROM `fake-recidiviz-project.fake-dataset.*`
+                GROUP BY _TABLE_SUFFIX
+                """,
+            location=BigQueryClient.DEFAULT_REGION,
+            job_config=mock_job_config.return_value,
+        )
+        mock_job_config.assert_called_with(use_query_cache=False)
+
+    def test_get_row_counts_for_tables_no_dataset(self) -> None:
+        # Arrange
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
+
+        # Act
+        results = self.bq_client.get_row_counts_for_tables(self.mock_dataset_id)
+
+        # Assert
+        self.assertEqual(results, {})
+        self.mock_client.get_dataset.assert_called()
+        self.mock_client.query.assert_not_called()
+
     def test_create_or_update_view_creates_view(self) -> None:
         """create_or_update_view creates a View if it does not exist."""
         self.mock_client.update_table.side_effect = exceptions.NotFound("!")

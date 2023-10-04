@@ -309,13 +309,10 @@ class IngestOpsEndpointTests(TestCase):
 
     @patch("recidiviz.admin_panel.routes.ingest_ops.get_latest_run_ingest_view_results")
     def test_get_latest_run_ingest_view_results(
-        self, mock_watermarks: mock.MagicMock
+        self, mock_ingest_view_counts: mock.MagicMock
     ) -> None:
         # Arrange
-        mock_watermarks.return_value = {
-            "foo_tag": 127,
-            "bar_tag": 0,
-        }
+        mock_ingest_view_counts.return_value = {"foo_tag": 127, "bar_tag": 0}
 
         # Act
         response = self.client.get(
@@ -325,7 +322,21 @@ class IngestOpsEndpointTests(TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json,
-            {"foo_tag": 127, "bar_tag": 0},
+        self.assertEqual(response.json, {"foo_tag": 127, "bar_tag": 0})
+
+    @patch("recidiviz.admin_panel.routes.ingest_ops.get_latest_run_state_results")
+    def test_get_latest_run_state_results(
+        self, mock_state_counts: mock.MagicMock
+    ) -> None:
+        # Arrange
+        mock_state_counts.return_value = {"state_person": 2341234, "state_staff": 1923}
+
+        # Act
+        response = self.client.get(
+            "/api/ingest_operations/get_latest_run_state_results/US_XX/PRIMARY",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json, {"state_person": 2341234, "state_staff": 1923})
