@@ -18,6 +18,7 @@
 import { Alert, Layout, Spin, Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import classNames from "classnames";
+import moment from "moment";
 import { useHistory } from "react-router-dom";
 import { getAllIngestInstanceDataflowEnabledStatuses } from "../../AdminPanelAPI";
 import { getAllLatestDataflowJobs } from "../../AdminPanelAPI/IngestOperations";
@@ -44,10 +45,15 @@ export interface IngestDataflowJobCellFormattingInfo {
   sortRank: number;
 }
 
+export type DataflowJobStatusMetadata = {
+  status: JobState;
+  terminationTime: number | undefined;
+};
+
 export type IngestInstanceDataflowStatusTableInfo = {
   stateCode: string;
-  dataflowPipelineStatusPrimary: JobState;
-  dataflowPipelineStatusSecondary: JobState;
+  primaryStatus: DataflowJobStatusMetadata;
+  secondaryStatus: DataflowJobStatusMetadata;
 };
 
 const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
@@ -135,24 +141,30 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     return queueStatusColorDict[currentState].color;
   }
 
-  function getPipelineStatus(
+  function getJobMetadataForCell(
     key: string,
     instance: DirectIngestInstance,
     enabledStatuses: IngestInstanceDataflowEnabledStatusResponse,
     pipelineStatuses: DataflowIngestPipelineJobResponse
-  ): JobState {
+  ): DataflowJobStatusMetadata {
     const enabled =
       instance === DirectIngestInstance.PRIMARY
         ? enabledStatuses[key].primary
         : enabledStatuses[key].secondary;
     if (enabled) {
       if (instance === DirectIngestInstance.PRIMARY) {
-        return getCurrentStatus(pipelineStatuses[key].primary);
+        return {
+          status: getCurrentStatus(pipelineStatuses[key].primary),
+          terminationTime: pipelineStatuses[key].primary?.terminationTime,
+        };
       }
-      return getCurrentStatus(pipelineStatuses[key].secondary);
+      return {
+        status: getCurrentStatus(pipelineStatuses[key].secondary),
+        terminationTime: pipelineStatuses[key].secondary?.terminationTime,
+      };
     }
 
-    return JobState.NOT_ENABLED;
+    return { status: JobState.NOT_ENABLED, terminationTime: undefined };
   }
 
   const dataSource: IngestInstanceDataflowStatusTableInfo[] = Object.keys(
@@ -160,13 +172,13 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
   ).map((key) => {
     return {
       stateCode: key,
-      dataflowPipelineStatusPrimary: getPipelineStatus(
+      primaryStatus: getJobMetadataForCell(
         key,
         DirectIngestInstance.PRIMARY,
         stateDataflowEnabledStatuses,
         dataflowPipelines
       ),
-      dataflowPipelineStatusSecondary: getPipelineStatus(
+      secondaryStatus: getJobMetadataForCell(
         key,
         DirectIngestInstance.SECONDARY,
         stateDataflowEnabledStatuses,
@@ -175,9 +187,19 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     };
   });
 
-  // TODO(#24305): add X mins/hours ago to status cell info
-  const renderDataflowStatusCell = (status: JobState) => {
-    return <div className={classNames(getJobStateColor(status))}>{status}</div>;
+  const renderDataflowStatusCell = (
+    statusMetadata: DataflowJobStatusMetadata
+  ) => {
+    return (
+      <div className={classNames(getJobStateColor(statusMetadata.status))}>
+        {statusMetadata.status}
+        {statusMetadata.terminationTime
+          ? `\n(${moment(
+              new Date(statusMetadata.terminationTime * 1000)
+            ).fromNow()})`
+          : null}
+      </div>
+    );
   };
 
   const columns: ColumnsType<IngestInstanceDataflowStatusTableInfo> = [
@@ -195,18 +217,18 @@ const IngestDataflowCurrentStatusSummary = (): JSX.Element => {
     },
     {
       title: "Ingest Pipeline Status (Primary)",
-      dataIndex: "dataflowPipelineStatusPrimary",
-      key: "dataflowPipelineStatusPrimary",
-      render: (dataflowPipelineStatusPrimary: JobState) => (
-        <span>{renderDataflowStatusCell(dataflowPipelineStatusPrimary)}</span>
+      dataIndex: "primaryStatus",
+      key: "primaryStatus",
+      render: (primaryStatus: DataflowJobStatusMetadata) => (
+        <span>{renderDataflowStatusCell(primaryStatus)}</span>
       ),
     },
     {
       title: "Ingest Pipeline Status (Secondary)",
-      dataIndex: "dataflowPipelineStatusSecondary",
-      key: "dataflowPipelineStatusSecondary",
-      render: (dataflowPipelineStatusSecondary: JobState) => (
-        <span>{renderDataflowStatusCell(dataflowPipelineStatusSecondary)}</span>
+      dataIndex: "secondaryStatus",
+      key: "secondaryStatus",
+      render: (secondaryStatus: DataflowJobStatusMetadata) => (
+        <span>{renderDataflowStatusCell(secondaryStatus)}</span>
       ),
     },
   ];

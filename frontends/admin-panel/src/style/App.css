@@ -221,7 +221,8 @@ tr.metadata-table-row > td.ant-table-cell > div {
 .job-succeeded {
   color: #ffffff;
   background-color: #389e0d;
-  width: 150px;
+  width: 300px;
+  white-space: pre-line;
   text-align: center;
 }
 
