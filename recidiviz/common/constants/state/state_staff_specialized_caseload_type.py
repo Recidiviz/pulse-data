@@ -127,6 +127,7 @@ class StateStaffCaseloadType(StateEntityEnum):
     DRUG_COURT = state_enum_strings.state_staff_caseload_type_drug_court
     VETERANS_COURT = state_enum_strings.state_staff_caseload_type_veterans_court
     COMMUNITY_FACILITY = state_enum_strings.state_staff_caseload_type_community_facility
+    DOMESTIC_VIOLENCE = state_enum_strings.state_staff_caseload_type_domestic_violence
     OTHER = state_enum_strings.state_staff_caseload_type_other
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
@@ -179,6 +180,9 @@ _CASELOAD_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateStaffCaseloadType.COMMUNITY_FACILITY: (
         "A caseload that consists of people who are being supervised within "
         "a community reentry center or other community-based facility."
+    ),
+    StateStaffCaseloadType.DOMESTIC_VIOLENCE: (
+        "Any caseload that consists of people who are involved in domestic violence proceedings."
     ),
     StateStaffCaseloadType.GENERAL: ("Any caseload that is not specialized."),
     StateStaffCaseloadType.OTHER: (
