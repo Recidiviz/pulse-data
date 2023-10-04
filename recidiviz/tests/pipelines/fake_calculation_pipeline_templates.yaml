@@ -52,11 +52,7 @@ supplemental_dataset_pipelines:
     region: us-east1
 
 ingest_pipelines:
-  - pipeline: ingest_pipeline
-    job_name: us-xx-ingest
-    state_code: US_XX
+  - state_code: US_XX
     region: us-east1
-  - pipeline: ingest_pipeline_2
-    job_name: us-yy-ingest
-    state_code: US_YY
+  - state_code: US_YY
     region: us-east2

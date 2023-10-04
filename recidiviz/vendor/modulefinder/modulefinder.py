@@ -227,7 +227,10 @@ class ModuleFinder:
                 call_chain.extend(self.call_chain_for_name(caller_name))
                 return call_chain
 
-        raise ValueError(f"Expected call chain to include root module: {root_module}.")
+        raise ValueError(
+            f"Expected package [{name}] call chain to include root module "
+            f"[{root_module}]: {call_chain}"
+        )
 
     def msg(self, level: int, out_str: str, *args: Any) -> None:
         if level <= self.debug:

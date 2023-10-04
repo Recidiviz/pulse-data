@@ -46,7 +46,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                 ("ID1", "US_DD_ID_TYPE"),
                 (
                     (
-                        datetime(2022, 7, 1, 0, 0).timestamp(),
+                        datetime(2022, 7, 4, 0, 0).timestamp(),
                         StatePerson(
                             state_code=self.region_code.value,
                             external_ids=[
@@ -64,26 +64,6 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                                     admission_date=date(2018, 1, 1),
                                     release_date=date(2019, 1, 1),
                                 ),
-                            ],
-                        ),
-                    )
-                ),
-            ),
-            (
-                ("ID1", "US_DD_ID_TYPE"),
-                (
-                    (
-                        datetime(2022, 7, 3, 0, 0).timestamp(),
-                        StatePerson(
-                            state_code=self.region_code.value,
-                            external_ids=[
-                                StatePersonExternalId(
-                                    state_code=self.region_code.value,
-                                    external_id="ID1",
-                                    id_type="US_DD_ID_TYPE",
-                                ),
-                            ],
-                            incarceration_periods=[
                                 StateIncarcerationPeriod(
                                     state_code=self.region_code.value,
                                     external_id="IC2",
@@ -91,27 +71,6 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                                     admission_date=date(2020, 1, 1),
                                     release_date=date(2021, 1, 1),
                                 ),
-                            ],
-                        ),
-                    )
-                ),
-            ),
-            (
-                ("ID1", "US_DD_ID_TYPE"),
-                (
-                    (
-                        datetime(2022, 7, 4, 0, 0).timestamp(),
-                        StatePerson(
-                            state_code=self.region_code.value,
-                            external_ids=[
-                                StatePersonExternalId(
-                                    state_code=self.region_code.value,
-                                    external_id="ID1",
-                                    id_type="US_DD_ID_TYPE",
-                                ),
-                            ],
-                            # This is the result of a merged tree.
-                            incarceration_periods=[
                                 StateIncarcerationPeriod(
                                     state_code=self.region_code.value,
                                     external_id="IC4",

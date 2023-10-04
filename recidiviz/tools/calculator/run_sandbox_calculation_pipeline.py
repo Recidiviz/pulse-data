@@ -66,34 +66,17 @@ Examples:
         --sandbox_output_dataset username_supplemental_data \
         --state_code US_IX
 
-    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
-        --pipeline ingest \
-        --type ingest \
-        --project recidiviz-staging \
-        --job_name my-mi-ingest-test \
-        --sandbox_output_dataset username_ingest_data \
-        --sandbox_ingest_view_results_output_dataset username_ingest_view_data \
-        --state_code US_MI \
-        --materialization_method latest \
-        --service_account_email some-account@some-project.iam.gserviceaccount.com
-
 You must also include any arguments required by the given pipeline.
+
+NOTE: To run ingest pipelines, use
+    recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline instead.
 """
 from __future__ import absolute_import
 
 import argparse
-import json
 import logging
-import os
-import time
 from typing import List, Tuple, Type
 
-import google.auth
-import google.auth.transport.requests
-import requests
-
-from recidiviz import pipelines
-from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
@@ -102,8 +85,10 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation, run_command
-from recidiviz.utils.environment import get_environment_for_project
+from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
+    run_sandbox_dataflow_pipeline,
+)
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 
 def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
@@ -115,7 +100,7 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
         type=str,
         dest="pipeline_type",
         help="type of the pipeline",
-        choices=["metrics", "normalization", "supplemental", "ingest"],
+        choices=["metrics", "normalization", "supplemental"],
         required=True,
     )
 
@@ -143,51 +128,15 @@ def parse_pipeline_parameters(
         parameter_cls = NormalizationPipelineParameters
     elif pipeline_type == "supplemental":
         parameter_cls = SupplementalPipelineParameters
-    elif pipeline_type == "ingest":
-        parameter_cls = IngestPipelineParameters
     else:
         raise ValueError(f"Unexpected pipeline_type [{pipeline_type}]")
 
     return parameter_cls.parse_from_args(remaining_args, sandbox_pipeline=True)
 
 
-def fetch_google_auth_token() -> str:
-    creds, _ = google.auth.default()
-
-    # creds.valid is False, and creds.token is None
-    # Need to refresh credentials to populate those
-    auth_req = google.auth.transport.requests.Request()
-    creds.refresh(auth_req)
-
-    return creds.token  # type: ignore[attr-defined]
-
-
-def get_cloudbuild_path() -> str:
-    pipeline_root_path = os.path.dirname(pipelines.__file__)
-    cloudbuild_path = "cloudbuild.pipelines.dev.yaml"
-
-    return os.path.join(pipeline_root_path, cloudbuild_path)
-
-
-def get_template_path(pipeline_type: str) -> str:
-    pipeline_root_path = os.path.dirname(pipelines.__file__)
-    template_path = f"{pipeline_type}/template_metadata.json"
-    return os.path.join(pipeline_root_path, template_path)
-
-
-def run_sandbox_calculation_pipeline() -> None:
-    """Runs the pipeline designated by the given --pipeline argument."""
+def main() -> None:
     known_args, remaining_args = parse_run_arguments()
     params = parse_pipeline_parameters(known_args.pipeline_type, remaining_args)
-    _, username = os.path.split(params.template_metadata_subdir)
-    launch_body = params.flex_template_launch_body()
-    template_gcs_path = params.template_gcs_path(params.project)
-    cloudbuild_absolute_path = get_cloudbuild_path()
-    template_absolute_path = get_template_path(params.flex_template_name)
-    artifact_reg_image_path = (
-        f"us-docker.pkg.dev/{params.project}/dataflow-dev/{username}/build:latest"
-    )
-
     # Have the user confirm that the sandbox dataflow dataset exists.
     for attr in dir(params):
         if attr.endswith("output") and isinstance(getattr(params, attr), str):
@@ -195,68 +144,9 @@ def run_sandbox_calculation_pipeline() -> None:
                 "Have you already created a sandbox dataflow dataset called "
                 f"`{getattr(params, attr)}` using `create_or_update_dataflow_sandbox`?",
             )
-
-    if not known_args.skip_build:
-        submit_build_start = time.time()
-        environment = get_environment_for_project(params.project)
-        # Build and submit the image to "us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}-build:latest"
-        print(
-            "Submitting build (this takes a few minutes, or longer on the first run).....\n"
-        )
-        run_command(
-            f"""
-                gcloud builds submit \
-                --project={params.project} \
-                --config {cloudbuild_absolute_path} \
-                --substitutions=_IMAGE_PATH={artifact_reg_image_path},_GOOGLE_CLOUD_PROJECT={params.project},_RECIDIVIZ_ENV={environment.value}
-            """,
-            timeout_sec=900,
-        )
-
-        submit_build_exec_seconds = time.time() - submit_build_start
-        build_minutes, build_seconds = divmod(submit_build_exec_seconds, 60)
-        print(
-            f"Submitted build in {build_minutes} minutes and {build_seconds} seconds.\n"
-        )
-
-        # Upload the flex template json, tagged with the image that should be used
-        # This step is only necessary when the template_metadata.json file or image path has been changed
-        print(f"Building flex template (uploading to {template_gcs_path}) .....\n")
-        run_command(
-            f"gcloud dataflow flex-template build \
-            {template_gcs_path} \
-            --image {artifact_reg_image_path} \
-            --sdk-language PYTHON \
-            --metadata-file {template_absolute_path}"
-        )
-    else:
-        print("--skip_build is set... skipping build...")
-
-    # Run the dataflow job
-    pipeline_launch_body = json.dumps(launch_body, indent=2)
-    print("Starting flex template job with body:")
-    print(pipeline_launch_body)
-
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + fetch_google_auth_token(),
-    }
-    response = requests.post(
-        f"https://dataflow.googleapis.com/v1b3/projects/{params.project}/locations/{params.region}/flexTemplates:launch",
-        headers=headers,
-        data=pipeline_launch_body,
-        timeout=60,
-    )
-
-    if response.ok:
-        print(
-            f"Job {params.job_name} successfully launched - go to https://console.cloud.google.com/dataflow/jobs?project={params.project} to monitor job progress"
-        )
-    else:
-        print("Job launch failed..")
-        print(response.text)
+    run_sandbox_dataflow_pipeline(params, known_args.skip_build)
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    run_sandbox_calculation_pipeline()
+    main()

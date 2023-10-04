@@ -358,7 +358,7 @@ def update_state_specific_ingest_view_result_schema(
     ingest_view_dataset_id: str,
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
-    default_table_expiration_ms: Optional[int] = None,
+    default_table_expiration_ms: Optional[int],
 ) -> None:
     """Updates each table in the ingest view dataset to match expected schemas."""
     bq_client = BigQueryClientImpl()

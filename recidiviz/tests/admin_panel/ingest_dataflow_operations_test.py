@@ -29,10 +29,10 @@ from recidiviz.admin_panel.ingest_dataflow_operations import (
     DataflowPipelineMetadataResponse,
     get_all_latest_ingest_jobs,
     get_latest_run_ingest_view_results,
-    ingest_pipeline_name,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.pipeline_utils import ingest_pipeline_name
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.utils.yaml_dict import YAMLDict
 

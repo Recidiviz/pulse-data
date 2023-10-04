@@ -650,6 +650,7 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
             "us_xx_dataflow_ingest_view_results_primary",
             StateCode.US_XX,
             DirectIngestInstance.PRIMARY,
+            default_table_expiration_ms=None,
         )
 
         self.mock_client.create_table_with_schema.assert_called()
@@ -683,6 +684,7 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
             "us_xx_dataflow_ingest_view_results_primary",
             StateCode.US_XX,
             DirectIngestInstance.PRIMARY,
+            default_table_expiration_ms=None,
         )
         self.mock_client.update_schema.assert_called()
         self.mock_client.create_table_with_schema.assert_not_called()
