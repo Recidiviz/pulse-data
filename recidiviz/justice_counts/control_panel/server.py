@@ -34,6 +34,7 @@ from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.error_handlers import (
     register_error_handlers,
 )
+from recidiviz.justice_counts.control_panel.routes.admin import get_admin_blueprint
 from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
@@ -130,6 +131,12 @@ def create_app(config: Optional[Config] = None) -> Flask:
             auth_decorator=config.AUTH_DECORATOR,
         ),
         url_prefix="/auth",
+    )
+    app.register_blueprint(
+        get_admin_blueprint(
+            auth_decorator=config.AUTH_DECORATOR,
+        ),
+        url_prefix="/admin",
     )
 
     # Need to silence mypy error `Cannot assign to a method`
