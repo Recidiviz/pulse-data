@@ -400,6 +400,7 @@ def main() -> int:
                 # TODO(#6859): Get rid of this dependency
                 "recidiviz.pipelines",
                 "recidiviz.calculator.query.state.views.dashboard.pathways",
+                "recidiviz.calculator.query.state.views.outliers",
                 "recidiviz.case_triage",
                 "recidiviz.cloud_memorystore",
                 "recidiviz.cloud_storage",

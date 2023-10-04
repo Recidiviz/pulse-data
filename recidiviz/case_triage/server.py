@@ -33,6 +33,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
     PATHWAYS_OFFLINE_DEMO_STATE,
 )
 from recidiviz.case_triage.error_handlers import register_error_handlers
+from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
 from recidiviz.case_triage.util import (
     get_rate_limit_storage_uri,
@@ -154,9 +155,11 @@ def set_headers(response: Response) -> Response:
 # Routes & Blueprints
 pathways_api_blueprint = create_pathways_api_blueprint()
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
+outliers_api_blueprint = create_outliers_api_blueprint()
 # Only the pathways endpoints are accessible in offline mode
 if not in_offline_mode():
     app.register_blueprint(workflows_blueprint, url_prefix="/workflows")
+    app.register_blueprint(outliers_api_blueprint, url_prefix="/outliers")
 
     @app.route("/")
     def index() -> Response:
