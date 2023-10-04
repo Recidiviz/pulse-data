@@ -18,9 +18,11 @@
 all agencies with Publisher accounts. Includes fields like "num_record_with_data",
 "num_metrics_configured", etc.
 
-python -m recidiviz.justice_counts.jobs.csg_data_pull.py \
+pipenv run python -m recidiviz.justice_counts.jobs.csg_data_pull \
   --project-id=PROJECT_ID \
+  --dry-run=true
 """
+import argparse
 import datetime
 import logging
 from collections import defaultdict
@@ -30,17 +32,25 @@ from typing import Any, Dict, List
 import pandas as pd
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
-from sqlalchemy.engine import Engine
 
 from recidiviz.auth.auth0_client import Auth0Client
+from recidiviz.justice_counts.utils.constants import AGENCIES_TO_EXCLUDE
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
+from recidiviz.utils.environment import (
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+)
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_bool
 
 # Spreadsheet Name: Justice Counts Data Pull Spreadsheet
 # https://docs.google.com/spreadsheets/d/1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0/edit#gid=870547342
@@ -54,17 +64,30 @@ NUM_METRICS_WITH_DATA = "num_metrics_with_data"
 NUM_METRICS_CONFIGURED = "num_metrics_configured"
 NUM_METRICS_AVAILABLE = "num_metrics_available"
 NUM_METRICS_UNAVAILABLE = "num_metrics_unavailable"
-IS_ALPHA_PARTNER = "is_alpha_partner"
 IS_SUPERAGENCY = "is_superagency"
+IS_CHILD_AGENCY = "is_child_agency"
 
 # To add:
 # NUM_METRICS_UNCONFIGURED = "num_metrics_unconfigured"
 # NUM_METRICS_DEFINED = "num_metrics_defined"
 
-# These are the IDs of our alpha partner agencies in production
-ALPHA_PARTNER_IDS = {74, 75, 73, 77, 79, 80, 81, 83, 84, 85}
-
 logger = logging.getLogger(__name__)
+
+
+def create_parser() -> argparse.ArgumentParser:
+    """Returns an argument parser for the script."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--project-id",
+        choices=[
+            GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+            GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+        ],
+        help="Used to select which GCP project in which to run this script.",
+        required=False,
+    )
+    parser.add_argument("--dry-run", type=str_to_bool, default=False)
+    return parser
 
 
 def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
@@ -79,7 +102,7 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
 
     last_update = None
     for datapoint in datapoints:
-        datapoint_last_update = datapoint.get("last_updated")
+        datapoint_last_update = datapoint["last_updated"]
         # If the agency's true last_update was prior to the new last_update field was
         # added to our schema, use the most recent created_at field
         if datapoint_last_update is not None:
@@ -125,9 +148,8 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
     }
 
 
-def generate_agency_summary_csv(engine: Engine) -> None:
+def generate_agency_summary_csv(session: Session, dry_run: bool) -> None:
     """Generates a CSV with data about all agencies with Publisher accounts."""
-    session = Session(bind=engine)
 
     # Authenticate with the Google Sheets API
     credentials = GoogleCredentials.get_application_default()
@@ -143,7 +165,9 @@ def generate_agency_summary_csv(engine: Engine) -> None:
     auth0_users = auth0_client.get_all_users()
     auth0_user_id_to_user = {user["user_id"]: user for user in auth0_users}
 
-    agencies = session.execute("select * from source where type = 'agency'").all()
+    original_agencies = session.execute(
+        "select * from source where type = 'agency' and LOWER(name) not like '%test%'"
+    ).all()
     agency_user_account_associations = session.execute(
         "select * from agency_user_account_association"
     ).all()
@@ -165,19 +189,9 @@ def generate_agency_summary_csv(engine: Engine) -> None:
             and "recidiviz" not in auth0_user["email"]
         ):
             agency_id_to_users[assoc["agency_id"]].append(auth0_user)
-
-    # We have some test agencies in production, currently distinguished only in name
-    test_agency_ids = {
-        a["id"] for a in agencies if "TEST" in a["name"] or "Test" in a["name"]
-    }
-    # Skip child agencies, since a superagency might have hundreds of them
-    child_agency_ids = {a["id"] for a in agencies if a["super_agency_id"]}
-
-    original_agencies = agencies
+    agencies_to_exclude = AGENCIES_TO_EXCLUDE.keys()
     agencies = [
-        dict(a)
-        for a in original_agencies
-        if a["id"] not in (test_agency_ids | child_agency_ids)
+        dict(a) for a in original_agencies if a["id"] not in agencies_to_exclude
     ]
     agency_id_to_agency = {a["id"]: a for a in agencies}
 
@@ -218,8 +232,8 @@ def generate_agency_summary_csv(engine: Engine) -> None:
         agency[NUM_METRICS_CONFIGURED] = 0
         agency[NUM_METRICS_AVAILABLE] = 0
         agency[NUM_METRICS_UNAVAILABLE] = 0
-        agency[IS_ALPHA_PARTNER] = agency["id"] in ALPHA_PARTNER_IDS
         agency[IS_SUPERAGENCY] = bool(agency["is_superagency"])
+        agency[IS_CHILD_AGENCY] = bool(agency["super_agency_id"])
 
     agency_id_to_datapoints_groupby = groupby(
         sorted(datapoints, key=lambda x: x["source_id"]),
@@ -247,8 +261,8 @@ def generate_agency_summary_csv(engine: Engine) -> None:
         NUM_METRICS_CONFIGURED,
         NUM_METRICS_AVAILABLE,
         NUM_METRICS_UNAVAILABLE,
-        IS_ALPHA_PARTNER,
         IS_SUPERAGENCY,
+        IS_CHILD_AGENCY,
         "systems",
     ]
     df = (
@@ -262,41 +276,61 @@ def generate_agency_summary_csv(engine: Engine) -> None:
     now = datetime.datetime.now()
     new_sheet_title = f"{now.month}-{now.day}-{now.year}"
 
-    # Create a new worksheet in the spreadsheet
-    request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 1}}}
+    if dry_run is False:
+        # Create a new worksheet in the spreadsheet
+        request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 1}}}
 
-    # Create new sheet
-    spreadsheet_service.spreadsheets().batchUpdate(
-        spreadsheetId=SPREADSHEET_ID, body={"requests": [request]}
-    ).execute()
+        # Create new sheet
+        spreadsheet_service.spreadsheets().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID, body={"requests": [request]}
+        ).execute()
 
-    logger.info("New Sheet Created")
+        logger.info("New Sheet Created")
 
-    # Format data to fit Google API specifications.
-    # Google API spec requires a list of lists,
-    # each list representing a row.
-    data_to_write = [columns]
-    data_to_write.extend(df.astype(str).values.tolist())
-    body = {"values": data_to_write}
-    range_name = f"{new_sheet_title}!A1"  #
-    spreadsheet_service.spreadsheets().values().update(
-        spreadsheetId=SPREADSHEET_ID,
-        range=range_name,
-        valueInputOption="RAW",
-        body=body,
-    ).execute()
+        # Format data to fit Google API specifications.
+        # Google API spec requires a list of lists,
+        # each list representing a row.
+        data_to_write = [columns]
+        data_to_write.extend(df.astype(str).values.tolist())
+        body = {"values": data_to_write}
+        range_name = f"{new_sheet_title}!A1"  #
+        spreadsheet_service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=range_name,
+            valueInputOption="RAW",
+            body=body,
+        ).execute()
 
-    logger.info("Sheet '%s' added and data written.", new_sheet_title)
+        logger.info("Sheet '%s' added and data written.", new_sheet_title)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    database_key = SQLAlchemyDatabaseKey.for_schema(
-        SchemaType.JUSTICE_COUNTS,
-    )
-    justice_counts_engine = SQLAlchemyEngineManager.init_engine(
-        database_key=database_key,
-        secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
-    )
+    args = create_parser().parse_args()
+    if args.project_id is not None:
+        with local_project_id_override(args.project_id):
+            schema_type = SchemaType.JUSTICE_COUNTS
+            database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
 
-    generate_agency_summary_csv(justice_counts_engine)
+            with cloudsql_proxy_control.connection(
+                schema_type=schema_type,
+                secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            ):
+                with SessionFactory.for_proxy(
+                    database_key=database_key,
+                    secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+                    autocommit=False,
+                ) as global_session:
+                    generate_agency_summary_csv(
+                        session=global_session, dry_run=args.dry_run
+                    )
+    else:
+        database_key = SQLAlchemyDatabaseKey.for_schema(
+            SchemaType.JUSTICE_COUNTS,
+        )
+        justice_counts_engine = SQLAlchemyEngineManager.init_engine(
+            database_key=database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+        )
+        global_session = Session(bind=justice_counts_engine)
+        generate_agency_summary_csv(session=global_session, dry_run=args.dry_run)
