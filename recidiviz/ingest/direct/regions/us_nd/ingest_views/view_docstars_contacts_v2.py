@@ -48,6 +48,21 @@ WITH contacts_with_split_supervisor_name AS (
   AND CONTACT_CODE != 'SG'
   -- ND includes supervision and FTR contacts. Only include supervision contacts
   AND CATEGORY = 'Supervision'
+ ),
+ latest_officer_info AS (
+  SELECT DISTINCT
+    OFFICER,
+    FNAME,
+    LNAME
+  FROM (
+    SELECT
+      OFFICER,
+      FNAME,
+      LNAME,
+      ROW_NUMBER() OVER(PARTITION BY FNAME, LNAME ORDER BY STATUS = '(1)' DESC, CAST(RecDate AS DATETIME) DESC, OFFICER DESC) AS rn
+    FROM {docstars_officers}
+  ) recency_ranked
+  WHERE rn = 1
  )
 SELECT 
   RecID,
@@ -64,7 +79,7 @@ SELECT
   contacts_with_split_supervisor_name.FNAME,
   CAST(OFFICER AS INT) AS OFFICER, 
   FROM contacts_with_split_supervisor_name LEFT JOIN
-  {docstars_officers} officers
+  latest_officer_info officers
   ON (
     contacts_with_split_supervisor_name.LNAME = officers.LNAME AND 
     contacts_with_split_supervisor_name.FNAME = officers.FNAME
