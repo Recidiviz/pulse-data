@@ -28,6 +28,7 @@ from google.cloud.dataflow_v1beta3 import JobState, ListJobsRequest
 
 import recidiviz
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataflow_dataset,
@@ -179,22 +180,20 @@ def get_latest_run_ingest_view_results(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> Dict[str, int]:
     bq_client = BigQueryClientImpl()
-
-    results_dataset = ingest_view_materialization_results_dataflow_dataset(
-        state_code, ingest_instance
+    return bq_client.get_row_counts_for_tables(
+        ingest_view_materialization_results_dataflow_dataset(
+            state_code, ingest_instance
+        )
     )
-    if not bq_client.dataset_exists(bq_client.dataset_ref_for_id(results_dataset)):
-        return {}
 
-    results = bq_client.run_query_async(
-        query_str=f"""
-            SELECT _TABLE_SUFFIX as ingest_view_name, COUNT(*) as num_rows
-            FROM `{metadata.project_id()}.{results_dataset}.*`
-            GROUP BY _TABLE_SUFFIX
-            """,
-        use_query_cache=False,
+
+def get_latest_run_state_results(
+    state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> Dict[str, int]:
+    bq_client = BigQueryClientImpl()
+    return bq_client.get_row_counts_for_tables(
+        state_dataset_for_state_code(state_code, ingest_instance)
     )
-    return {row["ingest_view_name"]: row["num_rows"] for row in results}
 
 
 def is_ingest_enabled_in_secondary(

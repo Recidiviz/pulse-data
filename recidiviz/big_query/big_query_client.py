@@ -235,6 +235,13 @@ class BigQueryClient:
         """Returns a list of tables (skipping views) in the dataset with the given dataset id."""
 
     @abc.abstractmethod
+    def get_row_counts_for_tables(self, dataset_id: str) -> Dict[str, int]:
+        """Returns the row counts for each table in a dataset.
+
+        If a table has no rows, it will be omitted from the output. If the dataset does
+        not exist, the output will be empty."""
+
+    @abc.abstractmethod
     def create_table(
         self, table: bigquery.Table, overwrite: bool = False
     ) -> bigquery.Table:
@@ -1182,6 +1189,20 @@ class BigQueryClientImpl(BigQueryClient):
             for table in self.client.list_tables(dataset_id)
             if table.table_type == "TABLE"
         )
+
+    def get_row_counts_for_tables(self, dataset_id: str) -> Dict[str, int]:
+        if not self.dataset_exists(self.dataset_ref_for_id(dataset_id)):
+            return {}
+
+        results = self.run_query_async(
+            query_str=f"""
+                SELECT _TABLE_SUFFIX as table_id, COUNT(*) as num_rows
+                FROM `{metadata.project_id()}.{dataset_id}.*`
+                GROUP BY _TABLE_SUFFIX
+                """,
+            use_query_cache=False,
+        )
+        return {row["table_id"]: row["num_rows"] for row in results}
 
     def get_table(
         self, dataset_ref: bigquery.DatasetReference, table_id: str
