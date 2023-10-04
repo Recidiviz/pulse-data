@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements api routes for the Justice Counts Publisher Admin Panel."""
+from http import HTTPStatus
 from typing import Callable
 
 from flask import Blueprint, Response, jsonify
 from flask_sqlalchemy_session import current_session
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
@@ -95,5 +97,34 @@ def get_admin_blueprint(
                 "roles": [role.value for role in schema.UserAccountRole],
             }
         )
+
+    @admin_blueprint.route(
+        "/agency/<super_agency_id>/child-agency/copy", methods=["POST"]
+    )
+    @auth_decorator
+    def copy_metric_config_to_child_agencies(super_agency_id: int) -> Response:
+        """Copies metric settings from a super agency to its child agency."""
+        super_agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=super_agency_id
+        )
+
+        child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
+            session=current_session, agency_ids=[super_agency_id]
+        )
+        super_agency_metric_settings = DatapointInterface.get_metric_settings_by_agency(
+            session=current_session,
+            agency=super_agency,
+        )
+
+        for child_agency in child_agencies:
+            for metric_setting in super_agency_metric_settings:
+                DatapointInterface.add_or_update_agency_datapoints(
+                    session=current_session,
+                    agency=child_agency,
+                    agency_metric=metric_setting,
+                )
+
+        current_session.commit()
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     return admin_blueprint

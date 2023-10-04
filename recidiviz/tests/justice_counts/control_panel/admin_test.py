@@ -21,6 +21,12 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
+from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.metrics import law_enforcement
+from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+    CustomReportingFrequency,
+)
+from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     AgencyUserAccountAssociation,
@@ -159,8 +165,98 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             response_json["roles"], [enum.value for enum in schema.UserAccountRole]
         )
         agency_json = response_json["agency"]
-        user = agency.user_account_assocs[0].user_account
         self.assertEqual(agency_json["name"], agency.name)
         self.assertEqual(agency_json["id"], agency.id)
         self.assertEqual(len(agency_json["team"]), 1)
-        self.assertEqual(agency_json["team"][0]["name"], user.name)
+        self.assertEqual(agency_json["team"][0]["name"], "Jane Doe")
+
+    def test_copy_metric_settings_to_child_agencies(self) -> None:
+        self.load_users_and_agencies()
+        super_agency = (
+            self.session.query(schema.Agency)
+            .filter(schema.Agency.name == "Agency Alpha")
+            .one()
+        )
+
+        super_agency_metric_key_to_agency_datapoints = (
+            DatapointInterface.get_metric_key_to_agency_datapoints(
+                session=self.session, agency_id=super_agency.id
+            )
+        )
+
+        child_agency = schema.Agency(
+            name="Agency Alpha Child Agency",
+            super_agency_id=super_agency.id,
+            systems=["LAW_ENFORCEMENT"],
+        )
+
+        disabled_metric = schema.Datapoint(
+            metric_definition_key=law_enforcement.funding.key,
+            enabled=False,
+            source_id=super_agency.id,
+            is_report_datapoint=False,
+        )
+
+        custom_reporting_frequency = schema.Datapoint(
+            metric_definition_key=law_enforcement.funding.key,
+            source_id=super_agency.id,
+            context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+            value=(
+                CustomReportingFrequency(
+                    frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
+                ).to_json_str()
+            ),
+            is_report_datapoint=False,
+        )
+
+        self.session.add_all(
+            [child_agency, disabled_metric, custom_reporting_frequency]
+        )
+        self.session.commit()
+        self.session.refresh(child_agency)
+        child_agency_id = child_agency.id
+        super_agency_id = super_agency.id
+
+        response = self.client.post(
+            f"/admin/agency/{super_agency.id}/child-agency/copy"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        child_agency_metric_key_to_agency_datapoints = (
+            DatapointInterface.get_metric_key_to_agency_datapoints(
+                session=self.session, agency_id=child_agency_id
+            )
+        )
+        super_agency_metric_key_to_agency_datapoints = (
+            DatapointInterface.get_metric_key_to_agency_datapoints(
+                session=self.session, agency_id=super_agency_id
+            )
+        )
+
+        for key in super_agency_metric_key_to_agency_datapoints:
+            self.assertEqual(
+                {
+                    (
+                        datapoint.is_report_datapoint,
+                        datapoint.enabled,
+                        datapoint.value,
+                        datapoint.context_key,
+                    )
+                    for datapoint in child_agency_metric_key_to_agency_datapoints.get(
+                        key, []
+                    )
+                    if datapoint.value is not None
+                },
+                {
+                    (
+                        datapoint.is_report_datapoint,
+                        datapoint.enabled,
+                        datapoint.value,
+                        datapoint.context_key,
+                    )
+                    for datapoint in super_agency_metric_key_to_agency_datapoints.get(
+                        key, []
+                    )
+                    if datapoint.value is not None
+                },
+            )
