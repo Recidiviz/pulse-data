@@ -61,6 +61,16 @@ def get_admin_blueprint(
             user_json.append(user.to_json(agencies=user_agencies))
         return jsonify({"users": user_json})
 
+    @admin_blueprint.route("/user/<user_id>", methods=["GET"])
+    @auth_decorator
+    def get_user(user_id: int) -> Response:
+        """Returns metadata for an individual user."""
+        user = UserAccountInterface.get_user_by_id(
+            session=current_session, user_account_id=user_id
+        )
+        agencies = [assoc.agency for assoc in user.agency_assocs]
+        return jsonify(user.to_json(agencies=agencies))
+
     # Agency
     @admin_blueprint.route("/agency", methods=["GET"])
     @auth_decorator
