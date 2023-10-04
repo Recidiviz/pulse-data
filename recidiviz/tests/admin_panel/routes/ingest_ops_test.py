@@ -306,3 +306,26 @@ class IngestOpsEndpointTests(TestCase):
             response.json,
             {"foo_tag": "2020-01-01T00:00:00", "bar_tag": "2023-09-29T03:50:47"},
         )
+
+    @patch("recidiviz.admin_panel.routes.ingest_ops.get_latest_run_ingest_view_results")
+    def test_get_latest_run_ingest_view_results(
+        self, mock_watermarks: mock.MagicMock
+    ) -> None:
+        # Arrange
+        mock_watermarks.return_value = {
+            "foo_tag": 127,
+            "bar_tag": 0,
+        }
+
+        # Act
+        response = self.client.get(
+            "/api/ingest_operations/get_latest_run_ingest_view_results/US_XX/PRIMARY",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json,
+            {"foo_tag": 127, "bar_tag": 0},
+        )

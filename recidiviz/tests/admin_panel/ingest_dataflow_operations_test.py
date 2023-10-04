@@ -22,10 +22,13 @@ from unittest import mock
 from unittest.case import TestCase
 from unittest.mock import patch
 
+from mock import MagicMock
+
 import recidiviz
 from recidiviz.admin_panel.ingest_dataflow_operations import (
     DataflowPipelineMetadataResponse,
     get_all_latest_ingest_jobs,
+    get_latest_run_ingest_view_results,
     ingest_pipeline_name,
 )
 from recidiviz.common.constants.states import StateCode
@@ -79,7 +82,6 @@ class IngestDataflowOperations(TestCase):
         True,
     )
     def test_get_all_latest_ingest_jobs_simple(self) -> None:
-
         pipeline = DataflowPipelineMetadataResponse(
             id="1234",
             project_id="test-project",
@@ -145,7 +147,6 @@ class IngestDataflowOperations(TestCase):
             self.assertEqual(expected, get_all_latest_ingest_jobs())
 
     def test_get_all_latest_ingest_jobs_no_secondary(self) -> None:
-
         pipeline = DataflowPipelineMetadataResponse(
             id="1234",
             project_id="test-project",
@@ -201,3 +202,47 @@ class IngestDataflowOperations(TestCase):
             )
             name = ingest_pipeline.peek("job_name", str)
             self.assertEqual(expected_name, name)
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
+    @patch(
+        "recidiviz.admin_panel.ingest_dataflow_operations.BigQueryClientImpl",
+    )
+    def test_get_latest_run_ingest_view_results(self, mock_bq_class: MagicMock) -> None:
+        # Arrange
+        mock_bq_client = mock_bq_class.return_value
+        mock_bq_client.dataset_exists.return_value = True
+        mock_bq_client.run_query_async.return_value = [
+            {"ingest_view_name": "foo", "num_rows": 120},
+            {"ingest_view_name": "bar", "num_rows": 0},
+        ]
+
+        # Act
+        results = get_latest_run_ingest_view_results(
+            state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
+        )
+
+        # Assert
+        self.assertEqual(results, {"foo": 120, "bar": 0})
+
+    @patch(
+        "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+    )
+    @patch(
+        "recidiviz.admin_panel.ingest_dataflow_operations.BigQueryClientImpl",
+    )
+    def test_get_latest_run_ingest_view_results_no_dataset(
+        self, mock_bq_class: MagicMock
+    ) -> None:
+        # Arrange
+        mock_bq_client = mock_bq_class.return_value
+        mock_bq_client.dataset_exists.return_value = False
+
+        # Act
+        results = get_latest_run_ingest_view_results(
+            state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
+        )
+
+        # Assert
+        self.assertEqual(results, {})
