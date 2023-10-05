@@ -27,6 +27,8 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
     IngestViewManifestCollector,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IS_PRIMARY_INSTANCE_PROPERTY_NAME,
+    IS_SECONDARY_INSTANCE_PROPERTY_NAME,
     IngestViewResultsParserDelegateImpl,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -43,8 +45,47 @@ def should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
     if not is_ingest_in_dataflow_enabled(state_code, DirectIngestInstance.SECONDARY):
         return False
 
-    # TODO(#23242): Update to determine whether to run for secondary or just primary based on pipeline mappings YAML
-    return True
+    region = direct_ingest_regions.get_direct_ingest_region(
+        region_code=state_code.value.lower()
+    )
+    primary_manifest_collector = IngestViewManifestCollector(
+        region=region,
+        delegate=IngestViewResultsParserDelegateImpl(
+            region=region,
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            results_update_datetime=datetime.now(),
+        ),
+    )
+
+    secondary_manifest_collector = IngestViewManifestCollector(
+        region=region,
+        delegate=IngestViewResultsParserDelegateImpl(
+            region=region,
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            results_update_datetime=datetime.now(),
+        ),
+    )
+
+    differing_launch_envs = False
+    for (
+        ingest_view_name,
+        primary_manifest,
+    ) in primary_manifest_collector.ingest_view_to_manifest.items():
+        secondary_manifest = secondary_manifest_collector.ingest_view_to_manifest[
+            ingest_view_name
+        ]
+        differing_launch_envs |= (
+            primary_manifest.should_launch != secondary_manifest.should_launch
+        )
+
+    return differing_launch_envs or any(
+        manifest.output.env_properties_referenced().intersection(
+            {IS_PRIMARY_INSTANCE_PROPERTY_NAME, IS_SECONDARY_INSTANCE_PROPERTY_NAME}
+        )
+        for manifest in primary_manifest_collector.ingest_view_to_manifest.values()
+    )
 
 
 def has_launchable_ingest_views(

@@ -1,4 +1,6 @@
 manifest_language: 1.0.0
+launch_env:
+  $env: is_staging
 input_columns:
   - PERSON_ID
   - TASK_DATE
