@@ -125,8 +125,6 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "public_dashboard_views",
     "reference_views",
     "sessions",
-    "spark_public_output_data",
-    "spark_public_output_data_most_recent",
     "shared_metric_views",
     "task_eligibility",
     "task_eligibility_candidates_general",

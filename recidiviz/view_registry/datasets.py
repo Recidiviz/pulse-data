@@ -32,7 +32,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     POPULATION_PROJECTION_OUTPUT_DATASET,
     PULSE_DASHBOARD_SEGMENT_DATASET,
     SENDGRID_EMAIL_DATA_DATASET,
-    SPARK_OUTPUT_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
     normalized_state_dataset_for_state_code,
@@ -139,7 +138,6 @@ OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
     " copy of the operations postgres database.",
     POPULATION_PROJECTION_OUTPUT_DATASET: "Stores output of the population projection"
     " simulations.",
-    SPARK_OUTPUT_DATASET: "Stores output of Spark simulations",
     PULSE_DASHBOARD_SEGMENT_DATASET: "Stores events logged from pulse-dashboard via Segment.",
     SENDGRID_EMAIL_DATA_DATASET: "Stores the output of email activity data from Sendgrid.",
     STATE_BASE_DATASET: "Ingested state data. This dataset is a copy of the state"
