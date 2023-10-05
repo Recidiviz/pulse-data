@@ -19,14 +19,13 @@ Unit test to test the calculation pipeline DAG logic.
 """
 import os
 import unittest
-from typing import Any, Dict, List, Set
+from typing import Dict, List, Set
 from unittest.mock import patch
 
 import yaml
 from airflow.models import DagRun
 from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
-from airflow.operators.empty import EmptyOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
@@ -40,6 +39,7 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
 )
 from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
+from recidiviz.airflow.tests.utils.dag_helper_functions import fake_operator_constructor
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -602,15 +602,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 "--ingest_instance=SECONDARY",
             ],
         )
-
-
-def fake_operator_constructor(*_args: Any, **kwargs: Any) -> EmptyOperator:
-    return EmptyOperator(
-        task_id=kwargs["task_id"],
-        trigger_rule=kwargs["trigger_rule"]
-        if "trigger_rule" in kwargs
-        else TriggerRule.ALL_SUCCESS,
-    )
 
 
 class TestCalculationDagIntegration(AirflowIntegrationTest):

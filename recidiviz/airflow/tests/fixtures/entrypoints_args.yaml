@@ -50,3 +50,8 @@ test_trigger_metric_view_data_operator_state_code:
 
 test_monitoring_dag_args:
   - --entrypoint=MetricExportTimelinessEntrypoint
+
+test_ingest_dag_acquire_lock_task:
+  - --entrypoint=IngestAcquireLockEntrypoint
+  - --state_code=US_XX
+  - --ingest_instance=PRIMARY

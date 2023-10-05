@@ -74,3 +74,9 @@ UpdateNormalizedStateEntrypoint:
     limits:
       cpu: 250m
       memory: 500Mi
+
+IngestAcquireLockEntrypoint:
+  default_resources:
+    limits:
+      cpu: 250m
+      memory: 500Mi

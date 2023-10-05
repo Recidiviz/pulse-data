@@ -19,9 +19,13 @@ Logic for state and ingest instance specific dataflow pipelines.
 """
 from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
+from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 
 from recidiviz.airflow.dags.ingest.ingest_branching import get_ingest_branch_key
+from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
+    build_kubernetes_pod_task,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -40,6 +44,20 @@ def _initialize_dataflow_pipeline(
     return EmptyOperator(task_id="check_raw_data_max_update_time")
 
 
+def _acquire_lock(
+    state_code: StateCode, instance: DirectIngestInstance
+) -> KubernetesPodOperator:
+    return build_kubernetes_pod_task(
+        task_id="acquire_lock",
+        container_name="acquire_lock",
+        arguments=[
+            "--entrypoint=IngestAcquireLockEntrypoint",
+            f"--state_code={state_code.value}",
+            f"--ingest_instance={instance.value}",
+        ],
+    )
+
+
 def create_single_ingest_pipeline_group(
     state_code: StateCode,
     instance: DirectIngestInstance,
@@ -53,8 +71,7 @@ def create_single_ingest_pipeline_group(
             state_code, instance
         )
 
-        # TODO(#23985): Replace EmptyOperator with acquire lock operator
-        acquire_lock = EmptyOperator(task_id="acquire_lock")
+        acquire_lock = _acquire_lock(state_code, instance)
 
         # TODO(#23962): Replace EmptyOperator with dataflow operator
         dataflow_pipeline = EmptyOperator(task_id="dataflow_pipeline")

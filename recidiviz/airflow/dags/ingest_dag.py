@@ -28,7 +28,7 @@ from recidiviz.airflow.dags.ingest.ingest_branching import (
 from recidiviz.airflow.dags.ingest.initialize_ingest_dag_group import (
     create_initialize_ingest_dag,
 )
-from recidiviz.airflow.dags.ingest.state_dataflow_pipeline import (
+from recidiviz.airflow.dags.ingest.single_ingest_pipeline_group import (
     create_single_ingest_pipeline_group,
 )
 from recidiviz.airflow.dags.utils.branching_by_key import create_branching_by_key
