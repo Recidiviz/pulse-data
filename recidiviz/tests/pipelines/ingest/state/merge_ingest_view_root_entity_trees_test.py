@@ -20,10 +20,16 @@ from datetime import date, datetime
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
+from mock import patch
 
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
+    StateCharge,
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
 )
@@ -99,7 +105,231 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                     test_name="ingestMultipleChildren",
                 )
             )
-            | pipeline.MergeIngestViewRootEntityTrees("ingestMultipleChildren")
+            | pipeline.MergeIngestViewRootEntityTrees(
+                "ingestMultipleChildren", self.region_code
+            )
         )
         assert_that(output, equal_to(expected_output))
         self.test_pipeline.run()
+
+    @patch(
+        "recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees.INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS",
+        {StateCode.US_DD: {"test_ingest_view"}},
+    )
+    def test_merge_entity_trees_passes_with_exemptions(self) -> None:
+        expected_input = [
+            (
+                datetime(2022, 7, 4, 0, 0).timestamp(),
+                StatePerson(
+                    state_code=self.region_code.value,
+                    external_ids=[
+                        StatePersonExternalId(
+                            state_code=self.region_code.value,
+                            external_id="ID1",
+                            id_type="US_DD_ID_TYPE",
+                        ),
+                    ],
+                    current_email_address="test1@some-email.com",
+                ),
+            ),
+            (
+                datetime(2022, 7, 4, 0, 0).timestamp(),
+                StatePerson(
+                    state_code=self.region_code.value,
+                    external_ids=[
+                        StatePersonExternalId(
+                            state_code=self.region_code.value,
+                            external_id="ID1",
+                            id_type="US_DD_ID_TYPE",
+                        ),
+                    ],
+                    current_email_address="test2@some-email.com",
+                ),
+            ),
+        ]
+        expected_output = [
+            (
+                ("ID1", "US_DD_ID_TYPE"),
+                (
+                    (
+                        datetime(2022, 7, 4, 0, 0).timestamp(),
+                        StatePerson(
+                            state_code=self.region_code.value,
+                            external_ids=[
+                                StatePersonExternalId(
+                                    state_code=self.region_code.value,
+                                    external_id="ID1",
+                                    id_type="US_DD_ID_TYPE",
+                                ),
+                            ],
+                            current_email_address="test2@some-email.com",
+                        ),
+                    )
+                ),
+            )
+        ]
+        output = (
+            self.test_pipeline
+            | beam.Create(expected_input)
+            | pipeline.MergeIngestViewRootEntityTrees(
+                "test_ingest_view", self.region_code
+            )
+        )
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    @patch(
+        "recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees.INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS",
+        {StateCode.US_DD: {"test_ingest_view"}},
+    )
+    def test_merge_entity_trees_passes_with_exemptions_deeper_in_tree(self) -> None:
+        expected_input = [
+            (
+                datetime(2022, 7, 4, 0, 0).timestamp(),
+                StatePerson(
+                    state_code=self.region_code.value,
+                    external_ids=[
+                        StatePersonExternalId(
+                            state_code=self.region_code.value,
+                            external_id="ID1",
+                            id_type="US_DD_ID_TYPE",
+                        ),
+                    ],
+                    incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            external_id="IS1",
+                            state_code=self.region_code.value,
+                            incarceration_type=StateIncarcerationType.STATE_PRISON,
+                            status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                            charges=[
+                                StateCharge(
+                                    external_id="IC1",
+                                    state_code=self.region_code.value,
+                                    description="something",
+                                    status=StateChargeStatus.INTERNAL_UNKNOWN,
+                                ),
+                            ],
+                        )
+                    ],
+                ),
+            ),
+            (
+                datetime(2022, 7, 4, 0, 0).timestamp(),
+                StatePerson(
+                    state_code=self.region_code.value,
+                    external_ids=[
+                        StatePersonExternalId(
+                            state_code=self.region_code.value,
+                            external_id="ID1",
+                            id_type="US_DD_ID_TYPE",
+                        ),
+                    ],
+                    incarceration_sentences=[
+                        StateIncarcerationSentence(
+                            external_id="IS1",
+                            state_code=self.region_code.value,
+                            incarceration_type=StateIncarcerationType.STATE_PRISON,
+                            status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                            charges=[
+                                StateCharge(
+                                    external_id="IC1",
+                                    state_code=self.region_code.value,
+                                    description="something different",
+                                    status=StateChargeStatus.INTERNAL_UNKNOWN,
+                                ),
+                            ],
+                        )
+                    ],
+                ),
+            ),
+        ]
+        expected_output = [
+            (
+                ("ID1", "US_DD_ID_TYPE"),
+                (
+                    (
+                        datetime(2022, 7, 4, 0, 0).timestamp(),
+                        StatePerson(
+                            state_code=self.region_code.value,
+                            external_ids=[
+                                StatePersonExternalId(
+                                    state_code=self.region_code.value,
+                                    external_id="ID1",
+                                    id_type="US_DD_ID_TYPE",
+                                ),
+                            ],
+                            incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    external_id="IS1",
+                                    state_code=self.region_code.value,
+                                    incarceration_type=StateIncarcerationType.STATE_PRISON,
+                                    status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                                    charges=[
+                                        StateCharge(
+                                            external_id="IC1",
+                                            state_code=self.region_code.value,
+                                            description="something different",
+                                            status=StateChargeStatus.INTERNAL_UNKNOWN,
+                                        ),
+                                    ],
+                                )
+                            ],
+                        ),
+                    )
+                ),
+            )
+        ]
+        output = (
+            self.test_pipeline
+            | beam.Create(expected_input)
+            | pipeline.MergeIngestViewRootEntityTrees(
+                "test_ingest_view", self.region_code
+            )
+        )
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    @patch(
+        "recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees.INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS",
+        {},
+    )
+    def test_merge_entity_trees_fails_without_exemptions(self) -> None:
+        expected_input = [
+            (
+                datetime(2022, 7, 4, 0, 0).timestamp(),
+                StatePerson(
+                    state_code=self.region_code.value,
+                    external_ids=[
+                        StatePersonExternalId(
+                            state_code=self.region_code.value,
+                            external_id="ID1",
+                            id_type="US_DD_ID_TYPE",
+                        ),
+                    ],
+                    current_email_address="test1@some-email.com",
+                ),
+            ),
+            (
+                datetime(2022, 7, 4, 0, 0).timestamp(),
+                StatePerson(
+                    state_code=self.region_code.value,
+                    external_ids=[
+                        StatePersonExternalId(
+                            state_code=self.region_code.value,
+                            external_id="ID1",
+                            id_type="US_DD_ID_TYPE",
+                        ),
+                    ],
+                    current_email_address="test2@some-email.com",
+                ),
+            ),
+        ]
+        _ = (
+            self.test_pipeline
+            | beam.Create(expected_input)
+            | pipeline.MergeIngestViewRootEntityTrees(
+                "test_ingest_view", self.region_code
+            )
+        )
+        with self.assertRaisesRegex(RuntimeError, r".*EntityMatchingError.*"):
+            self.test_pipeline.run()
