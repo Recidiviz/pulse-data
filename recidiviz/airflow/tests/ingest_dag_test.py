@@ -31,6 +31,7 @@ from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     KNOWN_CONFIGURATION_PARAMETERS,
 )
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
+from recidiviz.airflow.tests.utils.dag_helper_functions import fake_operator_constructor
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -83,6 +84,12 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         )
         self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher.start()
 
+        self.kubernetes_pod_operator_patcher = patch(
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.build_kubernetes_pod_task",
+            side_effect=fake_operator_constructor,
+        )
+        self.kubernetes_pod_operator_patcher.start()
+
         # Need to import ingest_dag inside test suite so environment variables are set before importing,
         # otherwise ingest_dag will raise an Error and not import.
         from recidiviz.airflow.dags.ingest_dag import (  # pylint: disable=import-outside-toplevel
@@ -95,6 +102,7 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         self.environment_patcher.stop()
         self.ingest_branching_get_all_enabled_state_and_instance_pairs_patcher.stop()
         self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher.stop()
+        self.kubernetes_pod_operator_patcher.stop()
         super().tearDown()
 
     def test_ingest_dag(self) -> None:
@@ -172,7 +180,7 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
 
     # TODO(#23984): Update to mock to EmptyOperator and update side effect to extract and use the state code and instance args
     @patch(
-        "recidiviz.airflow.dags.ingest.state_dataflow_pipeline._initialize_dataflow_pipeline"
+        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._initialize_dataflow_pipeline"
     )
     def test_ingest_dag_fails_for_branch_failure(
         self, mock_initialize_dataflow_pipeline: MagicMock
