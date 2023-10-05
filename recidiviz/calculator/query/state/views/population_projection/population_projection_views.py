@@ -78,18 +78,6 @@ from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_ri
 from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_total_jail_population import (
     US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.population_projection.spark.cost_avoidance_estimate_most_recent import (
-    SPARK_COST_AVOIDANCE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.cost_avoidance_non_cumulative_estimate_most_recent import (
-    SPARK_COST_AVOIDANCE_NON_CUMULATIVE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.population_estimate_most_recent import (
-    SPARK_POPULATION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.life_years_estimate_most_recent import (
-    SPARK_LIFE_YEARS_VIEW_BUILDER,
-)
 
 POPULATION_PROJECTION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INCARCERATION_REMAINING_SENTENCES_VIEW_BUILDER,
@@ -111,8 +99,4 @@ POPULATION_PROJECTION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_BUILDER,
     US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER,
     US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER,
-    SPARK_COST_AVOIDANCE_VIEW_BUILDER,
-    SPARK_COST_AVOIDANCE_NON_CUMULATIVE_VIEW_BUILDER,
-    SPARK_POPULATION_VIEW_BUILDER,
-    SPARK_LIFE_YEARS_VIEW_BUILDER,
 ] + POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS
