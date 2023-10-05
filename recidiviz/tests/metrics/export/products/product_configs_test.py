@@ -152,6 +152,16 @@ class TestProductConfigs(unittest.TestCase):
             state_code="US_XX",
         )
 
+    def test_get_product_agnostic_export_configs(self) -> None:
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml", "../fixtures")
+        )
+        export_configs = product_configs.get_product_agnostic_export_configs()
+        expected = [
+            ProductExportConfig(export_job_name="MOCK_EXPORT_NAME", state_code=None),
+        ]
+        self.assertEqual(expected, export_configs)
+
     def test_get_export_config_missing_state_code(self) -> None:
         product_configs = ProductConfigs.from_file(
             path=fixtures.as_filepath("fixture_products.yaml", "../fixtures")
