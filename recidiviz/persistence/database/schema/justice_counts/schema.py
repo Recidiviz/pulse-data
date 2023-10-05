@@ -311,6 +311,11 @@ class Source(JusticeCountsBase):
     # then this column is populated with the ID of that parent agency.
     super_agency_id = Column(Integer, nullable=True)
 
+    # If the agency has a public dashboard is_dashboard_enabled will be True.
+    # If is_dashboard_enabled is None or False, their data will only be accessible
+    # internally.
+    is_dashboard_enabled = Column(Boolean, nullable=True)
+
     __table_args__ = tuple(
         [
             PrimaryKeyConstraint(id),
