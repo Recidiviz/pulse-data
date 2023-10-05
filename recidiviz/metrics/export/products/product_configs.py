@@ -156,6 +156,13 @@ class ProductConfigs:
             if export["export_job_name"] == filter_uppercase
         ]
 
+    def get_product_agnostic_export_configs(self) -> List[ProductExportConfig]:
+        return [
+            export
+            for export in self.get_all_export_configs()
+            if export["state_code"] is None
+        ]
+
     def is_export_launched_in_env(
         self,
         export_job_name: str,

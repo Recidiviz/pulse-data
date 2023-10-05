@@ -51,7 +51,6 @@ from recidiviz.airflow.dags.utils.config_utils import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
-from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
@@ -90,7 +89,6 @@ def _get_pipeline_config() -> YAMLDict:
 def update_managed_views_operator(
     view_update_type: ManagedViewUpdateType,
 ) -> RecidivizKubernetesPodOperator:
-
     task_id = f"update_managed_views_{view_update_type.value}"
 
     additional_args = []
@@ -443,14 +441,12 @@ def create_calculation_dag() -> None:
                 get_state_code_filter,
             )
 
-        for export in PIPELINE_AGNOSTIC_EXPORTS:
-            relevant_product_exports = ProductConfigs.from_file(
-                path=PRODUCTS_CONFIG_PATH
-            ).get_export_configs_for_job_filter(export)
-            if not relevant_product_exports:
-                continue
-            with TaskGroup(group_id=f"{export}_metric_exports"):
-                create_metric_view_data_export_nodes(relevant_product_exports)
+        product_configs = ProductConfigs.from_file(path=PRODUCTS_CONFIG_PATH)
+        for export_config in product_configs.get_product_agnostic_export_configs():
+            with TaskGroup(
+                group_id=f"{export_config['export_job_name']}_metric_exports"
+            ):
+                create_metric_view_data_export_nodes([export_config])
 
     trigger_update_all_views >> metric_exports
 
