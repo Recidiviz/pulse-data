@@ -175,7 +175,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     ingest_view_name=ingest_view,
                 )
                 | f"Merge {ingest_view} entities using IngestViewTreeMerger within same date and external ID."
-                >> MergeIngestViewRootEntityTrees(ingest_view_name=ingest_view)
+                >> MergeIngestViewRootEntityTrees(
+                    ingest_view_name=ingest_view, state_code=state_code
+                )
             )
 
         merged_root_entities_with_dates: beam.PCollection[

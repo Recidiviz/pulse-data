@@ -21,6 +21,7 @@ import apache_beam as beam
 import attr
 from more_itertools import one
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
@@ -31,6 +32,9 @@ from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
 )
 from recidiviz.pipelines.ingest.state.constants import ExternalIdKey, UpperBoundDate
+from recidiviz.pipelines.ingest.state.exemptions import (
+    INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS,
+)
 
 
 @attr.s
@@ -56,9 +60,10 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
     merged via the IngestViewTreeMerger.
     """
 
-    def __init__(self, ingest_view_name: str):
+    def __init__(self, ingest_view_name: str, state_code: StateCode):
         super().__init__()
         self.ingest_view = ingest_view_name
+        self.state_code = state_code
 
     def expand(
         self, input_or_inputs: beam.PCollection[Tuple[UpperBoundDate, RootEntity]]
@@ -108,6 +113,10 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
         self,
         element: Tuple[Tuple[ExternalIdKey, UpperBoundDate], List[RootEntity]],
     ) -> Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]:
+        """For a given key, merges entity trees together using the IngestViewTreeMerger.
+        If the IngestViewTreeMerger is unable to merge the entity trees together, and if
+        this particular ingest view has an error exemption, then we return the first entity
+        that is conflicting. Otherwise, we raise an error."""
         key, entities = element
         external_id_key, upperbound_date = key
 
@@ -126,5 +135,11 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
                 f"[{set(type(e) for e in entities)}]"
             )
 
-        merged_entity: RootEntity = one(ingest_view_tree_merger.merge(root_entities))
+        should_throw_on_conflicts = (
+            not self.ingest_view
+            in INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS.get(self.state_code, {})
+        )
+        merged_entity: RootEntity = one(
+            ingest_view_tree_merger.merge(root_entities, should_throw_on_conflicts)
+        )
         return (external_id_key, (upperbound_date, merged_entity))

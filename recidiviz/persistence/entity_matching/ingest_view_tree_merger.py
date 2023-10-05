@@ -17,7 +17,7 @@
 """Class responsible for merging hydrated entity trees from a *single ingest view
 on a single day* into as few trees as possible.
 """
-
+import logging
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -44,7 +44,11 @@ class IngestViewTreeMerger:
     def __init__(self, field_index: CoreEntityFieldIndex) -> None:
         self.field_index = field_index
 
-    def merge(self, ingested_root_entities: List[RootEntityT]) -> List[RootEntityT]:
+    def merge(
+        self,
+        ingested_root_entities: List[RootEntityT],
+        should_throw_on_conflicts: bool = True,
+    ) -> List[RootEntityT]:
         """Merges all ingested root entity trees that can be connected via external_id.
 
         Returns the list of unique root entities after this merging.
@@ -59,7 +63,7 @@ class IngestViewTreeMerger:
         # Merge each bucket into one entity
         for root_entities_to_merge in buckets:
             unique_root_entity, _ = self._merge_matched_tree_group(
-                root_entities_to_merge
+                root_entities_to_merge, should_throw_on_conflicts
             )
             if unique_root_entity:
                 unique_root_entities.append(unique_root_entity)
@@ -120,7 +124,7 @@ class IngestViewTreeMerger:
         return result_buckets
 
     def _merge_matched_tree_group(
-        self, entity_group: List[EntityT]
+        self, entity_group: List[EntityT], should_throw_on_conflicts: bool = True
     ) -> Tuple[Optional[EntityT], Set[int]]:
         """Recursively merge the list of entities into a single entity and returns a
         tuple containing a) entity, or None if the list is empty and b) a set of all
@@ -144,12 +148,17 @@ class IngestViewTreeMerger:
         if len(flat_field_reprs) > 1:
             # If there is more than one string representation of the flat fields, then
             # we have objects with conflicting info that we are trying to merge.
-            raise EntityMatchingError(
+            error_message = (
                 f"Found multiple different ingested entities of type "
                 f"[{primary_entity.__class__.__name__}] with conflicting "
-                f"information: {[e.limited_pii_repr() for e in entity_group]}",
-                entity_name=primary_entity.get_entity_name(),
+                f"information: {[e.limited_pii_repr() for e in entity_group]}"
             )
+            if should_throw_on_conflicts:
+                raise EntityMatchingError(
+                    error_message,
+                    entity_name=primary_entity.get_entity_name(),
+                )
+            logging.error(error_message)
 
         children_by_field = self._get_children_grouped_by_field(entity_group)
 
@@ -159,7 +168,9 @@ class IngestViewTreeMerger:
             groups = self._bucket_ingested_single_id_entities(child_list)
             merged_children = []
             for group in groups:
-                merged_child, group_seen_objects = self._merge_matched_tree_group(group)
+                merged_child, group_seen_objects = self._merge_matched_tree_group(
+                    group, should_throw_on_conflicts
+                )
 
                 if seen_objects.intersection(group_seen_objects):
                     # If we have made it here, there are multiple paths to one or more
