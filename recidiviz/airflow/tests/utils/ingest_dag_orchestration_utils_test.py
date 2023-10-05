@@ -34,11 +34,11 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
         self.get_ingest_pipeline_enabled_states_patcher = patch(
             "recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils.get_ingest_pipeline_enabled_states",
             return_value={
-                # Has views, environment=production
+                # Has views, environment=production, has env variables in mappings
                 StateCode.US_DD,
                 # Has views, environment=staging
                 StateCode.US_XX,
-                # Views gated to secondary only, environment=staging
+                # Views gated to secondary only, environment=staging, has env variables in mappings
                 StateCode.US_YY,
                 # No views, environment=staging
                 StateCode.US_WW,
@@ -77,11 +77,7 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             set(result),
             {
                 (StateCode.US_DD, DirectIngestInstance.PRIMARY),
-                # TODO(#23242): This row should go away once should_run_secondary_ingest_pipeline is properly implemented
-                (StateCode.US_DD, DirectIngestInstance.SECONDARY),
                 (StateCode.US_XX, DirectIngestInstance.PRIMARY),
-                # TODO(#23242): This row should go away once should_run_secondary_ingest_pipeline is properly implemented
-                (StateCode.US_XX, DirectIngestInstance.SECONDARY),
                 (StateCode.US_YY, DirectIngestInstance.SECONDARY),
             },
         )
@@ -103,8 +99,6 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             set(result),
             {
                 (StateCode.US_DD, DirectIngestInstance.PRIMARY),
-                # TODO(#23242): This row should go away once should_run_secondary_ingest_pipeline is properly implemented
-                (StateCode.US_DD, DirectIngestInstance.SECONDARY),
             },
         )
 
@@ -121,8 +115,6 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             set(result),
             {
                 (StateCode.US_XX, DirectIngestInstance.PRIMARY),
-                # TODO(#23242): This row should go away once should_run_secondary_ingest_pipeline is properly implemented
-                (StateCode.US_XX, DirectIngestInstance.SECONDARY),
                 (StateCode.US_YY, DirectIngestInstance.SECONDARY),
             },
         )
