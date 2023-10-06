@@ -397,15 +397,22 @@ def main() -> int:
         "recidiviz/case_triage/server.py",
         valid_module_prefixes=make_module_matcher(
             {
+                # TODO(#24506): Clean up this dependency
+                "recidiviz.aggregated_metrics",
+                "recidiviz.calculator",
+                "recidiviz.big_query",
+                "recidiviz.task_eligibility",
+                "recidiviz.ingest",
                 # TODO(#6859): Get rid of this dependency
                 "recidiviz.pipelines",
                 "recidiviz.calculator.query.state.views.dashboard.pathways",
-                "recidiviz.calculator.query.state.views.outliers",
+                "recidiviz.calculator.query.state.views.outliers.outliers_enabled_states",
                 "recidiviz.case_triage",
                 "recidiviz.cloud_memorystore",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
                 "recidiviz.firestore",
+                "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.tools.utils.fixture_helpers",
                 "recidiviz.utils",
