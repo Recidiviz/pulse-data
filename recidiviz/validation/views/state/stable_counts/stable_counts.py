@@ -123,7 +123,8 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 8, 1)
                     ],  # TODO(#23918): Remove once OR sends data
                     StateCode.US_MI: [
-                        date(2023, 8, 1)
+                        date(2023, 8, 1),
+                        date(2023, 9, 1),
                     ],  # This was the month of the COMS migration and the refactor started a bunch of periods on 8/14/23
                     StateCode.US_IX: [
                         # The Atlas migration happened in 11/2022 and leading up to it there was a data cleanup effort, and following it there as a data correction effort, so this might be related to that.
@@ -156,7 +157,8 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 8, 1)
                     ],  # TODO(#23918): Remove once OR sends data
                     StateCode.US_MI: [
-                        date(2023, 8, 1)
+                        date(2023, 8, 1),
+                        date(2023, 9, 1),
                     ],  # This was the month of the COMS migration and the refactor ended a bunch of periods on 8/14/23
                     StateCode.US_IX: [
                         # The Atlas migration happened in 11/2022 and leading up to it there was a data cleanup effort, and following it there as a data correction effort, so this might be related to that.
@@ -183,7 +185,8 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                 exemptions={
                     StateCode.US_CA: [date(2023, 1, 1)],
                     StateCode.US_MI: [
-                        date(2023, 8, 1)
+                        date(2023, 8, 1),
+                        date(2023, 9, 1),
                     ],  # This is probably because we haven't ingested decision responses from COMS yet.  Check this again when we have TODO(#23960)
                 },
             )
