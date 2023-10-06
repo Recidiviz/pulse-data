@@ -74,10 +74,6 @@ class IngestDataflowOperations(TestCase):
         self.pipeline_config_yaml_path_patcher.stop()
         self.state_code_list_patcher.stop()
 
-    @mock.patch(
-        "recidiviz.admin_panel.ingest_dataflow_operations.is_ingest_enabled_in_secondary",
-        True,
-    )
     def test_get_all_latest_ingest_jobs_simple(self) -> None:
         pipeline = DataflowPipelineMetadataResponse(
             id="1234",
