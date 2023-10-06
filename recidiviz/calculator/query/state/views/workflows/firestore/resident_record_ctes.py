@@ -34,8 +34,9 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
             IF( dataflow.state_code IN ({level_2_state_codes}),
                 COALESCE(locations.level_2_incarceration_location_external_id, dataflow.facility),
                 dataflow.facility) AS facility_id,
+            sessions.start_date as admission_date
         FROM `{project_id}.{dataflow_dataset}.most_recent_incarceration_population_span_metrics_materialized` dataflow
-        INNER JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
+        INNER JOIN `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` sessions
             ON dataflow.state_code = sessions.state_code
             AND dataflow.person_id = sessions.person_id
             AND sessions.compartment_level_1 = "INCARCERATION"
@@ -56,7 +57,7 @@ _RESIDENT_RECORD_INCARCERATION_CTE = """
 _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
     incarceration_dates AS (
         SELECT 
-            ic.*,
+            ic.* EXCEPT(admission_date),
             MIN(t.start_date) 
                     OVER(w) AS admission_date,
             MAX({nonnull_end_date_clause('t.end_date')}) 
@@ -79,7 +80,7 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
         UNION ALL
 
         SELECT
-            ic.*,
+            ic.* EXCEPT(admission_date),
             NULL AS admission_date,
             NULL AS release_date
         FROM incarceration_cases ic
@@ -89,8 +90,6 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
 
         SELECT 
             ic.*,
-            MIN(t.start_date) 
-                    OVER(w) AS admission_date,
             MAX(t.projected_completion_date_max) 
                     OVER(w) AS release_date
         FROM
