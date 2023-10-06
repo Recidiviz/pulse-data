@@ -201,11 +201,13 @@ class BigQueryView(bigquery.TableReference):
         |select_query| instead, which will query from the materialized table if there
         is one.
         """
-        return self.address.select_query(self.project)
+        return self.address.to_project_specific_address(self.project).select_query()
 
     @property
     def select_query(self) -> str:
-        return self.table_for_query.select_query(self.project)
+        return self.table_for_query.to_project_specific_address(
+            self.project
+        ).select_query()
 
     @property
     def address(self) -> BigQueryAddress:
