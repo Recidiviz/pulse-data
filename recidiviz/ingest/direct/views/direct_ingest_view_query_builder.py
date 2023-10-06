@@ -619,11 +619,15 @@ class DirectIngestViewQueryBuilder:
         ):
             # If there is no bound and we are filtering to the latest version of each
             # row, we can query directly from the `latest` view for convenience.
-            return DirectIngestRawDataTableLatestViewBuilder(
-                region_code=self._region_code,
-                raw_data_source_instance=config.raw_data_source_instance,
-                raw_file_config=raw_table_dependency_config.raw_file_config,
-            ).table_for_query.select_query(project_id)
+            return (
+                DirectIngestRawDataTableLatestViewBuilder(
+                    region_code=self._region_code,
+                    raw_data_source_instance=config.raw_data_source_instance,
+                    raw_file_config=raw_table_dependency_config.raw_file_config,
+                )
+                .table_for_query.to_project_specific_address(project_id)
+                .select_query()
+            )
 
         return RawTableQueryBuilder(
             project_id=project_id,
