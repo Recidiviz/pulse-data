@@ -18,12 +18,11 @@
 Unit test to test the calculation pipeline DAG logic.
 """
 import os
-import unittest
 from typing import Dict, List, Set
 from unittest.mock import patch
 
 import yaml
-from airflow.models import DagRun
+from airflow.models import DagRun, import_all_models
 from airflow.models.baseoperator import BaseOperator
 from airflow.models.dagbag import DagBag
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
@@ -68,6 +67,9 @@ def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
     return f"bq_refresh.{schema_type.lower()}_bq_refresh.release_lock_{schema_type.upper()}"
 
 
+import_all_models()
+
+
 PRIMARY_DAG_RUN = DagRun(
     conf={
         "ingest_instance": "PRIMARY",
@@ -85,7 +87,7 @@ SECONDARY_DAG_RUN = DagRun(
 )
 
 
-class TestCalculationPipelineDag(unittest.TestCase):
+class TestCalculationPipelineDag(AirflowIntegrationTest):
     """Tests the calculation pipeline DAGs."""
 
     CALCULATION_DAG_ID = f"{_PROJECT_ID}_calculation_dag"
@@ -93,6 +95,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        super().setUpClass()
         with open(
             os.path.join(os.path.dirname(__file__), "fixtures/entrypoints_args.yaml"),
             "r",
@@ -101,6 +104,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             cls.entrypoint_args_fixture = yaml.safe_load(fixture_file)
 
     def setUp(self) -> None:
+        super().setUp()
         self.environment_patcher = patch(
             "os.environ",
             {
