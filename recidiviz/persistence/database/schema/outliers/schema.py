@@ -144,3 +144,27 @@ class SupervisionStateMetric(MetricBase, OutliersBase):
     """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_state_metrics`"""
 
     __tablename__ = "supervision_state_metrics"
+
+
+class MetricBenchmark(OutliersBase):
+    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.metric_benchmarks`"""
+
+    __tablename__ = "metric_benchmarks"
+
+    state_code = Column(String, primary_key=True, nullable=False)
+    # The name of the metric, which corresponds to a column in the supervision_x_aggregated_metrics_materialized table
+    metric_id = Column(String, primary_key=True, nullable=False)
+    # The period that this metric applies to (see recidiviz.aggregated_metrics.metric_time_periods.py)
+    period = Column(
+        String,
+        primary_key=True,
+        nullable=False,
+    )
+    # The end date for the period
+    end_date = Column(Date, primary_key=True, nullable=False)
+    # The target rate for the given metric
+    target = Column(Float, nullable=False)
+    # The threshold for the given metric, specifically the IQR
+    threshold = Column(Float, nullable=False)
+    # Caseload type, if applicable. NULL value indicates the metric benchmark is statewide.
+    caseload_type = Column(String, primary_key=True, nullable=True)

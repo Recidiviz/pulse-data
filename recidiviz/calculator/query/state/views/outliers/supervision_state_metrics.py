@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Aggregated metrics at the state-level for supervision-related metrics"""
-from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
@@ -54,7 +53,6 @@ SUPERVISION_STATE_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=SUPERVISION_STATE_METRICS_VIEW_NAME,
     view_query_template=SUPERVISION_STATE_METRICS_QUERY_TEMPLATE,
     description=SUPERVISION_STATE_METRICS_DESCRIPTION,
-    aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
     should_materialize=True,
     columns=[
         "state_code",
