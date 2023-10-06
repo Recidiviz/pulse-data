@@ -42,6 +42,10 @@ def _get_id_for_operator_or_group(
     )
 
 
+BRANCH_START_TASK_NAME = "branch_start"
+BRANCH_END_TASK_NAME = "branch_end"
+
+
 def create_branching_by_key(
     branch_by_key: Dict[str, Union[BaseOperator, TaskGroup]],
     get_key_filter: Callable[[DagRun], Optional[str]],
@@ -70,7 +74,7 @@ def create_branching_by_key(
         # to ensure we're able to go forward.
         start_branch_by_key[key] = EmptyOperator(task_id=f"{key}_start")
 
-    @task.branch(task_id="branch_start")
+    @task.branch(task_id=BRANCH_START_TASK_NAME)
     def get_selected_branch_ids(dag_run: Optional[DagRun] = None) -> Any:
         if not dag_run:
             raise ValueError(
@@ -89,7 +93,7 @@ def create_branching_by_key(
 
     branch_start: BranchPythonOperator = get_selected_branch_ids()
 
-    @task(task_id="branch_end", trigger_rule=TriggerRule.ALL_DONE)
+    @task(task_id=BRANCH_END_TASK_NAME, trigger_rule=TriggerRule.ALL_DONE)
     def create_branch_end(dag_run: Optional[DagRun] = None, **kwargs: Any) -> Any:
         if not dag_run:
             raise ValueError(

@@ -24,6 +24,7 @@ import attr
 from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
     AirflowAlertingIncident,
 )
+from recidiviz.airflow.dags.utils.branching_by_key import BRANCH_END_TASK_NAME
 
 
 class TriggerPredicateMethod(enum.Enum):
@@ -80,7 +81,7 @@ def get_trigger_predicates() -> List[AlertingIncidentTriggerPredicate]:
         AlertingIncidentTriggerPredicate(
             method=TriggerPredicateMethod.SILENCE,
             dag_id=f"{project_id}_calculation_dag",
-            condition=lambda incident: "state_code_branch_end" in incident.task_id,
+            condition=lambda incident: incident.task_id.endswith(BRANCH_END_TASK_NAME),
             failure_message="state_code_branch_end is not an actionable failure",
         ),
         AlertingIncidentTriggerPredicate(

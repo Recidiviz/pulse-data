@@ -28,6 +28,7 @@ from recidiviz.airflow.dags.monitoring.airflow_alerting_incident import (
 from recidiviz.airflow.dags.monitoring.alerting_trigger_predicates import (
     should_trigger_airflow_alerting_incident,
 )
+from recidiviz.airflow.dags.utils.branching_by_key import BRANCH_END_TASK_NAME
 
 
 @patch.dict(os.environ, {"GCP_PROJECT": "test_project"})
@@ -73,7 +74,7 @@ class TestPredicates(unittest.TestCase):
         incident = AirflowAlertingIncident(
             dag_id="test_project_calculation_dag",
             conf="{}",
-            task_id="post_normalization_pipelines.state_code_branch_end",
+            task_id=f"post_normalization_pipelines.{BRANCH_END_TASK_NAME}",
             failed_execution_dates=[datetime.now(tz=timezone.utc)],
         )
 
