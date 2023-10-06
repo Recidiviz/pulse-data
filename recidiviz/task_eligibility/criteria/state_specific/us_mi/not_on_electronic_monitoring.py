@@ -17,7 +17,10 @@
 """This criteria view builder defines spans of time that clients are not on a supervision level that indicates
 electronic monitoring
 """
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+    aggregate_adjacent_spans,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
@@ -31,6 +34,8 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+MAGIC_END_DATE = "9999-12-31"
 
 _CRITERIA_NAME = "US_MI_NOT_ON_ELECTRONIC_MONITORING"
 
@@ -47,7 +52,7 @@ includes electronic monitoring */
         person_id,
         start_date,
         end_date_exclusive AS end_date,
-        COALESCE(omni_map.is_em, coms_map.is_em, FALSE) AS is_electronic_monitoring
+        TRUE AS is_electronic_monitoring
     #TODO(#20035) replace with supervision level raw text sessions once views agree
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
     /* Using regex to match digits in sls.correctional_level_raw_text so imputed values with the form 
@@ -57,7 +62,8 @@ includes electronic monitoring */
     LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` coms_map
         ON SPLIT(sls.correctional_level_raw_text, '##')[OFFSET(0)] = coms_map.supervision_level_raw_text and coms_map.source = 'COMS'
     WHERE state_code = "US_MI"
-    AND compartment_level_1 = 'SUPERVISION' 
+    AND compartment_level_1 = 'SUPERVISION'
+    AND (omni_map.is_em OR coms_map.is_em)
     
     /* additional electronic monitoring can now be found in a separate COMS table as well */
     UNION ALL 
@@ -73,11 +79,13 @@ includes electronic monitoring */
         AND pei.state_code = 'US_MI'
         AND pei.id_type = "US_MI_DOC"
     WHERE Specialty = 'GPS Monitoring'
+    AND SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) != COALESCE(SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE), "{MAGIC_END_DATE}")
 ),
+{create_sub_sessions_with_attributes('em_spans')},
 /* This boolean is then used to aggregate electronic monitoring supervision levels and non electronic monitoring
 supervision levels */
 sessionized_cte AS (
-    {aggregate_adjacent_spans(table_name='em_spans',
+    {aggregate_adjacent_spans(table_name='sub_sessions_with_attributes',
                               attribute=['is_electronic_monitoring'])}
 )
     SELECT
@@ -87,7 +95,8 @@ sessionized_cte AS (
         end_date,
         NOT is_electronic_monitoring AS meets_criteria,
         TO_JSON(STRUCT(start_date AS eligible_date)) AS reason,
-    FROM sessionized_cte
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4,5
     WINDOW w AS (PARTITION BY person_id, state_code ORDER BY start_date)
 """
 

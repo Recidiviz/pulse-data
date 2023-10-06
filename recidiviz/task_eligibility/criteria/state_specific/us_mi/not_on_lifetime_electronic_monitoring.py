@@ -17,7 +17,10 @@
 """Defines a criteria span view that shows spans of time during which someone is on lifetime electronic monitoring
 """
 
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
@@ -46,6 +49,7 @@ WITH lifetime_em_sentences AS (
     --find the earliest sentence date w/ lifetime gps flag for each person 
         MIN(date_imposed) AS start_date,
         CAST(NULL AS DATE) AS end_date,
+        TRUE as is_electronic_monitoring
     FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sp
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON pei.state_code = 'US_MI'
@@ -65,6 +69,7 @@ WITH lifetime_em_sentences AS (
         pei.person_id, 
         SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) AS start_date,
         SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE) AS end_date, 
+        TRUE as is_electronic_monitoring
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.COMS_Specialties_latest`
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON LTRIM(Offender_Number, '0')= pei.external_id
@@ -80,17 +85,19 @@ WITH lifetime_em_sentences AS (
     
     SELECT *
     FROM COMS_lifetime_em_sentences
-    )
+    ),
+    {create_sub_sessions_with_attributes('lifetime_em_sentences')}
     SELECT 
         state_code,
         person_id,
         start_date,
         end_date,
-        FALSE AS meets_criteria,
+        NOT is_electronic_monitoring AS meets_criteria,
         TO_JSON(STRUCT(
             start_date AS lifetime_em_date
         )) AS reason,
-    FROM ({aggregate_adjacent_spans(table_name='lifetime_em_spans')})
+    FROM ({aggregate_adjacent_spans(table_name='sub_sessions_with_attributes',
+                              attribute=['is_electronic_monitoring'])})
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
