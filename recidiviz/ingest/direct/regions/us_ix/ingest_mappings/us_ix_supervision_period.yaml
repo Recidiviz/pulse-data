@@ -184,10 +184,16 @@ output:
                       StateSupervisionPeriodTerminationReason.DEATH:
                         - Death - Natural
                         - Death - Unnatural
+                      StateSupervisionPeriodTerminationReason.COMMUTED:
+                        - Commuted
                       StateSupervisionPeriodTerminationReason.DISCHARGE:
                         - Discharged from DOC
                         - Release Court Order
                         - Release Clemency/Pardon
+                        - "Granted Early Discharge - Probation"
+                        - "Granted Early Discharge - Parole"
+                      StateSupervisionPeriodTerminationReason.EXPIRATION:
+                        - Probation Term Expired
                       StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                         - Administrative
                         - Administrative Transfer
