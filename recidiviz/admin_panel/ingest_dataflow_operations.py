@@ -194,10 +194,3 @@ def get_latest_run_state_results(
     return bq_client.get_row_counts_for_tables(
         state_dataset_for_state_code(state_code, ingest_instance)
     )
-
-
-def is_ingest_enabled_in_secondary(
-    state_code: StateCode,  # pylint: disable=unused-argument
-) -> bool:
-    # TODO(#24240): Look at mappings to determine whether there is instance-specific logic
-    return False
