@@ -396,3 +396,63 @@ class TestOutliersQuerier(TestCase):
             for supervisor_id, supervisor_data in actual.items()
         }
         self.assertEqual(expected_json, actual_json)
+
+    @patch(
+        "recidiviz.outliers.querier.querier.OutliersQuerier.get_officer_level_report_data_for_all_officer_supervisors"
+    )
+    def test_get_supervisors_with_outliers(
+        self, mock_get_supervisor_report_data: MagicMock
+    ) -> None:
+        mock_get_supervisor_report_data.return_value = {
+            "103": OfficerSupervisorReportData(
+                metrics=[],
+                metrics_without_outliers=[
+                    TEST_METRIC_1,
+                    TEST_METRIC_2,
+                ],
+                recipient_email_address="manager3@recidiviz.org",
+                additional_recipients=[
+                    "manager2@recidiviz.org",
+                ],
+            ),
+            "102": OfficerSupervisorReportData(
+                metrics=[
+                    OutlierMetricInfo(
+                        metric=TEST_METRIC_1,
+                        target=0.13,
+                        other_officers={
+                            TargetStatus.FAR: [],
+                            TargetStatus.MET: [0.111, 0.0399, 0.0, 0.126],
+                            TargetStatus.NEAR: [0.184, 0.17],
+                        },
+                        highlighted_officers=[
+                            OfficerMetricEntity(
+                                name=PersonName(
+                                    given_names="Officer",
+                                    surname="1",
+                                    middle_names=None,
+                                    name_suffix=None,
+                                ),
+                                rate=0.266,
+                                target_status=TargetStatus.FAR,
+                                prev_rate=0.319,
+                                supervisor_external_id="101",
+                                supervision_district="1",
+                                prev_target_status=TargetStatus.NEAR,
+                            )
+                        ],
+                        target_status_strategy=TargetStatusStrategy.IQR_THRESHOLD,
+                    )
+                ],
+                metrics_without_outliers=[TEST_METRIC_2],
+                recipient_email_address="supervisor1@recidiviz.org",
+                additional_recipients=[],
+            ),
+        }
+
+        actual = OutliersQuerier().get_supervisors_with_outliers(
+            state_code=StateCode.US_XX,
+        )
+
+        self.assertEqual(actual[0].external_id, "102")
+        self.assertEqual(len(actual), 1)

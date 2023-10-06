@@ -83,6 +83,7 @@ class OutliersQuerier:
             ...
         }
         """
+        # TODO(#24516): Simplify logic
         db_key = SQLAlchemyDatabaseKey(
             SchemaType.OUTLIERS, db_name=state_code.value.lower()
         )
@@ -547,3 +548,45 @@ class OutliersQuerier:
             metrics.append(metric_info)
 
         return metrics
+
+    def get_supervisors_with_outliers(
+        self, state_code: StateCode
+    ) -> List[SupervisionOfficerSupervisor]:
+        """
+        Return a list of SupervisionOfficerSupervisors who have outliers in the latest period.
+        """
+        db_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name=state_code.value.lower()
+        )
+
+        with SessionFactory.using_database(db_key, autocommit=False) as session:
+            latest_period_end_date = (
+                session.query(func.max(SupervisionOfficerMetric.metric_value))
+                .filter(
+                    SupervisionOfficerMetric.period == MetricTimePeriod.YEAR.value,
+                    SupervisionOfficerMetric.value_type
+                    == OutliersMetricValueType.RATE.value,
+                )
+                .scalar()
+            )
+
+            # Get external ids of officers with outliers
+            # TODO(#24516): Simplify logic
+            supervisor_ids_with_outliers = [
+                external_id
+                for external_id, report_data in self.get_officer_level_report_data_for_all_officer_supervisors(
+                    state_code, latest_period_end_date
+                ).items()
+                if report_data.metrics
+            ]
+
+            supervisor_entities = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(
+                    SupervisionOfficerSupervisor.external_id.in_(
+                        supervisor_ids_with_outliers
+                    )
+                )
+                .all()
+            )
+            return supervisor_entities

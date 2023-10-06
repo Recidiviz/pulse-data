@@ -31,6 +31,7 @@ from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.outliers.querier.querier import OutliersQuerier
+from recidiviz.outliers.types import PersonName
 
 ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -95,5 +96,27 @@ def create_outliers_api_blueprint() -> Blueprint:
             snake_to_camel,
         )
         return jsonify({"config": config_json})
+
+    @api.get("/<state>/supervisors")
+    def supervisors_with_outliers(state: str) -> Response:
+        state_code = StateCode(state)
+        supervisor_entities = OutliersQuerier().get_supervisors_with_outliers(
+            state_code
+        )
+
+        supervisors = [
+            {
+                "externalId": supervisor.external_id,
+                "fullName": {
+                    "givenNames": PersonName(**supervisor.full_name).given_names,
+                    "middleNames": PersonName(**supervisor.full_name).middle_names,
+                    "surname": PersonName(**supervisor.full_name).surname,
+                },
+                "supervisionDistrict": supervisor.supervision_district,
+                "email": supervisor.email,
+            }
+            for supervisor in supervisor_entities
+        ]
+        return jsonify(supervisors)
 
     return api

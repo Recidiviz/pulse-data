@@ -21,6 +21,7 @@ from typing import Callable, Optional
 from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
+import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 
@@ -31,6 +32,14 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
 from recidiviz.outliers.constants import INCARCERATION_STARTS_AND_INFERRED
 from recidiviz.outliers.types import OutliersConfig, OutliersMetricConfig
+from recidiviz.persistence.database.schema.outliers.schema import (
+    SupervisionOfficerSupervisor,
+)
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tests.outliers.querier_test import load_model_fixture
+from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
     metric=INCARCERATION_STARTS_AND_INFERRED,
@@ -91,18 +100,33 @@ class OutliersBlueprintTestCase(TestCase):
         )
 
 
+@pytest.mark.uses_db
 class TestOutliersRoutes(OutliersBlueprintTestCase):
     """Implements tests for the outliers routes."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         super().setUp()
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="recidiviz", allowed_states=["US_IX"]
+            state_code="recidiviz", allowed_states=["US_IX", "US_XX"]
         )
 
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
+
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx")
+        local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            for supervisor in load_model_fixture(SupervisionOfficerSupervisor):
+                session.add(SupervisionOfficerSupervisor(**supervisor))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -112,6 +136,16 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         else:
             os.unsetenv("AUTH0_CLAIM_NAMESPACE")
 
+        local_persistence_helpers.teardown_on_disk_postgresql_database(
+            self.database_key
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
     def test_get_state_configuration_failure(self) -> None:
         # State is not enabled
         response = self.test_client.get(
@@ -120,7 +154,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
             (response.get_json() or {}).get("description"),
-            "These routes are not enabled for this state",
+            "This product is not enabled for this state",
         )
 
     @patch(
@@ -156,3 +190,43 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
 
         self.assertEqual(HTTPStatus.OK, response.status_code)
         self.assertEqual(expected_json, response.json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisors_with_outliers",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_supervisors_with_outliers(
+        self, mock_enabled_states: MagicMock, mock_get_supervisors: MagicMock
+    ) -> None:
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        with SessionFactory.using_database(self.database_key) as session:
+            mock_get_supervisors.return_value = [
+                (
+                    session.query(SupervisionOfficerSupervisor)
+                    .filter(SupervisionOfficerSupervisor.external_id == "102")
+                    .first()
+                )
+            ]
+
+            response = self.test_client.get(
+                "/outliers/US_XX/supervisors",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            expected_json = [
+                {
+                    "externalId": "102",
+                    "fullName": {
+                        "givenNames": "Supervisor",
+                        "middleNames": None,
+                        "surname": "2",
+                    },
+                    "supervisionDistrict": "2",
+                    "email": "supervisor2@recidiviz.org",
+                }
+            ]
+
+            self.assertEqual(response.json, expected_json)

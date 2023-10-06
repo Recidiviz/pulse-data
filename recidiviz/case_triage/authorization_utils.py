@@ -107,7 +107,7 @@ def on_successful_authorization_requested_state(
     if requested_state not in enabled_states:
         raise FlaskException(
             code="state_not_enabled",
-            description="These routes are not enabled for this state",
+            description="This product is not enabled for this state",
             status_code=HTTPStatus.BAD_REQUEST,
         )
 
