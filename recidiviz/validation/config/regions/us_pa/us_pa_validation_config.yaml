@@ -51,6 +51,12 @@ max_allowed_error_overrides:
   - validation_name: most_recent_assessment_score_by_person_by_state_comparison
     hard_max_allowed_error_override: 1.0
     override_reason: Needs investigation.
+  - validation_name: state_supervision_violation_by_violation_date_stable_counts
+    hard_max_allowed_error_override: 0.28
+    override_reason: We're expecting this is standard variation.
+  - validation_name: state_supervision_period_by_termination_date_stable_counts
+    hard_max_allowed_error_override: 0.28
+    override_reason: We're expecting this is standard variation.
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 1450

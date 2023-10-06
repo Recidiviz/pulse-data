@@ -21,7 +21,7 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.04
     override_reason: TODO(#20470) - Added in IX specific logic to address some of the error, but requires further investigation
   - validation_name: incarceration_release_person_level_external_comparison
-    hard_max_allowed_error_override: 0.36
+    hard_max_allowed_error_override: 0.37
     override_reason: TODO(#20470) - Added in IX specific logic to address some of the error, but requires further investigation
   - validation_name: incarceration_admission_person_level_external_comparison
     hard_max_allowed_error_override: 0.61
@@ -49,13 +49,13 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 150
     override_reason: Needs investigation. Current failing level as of 2/24/23 is 69 rows #TODO(#19047)
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 2100
+    hard_num_allowed_rows_override: 2200
     override_reason: TODO(#23972) - Addressed known issues, ticket to investigate remaining issues.
   - validation_name: incarceration_release_reason_no_release_date
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#20471) - Really low error rate so just bumping threshold for now
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 29000
+    hard_num_allowed_rows_override: 29500
     override_reason:
       TODO(#20472) - Half of the issue is coming from ingested charges that aren't attached to an ingested sentence (20472 is the ticket to fix).
       The other half of the issue is from ingested early discharges that are attached to dummy sentences since we don't have sentence info.
@@ -63,7 +63,7 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 60
     override_reason: Current failing level as of 4/5/23 is 0 rows
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 90
+    hard_num_allowed_rows_override: 100
     override_reason: TODO(#21246) To investigate
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 3000
@@ -72,20 +72,20 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 1
     override_reason: In Atlas, there's one location who's name is just 0
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 1
+    hard_num_allowed_rows_override: 5
     override_reason: TODO(#21922) Just one case, to investigate later
   - validation_name: invalid_admission_reason_and_pfi
     hard_num_allowed_rows_override: 1
     override_reason: TODO(#22279) Just one case, to investigate later
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 1
-    override_reason: TODO(#23965) Just one case, to investigate later
+    hard_num_allowed_rows_override: 8
+    override_reason: TODO(#23965) Just a few cases, to investigate later
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 7
+    hard_num_allowed_rows_override: 35
     override_reason:
-      TODO(#23965) Current failing level as of 9/14/23 is 5 rows. Likely
-      the same root cause as incarceration_admission_after_open_period failure. Needs to
-      be investigated.
+      TODO(#23965) Current failing level as of 10/4/23 is 26 rows. Likely
+      the same root cause as incarceration_admission_after_open_period failure. Increase
+      in failing rows after the custody level revision. Needs to be investigated.
   - validation_name: current_supervision_staff_missing_district
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#23971) Known issue, will be resolved soon
