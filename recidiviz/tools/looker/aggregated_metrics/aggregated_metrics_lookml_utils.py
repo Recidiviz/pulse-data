@@ -16,15 +16,21 @@
 # =============================================================================
 """Util functions to support constructing LookML fields and view fragments using AggregatedMetric objects"""
 
-from typing import List, Optional
+import itertools
+from typing import Callable, List, Optional
 
-from more_itertools import one
-
+from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
+    METRICS_BY_POPULATION_TYPE,
+)
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
+    AssignmentCountMetric,
     AssignmentDaysToFirstEventMetric,
+    AssignmentEventBinaryMetric,
     AssignmentEventCountMetric,
     AssignmentSpanDaysMetric,
+    AssignmentSpanMaxDaysMetric,
+    AssignmentSpanValueAtStartMetric,
     DailyAvgSpanCountMetric,
     DailyAvgSpanValueMetric,
     DailyAvgTimeSinceSpanStartMetric,
@@ -36,7 +42,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
 )
-from recidiviz.looker import lookml_view_field_parameter
 from recidiviz.looker.lookml_view_field import (
     DimensionLookMLViewField,
     LookMLFieldParameter,
@@ -211,11 +216,7 @@ def get_metric_value_measure(
     """
     Returns a measure LookML field that uses liquid to return the metric measure selected via the metric menu filter.
     """
-    view_label_parameter = one(
-        p
-        for p in metric_filter_parameter.parameters
-        if isinstance(p, lookml_view_field_parameter.FieldParameterViewLabel)
-    )
+    view_label_parameter = metric_filter_parameter.view_label()
 
     allowed_values = [
         param.value_param for param in metric_filter_parameter.allowed_values()
@@ -254,11 +255,7 @@ def get_metric_value_dimension(
     """
     Returns a dimension LookML field that uses liquid to return the metric dimension selected via a metric menu filter.
     """
-    view_label_parameter = one(
-        p
-        for p in metric_filter_parameter.parameters
-        if isinstance(p, lookml_view_field_parameter.FieldParameterViewLabel)
-    )
+    view_label_parameter = metric_filter_parameter.view_label()
 
     allowed_values = [
         param.value_param for param in metric_filter_parameter.allowed_values()
@@ -282,6 +279,124 @@ def get_metric_value_dimension(
             ),
             *additional_params,
             LookMLFieldParameter.type(LookMLFieldType.NUMBER),
+            LookMLFieldParameter.view_label(view_label_parameter.text),
+            LookMLFieldParameter.sql(sql_value),
+        ],
+    )
+
+
+def generate_lookml_denominator_description_normalized(
+    metric: AggregatedMetric,
+    allow_custom_denominator: bool,
+) -> Optional[str]:
+    """
+    Returns the description for an aggregated metric when the measure_type is set to normalized.
+    """
+
+    if isinstance(
+        metric,
+        (
+            AssignmentDaysToFirstEventMetric,
+            AssignmentEventCountMetric,
+            AssignmentSpanDaysMetric,
+        ),
+    ):
+        return f'"{metric.description}, divided by the number of assignments to the population"'
+    if isinstance(metric, (DailyAvgSpanCountMetric, EventCountMetric)):
+        denominator_description = (
+            "${metric_denominator_description}"
+            if allow_custom_denominator
+            else '"average daily population"'
+        )
+        return f'CONCAT("{metric.description}", ", divided by the ", {denominator_description})'
+    if isinstance(metric, SumSpanDaysMetric):
+        return f'"{metric.description}, divided by the total number of person-days in the time period"'
+    # Return an empty string if the metric can not be normalized
+    # This reflects the NULL output from _generate_lookml_measure_fragment_normalized
+    if isinstance(
+        metric,
+        (
+            AssignmentCountMetric,
+            AssignmentEventBinaryMetric,
+            AssignmentSpanMaxDaysMetric,
+            AssignmentSpanValueAtStartMetric,
+            DailyAvgSpanValueMetric,
+            DailyAvgTimeSinceSpanStartMetric,
+            EventValueMetric,
+            MiscAggregatedMetric,
+        ),
+    ):
+        return '""'
+    raise ValueError(
+        f"Metric type {type(metric)} is not supported by normalization logic."
+    )
+
+
+def custom_description_param_value_builder(metric_name: str) -> str:
+    """Function that formats description for a metric name based on normalization logic for the metric's type"""
+    all_metrics = itertools.chain.from_iterable(METRICS_BY_POPULATION_TYPE.values())
+    metric = next(m for m in all_metrics if m.name == metric_name)
+    description = f'"{metric.description}"'
+    description_with_denominator = generate_lookml_denominator_description_normalized(
+        metric, allow_custom_denominator=True
+    )
+    full_description = ParameterizedValue(
+        parameter_name="supervision_state_aggregated_metrics.measure_type",
+        parameter_options=["normalized", "value"],
+        value_builder=lambda x: (
+            description_with_denominator if description_with_denominator else ""
+        )
+        if x == "normalized"
+        else description,
+        indentation_level=4,
+    ).build_liquid_template()
+    return full_description
+
+
+def default_description_param_value_builder(metric_name: str) -> str:
+    """Function that returns the metric description associated with a metric name"""
+    all_metrics = itertools.chain.from_iterable(METRICS_BY_POPULATION_TYPE.values())
+    return (
+        f'"{next(m.description.lower() for m in all_metrics if m.name == metric_name)}"'
+    )
+
+
+def get_metric_description_dimension(
+    view_name: str,
+    metric_filter_parameter: ParameterLookMLViewField,
+    field_name: str = "metric_description",
+    aggregation_level: Optional[MetricUnitOfAnalysis] = None,
+    custom_description_builder: Optional[Callable[[str], str]] = None,
+) -> DimensionLookMLViewField:
+    """
+    Returns a dimension LookML field that uses liquid to return the description of the metric selected via a metric menu
+    filter. If custom_description_builder is provided, use this as the parameter value builder function.
+    Default parameter value builder will return the configured metric description of the selected metric.
+    """
+    view_label_parameter = metric_filter_parameter.view_label()
+
+    if not custom_description_builder:
+        custom_description_builder = default_description_param_value_builder
+
+    allowed_values = [
+        param.value_param for param in metric_filter_parameter.allowed_values()
+    ]
+    sql_value = ParameterizedValue(
+        parameter_name=f"{view_name}.{metric_filter_parameter.field_name}",
+        parameter_options=allowed_values,
+        value_builder=custom_description_builder,
+        indentation_level=3,
+    )
+    additional_params = (
+        [LookMLFieldParameter.group_label(aggregation_level.pretty_name)]
+        if aggregation_level
+        else []
+    )
+    return DimensionLookMLViewField(
+        field_name=field_name,
+        parameters=[
+            *additional_params,
+            LookMLFieldParameter.type(LookMLFieldType.STRING),
             LookMLFieldParameter.view_label(view_label_parameter.text),
             LookMLFieldParameter.sql(sql_value),
         ],

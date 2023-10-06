@@ -133,6 +133,10 @@ class LookMLFieldParameter:
         return FieldParameterHidden(is_hidden)
 
     @classmethod
+    def html(cls, html_value: str) -> "LookMLFieldParameter":
+        return FieldParameterHtml(html_value)
+
+    @classmethod
     def precision(cls, precision: int) -> "LookMLFieldParameter":
         return FieldParameterPrecision(precision)
 
@@ -360,6 +364,30 @@ class FieldParameterDatatype(LookMLFieldParameter):
 
     def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
         return field_category != LookMLFieldCategory.PARAMETER
+
+
+@attr.define
+class FieldParameterHtml(LookMLFieldParameter):
+    """Generates a `html` field parameter
+    (see https://cloud.google.com/looker/docs/reference/param-field-html).
+    """
+
+    html_value: str
+
+    @property
+    def key(self) -> str:
+        return "html"
+
+    @property
+    def value_text(self) -> str:
+        return f"{self.html_value} ;;"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return field_category in (
+            LookMLFieldCategory.DIMENSION,
+            LookMLFieldCategory.DIMENSION_GROUP,
+            LookMLFieldCategory.MEASURE,
+        )
 
 
 @attr.define
