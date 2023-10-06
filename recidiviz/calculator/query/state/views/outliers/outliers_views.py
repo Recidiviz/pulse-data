@@ -20,6 +20,9 @@ from typing import List
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
+    METRIC_BENCHMARKS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_district_managers import (
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
 )
@@ -43,6 +46,7 @@ from recidiviz.calculator.query.state.views.outliers.supervison_directors import
 )
 
 OUTLIERS_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
+    METRIC_BENCHMARKS_VIEW_BUILDER,
     SUPERVISION_DIRECTORS_VIEW_BUILDER,
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
     SUPERVISION_DISTRICTS_VIEW_BUILDER,

@@ -201,6 +201,7 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_dataflow_raw_table_upper_bounds",
         ]
         outliers_table_names = [
+            "metric_benchmarks",
             "supervision_directors",
             "supervision_districts",
             "supervision_officers",
