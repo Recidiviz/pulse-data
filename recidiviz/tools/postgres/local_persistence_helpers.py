@@ -23,7 +23,7 @@ from typing import Dict, Optional
 
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import ProgrammingError
-from sqlalchemy.orm import close_all_sessions
+from sqlalchemy.orm.session import _sessions
 
 from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
@@ -100,7 +100,12 @@ def teardown_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) ->
     tables.
     """
     # Ensure all sessions are closed, otherwise the below may hang.
-    close_all_sessions()
+    # Note: close_all_sessions() sometimes raises a RuntimeError about the size of the
+    # underlying dictionary changing, despite the IterationGuard used during iteration.
+    # It isn't clear why this is happening, but as an attempt to fix, first copy the
+    # values to a list and then iterate over that list ourselves.
+    for session in list(_sessions.values()):
+        session.close()
 
     for table in reversed(database_key.declarative_meta.metadata.sorted_tables):
         with SessionFactory.using_database(database_key) as session:
