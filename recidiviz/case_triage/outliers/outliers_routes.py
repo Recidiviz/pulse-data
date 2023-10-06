@@ -20,13 +20,17 @@ from http import HTTPStatus
 from typing import Optional
 
 import werkzeug
-from flask import Blueprint, Response, make_response, request
+from flask import Blueprint, Response, jsonify, make_response, request
 from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
 )
+from recidiviz.common.common_utils import convert_nested_dictionary_keys
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.str_field_utils import snake_to_camel
+from recidiviz.outliers.querier.querier import OutliersQuerier
 
 ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -80,5 +84,16 @@ def create_outliers_api_blueprint() -> Blueprint:
         # Cache preflight responses for 2 hours
         response.access_control_max_age = 2 * 60 * 60
         return response
+
+    @api.get("/<state>/configuration")
+    def state_configuration(state: str) -> Response:
+        state_code = StateCode(state)
+        config = OutliersQuerier().get_outliers_config(state_code)
+
+        config_json = convert_nested_dictionary_keys(
+            config.to_json(),
+            snake_to_camel,
+        )
+        return jsonify({"config": config_json})
 
     return api

@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import attr
 import cattrs
+from cattrs.gen import make_dict_unstructure_fn, override
 
 from recidiviz.common.str_field_utils import person_name_case
 
@@ -136,6 +137,18 @@ class OutliersConfig:
 
     # A string representing the filters to apply for the state's supervision officer aggregated metrics
     supervision_officer_metric_exclusions: str = attr.ib(default=None)
+
+    def to_json(self) -> Dict[str, Any]:
+        c = cattrs.Converter()
+        # Omit the exclusions since they are only for internal (backend) use.
+        unst_hook = make_dict_unstructure_fn(
+            OutliersConfig,
+            c,
+            supervision_staff_exclusions=override(omit=True),
+            supervision_officer_metric_exclusions=override(omit=True),
+        )
+        c.register_unstructure_hook(OutliersConfig, unst_hook)
+        return c.unstructure(self)
 
 
 @attr.s

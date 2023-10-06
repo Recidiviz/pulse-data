@@ -539,7 +539,7 @@ class OutliersQuerier:
                 metric_context, aggregation_type, filter_value
             )
 
-            # For the relevant entities, get the aggregated information
+            # o For the relevant entities, get the aggregated information
             metric_info = self._get_aggregated_metric_info(
                 metric, current_period_entities, prev_period_entities
             )
