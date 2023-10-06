@@ -62,6 +62,8 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLSqlReferenceType,
 )
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
+    custom_description_param_value_builder,
+    get_metric_description_dimension,
     get_metric_explore_parameter,
     get_metric_value_dimension,
     get_metric_value_measure,
@@ -174,6 +176,7 @@ def get_lookml_views_for_metrics(
                 "Used to select one metric for a Look. Works across all levels of "
                 f"observation for the {population.population_type.value} population."
             ),
+            LookMLFieldParameter.group_label("Metric Filter"),
         ]
     )
     metric_denominator_filter_parameter = get_metric_explore_parameter(
@@ -189,6 +192,7 @@ def get_lookml_views_for_metrics(
                 "Used to select a denominator to normalize the metric if the `normalized` "
                 "measure type is selected. Default is average daily population."
             ),
+            LookMLFieldParameter.group_label("Metric Denominator"),
         ]
     )
     metric_value_measure = get_metric_value_measure(
@@ -200,6 +204,32 @@ def get_lookml_views_for_metrics(
         metric_denominator_filter_parameter,
         "metric_denominator_value",
     ).extend(additional_parameters=[LookMLFieldParameter.hidden(is_hidden=True)])
+    metric_denominator_description_dimension = get_metric_description_dimension(
+        f"{population.population_name_short}_{parent_name}_aggregated_metrics",
+        metric_denominator_filter_parameter,
+        "metric_denominator_description",
+    ).extend(
+        additional_parameters=[
+            LookMLFieldParameter.hidden(is_hidden=True),
+            LookMLFieldParameter.description(
+                f"Outputs the description associated with the metric chosen using "
+                f"`{metric_denominator_filter_parameter.field_name}`"
+            ),
+        ]
+    )
+
+    dynamic_explore_description = get_metric_description_dimension(
+        f"{population.population_name_short}_{parent_name}_aggregated_metrics",
+        metric_filter_parameter,
+        "dynamic_description",
+        custom_description_builder=custom_description_param_value_builder,
+    ).extend(
+        additional_parameters=[
+            LookMLFieldParameter.description(
+                "Outputs the description associated with the selected metric, metric denominator, and measure type"
+            ),
+        ]
+    )
     aggregated_metrics_view = LookMLView(
         view_name=f"{population.population_name_short}_aggregated_metrics_template",
         fields=[
@@ -207,6 +237,8 @@ def get_lookml_views_for_metrics(
             *metric_measures,
             metric_value_measure,
             metric_denominator_value_dimension,
+            metric_denominator_description_dimension,
+            dynamic_explore_description,
         ],
     )
     included_fields: List[LookMLViewField] = [

@@ -19,12 +19,14 @@ import abc
 from typing import List, Optional, TypeVar
 
 import attr
+from more_itertools import one
 
 from recidiviz.looker.lookml_view_field_parameter import (
     FieldParameterAllowedValue,
     FieldParameterDatatype,
     FieldParameterTimeframes,
     FieldParameterType,
+    FieldParameterViewLabel,
     LookMLFieldCategory,
     LookMLFieldDatatype,
     LookMLFieldParameter,
@@ -111,6 +113,9 @@ class LookMLViewField:
     ) -> LookMLViewFieldT:
         """Returns a new view field of the same type with additional parameters added"""
         return self.__class__(self.field_name, self.parameters + additional_parameters)
+
+    def view_label(self) -> FieldParameterViewLabel:
+        return one(p for p in self.parameters if isinstance(p, FieldParameterViewLabel))
 
 
 @attr.define
