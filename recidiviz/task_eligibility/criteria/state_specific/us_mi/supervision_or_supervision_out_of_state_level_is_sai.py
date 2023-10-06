@@ -17,7 +17,10 @@
 """This criteria view builder defines spans of time that clients are on supervision after participating in
  SAI (Special Alternative Incarceration) based on supervision level raw text values that contain SAI.
 """
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
@@ -31,6 +34,8 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+MAGIC_END_DATE = "9999-12-31"
 
 _CRITERIA_NAME = "US_MI_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_LEVEL_IS_SAI"
 
@@ -46,6 +51,7 @@ WITH sai_spans AS (
         person_id,
         start_date,
         end_date_exclusive AS end_date,
+        TRUE as is_sai,
     #TODO(#20035) replace with supervision level raw text sessions once views agree
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
     /* Using regex to match digits in sls.correctional_level_raw_text
@@ -69,21 +75,26 @@ WITH sai_spans AS (
         pei.person_id, 
         SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) AS start_date, 
         SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE) AS end_date, 
+        TRUE as is_sai,
     FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.COMS_Specialties_latest`
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON LTRIM(Offender_Number, '0')= pei.external_id
         AND pei.state_code = 'US_MI'
         AND pei.id_type = "US_MI_DOC"
     WHERE Specialty = 'Special Alternative Incarceration'
-)
+    AND SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) != COALESCE(SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE), "{MAGIC_END_DATE}")
+),
+#TODO(#24542): Fix deduping of sub_sessions
+{create_sub_sessions_with_attributes('sai_spans')}
     SELECT 
         state_code,
         person_id,
         start_date,
         end_date,
-        TRUE AS meets_criteria,
-    TO_JSON(STRUCT(TRUE AS supervision_level_is_sai)) AS reason,
-    FROM ({aggregate_adjacent_spans(table_name='sai_spans')})
+        is_sai AS meets_criteria,
+    TO_JSON(STRUCT(is_sai AS supervision_level_is_sai)) AS reason,
+    FROM ({aggregate_adjacent_spans(table_name='sub_sessions_with_attributes',
+                              attribute=['is_sai'])})
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
