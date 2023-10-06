@@ -149,7 +149,7 @@ WITH all_staff_attribute_periods AS (
         NULL AS supervision_office_inferred,
         NULL AS role_type,
         NULL AS role_subtype,
-        state_staff_specialized_caseload_type AS specialized_caseload_type,
+        caseload_type AS specialized_caseload_type,
         NULL AS supervisor_staff_external_id,
         NULL AS supervisor_staff_id,
     FROM
