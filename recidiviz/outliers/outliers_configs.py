@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The configuration objects for Outliers states"""
-from typing import Dict
+from collections import defaultdict
+from typing import Dict, Set
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
@@ -27,7 +28,7 @@ from recidiviz.outliers.constants import (
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
 )
-from recidiviz.outliers.types import OutliersConfig, OutliersMetricConfig
+from recidiviz.outliers.types import MetricOutcome, OutliersConfig, OutliersMetricConfig
 
 OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
     StateCode.US_IX: OutliersConfig(
@@ -100,3 +101,10 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         supervision_staff_exclusions="COALESCE(supervision_district, supervision_district_inferred, '') NOT IN ('FAST', 'CO')",
     ),
 }
+
+METRICS_BY_OUTCOME_TYPE: Dict[MetricOutcome, Set[OutliersMetricConfig]] = defaultdict(
+    set
+)
+for config in OUTLIERS_CONFIGS_BY_STATE.values():
+    for metric in config.metrics:
+        METRICS_BY_OUTCOME_TYPE[metric.outcome_type].add(metric)
