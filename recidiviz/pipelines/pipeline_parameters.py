@@ -22,7 +22,7 @@ import json
 import logging
 import os.path
 import re
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import attr
 from apache_beam.options.pipeline_options import (
@@ -31,6 +31,7 @@ from apache_beam.options.pipeline_options import (
     WorkerOptions,
 )
 from attr import Attribute
+from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.query.state.dataset_config import (
@@ -42,6 +43,7 @@ from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import GCP_PROJECTS, in_test
+from recidiviz.utils.params import str_matches_regex_type
 
 
 class NormalizeSandboxJobName(argparse.Action):
@@ -259,21 +261,28 @@ class PipelineParameters:
                 )
                 help_text = f"{parameter['label']}. {parameter['helpText']}"
 
+                arg_type: Union[Callable[[Any], str], Type] = (
+                    str_matches_regex_type(one(parameter["regexes"]))
+                    if "regexes" in parameter
+                    else str
+                )
+
                 if sandbox_pipeline and name.endswith("output"):
                     parser.add_argument(
                         f"--sandbox_{name}_dataset",
                         # Change output name to match what pipeline args expect
                         dest=name,
-                        type=str,
+                        type=arg_type,
                         help=f"{name} dataset where results should be written to for test jobs.",
                         required=True,
                         action=ValidateSandboxDataset,
                     )
                 else:
+
                     parser.add_argument(
                         f"--{name}",
                         dest=name,
-                        type=str,
+                        type=arg_type,
                         required=not is_optional,
                         help=help_text,
                     )

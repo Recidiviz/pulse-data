@@ -16,8 +16,11 @@
 # =============================================================================
 
 """Helpers for working with parameters from requests."""
-from typing import List, Optional
+import argparse
+import re
+from typing import Any, Callable, List, Optional
 from urllib.parse import unquote
+
 from werkzeug.datastructures import MultiDict
 
 
@@ -94,6 +97,21 @@ def str_to_list(list_str: str) -> List[str]:
     Separates strings by commas and returns a list
     """
     return list_str.split(",")
+
+
+def str_matches_regex_type(regex: str) -> Callable[[Any], str]:
+    def matches_regex_str(value: Any) -> str:
+        if not isinstance(value, str):
+            raise argparse.ArgumentTypeError(
+                f"Unexpected type for argument [{value}]: [{type(value)}]"
+            )
+        if not re.match(regex, value):
+            raise argparse.ArgumentTypeError(
+                f"Value [{value}] does not match expected pattern [{regex}]."
+            )
+        return value
+
+    return matches_regex_str
 
 
 def get_int_param_value(arg_key: str, args: MultiDict) -> Optional[int]:

@@ -177,7 +177,7 @@ def main() -> None:
         f"[{params.ingest_view_results_output}] and [{params.output}] - continue?"
     )
 
-    if params.materialization_method == MaterializationMethod.ORIGINAL:
+    if params.materialization_method == MaterializationMethod.ORIGINAL.value:
         prompt_for_confirmation(
             "Pipeline will use materialization method ORIGINAL which can be very "
             "expensive (>$100 per run) - continue?"
