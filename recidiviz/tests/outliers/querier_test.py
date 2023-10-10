@@ -42,13 +42,13 @@ from recidiviz.outliers.types import (
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
+    MetricBenchmark,
     OutliersBase,
     SupervisionDistrict,
     SupervisionDistrictManager,
     SupervisionOfficer,
-    SupervisionOfficerMetric,
+    SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
-    SupervisionStateMetric,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -109,16 +109,16 @@ class TestOutliersQuerier(TestCase):
         with SessionFactory.using_database(self.database_key) as session:
             for officer in load_model_fixture(SupervisionOfficer):
                 session.add(SupervisionOfficer(**officer))
-            for metric in load_model_fixture(SupervisionStateMetric):
-                session.add(SupervisionStateMetric(**metric))
-            for metric in load_model_fixture(SupervisionOfficerMetric):
-                session.add(SupervisionOfficerMetric(**metric))
+            for status in load_model_fixture(SupervisionOfficerOutlierStatus):
+                session.add(SupervisionOfficerOutlierStatus(**status))
             for supervisor in load_model_fixture(SupervisionOfficerSupervisor):
                 session.add(SupervisionOfficerSupervisor(**supervisor))
             for district in load_model_fixture(SupervisionDistrict):
                 session.add(SupervisionDistrict(**district))
             for manager in load_model_fixture(SupervisionDistrictManager):
                 session.add(SupervisionDistrictManager(**manager))
+            for benchmark in load_model_fixture(MetricBenchmark):
+                session.add(MetricBenchmark(**benchmark))
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -151,20 +151,15 @@ class TestOutliersQuerier(TestCase):
         expected = {
             "103": OfficerSupervisorReportData(
                 metrics=[],
-                metrics_without_outliers=[
-                    TEST_METRIC_1,
-                    TEST_METRIC_2,
-                ],
+                metrics_without_outliers=[TEST_METRIC_1, TEST_METRIC_2],
                 recipient_email_address="manager3@recidiviz.org",
-                additional_recipients=[
-                    "manager2@recidiviz.org",
-                ],
+                additional_recipients=["manager2@recidiviz.org"],
             ),
             "102": OfficerSupervisorReportData(
                 metrics=[
                     OutlierMetricInfo(
                         metric=TEST_METRIC_2,
-                        target=0.008800003960001782,
+                        target=0.008,
                         other_officers={
                             TargetStatus.FAR: [],
                             TargetStatus.MET: [
@@ -208,10 +203,10 @@ class TestOutliersQuerier(TestCase):
                 metrics=[
                     OutlierMetricInfo(
                         metric=TEST_METRIC_1,
-                        target=0.13887506249377812,
+                        target=0.13,
                         other_officers={
                             TargetStatus.FAR: [],
-                            TargetStatus.MET: [0.111, 0.0399, 0.0, 0.126],
+                            TargetStatus.MET: [0.11, 0.04, 0.0, 0.12],
                             TargetStatus.NEAR: [0.184, 0.17],
                         },
                         highlighted_officers=[
@@ -222,9 +217,9 @@ class TestOutliersQuerier(TestCase):
                                     middle_names=None,
                                     name_suffix=None,
                                 ),
-                                rate=0.266,
+                                rate=0.26,
                                 target_status=TargetStatus.FAR,
-                                prev_rate=0.319,
+                                prev_rate=0.32,
                                 supervisor_external_id="101",
                                 supervision_district="1",
                                 prev_target_status=TargetStatus.NEAR,
@@ -252,7 +247,6 @@ class TestOutliersQuerier(TestCase):
                 additional_recipients=[],
             ),
         }
-
         expected_json = {
             "103": {
                 "metrics": [],
@@ -273,9 +267,7 @@ class TestOutliersQuerier(TestCase):
                     },
                 ],
                 "recipient_email_address": "manager3@recidiviz.org",
-                "additional_recipients": [
-                    "manager2@recidiviz.org",
-                ],
+                "additional_recipients": ["manager2@recidiviz.org"],
             },
             "102": {
                 "metrics": [
@@ -287,7 +279,7 @@ class TestOutliersQuerier(TestCase):
                             "body_display_name": "Limited Supervision Unit transfer rate(s)",
                             "event_name": "LSU transfers",
                         },
-                        "target": 0.008800003960001782,
+                        "target": 0.008,
                         "other_officers": {
                             "FAR": [],
                             "MET": [0.27, 0.11, 0.039, 0.184, 0.126, 0.171, 0.333],
@@ -337,10 +329,10 @@ class TestOutliersQuerier(TestCase):
                             "body_display_name": "incarceration rate",
                             "event_name": "incarcerations",
                         },
-                        "target": 0.13887506249377812,
+                        "target": 0.13,
                         "other_officers": {
                             "FAR": [],
-                            "MET": [0.111, 0.0399, 0.0, 0.126],
+                            "MET": [0.11, 0.04, 0.0, 0.12],
                             "NEAR": [0.184, 0.17],
                         },
                         "highlighted_officers": [
@@ -351,9 +343,9 @@ class TestOutliersQuerier(TestCase):
                                     "middle_names": None,
                                     "name_suffix": None,
                                 },
-                                "rate": 0.266,
+                                "rate": 0.26,
                                 "target_status": "FAR",
-                                "prev_rate": 0.319,
+                                "prev_rate": 0.32,
                                 "supervisor_external_id": "101",
                                 "supervision_district": "1",
                                 "prev_target_status": "NEAR",
@@ -389,7 +381,7 @@ class TestOutliersQuerier(TestCase):
                 "additional_recipients": [],
             },
         }
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
         actual_json = {
             supervisor_id: supervisor_data.to_dict()
