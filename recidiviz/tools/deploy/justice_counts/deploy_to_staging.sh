@@ -18,9 +18,8 @@ source "${BASH_SOURCE_DIR}/../../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
-RECIDIVIZ_PROJECT_ID='recidiviz-staging'
 JUSTICE_COUNTS_PROJECT_ID='justice-counts-staging'
-PUBLISHER_CLOUD_RUN_SERVICE="justice-counts-web"
+PUBLISHER_CLOUD_RUN_SERVICE="publisher-web"
 DASHBOARD_CLOUD_RUN_SERVICE="agency-dashboard-web"
 VERSION=''
 
@@ -50,8 +49,8 @@ echo "Checking for clean git status in pulse-data..."
 run_cmd verify_clean_git_status
 
 # This is where Cloud Build will put the new Docker image
-SUBDIRECTORY=justice-counts
-REMOTE_IMAGE_BASE=us.gcr.io/${RECIDIVIZ_PROJECT_ID}/${SUBDIRECTORY}
+SUBDIRECTORY=main
+REMOTE_IMAGE_BASE=us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/${SUBDIRECTORY}
 
 # Step 1: Determine most recent commit sha of Justice Counts repo
 
@@ -80,14 +79,14 @@ run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_cloud_bui
 # Step 4: Tag Docker image with 'latest'
 
 # Look up the pulse-data commit sha used in the Docker build
-RECIDIVIZ_DATA_COMMIT_HASH=$(gcloud container images list-tags "${REMOTE_IMAGE_BASE}" --format=json | jq -r '.[0].tags[0]')
+RECIDIVIZ_DATA_COMMIT_HASH=$(gcloud artifacts docker images list "${REMOTE_IMAGE_BASE}" --format=json --include-tags --sort-by=~CREATE_TIME | jq -r '.[0].tags' | cut -d ',' -f 1)
 
 # Use that to get the URL of the built Docker image
 COMMIT_SHA_DOCKER_TAG=${REMOTE_IMAGE_BASE}:${RECIDIVIZ_DATA_COMMIT_HASH}
 
 echo "Adding \"latest\" tag to the Docker image..."
 LATEST_DOCKER_TAG=${REMOTE_IMAGE_BASE}:latest
-run_cmd gcloud -q container images add-tag "${COMMIT_SHA_DOCKER_TAG}" "${LATEST_DOCKER_TAG}"
+run_cmd gcloud artifacts docker tags add "${COMMIT_SHA_DOCKER_TAG}" "${LATEST_DOCKER_TAG}"
 
 # Step 5: Run migrations
 
@@ -109,13 +108,13 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 
 echo "Deploying new Publisher Cloud Run revision with image ${LATEST_DOCKER_TAG}..."
 run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
-    --project "${RECIDIVIZ_PROJECT_ID}" \
+    --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --image "${LATEST_DOCKER_TAG}" \
     --region "us-central1" \
 
 echo "Directing 100% of traffic to new revision..."
 run_cmd gcloud -q run services update-traffic "${PUBLISHER_CLOUD_RUN_SERVICE}" \
-    --project "${RECIDIVIZ_PROJECT_ID}" \
+    --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --to-latest \
     --region "us-central1"
 
@@ -155,7 +154,7 @@ echo "Pushing tag [${TAG}] to remote..."
 run_cmd git push origin "${TAG}"
 
 echo "Adding version tags to the Docker image..."
-run_cmd gcloud -q container images add-tag "${LATEST_DOCKER_TAG}" "${REMOTE_IMAGE_BASE}:${TAG}"
+run_cmd gcloud artifacts docker tags add "${LATEST_DOCKER_TAG}" "${REMOTE_IMAGE_BASE}:${TAG}"
 
 # Step 8: Update Image for Cloud Run Jobs
 echo "Updating Image for Cloud Run Jobs"
