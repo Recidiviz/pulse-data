@@ -82,10 +82,19 @@ includes electronic monitoring */
     AND SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) != COALESCE(SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE), "{MAGIC_END_DATE}")
 ),
 {create_sub_sessions_with_attributes('em_spans')},
+deduped_sub_sessions AS (
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        is_electronic_monitoring,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4,5),
 /* This boolean is then used to aggregate electronic monitoring supervision levels and non electronic monitoring
 supervision levels */
 sessionized_cte AS (
-    {aggregate_adjacent_spans(table_name='sub_sessions_with_attributes',
+    {aggregate_adjacent_spans(table_name='deduped_sub_sessions',
                               attribute=['is_electronic_monitoring'])}
 )
     SELECT
@@ -95,8 +104,7 @@ sessionized_cte AS (
         end_date,
         NOT is_electronic_monitoring AS meets_criteria,
         TO_JSON(STRUCT(start_date AS eligible_date)) AS reason,
-    FROM sub_sessions_with_attributes
-    GROUP BY 1,2,3,4,5
+    FROM sessionized_cte
     WINDOW w AS (PARTITION BY person_id, state_code ORDER BY start_date)
 """
 

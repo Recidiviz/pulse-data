@@ -84,8 +84,16 @@ WITH sai_spans AS (
     WHERE Specialty = 'Special Alternative Incarceration'
     AND SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) != COALESCE(SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE), "{MAGIC_END_DATE}")
 ),
-#TODO(#24542): Fix deduping of sub_sessions
-{create_sub_sessions_with_attributes('sai_spans')}
+{create_sub_sessions_with_attributes('sai_spans')},
+deduped_sub_sessions AS (
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        is_sai,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4,5)
     SELECT 
         state_code,
         person_id,
@@ -93,7 +101,7 @@ WITH sai_spans AS (
         end_date,
         is_sai AS meets_criteria,
     TO_JSON(STRUCT(is_sai AS supervision_level_is_sai)) AS reason,
-    FROM ({aggregate_adjacent_spans(table_name='sub_sessions_with_attributes',
+    FROM ({aggregate_adjacent_spans(table_name='deduped_sub_sessions',
                               attribute=['is_sai'])})
 """
 
