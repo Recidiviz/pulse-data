@@ -65,11 +65,6 @@ variable "max_case_triage_instances" {
   default = 3
 }
 
-variable "max_justice_counts_instances" {
-  type    = number
-  default = 3
-}
-
 variable "max_application_import_instances" {
   type = number
   # Start with 3 as the default to match our other services. The Cloud Run
