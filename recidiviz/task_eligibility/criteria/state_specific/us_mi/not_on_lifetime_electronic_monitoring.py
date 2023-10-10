@@ -86,7 +86,16 @@ WITH lifetime_em_sentences AS (
     SELECT *
     FROM COMS_lifetime_em_sentences
     ),
-    {create_sub_sessions_with_attributes('lifetime_em_sentences')}
+    {create_sub_sessions_with_attributes('lifetime_em_spans')},
+    deduped_sub_sessions AS (
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        is_electronic_monitoring,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4,5)
     SELECT 
         state_code,
         person_id,
@@ -96,7 +105,7 @@ WITH lifetime_em_sentences AS (
         TO_JSON(STRUCT(
             start_date AS lifetime_em_date
         )) AS reason,
-    FROM ({aggregate_adjacent_spans(table_name='sub_sessions_with_attributes',
+    FROM ({aggregate_adjacent_spans(table_name='deduped_sub_sessions',
                               attribute=['is_electronic_monitoring'])})
 """
 
