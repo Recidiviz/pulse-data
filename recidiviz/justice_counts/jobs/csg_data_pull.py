@@ -30,6 +30,7 @@ from itertools import groupby
 from typing import Any, Dict, List
 
 import pandas as pd
+from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
@@ -84,6 +85,11 @@ def create_parser() -> argparse.ArgumentParser:
             GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
         ],
         help="Used to select which GCP project in which to run this script.",
+        required=False,
+    )
+    parser.add_argument(
+        "--credentials-path",
+        help="Used to point to path of JSON file with Google Cloud credentials.",
         required=False,
     )
     parser.add_argument("--dry-run", type=str_to_bool, default=False)
@@ -148,15 +154,11 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
     }
 
 
-def generate_agency_summary_csv(session: Session, dry_run: bool) -> None:
+def generate_agency_summary_csv(
+    session: Session, dry_run: bool, google_credentials: Any
+) -> None:
     """Generates a CSV with data about all agencies with Publisher accounts."""
-
-    # Authenticate with the Google Sheets API
-    credentials = GoogleCredentials.get_application_default()
-    # GoogleCredentials.get_application_default() will use the service account
-    # assigned to the Cloud Run Job. The service account has access to the spreadsheet
-    # with editor permissions.
-    spreadsheet_service = build("sheets", "v4", credentials=credentials)
+    spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
     auth0_client = Auth0Client(  # nosec
         domain_secret_name="justice_counts_auth0_api_domain",
         client_id_secret_name="justice_counts_auth0_api_client_id",
@@ -199,7 +201,11 @@ def generate_agency_summary_csv(session: Session, dry_run: bool) -> None:
 
     for agency in agencies:
         users = agency_id_to_users[agency["id"]]
+
         agency_created_at = agency.get("created_at")
+        if agency_created_at:
+            agency_created_at = agency_created_at.strftime("%Y-%m-%d")
+
         last_login = None
         first_user_created_at = None
         for user in users:
@@ -268,7 +274,7 @@ def generate_agency_summary_csv(session: Session, dry_run: bool) -> None:
     df = (
         pd.DataFrame.from_records(agencies)
         # Sort agencies alphabetically by name
-        .sort_index().rename(columns={"state_code": "state"})
+        .sort_values("name").rename(columns={"state_code": "state"})
         # Put columns in desired order
         .reindex(columns=columns)
     )
@@ -308,6 +314,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     args = create_parser().parse_args()
     if args.project_id is not None:
+        # When running locally, point to JSON file with service account credentials.
+        # The service account has access to the spreadsheet with editor permissions.
+        credentials = Credentials.from_service_account_file(args.credentials_path)
         with local_project_id_override(args.project_id):
             schema_type = SchemaType.JUSTICE_COUNTS
             database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
@@ -322,9 +331,15 @@ if __name__ == "__main__":
                     autocommit=False,
                 ) as global_session:
                     generate_agency_summary_csv(
-                        session=global_session, dry_run=args.dry_run
+                        session=global_session,
+                        dry_run=args.dry_run,
+                        google_credentials=credentials,
                     )
     else:
+        # When running via Cloud Run Job, GoogleCredentials.get_application_default()
+        # will use the service account assigned to the Cloud Run Job.
+        # The service account has access to the spreadsheet with editor permissions.
+        credentials = GoogleCredentials.get_application_default()
         database_key = SQLAlchemyDatabaseKey.for_schema(
             SchemaType.JUSTICE_COUNTS,
         )
@@ -333,4 +348,6 @@ if __name__ == "__main__":
             secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
         )
         global_session = Session(bind=justice_counts_engine)
-        generate_agency_summary_csv(session=global_session, dry_run=args.dry_run)
+        generate_agency_summary_csv(
+            session=global_session, dry_run=args.dry_run, google_credentials=credentials
+        )
