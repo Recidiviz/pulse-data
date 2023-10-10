@@ -78,7 +78,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 systems: List[str] = non_optional(request_json.get("systems"))
                 state_code = assert_type(request_json.get("state_code"), str)
                 fips_county_code = request_json.get("fips_county_code")
-                agency = AgencyInterface.create_agency(
+                agency = AgencyInterface.create_or_update_agency(
                     session=session,
                     name=name,
                     systems=[schema.System[system] for system in systems],

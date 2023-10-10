@@ -122,7 +122,7 @@ def create_child_agencies(all_agencies: set, dry_run: bool, project_id: str) -> 
                     logging.info("Would create %s", agency)
                     continue
                 try:
-                    AgencyInterface.create_agency(
+                    AgencyInterface.create_or_update_agency(
                         session=session,
                         name=agency,
                         systems=[system],

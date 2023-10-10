@@ -33,7 +33,7 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
             user_id = UserAccountInterface.create_or_update_user(
                 session=session, auth0_user_id="test_auth0_user"
             ).id
-            agency_A = AgencyInterface.create_agency(
+            agency_A = AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Agency Alpha",
                 systems=[schema.System.LAW_ENFORCEMENT],
@@ -41,7 +41,7 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
                 fips_county_code="us_ca_sacramento",
                 user_account_id=user_id,
             )
-            agency_B = AgencyInterface.create_agency(
+            agency_B = AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Beta Initiative",
                 systems=[schema.System.LAW_ENFORCEMENT],
