@@ -50,7 +50,6 @@ INCARCERATION_STARTS_AND_INFERRED = OutliersMetric(
     outcome_type=MetricOutcome.ADVERSE,
 )
 
-
 # Favorable metrics
 EARLY_DISCHARGE_REQUESTS = OutliersMetric(
     name=metric_config.EARLY_DISCHARGE_REQUESTS.name,

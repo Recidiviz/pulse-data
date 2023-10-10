@@ -208,6 +208,7 @@ class TestSchemaUtils(unittest.TestCase):
             "supervision_officer_supervisors",
             "supervision_district_managers",
             "supervision_officer_metrics",
+            "supervision_officer_outlier_status",
             "supervision_state_metrics",
         ]
 
