@@ -30,16 +30,35 @@ class AgencyInterface:
     """Contains methods for setting and getting Agency info."""
 
     @staticmethod
-    def create_agency(
+    def create_or_update_agency(
         session: Session,
         name: str,
         systems: List[schema.System],
         state_code: str,
         fips_county_code: Optional[str],
         user_account_id: Optional[int] = None,
-        is_superagency: Optional[bool] = False,
+        is_superagency: Optional[bool] = None,
         super_agency_id: Optional[int] = None,
     ) -> schema.Agency:
+        """If there is an existing agency in our DB with this name,
+        then update their metadata. Else, create a new agency
+        in our DB with this name and metadata.
+        """
+
+        existing_agency = AgencyInterface.get_agency_by_name(session=session, name=name)
+
+        if existing_agency is not None:
+            existing_agency.systems = [system.value for system in systems]
+            existing_agency.state_code = state_code
+            if fips_county_code is not None:
+                existing_agency.fips_county_code = fips_county_code
+            if is_superagency is not None:
+                existing_agency.is_superagency = is_superagency
+            if super_agency_id is not None:
+                existing_agency.super_agency_id = super_agency_id
+            session.commit()
+            return existing_agency
+
         agency = schema.Agency(
             name=name,
             systems=[system.value for system in systems],
@@ -49,6 +68,7 @@ class AgencyInterface:
             super_agency_id=super_agency_id,
             created_at=datetime.now(tz=timezone.utc),
         )
+
         session.add(agency)
         session.commit()
         session.refresh(agency)

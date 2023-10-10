@@ -19,7 +19,6 @@
 from datetime import datetime, timezone
 
 from freezegun import freeze_time
-from sqlalchemy.exc import IntegrityError
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
@@ -37,7 +36,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
             user_id = UserAccountInterface.create_or_update_user(
                 session=session, auth0_user_id="test_auth0_user"
             ).id
-            AgencyInterface.create_agency(
+            AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Agency Alpha",
                 systems=[schema.System.LAW_ENFORCEMENT],
@@ -45,7 +44,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 fips_county_code="us_ca_sacramento",
                 user_account_id=user_id,
             )
-            AgencyInterface.create_agency(
+            AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Beta Initiative",
                 systems=[schema.System.LAW_ENFORCEMENT],
@@ -101,7 +100,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id="test_auth0_user",
                 email="test@email.com",
             )
-            gamma_agency = AgencyInterface.create_agency(
+            gamma_agency = AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Agency Gamma",
                 systems=[schema.System.LAW_ENFORCEMENT],
@@ -109,7 +108,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 fips_county_code="us_ca_sacramento",
                 user_account_id=user.id,
             )
-            delta_agency = AgencyInterface.create_agency(
+            delta_agency = AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Agency Delta",
                 systems=[schema.System.LAW_ENFORCEMENT],
@@ -151,20 +150,6 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
             user.auth0_user_id,
         )
 
-        # Raise error if agency of that name already exists
-        with self.assertRaisesRegex(
-            IntegrityError,
-            "psycopg2.errors.UniqueViolation",
-        ):
-            AgencyInterface.create_agency(
-                session=session,
-                name="Agency Alpha",
-                systems=[schema.System.LAW_ENFORCEMENT],
-                state_code="us_ca",
-                fips_county_code="us_ca_sacramento",
-                user_account_id=user.id,
-            )
-
     def test_get_child_agencies(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = UserAccountInterface.create_or_update_user(
@@ -172,7 +157,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id="test_auth0_user",
                 email="test@email.com",
             )
-            super_agency = AgencyInterface.create_agency(
+            super_agency = AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Super Agency",
                 systems=[schema.System.LAW_ENFORCEMENT],
@@ -181,7 +166,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 user_account_id=user.id,
                 is_superagency=True,
             )
-            child_agency = AgencyInterface.create_agency(
+            child_agency = AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Child Agency",
                 systems=[schema.System.LAW_ENFORCEMENT],

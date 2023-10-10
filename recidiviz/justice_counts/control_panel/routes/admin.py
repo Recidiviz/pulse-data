@@ -18,13 +18,18 @@
 from http import HTTPStatus
 from typing import Callable
 
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, request
 from flask_sqlalchemy_session import current_session
+from sqlalchemy.dialects.postgresql import insert
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_user_account_association import (
+    AgencyUserAccountAssociationInterface,
+)
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.utils.types import assert_type
 
 
 def get_admin_blueprint(
@@ -105,6 +110,66 @@ def get_admin_blueprint(
                 # also send list of possible roles to use in the dropdown
                 # when users can assign a new role to user.
                 "roles": [role.value for role in schema.UserAccountRole],
+            }
+        )
+
+    @admin_blueprint.route("/agency", methods=["PUT"])
+    @auth_decorator
+    def create_or_update_agency() -> Response:
+        """
+        Creates/Updates an Agency.
+        """
+        request_json = assert_type(request.json, dict)
+        name = assert_type(request_json.get("name"), str)
+        state_code = assert_type(request_json.get("state_code"), str)
+        systems = assert_type(request_json.get("systems"), list)
+        agency = AgencyInterface.create_or_update_agency(
+            session=current_session,
+            name=name,
+            systems=[schema.System[system] for system in systems],
+            state_code=state_code,
+            fips_county_code=request_json.get("fips_county_code"),
+            is_superagency=request_json.get("is_superagency", None),
+            super_agency_id=request_json.get("super_agency_id"),
+        )
+
+        if request_json.get("child_agency_ids") is not None:
+            # Add child agencies
+            AgencyUserAccountAssociationInterface.add_child_agencies_to_super_agency(
+                session=current_session,
+                super_agency_id=agency.id,
+                child_agency_ids=request_json.get("child_agency_ids", []),
+            )
+        if request_json.get("team") is not None:
+            # Add users to agency
+
+            # Prepare all the values that should be "upserted" to the DB
+            values = []
+            for user_json in request_json.get("team", []):
+                value = {
+                    "agency_id": agency.id,
+                    "user_account_id": user_json.get("id"),
+                }
+
+                if user_json.get("role") is not None:
+                    value["role"] = schema.UserAccountRole[user_json.get("role")]
+
+                values.append(value)
+
+            insert_statement = insert(schema.AgencyUserAccountAssociation).values(
+                values
+            )
+
+            insert_statement = insert_statement.on_conflict_do_update(
+                constraint="agency_user_account_association_pkey",
+                set_={"role": insert_statement.excluded.role},
+            )
+
+            current_session.execute(insert_statement)
+        current_session.commit()
+        return jsonify(
+            {
+                "agency": agency.to_json(),
             }
         )
 
