@@ -34,7 +34,6 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import in_gcp_staging
 from recidiviz.utils.types import assert_type, non_optional
@@ -285,7 +284,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     user=user,
                     agencies=all_agencies,
                     role=schema.UserAccountRole.AGENCY_ADMIN
-                    if metadata.project_id() == "justice-counts-staging"
+                    if in_gcp_staging()
                     else schema.UserAccountRole.READ_ONLY,
                 )
 
