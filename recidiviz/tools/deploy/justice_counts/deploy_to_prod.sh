@@ -16,9 +16,8 @@ source "${BASH_SOURCE_DIR}/../../script_base.sh"
 # shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
 source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
-RECIDIVIZ_PROJECT_ID='recidiviz-123'
 JUSTICE_COUNTS_PROJECT_ID='justice-counts-production'
-PUBLISHER_CLOUD_RUN_SERVICE="justice-counts-web"
+PUBLISHER_CLOUD_RUN_SERVICE="publisher-web"
 DASHBOARD_CLOUD_RUN_SERVICE="agency-dashboard-web"
 VERSION=''
 
@@ -54,27 +53,33 @@ echo "Checking for clean git status..."
 run_cmd verify_clean_git_status
 
 TAG=jc.${VERSION} 
-STAGING_IMAGE_BASE="us.gcr.io/recidiviz-staging/justice-counts"
-PROD_IMAGE_BASE="us.gcr.io/recidiviz-123/justice-counts"
+STAGING_IMAGE_BASE=us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/main
+PROD_IMAGE_BASE=us-central1-docker.pkg.dev/justice-counts-production/publisher-and-dashboard-images/main
 
-# Find the Docker image on staging with the specified backend and frontend tags.
-STAGING_IMAGE_JSON=$(gcloud container images list-tags --filter="tags:${TAG}" "${STAGING_IMAGE_BASE}" --format=json)
+# Find the Docker image on staging with the specified tag.
+STAGING_IMAGE_JSON=$(gcloud artifacts docker images list "${STAGING_IMAGE_BASE}" --filter="tags:${TAG}" --format=json --include-tags)
 
 if [[ ${STAGING_IMAGE_JSON}  == "[]" ]]; then
     echo_error "No Docker images found in ${STAGING_IMAGE_BASE} with tag ${TAG}"
     run_cmd exit 1
 fi
 
-STAGING_IMAGE_DIGEST=$(jq -r '.[0].digest' <<< "${STAGING_IMAGE_JSON}")
-# As long as this Docker image was built using our Cloud Build Trigger, the first tag will always be the commit hash.
-RECIDIVIZ_DATA_COMMIT_HASH=$(jq -r '.[0].tags[0]' <<< "${STAGING_IMAGE_JSON}")
-
-STAGING_IMAGE_URL="${STAGING_IMAGE_BASE}@${STAGING_IMAGE_DIGEST}"
+# Move the image from the staging GCP project to the production GCP project and tag it with 'latest'.
+STAGING_IMAGE_URL=${STAGING_IMAGE_BASE}:${TAG}
 PROD_IMAGE_URL="${PROD_IMAGE_BASE}:latest"
 PROD_IMAGE_TAG="${PROD_IMAGE_BASE}:${TAG}"
 
-echo "Moving Docker image ${STAGING_IMAGE_URL} to ${RECIDIVIZ_PROJECT_ID} and tagging with latest and ${PROD_IMAGE_TAG}..."
-run_cmd gcloud -q container images add-tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}" "${PROD_IMAGE_TAG}"
+echo "Moving Docker image ${STAGING_IMAGE_URL} to ${PROD_IMAGE_URL}..."
+run_cmd docker run -v ~/.config/gcloud:/.config/gcloud -e GOOGLE_APPLICATION_CREDENTIALS=/.config/gcloud/application_default_credentials.json --rm gcr.io/go-containerregistry/gcrane cp "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}"
+
+echo "Tagging Docker image with ${PROD_IMAGE_TAG}..."
+run_cmd gcloud artifacts docker tags add "${PROD_IMAGE_URL}" "${PROD_IMAGE_TAG}"
+
+# Now we need to run migrations.
+# As long as this Docker image was built using our Cloud Build Trigger, the first tag will always be the commit hash.
+# We need the commit hash so we know what point in the code to run the migrations against.
+RECIDIVIZ_DATA_TAGS=$(jq -r '.[0].tags' <<< "${STAGING_IMAGE_JSON}")
+RECIDIVIZ_DATA_COMMIT_HASH=$(cut -d ',' -f 1 <<< "${RECIDIVIZ_DATA_TAGS}")
 
 echo "Checking out [${RECIDIVIZ_DATA_COMMIT_HASH}] in pulse-data..."
 run_cmd git fetch origin "${RECIDIVIZ_DATA_COMMIT_HASH}"
@@ -93,7 +98,7 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 # because we currently never use the --no-traffic arg when deploying to prod.
 echo "Deploying new Publisher Cloud Run revision with image ${PROD_IMAGE_URL}..."
 run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
-    --project "${RECIDIVIZ_PROJECT_ID}" \
+    --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
     --region "us-central1" 
 
@@ -107,7 +112,6 @@ run_cmd gcloud -q run deploy "${DASHBOARD_CLOUD_RUN_SERVICE}" \
 echo "Updating Image for Cloud Run Jobs"
 run_cmd gcloud run jobs update recurring-report-creation --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
 run_cmd gcloud run jobs update csg-data-pull --image "${PROD_IMAGE_URL}" --region "us-central1" --project "justice-counts-production"
-
 
 # TODO(#16325): Automatically create a new release in the justice-counts repo.
 

@@ -27,12 +27,12 @@ Example usage (run from `pipenv shell`):
 python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
     --backend-tag jc.publisher.v1.0.0 \
     --frontend-tag publisher.v1.0.0 \
-    --subdirectory justice-counts
+    --subdirectory main
 
 python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
     --backend-branch main \
     --frontend-branch testing-out \
-    --subdirectory justice-counts/playtesting
+    --subdirectory playtesting
 """
 import argparse
 import logging
@@ -44,7 +44,7 @@ import google.cloud.devtools.cloudbuild_v1 as cloudbuild_v1
 
 from recidiviz.utils.metadata import local_project_id_override
 
-PROJECT_ID = "recidiviz-staging"
+PROJECT_ID = "justice-counts-staging"
 CLOUD_BUILD_TRIGGER = "Build-JC"
 
 
@@ -73,7 +73,7 @@ def create_parser() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "--subdirectory",
-        help="Name of the subdirectory in Container Registry in which to place the built image.",
+        help="Name of the subdirectory in Artifact Registry in which to place the built image.",
         required=True,
     )
     return parser

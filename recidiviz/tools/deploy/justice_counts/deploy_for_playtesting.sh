@@ -18,9 +18,8 @@ BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../../script_base.sh"
 
-RECIDIVIZ_PROJECT_ID='recidiviz-staging'
 JUSTICE_COUNTS_PROJECT_ID='justice-counts-staging'
-PUBLISHER_CLOUD_RUN_SERVICE="justice-counts-web"
+PUBLISHER_CLOUD_RUN_SERVICE="publisher-web"
 DASHBOARD_CLOUD_RUN_SERVICE="agency-dashboard-web"
 
 BACKEND_BRANCH=''
@@ -41,7 +40,7 @@ function deploy_publisher {
     echo "Deploying new Cloud Run Publisher revision with image ${REMOTE_IMAGE_URL} to playtesting URL..."
 
     run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
-        --project "${RECIDIVIZ_PROJECT_ID}" \
+        --project "${JUSTICE_COUNTS_PROJECT_ID}" \
         --image "${REMOTE_IMAGE_URL}" \
         --region "us-central1" \
         --tag "${URL_TAG}" \
@@ -100,8 +99,9 @@ if [[ -z ${URL_TAG} ]]; then
 fi
 
 # This is where Cloud Build will put the new Docker image
-SUBDIRECTORY=justice-counts/playtesting/${FRONTEND_APP}/${URL_TAG}
-REMOTE_IMAGE_BASE=us.gcr.io/${RECIDIVIZ_PROJECT_ID}/${SUBDIRECTORY}
+SUBDIRECTORY=playtesting
+REMOTE_IMAGE_BASE=us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/${SUBDIRECTORY}
+
 
 echo "Building Docker image off of ${BACKEND_BRANCH} in pulse-data and ${FRONTEND_BRANCH} in justice-counts..."
 run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
@@ -110,7 +110,7 @@ run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_cloud_bui
     --subdirectory "${SUBDIRECTORY}"
 
 # Look up the pulse-data commit sha used in the Docker build
-RECIDIVIZ_DATA_COMMIT_HASH=$(gcloud container images list-tags "${REMOTE_IMAGE_BASE}" --format=json | jq -r '.[0].tags[0]')
+RECIDIVIZ_DATA_COMMIT_HASH=$(gcloud artifacts docker images list "${REMOTE_IMAGE_BASE}" --format=json --include-tags --sort-by=~CREATE_TIME | jq -r '.[0].tags' | cut -d ',' -f 1)
 
 # Use that to get the URL of the built Docker image
 REMOTE_IMAGE_URL=${REMOTE_IMAGE_BASE}:${RECIDIVIZ_DATA_COMMIT_HASH}

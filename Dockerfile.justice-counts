@@ -19,7 +19,7 @@ RUN yarn config set network-timeout 300000
 RUN yarn
 RUN yarn build
 
-FROM us.gcr.io/recidiviz-staging/recidiviz-base:latest
+FROM us-central1-docker.pkg.dev/justice-counts-staging/recidiviz-base-images/recidiviz-base:latest
 
 WORKDIR /app/recidiviz
 
