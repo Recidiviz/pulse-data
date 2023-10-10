@@ -17,9 +17,8 @@
 """Implements Querier abstractions for Outliers data sources"""
 from copy import copy
 from datetime import date
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
@@ -33,21 +32,18 @@ from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
-    OutliersAggregatedMetricInfo,
-    OutliersAggregationType,
     OutliersConfig,
     OutliersMetricConfig,
-    OutliersMetricValueType,
     PersonName,
     TargetStatus,
     TargetStatusStrategy,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
+    MetricBenchmark,
     SupervisionDistrictManager,
     SupervisionOfficer,
-    SupervisionOfficerMetric,
+    SupervisionOfficerOutlierStatus,
     SupervisionOfficerSupervisor,
-    SupervisionStateMetric,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -83,7 +79,6 @@ class OutliersQuerier:
             ...
         }
         """
-        # TODO(#24516): Simplify logic
         db_key = SQLAlchemyDatabaseKey(
             SchemaType.OUTLIERS, db_name=state_code.value.lower()
         )
@@ -222,30 +217,29 @@ class OutliersQuerier:
         """
         For the given metric_id, calculate and hydrate the MetricContext object as defined above.
         """
-        metric_id = metric.name
-
-        target = self.get_state_target_from_db(session, metric_id, end_date)
-        prev_target = self.get_state_target_from_db(session, metric_id, prev_end_date)
+        target, target_status_strategy = self.get_target_from_db(
+            session, metric, end_date
+        )
 
         # Get officer metrics for the given metric_id for the current and previous period
         combined_period_officer_metrics = (
-            session.query(SupervisionOfficerMetric)
+            session.query(SupervisionOfficerOutlierStatus)
             .join(
                 SupervisionOfficer,
-                SupervisionOfficer.external_id == SupervisionOfficerMetric.officer_id,
+                SupervisionOfficer.external_id
+                == SupervisionOfficerOutlierStatus.officer_id,
             )
             .filter(
-                SupervisionOfficerMetric.metric_id == metric_id,
-                SupervisionOfficerMetric.end_date.in_([end_date, prev_end_date]),
-                SupervisionOfficerMetric.period == MetricTimePeriod.YEAR.value,
-                SupervisionOfficerMetric.value_type
-                == OutliersMetricValueType.RATE.value,
+                SupervisionOfficerOutlierStatus.metric_id == metric.name,
+                SupervisionOfficerOutlierStatus.end_date.in_([end_date, prev_end_date]),
+                SupervisionOfficerOutlierStatus.period == MetricTimePeriod.YEAR.value,
             )
             .with_entities(
-                SupervisionOfficerMetric.officer_id,
-                SupervisionOfficerMetric.metric_id,
-                SupervisionOfficerMetric.metric_value,
-                SupervisionOfficerMetric.end_date,
+                SupervisionOfficerOutlierStatus.officer_id,
+                SupervisionOfficerOutlierStatus.metric_id,
+                SupervisionOfficerOutlierStatus.end_date,
+                SupervisionOfficerOutlierStatus.metric_rate,
+                SupervisionOfficerOutlierStatus.status,
                 SupervisionOfficer.full_name,
                 SupervisionOfficer.supervisor_external_id,
                 SupervisionOfficer.supervision_district,
@@ -271,34 +265,11 @@ class OutliersQuerier:
             )
         )
 
-        iqr = self.get_iqr(
-            [record.metric_value for record in current_period_officer_metrics]
-        )
-
-        target_status_strategy = (
-            TargetStatusStrategy.ZERO_RATE
-            if target - iqr <= 0 and metric.outcome_type == MetricOutcome.FAVORABLE
-            else TargetStatusStrategy.IQR_THRESHOLD
-        )
-
-        prev_iqr = self.get_iqr(
-            [record.metric_value for record in previous_period_officer_metrics]
-        )
-
-        prev_target_status_strategy = (
-            TargetStatusStrategy.ZERO_RATE
-            if prev_target - prev_iqr <= 0
-            and metric.outcome_type == MetricOutcome.FAVORABLE
-            else TargetStatusStrategy.IQR_THRESHOLD
-        )
-
         # Generate the OfficerMetricEntity object for all officers
         entities: List[OfficerMetricEntity] = []
         for officer_metric_record in current_period_officer_metrics:
-            rate = officer_metric_record.metric_value
-            target_status = self.get_target_status(
-                metric.outcome_type, rate, target, iqr, target_status_strategy
-            )
+            rate = officer_metric_record.metric_rate
+            target_status = officer_metric_record.status
 
             prev_period_record = [
                 past_officer_metric_record
@@ -310,244 +281,70 @@ class OutliersQuerier:
             if len(prev_period_record) > 1:
                 raise ValueError(
                     f"Expected at most one entry for the previous period, but got {len(prev_period_record)}"
-                    f"for officer_id: {officer_metric_record.officer_id} and {metric_id} metric"
+                    f"for officer_id: {officer_metric_record.officer_id} and {metric.name} metric"
                 )
 
             prev_rate = (
-                prev_period_record[0].metric_value
+                prev_period_record[0].metric_rate
                 if len(prev_period_record) == 1
                 else None
             )
 
-            prev_target_status = (
-                self.get_target_status(
-                    metric.outcome_type,
-                    prev_rate,
-                    prev_target,
-                    prev_iqr,
-                    target_status_strategy,
-                )
-                if prev_rate
-                else None
-            )
+            prev_target_status = prev_period_record[0].status if prev_rate else None
 
             entities.append(
                 OfficerMetricEntity(
                     name=PersonName(**officer_metric_record.full_name),
                     rate=rate,
-                    target_status=target_status,
+                    target_status=TargetStatus(target_status),
                     prev_rate=prev_rate,
-                    prev_target_status=prev_target_status,
+                    prev_target_status=TargetStatus(prev_target_status)
+                    if prev_target_status
+                    else None,
                     supervisor_external_id=officer_metric_record.supervisor_external_id,
                     supervision_district=officer_metric_record.supervision_district,
                 )
             )
 
-        # Capturing prev_period_entities ensures that the officer count in the previous period is accurate
-        # since officers may have a metric for one period, but not the other.
-        # We will only use the previous entities to get the count of officers and number of officers
-        # with "FAR" target status in this period, so the previous, previous period values do not matter.
-        prev_period_entities: List[OfficerMetricEntity] = []
-        for prev_officer_metric_record in previous_period_officer_metrics:
-            rate = prev_officer_metric_record.metric_value
-            target_status = self.get_target_status(
-                metric.outcome_type,
-                rate,
-                prev_target,
-                prev_iqr,
-                prev_target_status_strategy,
-            )
-
-            prev_period_entities.append(
-                OfficerMetricEntity(
-                    name=PersonName(**prev_officer_metric_record.full_name),
-                    rate=rate,
-                    target_status=target_status,
-                    prev_rate=None,
-                    prev_target_status=None,
-                    supervisor_external_id=prev_officer_metric_record.supervisor_external_id,
-                    supervision_district=prev_officer_metric_record.supervision_district,
-                )
-            )
         return MetricContext(
             target=target,
             entities=entities,
-            prev_period_entities=prev_period_entities,
             target_status_strategy=target_status_strategy,
         )
 
     @staticmethod
-    def get_target_status(
-        metric_outcome_type: MetricOutcome,
-        rate: float,
-        target: float,
-        iqr: float,
-        target_status_strategy: TargetStatusStrategy,
-    ) -> TargetStatus:
-
-        if target_status_strategy == TargetStatusStrategy.ZERO_RATE and rate == 0.0:
-            return TargetStatus.FAR
-
-        if metric_outcome_type == MetricOutcome.FAVORABLE:
-            if rate >= target:
-                return TargetStatus.MET
-            if target - rate <= iqr:
-                return TargetStatus.NEAR
-            return TargetStatus.FAR
-
-        # Otherwise, MetricOutcome is ADVERSE
-        if rate <= target:
-            return TargetStatus.MET
-        if rate - target <= iqr:
-            return TargetStatus.NEAR
-        return TargetStatus.FAR
-
-    @staticmethod
-    def get_state_target_from_db(
-        session: Session, metric: str, end_date: date
-    ) -> float:
-        state_metric_rate = (
-            session.query(SupervisionStateMetric.metric_value)
-            .filter(
-                SupervisionStateMetric.metric_id == metric,
-                SupervisionStateMetric.end_date == end_date,
-                SupervisionStateMetric.period == MetricTimePeriod.YEAR.value,
-                SupervisionStateMetric.value_type == OutliersMetricValueType.RATE.value,
-            )
-            .scalar()
+    def get_target_from_db(
+        session: Session,
+        metric: OutliersMetricConfig,
+        end_date: date,
+        caseload_type: Optional[str] = None,
+    ) -> Tuple[float, TargetStatusStrategy]:
+        target_query = session.query(MetricBenchmark).filter(
+            MetricBenchmark.metric_id == metric.name,
+            MetricBenchmark.end_date == end_date,
+            MetricBenchmark.period == MetricTimePeriod.YEAR.value,
         )
 
-        return state_metric_rate
+        if caseload_type:
+            target_query.filter(MetricBenchmark.caseload_type == caseload_type)
+        else:
+            target_query.filter(MetricBenchmark.caseload_type is None)
 
-    @staticmethod
-    def get_iqr(values: List[float]) -> float:
-        q1, q3 = np.percentile(values, [25, 75])
-        iqr = q3 - q1
-        return iqr
+        metric_benchmark = target_query.scalar()
+        target = metric_benchmark.target
+
+        target_status_strategy = (
+            TargetStatusStrategy.ZERO_RATE
+            if target - metric_benchmark.threshold <= 0
+            and metric.outcome_type == MetricOutcome.FAVORABLE
+            else TargetStatusStrategy.IQR_THRESHOLD
+        )
+
+        return metric_benchmark.target, target_status_strategy
 
     @staticmethod
     def get_outliers_config(state_code: StateCode) -> OutliersConfig:
         return OUTLIERS_CONFIGS_BY_STATE[state_code]
-
-    @staticmethod
-    def _get_filtered_officer_entities(
-        metric_context: MetricContext,
-        aggregation_type: OutliersAggregationType,
-        filter_value: str,
-    ) -> Tuple[List[OfficerMetricEntity], List[OfficerMetricEntity]]:
-        """
-        Return the relevant officer entities from the current and previous period entities for the metric.
-
-        If the aggregation type is SUPERVISION_OFFICER_SUPERVISOR, then filter the entities by the supervisor id.
-        If the aggregation type is SUPERVISION_DISTRICT, filter the officer entities by district_id.
-        """
-        current_period_entities, prev_period_entities = [], []
-        if aggregation_type == OutliersAggregationType.SUPERVISION_OFFICER_SUPERVISOR:
-            # Get the OfficerMetricEntity objects for officers who have a given supervisor
-            current_period_entities = [
-                officer_entity
-                for officer_entity in metric_context.entities
-                if officer_entity.supervisor_external_id == filter_value
-            ]
-
-            prev_period_entities = [
-                officer_entity
-                for officer_entity in metric_context.prev_period_entities
-                if officer_entity.supervisor_external_id == filter_value
-            ]
-
-        if aggregation_type == OutliersAggregationType.SUPERVISION_DISTRICT:
-            # Get the OfficerMetricEntity objects for officers who are in a given district
-            current_period_entities = [
-                officer_entity
-                for officer_entity in metric_context.entities
-                if officer_entity.supervision_district == filter_value
-            ]
-
-            prev_period_entities = [
-                officer_entity
-                for officer_entity in metric_context.prev_period_entities
-                if officer_entity.supervision_district == filter_value
-            ]
-
-        return current_period_entities, prev_period_entities
-
-    @staticmethod
-    def _get_aggregated_metric_info(
-        metric: OutliersMetricConfig,
-        current_period_entities: List[OfficerMetricEntity],
-        prev_period_entities: List[OfficerMetricEntity],
-    ) -> OutliersAggregatedMetricInfo:
-        """
-        For the given metric, return the aggregated officer-level metric information.
-        """
-        officer_rates: Dict[TargetStatus, List[OfficerMetricEntity]] = {
-            TargetStatus.MET: [],
-            TargetStatus.NEAR: [],
-            TargetStatus.FAR: [],
-        }
-
-        num_officers = len(current_period_entities)
-        num_officers_far = 0
-
-        for entity in current_period_entities:
-            officer_rates[entity.target_status].append(entity)
-
-            if entity.target_status == TargetStatus.FAR:
-                num_officers_far += 1
-
-        prev_num_officers = len(prev_period_entities)
-        prev_num_officers_far = len(
-            list(
-                filter(
-                    lambda officer_entity: (
-                        officer_entity.target_status == TargetStatus.FAR
-                    ),
-                    copy(prev_period_entities),
-                )
-            )
-        )
-
-        return OutliersAggregatedMetricInfo(
-            metric=metric,
-            officers_far_pct=num_officers_far / num_officers if num_officers else 0,
-            prev_officers_far_pct=prev_num_officers_far / prev_num_officers
-            if prev_num_officers
-            else 0,
-            officer_rates=officer_rates,
-        )
-
-    def _get_all_metrics_information(
-        self,
-        metric_to_metric_context: Dict[OutliersMetricConfig, MetricContext],
-        aggregation_type: OutliersAggregationType,
-        filter_value: str,
-    ) -> List[OutliersAggregatedMetricInfo]:
-        """
-        For all the metrics in the metric_context, get the officer-level aggregated information and filtered using
-        the aggregation_type and filter_value.
-        """
-        metrics: List[OutliersAggregatedMetricInfo] = []
-        for (
-            metric,
-            metric_context,
-        ) in metric_to_metric_context.items():
-            # Get the current and previous period entities filtered for the filter_value and aggregation_type
-            (
-                current_period_entities,
-                prev_period_entities,
-            ) = self._get_filtered_officer_entities(
-                metric_context, aggregation_type, filter_value
-            )
-
-            # o For the relevant entities, get the aggregated information
-            metric_info = self._get_aggregated_metric_info(
-                metric, current_period_entities, prev_period_entities
-            )
-
-            metrics.append(metric_info)
-
-        return metrics
 
     def get_supervisors_with_outliers(
         self, state_code: StateCode
@@ -561,17 +358,15 @@ class OutliersQuerier:
 
         with SessionFactory.using_database(db_key, autocommit=False) as session:
             latest_period_end_date = (
-                session.query(func.max(SupervisionOfficerMetric.metric_value))
+                session.query(func.max(SupervisionOfficerOutlierStatus.end_date))
                 .filter(
-                    SupervisionOfficerMetric.period == MetricTimePeriod.YEAR.value,
-                    SupervisionOfficerMetric.value_type
-                    == OutliersMetricValueType.RATE.value,
+                    SupervisionOfficerOutlierStatus.period
+                    == MetricTimePeriod.YEAR.value,
                 )
                 .scalar()
             )
 
             # Get external ids of officers with outliers
-            # TODO(#24516): Simplify logic
             supervisor_ids_with_outliers = [
                 external_id
                 for external_id, report_data in self.get_officer_level_report_data_for_all_officer_supervisors(

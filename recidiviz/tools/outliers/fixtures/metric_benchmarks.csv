@@ -1,0 +1,5 @@
+state_code,metric_id,period,end_date,caseload_type,target,threshold
+US_XX,incarceration_starts_and_inferred,YEAR,2023-04-01,,0.14,0.21
+US_XX,incarceration_starts_and_inferred,YEAR,2023-05-01,,0.13,0.2
+US_XX,task_completions_transfer_to_limited_supervision,YEAR,2023-04-01,,0.008,0.1
+US_XX,task_completions_transfer_to_limited_supervision,YEAR,2023-05-01,,0.008,0.1

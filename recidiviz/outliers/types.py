@@ -16,7 +16,7 @@
 # =============================================================================
 """Outliers-related types"""
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import attr
 import cattrs
@@ -42,11 +42,6 @@ class TargetStatus(Enum):
     MET = "MET"
     NEAR = "NEAR"
     FAR = "FAR"
-
-
-class OutliersAggregationType(Enum):
-    SUPERVISION_DISTRICT = "SUPERVISION_DISTRICT"
-    SUPERVISION_OFFICER_SUPERVISOR = "SUPERVISION_OFFICER_SUPERVISOR"
 
 
 class OutliersMetricValueType(Enum):
@@ -176,8 +171,6 @@ class MetricContext:
     target: float = attr.ib()
     # All units of analysis for a given state and metric for the current period
     entities: List[OfficerMetricEntity] = attr.ib()
-    # All units of analysis for a given state and metric for the previous period
-    prev_period_entities: List[OfficerMetricEntity] = attr.ib()
     # Describes how the TargetStatus is calculated (see the Enum definition)
     target_status_strategy: TargetStatusStrategy = attr.ib(
         default=TargetStatusStrategy.IQR_THRESHOLD
@@ -214,42 +207,4 @@ class OfficerSupervisorReportData:
     additional_recipients: List[str] = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
-
-
-######################################
-# Data classes for upper management emails
-######################################
-@attr.s
-class OutliersAggregatedMetricInfo:
-    # The Outliers metric the information corresponds to
-    metric: OutliersMetricConfig = attr.ib()
-    # The percentage of officers with "FAR" target status for this metric in the current period
-    officers_far_pct: float = attr.ib()
-    # The percentage of officers with "FAR" target status for this metric in the previous period
-    prev_officers_far_pct: float = attr.ib()
-    # Maps target status to list of officers with the respective status for all officers in the current period
-    officer_rates: Dict[TargetStatus, List[OfficerMetricEntity]] = attr.ib()
-
-
-@attr.s
-class OutliersAggregatedMetricEntity:
-    # The name of the entity, e.g. district name or officer supervisor name
-    name: Union[str, PersonName] = attr.ib()
-    # The metric information for all metrics for this entity
-    metrics: List[OutliersAggregatedMetricInfo] = attr.ib()
-
-
-@attr.s
-class OutliersUpperManagementReportData:
-    # The name of the recipient, e.g. a SupervisionDistrictManager or SupervisionDirector
-    recipient_name: PersonName = attr.ib()
-    # The recipient's email address
-    recipient_email: str = attr.ib()
-    # The entities relevant for recipient
-    entities: List[OutliersAggregatedMetricEntity] = attr.ib()
-    # The copy for how to refer to an entity, i.e. "officer" or "district"
-    entity_label: str = attr.ib()
-
-    def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
