@@ -60,7 +60,10 @@ from recidiviz.justice_counts.utils.constants import (
 from recidiviz.justice_counts.utils.datapoint_utils import get_dimension_id
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import in_gcp_staging
+from recidiviz.utils.environment import (
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    in_gcp_staging,
+)
 
 
 class SpreadsheetInterface:
@@ -330,9 +333,9 @@ class SpreadsheetInterface:
     @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
         bucket_name = (
-            "justice-counts-staging-publisher-uploads"
-            if metadata.project_id() == "recidiviz-staging"
-            else "justice-counts-production-publisher-uploads"
+            "justice-counts-production-publisher-uploads"
+            if metadata.project_id() == GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
+            else "justice-counts-staging-publisher-uploads"
         )
         return GcsfsFilePath(
             bucket_name=bucket_name,
