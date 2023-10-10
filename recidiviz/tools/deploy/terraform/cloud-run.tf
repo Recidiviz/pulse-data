@@ -114,19 +114,6 @@ resource "google_service_account_iam_member" "application_data_import_iam" {
   member = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
 }
 
-
-# Use existing Justice Counts service account for Justice Counts Cloud Run
-data "google_service_account" "justice_counts_cloud_run" {
-  account_id = var.project_id == "recidiviz-123" ? "justice-counts-spotlights-prod" : "jstc-counts-spotlights-staging"
-}
-
-# Give JC service account permission to write logs
-resource "google_project_iam_member" "justice_counts_cloud_run_log_writer" {
-  project = var.project_id
-  role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${data.google_service_account.justice_counts_cloud_run.email}"
-}
-
 # Env vars from secrets
 data "google_secret_manager_secret_version" "segment_write_key" { secret = "case_triage_segment_backend_key" }
 
@@ -201,65 +188,6 @@ resource "google_cloud_run_service" "case-triage" {
   metadata {
     annotations = {
       "run.googleapis.com/ingress" = "internal-and-cloud-load-balancing"
-    }
-  }
-
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
-
-  autogenerate_revision_name = false
-}
-
-# Initializes Justice Counts Cloud Run service
-resource "google_cloud_run_service" "justice-counts" {
-  name     = "justice-counts-web"
-  location = var.region
-
-  # !Important! This block means that the Justice Counts Cloud Run service WILL NOT
-  # be updated with the standard data platform deploy. Instead, we manually control
-  # revisions via the UI.
-  lifecycle {
-    ignore_changes = all
-  }
-
-  template {
-    spec {
-      containers {
-        image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
-        command = ["pipenv"]
-        args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.justice_counts.control_panel.server:create_app()"]
-
-        env {
-          name  = "RECIDIVIZ_ENV"
-          value = var.project_id == "recidiviz-123" ? "production" : "staging"
-        }
-
-        resources {
-          limits = {
-            cpu    = "1000m"
-            memory = "1024Mi"
-          }
-        }
-      }
-
-      service_account_name = data.google_service_account.justice_counts_cloud_run.email
-    }
-
-    metadata {
-      annotations = {
-        "autoscaling.knative.dev/minScale"      = 1
-        "autoscaling.knative.dev/maxScale"      = var.max_justice_counts_instances
-        "run.googleapis.com/cloudsql-instances" = module.justice_counts_database.connection_name
-      }
-
-      # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
-      # we reattempt, the docker image tag (version number) will remain the same. If we only include the image tag but
-      # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
-      # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
-      # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
-      name = "justice-counts-web-${local.git_short_hash}"
     }
   }
 
@@ -396,14 +324,6 @@ resource "google_cloud_run_service_iam_member" "public-access" {
   location = google_cloud_run_service.case-triage.location
   project  = google_cloud_run_service.case-triage.project
   service  = google_cloud_run_service.case-triage.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
-
-resource "google_cloud_run_service_iam_member" "justice-counts-public-access" {
-  location = google_cloud_run_service.justice-counts.location
-  project  = google_cloud_run_service.justice-counts.project
-  service  = google_cloud_run_service.justice-counts.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
