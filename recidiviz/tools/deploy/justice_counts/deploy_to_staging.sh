@@ -29,7 +29,7 @@ VERSION=''
 function get_next_version {
     run_cmd git fetch --all --tags --prune --prune-tags --force
 
-    LAST_VERSION_TAG_ON_BRANCH=$(git tag "main" | grep "jc" | sort_versions | tail -n 1) || exit_on_fail
+    LAST_VERSION_TAG_ON_BRANCH=$(git tag --merged "main" | grep "jc" | sort_versions | tail -n 1) || exit_on_fail
 
     if [[ ! ${LAST_VERSION_TAG_ON_BRANCH} =~ ^jc.v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
         echo_error "Invalid version - must be of the format vX.Y.Z"
