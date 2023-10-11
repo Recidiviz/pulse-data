@@ -16,6 +16,10 @@
 # =============================================================================
 
 
+locals {
+  admin_panel_load_balancer_name = "admin-panel-load-balancer"
+}
+
 # Contains YAML list of IAM policy members that should have access to the admin panel
 data "google_secret_manager_secret_version" "iam_admin_panel_access" {
   secret = "iam_admin_panel_access"
@@ -75,7 +79,7 @@ resource "google_compute_region_network_endpoint_group" "admin_panel_serverless_
 module "admin_panel_load_balancer" {
   source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
   version = "~> 6.2.0"
-  name    = "admin-panel-load-balancer"
+  name    = local.admin_panel_load_balancer_name
   project = var.project_id
 
   ssl                             = true
@@ -124,7 +128,7 @@ data "google_iam_policy" "admin_panel_iap" {
 
 resource "google_iap_web_backend_service_iam_policy" "admin_panel_policy" {
   project             = var.project_id
-  web_backend_service = "admin-panel-backend-default"
+  web_backend_service = format("%s-backend-default", local.admin_panel_load_balancer_name)
   policy_data         = data.google_iam_policy.admin_panel_iap.policy_data
   depends_on = [
     module.admin_panel_load_balancer
