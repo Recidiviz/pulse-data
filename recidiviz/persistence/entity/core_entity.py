@@ -21,6 +21,8 @@ from enum import Enum
 from functools import lru_cache
 from typing import Any, List, Optional, Type
 
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.attr_utils import is_attr_decorated
 from recidiviz.common.constants.state import enum_canonical_strings
 from recidiviz.common.str_field_utils import to_snake_case
 
@@ -59,31 +61,11 @@ class CoreEntity:
     def get_id(self):
         return getattr(self, self.get_class_id_name())
 
-    def get_root_entity_id(self):
-        """Returns the id of the root entity the entity is associated with."""
-        if hasattr(self, "person"):
-            return self.person.person_id
-
-        if hasattr(self, "staff"):
-            return self.staff.staff_id
-
-        if self.get_class_id_name() not in {"person_id", "staff_id"}:
-            raise ValueError(
-                f"Expected non root entity {type(self)} to have field staff or person but found none."
-            )
-        return self.get_id()
-
-    def get_root_entity_name(self):
-        """Returns the name of the root entity the entity is associated with."""
-        if hasattr(self, "person") or self.get_class_id_name() == "person_id":
-            return "StatePerson"
-
-        if hasattr(self, "staff") or self.get_class_id_name() == "staff_id":
-            return "StateStaff"
-
-        raise ValueError(
-            f"Expected non root entity {type(self)} to have field staff or person but found none."
-        )
+    @classmethod
+    def has_field(cls, field: str) -> bool:
+        if is_attr_decorated(cls):
+            return field in attribute_field_type_reference_for_class(cls)
+        return hasattr(cls, field)
 
     @classmethod
     @lru_cache(maxsize=None)
