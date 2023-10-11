@@ -48,17 +48,23 @@ class TestRecidivizDataflowFlexTemplateOperator(unittest.TestCase):
         )
         self.mock_logs_client_patcher.start().return_value = self.mock_logs_client
 
+        # Mocking instance method rather than setting up deeply nested mock of the dataflow service
+        self.mock_get_job = patch(
+            "recidiviz.airflow.dags.operators.recidiviz_dataflow_operator.RecidivizDataflowFlexTemplateOperator.get_job"
+        ).start()
+
         self.dag = DAG(dag_id="test_dag", start_date=datetime.now())
         self.dataflow_task = RecidivizDataflowFlexTemplateOperator(
             task_id="test_task",
             project_id="test-project",
-            body={},
+            body={"launchParameter": {"jobName": "test-job"}},
             location="us-central1",
         )
 
     def tearDown(self) -> None:
         self.mock_hook_patcher.stop()
         self.mock_logs_client_patcher.stop()
+        self.mock_get_job.stop()
 
     def test_execute_basic(self) -> None:
         # Arrange
@@ -81,7 +87,7 @@ class TestRecidivizDataflowFlexTemplateOperator(unittest.TestCase):
     def test_execute_job_failure(self) -> None:
         self.mock_hook.is_job_dataflow_running.return_value = False
         self.mock_hook.start_flex_template.side_effect = Exception("Job has failed!")
-        self.mock_hook.get_job.return_value = {
+        self.mock_get_job.return_value = {
             "currentState": DataflowJobStatus.JOB_STATE_FAILED,
             "id": "2023-09-18_07_09_47-16912541725945987225",
             "creationTime": "2023-09-18T14:09:47.864426Z",
