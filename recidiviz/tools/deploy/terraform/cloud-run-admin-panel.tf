@@ -91,7 +91,7 @@ module "admin_panel_load_balancer" {
           group = google_compute_region_network_endpoint_group.admin_panel_serverless_neg.id
         }
       ]
-      enable_cdn      = true
+      enable_cdn      = false
       security_policy = google_compute_security_policy.recidiviz-waf-policy.id
       custom_request_headers = [
         "X-Client-Geo-Location: {client_region_subdivision}, {client_city}",
