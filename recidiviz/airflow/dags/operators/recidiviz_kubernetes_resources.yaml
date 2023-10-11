@@ -80,3 +80,9 @@ IngestAcquireLockEntrypoint:
     limits:
       cpu: 250m
       memory: 500Mi
+
+IngestReleaseLockEntrypoint:
+  default_resources:
+    limits:
+      cpu: 250m
+      memory: 500Mi

@@ -18,10 +18,8 @@
 Unit tests to test the ingest DAG.
 """
 import os
-from typing import Any
 from unittest.mock import MagicMock, patch
 
-from airflow.decorators import task
 from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.state import DagRunState
@@ -31,7 +29,10 @@ from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     KNOWN_CONFIGURATION_PARAMETERS,
 )
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
-from recidiviz.airflow.tests.utils.dag_helper_functions import fake_operator_constructor
+from recidiviz.airflow.tests.utils.dag_helper_functions import (
+    fake_failure_task,
+    fake_operator_constructor,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
@@ -198,18 +199,11 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
             through to the EmptyOperator.
             """
 
-            @task(task_id="check_raw_data_max_update_time")
-            def fake_failure_task() -> Any:
-                """
-                Raises an exception to simulate a failure.
-                """
-                raise ValueError("Test failure")
-
             if (
                 state_code == StateCode.US_XX
                 and instance == DirectIngestInstance.PRIMARY
             ):
-                return fake_failure_task()
+                return fake_failure_task(task_id="check_raw_data_max_update_time")
 
             return EmptyOperator(task_id="check_raw_data_max_update_time")
 
@@ -226,7 +220,6 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                     ".*us_xx_primary_dataflow.check_raw_data_max_update_time.*",
                     ".*us_xx_primary_dataflow.acquire_lock.*",
                     ".*us_xx_primary_dataflow.dataflow_pipeline.*",
-                    ".*us_xx_primary_dataflow.release_lock.*",
                     ".*us_xx_primary_dataflow.write_upper_bounds.*",
                     ".*ingest_branching.branch_end.*",
                 ],

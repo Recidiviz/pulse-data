@@ -126,6 +126,7 @@ class StateUpdateLockManager:
 
         return no_blocking_locks
 
+    # TODO(#23987): Add lock_id as an argument to use to release lock
     def release_lock(self) -> None:
         """Releases the state update lock."""
         self.lock_manager.unlock(self.lock_name)

@@ -55,3 +55,8 @@ test_ingest_dag_acquire_lock_task:
   - --entrypoint=IngestAcquireLockEntrypoint
   - --state_code=US_XX
   - --ingest_instance=PRIMARY
+
+test_ingest_dag_release_lock_task:
+  - --entrypoint=IngestReleaseLockEntrypoint
+  - --state_code=US_XX
+  - --ingest_instance=PRIMARY

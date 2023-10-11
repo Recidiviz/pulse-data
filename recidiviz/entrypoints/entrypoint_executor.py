@@ -28,6 +28,7 @@ from recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh import (
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.ingest.ingest_lock_management import (
     IngestAcquireLockEntrypoint,
+    IngestReleaseLockEntrypoint,
 )
 from recidiviz.entrypoints.metric_export.metric_view_export import (
     MetricViewExportEntrypoint,
@@ -52,6 +53,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     ValidationEntrypoint,
     UpdateAllManagedViewsEntrypoint,
     IngestAcquireLockEntrypoint,
+    IngestReleaseLockEntrypoint,
 }
 
 

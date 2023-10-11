@@ -24,6 +24,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 
 
+# TODO(#23987): Add lock_id as an argument to use to acquire lock
 class IngestAcquireLockEntrypoint(EntrypointInterface):
     """Entrypoint for acquiring the ingest lock"""
 
@@ -56,3 +57,38 @@ class IngestAcquireLockEntrypoint(EntrypointInterface):
             state_code_filter=args.state_code, ingest_instance=args.ingest_instance
         )
         state_update_lock_manager.acquire_lock(lock_id=str(uuid.uuid4()))
+
+
+# TODO(#23987): Add lock_id as an argument to use to release lock
+class IngestReleaseLockEntrypoint(EntrypointInterface):
+    """Entrypoint for releasing the ingest lock"""
+
+    @staticmethod
+    def get_parser() -> argparse.ArgumentParser:
+        """Parses arguments for the ingest lock release."""
+        parser = argparse.ArgumentParser()
+
+        parser.add_argument(
+            "--state_code",
+            help="The state code for which the lock needs to be released",
+            type=StateCode,
+            choices=list(StateCode),
+            required=True,
+        )
+
+        parser.add_argument(
+            "--ingest_instance",
+            help="The ingest instance for which the lock needs to be released",
+            type=DirectIngestInstance,
+            choices=list(DirectIngestInstance),
+            required=True,
+        )
+
+        return parser
+
+    @staticmethod
+    def run_entrypoint(args: argparse.Namespace) -> None:
+        state_update_lock_manager = StateUpdateLockManager(
+            state_code_filter=args.state_code, ingest_instance=args.ingest_instance
+        )
+        state_update_lock_manager.release_lock()
