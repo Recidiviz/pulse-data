@@ -315,12 +315,22 @@ export const getAllLatestDataflowJobs = async (): Promise<Response> => {
 };
 
 // Get latest ingest dataflow pipeline status for the state and instance
-export const getLatestDataflowPipelineByInstance = async (
+export const getLatestDataflowJobByInstance = async (
   stateCode: string,
   instance: string
 ): Promise<Response> => {
   return getResource(
     `/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/${stateCode}/${instance}`
+  );
+};
+
+// Get latest ingest dataflow raw data watermarks for the state and instance
+export const getLatestDataflowRawDataWatermarks = async (
+  stateCode: string,
+  instance: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/get_latest_ingest_dataflow_raw_data_watermarks/${stateCode}/${instance}`
   );
 };
 
