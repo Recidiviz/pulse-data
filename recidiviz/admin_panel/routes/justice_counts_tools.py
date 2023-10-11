@@ -29,7 +29,6 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -67,10 +66,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         """
         try:
             with SessionFactory.using_database(
-                database_key=SQLAlchemyDatabaseKey.for_schema(
-                    SchemaType.JUSTICE_COUNTS
-                ),
-                secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+                database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
             ) as session:
                 request_json = assert_type(request.json, dict)
                 name = assert_type(request_json.get("name"), str)
@@ -112,8 +108,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     def get_agency(agency_id: int) -> Tuple[Response, HTTPStatus]:
         """Returns Agency information."""
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             return (
                 jsonify(
@@ -133,8 +128,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     def get_all_agencies() -> Tuple[Response, HTTPStatus]:
         """Returns all Agency records."""
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             return (
                 jsonify(
@@ -158,8 +152,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         Updates Agency name and systems in our DB.
         """
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
             name = request_json.get("name")
@@ -249,8 +242,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         Looks for an existing user in Auth0 and creates the User in the database.
         """
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
             email = assert_type(request_json.get("email"), str)
@@ -298,8 +290,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     def get_all_users() -> Tuple[Response, HTTPStatus]:
         """Returns all UserAccount records."""
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             db_users = UserAccountInterface.get_users(session=session)
             agency_ids_to_fetch = set()
@@ -342,8 +333,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         Updates a User's name in the DB.
         """
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
             name = request_json.get("name")
@@ -372,8 +362,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         Adds or Updates AgencyUserAccountAssociations for a user.
         """
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
             email = assert_type(request_json.get("email"), str)
@@ -422,8 +411,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         Deletes AgencyUserAccountAssociations for a user.
         """
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
             email = assert_type(request_json.get("email"), str)
@@ -468,8 +456,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         Adds or Updates AgencyUserAccountAssociations for an agency.
         """
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
             emails = assert_type(request_json.get("emails"), list)
@@ -530,8 +517,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
         Deletes AgencyUserAccountAssociations for an agency.
         """
         with SessionFactory.using_database(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
             emails = request_json.get("emails")
