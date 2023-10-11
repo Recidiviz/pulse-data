@@ -42,14 +42,10 @@ class CloudSQLProxyControl:
     port: int
 
     def _start_proxy(
-        self,
-        *,
-        schema_type: SchemaType,
-        prompt: Optional[bool] = True,
-        secret_prefix_override: Optional[str],
+        self, *, schema_type: SchemaType, prompt: Optional[bool] = True
     ) -> str:
         connection_string = SQLAlchemyEngineManager.get_full_cloudsql_instance_id(
-            schema_type=schema_type, secret_prefix_override=secret_prefix_override
+            schema_type=schema_type
         )
 
         if prompt:
@@ -82,18 +78,10 @@ class CloudSQLProxyControl:
 
     @contextlib.contextmanager
     def connection(
-        self,
-        *,
-        schema_type: SchemaType,
-        prompt: Optional[bool] = None,
-        secret_prefix_override: Optional[str] = None,
+        self, *, schema_type: SchemaType, prompt: Optional[bool] = None
     ) -> Generator[None, None, None]:
         atexit.register(self._quit_proxy)
-        self._start_proxy(
-            schema_type=schema_type,
-            prompt=prompt,
-            secret_prefix_override=secret_prefix_override,
-        )
+        self._start_proxy(schema_type=schema_type, prompt=prompt)
 
         try:
             yield

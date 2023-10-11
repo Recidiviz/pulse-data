@@ -29,7 +29,6 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.report import ReportInterface
-from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -145,8 +144,7 @@ if __name__ == "__main__":
         SchemaType.JUSTICE_COUNTS,
     )
     justice_counts_engine = SQLAlchemyEngineManager.init_engine(
-        database_key=database_key,
-        secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+        database_key=database_key
     )
 
     main(justice_counts_engine)
