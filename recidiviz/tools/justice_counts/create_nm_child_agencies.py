@@ -31,6 +31,7 @@ import pandas as pd
 import requests
 
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -108,9 +109,12 @@ def create_child_agencies(all_agencies: set, dry_run: bool, project_id: str) -> 
         super_agency_id = 207
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
-    with cloudsql_proxy_control.connection(schema_type=schema_type):
+    with cloudsql_proxy_control.connection(
+        schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+    ):
         with SessionFactory.for_proxy(
             database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
             autocommit=False,
         ) as session:
             for agency in all_agencies:
