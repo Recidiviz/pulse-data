@@ -315,6 +315,11 @@ def parse_supervision_level(
 ) -> Optional[StateSupervisionLevel]:
     """Parse supervision level based on assigned supervision level"""
 
+    # If the supervision level raw text has "IN JAIL", let's map to IN_CUSTODY regardless of
+    # what else the raw text says:
+    if "IN JAIL" in raw_text:
+        return StateSupervisionLevel.IN_CUSTODY
+
     # By default, use the first part of raw text for mapping
     #   For supervision levels coming from OMNI, this will be the whole raw text string
     #   For supervision levels coming from COMS, this will be the value coming from COMS_Supervision_Levels
