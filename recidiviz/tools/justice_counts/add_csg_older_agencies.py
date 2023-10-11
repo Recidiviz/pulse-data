@@ -22,7 +22,8 @@ agencies as CSG users are automatically added to newly created agencies.
 
 python -m recidiviz.tools.justice_counts.add_csg_older_agencies \
   --project-id=justice-counts-staging \
-  --dry-run=true
+  --dry-run=true \
+  --preserve-role=true
 """
 
 import argparse
@@ -58,16 +59,19 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument("--dry-run", type=str_to_bool, default=True)
+    parser.add_argument("--preserve-role", type=str_to_bool, default=True)
     return parser
 
 
-def add_csg_users_to_agencies(dry_run: bool, project_id: str) -> None:
+def add_csg_users_to_agencies(
+    dry_run: bool, project_id: str, preserve_role: bool
+) -> None:
     """
     This function retrieves all agencies (filtering out test agencies),
     as well as all CSG users, and adds all CSG users to all agencies. If the agency exists
     in production, we set their roles to READ_ONLY. If the agency exists in staging, we set
     their roles to AGENCY_ADMIN. If a CSG user has been previously assigned a role
-    for a given agency, we preserve that role.
+    for a given agency, we preserve that role unless preserve_role is passed in as False.
     """
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
@@ -94,11 +98,43 @@ def add_csg_users_to_agencies(dry_run: bool, project_id: str) -> None:
                         user=csg_user,
                         agencies=all_agencies,
                         role=UserAccountRole[role],
-                        preserve_role=True,
+                        preserve_role=preserve_role,
                     )
                     logging.info("Added %s to agencies", csg_user.name)
                 else:
-                    logging.info("Would add %s to agencies", csg_user.name)
+                    associations_agency_ids_by_role = {
+                        user_associations.agency_id: user_associations.role
+                        for user_associations in csg_user.agency_assocs
+                    }
+                    for agency in all_agencies:
+                        if associations_agency_ids_by_role.get(agency.id) is None:
+                            logging.info(
+                                "No association for %s, %s", csg_user.name, agency.name
+                            )
+                        else:
+                            role = associations_agency_ids_by_role.get(agency.id)  # type: ignore[assignment]
+                            if (
+                                project_id == GCP_PROJECT_JUSTICE_COUNTS_STAGING
+                                and role != UserAccountRole.AGENCY_ADMIN
+                            ):
+                                logging.info(
+                                    "Will override %s, %s, %s",
+                                    csg_user.name,
+                                    agency.name,
+                                    role,
+                                )
+                            elif (
+                                project_id == GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
+                                and role != UserAccountRole.READ_ONLY
+                            ):
+                                logging.info(
+                                    "Will override %s, %s, %s",
+                                    csg_user.name,
+                                    agency.name,
+                                    role,
+                                )
+            if dry_run is False:
+                session.commit()
 
 
 if __name__ == "__main__":
@@ -108,4 +144,5 @@ if __name__ == "__main__":
         add_csg_users_to_agencies(
             dry_run=args.dry_run,
             project_id=args.project_id,
+            preserve_role=args.preserve_role,
         )
