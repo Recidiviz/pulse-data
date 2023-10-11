@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class for ingest pipeline parameters"""
+import json
 from enum import Enum
-from typing import List
+from typing import Dict, List
 
 import attr
 
@@ -65,6 +66,17 @@ class IngestPipelineParameters(PipelineParameters):
     materialization_method: str = attr.ib(
         default=MaterializationMethod.LATEST.value, validator=attr_validators.is_str
     )
+
+    raw_data_upper_bound_dates_json: str = attr.ib(
+        validator=attr_validators.is_non_empty_str
+    )
+
+    raw_data_upper_bound_dates: Dict[str, str] = attr.ib()
+
+    @raw_data_upper_bound_dates.default
+    def _raw_data_upper_bound_dates(self) -> Dict[str, str]:
+        raw_json = json.loads(self.raw_data_upper_bound_dates_json)
+        return dict(raw_json.items())
 
     @property
     def flex_template_name(self) -> str:

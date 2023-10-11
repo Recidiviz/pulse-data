@@ -112,6 +112,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         default_materialization_method = MaterializationMethod(
             self.pipeline_parameters.materialization_method
         )
+
+        raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates
+
         region = direct_ingest_regions.get_direct_ingest_region(
             region_code=state_code.value
         )
@@ -133,12 +136,20 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]],
         ] = {}
         for ingest_view in ingest_manifest_collector.launchable_ingest_views():
-            raw_data_tables = [
-                raw_data_dependency.raw_file_config.file_tag
-                for raw_data_dependency in view_collector.get_query_builder_by_view_name(
-                    ingest_view
-                ).raw_table_dependency_configs
-            ]
+            raw_data_tables_to_upperbound_dates: Dict[str, str] = {}
+            for raw_data_dependency in view_collector.get_query_builder_by_view_name(
+                ingest_view
+            ).raw_table_dependency_configs:
+                file_tag = raw_data_dependency.raw_file_config.file_tag
+                if file_tag not in raw_data_upper_bound_dates:
+                    raise ValueError(
+                        f"Found raw table {raw_data_dependency.raw_file_config.file_tag}"
+                        f" dependency of ingest view {ingest_view} with no uploaded data."
+                        f" All raw table dependencies must have uploaded data before an ingest view can be enabled."
+                    )
+                raw_data_tables_to_upperbound_dates[
+                    file_tag
+                ] = raw_data_upper_bound_dates[file_tag]
 
             materialization_method = materialization_method_for_ingest_view(
                 ingest_manifest_collector.ingest_view_to_manifest[ingest_view],
@@ -151,7 +162,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 project_id=self.pipeline_parameters.project,
                 state_code=state_code,
                 ingest_view_name=ingest_view,
-                raw_data_tables=raw_data_tables,
+                raw_data_tables_to_upperbound_dates=raw_data_tables_to_upperbound_dates,
                 ingest_instance=ingest_instance,
                 materialization_method=materialization_method,
             )

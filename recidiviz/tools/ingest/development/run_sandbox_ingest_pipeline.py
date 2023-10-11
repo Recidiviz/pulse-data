@@ -39,22 +39,34 @@ Examples:
         --materialization_method original \
         --skip_build True
 """
-
 import argparse
+import json
 import logging
+from datetime import datetime
 from typing import List, Tuple
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataflow_dataset,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
+    IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegateImpl,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    DirectIngestViewQueryBuilderCollector,
+)
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.ingest.pipeline_parameters import (
     IngestPipelineParameters,
     MaterializationMethod,
@@ -116,7 +128,7 @@ def get_extra_pipeline_parameter_args(
     state_code: StateCode, ingest_instance: DirectIngestInstance, sandbox_prefix: str
 ) -> List[str]:
     """Returns additional pipeline command-line args that can be inferred from the
-    state code, instance and sandbox preifix.
+    state code, instance and sandbox prefix.
     """
 
     standard_job_name = ingest_pipeline_name(state_code, ingest_instance)
@@ -138,6 +150,36 @@ def get_extra_pipeline_parameter_args(
         )
     )
 
+    right_now = datetime.now()
+
+    region = direct_ingest_regions.get_direct_ingest_region(
+        region_code=state_code.value
+    )
+    ingest_manifest_collector = IngestViewManifestCollector(
+        region=region,
+        delegate=IngestViewResultsParserDelegateImpl(
+            region=region,
+            schema_type=SchemaType.STATE,
+            ingest_instance=ingest_instance,
+            results_update_datetime=right_now,
+        ),
+    )
+    view_collector = DirectIngestViewQueryBuilderCollector(
+        region,
+        ingest_manifest_collector.launchable_ingest_views(),
+    )
+
+    # TODO(#24519) Update to use Cloud SQL proxy and reuse query from raw file metadata.
+    raw_data_upper_bound_dates_json = json.dumps(
+        {
+            raw_data_dependency.raw_file_config.file_tag: right_now.isoformat()
+            for ingest_view in ingest_manifest_collector.launchable_ingest_views()
+            for raw_data_dependency in view_collector.get_query_builder_by_view_name(
+                ingest_view
+            ).raw_table_dependency_configs
+        }
+    )
+
     return [
         # TODO(#18108): Once we have a distinct entrypoint for each pipeline type, we
         #  likely won't need this arg.
@@ -155,6 +197,8 @@ def get_extra_pipeline_parameter_args(
         #  here.
         "--service_account_email"
         "emily-temporary-sa-testing-dat@recidiviz-staging.iam.gserviceaccount.com",
+        "--raw_data_upper_bound_dates_json",
+        raw_data_upper_bound_dates_json,
     ]
 
 
