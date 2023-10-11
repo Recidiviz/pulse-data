@@ -39,6 +39,7 @@ class MetricUnitOfAnalysisType(Enum):
 
     STATE_CODE = "STATE"
     FACILITY = "FACILITY"
+    FACILITY_COUNSELOR = "FACILITY_COUNSELOR"
     SUPERVISION_DISTRICT = "DISTRICT"
     SUPERVISION_OFFICE = "OFFICE"
     SUPERVISION_OFFICER = "OFFICER"
@@ -122,6 +123,26 @@ METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
         client_assignment_query="SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
         primary_key_columns=["state_code", "facility"],
         static_attribute_columns=["facility_name"],
+    ),
+    MetricUnitOfAnalysisType.FACILITY_COUNSELOR: MetricUnitOfAnalysis(
+        level_type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+        client_assignment_query="""
+SELECT 
+    a.* EXCEPT (incarceration_staff_assignment_id),
+    a.incarceration_staff_assignment_id AS facility_counselor_id,
+    b.full_name_clean AS facility_counselor_name
+FROM
+    `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized` a
+LEFT JOIN
+    `{project_id}.reference_views.state_staff_with_names` b
+ON
+    a.state_code = b.state_code
+    AND a.incarceration_staff_assignment_id = b.staff_id
+WHERE
+    incarceration_staff_assignment_role_subtype = "COUNSELOR"
+""",
+        primary_key_columns=["state_code", "facility_counselor_id"],
+        static_attribute_columns=["facility_counselor_name"],
     ),
     MetricUnitOfAnalysisType.STATE_CODE: MetricUnitOfAnalysis(
         level_type=MetricUnitOfAnalysisType.STATE_CODE,

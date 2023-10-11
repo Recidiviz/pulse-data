@@ -426,6 +426,7 @@ LEVELS_BY_POPULATION_TYPE: Dict[
 ] = {
     MetricPopulationType.INCARCERATION: [
         MetricUnitOfAnalysisType.FACILITY,
+        MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
         MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.SUPERVISION: [
