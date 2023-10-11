@@ -8,6 +8,7 @@ export type Agency = {
   team: AgencyTeamMember[];
   super_agency_id: number;
   is_superagency: boolean;
+  is_dashboard_enabled: boolean;
 };
 
 export type AgencyTeamMember = {

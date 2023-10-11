@@ -48,6 +48,18 @@ export const getAgencies = async (): Promise<Response> => {
   return getResource(`/api/justice_counts_tools/agencies`);
 };
 
+export const updateIsDashboardEnabled = async (
+  agencyId: number,
+  isDashboardEnabled: boolean
+): Promise<Response> => {
+  return putWithURLAndBody(
+    `/api/justice_counts_tools/agency/${agencyId}/dashboard`,
+    {
+      is_dashboard_enabled: isDashboardEnabled,
+    }
+  );
+};
+
 export const updateAgency = async (
   name: string | null,
   systems: string[] | null,

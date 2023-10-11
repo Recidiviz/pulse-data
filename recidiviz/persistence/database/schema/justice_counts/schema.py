@@ -411,6 +411,7 @@ class Agency(Source):
             else [],
             "is_superagency": self.is_superagency,
             "super_agency_id": self.super_agency_id,
+            "is_dashboard_enabled": self.is_dashboard_enabled,
         }
 
     def to_public_json(self) -> Dict[str, Any]:
@@ -427,6 +428,7 @@ class Agency(Source):
         return {
             "id": self.id,
             "name": self.name,
+            "is_dashboard_enabled": self.is_dashboard_enabled,
             "systems": [
                 system_enum.value
                 for system_enum in System.sort(

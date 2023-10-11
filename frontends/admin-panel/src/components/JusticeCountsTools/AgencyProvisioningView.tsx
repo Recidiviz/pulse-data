@@ -23,6 +23,7 @@ import {
   Select,
   Space,
   Spin,
+  Switch,
   Table,
   Typography,
   message,
@@ -36,12 +37,14 @@ import {
   getUsers,
   updateAgency,
   updateAgencyUsers,
+  updateIsDashboardEnabled,
 } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   Agency,
+  AgencyResponse,
   AgencyTeamMember,
   CreateAgencyRequest,
   CreateAgencyResponse,
@@ -104,10 +107,9 @@ const AgencyProvisioningView = (): JSX.Element => {
   type AgencyRecord = {
     id: number;
     name: string;
-
     state: string;
-    county?: string;
     team: AgencyTeamMember[];
+    isDashboardEnabled: boolean;
   };
 
   const getColumnSearchProps = (dataIndex: keyof AgencyRecord) => ({
@@ -157,6 +159,42 @@ const AgencyProvisioningView = (): JSX.Element => {
     },
   });
 
+  const onToggleIsDashboardEnabled = async (
+    isDashboardEnabled: boolean,
+    agencyToUpdate: Agency
+  ) => {
+    try {
+      const response = await updateIsDashboardEnabled(
+        agencyToUpdate.id,
+        isDashboardEnabled
+      );
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
+        message.error(`An error occured: ${error}`);
+        return;
+      }
+      const { agency } = (await response.json()) as AgencyResponse;
+      const newAgencyData = {
+        agencies:
+          data?.agencies.map((currAgency) =>
+            currAgency.id === agency.id ? agency : currAgency
+          ) || [],
+        systems: data?.systems || [],
+      };
+      if (isDashboardEnabled === true) {
+        message.success(`${agency.name}'s dashboard is now public`);
+      }
+      if (isDashboardEnabled === false) {
+        message.success(
+          `${agency.name}'s dashboard is no longer available to the public`
+        );
+      }
+      setData(newAgencyData);
+    } catch (err) {
+      message.error(`An error occurred: ${err}`);
+    }
+  };
+
   const onNameChange = async (agency: Agency, name: string) => {
     try {
       const response = await updateAgency(
@@ -168,12 +206,12 @@ const AgencyProvisioningView = (): JSX.Element => {
       );
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
-        message.error(`An error occured: ${error}`);
+        message.error(`An error occurred: ${error}`);
         return;
       }
       message.success(`${agency.name}'s name changed to ${name}!`);
     } catch (err) {
-      message.error(`An error occured: ${err}`);
+      message.error(`An error occurred: ${err}`);
     }
   };
 
@@ -188,12 +226,12 @@ const AgencyProvisioningView = (): JSX.Element => {
       );
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
-        message.error(`An error occured: ${error}`);
+        message.error(`An error occurred: ${error}`);
         return;
       }
       message.success(`${agency.name}'s systems were successfully updated.`);
     } catch (err) {
-      message.error(`An error occured: ${err}`);
+      message.error(`An error occurred: ${err}`);
     }
   };
 
@@ -221,7 +259,7 @@ const AgencyProvisioningView = (): JSX.Element => {
       );
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
-        message.error(`An error occured: ${error}`);
+        message.error(`An error occurred: ${error}`);
         return;
       }
       const { agencies, systems } = (await response.json()) as AgenciesResponse;
@@ -295,16 +333,20 @@ const AgencyProvisioningView = (): JSX.Element => {
       },
     },
     {
-      title: "State",
+      title: "Location",
       dataIndex: "state",
       key: "stateCode",
-      ...getColumnSearchProps("state"),
-    },
-    {
-      title: "County",
-      dataIndex: "county",
-      key: "fipsCountyCode",
-      ...getColumnSearchProps("county"),
+      render: (state: string, agency: Agency) => {
+        return (
+          <div>
+            {agency.fips_county_code !== null
+              ? `${
+                  FipsCountyCode[agency.fips_county_code as FipsCountyCodeKey]
+                }, ${state}`
+              : `${state}`}
+          </div>
+        );
+      },
     },
     {
       title: "Team Members",
@@ -345,6 +387,23 @@ const AgencyProvisioningView = (): JSX.Element => {
       },
     },
     {
+      title: "Dashboard",
+      dataIndex: "isDashboardEnabled",
+      key: "id",
+      render: (isDashboardEnabled: boolean, agency: Agency) => {
+        return (
+          <div>
+            <Switch
+              checkedChildren="On"
+              unCheckedChildren="Off"
+              onClick={(event) => onToggleIsDashboardEnabled(event, agency)}
+              checked={isDashboardEnabled}
+            />
+          </div>
+        );
+      },
+    },
+    {
       title: "Roles",
       dataIndex: "id",
       key: "fipsCountyCode",
@@ -363,8 +422,8 @@ const AgencyProvisioningView = (): JSX.Element => {
           ...agency,
           state:
             StateCode[agency.state_code?.toLocaleLowerCase() as StateCodeKey],
-          county: FipsCountyCode[agency.fips_county_code as FipsCountyCodeKey],
           teamMembers: agency.team.map((u) => u.email),
+          isDashboardEnabled: agency.is_dashboard_enabled === true,
         }))}
         pagination={{
           hideOnSinglePage: true,
