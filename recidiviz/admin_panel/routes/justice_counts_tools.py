@@ -233,6 +233,26 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 HTTPStatus.OK,
             )
 
+    @bp.route("/api/justice_counts_tools/agency/<agency_id>/dashboard", methods=["PUT"])
+    @requires_gae_auth
+    def update_is_dashboard_enabled(agency_id: int) -> Response:
+        with SessionFactory.using_database(
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
+        ) as session:
+            agency = AgencyInterface.get_agency_by_id(
+                session=session, agency_id=agency_id
+            )
+            request_json = assert_type(request.json, dict)
+            is_dashboard_enabled = assert_type(
+                request_json.get("is_dashboard_enabled"), bool
+            )
+            agency.is_dashboard_enabled = is_dashboard_enabled
+            return jsonify(
+                {
+                    "agency": agency.to_json(),
+                }
+            )
+
     # UserAccount
 
     @bp.route("/api/justice_counts_tools/users", methods=["POST"])
