@@ -259,6 +259,10 @@ output:
                     - $equal:
                         - expiration_date
                         - $literal("2999-12-31")
+                    # Let's also set it to true if we see an end date of 9999-12-31 (which we see some cases of in the data)
+                    - $equal:
+                        - expiration_date
+                        - $literal("9999-12-31")
                 county_code: county
                 min_length_days:
                   $conditional:
@@ -473,6 +477,10 @@ output:
                     - $equal:
                         - expiration_date
                         - $literal("2999-12-31")
+                    # Let's also set it to true if we see an end date of 9999-12-31 (which we see some cases of in the data)
+                    - $equal:
+                        - expiration_date
+                        - $literal("9999-12-31")
                 # MI doesn't do capital punishment so setting it to false always
                 is_capital_punishment: $literal_bool(False)
                 parole_possible:
