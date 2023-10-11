@@ -1,4 +1,4 @@
-FROM ubuntu:jammy AS recidiviz-init
+FROM ubuntu:focal-20221130 AS recidiviz-init
 ENV DEBIAN_FRONTEND noninteractive
 # NOTE: It is is extremely important that we do not delete this
 # variable. One of our dependencies, dateparser, seems to require
