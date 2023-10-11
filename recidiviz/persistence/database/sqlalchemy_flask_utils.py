@@ -30,13 +30,16 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 
 
 def setup_scoped_sessions(
-    app: Flask, schema_type: SchemaType, database_url_override: Optional[str] = None
+    app: Flask,
+    schema_type: SchemaType,
+    database_url_override: Optional[str] = None,
+    secret_prefix_override: Optional[str] = None,
 ) -> Engine:
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
     database_url = (
         database_url_override
         or SQLAlchemyEngineManager.get_server_postgres_instance_url(
-            database_key=database_key
+            database_key=database_key, secret_prefix_override=secret_prefix_override
         )
     )
 

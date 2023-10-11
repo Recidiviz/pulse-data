@@ -36,6 +36,7 @@ from oauth2client.client import GoogleCredentials
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.utils.constants import AGENCIES_TO_EXCLUDE
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -320,9 +321,14 @@ if __name__ == "__main__":
             schema_type = SchemaType.JUSTICE_COUNTS
             database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
 
-            with cloudsql_proxy_control.connection(schema_type=schema_type):
+            with cloudsql_proxy_control.connection(
+                schema_type=schema_type,
+                secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+            ):
                 with SessionFactory.for_proxy(
-                    database_key=database_key, autocommit=False
+                    database_key=database_key,
+                    secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
+                    autocommit=False,
                 ) as global_session:
                     generate_agency_summary_csv(
                         session=global_session,
@@ -338,7 +344,8 @@ if __name__ == "__main__":
             SchemaType.JUSTICE_COUNTS,
         )
         justice_counts_engine = SQLAlchemyEngineManager.init_engine(
-            database_key=database_key
+            database_key=database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
         )
         global_session = Session(bind=justice_counts_engine)
         generate_agency_summary_csv(

@@ -18,7 +18,7 @@
 Class for generating SQLAlchemy Sessions objects for the appropriate schema.
 """
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Iterator, Optional
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -40,11 +40,17 @@ class SessionFactory:
     @classmethod
     @contextmanager
     def using_database(
-        cls, database_key: SQLAlchemyDatabaseKey, *, autocommit: bool = True
+        cls,
+        database_key: SQLAlchemyDatabaseKey,
+        *,
+        autocommit: bool = True,
+        secret_prefix_override: Optional[str] = None,
     ) -> Iterator[Session]:
         session = None
         try:
-            session = cls._for_database(database_key=database_key)
+            session = cls._for_database(
+                database_key=database_key, secret_prefix_override=secret_prefix_override
+            )
             yield session
             if autocommit:
                 try:
@@ -59,14 +65,16 @@ class SessionFactory:
     # TODO(#8046): Eventually delete this method
     @classmethod
     def deprecated__for_database(cls, database_key: SQLAlchemyDatabaseKey) -> Session:
-        return cls._for_database(database_key=database_key)
+        return cls._for_database(database_key=database_key, secret_prefix_override=None)
 
     @classmethod
-    def _for_database(cls, database_key: SQLAlchemyDatabaseKey) -> Session:
+    def _for_database(
+        cls, database_key: SQLAlchemyDatabaseKey, secret_prefix_override: Optional[str]
+    ) -> Session:
         # TODO(#8046): When the above method is deleted, move this into `using_database`
         # directly.
         engine = SQLAlchemyEngineManager.get_engine_for_database(
-            database_key=database_key
+            database_key=database_key, secret_prefix_override=secret_prefix_override
         )
         if engine is None:
             raise ValueError(f"No engine set for key [{database_key}]")
@@ -82,11 +90,15 @@ class SessionFactory:
     @contextmanager
     @environment.local_only
     def for_proxy(
-        cls, database_key: SQLAlchemyDatabaseKey, *, autocommit: bool = True
+        cls,
+        database_key: SQLAlchemyDatabaseKey,
+        *,
+        autocommit: bool = True,
+        secret_prefix_override: Optional[str] = None,
     ) -> Iterator[Session]:
         """Implements a context manager for db sessions for use with the Cloud SQL Proxy."""
         engine = SQLAlchemyEngineManager.get_engine_for_database_with_proxy(
-            database_key=database_key
+            database_key=database_key, secret_prefix_override=secret_prefix_override
         )
         if engine is None:
             raise ValueError(f"No engine set for key [{database_key}]")

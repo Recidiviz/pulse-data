@@ -33,6 +33,7 @@ from opencensus.trace import base_exporter, config_integration, file_exporter, s
 from opencensus.trace.propagation import google_cloud_format
 
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -129,9 +130,16 @@ if environment.in_development():
     ]
 
     for schema_type in enabled_development_schema_types:
+        # TODO(#23253): Remove when Publisher is migrated to JC GCP project.
+        secret_prefix_override = (
+            JUSTICE_COUNTS_DB_SECRET_PREFIX
+            if schema_type == SchemaType.JUSTICE_COUNTS
+            else None
+        )
         try:
             SQLAlchemyEngineManager.init_engine(
                 database_key=SQLAlchemyDatabaseKey.for_schema(schema_type),
+                secret_prefix_override=secret_prefix_override,
             )
         except BaseException as e:
             logging.warning(
@@ -161,8 +169,15 @@ elif environment.in_gcp():
         raise ValueError(f"Unsupported service type: {service_type}")
 
     for schema_type in schemas:
+        # TODO(#23253): Remove when Publisher is migrated to JC GCP project.
+        secret_prefix_override = (
+            JUSTICE_COUNTS_DB_SECRET_PREFIX
+            if schema_type == SchemaType.JUSTICE_COUNTS
+            else None
+        )
         SQLAlchemyEngineManager.attempt_init_engines_for_databases(
             database_keys=database_keys_for_schema_type(schema_type),
+            secret_prefix_override=secret_prefix_override,
         )
 if environment.in_development() or environment.in_gcp():
     # Initialize datastores for the admin panel and trigger a data refresh. This call

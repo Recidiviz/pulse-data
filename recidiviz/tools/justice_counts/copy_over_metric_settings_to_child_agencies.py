@@ -32,6 +32,7 @@ import logging
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -68,9 +69,12 @@ def copy_metric_settings(super_agency_id: int, dry_run: bool) -> None:
     """Copies metric settings from a super agency to a child agency."""
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
-    with cloudsql_proxy_control.connection(schema_type=schema_type):
+    with cloudsql_proxy_control.connection(
+        schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+    ):
         with SessionFactory.for_proxy(
             database_key=database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
             autocommit=False,
         ) as session:
             super_agency_list = AgencyInterface.get_agencies_by_id(

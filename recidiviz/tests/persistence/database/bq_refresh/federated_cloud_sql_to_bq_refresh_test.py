@@ -100,7 +100,8 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         test_secrets = {
             # pylint: disable=protected-access
             SQLAlchemyEngineManager._get_cloudsql_instance_id_key(
-                schema_type=schema_type
+                schema_type=schema_type,
+                secret_prefix_override=None,
             ): f"test-project:us-east2:{schema_type.value}-data"
             for schema_type in SchemaType
         }

@@ -32,6 +32,7 @@ import logging
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -93,9 +94,12 @@ def update_user_role(email: str, agency: str, role: str, dry_run: bool) -> None:
     schema_type = SchemaType.JUSTICE_COUNTS
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
 
-    with cloudsql_proxy_control.connection(schema_type=schema_type):
+    with cloudsql_proxy_control.connection(
+        schema_type=schema_type, secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX
+    ):
         with SessionFactory.for_proxy(
             database_key=database_key,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
             autocommit=False,
         ) as session:
             user = UserAccountInterface.get_user_by_email(session=session, email=email)

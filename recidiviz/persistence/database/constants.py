@@ -21,3 +21,13 @@ SQLALCHEMY_DB_HOST = "SQLALCHEMY_DB_HOST"
 SQLALCHEMY_DB_PORT = "SQLALCHEMY_DB_PORT"
 SQLALCHEMY_DB_USER = "SQLALCHEMY_DB_USER"
 SQLALCHEMY_DB_PASSWORD = "SQLALCHEMY_DB_PASSWORD"
+
+# We have two sets of Justice Counts DB instances -- one original set in the
+# Recidiviz GCP projects and one new set in the Justice Counts GCP projects.
+# The secrets for the original instance are prefixed with `justice_counts`,
+# and the secrets for the new instance are prefixed with `justice_counts_v2`.
+# TODO(#23253): Remove when Publisher is migrated to JC GCP project. Then
+# the Recidiviz GCP project will have one set of secrets that point to the
+# original JC instance, and the JC GCP projects will have one set of secrets
+# that point to the new JC instance.
+JUSTICE_COUNTS_DB_SECRET_PREFIX = "justice_counts_v2"  # nosec

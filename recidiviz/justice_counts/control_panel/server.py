@@ -39,6 +39,7 @@ from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.feed import FeedInterface
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.utils import structured_logging
 from recidiviz.utils.environment import (
@@ -107,7 +108,10 @@ def create_app(config: Optional[Config] = None) -> Flask:
         "JUSTICE_COUNTS_SERVICE_ACCOUNT_EMAIL", ""
     )
     setup_scoped_sessions(
-        app=app, schema_type=config.SCHEMA_TYPE, database_url_override=config.DB_URL
+        app=app,
+        schema_type=config.SCHEMA_TYPE,
+        database_url_override=config.DB_URL,
+        secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
     )
     app.register_blueprint(
         get_api_blueprint(

@@ -24,6 +24,7 @@ import attr
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.control_panel.utils import on_successful_authorization
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -68,7 +69,8 @@ class Config:
     @DB_URL.default
     def _db_url_factory(self) -> str:
         return SQLAlchemyEngineManager.get_server_postgres_instance_url(
-            database_key=self.DATABASE_KEY
+            database_key=self.DATABASE_KEY,
+            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
         )
 
     @AUTH_DECORATOR.default
