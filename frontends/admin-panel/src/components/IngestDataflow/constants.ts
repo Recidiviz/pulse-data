@@ -34,6 +34,10 @@ export type DataflowIngestPipelineStatus = {
   duration: number;
 };
 
+export interface DataflowIngestRawDataWatermarks {
+  [fileName: string]: Date;
+}
+
 export type DataflowIngestPipelineJobResponse = {
   [stateCode: string]: {
     primary: DataflowIngestPipelineStatus | null;

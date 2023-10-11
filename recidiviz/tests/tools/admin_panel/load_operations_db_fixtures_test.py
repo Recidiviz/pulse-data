@@ -80,12 +80,6 @@ class TestOperationsLoadFixtures(unittest.TestCase):
                 # TODO(#10214): Add admin panel fixtures for the SFTP table.
                 if "sftp" in fixture_class.name:
                     continue
-                # TODO(#23319): Add fixtures for these!
-                if fixture_class.name in (
-                    "direct_ingest_dataflow_job",
-                    "direct_ingest_dataflow_raw_table_upper_bounds",
-                ):
-                    continue
                 row_count = len(read_session.query(fixture_class).all())
                 self.assertTrue(
                     row_count > 0, f"Found no rows in table [{fixture_class}]"

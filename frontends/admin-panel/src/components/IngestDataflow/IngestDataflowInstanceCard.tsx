@@ -14,11 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Card, Descriptions, Spin } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
+import { Alert, Card, Descriptions, Spin, Table, Tooltip } from "antd";
+import { ColumnsType } from "antd/lib/table";
 import Title from "antd/lib/typography/Title";
 import moment from "moment";
 import { useCallback } from "react";
-import { getLatestDataflowPipelineByInstance } from "../../AdminPanelAPI/IngestOperations";
+import {
+  getLatestDataflowJobByInstance,
+  getLatestDataflowRawDataWatermarks,
+} from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import { DirectIngestInstance } from "../IngestOperationsView/constants";
 import NewTabLink from "../NewTabLink";
@@ -26,8 +31,14 @@ import { formatDatetimeFromTimestamp } from "../Utilities/GeneralUtilities";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
   DataflowIngestPipelineStatus,
+  DataflowIngestRawDataWatermarks,
   JobState,
 } from "./constants";
+
+interface RawFileTags {
+  fileTag: string;
+  lastRunDate: Date;
+}
 
 interface IngestDataflowInstanceCardProps {
   instance: DirectIngestInstance;
@@ -51,7 +62,7 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   stateCode,
 }) => {
   const fetchDataflowPipelineInstance = useCallback(async () => {
-    return getLatestDataflowPipelineByInstance(stateCode, instance);
+    return getLatestDataflowJobByInstance(stateCode, instance);
   }, [stateCode, instance]);
 
   const {
@@ -60,6 +71,13 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   } = useFetchedDataJSON<DataflowIngestPipelineStatus>(
     fetchDataflowPipelineInstance
   );
+
+  const fetchRawDataWatermarks = useCallback(async () => {
+    return getLatestDataflowRawDataWatermarks(stateCode, instance);
+  }, [stateCode, instance]);
+
+  const { data: latestRawDataWatermarks } =
+    useFetchedDataJSON<DataflowIngestRawDataWatermarks>(fetchRawDataWatermarks);
 
   if (mostRecentPipelineInfoLoading) {
     return (
@@ -83,6 +101,47 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   if (mostRecentPipelineInfo === null) {
     return <Alert message="No latest run found." />;
   }
+
+  if (latestRawDataWatermarks === undefined) {
+    return <Alert message="No latestWatermarks found." />;
+  }
+
+  const fileTagColumns: ColumnsType<RawFileTags> = [
+    {
+      title: "File Tag",
+      dataIndex: "fileTag",
+      key: "fileTag",
+      render: (row: string) =>
+        env === "staging" || env === "development" ? (
+          <NewTabLink
+            href={`https://go/staging-raw-data-file/${stateCode}/${row}`}
+          >
+            {row}
+          </NewTabLink>
+        ) : (
+          <NewTabLink
+            href={`https://go/prod-raw-data-file/${stateCode}/${row}`}
+          >
+            {row}
+          </NewTabLink>
+        ),
+    },
+    {
+      title: "Upper bound input data date",
+      dataIndex: "lastRunDate",
+      key: "lastRunDate",
+      defaultSortOrder: "ascend",
+      sorter: (a, b) =>
+        moment(a.lastRunDate).unix() - moment(b.lastRunDate).unix(),
+    },
+  ];
+
+  const fileTagDataSource = Object.entries(latestRawDataWatermarks).map(
+    ([key, value], _) => ({
+      fileTag: key,
+      lastRunDate: value,
+    })
+  );
 
   return (
     <Card>
@@ -133,6 +192,28 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
         </Descriptions.Item>
       </Descriptions>
       <br />
+      <Card
+        title="Raw Data Freshness"
+        extra={
+          <Tooltip title="Each row indicates the version of the raw data that the latest pipeline used">
+            <InfoCircleOutlined />
+          </Tooltip>
+        }
+      >
+        <Table
+          dataSource={fileTagDataSource}
+          columns={fileTagColumns}
+          rowKey={(record: { fileTag: string; lastRunDate: Date }) =>
+            record.fileTag
+          }
+          pagination={{
+            hideOnSinglePage: true,
+            showSizeChanger: true,
+            defaultPageSize: 5,
+            size: "small",
+          }}
+        />
+      </Card>
     </Card>
   );
 };

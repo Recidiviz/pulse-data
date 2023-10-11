@@ -166,8 +166,6 @@ class DirectIngestInstanceStatus(Entity, BuildableAttr, DefaultableAttr):
         }
 
 
-# TODO(#23319): Ensure these models can be used correctly to load job details for the
-# admin panel.
 @attr.s(eq=False)
 class DirectIngestDataflowJob(Entity, BuildableAttr, DefaultableAttr):
     """A record of the ingest jobs that have completed."""

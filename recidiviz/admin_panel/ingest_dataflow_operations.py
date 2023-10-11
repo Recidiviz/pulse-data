@@ -127,7 +127,7 @@ def get_latest_jobs_from_location_by_name(
     return jobs_by_name
 
 
-# TODO(#23319): Refactor to use new database table
+# TODO(#24515): Refactor to use new database table
 def get_all_latest_ingest_jobs() -> (
     Dict[
         StateCode,
