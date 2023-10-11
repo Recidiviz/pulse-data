@@ -33,6 +33,10 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_entities_from_tree,
     get_entity_class_in_module_with_name,
 )
+from recidiviz.persistence.entity.root_entity_utils import (
+    get_root_entity_class_for_entity,
+    get_root_entity_id,
+)
 from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.ingest.state.constants import (
     EntityClassName,
@@ -226,9 +230,10 @@ class RunValidations(beam.PTransform):
 
             error_msg += "entities found: "
             for e in grouped_entities:
+                root_entity_cls = get_root_entity_class_for_entity(type(entity))
                 error_msg += (
                     f"[{snake_to_camel(e.get_entity_name(), capitalize_first_letter=True)}: {e.get_class_id_name()} {e.get_id()}, "
-                    f"associated with root entity: {e.get_root_entity_name()} id {e.get_root_entity_id()}], "
+                    f"associated with root entity: {root_entity_cls.__name__} id {get_root_entity_id(e)}], "
                 )
 
             error_msg += "This may indicate an error with the raw data."

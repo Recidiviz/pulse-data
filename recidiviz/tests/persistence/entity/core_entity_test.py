@@ -25,6 +25,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.entity.state import entities
+from recidiviz.utils.types import assert_type
 
 _STATE_CODE = "US_ND"
 
@@ -92,90 +93,22 @@ class TestCoreEntity(unittest.TestCase):
             entities.StateSupervisionViolationResponse.get_class_id_name(),
         )
 
-    def test_get_root_entity_id_simple(self) -> None:
-        self.assertEqual(
-            "StatePerson",
-            entities.StatePerson.new_with_defaults(
-                person_id=123, state_code="US_XX"
-            ).get_root_entity_name(),
-        )
-
-        self.assertEqual(
-            "StateStaff",
-            entities.StateStaff.new_with_defaults(
-                staff_id=123, state_code="US_XX"
-            ).get_root_entity_name(),
-        )
-
-        person = entities.StatePerson.new_with_defaults(
-            person_id=123, state_code="US_XX"
-        )
-        external_id = entities.StatePersonExternalId.new_with_defaults(
-            external_id="11111",
-            id_type="US_XX_TYPE",
-            state_code="US_XX",
-            person=person,
-        )
-        person.external_ids.append(external_id)
-
-        self.assertEqual(123, external_id.get_root_entity_id())
-
-        staff = entities.StateStaff.new_with_defaults(staff_id=123, state_code="US_XX")
-        staff_external_id = entities.StateStaffExternalId.new_with_defaults(
-            external_id="11111",
-            id_type="US_ND_TYPE",
-            state_code="US_ND",
-            staff=staff,
-        )
-        staff.external_ids.append(staff_external_id)
-
-        self.assertEqual(123, staff_external_id.get_root_entity_id())
-
-    def test_get_root_entity_name_simple(self) -> None:
-        self.assertEqual(
-            123,
-            entities.StatePerson.new_with_defaults(
-                person_id=123, state_code="US_XX"
-            ).get_root_entity_id(),
-        )
-
-        self.assertEqual(
-            123,
-            entities.StateStaff.new_with_defaults(
-                staff_id=123, state_code="US_XX"
-            ).get_root_entity_id(),
-        )
-
-        person = entities.StatePerson.new_with_defaults(
-            person_id=123, state_code="US_XX"
-        )
-        external_id = entities.StatePersonExternalId.new_with_defaults(
-            external_id="11111",
-            id_type="US_XX_TYPE",
-            state_code="US_XX",
-            person=person,
-        )
-        person.external_ids.append(external_id)
-
-        self.assertEqual("StatePerson", external_id.get_root_entity_name())
-
-        staff = entities.StateStaff.new_with_defaults(staff_id=123, state_code="US_XX")
-        staff_external_id = entities.StateStaffExternalId.new_with_defaults(
-            external_id="11111",
-            id_type="US_ND_TYPE",
-            state_code="US_ND",
-            staff=staff,
-        )
-        staff.external_ids.append(staff_external_id)
-
-        self.assertEqual("StateStaff", staff_external_id.get_root_entity_name())
-
     def test_getField(self) -> None:
+        external_id = entities.StatePersonExternalId.new_with_defaults(
+            state_code="US_XX",
+            external_id="ABC",
+            id_type="US_XX_ID_TYPE",
+        )
         entity = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
             current_address=None,
+            external_ids=[external_id],
         )
-        db_entity = converter.convert_entity_to_schema_object(entity)
+        external_id.person = entity
+        db_entity = assert_type(
+            converter.convert_entity_to_schema_object(entity), schema.StatePerson
+        )
+        db_external_id = db_entity.external_ids[0]
 
         self.assertEqual("US_XX", entity.get_field("state_code"))
         self.assertEqual("US_XX", db_entity.get_field("state_code"))
@@ -185,6 +118,59 @@ class TestCoreEntity(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             db_entity.get_field("bad_current_address")
+
+        self.assertEqual([external_id], entity.get_field("external_ids"))
+        self.assertEqual([db_external_id], db_entity.get_field("external_ids"))
+
+        self.assertEqual(entity, external_id.get_field("person"))
+        self.assertEqual(db_entity, db_external_id.get_field("person"))
+
+    def test_hasField(self) -> None:
+        external_id_cls = entities.StatePersonExternalId
+        entity_cls = entities.StatePerson
+        db_entity_cls = schema.StatePerson
+        db_external_id_cls = schema.StatePersonExternalId
+
+        self.assertTrue(entity_cls.has_field("state_code"))
+        self.assertTrue(db_entity_cls.has_field("state_code"))
+
+        self.assertFalse(entity_cls.has_field("bad_current_address"))
+        self.assertFalse(db_entity_cls.has_field("bad_current_address"))
+
+        self.assertTrue(entity_cls.has_field("external_ids"))
+        self.assertTrue(db_entity_cls.has_field("external_ids"))
+
+        self.assertTrue(external_id_cls.has_field("person"))
+        self.assertTrue(db_external_id_cls.has_field("person"))
+
+    def test_hasField_instantiated(self) -> None:
+        external_id = entities.StatePersonExternalId.new_with_defaults(
+            state_code="US_XX",
+            external_id="ABC",
+            id_type="US_XX_ID_TYPE",
+        )
+        entity = entities.StatePerson.new_with_defaults(
+            state_code="US_XX",
+            current_address=None,
+            external_ids=[external_id],
+        )
+        external_id.person = entity
+        db_entity = assert_type(
+            converter.convert_entity_to_schema_object(entity), schema.StatePerson
+        )
+        db_external_id = db_entity.external_ids[0]
+
+        self.assertTrue(entity.has_field("state_code"))
+        self.assertTrue(db_entity.has_field("state_code"))
+
+        self.assertFalse(entity.has_field("bad_current_address"))
+        self.assertFalse(db_entity.has_field("bad_current_address"))
+
+        self.assertTrue(entity.has_field("external_ids"))
+        self.assertTrue(db_entity.has_field("external_ids"))
+
+        self.assertTrue(external_id.has_field("person"))
+        self.assertTrue(db_external_id.has_field("person"))
 
     def test_getFieldAsList(self) -> None:
         assessment = entities.StateAssessment.new_with_defaults(
