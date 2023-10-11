@@ -72,7 +72,12 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
             project_id=BQ_EMULATOR_PROJECT_ID,
             state_code=self.region_code,
             ingest_view_name="ingest12",
-            raw_data_tables=["table1", "table2"],
+            raw_data_tables_to_upperbound_dates={
+                "table1": datetime.fromisoformat(
+                    "2023-07-05:00:00:00.000000"
+                ).isoformat(),
+                "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+            },
             ingest_instance=DirectIngestInstance.PRIMARY,
             materialization_method=MaterializationMethod.ORIGINAL,
         )
@@ -98,7 +103,10 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
             project_id=BQ_EMULATOR_PROJECT_ID,
             state_code=self.region_code,
             ingest_view_name="ingest12",
-            raw_data_tables=["table1", "table2"],
+            raw_data_tables_to_upperbound_dates={
+                "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+            },
             ingest_instance=DirectIngestInstance.PRIMARY,
             materialization_method=MaterializationMethod.LATEST,
         )
@@ -124,7 +132,10 @@ class TestGenerateDateBoundTuplesQuery(StateIngestPipelineTestCase):
         result = pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
             project_id="test-project",
             state_code=self.region_code,
-            raw_data_tables=["table1", "table2"],
+            raw_data_tables_to_upperbound_dates={
+                "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+            },
         )
         expected = """
 SELECT
@@ -138,10 +149,10 @@ FROM (
         MAX(update_datetime) AS max_dt_on_date
     FROM (
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `test-project.us_dd_raw_data.table1`
+        FROM `test-project.us_dd_raw_data.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
 UNION ALL
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `test-project.us_dd_raw_data.table2`
+        FROM `test-project.us_dd_raw_data.table2` WHERE update_datetime <= '2023-07-05T00:00:00'
     )
     GROUP BY update_date
 )
@@ -213,7 +224,10 @@ ORDER BY 1;"""
             query_str=pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
                 BQ_EMULATOR_PROJECT_ID,
                 self.region_code,
-                ["table1", "table2"],
+                {
+                    "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                    "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                },
             ),
             expected_result=expected_results,
         )
@@ -222,7 +236,10 @@ ORDER BY 1;"""
         result = pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
             project_id="test-project",
             state_code=self.region_code,
-            raw_data_tables=["table1", "table2"],
+            raw_data_tables_to_upperbound_dates={
+                "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+            },
             materialization_method=MaterializationMethod.LATEST,
         )
         expected = """
@@ -231,10 +248,10 @@ SELECT
     CAST(NULL AS DATETIME) AS __lower_bound_datetime_exclusive
 FROM (
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `test-project.us_dd_raw_data.table1`
+        FROM `test-project.us_dd_raw_data.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
 UNION ALL
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `test-project.us_dd_raw_data.table2`
+        FROM `test-project.us_dd_raw_data.table2` WHERE update_datetime <= '2023-07-05T00:00:00'
 );"""
         self.assertEqual(result, expected)
 
@@ -292,7 +309,10 @@ UNION ALL
             query_str=pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
                 BQ_EMULATOR_PROJECT_ID,
                 self.region_code,
-                ["table1", "table2"],
+                {
+                    "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                    "table2": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                },
                 MaterializationMethod.LATEST,
             ),
             expected_result=expected_results,

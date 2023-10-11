@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A PTransform that generates ingest view results for a given ingest view."""
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
@@ -70,7 +70,7 @@ FROM (
 );"""
 
 INDIVIDUAL_TABLE_QUERY_TEMPLATE = """SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `{project_id}.{state_code}_raw_data.{file_tag}`"""
+        FROM `{project_id}.{state_code}_raw_data.{file_tag}` WHERE update_datetime <= '{upper_bound_date}'"""
 
 ADDITIONAL_SCHEMA_COLUMNS = [
     bigquery.SchemaField(
@@ -99,7 +99,7 @@ class GenerateIngestViewResults(beam.PTransform):
         project_id: str,
         state_code: StateCode,
         ingest_view_name: str,
-        raw_data_tables: List[str],
+        raw_data_tables_to_upperbound_dates: Dict[str, str],
         ingest_instance: DirectIngestInstance,
         materialization_method: MaterializationMethod,
     ) -> None:
@@ -108,7 +108,7 @@ class GenerateIngestViewResults(beam.PTransform):
         self.project_id = project_id
         self.state_code = state_code
         self.ingest_view_name = ingest_view_name
-        self.raw_data_tables = raw_data_tables
+        self.raw_data_tables_to_upperbound_dates = raw_data_tables_to_upperbound_dates
         self.ingest_instance = ingest_instance
         self.materialization_method = materialization_method
 
@@ -120,7 +120,7 @@ class GenerateIngestViewResults(beam.PTransform):
                 query=self.generate_date_bound_tuples_query(
                     project_id=self.project_id,
                     state_code=self.state_code,
-                    raw_data_tables=self.raw_data_tables,
+                    raw_data_tables_to_upperbound_dates=self.raw_data_tables_to_upperbound_dates,
                     materialization_method=self.materialization_method,
                 )
             )
@@ -139,7 +139,7 @@ class GenerateIngestViewResults(beam.PTransform):
     def generate_date_bound_tuples_query(
         project_id: str,
         state_code: StateCode,
-        raw_data_tables: List[str],
+        raw_data_tables_to_upperbound_dates: Dict[str, str],
         materialization_method: MaterializationMethod = MaterializationMethod.ORIGINAL,
     ) -> str:
         """Returns a SQL query that will return a list of upper and lower bound date tuples
@@ -150,8 +150,11 @@ class GenerateIngestViewResults(beam.PTransform):
                 project_id=project_id,
                 state_code=state_code.value.lower(),
                 file_tag=table,
+                upper_bound_date=upper_bound_date_str,
             )
-            for table in raw_data_tables
+            for table, upper_bound_date_str in sorted(
+                raw_data_tables_to_upperbound_dates.items()
+            )
         ]
         raw_data_tables_sql = "\nUNION ALL\n        ".join(
             raw_data_table_sql_statements

@@ -32,6 +32,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             job_name="test-job",
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000","TEST_RAW_DATA_2":"2020-01-01T00:00:00.00000"}',
         )
 
         expected_parameters = {
@@ -43,6 +44,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_view_results_output": "test_ingest_view_output",
             "ingest_instance": "PRIMARY",
             "materialization_method": "latest",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000","TEST_RAW_DATA_2":"2020-01-01T00:00:00.00000"}',
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -58,6 +60,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             pipeline="test_pipeline_name",
             region="us-west1",
             job_name="test-job",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
 
         expected_parameters = {
@@ -69,6 +72,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_view_results_output": "us_oz_dataflow_ingest_view_results_primary",
             "ingest_instance": "PRIMARY",
             "materialization_method": "latest",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -84,6 +88,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             region="us-west1",
             job_name="test-job",
             ingest_instance="SECONDARY",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
 
         expected_parameters = {
@@ -95,6 +100,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_view_results_output": "us_oz_dataflow_ingest_view_results_secondary",
             "ingest_instance": "SECONDARY",
             "materialization_method": "latest",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -113,6 +119,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 region="us-west1",
                 job_name="test-job",
                 output="test_output",
+                raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             )
 
     def test_creation_valid_service_account_email(self) -> None:
@@ -123,6 +130,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             region="us-west1",
             job_name="test-job",
             service_account_email="some-test-account@recidiviz-staging.iam.gserviceaccount.com",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
         self.assertEqual(
             pipeline_parameters.service_account_email,
@@ -137,6 +145,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             region="us-west1",
             job_name="test-job",
             service_account_email="12345-compute@developer.gserviceaccount.com",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
         self.assertEqual(
             pipeline_parameters.service_account_email,
@@ -155,6 +164,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 region="us-west1",
                 job_name="test-job",
                 service_account_email="some-test-account@somerandomwebsite.com",
+                raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
             )
 
     def test_update_with_sandbox_prefix(self) -> None:
@@ -166,6 +176,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             job_name="test-job",
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         ).update_with_sandbox_prefix("my_prefix")
 
         expected_parameters = {
@@ -177,6 +188,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_view_results_output": "my_prefix_test_ingest_view_output",
             "ingest_instance": "PRIMARY",
             "materialization_method": "latest",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -192,6 +204,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
             ingest_instance="SECONDARY",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         ).update_with_sandbox_prefix("my_prefix")
 
         expected_parameters = {
@@ -203,6 +216,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_view_results_output": "my_prefix_test_ingest_view_output",
             "ingest_instance": "SECONDARY",
             "materialization_method": "latest",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -218,6 +232,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             output="test_output",
             ingest_view_results_output="test_ingest_view_output",
             materialization_method="original",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         )
 
         expected_parameters = {
@@ -229,6 +244,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_view_results_output": "test_ingest_view_output",
             "ingest_instance": "PRIMARY",
             "materialization_method": "original",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
