@@ -21,6 +21,7 @@ from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
+from airflow.utils.trigger_rule import TriggerRule
 
 from recidiviz.airflow.dags.ingest.ingest_branching import get_ingest_branch_key
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
@@ -47,6 +48,7 @@ def _initialize_dataflow_pipeline(
 def _acquire_lock(
     state_code: StateCode, instance: DirectIngestInstance
 ) -> KubernetesPodOperator:
+    # TODO(#23987): Generate and pass in lock_id to acquire lock operator
     return build_kubernetes_pod_task(
         task_id="acquire_lock",
         container_name="acquire_lock",
@@ -56,6 +58,29 @@ def _acquire_lock(
             f"--ingest_instance={instance.value}",
         ],
     )
+
+
+def _release_lock(
+    state_code: StateCode, instance: DirectIngestInstance
+) -> KubernetesPodOperator:
+    # TODO(#23987): Pass in generated lock_id to release lock operator
+    return build_kubernetes_pod_task(
+        trigger_rule=TriggerRule.NONE_SKIPPED,
+        task_id="release_lock",
+        container_name="release_lock",
+        arguments=[
+            "--entrypoint=IngestReleaseLockEntrypoint",
+            f"--state_code={state_code.value}",
+            f"--ingest_instance={instance.value}",
+        ],
+    )
+
+
+def _create_dataflow_pipeline(
+    _state_code: StateCode, _instance: DirectIngestInstance
+) -> BaseOperator:
+    # TODO(#23962): Replace EmptyOperator with dataflow operator
+    return EmptyOperator(task_id="dataflow_pipeline")
 
 
 def create_single_ingest_pipeline_group(
@@ -73,11 +98,10 @@ def create_single_ingest_pipeline_group(
 
         acquire_lock = _acquire_lock(state_code, instance)
 
-        # TODO(#23962): Replace EmptyOperator with dataflow operator
-        dataflow_pipeline = EmptyOperator(task_id="dataflow_pipeline")
+        dataflow_pipeline = _create_dataflow_pipeline(state_code, instance)
 
         # TODO(#23987): Replace EmptyOperator with release lock operator
-        release_lock = EmptyOperator(task_id="release_lock")
+        release_lock = _release_lock(state_code, instance)
 
         # TODO(#23986): Replace EmptyOperator with write upper bounds operator
         write_upper_bounds = EmptyOperator(task_id="write_upper_bounds")
@@ -87,7 +111,8 @@ def create_single_ingest_pipeline_group(
             >> acquire_lock
             >> dataflow_pipeline
             >> release_lock
-            >> write_upper_bounds
         )
+
+        dataflow_pipeline >> write_upper_bounds
 
     return dataflow

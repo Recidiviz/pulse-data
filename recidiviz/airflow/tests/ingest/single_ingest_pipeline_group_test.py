@@ -19,20 +19,28 @@
 import os
 import unittest
 from datetime import datetime
-from typing import Dict, List
-from unittest.mock import patch
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, patch
 
 import yaml
 from airflow.models.dag import DAG, dag
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+from airflow.utils.state import DagRunState
+from sqlalchemy.orm import Session
 
 from recidiviz.airflow.dags.ingest.ingest_branching import get_ingest_branch_key
 from recidiviz.airflow.dags.ingest.single_ingest_pipeline_group import (
     _acquire_lock,
+    _release_lock,
     create_single_ingest_pipeline_group,
 )
 from recidiviz.airflow.tests import fixtures
+from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
+from recidiviz.airflow.tests.utils.dag_helper_functions import (
+    fake_failure_task,
+    fake_operator_constructor,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCPEnvironment
@@ -69,7 +77,6 @@ def _create_test_single_ingest_pipeline_group_dag(
 class TestSingleIngestPipelineGroup(unittest.TestCase):
     """Tests for the single ingest pipeline group ."""
 
-    INGEST_DAG_ID = f"{_PROJECT_ID}_ingest_dag"
     entrypoint_args_fixture: Dict[str, List[str]] = {}
 
     @classmethod
@@ -114,10 +121,8 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
                 f"[{type(acquire_lock_task)}]."
             )
 
-    def test_acquire_lock_task(
-        self,
-    ) -> None:
-        """Tests that refresh_bq_dataset_task triggers the proper script."""
+    def test_acquire_lock_task(self) -> None:
+        """Tests that acquire_lock triggers the proper script."""
 
         task = _acquire_lock(StateCode.US_XX, DirectIngestInstance.PRIMARY)
 
@@ -126,3 +131,171 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
             task.arguments[4:],
             self.entrypoint_args_fixture["test_ingest_dag_acquire_lock_task"],
         )
+
+    def test_release_lock_task_exists(self) -> None:
+        """Tests that release_lock triggers the proper script."""
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        release_lock_task = test_dag.get_task(
+            f"{get_ingest_branch_key(StateCode.US_XX.value, DirectIngestInstance.PRIMARY.value)}.release_lock"
+        )
+
+        if not isinstance(release_lock_task, KubernetesPodOperator):
+            raise ValueError(
+                f"Expected type KubernetesPodOperator, found "
+                f"[{type(release_lock_task)}]."
+            )
+
+    def test_release_lock_task(self) -> None:
+        """Tests that release_lock triggers the proper script."""
+
+        task = _release_lock(StateCode.US_XX, DirectIngestInstance.PRIMARY)
+
+        self.assertEqual(task.task_id, "release_lock")
+        self.assertEqual(
+            task.arguments[4:],
+            self.entrypoint_args_fixture["test_ingest_dag_release_lock_task"],
+        )
+
+
+def _fake_failure_execute(*args: Any, **kwargs: Any) -> None:
+    raise ValueError("Fake failure")
+
+
+class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
+    """Tests for the single ingest pipeline group ."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.environment_patcher = patch(
+            "os.environ",
+            {
+                "GCP_PROJECT": _PROJECT_ID,
+            },
+        )
+        self.environment_patcher.start()
+
+        self.kubernetes_pod_operator_patcher = patch(
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.build_kubernetes_pod_task",
+            side_effect=fake_operator_constructor,
+        )
+        self.kubernetes_pod_operator_patcher.start()
+
+    def tearDown(self) -> None:
+        self.environment_patcher.stop()
+        self.kubernetes_pod_operator_patcher.stop()
+        super().tearDown()
+
+    def test_single_ingest_pipeline_group(self) -> None:
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(test_dag, session)
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    # TODO(#23986): Mock dataflow operator directly when it is implemented
+    @patch(
+        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._create_dataflow_pipeline"
+    )
+    def test_failed_dataflow_pipeline(
+        self, mock_create_dataflow_pipeline: MagicMock
+    ) -> None:
+        mock_create_dataflow_pipeline.side_effect = (
+            lambda _state_code, _instance: fake_failure_task(
+                task_id="dataflow_pipeline"
+            )
+        )
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                expected_failure_ids=[
+                    ".*dataflow_pipeline",
+                    ".*write_upper_bounds",
+                    _DOWNSTREAM_TASK_ID,
+                ],
+            )
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+
+    @patch("recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._acquire_lock")
+    def test_failed_acquire_lock(self, mock_acquire_lock: MagicMock) -> None:
+        mock_acquire_lock.side_effect = (
+            lambda _state_code, _instance: fake_failure_task(task_id="acquire_lock")
+        )
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                expected_failure_ids=[
+                    ".*acquire_lock",
+                    ".*dataflow_pipeline",
+                    ".*write_upper_bounds",
+                    _DOWNSTREAM_TASK_ID,
+                ],
+            )
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+
+    @patch("recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._release_lock")
+    def test_failed_release_lock(self, mock_release_lock: MagicMock) -> None:
+        mock_release_lock.side_effect = (
+            lambda _state_code, _instance: fake_failure_task(task_id="release_lock")
+        )
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                expected_failure_ids=[".*release_lock", _DOWNSTREAM_TASK_ID],
+            )
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+
+    def test_failed_tasks_fail_group(self) -> None:
+        """
+        Tests that if any task in the group fails, the entire group fails.
+        """
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        with Session(bind=self.engine) as session:
+
+            for task in test_dag.task_group_dict[
+                get_ingest_branch_key(
+                    StateCode.US_XX.value, DirectIngestInstance.PRIMARY.value
+                )
+            ]:
+                old_execute_function = task.execute
+                task.execute = _fake_failure_execute
+                result = self.run_dag_test(
+                    test_dag,
+                    session,
+                    skip_checking_task_statuses=True,
+                )
+                task.execute = old_execute_function
+                self.assertEqual(
+                    DagRunState.FAILED,
+                    result.dag_run_state,
+                    f"Incorrect dag run state when failing task: {task.task_id}",
+                )
+                self.assertEqual(
+                    result.failure_messages[task.task_id],
+                    "Fake failure",
+                )

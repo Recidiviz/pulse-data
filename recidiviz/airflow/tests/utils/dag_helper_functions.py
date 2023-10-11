@@ -19,6 +19,7 @@ Helper functions for testing Airflow DAGs.
 """
 from typing import Any
 
+from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -30,3 +31,19 @@ def fake_operator_constructor(*_args: Any, **kwargs: Any) -> EmptyOperator:
         if "trigger_rule" in kwargs
         else TriggerRule.ALL_SUCCESS,
     )
+
+
+def fake_failure_task(*_args: Any, **kwargs: Any) -> EmptyOperator:
+    @task(
+        task_id=kwargs["task_id"],
+        trigger_rule=kwargs["trigger_rule"]
+        if "trigger_rule" in kwargs
+        else TriggerRule.ALL_SUCCESS,
+    )
+    def create_fake_failure_task() -> Any:
+        """
+        Raises an exception to simulate a failure.
+        """
+        raise ValueError("Test failure")
+
+    return create_fake_failure_task()

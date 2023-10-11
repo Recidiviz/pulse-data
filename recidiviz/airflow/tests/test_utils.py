@@ -135,6 +135,7 @@ class AirflowIntegrationTest(unittest.TestCase):
         run_conf: Optional[Dict[str, Any]] = None,
         expected_failure_ids: Optional[List[str]] = None,
         expected_skipped_ids: Optional[List[str]] = None,
+        skip_checking_task_statuses: Optional[bool] = False,
     ) -> DagTestResult:
         """
         A Modified version of 'dag.test'. Will run the full dag to allow
@@ -142,12 +143,6 @@ class AirflowIntegrationTest(unittest.TestCase):
         take regexes. Failure messages are stored in self.failure_messages.
         """
 
-        expected_failure_task_ids = _find_task_ids_for_given_search_regexes(
-            dag, expected_failure_ids or []
-        )
-        expected_skipped_task_ids = _find_task_ids_for_given_search_regexes(
-            dag, expected_skipped_ids or []
-        )
         failure_messages: Dict[str, str] = {}
 
         def add_logger_if_needed(ti: TaskInstance) -> None:
@@ -207,6 +202,32 @@ class AirflowIntegrationTest(unittest.TestCase):
 
         dag.run(ignore_first_depends_on_past=True, verbose=True)
 
+        if not skip_checking_task_statuses:
+            self._check_dag_task_statuses(
+                dag, session, expected_failure_ids, expected_skipped_ids
+            )
+
+        return DagTestResult(self._get_dag_run_state(session), failure_messages)
+
+    def _check_dag_task_statuses(
+        self,
+        dag: DAG,
+        session: Session,
+        expected_failure_ids: Optional[List[str]] = None,
+        expected_skipped_ids: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Check that the task statuses are as expected. If expected_failure_ids or expected_skipped_ids are
+        provided, then the task statuses must match the expected statuses. Otherwise, the task statuses
+        must be SUCCESS.
+        """
+        expected_failure_task_ids = _find_task_ids_for_given_search_regexes(
+            dag, expected_failure_ids or []
+        )
+        expected_skipped_task_ids = _find_task_ids_for_given_search_regexes(
+            dag, expected_skipped_ids or []
+        )
+
         for task_instance in dag.tasks:
             task_state = self.get_task_instance_state(task_instance.task_id, session)
             if (
@@ -217,7 +238,8 @@ class AirflowIntegrationTest(unittest.TestCase):
                     f"Task [{task_instance.task_id}] was skipped unexpectedly"
                 )
             if (
-                task_state == TaskInstanceState.FAILED
+                task_state
+                in [TaskInstanceState.FAILED, TaskInstanceState.UPSTREAM_FAILED]
                 and task_instance.task_id not in expected_failure_task_ids
             ):
                 raise ValueError(f"Task [{task_instance.task_id}] failed unexpectedly")
@@ -230,7 +252,15 @@ class AirflowIntegrationTest(unittest.TestCase):
                     f"Task [{task_instance.task_id}] succeeded unexpectedly"
                 )
 
-        return DagTestResult(self._get_dag_run_state(session), failure_messages)
+            if task_state not in [
+                TaskInstanceState.SUCCESS,
+                TaskInstanceState.SKIPPED,
+                TaskInstanceState.FAILED,
+                TaskInstanceState.UPSTREAM_FAILED,
+            ]:
+                raise ValueError(
+                    f"Task [{task_instance.task_id}] has an unexpected state: {task_state}"
+                )
 
     def _get_or_create_dagrun(
         self,
