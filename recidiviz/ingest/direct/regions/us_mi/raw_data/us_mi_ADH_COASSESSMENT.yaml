@@ -86,3 +86,4 @@ columns:
   - name: DateToBeLockedAsString
   - name: IsLocked
   - name: FkShSyCodeIncarceratedLanguage
+  - name: IsFrail
