@@ -30,6 +30,7 @@ from airflow.providers.google.cloud.operators.dataflow import (
 )
 from airflow.utils.context import Context
 from google.cloud.logging import Client as LoggingClient
+from googleapiclient.discovery import build
 
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -45,6 +46,28 @@ severity >= ERROR
 class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
     """A custom implementation of the DataflowStartFlexTemplateOperator for flex templates."""
 
+    @property
+    def job_name(self) -> str:
+        return self.body["launchParameter"]["jobName"]
+
+    def get_job(self) -> Dict[Any, Any]:
+        """Retrieves the most recent Dataflow job with job_name.
+        That job may either be currently running or completed (if another one has not yet started).
+        Queries the Dataflow service directly because DataflowHook does not support retrieving jobs by name."""
+        service = build("dataflow", "v1b3", cache_discovery=False)
+
+        return (
+            service.projects()
+            .locations()
+            .jobs()
+            .list(
+                projectId=self.project_id,
+                location=self.location,
+                name=self.job_name,
+            )
+            .execute()["jobs"][0]
+        )
+
     def execute(
         self,
         # Some context about the context: https://bcb.github.io/airflow/execute-context
@@ -52,30 +75,22 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
     ) -> Dict[Any, Any]:
         """Checks if a Dataflow job is running (in case of task retry), otherwise starts
         the job. Polls the status of the job until it's finished or failed."""
-
         hook = DataflowHook(
             gcp_conn_id=self.gcp_conn_id,
             delegate_to=self.delegate_to,
         )
-
-        region = self.location
-
         try:
             # If the operator is on a retry loop, we ignore the start operation by checking
             # if the job is running.
             if hook.is_job_dataflow_running(
-                name=self.task_id, project_id=self.project_id, location=region
+                name=self.job_name, project_id=self.project_id, location=self.location
             ):
                 hook.wait_for_done(
-                    job_name=self.task_id,
+                    job_name=self.job_name,
                     project_id=self.project_id,
-                    location=region,
+                    location=self.location,
                 )
-                return hook.get_job(
-                    job_id=self.task_id,
-                    project_id=self.project_id,
-                    location=region,
-                )
+                return self.get_job()
 
             return hook.start_flex_template(
                 location=self.location,
@@ -84,11 +99,7 @@ class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
             )
         # Dataflow `wait_for_done` methods do not raise an `Exception` subclass, they raise an `Exception` on failure
         except Exception as e:
-            job = hook.get_job(
-                job_id=self.task_id,
-                project_id=self.project_id,
-                location=region,
-            )
+            job = self.get_job()
 
             if job["currentState"] == DataflowJobStatus.JOB_STATE_FAILED:
                 logging.info("Fetching logs for failed job...")
