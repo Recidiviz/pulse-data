@@ -36,9 +36,20 @@ resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
   time_zone   = "America/Los_Angeles"
 
   pubsub_target {
-    # topic's full resource name.
-    topic_name = "projects/${var.project_id}/topics/v1.sftp.trigger_sftp_dag"
+    topic_name = google_pubsub_topic.sftp_pubsub_topic.id
     data       = base64encode("DATA") # Added to fulfill requirements that data has to be passed
+  }
+}
+
+resource "google_cloud_scheduler_job" "schedule_ingest_dag_run_topic" {
+  name        = "schedule_ingest_dag_run_cloud_function"
+  schedule    = "0 1 * * *" # Every day at 1 am Pacific
+  description = "Triggers the ingest DAG via pubsub"
+  time_zone   = "America/Los_Angeles"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.ingest_dag_pubsub_topic.id
+    data       = base64encode("{}") # Run ingest dag with no filters.
   }
 }
 
