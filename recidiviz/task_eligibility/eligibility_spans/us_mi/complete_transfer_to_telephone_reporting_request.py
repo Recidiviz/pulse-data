@@ -33,6 +33,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     not_required_to_register_under_sora,
     not_serving_ineligible_offenses_for_telephone_reporting,
     supervision_and_assessment_level_eligible_for_telephone_reporting,
+    supervision_specialty_is_not_rposn,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -55,6 +56,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_not_past_full_term_completion_date_or_upcoming_90_days.VIEW_BUILDER,
         on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
         supervision_and_assessment_level_eligible_for_telephone_reporting.VIEW_BUILDER,
+        supervision_specialty_is_not_rposn.VIEW_BUILDER,
         if_serving_an_ouil_or_owi_has_completed_12_months_on_supervision.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
