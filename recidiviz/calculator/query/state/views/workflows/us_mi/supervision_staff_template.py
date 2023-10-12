@@ -77,10 +77,12 @@ US_MI_SUPERVISION_STAFF_TEMPLATE = f"""
     WHERE
         employee.termination_date IS NULl
         AND employee.employee_type_id IN (
-            "2110", # Parole Manager
-            "2111", # Probation Manager
-            "2106", # Agent
             "2104", # Supervisor
-            "2105"
+            "2105", # Agent
+            "2106", # Field Services Assistant
+            "2109", # Parole Manager
+            "2110", # Probation Manager
+            "2111", # Center Manager
+            "13744" # Parole Probation Specialist
         )
  """
