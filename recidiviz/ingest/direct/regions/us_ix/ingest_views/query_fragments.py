@@ -873,7 +873,7 @@ retained_jurisdiction_details_cte AS (
         USING (RetainedJurisdictionTypeId)
 )"""
 
-STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
+CURRENT_ATLAS_EMPLOYEE_INFO_CTE = """
     -- compile the most recent info for each employee
     --   recency order prioritizes Inactive = '0' and then most recently inserted record
     current_atlas_employee_info as (
@@ -893,11 +893,14 @@ STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
                         ORDER BY emp.Inactive,
                                  (DATE(emp.InsertDate)) DESC,
                                  CAST(EmployeeId as INT) DESC) as recency_rnk
-            FROM {{ref_Employee}} emp
-            LEFT JOIN {{ref_Location}} USING(LocationId)
+            FROM {ref_Employee} emp
+            LEFT JOIN {ref_Location} USING(LocationId)
         ) as recency_ranked
         WHERE recency_rnk = 1
-    ),
+    )
+"""
+
+SUPERVISOR_ROSTER_EMPLOYEE_IDS_CTE = """
     -- since the roster currently only comes with officer email and names, we have to link on EmployeeId ourselves
     -- we'll first try matching by email (which works most of the time) and then try matching on name/district
     -- from our matches, we'll prioritize email matches over name/district matches
@@ -915,7 +918,7 @@ STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
                 ROW_NUMBER() 
                     OVER(PARTITION BY OFFICER_FIRST_NAME, OFFICER_LAST_NAME, DIST
                          ORDER BY emp_ref_email.EmployeeId NULLS LAST, emp_ref_name.EmployeeId) as row_number
-            FROM {{RECIDIVIZ_REFERENCE_supervisor_roster@ALL}} roster
+            FROM {RECIDIVIZ_REFERENCE_supervisor_roster@ALL} roster
             LEFT JOIN current_atlas_employee_info emp_ref_email on UPPER(replace(roster.OFFICER_EMAIL, ',', '.')) = emp_ref_email.Email
             LEFT JOIN current_atlas_employee_info emp_ref_name 
                 on UPPER(roster.OFFICER_FIRST_NAME) = emp_ref_name.FirstName
@@ -925,7 +928,10 @@ STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
         -- filter to the most likely match where either the email or name matched
         WHERE row_number = 1
           AND (EmployeeId_email_match is not null or EmployeeId_name_match is not null)
-    ),
+    )
+"""
+
+SUPERVISOR_ROSTER_SUPERVISOR_IDS_CTE = """
     -- now, we'll do the same matching to get supervisor employeeId
     -- we'll first try matching by email (which works most of the time) and then try matching on name/dist
     -- from our matches, we'll prioritize email matches over name/dist matches
@@ -949,7 +955,7 @@ STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
                 ROW_NUMBER() 
                     OVER(PARTITION BY SUPERVISOR_FIRST_NAME, SUPERVISOR_LAST_NAME
                          ORDER BY emp_ref_email.EmployeeId NULLS LAST, emp_ref_name.EmployeeId) as row_number
-            FROM {{RECIDIVIZ_REFERENCE_supervisor_roster@ALL}} roster
+            FROM {RECIDIVIZ_REFERENCE_supervisor_roster@ALL} roster
             LEFT JOIN current_atlas_employee_info emp_ref_email on UPPER(replace(roster.SUPERVISOR_EMAIL, ',', '.')) = emp_ref_email.Email
             LEFT JOIN current_atlas_employee_info emp_ref_name 
                 on UPPER(roster.SUPERVISOR_FIRST_NAME) = emp_ref_name.FirstName
@@ -959,7 +965,13 @@ STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
         -- filter to the most likely match where either the email or name/dist matched
         WHERE row_number = 1
           AND (EmployeeId_email_match is not null or EmployeeId_name_match is not null)
-    ),
+    )
+"""
+
+STATE_STAFF_SUPERVISOR_PERIODS_CTES = f"""
+   {CURRENT_ATLAS_EMPLOYEE_INFO_CTE},
+   {SUPERVISOR_ROSTER_EMPLOYEE_IDS_CTE},
+   {SUPERVISOR_ROSTER_SUPERVISOR_IDS_CTE},
     -- join employee IDs back onto full roster information
     all_periods as (
         SELECT
