@@ -103,6 +103,7 @@ def execute_cloud_sql_to_bq_refresh(
 
     cloud_sql_to_bq_lock_manager = CloudSqlToBQLockManager()
     state_update_lock_manager = StateUpdateLockManager(ingest_instance)
+    state_update_lock_manager_lock_id = str(uuid.uuid4())
 
     try:
         # TODO(#20930): Remove once all states no longer writing to postgres
@@ -111,7 +112,7 @@ def execute_cloud_sql_to_bq_refresh(
         )
         if schema_type == SchemaType.STATE:
             state_update_lock_manager.acquire_lock(
-                lock_id=str(uuid.uuid4()),
+                lock_id=state_update_lock_manager_lock_id,
                 lock_wait_timeout=LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT,
             )
         start = datetime.datetime.now()
@@ -136,4 +137,4 @@ def execute_cloud_sql_to_bq_refresh(
     finally:
         cloud_sql_to_bq_lock_manager.release_lock(schema_type, ingest_instance)
         if schema_type == SchemaType.STATE:
-            state_update_lock_manager.release_lock()
+            state_update_lock_manager.release_lock(state_update_lock_manager_lock_id)

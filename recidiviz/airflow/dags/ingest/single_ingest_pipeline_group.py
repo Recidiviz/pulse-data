@@ -48,7 +48,6 @@ def _initialize_dataflow_pipeline(
 def _acquire_lock(
     state_code: StateCode, instance: DirectIngestInstance
 ) -> KubernetesPodOperator:
-    # TODO(#23987): Generate and pass in lock_id to acquire lock operator
     return build_kubernetes_pod_task(
         task_id="acquire_lock",
         container_name="acquire_lock",
@@ -56,6 +55,7 @@ def _acquire_lock(
             "--entrypoint=IngestAcquireLockEntrypoint",
             f"--state_code={state_code.value}",
             f"--ingest_instance={instance.value}",
+            "--lock_id={{dag_run.run_id}}" + f"_{state_code.value}_{instance.value}",
         ],
     )
 
@@ -63,7 +63,6 @@ def _acquire_lock(
 def _release_lock(
     state_code: StateCode, instance: DirectIngestInstance
 ) -> KubernetesPodOperator:
-    # TODO(#23987): Pass in generated lock_id to release lock operator
     return build_kubernetes_pod_task(
         trigger_rule=TriggerRule.NONE_SKIPPED,
         task_id="release_lock",
@@ -72,6 +71,7 @@ def _release_lock(
             "--entrypoint=IngestReleaseLockEntrypoint",
             f"--state_code={state_code.value}",
             f"--ingest_instance={instance.value}",
+            "--lock_id={{dag_run.run_id}}" + f"_{state_code.value}_{instance.value}",
         ],
     )
 
@@ -100,7 +100,6 @@ def create_single_ingest_pipeline_group(
 
         dataflow_pipeline = _create_dataflow_pipeline(state_code, instance)
 
-        # TODO(#23987): Replace EmptyOperator with release lock operator
         release_lock = _release_lock(state_code, instance)
 
         # TODO(#23986): Replace EmptyOperator with write upper bounds operator
