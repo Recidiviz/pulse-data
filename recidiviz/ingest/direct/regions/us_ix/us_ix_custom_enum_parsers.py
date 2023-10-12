@@ -26,6 +26,9 @@ my_enum_field:
 from datetime import date
 
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
+from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
+    StateStaffCaseloadType,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -169,3 +172,36 @@ def determine_ed_requesting_body(raw_text: str) -> StateActingBodyType:
         return StateActingBodyType.SENTENCED_PERSON
 
     return StateActingBodyType.INTERNAL_UNKNOWN
+
+
+def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
+    """Maps an officer's caseload type to the appropriate enum based on raw text in the supervisor roster."""
+    caseload_type = raw_text.split("-")[0]
+
+    if caseload_type:
+        if caseload_type == "ADMINSTRATIVE_SUPERVISION":
+            return StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION
+        if caseload_type == "ALCOHOL_AND_DRUG":
+            return StateStaffCaseloadType.ALCOHOL_AND_DRUG
+        if caseload_type == "COMMUNITY_FACILITY":
+            return StateStaffCaseloadType.COMMUNITY_FACILITY
+        if caseload_type == "DRUG_COURT":
+            return StateStaffCaseloadType.DRUG_COURT
+        if caseload_type == "ELECTRONIC_MONITORING":
+            return StateStaffCaseloadType.ELECTRONIC_MONITORING
+        if caseload_type == "INTENSIVE":
+            return StateStaffCaseloadType.INTENSIVE
+        if caseload_type == "MENTAL_HEALTH":
+            return StateStaffCaseloadType.MENTAL_HEALTH
+        if caseload_type == "OTHER_COURT":
+            return StateStaffCaseloadType.OTHER_COURT
+        if caseload_type == "SEX_OFFENSE":
+            return StateStaffCaseloadType.SEX_OFFENSE
+        if caseload_type == "VETERANS_COURT":
+            return StateStaffCaseloadType.VETERANS_COURT
+        if caseload_type == "DOMESTIC_VIOLENCE":
+            return StateStaffCaseloadType.DOMESTIC_VIOLENCE
+        if caseload_type == "GENERAL":
+            return StateStaffCaseloadType.GENERAL
+        return StateStaffCaseloadType.INTERNAL_UNKNOWN
+    return StateStaffCaseloadType.INTERNAL_UNKNOWN
