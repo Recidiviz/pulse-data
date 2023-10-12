@@ -877,6 +877,16 @@ class ViewManagerTest(unittest.TestCase):
                     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
                 )
 
+    def test_no_source_table_datasets_registered_as_managed(self) -> None:
+        for source_table_dataset_id in VIEW_SOURCE_TABLE_DATASETS:
+            self.assertNotIn(
+                source_table_dataset_id,
+                DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+                f"Source table {source_table_dataset_id} should not be listed in "
+                f"DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED, which should only "
+                f"contain datasets that currently hold or once held managed views.",
+            )
+
 
 class TestExecuteUpdateAllManagedViews(unittest.TestCase):
     """Tests the execute_update_all_managed_views function."""
