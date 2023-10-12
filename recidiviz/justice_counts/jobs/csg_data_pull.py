@@ -20,7 +20,8 @@ all agencies with Publisher accounts. Includes fields like "num_record_with_data
 
 pipenv run python -m recidiviz.justice_counts.jobs.csg_data_pull \
   --project-id=PROJECT_ID \
-  --dry-run=true
+  --dry-run=true \
+  --credentials-path=<path>
 """
 import argparse
 import datetime
@@ -67,6 +68,8 @@ NUM_METRICS_AVAILABLE = "num_metrics_available"
 NUM_METRICS_UNAVAILABLE = "num_metrics_unavailable"
 IS_SUPERAGENCY = "is_superagency"
 IS_CHILD_AGENCY = "is_child_agency"
+NEW_STATE_THIS_WEEK = "new_state_this_week"
+NEW_AGENCY_THIS_WEEK = "new_agency_this_week"
 
 # To add:
 # NUM_METRICS_UNCONFIGURED = "num_metrics_unconfigured"
@@ -195,16 +198,30 @@ def generate_agency_summary_csv(
     agencies = [
         dict(a) for a in original_agencies if a["id"] not in agencies_to_exclude
     ]
-    agency_id_to_agency = {a["id"]: a for a in agencies}
 
     logger.info("Number of agencies: %s", len(agencies))
 
+    # A dictionary that maps agency ids to agency objects
+    agency_id_to_agency = {}
+    # A dictionary that maps all state codes to their count of total agencies: {"us_il": 4, "us_oh": 1}
+    state_code_by_all_agency_count: Dict[str, int] = defaultdict(int)
+    # A dictionary that maps state codes to their count of new agencies: {"us_state": 2}
+    state_code_by_new_agency_count: Dict[str, int] = defaultdict(int)
+
+    # First, populate agency_id_to_agency and all_state_code_by_count
+    for a in agencies:
+        agency_id_to_agency[a["id"]] = a
+        state_code = a["state_code"]
+        state_code_by_all_agency_count[state_code] += 1
+
+    # We populate state_code_by_new_agency_count in this loop
     for agency in agencies:
         users = agency_id_to_users[agency["id"]]
 
         agency_created_at = agency.get("created_at")
+        agency_created_at_str = None
         if agency_created_at:
-            agency_created_at = agency_created_at.strftime("%Y-%m-%d")
+            agency_created_at_str = agency_created_at.strftime("%Y-%m-%d")
 
         last_login = None
         first_user_created_at = None
@@ -230,8 +247,17 @@ def generate_agency_summary_csv(
             if not last_login or (user_last_login > last_login):
                 last_login = user_last_login
 
+        new_agency_this_week = False
+        today = datetime.datetime.now(tz=datetime.timezone.utc)
+        # this should not be None as of 09/27/2023, so we don't need another condition
+        if agency_created_at is not None:
+            if agency_created_at > (today + datetime.timedelta(days=-7)):
+                new_agency_this_week = True
+                agency_state_code = agency["state_code"]
+                state_code_by_new_agency_count[agency_state_code] += 1
+
         agency[LAST_LOGIN] = last_login or ""
-        agency[CREATED_AT] = agency_created_at or first_user_created_at or ""
+        agency[CREATED_AT] = agency_created_at_str or first_user_created_at or ""
         agency[LAST_UPDATE] = ""
         agency[NUM_RECORDS_WITH_DATA] = 0
         agency[NUM_METRICS_WITH_DATA] = 0
@@ -240,6 +266,29 @@ def generate_agency_summary_csv(
         agency[NUM_METRICS_UNAVAILABLE] = 0
         agency[IS_SUPERAGENCY] = bool(agency["is_superagency"])
         agency[IS_CHILD_AGENCY] = bool(agency["super_agency_id"])
+        agency[NEW_AGENCY_THIS_WEEK] = new_agency_this_week
+
+    # Now that state_code_by_new_agency_count is populated, we can determine if
+    # NEW_STATE_THIS_WEEK is True
+    for agency in agencies:
+        new_state_this_week = False
+        if agency[NEW_AGENCY_THIS_WEEK] is True:
+            potential_new_state_code = agency["state_code"]
+            num_total_agencies_for_state = state_code_by_all_agency_count.get(
+                potential_new_state_code
+            )
+            if num_total_agencies_for_state == 1:
+                # A new agency is the only agency associated with this state
+                # So this must be a new state
+                new_state_this_week = True
+            elif (
+                num_total_agencies_for_state
+                == state_code_by_new_agency_count[potential_new_state_code]
+            ):
+                # Multiple agencies are associated with the state, but they are all new
+                # agencies. So this is also a new state.
+                new_state_this_week = True
+        agency[NEW_STATE_THIS_WEEK] = new_state_this_week
 
     agency_id_to_datapoints_groupby = groupby(
         sorted(datapoints, key=lambda x: x["source_id"]),
@@ -269,6 +318,8 @@ def generate_agency_summary_csv(
         NUM_METRICS_UNAVAILABLE,
         IS_SUPERAGENCY,
         IS_CHILD_AGENCY,
+        NEW_AGENCY_THIS_WEEK,
+        NEW_STATE_THIS_WEEK,
         "systems",
     ]
     df = (
