@@ -16,7 +16,6 @@
 # =============================================================================
 """ Entrypoints for the ingest DAG Lock Management """
 import argparse
-import uuid
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
@@ -24,7 +23,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 
 
-# TODO(#23987): Add lock_id as an argument to use to acquire lock
 class IngestAcquireLockEntrypoint(EntrypointInterface):
     """Entrypoint for acquiring the ingest lock"""
 
@@ -49,6 +47,13 @@ class IngestAcquireLockEntrypoint(EntrypointInterface):
             required=True,
         )
 
+        parser.add_argument(
+            "--lock_id",
+            help="The lock id to acquire",
+            type=str,
+            required=True,
+        )
+
         return parser
 
     @staticmethod
@@ -56,10 +61,9 @@ class IngestAcquireLockEntrypoint(EntrypointInterface):
         state_update_lock_manager = StateUpdateLockManager(
             state_code_filter=args.state_code, ingest_instance=args.ingest_instance
         )
-        state_update_lock_manager.acquire_lock(lock_id=str(uuid.uuid4()))
+        state_update_lock_manager.acquire_lock(lock_id=args.lock_id)
 
 
-# TODO(#23987): Add lock_id as an argument to use to release lock
 class IngestReleaseLockEntrypoint(EntrypointInterface):
     """Entrypoint for releasing the ingest lock"""
 
@@ -84,6 +88,13 @@ class IngestReleaseLockEntrypoint(EntrypointInterface):
             required=True,
         )
 
+        parser.add_argument(
+            "--lock_id",
+            help="The lock id to release",
+            type=str,
+            required=True,
+        )
+
         return parser
 
     @staticmethod
@@ -91,4 +102,4 @@ class IngestReleaseLockEntrypoint(EntrypointInterface):
         state_update_lock_manager = StateUpdateLockManager(
             state_code_filter=args.state_code, ingest_instance=args.ingest_instance
         )
-        state_update_lock_manager.release_lock()
+        state_update_lock_manager.release_lock(lock_id=args.lock_id)

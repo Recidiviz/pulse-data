@@ -63,7 +63,7 @@ class StateUpdateLockManagerTest(unittest.TestCase):
         self.sleep_patcher.stop()
 
     def test_acquire_release_new_lock(self) -> None:
-        self.us_xx_primary_lock_manager.acquire_lock(lock_id="lock1")
+        self.us_xx_primary_lock_manager.acquire_lock(lock_id="lock_id1")
         expected_paths = [
             GcsfsFilePath(
                 bucket_name=self.lock_bucket,
@@ -74,24 +74,45 @@ class StateUpdateLockManagerTest(unittest.TestCase):
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
 
-        self.us_xx_primary_lock_manager.release_lock()
+        self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id1")
         self.assertEqual([], self.fake_fs.all_paths)
+
+    def test_release_lock_with_wrong_lock_id(self) -> None:
+        self.us_xx_primary_lock_manager.acquire_lock(lock_id="lock_id1")
+        expected_paths = [
+            GcsfsFilePath(
+                bucket_name=self.lock_bucket,
+                blob_name=state_update_lock_name(
+                    DirectIngestInstance.PRIMARY, StateCode.US_XX
+                ),
+            )
+        ]
+        self.assertEqual(expected_paths, self.fake_fs.all_paths)
+
+        with self.assertRaisesRegex(
+            ValueError, "Lock id.* does not match existing lock's lock id .*"
+        ):
+            self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id2")
+        self.assertEqual(expected_paths, self.fake_fs.all_paths)
+        self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id1")
 
     def test_release_without_acquiring(self) -> None:
         with self.assertRaises(GCSPseudoLockDoesNotExist):
-            self.us_xx_primary_lock_manager.release_lock()
+            self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id1")
 
     def test_acquire_existing_timeout(self) -> None:
-        self.us_xx_primary_lock_manager.acquire_lock(lock_id="lock1")
+        self.us_xx_primary_lock_manager.acquire_lock(lock_id="lock_id1")
         with self.assertRaisesRegex(
             ValueError, "Could not acquire lock after waiting.*"
         ):
-            self.us_xx_primary_lock_manager.acquire_lock(lock_id="lock2")
-        self.us_xx_primary_lock_manager.release_lock()
+            self.us_xx_primary_lock_manager.acquire_lock(lock_id="lock_id2")
+        self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id1")
 
     def test_general_lock_held_state_specific_attempted(self) -> None:
         self.mock_sleep.side_effect = (
-            lambda _: self.state_agnostic_primary_lock_manager.release_lock()
+            lambda _: self.state_agnostic_primary_lock_manager.release_lock(
+                lock_id="lock_id1"
+            )
             if self.state_agnostic_primary_lock_manager.is_locked()
             else None
         )
@@ -107,11 +128,11 @@ class StateUpdateLockManagerTest(unittest.TestCase):
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
         self.mock_sleep.assert_called()
-        self.us_xx_primary_lock_manager.release_lock()
+        self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id2")
 
     def test_state_specific_acquired_general_attempted(self) -> None:
         self.mock_sleep.side_effect = (
-            lambda _: self.us_xx_primary_lock_manager.release_lock()
+            lambda _: self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id1")
             if self.us_xx_primary_lock_manager.is_locked()
             else None
         )
@@ -125,7 +146,7 @@ class StateUpdateLockManagerTest(unittest.TestCase):
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
         self.mock_sleep.assert_called()
-        self.state_agnostic_primary_lock_manager.release_lock()
+        self.state_agnostic_primary_lock_manager.release_lock(lock_id="lock_id2")
 
     def test_state_specific_acquired_another_state_specific_attempted(self) -> None:
         self.us_xx_primary_lock_manager.acquire_lock("lock_id1")
@@ -146,8 +167,8 @@ class StateUpdateLockManagerTest(unittest.TestCase):
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
         self.mock_sleep.assert_not_called()
-        self.us_xx_primary_lock_manager.release_lock()
-        self.us_yy_primary_lock_manager.release_lock()
+        self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id1")
+        self.us_yy_primary_lock_manager.release_lock(lock_id="lock_id2")
 
     def test_state_specific_acquired_secondary_state_specific_attempted(self) -> None:
         self.us_xx_primary_lock_manager.acquire_lock("lock_id1")
@@ -168,8 +189,8 @@ class StateUpdateLockManagerTest(unittest.TestCase):
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
         self.mock_sleep.assert_not_called()
-        self.us_xx_primary_lock_manager.release_lock()
-        self.us_xx_secondary_lock_manager.release_lock()
+        self.us_xx_primary_lock_manager.release_lock(lock_id="lock_id1")
+        self.us_xx_secondary_lock_manager.release_lock(lock_id="lock_id2")
 
     def test_secondary_state_specific_acquired_primary_agnostic_state_attempted(
         self,
@@ -190,8 +211,8 @@ class StateUpdateLockManagerTest(unittest.TestCase):
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
         self.mock_sleep.assert_not_called()
-        self.state_agnostic_primary_lock_manager.release_lock()
-        self.us_xx_secondary_lock_manager.release_lock()
+        self.us_xx_secondary_lock_manager.release_lock(lock_id="lock_id1")
+        self.state_agnostic_primary_lock_manager.release_lock(lock_id="lock_id2")
 
     def test_primary_agnostic_state_acquired_secondary_state_specific_attempted(
         self,
@@ -212,5 +233,5 @@ class StateUpdateLockManagerTest(unittest.TestCase):
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
         self.mock_sleep.assert_not_called()
-        self.state_agnostic_primary_lock_manager.release_lock()
-        self.us_xx_secondary_lock_manager.release_lock()
+        self.state_agnostic_primary_lock_manager.release_lock(lock_id="lock_id1")
+        self.us_xx_secondary_lock_manager.release_lock(lock_id="lock_id2")
