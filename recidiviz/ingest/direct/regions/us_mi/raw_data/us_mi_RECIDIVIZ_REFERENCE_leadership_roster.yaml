@@ -4,8 +4,6 @@ file_description: |-
   This table is a Recidiviz-generated reference table for members of MI DOC regional 
   and state leadership.
 data_classification: source
-separator: ","
-always_historical_export: False
 primary_key_cols:
   - employee_id
   - Role
@@ -30,3 +28,6 @@ columns:
     description: Employee's last day in this position.
   - name: period_seq_num
     description: The order of this role period in the history of this person's employment.
+separator: ","
+custom_line_terminator: "\n"
+always_historical_export: False

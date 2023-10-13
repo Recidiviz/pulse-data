@@ -7,9 +7,6 @@ input_columns:
   - end_date
   - period_seq_num
 unused_columns: []
-# TODO(#24660) Remove this once there is raw data with the leadership roster.
-launch_env:
-  $env: is_local
 output:
   StateStaff:
     external_ids:
