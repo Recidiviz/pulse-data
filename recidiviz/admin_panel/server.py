@@ -20,12 +20,20 @@ from typing import Tuple
 
 from flask import Flask
 
-from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils import structured_logging
+from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
+
+structured_logging.setup()
 
 app = Flask(__name__)
 
 
-@requires_gae_auth
+requires_authorization = build_compute_engine_auth_decorator(
+    backend_service_id_secret_name="iap_admin_panel_load_balancer_service_id"  # nosec
+)
+
+
+@requires_authorization
 @app.route("/health")
 def health() -> Tuple[str, HTTPStatus]:
     """This just returns 200, and is used by Docker and GCP uptime checks to verify that the flask workers are
