@@ -7,25 +7,31 @@ import argparse
 import logging
 from typing import Optional
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
-from recidiviz.tools.utils.bigquery_helpers import run_operation_for_tables
+from recidiviz.tools.utils.bigquery_helpers import (
+    dataset_prefix_to_filter_regex,
+    run_operation_for_tables,
+)
 from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.utils.metadata import local_project_id_override
 
 
 def apply_row_level_permissions_to_all_tables(dataset_prefix: Optional[str]) -> None:
     def _apply_permissions_for_table(
-        client: BigQueryClient, dataset_id: str, table_id: str
+        client: BigQueryClient, address: ProjectSpecificBigQueryAddress
     ) -> None:
-        dataset_ref = client.dataset_ref_for_id(dataset_id)
-        table = client.get_table(dataset_ref=dataset_ref, table_id=table_id)
+        dataset_ref = client.dataset_ref_for_id(address.dataset_id)
+        table = client.get_table(dataset_ref=dataset_ref, table_id=address.table_id)
         client.apply_row_level_permissions(table)
 
     run_operation_for_tables(
         client=BigQueryClientImpl(),
         prompt="Apply row level permissions",
         operation=_apply_permissions_for_table,
-        dataset_prefix=dataset_prefix,
+        dataset_filter=dataset_prefix_to_filter_regex(dataset_prefix)
+        if dataset_prefix
+        else None,
     )
 
 
