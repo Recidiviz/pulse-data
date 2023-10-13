@@ -44,10 +44,10 @@ EOT
 }
 
 resource "google_service_account" "admin_panel_cloud_run" {
-  account_id   = "asset-generation-cr"
-  display_name = "Asset Generation Cloud Run Service Account"
+  account_id   = "admin-panel-cr"
+  display_name = "Admin Panel Cloud Run Service Account"
   description  = <<EOT
-Service Account that acts as the identity for the Asset Generation Cloud Run service.
+Service Account that acts as the identity for the Admin Panel Cloud Run service.
 The account and its IAM policies are managed in Terraform.
 EOT
 }
