@@ -199,7 +199,21 @@ INSTITUTIONAL_BEHAVIOR_NOTES_STR = "Institutional Behavior Notes (in the past 6 
 I9_NOTES_STR = "I-9 Documents Notes"
 WORK_HISTORY_STR = "Work History (in the past 5 years)"
 MEDICAL_CLEARANCE_STR = "Medical Clearance (in the past 6 months)"
-
+RELEASE_INFORMATION_STR = "Release District Information"
+RELEASE_INFORMATION_CONTACT_MODES = """(
+                    "CRC Request - D1 Release",
+                    "CRC Request - D2 Release",
+                    "CRC Request - D3 Release",
+                    "CRC Request - D4 Release",
+                    "CRC Request - D5 Release",
+                    "CRC Request - D6 Release",
+                    "CRC Request - D7 Release",
+                    "CRC Request - ISC Release")"""
+CRC_INFORMATION_STR = "Additional CRC Information (in the past 6 months)"
+CRC_INFORMATION_CONTACT_MODES = """('CRC Termer Approved',
+                    'CRC Termer Denied', 
+                    'CRC DIV Approved', 
+                    'CRC DIV Denied')"""
 I9_NOTE_TX_REGEX = "|".join(
     ["I9", "I-9", "I- 9", "I - 9", "I -9", "I - 9", "I- 9", "I -9"]
 )
