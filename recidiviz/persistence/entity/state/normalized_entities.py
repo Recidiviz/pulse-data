@@ -21,6 +21,9 @@ import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name, is_list
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.date import NonNegativeDateRange
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import (
@@ -185,6 +188,10 @@ class NormalizedStateIncarcerationPeriod(
     normalized and are prepared to be used in calculations."""
 
     purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
+
+    incarceration_admission_violation_type: Optional[
+        StateSupervisionViolationType
+    ] = attr.ib(default=None)
 
     @property
     def duration(self) -> NonNegativeDateRange:

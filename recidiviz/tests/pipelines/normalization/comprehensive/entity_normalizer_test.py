@@ -200,6 +200,7 @@ class TestNormalizeEntities(unittest.TestCase):
                 ip.incarceration_period_id: {
                     "sequence_num": index,
                     "purpose_for_incarceration_subtype": None,
+                    "incarceration_admission_violation_type": None,
                 }
                 for index, ip in enumerate(self.full_graph_person.incarceration_periods)
                 if ip.incarceration_period_id

@@ -32,6 +32,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     is_commitment_from_supervision,
     release_reason_overrides_released_from_temporary_custody,
 )
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -163,6 +166,19 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
             ].specialized_purpose_for_incarceration,
             purpose_for_incarceration_subtype=None,
         )
+
+    def get_incarceration_admission_violation_type(  # pylint: disable=unused-argument
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateSupervisionViolationType]:
+        """State-specific implementations of this class should return a
+        StateSupervisionViolationType object if the incarceration admission was due
+        to a revocation and we have some information on the incarceration period
+        that indicates the violation type that led to this revocation.
+
+        By default, returns None
+        """
+        return None
 
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         """State-specific implementations of this class should return a non-empty set if
@@ -358,7 +374,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
             self._normalized_incarceration_periods_and_additional_attributes = (
                 [],
                 self.additional_attributes_map_for_normalized_ips(
-                    incarceration_periods=[], ip_id_to_pfi_subtype={}
+                    incarceration_periods=[],
+                    ip_id_to_pfi_subtype={},
+                    ip_id_to_violation_type={},
                 ),
             )
         else:
@@ -447,6 +465,13 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                 )
             )
 
+            # Generates map of admisson violation type information
+            ip_id_to_violation_type = (
+                self._generate_incarceration_admission_violation_types(
+                    mid_processing_periods=mid_processing_periods,
+                )
+            )
+
             # Validate IPs
             self.validate_ip_invariants(mid_processing_periods)
 
@@ -455,6 +480,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                 self.additional_attributes_map_for_normalized_ips(
                     incarceration_periods=mid_processing_periods,
                     ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
+                    ip_id_to_violation_type=ip_id_to_violation_type,
                 ),
             )
 
@@ -1094,6 +1120,22 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
         return updated_ips
 
+    def _generate_incarceration_admission_violation_types(
+        self,
+        mid_processing_periods: List[StateIncarcerationPeriod],
+    ) -> Dict[int, Optional[StateSupervisionViolationType]]:
+
+        """Generates a map of incarceration admission violation type information
+        to be added to each period."""
+
+        return {
+            ip.incarceration_period_id: self.normalization_delegate.get_incarceration_admission_violation_type(
+                ip
+            )
+            for ip in mid_processing_periods
+            if ip.incarceration_period_id
+        }
+
     @staticmethod
     def validate_ip_invariants(
         incarceration_periods: Sequence[StateIncarcerationPeriod],
@@ -1156,6 +1198,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         cls,
         incarceration_periods: List[StateIncarcerationPeriod],
         ip_id_to_pfi_subtype: Dict[int, Optional[str]],
+        ip_id_to_violation_type: Dict[int, Optional[StateSupervisionViolationType]],
     ) -> AdditionalAttributesMap:
         """Returns the attributes that should be set on the normalized version of
         each of the incarceration periods for each of the attributes that are unique
@@ -1182,6 +1225,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                 ip.incarceration_period_id
             ] = {
                 "purpose_for_incarceration_subtype": ip_id_to_pfi_subtype[
+                    ip.incarceration_period_id
+                ],
+                "incarceration_admission_violation_type": ip_id_to_violation_type[
                     ip.incarceration_period_id
                 ],
             }
