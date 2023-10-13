@@ -198,21 +198,15 @@ class RunValidations(beam.PTransform):
         grouped_entities: Iterable[Entity],
     ) -> Tuple[EntityKey, Iterable[Error]]:
         entity_id, _ = entity_id_with_class_name
-        entity_iterator = iter(grouped_entities)
+        entity_list = list(grouped_entities)
         error_messages: List[Error] = []
-        try:
-            entity = next(entity_iterator)
-        except StopIteration:
+        if not entity_list:
             return entity_id_with_class_name, [f"No entities found for id {entity_id}"]
-
-        try:
-            next(entity_iterator)
-        except StopIteration:
-            return entity_id_with_class_name, error_messages
-        error_messages.append(
-            f"More than one {entity.get_entity_name()} entity found with {entity.get_class_id_name()} {entity_id}: {grouped_entities}"
-        )
-
+        if len(entity_list) > 1:
+            entity = entity_list[0]
+            error_messages.append(
+                f"More than one {entity.get_entity_name()} entity found with {entity.get_class_id_name()} {entity_id}: {entity_list}"
+            )
         return entity_id_with_class_name, error_messages
 
     @staticmethod
