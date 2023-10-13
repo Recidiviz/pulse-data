@@ -1424,6 +1424,162 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             commitment_from_supervision_event,
         )
 
+    def test_most_severe_violation_and_incarceration_admission_violation_type(
+        self,
+    ) -> None:
+        """Tests that most_severe_violation_type, most_severe_violation_subtype, and
+        most_severe_violation_id are all set correctly when incarceration_admission_violation_type
+        is valued.  That is, most_severe_violation_type should be set according to
+        incarceration_admission_violation_type while the most_severe_violation_subtype and
+        most_severe_violation_id should set to null."""
+
+        supervision_violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            external_id="sv1",
+            state_code="US_XX",
+            violation_date=date(2008, 12, 7),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                )
+            ],
+        )
+
+        supervision_violation_response_1 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr1",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2008, 12, 7),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                )
+            ],
+            supervision_violation=supervision_violation_1,
+        )
+
+        supervision_violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            external_id="sv2",
+            state_code="US_XX",
+            violation_date=date(2009, 11, 13),
+        )
+
+        supervision_violation_response_2 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr2",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code="US_XX",
+            response_date=date(2009, 11, 13),
+            supervision_violation_response_decisions=[
+                # This REVOCATION decision is the most severe, but this is not the most recent response
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                )
+            ],
+            supervision_violation=supervision_violation_2,
+        )
+
+        supervision_violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=6789,
+            external_id="sv3",
+            violation_date=date(2009, 12, 1),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                )
+            ],
+        )
+
+        supervision_violation_response_3 = NormalizedStateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            external_id="svr3",
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2009, 12, 1),
+            supervision_violation_response_decisions=[
+                NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                )
+            ],
+            supervision_violation=supervision_violation_3,
+        )
+
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=_DEFAULT_SP_ID,
+            external_id="sp1",
+            state_code="US_XX",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2009, 12, 19),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_site="OFFICE_1",
+        )
+
+        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            admission_date=date(2009, 12, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            incarceration_admission_violation_type=StateSupervisionViolationType.TECHNICAL,
+        )
+
+        violation_responses = [
+            supervision_violation_response_1,
+            supervision_violation_response_2,
+            supervision_violation_response_3,
+        ]
+
+        commitment_from_supervision_event = (
+            self._run_commitment_from_supervision_event_for_period(
+                pre_commitment_supervision_period=supervision_period,
+                incarceration_period=incarceration_period,
+                violation_responses=violation_responses,
+                violation_delegate=UsXxViolationDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate([]),
+            )
+        )
+
+        supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
+        expected_commitment_from_supervision_event = IncarcerationCommitmentFromSupervisionAdmissionEvent(
+            state_code=supervision_period.state_code,
+            event_date=incarceration_period.admission_date,
+            admission_reason=incarceration_period.admission_reason,
+            supervision_type=supervision_type,
+            case_type=StateSupervisionCaseType.GENERAL,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
+            most_severe_violation_type_subtype=None,
+            most_severe_violation_id=None,
+            violation_history_id_array="6789,123455",
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            most_recent_response_decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+            response_count=3,
+            violation_history_description="1felony;1technical",
+            violation_type_frequency_counter=[["FELONY"], ["TECHNICAL"]],
+            supervising_district_external_id="OFFICE_1",
+            level_1_supervision_location_external_id="OFFICE_1",
+            county_of_residence=_COUNTY_OF_RESIDENCE,
+            assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
+        )
+
+        self.assertEqual(
+            expected_commitment_from_supervision_event,
+            commitment_from_supervision_event,
+        )
+
 
 class TestReleaseEventForPeriod(unittest.TestCase):
     """Tests the release_event_for_period function."""

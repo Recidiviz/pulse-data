@@ -403,6 +403,24 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             violation_delegate=violation_delegate,
         )
 
+        most_severe_violation_type = (
+            incarceration_period.incarceration_admission_violation_type
+            if incarceration_period.incarceration_admission_violation_type
+            else violation_history.most_severe_violation_type
+        )
+
+        most_severe_violation_type_subtype = (
+            None
+            if incarceration_period.incarceration_admission_violation_type
+            else violation_history.most_severe_violation_type_subtype
+        )
+
+        most_severe_violation_id = (
+            None
+            if incarceration_period.incarceration_admission_violation_type
+            else violation_history.most_severe_violation_id
+        )
+
         responses_for_decision_evaluation = violation_responses_for_history
 
         if (
@@ -468,9 +486,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             assessment_level=assessment_level,
             assessment_type=assessment_type,
             assessment_score_bucket=assessment_score_bucket,
-            most_severe_violation_type=violation_history.most_severe_violation_type,
-            most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
-            most_severe_violation_id=violation_history.most_severe_violation_id,
+            most_severe_violation_type=most_severe_violation_type,
+            most_severe_violation_type_subtype=most_severe_violation_type_subtype,
+            most_severe_violation_id=most_severe_violation_id,
             violation_history_id_array=violation_history.violation_history_id_array,
             most_severe_response_decision=violation_history.most_severe_response_decision,
             most_recent_response_decision=most_recent_response_decision,
