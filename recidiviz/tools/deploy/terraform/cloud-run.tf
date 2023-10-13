@@ -43,6 +43,15 @@ The account and its IAM policies are managed in Terraform.
 EOT
 }
 
+resource "google_service_account" "admin_panel_cloud_run" {
+  account_id   = "asset-generation-cr"
+  display_name = "Asset Generation Cloud Run Service Account"
+  description  = <<EOT
+Service Account that acts as the identity for the Asset Generation Cloud Run service.
+The account and its IAM policies are managed in Terraform.
+EOT
+}
+
 locals {
   cloud_run_common_roles = [
     "roles/run.admin",
@@ -102,6 +111,13 @@ resource "google_project_iam_member" "asset_generation_iam" {
   project  = var.project_id
   role     = each.key
   member   = "serviceAccount:${google_service_account.asset_generation_cloud_run.email}"
+}
+
+resource "google_project_iam_member" "admin_panel_iam" {
+  for_each = toset(local.cloud_run_common_roles)
+  project  = var.project_id
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.admin_panel_cloud_run.email}"
 }
 
 resource "google_service_account_iam_member" "application_data_import_iam" {

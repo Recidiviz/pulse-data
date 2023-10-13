@@ -50,18 +50,35 @@ resource "google_cloud_run_service" "admin_panel" {
     }
   }
   template {
-    metadata {
-      annotations = {
-        "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.us_central_redis_vpc_connector.name
-      }
-    }
     spec {
+
       containers {
         image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
         args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.admin_panel.server:app"]
+
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "1024Mi"
+          }
+        }
+      }
+      service_account_name = google_service_account.admin_panel_cloud_run.email
+    }
+
+    metadata {
+      annotations = {
+        "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.us_central_redis_vpc_connector.name
+        "autoscaling.knative.dev/maxScale" : 3
       }
     }
+
   }
 }
 
@@ -113,7 +130,7 @@ module "admin_panel_load_balancer" {
 
       log_config = {
         enable      = true
-        sample_rate = null
+        sample_rate = 1
       }
     }
   }
