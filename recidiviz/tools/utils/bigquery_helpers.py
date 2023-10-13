@@ -15,40 +15,64 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper to run an operation against tables in many datasets."""
+import re
 import threading
 from concurrent import futures
-from typing import Callable, Optional
+from typing import Callable, Dict, Optional
 
 from tqdm import tqdm
 
+from recidiviz.big_query.big_query_address import ProjectSpecificBigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE, BigQueryClient
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.types import T
+
+
+def dataset_prefix_to_filter_regex(dataset_prefix: str) -> str:
+    """For the given dataset_prefix, returns a regex that would match any dataset_id
+    that starts with that prefix.
+    """
+    return f"^{dataset_prefix}_.*"
+
+
+def dataset_id_to_filter_regex(dataset_id: str) -> str:
+    """For the given dataset_id, returns a regex that would match only that exact
+    dataset_id.
+    """
+    return f"^{dataset_id}$"
 
 
 def run_operation_for_tables(
     client: BigQueryClient,
-    prompt: str,
-    operation: Callable[[BigQueryClient, str, str], None],
-    dataset_prefix: Optional[str] = None,
-) -> None:
+    operation: Callable[[BigQueryClient, ProjectSpecificBigQueryAddress], T],
+    prompt: Optional[str],
+    dataset_filter: Optional[str] = None,
+) -> Dict[ProjectSpecificBigQueryAddress, T]:
     """Helper to run the provided function against all tables.
 
-    If `dataset_prefix` is provided, will only include tables that are in datasets
-    matched by the prefix.
+    If `dataset_filter` is provided, will only include tables that are in datasets
+    matched by the filter regex.
 
-    Will prompt for confirmation once all of the datasets are identified, appending
-    "for N datasets" to the end of the prompt where N is the number of affected datasets.
+    If `prompt` is provided, will prompt for confirmation once all of the datasets are
+    identified, appending "for N datasets" to the end of the prompt where N is the
+    number of affected datasets.
     """
     print("Fetching all datasets...")
+
+    dataset_filter_pattern = re.compile(dataset_filter) if dataset_filter else None
     datasets = [
         dataset_item
         for dataset_item in client.list_datasets()
-        if dataset_prefix is None
-        or dataset_item.dataset_id.startswith(f"{dataset_prefix}_")
+        if (
+            dataset_filter_pattern is None
+            or re.match(dataset_filter_pattern, dataset_item.dataset_id)
+        )
     ]
 
-    prompt_for_confirmation(f"{prompt} for {len(datasets)} datasets")
+    if prompt:
+        prompt_for_confirmation(f"{prompt} for {len(datasets)} datasets")
 
+    results = {}
     with futures.ThreadPoolExecutor(
         # Conservatively allow only half as many workers as allowed connections.
         # Lower this number if we see "urllib3.connectionpool:Connection pool is
@@ -64,12 +88,11 @@ def run_operation_for_tables(
         }
 
         def _run_operation(
-            dataset_id: str,
-            table_id: str,
+            table_address: ProjectSpecificBigQueryAddress,
             dataset_progress: tqdm,
             dataset_progress_lock: threading.Lock,
-        ) -> None:
-            operation(client, dataset_id, table_id)
+        ) -> T:
+            result = operation(client, table_address)
 
             # Prevent two threads from checking `n` when it has the same value.
             with dataset_progress_lock:
@@ -79,8 +102,9 @@ def run_operation_for_tables(
             if dataset_completed:
                 dataset_progress.close()
                 overall_progress.update()
+            return result
 
-        operation_futures = []
+        operation_futures = {}
         for tables_future in futures.as_completed(dataset_tables_futures):
             table_items = list(tables_future.result())
             dataset_item = dataset_tables_futures[tables_future]
@@ -96,18 +120,23 @@ def run_operation_for_tables(
             )
             dataset_progress_lock = threading.Lock()
 
-            operation_futures.extend(
-                [
+            for table_item in table_items:
+                table_address = ProjectSpecificBigQueryAddress.from_list_item(
+                    table_item
+                )
+                operation_futures[
                     executor.submit(
                         _run_operation,
-                        dataset_id=dataset_item.dataset_id,
-                        table_id=table_item.table_id,
+                        table_address=table_address,
                         dataset_progress=dataset_progress,
                         dataset_progress_lock=dataset_progress_lock,
                     )
-                    for table_item in table_items
-                ]
-            )
+                ] = table_address
 
-        futures.wait(operation_futures)
+        for f in futures.as_completed(operation_futures):
+            table_address = operation_futures[f]
+            results[table_address] = f.result()
+
         overall_progress.close()
+
+    return results

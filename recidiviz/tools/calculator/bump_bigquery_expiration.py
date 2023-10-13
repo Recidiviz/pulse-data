@@ -32,7 +32,10 @@ import datetime
 import logging
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.tools.utils.bigquery_helpers import run_operation_for_tables
+from recidiviz.tools.utils.bigquery_helpers import (
+    dataset_prefix_to_filter_regex,
+    run_operation_for_tables,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -71,8 +74,8 @@ if __name__ == "__main__":
         run_operation_for_tables(
             client=BigQueryClientImpl(),
             prompt=f"Extend the expiration to {expiration.isoformat()}",
-            operation=lambda client, dataset_id, table_id: client.set_table_expiration(
-                dataset_id, table_id, expiration
+            operation=lambda client, address: client.set_table_expiration(
+                address.dataset_id, address.table_id, expiration
             ),
-            dataset_prefix=args.dataset_prefix,
+            dataset_filter=dataset_prefix_to_filter_regex(args.dataset_prefix),
         )
