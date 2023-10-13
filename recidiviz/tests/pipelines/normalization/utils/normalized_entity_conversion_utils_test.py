@@ -30,6 +30,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
     NORMALIZED_ENTITY_CLASSES,
@@ -128,7 +131,11 @@ class TestFieldsUniqueToNormalizedClass(unittest.TestCase):
     def test_fields_unique_to_normalized_class(self) -> None:
         entity = NormalizedStateIncarcerationPeriod
 
-        expected_unique_fields = {"sequence_num", "purpose_for_incarceration_subtype"}
+        expected_unique_fields = {
+            "sequence_num",
+            "purpose_for_incarceration_subtype",
+            "incarceration_admission_violation_type",
+        }
 
         self.assertEqual(
             expected_unique_fields, fields_unique_to_normalized_class(entity)
@@ -189,7 +196,11 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
 
         additional_attributes_map = {
             StateIncarcerationPeriod.__name__: {
-                111: {"sequence_num": 0, "purpose_for_incarceration_subtype": "XYZ"},
+                111: {
+                    "sequence_num": 0,
+                    "purpose_for_incarceration_subtype": "XYZ",
+                    "incarceration_admission_violation_type": StateSupervisionViolationType.TECHNICAL,
+                },
                 222: {"sequence_num": 1, "purpose_for_incarceration_subtype": "AAA"},
             }
         }
@@ -208,6 +219,7 @@ class TestConvertEntityTreesToNormalizedVersions(unittest.TestCase):
                 external_id="ip1",
                 sequence_num=0,
                 purpose_for_incarceration_subtype="XYZ",
+                incarceration_admission_violation_type=StateSupervisionViolationType.TECHNICAL,
             ),
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 state_code="US_XX",

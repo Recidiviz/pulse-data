@@ -29,6 +29,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_violated_condition import (
     StateSupervisionViolatedConditionType,
 )
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
@@ -122,11 +125,23 @@ class TestMergeAdditionalAttributesMaps(unittest.TestCase):
             }
         }
 
-        merged_map = merge_additional_attributes_maps([map_1, map_2])
+        map_3: AdditionalAttributesMap = {
+            StateIncarcerationPeriod.__name__: {
+                123: {
+                    "admission_reason_violation_type": StateSupervisionViolationType.LAW
+                }
+            }
+        }
+
+        merged_map = merge_additional_attributes_maps([map_1, map_2, map_3])
 
         expected_merged_maps: AdditionalAttributesMap = {
             StateIncarcerationPeriod.__name__: {
-                123: {"sequence_num": 0, "purpose_for_incarceration_subtype": "XYZ"}
+                123: {
+                    "sequence_num": 0,
+                    "purpose_for_incarceration_subtype": "XYZ",
+                    "admission_reason_violation_type": StateSupervisionViolationType.LAW,
+                }
             }
         }
 

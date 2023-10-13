@@ -1370,6 +1370,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 111: {
                     "sequence_num": 0,
                     "purpose_for_incarceration_subtype": None,
+                    "incarceration_admission_violation_type": None,
                 }
             }
         }

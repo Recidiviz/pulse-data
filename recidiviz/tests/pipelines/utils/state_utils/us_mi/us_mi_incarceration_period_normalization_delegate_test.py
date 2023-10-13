@@ -28,6 +28,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.normalized_entities_utils import (
     clear_entity_id_index_cache,
@@ -243,3 +246,18 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
         expected_periods = [incarceration_period_1, incarceration_period_2]
 
         self.assertEqual(result, expected_periods)
+
+    def test_get_incarceration_admission_violation_type(self) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 6, 1),
+            release_date=date(2022, 7, 1),
+            admission_reason_raw_text="15",
+            external_id="ip-1",
+        )
+
+        result = self.delegate.get_incarceration_admission_violation_type(
+            incarceration_period_1
+        )
+
+        self.assertEqual(result, StateSupervisionViolationType.TECHNICAL)

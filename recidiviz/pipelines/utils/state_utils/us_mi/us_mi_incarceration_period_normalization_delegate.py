@@ -22,6 +22,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.normalized_entities_utils import (
     update_normalized_entity_with_globally_unique_id,
@@ -119,3 +122,28 @@ class UsMiIncarcerationNormalizationDelegate(
                     new_incarceration_periods.append(new_incarceration_period)
 
         return new_incarceration_periods
+
+    def get_incarceration_admission_violation_type(  # pylint: disable=unused-argument
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateSupervisionViolationType]:
+        """MI specific implementation of get_incarceration_admission_violation_type
+        that returns StateSupervisionViolationType.TECHNICAL or StateSupervisionViolationType.LAW
+        depending on admission reason raw text. If admission reason raw text does not indicate
+        this is a revocation admission, we return None
+        """
+
+        # Movement reasons that indicate technical revocation
+        # 15 - New Commitment - Probation Technical Violator (Rec Ctr Only)
+        # 17 - Returned as Parole Technical Rule Violator
+        if incarceration_period.admission_reason_raw_text in ("15", "17"):
+
+            return StateSupervisionViolationType.TECHNICAL
+
+        # Movement reasons that indicate new sentence revocation
+        # 12 - New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
+        # 14 - New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
+        if incarceration_period.admission_reason_raw_text in ("12", "14"):
+            return StateSupervisionViolationType.LAW
+
+        return None
