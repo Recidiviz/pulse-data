@@ -19,8 +19,8 @@ from typing import Dict, List, Optional
 
 class V1PodStatus:
     phase: str
-    start_time: datetime
-    def __init__(self, phase: str, start_time: datetime) -> None: ...
+    start_time: Optional[datetime]
+    def __init__(self, phase: str, start_time: Optional[datetime]) -> None: ...
 
 class V1ObjectMeta:
     name: str

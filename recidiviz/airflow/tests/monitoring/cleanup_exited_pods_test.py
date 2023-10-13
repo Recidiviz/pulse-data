@@ -59,8 +59,16 @@ class TestCleanupExitedPods(unittest.TestCase):
             ),
         )
 
+        fresh_pod = V1Pod(
+            metadata=V1ObjectMeta(name="fresh-pod"),
+            status=V1PodStatus(
+                phase="Pending",
+                start_time=None,
+            ),
+        )
+
         mock_client.list_namespaced_pod.return_value = V1PodList(
-            items=[recent_pod, old_pod]
+            items=[recent_pod, old_pod, fresh_pod]
         )
 
         cleanup_exited_pods()
