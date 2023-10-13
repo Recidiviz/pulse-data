@@ -44,6 +44,8 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
 )
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
+    CRC_INFORMATION_CONTACT_MODES,
+    CRC_INFORMATION_STR,
     I9_NOTE_TX_REGEX,
     I9_NOTES_STR,
     INSTITUTIONAL_BEHAVIOR_NOTES_STR,
@@ -51,6 +53,8 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     MEDICAL_CLEARANCE_TX_REGEX,
     NOTE_BODY_REGEX,
     NOTE_TITLE_REGEX,
+    RELEASE_INFORMATION_CONTACT_MODES,
+    RELEASE_INFORMATION_STR,
     WORK_HISTORY_STR,
     detainer_case_notes,
     escape_absconsion_or_eluding_police_case_notes,
@@ -107,6 +111,19 @@ WITH current_incarcerated_population AS (
         -- Positive [behavior notes]
     {ix_general_case_notes(where_clause_addition="AND ContactModeDesc = 'Positive'", 
                            criteria_str=INSTITUTIONAL_BEHAVIOR_NOTES_STR)}
+
+        UNION ALL 
+
+        -- Release information (in the past 3 years)
+    {ix_general_case_notes(where_clause_addition=f"AND ContactModeDesc IN {RELEASE_INFORMATION_CONTACT_MODES}",
+                           criteria_str=RELEASE_INFORMATION_STR, 
+                           in_the_past_x_months=36)}
+                           
+        UNION ALL 
+
+        -- Additional CRC info (in the past 6 months)
+    {ix_general_case_notes(where_clause_addition=f"AND ContactModeDesc IN {CRC_INFORMATION_CONTACT_MODES}",
+                           criteria_str=CRC_INFORMATION_STR)}
 
         UNION ALL
 
