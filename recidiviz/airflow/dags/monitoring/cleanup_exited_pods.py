@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """Functionality for cleaning up completed pods"""
+import logging
 from datetime import datetime, timedelta
 
 from airflow.configuration import conf
@@ -47,7 +48,12 @@ def cleanup_exited_pods() -> None:
     for pod in pod_list.items:
         pod_name = pod.metadata.name
 
+        if not pod.status.start_time:
+            logging.warning("skipping pod without start_time %s", pod)
+            continue
+
         if now - pod.status.start_time > POD_HISTORY_TTL:
+            logging.info("deleting %s", pod_name)
             k8s_client.delete_namespaced_pod(
                 namespace=COMPOSER_USER_WORKLOADS,
                 name=pod_name,
