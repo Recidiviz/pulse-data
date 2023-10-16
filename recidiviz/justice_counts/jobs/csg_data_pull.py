@@ -28,7 +28,7 @@ import datetime
 import logging
 from collections import defaultdict
 from itertools import groupby
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 from google.oauth2.service_account import Credentials
@@ -100,8 +100,8 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
-    """Given a list of Datapoints belonging to a particular agency,
-    return a dictionary containing summary statistics.
+    """Given a list of Datapoints belonging to a particular agency, return a dictionary
+    containing summary statistics.
     """
     report_id_to_datapoints = defaultdict(list)
     metric_key_to_datapoints = defaultdict(list)
@@ -157,11 +157,12 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
     }
 
 
-def generate_agency_summary_csv(
-    session: Session, dry_run: bool, google_credentials: Any
-) -> None:
-    """Generates a CSV with data about all agencies with Publisher accounts."""
-    spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
+def get_all_data(
+    session: Session,
+) -> Tuple[Dict[str, schema.UserAccount], List[Any], List[Any], List[Any], List[Any]]:
+    """Retrieve agency, user, agency_user_account_association, and datapoint data from both
+    Auth0 as well as our database.
+    """
     auth0_client = Auth0Client(  # nosec
         domain_secret_name="justice_counts_auth0_api_domain",
         client_id_secret_name="justice_counts_auth0_api_client_id",
@@ -179,42 +180,32 @@ def generate_agency_summary_csv(
     users = session.execute("select * from user_account").all()
     datapoints = session.execute("select * from datapoint").all()
 
-    user_id_to_auth0_user = {
-        user["id"]: auth0_user_id_to_user.get(user["auth0_user_id"]) for user in users
-    }
-
-    agency_id_to_users = defaultdict(list)
-    for assoc in agency_user_account_associations:
-        auth0_user = user_id_to_auth0_user[assoc["user_account_id"]]
-        if (
-            # Skip over CSG and Recidiviz users -- we shouldn't
-            # count as a true login!
-            auth0_user
-            and "csg" not in auth0_user["email"]
-            and "recidiviz" not in auth0_user["email"]
-        ):
-            agency_id_to_users[assoc["agency_id"]].append(auth0_user)
     agencies_to_exclude = AGENCIES_TO_EXCLUDE.keys()
     agencies = [
         dict(a) for a in original_agencies if a["id"] not in agencies_to_exclude
     ]
+    return (
+        auth0_user_id_to_user,
+        agencies,
+        agency_user_account_associations,
+        users,
+        datapoints,
+    )
 
-    logger.info("Number of agencies: %s", len(agencies))
 
-    # A dictionary that maps agency ids to agency objects
-    agency_id_to_agency = {}
-    # A dictionary that maps all state codes to their count of total agencies: {"us_il": 4, "us_oh": 1}
-    state_code_by_all_agency_count: Dict[str, int] = defaultdict(int)
+def create_new_agency_columns(
+    agencies: List[schema.Agency],
+    agency_id_to_users: Dict[str, List[schema.UserAccount]],
+) -> Tuple[List[schema.Agency], Dict[str, int]]:
+    """Given a list of agencies and their users, create and populate the following columns:
+    - last_login
+    - created_at
+    - is_superagency
+    - is_child_agency
+    - new_agency_this_week
+    """
     # A dictionary that maps state codes to their count of new agencies: {"us_state": 2}
     state_code_by_new_agency_count: Dict[str, int] = defaultdict(int)
-
-    # First, populate agency_id_to_agency and all_state_code_by_count
-    for a in agencies:
-        agency_id_to_agency[a["id"]] = a
-        state_code = a["state_code"]
-        state_code_by_all_agency_count[state_code] += 1
-
-    # We populate state_code_by_new_agency_count in this loop
     for agency in agencies:
         users = agency_id_to_users[agency["id"]]
 
@@ -268,8 +259,15 @@ def generate_agency_summary_csv(
         agency[IS_CHILD_AGENCY] = bool(agency["super_agency_id"])
         agency[NEW_AGENCY_THIS_WEEK] = new_agency_this_week
 
-    # Now that state_code_by_new_agency_count is populated, we can determine if
-    # NEW_STATE_THIS_WEEK is True
+    return agencies, state_code_by_new_agency_count
+
+
+def populate_new_state_this_week(
+    agencies: List[schema.Agency],
+    state_code_by_all_agency_count: Dict[str, int],
+    state_code_by_new_agency_count: Dict[str, int],
+) -> List[schema.Agency]:
+    """Given a list of agencies, create and populate the new_state_this_week column."""
     for agency in agencies:
         new_state_this_week = False
         if agency[NEW_AGENCY_THIS_WEEK] is True:
@@ -289,6 +287,63 @@ def generate_agency_summary_csv(
                 # agencies. So this is also a new state.
                 new_state_this_week = True
         agency[NEW_STATE_THIS_WEEK] = new_state_this_week
+    return agencies
+
+
+def generate_agency_summary_csv(
+    session: Session, dry_run: bool, google_credentials: Any
+) -> None:
+    """Generates a CSV with data about all agencies with Publisher accounts."""
+
+    # First, pull user, agency, and datapoint data from auth0 and our database
+    (
+        auth0_user_id_to_user,
+        agencies,
+        agency_user_account_associations,
+        users,
+        datapoints,
+    ) = get_all_data(session=session)
+    logger.info("Number of agencies: %s", len(agencies))
+
+    user_id_to_auth0_user = {
+        user["id"]: auth0_user_id_to_user.get(user["auth0_user_id"]) for user in users
+    }
+
+    agency_id_to_users = defaultdict(list)
+    for assoc in agency_user_account_associations:
+        auth0_user = user_id_to_auth0_user[assoc["user_account_id"]]
+        if (
+            # Skip over CSG and Recidiviz users -- we shouldn't
+            # count as a true login!
+            auth0_user
+            and "csg" not in auth0_user["email"]
+            and "recidiviz" not in auth0_user["email"]
+        ):
+            agency_id_to_users[assoc["agency_id"]].append(auth0_user)
+
+    # A dictionary that maps agency ids to agency objects
+    agency_id_to_agency = {}
+    # A dictionary that maps all state codes to their count of total agencies: {"us_il": 4, "us_oh": 1}
+    state_code_by_all_agency_count: Dict[str, int] = defaultdict(int)
+
+    # Next, populate agency_id_to_agency and all_state_code_by_count
+    for a in agencies:
+        agency_id_to_agency[a["id"]] = a
+        state_code = a["state_code"]
+        state_code_by_all_agency_count[state_code] += 1
+
+    # Create new agency columns and populate state_code_by_new_agency_count
+    agencies, state_code_by_new_agency_count = create_new_agency_columns(
+        agencies=agencies, agency_id_to_users=agency_id_to_users
+    )
+
+    # Now that state_code_by_new_agency_count is populated, we can determine if
+    # NEW_STATE_THIS_WEEK is True
+    agencies = populate_new_state_this_week(
+        agencies=agencies,
+        state_code_by_all_agency_count=state_code_by_all_agency_count,
+        state_code_by_new_agency_count=state_code_by_new_agency_count,
+    )
 
     agency_id_to_datapoints_groupby = groupby(
         sorted(datapoints, key=lambda x: x["source_id"]),
@@ -330,35 +385,47 @@ def generate_agency_summary_csv(
         .reindex(columns=columns)
     )
 
+    if dry_run is False:
+        write_data_to_spreadsheet(
+            google_credentials=google_credentials, df=df, columns=columns
+        )
+
+
+def write_data_to_spreadsheet(
+    google_credentials: Credentials, df: pd.DataFrame, columns: List[str]
+) -> None:
+    """Now that we have retrieved and cleaned all agency data, write this data to a new
+    sheet in the CSG Data Pull spreadsheet.
+    """
+    spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
+
     now = datetime.datetime.now()
     new_sheet_title = f"{now.month}-{now.day}-{now.year}"
+    # Create a new worksheet in the spreadsheet
+    request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 1}}}
 
-    if dry_run is False:
-        # Create a new worksheet in the spreadsheet
-        request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 1}}}
+    # Create new sheet
+    spreadsheet_service.spreadsheets().batchUpdate(
+        spreadsheetId=SPREADSHEET_ID, body={"requests": [request]}
+    ).execute()
 
-        # Create new sheet
-        spreadsheet_service.spreadsheets().batchUpdate(
-            spreadsheetId=SPREADSHEET_ID, body={"requests": [request]}
-        ).execute()
+    logger.info("New Sheet Created")
 
-        logger.info("New Sheet Created")
+    # Format data to fit Google API specifications.
+    # Google API spec requires a list of lists,
+    # each list representing a row.
+    data_to_write = [columns]
+    data_to_write.extend(df.astype(str).values.tolist())
+    body = {"values": data_to_write}
+    range_name = f"{new_sheet_title}!A1"  #
+    spreadsheet_service.spreadsheets().values().update(
+        spreadsheetId=SPREADSHEET_ID,
+        range=range_name,
+        valueInputOption="RAW",
+        body=body,
+    ).execute()
 
-        # Format data to fit Google API specifications.
-        # Google API spec requires a list of lists,
-        # each list representing a row.
-        data_to_write = [columns]
-        data_to_write.extend(df.astype(str).values.tolist())
-        body = {"values": data_to_write}
-        range_name = f"{new_sheet_title}!A1"  #
-        spreadsheet_service.spreadsheets().values().update(
-            spreadsheetId=SPREADSHEET_ID,
-            range=range_name,
-            valueInputOption="RAW",
-            body=body,
-        ).execute()
-
-        logger.info("Sheet '%s' added and data written.", new_sheet_title)
+    logger.info("Sheet '%s' added and data written.", new_sheet_title)
 
 
 if __name__ == "__main__":
