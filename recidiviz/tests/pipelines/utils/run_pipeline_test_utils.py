@@ -257,6 +257,15 @@ def default_arg_list_for_pipeline(
                 '{"table1":"2023-07-05T00:00:00.000000","table2":"2023-07-05T00:00:00.000000","table3":"2023-07-05T00:00:00.000000","table4":"2023-07-05T00:00:00.000000","table5":"2023-07-05T00:00:00.000000"}',
             ]
         )
+        if ingest_view_results_only := additional_pipeline_args.get(
+            "ingest_view_results_only"
+        ):
+            pipeline_args.extend(
+                [
+                    "--ingest_view_results_only",
+                    str(ingest_view_results_only),
+                ]
+            )
     else:
         raise ValueError(f"Unexpected Pipeline type: {type(pipeline)}.")
 

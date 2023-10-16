@@ -60,6 +60,13 @@
         "label": "A comma-separated list of raw file tags to dates to use as upper bounds for raw data.",
         "helpText": "The pipeline will use the dates specified as upper bounds for each raw data table.",
         "regexes": ["{.*}"]
+      },
+      {
+        "name": "ingest_view_results_only",
+        "label": "If set to true, only run the pipeline to output ingest view results only to BigQuery.",
+        "helpText": "If set to true, only run the pipeline to output ingest view results only to BigQuery.",
+        "regexes": ["True|False"],
+        "isOptional": true
       }
     ]
   }

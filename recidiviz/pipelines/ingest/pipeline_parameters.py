@@ -67,6 +67,12 @@ class IngestPipelineParameters(PipelineParameters):
         default=MaterializationMethod.LATEST.value, validator=attr_validators.is_str
     )
 
+    ingest_view_results_only: bool = attr.ib(
+        default=False,
+        validator=attr_validators.is_bool,
+        converter=attr.converters.to_bool,
+    )
+
     raw_data_upper_bound_dates_json: str = attr.ib(
         validator=attr_validators.is_non_empty_str
     )
