@@ -44,6 +44,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         self,
         ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
         expected_entity_types: Iterable[str],
+        ingest_view_results_only: bool = False,
     ) -> None:
         """Runs a test version of the state ingest pipeline."""
         project = BQ_EMULATOR_PROJECT_ID
@@ -69,6 +70,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             read_all_from_bq_constructor=read_all_from_bq_constructor,
+            ingest_view_results_only=ingest_view_results_only,
         )
 
     def test_state_ingest_pipeline(self) -> None:
@@ -88,3 +90,15 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         }
 
         self.run_test_pipeline(expected_ingest_view_output, list(expected_entity_types))
+
+    def test_state_ingest_pipeline_ingest_view_results_only(self) -> None:
+        self.setup_region_raw_data_bq_tables(test_name="ingest_integration")
+        expected_ingest_view_output = {
+            ingest_view: self.get_expected_ingest_view_results(
+                ingest_view_name=ingest_view, test_name="ingest_integration"
+            )
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+        }
+        self.run_test_pipeline(
+            expected_ingest_view_output, [], ingest_view_results_only=True
+        )

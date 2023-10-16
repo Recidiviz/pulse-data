@@ -45,6 +45,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_instance": "PRIMARY",
             "materialization_method": "latest",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000","TEST_RAW_DATA_2":"2020-01-01T00:00:00.00000"}',
+            "ingest_view_results_only": "False",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -73,6 +74,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_instance": "PRIMARY",
             "materialization_method": "latest",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "False",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -101,6 +103,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_instance": "SECONDARY",
             "materialization_method": "latest",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "False",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -189,6 +192,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_instance": "PRIMARY",
             "materialization_method": "latest",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "False",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -217,6 +221,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_instance": "SECONDARY",
             "materialization_method": "latest",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "False",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -245,6 +250,36 @@ class TestIngestPipelineParameters(unittest.TestCase):
             "ingest_instance": "PRIMARY",
             "materialization_method": "original",
             "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "False",
+        }
+
+        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+
+    def test_ingest_view_results_only(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test-job",
+            output="test_output",
+            ingest_view_results_output="test_ingest_view_output",
+            materialization_method="original",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            ingest_view_results_only=True,  # type: ignore
+        )
+
+        expected_parameters = {
+            "state_code": "US_OZ",
+            "pipeline": "test_pipeline_name",
+            "output": "test_output",
+            "raw_data_table_input": "us_oz_raw_data",
+            "reference_view_input": "reference_views",
+            "ingest_view_results_output": "test_ingest_view_output",
+            "ingest_instance": "PRIMARY",
+            "materialization_method": "original",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "True",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)

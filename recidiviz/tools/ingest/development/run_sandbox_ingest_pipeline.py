@@ -23,7 +23,7 @@ Usage:
         --state_code US_XX \
         --sandbox_prefix SANDBOX_PREFIX \
         [--ingest_instance INSTANCE] \
-        [--skip_build True/False]
+        [--skip_build True/False] 
 
 Examples:
     python -m recidiviz.tools.ingest.development.run_sandbox_ingest_pipeline \
@@ -37,6 +37,7 @@ Examples:
         --sandbox_prefix my_prefix \
         --ingest_instance SECONDARY \
         --materialization_method original \
+        --ingest_view_results_only True \
         --skip_build True
 """
 import argparse

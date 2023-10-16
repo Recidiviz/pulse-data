@@ -112,7 +112,6 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         default_materialization_method = MaterializationMethod(
             self.pipeline_parameters.materialization_method
         )
-
         raw_data_upper_bound_dates = self.pipeline_parameters.raw_data_upper_bound_dates
 
         region = direct_ingest_regions.get_direct_ingest_region(
@@ -176,6 +175,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
                 )
             )
+            if self.pipeline_parameters.ingest_view_results_only:
+                continue
 
             merged_root_entities_with_dates_per_ingest_view[ingest_view] = (
                 ingest_view_results
@@ -190,6 +191,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                     ingest_view_name=ingest_view, state_code=state_code
                 )
             )
+
+        if self.pipeline_parameters.ingest_view_results_only:
+            return
 
         merged_root_entities_with_dates: beam.PCollection[
             Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]
