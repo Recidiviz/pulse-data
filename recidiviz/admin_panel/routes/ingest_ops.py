@@ -169,7 +169,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         return "", HTTPStatus.OK
 
-    # TODO(#23872): Gate frontend to pick between this and start_ingest_rerun().
     # Start a raw data reimport in secondary
     @bp.route(
         "/api/ingest_operations/<state_code_str>/start_raw_data_reimport",
