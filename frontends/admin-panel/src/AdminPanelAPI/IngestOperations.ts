@@ -36,6 +36,7 @@ export const triggerTaskScheduler = async (
   );
 };
 
+// TODO(#24652): delete once dataflow is fully enabled
 //  Start Ingest Rerun
 export const startIngestRerun = async (
   regionCode: string,
@@ -48,6 +49,15 @@ export const startIngestRerun = async (
       instance,
       rawDataSourceInstance,
     }
+  );
+};
+
+//  Start Raw Data Reimport
+export const startRawDataReimport = async (
+  regionCode: string
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/${regionCode}/start_raw_data_reimport`
   );
 };
 

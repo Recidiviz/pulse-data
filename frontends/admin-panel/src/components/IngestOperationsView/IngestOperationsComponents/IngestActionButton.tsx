@@ -17,16 +17,17 @@
 import { Button, message } from "antd";
 import { useState } from "react";
 import {
-  triggerTaskScheduler,
-  updateIngestQueuesState,
   exportDatabaseToGCS,
   startIngestRerun,
+  triggerTaskScheduler,
+  updateIngestQueuesState,
 } from "../../../AdminPanelAPI";
+import { startRawDataReimport } from "../../../AdminPanelAPI/IngestOperations";
 import ActionRegionConfirmationForm, {
   RegionAction,
   RegionActionContext,
-  regionActionNames,
   StartIngestRerunContext,
+  regionActionNames,
 } from "../../Utilities/ActionRegionConfirmationForm";
 import { DirectIngestInstance, QueueState } from "../constants";
 
@@ -88,6 +89,8 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
         await updateIngestQueuesState(stateCode, QueueState.RUNNING);
         setActionConfirmed();
         break;
+
+      // TODO(#24652): delete after dataflow is fully enabled
       case RegionAction.StartIngestRerun:
         if (instance === undefined) {
           throw new Error(
@@ -118,6 +121,22 @@ const IngestActionButton: React.FC<IngestActionButtonProps> = ({
           } else {
             const text = await res.text();
             message.error(`Start Ingest Rerun Failed: ${text}`, 7);
+          }
+        }
+        setActionConfirmed();
+        break;
+      case RegionAction.StartRawDataReimport:
+        if (context.ingestAction !== RegionAction.StartRawDataReimport) {
+          throw new Error(
+            "Context for raw data reimport must be of type StartRawDataReimport."
+          );
+        } else {
+          const res = await startRawDataReimport(stateCode);
+          if (res.status === 200) {
+            message.success(`Start Raw Data Reimport Succeeded!`, 7);
+          } else {
+            const text = await res.text();
+            message.error(`Start Raw Data Reimport Failed: ${text}`, 7);
           }
         }
         setActionConfirmed();

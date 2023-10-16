@@ -111,8 +111,18 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
                   ? { marginRight: 5 }
                   : { display: "none" }
               }
-              action={RegionAction.StartIngestRerun}
-              buttonText={regionActionNames[RegionAction.StartIngestRerun]}
+              action={
+                // TODO(#24652): remove rerun condition once dataflow is fully enabled
+                dataflowEnabled
+                  ? RegionAction.StartRawDataReimport
+                  : RegionAction.StartIngestRerun
+              }
+              buttonText={
+                // TODO(#24652): remove rerun condition once dataflow is fully enabled
+                dataflowEnabled
+                  ? regionActionNames[RegionAction.StartRawDataReimport]
+                  : regionActionNames[RegionAction.StartIngestRerun]
+              }
               instance={instance}
               stateCode={stateCode}
               type="primary"
