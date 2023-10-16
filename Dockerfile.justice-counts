@@ -31,7 +31,7 @@ COPY ./recidiviz/justice_counts/ justice_counts/
 COPY ./recidiviz/cloud_storage/ cloud_storage/
 COPY ./recidiviz/common/ common/
 COPY ./recidiviz/persistence/ persistence/
-COPY ./recidiviz/tools/postgres /tools/postgres
+COPY ./recidiviz/tools/postgres/ tools/postgres/
 COPY ./recidiviz/tools/utils/ tools/utils/
 COPY ./recidiviz/utils/ utils/
 COPY ./recidiviz/reporting/sendgrid_client_wrapper.py reporting/sendgrid_client_wrapper.py 
