@@ -344,6 +344,26 @@ export const getLatestDataflowRawDataWatermarks = async (
   );
 };
 
+// Get latest run ingest view results for the state and instance
+export const getLatestRunIngestViewResults = async (
+  stateCode: string,
+  instance: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/get_latest_run_ingest_view_results/${stateCode}/${instance}`
+  );
+};
+
+// Get latest run state dataset row counts
+export const getLatestRunStateDatasetRowCounts = async (
+  stateCode: string,
+  instance: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/get_latest_run_state_results/${stateCode}/${instance}`
+  );
+};
+
 export const getRecentIngestInstanceStatusHistory = async (
   stateCode: string
 ): Promise<Response> => {

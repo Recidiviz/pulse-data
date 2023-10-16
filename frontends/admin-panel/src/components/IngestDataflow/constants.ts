@@ -38,6 +38,14 @@ export interface DataflowIngestRawDataWatermarks {
   [fileName: string]: Date;
 }
 
+export interface IngestViewResultRowCounts {
+  [ingestViewName: string]: number;
+}
+
+export interface StateDatasetRowCounts {
+  [dataset: string]: number;
+}
+
 export type DataflowIngestPipelineJobResponse = {
   [stateCode: string]: {
     primary: DataflowIngestPipelineStatus | null;
