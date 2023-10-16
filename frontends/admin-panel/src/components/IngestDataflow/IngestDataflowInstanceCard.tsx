@@ -23,6 +23,8 @@ import { useCallback } from "react";
 import {
   getLatestDataflowJobByInstance,
   getLatestDataflowRawDataWatermarks,
+  getLatestRunIngestViewResults,
+  getLatestRunStateDatasetRowCounts,
 } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON } from "../../hooks";
 import { DirectIngestInstance } from "../IngestOperationsView/constants";
@@ -32,12 +34,23 @@ import {
   ANCHOR_DATAFLOW_LATEST_JOB,
   DataflowIngestPipelineStatus,
   DataflowIngestRawDataWatermarks,
+  IngestViewResultRowCounts,
   JobState,
+  StateDatasetRowCounts,
 } from "./constants";
 
-interface RawFileTags {
+interface RawFileTagColumns {
   fileTag: string;
   lastRunDate: Date;
+}
+
+interface IngestViewResultsColumns {
+  ingestViewName: string;
+  numRows: number;
+}
+interface StateDatasetColumns {
+  dataset: string;
+  numRows: number;
 }
 
 interface IngestDataflowInstanceCardProps {
@@ -61,6 +74,8 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   env,
   stateCode,
 }) => {
+  const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
+
   const fetchDataflowPipelineInstance = useCallback(async () => {
     return getLatestDataflowJobByInstance(stateCode, instance);
   }, [stateCode, instance]);
@@ -76,8 +91,22 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
     return getLatestDataflowRawDataWatermarks(stateCode, instance);
   }, [stateCode, instance]);
 
-  const { data: latestRawDataWatermarks } =
+  const { loading: loadingWatermarks, data: latestRawDataWatermarks } =
     useFetchedDataJSON<DataflowIngestRawDataWatermarks>(fetchRawDataWatermarks);
+
+  const fetchIngestViewResults = useCallback(async () => {
+    return getLatestRunIngestViewResults(stateCode, instance);
+  }, [stateCode, instance]);
+
+  const { loading: loadingIngestViewResults, data: latestIngestViewResults } =
+    useFetchedDataJSON<IngestViewResultRowCounts>(fetchIngestViewResults);
+
+  const fetchStateDatasetRowCounts = useCallback(async () => {
+    return getLatestRunStateDatasetRowCounts(stateCode, instance);
+  }, [stateCode, instance]);
+
+  const { loading: loadingStateDatasetCounts, data: latestStateDatasetCounts } =
+    useFetchedDataJSON<StateDatasetRowCounts>(fetchStateDatasetRowCounts);
 
   if (mostRecentPipelineInfoLoading) {
     return (
@@ -102,27 +131,23 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
     return <Alert message="No latest run found." />;
   }
 
-  if (latestRawDataWatermarks === undefined) {
-    return <Alert message="No latestWatermarks found." />;
-  }
-
-  const fileTagColumns: ColumnsType<RawFileTags> = [
+  const fileTagColumns: ColumnsType<RawFileTagColumns> = [
     {
       title: "File Tag",
       dataIndex: "fileTag",
       key: "fileTag",
-      render: (row: string) =>
-        env === "staging" || env === "development" ? (
+      render: (fileTag: string) =>
+        isProduction ? (
           <NewTabLink
-            href={`https://go/staging-raw-data-file/${stateCode}/${row}`}
+            href={`https://go/prod-raw-data-file/${stateCode}/${fileTag}`}
           >
-            {row}
+            {fileTag}
           </NewTabLink>
         ) : (
           <NewTabLink
-            href={`https://go/prod-raw-data-file/${stateCode}/${row}`}
+            href={`https://go/staging-raw-data-file/${stateCode}/${fileTag}`}
           >
-            {row}
+            {fileTag}
           </NewTabLink>
         ),
     },
@@ -136,12 +161,59 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
     },
   ];
 
-  const fileTagDataSource = Object.entries(latestRawDataWatermarks).map(
-    ([key, value], _) => ({
-      fileTag: key,
-      lastRunDate: value,
-    })
-  );
+  const ingestViewColumns: ColumnsType<IngestViewResultsColumns> = [
+    {
+      title: "Ingest View Name",
+      dataIndex: "ingestViewName",
+      key: "ingestViewName",
+      render: (ingestViewName: string) =>
+        isProduction ? (
+          <NewTabLink
+            href={`https://go/prod-ingest-view-results/${stateCode}/${instance}/${ingestViewName}`}
+          >
+            {ingestViewName}
+          </NewTabLink>
+        ) : (
+          <NewTabLink
+            href={`https://go/staging-ingest-view-results/${stateCode}/${instance}/${ingestViewName}`}
+          >
+            {ingestViewName}
+          </NewTabLink>
+        ),
+    },
+    {
+      title: "Number of Rows",
+      dataIndex: "numRows",
+      key: "numRows",
+    },
+  ];
+
+  const stateDatasetColumns: ColumnsType<StateDatasetColumns> = [
+    {
+      title: "State Dataset Counts",
+      dataIndex: "dataset",
+      key: "dataset",
+      render: (tableName: string) =>
+        isProduction ? (
+          <NewTabLink
+            href={`https://go/prod-state-dataset-table/${stateCode}/${instance}/${tableName}`}
+          >
+            {tableName}
+          </NewTabLink>
+        ) : (
+          <NewTabLink
+            href={`https://go/staging-state-dataset-table/${stateCode}/${instance}/${tableName}`}
+          >
+            {tableName}
+          </NewTabLink>
+        ),
+    },
+    {
+      title: "Number of Rows",
+      dataIndex: "numRows",
+      key: "numRows",
+    },
+  ];
 
   return (
     <Card>
@@ -174,16 +246,16 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
           </NewTabLink>
         </Descriptions.Item>
         <Descriptions.Item label="Logs" span={3}>
-          {env === "staging" || env === "development" ? (
+          {isProduction ? (
             <NewTabLink
-              href={`http://go/staging-ingest-dataflow-logs/${mostRecentPipelineInfo.name}`}
+              href={`http://go/prod-ingest-dataflow-logs/${mostRecentPipelineInfo.name}`}
             >
               go/staging-ingest-dataflow-logs/
               {mostRecentPipelineInfo.name}
             </NewTabLink>
           ) : (
             <NewTabLink
-              href={`http://go/prod-ingest-dataflow-logs/${mostRecentPipelineInfo.name}`}
+              href={`http://go/staging-ingest-dataflow-logs/${mostRecentPipelineInfo.name}`}
             >
               go/prod-ingest-dataflow-logs/
               {mostRecentPipelineInfo.name}
@@ -200,11 +272,111 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
           </Tooltip>
         }
       >
+        {latestRawDataWatermarks === undefined ? (
+          <>
+            <Alert
+              message="Failed to load latest watermark data."
+              type="error"
+            />
+          </>
+        ) : null}
         <Table
-          dataSource={fileTagDataSource}
+          dataSource={
+            latestRawDataWatermarks
+              ? Object.entries(latestRawDataWatermarks).map(
+                  ([key, value], _) => ({
+                    fileTag: key,
+                    lastRunDate: value,
+                  })
+                )
+              : undefined
+          }
+          loading={loadingWatermarks}
           columns={fileTagColumns}
           rowKey={(record: { fileTag: string; lastRunDate: Date }) =>
             record.fileTag
+          }
+          pagination={{
+            hideOnSinglePage: true,
+            showSizeChanger: true,
+            defaultPageSize: 5,
+            size: "small",
+          }}
+        />
+      </Card>
+      <br />
+      {latestIngestViewResults === undefined ? (
+        <>
+          <Alert
+            message="Failed to load latest ingest view results."
+            type="error"
+          />
+        </>
+      ) : null}
+      <Card
+        title="Ingest View Results"
+        extra={
+          <Tooltip title="Each row indicates how many rows were generated for the given ingest view during the latest pipeline run">
+            <InfoCircleOutlined />
+          </Tooltip>
+        }
+      >
+        <Table
+          dataSource={
+            latestIngestViewResults
+              ? Object.entries(latestIngestViewResults).map(
+                  ([key, value], _) => ({
+                    ingestViewName: key,
+                    numRows: value,
+                  })
+                )
+              : undefined
+          }
+          loading={loadingIngestViewResults}
+          columns={ingestViewColumns}
+          rowKey={(record: { ingestViewName: string; numRows: number }) =>
+            record.ingestViewName
+          }
+          pagination={{
+            hideOnSinglePage: true,
+            showSizeChanger: true,
+            defaultPageSize: 5,
+            size: "small",
+          }}
+        />
+      </Card>
+      <br />
+      {latestStateDatasetCounts === undefined ? (
+        <>
+          <Alert
+            message="Failed to load latest state dataset counts."
+            type="error"
+          />
+        </>
+      ) : null}
+      <Card
+        title="State Dataset Results"
+        extra={
+          <Tooltip title="Each row indicates how many rows were generated for the given state dataset table during the latest pipeline run">
+            <InfoCircleOutlined />
+          </Tooltip>
+        }
+      >
+        <Table
+          dataSource={
+            latestStateDatasetCounts
+              ? Object.entries(latestStateDatasetCounts).map(
+                  ([key, value], _) => ({
+                    dataset: key,
+                    numRows: value,
+                  })
+                )
+              : undefined
+          }
+          loading={loadingStateDatasetCounts}
+          columns={stateDatasetColumns}
+          rowKey={(record: { dataset: string; numRows: number }) =>
+            record.dataset
           }
           pagination={{
             hideOnSinglePage: true,
