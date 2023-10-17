@@ -134,7 +134,7 @@ def get_extra_pipeline_parameter_args(
 
     standard_job_name = ingest_pipeline_name(state_code, ingest_instance)
 
-    job_name = f"{sandbox_prefix}-{standard_job_name}-test"
+    job_name = f"{sandbox_prefix}-{standard_job_name}-test".replace("_", "-")
 
     sandbox_output_dataset = state_dataset_for_state_code(
         state_code,
@@ -217,7 +217,7 @@ def main() -> None:
     )
 
     prompt_for_confirmation(
-        f"Starting ingest pipeline for [{params.state_code}] in "
+        f"Starting ingest pipeline [{params.job_name}] for [{params.state_code}] in "
         f"[{params.project}] which will output to datasets "
         f"[{params.ingest_view_results_output}] and [{params.output}] - continue?"
     )
