@@ -17,10 +17,12 @@
 """
 Helper functions for testing Airflow DAGs.
 """
-from typing import Any
+from typing import Any, Callable
 
 from airflow.decorators import task
+from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
+from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
 
 
@@ -31,6 +33,26 @@ def fake_operator_constructor(*_args: Any, **kwargs: Any) -> EmptyOperator:
         if "trigger_rule" in kwargs
         else TriggerRule.ALL_SUCCESS,
     )
+
+
+def fake_operator_with_return_value(return_value: Any) -> Callable:
+    """
+    Returns a fake operator that returns a specified value.
+    """
+
+    class FakeOperator(BaseOperator):
+        def __init__(self, *_args: Any, **kwargs: Any) -> None:
+            super().__init__(
+                task_id=kwargs["task_id"],
+                trigger_rule=kwargs["trigger_rule"]
+                if "trigger_rule" in kwargs
+                else TriggerRule.ALL_SUCCESS,
+            )
+
+        def execute(self, context: Context) -> Any:  # pylint: disable=unused-argument
+            return return_value
+
+    return FakeOperator
 
 
 def fake_failure_task(*_args: Any, **kwargs: Any) -> EmptyOperator:

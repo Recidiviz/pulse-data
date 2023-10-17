@@ -32,6 +32,7 @@ from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_failure_task,
     fake_operator_constructor,
+    fake_operator_with_return_value,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -91,6 +92,12 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         )
         self.kubernetes_pod_operator_patcher.start()
 
+        self.cloud_sql_query_operator_patcher = patch(
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.CloudSqlQueryOperator",
+            side_effect=fake_operator_with_return_value({}),
+        )
+        self.cloud_sql_query_operator_patcher.start()
+
         # Need to import ingest_dag inside test suite so environment variables are set before importing,
         # otherwise ingest_dag will raise an Error and not import.
         from recidiviz.airflow.dags.ingest_dag import (  # pylint: disable=import-outside-toplevel
@@ -104,6 +111,7 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         self.ingest_branching_get_all_enabled_state_and_instance_pairs_patcher.stop()
         self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
+        self.cloud_sql_query_operator_patcher.stop()
         super().tearDown()
 
     def test_ingest_dag(self) -> None:
@@ -179,19 +187,16 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
             )
 
-    # TODO(#23984): Update to mock to EmptyOperator and update side effect to extract and use the state code and instance args
-    @patch(
-        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._initialize_dataflow_pipeline"
-    )
+    @patch("recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._acquire_lock")
     def test_ingest_dag_fails_for_branch_failure(
-        self, mock_initialize_dataflow_pipeline: MagicMock
+        self, mock_acquire_lock: MagicMock
     ) -> None:
         # Need to re-import ingest_dag if you want to modify the creation of the dag for a specific test.
         from recidiviz.airflow.dags.ingest_dag import (  # pylint: disable=import-outside-toplevel
             create_ingest_dag,
         )
 
-        def fail_for_us_xx_primary_initialize_dataflow_pipeline(
+        def fail_for_us_xx_primary_acquire_lock(
             state_code: StateCode, instance: DirectIngestInstance
         ) -> BaseOperator:
             """
@@ -203,13 +208,11 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 state_code == StateCode.US_XX
                 and instance == DirectIngestInstance.PRIMARY
             ):
-                return fake_failure_task(task_id="check_raw_data_max_update_time")
+                return fake_failure_task(task_id="acquire_lock")
 
-            return EmptyOperator(task_id="check_raw_data_max_update_time")
+            return EmptyOperator(task_id="acquire_lock")
 
-        mock_initialize_dataflow_pipeline.side_effect = (
-            fail_for_us_xx_primary_initialize_dataflow_pipeline
-        )
+        mock_acquire_lock.side_effect = fail_for_us_xx_primary_acquire_lock
 
         with Session(bind=self.engine) as session:
             dag = create_ingest_dag()
@@ -217,7 +220,6 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 dag,
                 session=session,
                 expected_failure_ids=[
-                    ".*us_xx_primary_dataflow.check_raw_data_max_update_time.*",
                     ".*us_xx_primary_dataflow.acquire_lock.*",
                     ".*us_xx_primary_dataflow.dataflow_pipeline.*",
                     ".*us_xx_primary_dataflow.write_upper_bounds.*",
