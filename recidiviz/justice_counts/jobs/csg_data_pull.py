@@ -60,6 +60,7 @@ SPREADSHEET_ID = "1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0"
 
 CREATED_AT = "created_at"
 LAST_LOGIN = "last_login"
+LOGIN_THIS_WEEK = "login_this_week"
 LAST_UPDATE = "last_update"
 NUM_RECORDS_WITH_DATA = "num_records_with_data"
 NUM_METRICS_WITH_DATA = "num_metrics_with_data"
@@ -199,13 +200,16 @@ def create_new_agency_columns(
 ) -> Tuple[List[schema.Agency], Dict[str, int]]:
     """Given a list of agencies and their users, create and populate the following columns:
     - last_login
+    - login_this_week
     - created_at
     - is_superagency
     - is_child_agency
     - new_agency_this_week
     """
+
     # A dictionary that maps state codes to their count of new agencies: {"us_state": 2}
     state_code_by_new_agency_count: Dict[str, int] = defaultdict(int)
+    today = datetime.datetime.now(tz=datetime.timezone.utc)
     for agency in agencies:
         users = agency_id_to_users[agency["id"]]
 
@@ -215,6 +219,7 @@ def create_new_agency_columns(
             agency_created_at_str = agency_created_at.strftime("%Y-%m-%d")
 
         last_login = None
+        login_this_week = False
         first_user_created_at = None
         for user in users:
             # If the agency was created before the agency.created_at field was
@@ -237,9 +242,12 @@ def create_new_agency_columns(
             ).date()
             if not last_login or (user_last_login > last_login):
                 last_login = user_last_login
+            if login_this_week is False and (
+                user_last_login > (today + datetime.timedelta(days=-7)).date()
+            ):
+                login_this_week = True
 
         new_agency_this_week = False
-        today = datetime.datetime.now(tz=datetime.timezone.utc)
         # this should not be None as of 09/27/2023, so we don't need another condition
         if agency_created_at is not None:
             if agency_created_at > (today + datetime.timedelta(days=-7)):
@@ -248,6 +256,7 @@ def create_new_agency_columns(
                 state_code_by_new_agency_count[agency_state_code] += 1
 
         agency[LAST_LOGIN] = last_login or ""
+        agency[LOGIN_THIS_WEEK] = login_this_week
         agency[CREATED_AT] = agency_created_at_str or first_user_created_at or ""
         agency[LAST_UPDATE] = ""
         agency[NUM_RECORDS_WITH_DATA] = 0
@@ -365,6 +374,7 @@ def generate_agency_summary_csv(
         "state",
         CREATED_AT,
         LAST_LOGIN,
+        LOGIN_THIS_WEEK,
         LAST_UPDATE,
         NUM_RECORDS_WITH_DATA,
         NUM_METRICS_WITH_DATA,
