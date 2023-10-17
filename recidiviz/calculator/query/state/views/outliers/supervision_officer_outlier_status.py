@@ -81,7 +81,6 @@ officer_metrics_with_caseload_type AS (
   FROM officer_metrics_with_caseload_type m
   LEFT JOIN `{{project_id}}.outliers_views.metric_benchmarks_materialized` b 
     USING (state_code, end_date, period, metric_id)
-  WHERE m.caseload_type IS NULL AND b.caseload_type IS NULL
 )
 
 SELECT 
