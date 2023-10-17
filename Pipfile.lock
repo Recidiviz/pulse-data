@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "704039805944b2ca84425bb8e3a5508a6f37b52b44c2803fbc311ce79214e407"
+            "sha256": "5668e6e400dc904ccd0d8bc43767544f752b2083a26d4b7eabfe10709ee6917f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1480,7 +1480,7 @@
                 "sha256:f351479a6914fd81a55c8e68963609f792d9b067fb8a60a042c585a621e0de4f",
                 "sha256:f47932c434a3c8d3c86d865443fadc1fbf574e9b11d6650b656e602b1797908a"
             ],
-            "markers": "python_version < '3.11' and platform_python_implementation == 'CPython'",
+            "markers": "python_version >= '3' and platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32')))))",
             "version": "==3.0.0"
         },
         "grpc-google-iam-v1": {
@@ -6031,7 +6031,7 @@
                 "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330",
                 "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"
             ],
-            "markers": "python_version >= '3.5'",
+            "markers": "python_version < '3.11' and python_version >= '3.7'",
             "version": "==5.1.1"
         },
         "defusedxml": {
@@ -6479,6 +6479,15 @@
             ],
             "version": "==2.11.1"
         },
+        "google-cloud-orchestration-airflow": {
+            "hashes": [
+                "sha256:78c7cb164259c8bac9dd99ae9af9d2b4af933d3fbcd30895441479a36c5513b2",
+                "sha256:fb1801bd11f63c94614c0f9f7a9e1ec846ffabd487a3fa4b7ee62ff784b46d29"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.7'",
+            "version": "==1.9.2"
+        },
         "google-cloud-pubsub": {
             "hashes": [
                 "sha256:32eb61fd4c1dc6c842f594d69d9afa80544e3b327aa640a164eb6fb0201eaf2d",
@@ -6695,7 +6704,7 @@
                 "sha256:f351479a6914fd81a55c8e68963609f792d9b067fb8a60a042c585a621e0de4f",
                 "sha256:f47932c434a3c8d3c86d865443fadc1fbf574e9b11d6650b656e602b1797908a"
             ],
-            "markers": "python_version < '3.11' and platform_python_implementation == 'CPython'",
+            "markers": "python_version >= '3' and platform_machine == 'aarch64' or (platform_machine == 'ppc64le' or (platform_machine == 'x86_64' or (platform_machine == 'amd64' or (platform_machine == 'AMD64' or (platform_machine == 'win32' or platform_machine == 'WIN32')))))",
             "version": "==3.0.0"
         },
         "grpc-google-iam-v1": {

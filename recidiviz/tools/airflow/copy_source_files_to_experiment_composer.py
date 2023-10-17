@@ -17,17 +17,21 @@
 """Script that aids Airflow development by copying over any Terraform defined
 source files to the Airflow experiment environment in staging.
 
-    to copy all files (to go/airflow-experiment):
+Typically, we should run the `environment_control` tool directly to update files.
+
+python -m recidiviz.tools.airflow.environment_control update_files
+
+    to copy all files:
     python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer \
-        --environment experiment --dry-run False
+        --gcs_uri gs://... --dry-run False
 
     to copy all files (to go/airflow-experiment-2):
     python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer \
-        --environment experiment-2 --dry-run False
+        --gcs_uri gs://... --dry-run False
 
     to copy only specific files:
     python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer \
-       --dry-run False --environment experiment \
+       --dry-run False --gcs_uri gs://... \
        --files recidiviz/airflow/dags/calculation_dag.py recidiviz/airflow/dags/operators/recidiviz_dataflow_operator.py
 """
 import argparse
@@ -37,7 +41,7 @@ import os
 from collections import deque
 from glob import glob
 from multiprocessing.pool import ThreadPool
-from typing import Deque, List, Set, Tuple
+from typing import Deque, List, Optional, Set, Tuple
 
 import yaml
 
@@ -55,9 +59,6 @@ SOURCE_FILE_YAML_PATH = os.path.join(
     ROOT,
     "tools/deploy/terraform/config/cloud_composer_source_files_to_copy.yaml",
 )
-
-EXPERIMENT = "us-central1-experiment-eecbc35e-bucket"
-EXPERIMENT_2 = "us-central1-experiment-2-8bb6ce5a-bucket"
 
 
 def _get_file_module_dependencies(
@@ -229,20 +230,19 @@ def get_airflow_source_file_paths() -> List[str]:
     return dag_files + non_python_source_files + list(explored_python_dependencies)
 
 
-def main(files: list[str], environment: str, dry_run: bool) -> None:
+def copy_source_files_to_experiment(
+    gcs_uri: str,
+    dry_run: bool,
+    file_filter: Optional[List[str]] = None,
+) -> None:
     """
     Takes in arguments and copies appropriate files to the appropriate environment.
     """
-    experiment_cloud_composer_bucket = EXPERIMENT
-
-    if environment == "experiment-2":
-        experiment_cloud_composer_bucket = EXPERIMENT_2
-
     thread_pool = ThreadPool(processes=10)
 
-    if files:
+    if file_filter:
         local_path_list = [
-            f"{ROOT}/{file.removeprefix('recidiviz/')}" for file in files
+            f"{ROOT}/{file.removeprefix('recidiviz/')}" for file in file_filter
         ]
     else:
         local_path_list = get_airflow_source_file_paths()
@@ -252,7 +252,7 @@ def main(files: list[str], environment: str, dry_run: bool) -> None:
 
     for local_path in local_path_list:
         gcloud_path = gcloud_path_for_local_path(local_path)
-        gcs_url = f"gs://{experiment_cloud_composer_bucket}/{DAGS_FOLDER}/{gcloud_path}"
+        gcs_url = f"{gcs_uri}/{gcloud_path}"
         message = f"COPY [{local_path}] to [{gcs_url}]"
         if not is_valid_code_path(local_path):
             continue
@@ -285,13 +285,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--environment",
-        default="experiment",
+        "--gcs_uri",
         required=True,
-        choices=["experiment", "experiment-2"],
-        help="Specifies which experiment environment to copy files to. 'experiment-v2' points to go/airflow-experiment and 'experiment-2' points to go/airflow-experiment-2",
+        type=str,
+        help="Specifies the bucket to copy files to",
     )
 
     args = parser.parse_args()
     with local_project_id_override(GCP_PROJECT_STAGING):
-        main(args.files, args.environment, args.dry_run)
+        copy_source_files_to_experiment(
+            args.environment, args.dry_run, file_filter=args.files
+        )

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Util class for building protobuf Message objects."""
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, List, Type, TypeVar
 
 from google.protobuf.message import Message as ProtobufMessage
 from proto import Message as ProtoPlusMessage
@@ -59,6 +59,10 @@ class ProtobufBuilder(Generic[ProtobufType]):
         self.proto.MergeFrom(other_proto)
         return self
 
+    def clear_field(self, *fields: List[str]) -> "ProtobufBuilder":
+        self.proto.ClearField(*fields)
+        return self
+
     def build(self) -> ProtobufType:
         """Returns current state of built proto."""
         return self.proto
@@ -88,3 +92,9 @@ class ProtoPlusBuilder(Generic[ProtoPlusType]):
     def build(self) -> ProtoPlusType:
         """Returns current state of built proto."""
         return self.proto
+
+    def clear_field(self, *fields: str) -> "ProtoPlusBuilder":
+        for field in fields:
+            self.proto_cls.pb(self.proto).ClearField(field)
+
+        return self
