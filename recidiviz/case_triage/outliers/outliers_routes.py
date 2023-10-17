@@ -88,7 +88,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
     @api.get("/<state>/configuration")
     def state_configuration(state: str) -> Response:
-        state_code = StateCode(state)
+        state_code = StateCode(state.upper())
         config = OutliersQuerier().get_outliers_config(state_code)
 
         config_json = convert_nested_dictionary_keys(
@@ -99,7 +99,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
     @api.get("/<state>/supervisors")
     def supervisors_with_outliers(state: str) -> Response:
-        state_code = StateCode(state)
+        state_code = StateCode(state.upper())
         supervisor_entities = OutliersQuerier().get_supervisors_with_outliers(
             state_code
         )
