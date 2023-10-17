@@ -71,6 +71,7 @@ IS_SUPERAGENCY = "is_superagency"
 IS_CHILD_AGENCY = "is_child_agency"
 NEW_STATE_THIS_WEEK = "new_state_this_week"
 NEW_AGENCY_THIS_WEEK = "new_agency_this_week"
+DATA_SHARED_THIS_WEEK = "data_shared_this_week"
 
 # To add:
 # NUM_METRICS_UNCONFIGURED = "num_metrics_unconfigured"
@@ -100,7 +101,9 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
+def summarize(
+    datapoints: List[schema.Datapoint], today: datetime.datetime
+) -> Dict[str, Any]:
     """Given a list of Datapoints belonging to a particular agency, return a dictionary
     containing summary statistics.
     """
@@ -110,18 +113,28 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
     metrics_available = set()
     metrics_unavailable = set()
 
-    last_update = None
+    # last_update is the most recent date in which an agency or report datapoint
+    # has been changed. For report datapoints, we do not consider null values
+    last_update = datetime.datetime(1970, 1, 1)
+    # data_shared_this week is a boolean that indicates if an agency has updated at least
+    # 1 report datapoint (does not consider agency datapoints). We do not consider null
+    # values
+    data_shared_this_week = False
     for datapoint in datapoints:
+        if datapoint["is_report_datapoint"] is True and datapoint["value"] is None:
+            # Ignore report datapoints with no values
+            continue
         datapoint_last_update = datapoint["last_updated"]
-        # If the agency's true last_update was prior to the new last_update field was
-        # added to our schema, use the most recent created_at field
         if datapoint_last_update is not None:
-            if last_update is None or (datapoint_last_update.date() > last_update):
-                last_update = datapoint_last_update.date()
+            last_update = max(last_update, datapoint_last_update)
+            if datapoint["is_report_datapoint"] is True:
+                data_shared_this_week = last_update.replace(
+                    tzinfo=datetime.timezone.utc
+                ) > (today + datetime.timedelta(days=-7))
         elif datapoint["created_at"] is not None:
-            datapoint_created_at = datapoint["created_at"].date()
-            if last_update is None or (datapoint_created_at > last_update):
-                last_update = datapoint_created_at
+            # If the agency's true last_update was prior to the new last_update field was
+            # added to our schema, use the most recent created_at field
+            last_update = max(last_update, datapoint["created_at"])
 
         # Process report datapoints (i.e. those that contain data for a time period)
         if datapoint["is_report_datapoint"] and datapoint["value"] is not None:
@@ -149,12 +162,15 @@ def summarize(datapoints: List[schema.Datapoint]) -> Dict[str, Any]:
                 metrics_unavailable.add(datapoint["metric_definition_key"])
 
     return {
-        LAST_UPDATE: last_update or "",
+        LAST_UPDATE: last_update.date()
+        if last_update != datetime.datetime(1970, 1, 1)
+        else "",
         NUM_RECORDS_WITH_DATA: len(report_id_to_datapoints),
         NUM_METRICS_WITH_DATA: len(metric_key_to_datapoints),
         NUM_METRICS_CONFIGURED: len(metrics_configured),
         NUM_METRICS_AVAILABLE: len(metrics_available),
         NUM_METRICS_UNAVAILABLE: len(metrics_unavailable),
+        DATA_SHARED_THIS_WEEK: data_shared_this_week,
     }
 
 
@@ -197,10 +213,10 @@ def get_all_data(
 def create_new_agency_columns(
     agencies: List[schema.Agency],
     agency_id_to_users: Dict[str, List[schema.UserAccount]],
+    today: datetime.datetime,
 ) -> Tuple[List[schema.Agency], Dict[str, int]]:
     """Given a list of agencies and their users, create and populate the following columns:
     - last_login
-    - login_this_week
     - created_at
     - is_superagency
     - is_child_agency
@@ -209,7 +225,6 @@ def create_new_agency_columns(
 
     # A dictionary that maps state codes to their count of new agencies: {"us_state": 2}
     state_code_by_new_agency_count: Dict[str, int] = defaultdict(int)
-    today = datetime.datetime.now(tz=datetime.timezone.utc)
     for agency in agencies:
         users = agency_id_to_users[agency["id"]]
 
@@ -219,7 +234,6 @@ def create_new_agency_columns(
             agency_created_at_str = agency_created_at.strftime("%Y-%m-%d")
 
         last_login = None
-        login_this_week = False
         first_user_created_at = None
         for user in users:
             # If the agency was created before the agency.created_at field was
@@ -242,10 +256,6 @@ def create_new_agency_columns(
             ).date()
             if not last_login or (user_last_login > last_login):
                 last_login = user_last_login
-            if login_this_week is False and (
-                user_last_login > (today + datetime.timedelta(days=-7)).date()
-            ):
-                login_this_week = True
 
         new_agency_this_week = False
         # this should not be None as of 09/27/2023, so we don't need another condition
@@ -256,11 +266,16 @@ def create_new_agency_columns(
                 state_code_by_new_agency_count[agency_state_code] += 1
 
         agency[LAST_LOGIN] = last_login or ""
-        agency[LOGIN_THIS_WEEK] = login_this_week
+        agency[LOGIN_THIS_WEEK] = (
+            last_login > (today + datetime.timedelta(days=-7)).date()
+            if last_login
+            else False
+        )
         agency[CREATED_AT] = agency_created_at_str or first_user_created_at or ""
         agency[LAST_UPDATE] = ""
         agency[NUM_RECORDS_WITH_DATA] = 0
         agency[NUM_METRICS_WITH_DATA] = 0
+        agency[DATA_SHARED_THIS_WEEK] = False
         agency[NUM_METRICS_CONFIGURED] = 0
         agency[NUM_METRICS_AVAILABLE] = 0
         agency[NUM_METRICS_UNAVAILABLE] = 0
@@ -341,9 +356,10 @@ def generate_agency_summary_csv(
         state_code = a["state_code"]
         state_code_by_all_agency_count[state_code] += 1
 
+    today = datetime.datetime.now(tz=datetime.timezone.utc)
     # Create new agency columns and populate state_code_by_new_agency_count
     agencies, state_code_by_new_agency_count = create_new_agency_columns(
-        agencies=agencies, agency_id_to_users=agency_id_to_users
+        agencies=agencies, agency_id_to_users=agency_id_to_users, today=today
     )
 
     # Now that state_code_by_new_agency_count is populated, we can determine if
@@ -364,7 +380,7 @@ def generate_agency_summary_csv(
         if agency_id not in agency_id_to_agency:
             continue
 
-        data = summarize(datapoints=datapoints)
+        data = summarize(datapoints=datapoints, today=today)
         agency_id_to_agency[agency_id] = dict(agency_id_to_agency[agency_id], **data)
 
     agencies = list(agency_id_to_agency.values())
@@ -378,6 +394,7 @@ def generate_agency_summary_csv(
         LAST_UPDATE,
         NUM_RECORDS_WITH_DATA,
         NUM_METRICS_WITH_DATA,
+        DATA_SHARED_THIS_WEEK,
         NUM_METRICS_CONFIGURED,
         NUM_METRICS_AVAILABLE,
         NUM_METRICS_UNAVAILABLE,
