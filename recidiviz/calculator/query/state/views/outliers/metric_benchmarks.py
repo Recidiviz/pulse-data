@@ -56,7 +56,6 @@ statewide_iqrs AS (
     LEFT JOIN statewide_iqrs
         USING (state_code, metric_id, end_date)
     WHERE m.value_type = 'RATE'
-
 -- TODO(#24119): Add metrics aggregated by caseload type
 )
 

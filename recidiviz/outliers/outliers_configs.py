@@ -100,6 +100,34 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         learn_more_url="https://drive.google.com/file/d/1NvTuKhN-N1-ba1KMI562_z9ka932JqXQ/view",
         supervision_staff_exclusions="COALESCE(supervision_district, supervision_district_inferred, '') NOT IN ('FAST', 'CO')",
     ),
+    StateCode.US_MI: OutliersConfig(
+        metrics=[
+            OutliersMetricConfig.build_from_metric(
+                metric=INCARCERATION_STARTS,
+                title_display_name="Incarceration Rate",
+                body_display_name="incarceration rate",
+                event_name="incarcerations",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=ABSCONSIONS_BENCH_WARRANTS,
+                title_display_name="Absconsion Rate",
+                body_display_name="absconsion rate",
+                event_name="absconsions",
+            ),
+            OutliersMetricConfig.build_from_metric(
+                metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+                title_display_name="Technical Incarceration Rate (TPVs)",
+                body_display_name="technical incarceration rate",
+                event_name="technical incarcerations",
+            ),
+        ],
+        supervision_officer_label="officer",
+        supervision_officer_metric_exclusions="""
+        AND avg_daily_population BETWEEN 10 AND 150
+        AND prop_period_with_critical_caseload >= 0.75""",
+        # TODO(#24754): Get correct Learn More URL
+        learn_more_url="",
+    ),
 }
 
 METRICS_BY_OUTCOME_TYPE: Dict[MetricOutcome, Set[OutliersMetricConfig]] = defaultdict(
