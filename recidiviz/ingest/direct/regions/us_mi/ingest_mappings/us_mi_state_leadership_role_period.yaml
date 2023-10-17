@@ -2,11 +2,17 @@
 manifest_language: 1.0.0
 input_columns:
   - employee_id
+  - Email
+  - FirstName
+  - LastName
   - Role
   - start_date
   - end_date
   - period_seq_num
-unused_columns: []
+unused_columns:
+  - FirstName
+  - LastName
+  - Email
 output:
   StateStaff:
     external_ids:
