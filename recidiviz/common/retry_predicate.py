@@ -20,7 +20,9 @@ from google.api_core import exceptions  # pylint: disable=no-name-in-module
 from google.api_core import retry
 
 
-def google_api_retry_predicate(exception: BaseException) -> bool:
+def google_api_retry_predicate(
+    exception: BaseException,
+) -> bool:
     """A function that will determine whether we should retry a given Google exception."""
     return (
         retry.if_transient_error(exception)
