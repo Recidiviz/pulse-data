@@ -168,7 +168,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
         response = self.test_client.get(
-            "/outliers/US_IX/configuration",
+            "/outliers/us_ix/configuration",
             headers={"Origin": "http://localhost:3000"},
         )
 
