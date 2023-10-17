@@ -33,6 +33,7 @@ from recidiviz.airflow.dags.ingest.ingest_branching import get_ingest_branch_key
 from recidiviz.airflow.dags.ingest.single_ingest_pipeline_group import (
     _acquire_lock,
     _release_lock,
+    _should_run_based_on_watermarks,
     create_single_ingest_pipeline_group,
 )
 from recidiviz.airflow.tests import fixtures
@@ -40,6 +41,7 @@ from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
     fake_failure_task,
     fake_operator_constructor,
+    fake_operator_with_return_value,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -184,9 +186,16 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         )
         self.kubernetes_pod_operator_patcher.start()
 
+        self.cloud_sql_query_operator_patcher = patch(
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.CloudSqlQueryOperator",
+            side_effect=fake_operator_with_return_value({}),
+        )
+        self.cloud_sql_query_operator_patcher.start()
+
     def tearDown(self) -> None:
         self.environment_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
+        self.cloud_sql_query_operator_patcher.stop()
         super().tearDown()
 
     def test_single_ingest_pipeline_group(self) -> None:
@@ -195,6 +204,63 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         )
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(test_dag, session)
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    @patch(
+        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._should_run_based_on_watermarks"
+    )
+    def test_initialize_dataflow_pipeline_short_circuits_when_watermark_datetime_greater_than_max_update_datetime(
+        self,
+        mock_should_run_based_on_watermarks: MagicMock,
+    ) -> None:
+        mock_should_run_based_on_watermarks.side_effect = (
+            lambda watermarks, max_update_datetimes: _should_run_based_on_watermarks(
+                watermarks={"test_file_tag": "2023-01-26 00:00:0.000000+00"},
+                max_update_datetimes={"test_file_tag": "2023-01-25 00:00:0.000000+00"},
+            )
+        )
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                expected_skipped_ids=[
+                    ".*acquire_lock",
+                    ".*dataflow_pipeline$",
+                    ".*release_lock",
+                    ".*write_upper_bounds",
+                    _DOWNSTREAM_TASK_ID,
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    @patch(
+        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._should_run_based_on_watermarks"
+    )
+    def test_initialize_dataflow_pipeline_when_watermark_datetime_less_than_max_update_datetime(
+        self,
+        mock_should_run_based_on_watermarks: MagicMock,
+    ) -> None:
+        mock_should_run_based_on_watermarks.side_effect = (
+            lambda watermarks, max_update_datetimes: _should_run_based_on_watermarks(
+                watermarks={"test_file_tag": "2023-01-24 00:00:0.000000+00"},
+                max_update_datetimes={"test_file_tag": "2023-01-25 00:00:0.000000+00"},
+            )
+        )
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+            )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
     # TODO(#23986): Mock dataflow operator directly when it is implemented
@@ -219,7 +285,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 test_dag,
                 session,
                 expected_failure_ids=[
-                    ".*dataflow_pipeline",
+                    ".*dataflow_pipeline$",
                     ".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
                 ],
@@ -242,7 +308,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 session,
                 expected_failure_ids=[
                     ".*acquire_lock",
-                    ".*dataflow_pipeline",
+                    ".*dataflow_pipeline$",
                     ".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
                 ],
@@ -275,13 +341,21 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             StateCode.US_XX, DirectIngestInstance.PRIMARY
         )
 
-        with Session(bind=self.engine) as session:
-
+        task_ids_to_fail = [
+            task.task_id
             for task in test_dag.task_group_dict[
                 get_ingest_branch_key(
                     StateCode.US_XX.value, DirectIngestInstance.PRIMARY.value
                 )
-            ]:
+            ]
+        ]
+
+        with Session(bind=self.engine) as session:
+            for task_id in task_ids_to_fail:
+                test_dag = _create_test_single_ingest_pipeline_group_dag(
+                    StateCode.US_XX, DirectIngestInstance.PRIMARY
+                )
+                task = test_dag.get_task(task_id)
                 old_execute_function = task.execute
                 task.execute = _fake_failure_execute
                 result = self.run_dag_test(
@@ -294,6 +368,10 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                     DagRunState.FAILED,
                     result.dag_run_state,
                     f"Incorrect dag run state when failing task: {task.task_id}",
+                )
+                self.assertIn(
+                    task.task_id,
+                    result.failure_messages,
                 )
                 self.assertEqual(
                     result.failure_messages[task.task_id],
