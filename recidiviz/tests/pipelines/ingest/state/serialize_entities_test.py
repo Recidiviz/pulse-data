@@ -22,10 +22,6 @@ from apache_beam.testing.util import is_not_empty
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import get_state_entity_names
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    get_all_entities_from_tree,
-)
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
@@ -44,22 +40,17 @@ class TestSerializeEntities(StateIngestPipelineTestCase):
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
 
     def test_serialize_entities(self) -> None:
-        field_index = CoreEntityFieldIndex()
-        person_entities = get_all_entities_from_tree(
+        root_entities = [
             generate_full_graph_state_person(
                 set_back_edges=True, include_person_back_edges=True, set_ids=True
             ),
-            field_index,
-        )
-        staff_entities = get_all_entities_from_tree(
             generate_full_graph_state_staff(set_back_edges=True, set_ids=True),
-            field_index,
-        )
+        ]
         state_tables = get_state_entity_names()
 
         output = (
             self.test_pipeline
-            | beam.Create(person_entities + staff_entities)
+            | beam.Create(root_entities)
             | beam.ParDo(
                 pipeline.SerializeEntities(state_code=StateCode.US_DD)
             ).with_outputs(*state_tables)

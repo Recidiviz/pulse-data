@@ -77,7 +77,6 @@ from recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees import
 from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
     MergeRootEntitiesAcrossDates,
 )
-from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
@@ -232,9 +231,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             }
             | AssociateRootEntitiesWithPrimaryKeys()
             | MergeRootEntitiesAcrossDates(state_code=state_code)
-            | RunValidations(
-                expected_output_entities=ingest_manifest_collector.hydrated_entity_names
-            )
+            # TODO(#24733): Add back a cost-efficient version of invariant checking
+            #  that takes in PCollection[RootEntity] and spits out
+            #  PCollection[RootEntity].
             # TODO(#24394) Update the write steps to only look at hydrated_entity_names
             | beam.ParDo(SerializeEntities(state_code=state_code)).with_outputs(
                 *all_state_tables
