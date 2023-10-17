@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: COMS_Intervention_Referrals
+file_description: |-
+  This table includes data from the COMS system about intervention referrals
+data_classification: source
+separator: †
+custom_line_terminator: ‡
+encoding: WINDOWS-1252
+always_historical_export: False
+primary_key_cols:
+  - Intervention_Referral_Id
+columns:
+  - name: Intervention_Referral_Id
+    description: COMS system generated ID for an intervention referral record
+  - name: Offender_Number
+    description: >-
+      MDOC assigned person ID for JII in the MDOC system.  This is their publically
+      searchable JII id (same as offender_number in the OMNI system).
+    is_pii: True
+    field_type: person_external_id
+    external_id_type: US_MI_DOC
+  - name: Referring_Staff_Employee_Id
+    description: Employee id of referring employee
+    is_pii: True
+  - name: Provider
+    description: Provider of intervention service or program
+  - name: Referral_Date
+    description: Referral Date
+    field_type: datetime
+  - name: Start_Date
+    description: Intervention Start Date
+    field_type: datetime
+  - name: End_Date
+    description: Intervention End Date
+    field_type: datetime
+  - name: Entered_Date
+    description: Date intervention referral record entered into COMS
+    field_type: datetime
