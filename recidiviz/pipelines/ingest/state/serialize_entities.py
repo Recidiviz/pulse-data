@@ -25,10 +25,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import (
     get_state_database_association_with_names,
 )
-from recidiviz.persistence.entity.base_entity import CoreEntity, Entity
+from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
+    get_all_entities_from_tree,
     get_many_to_many_relationships,
     is_one_to_one_relationship,
 )
@@ -38,49 +39,55 @@ from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
 
 
 # pylint: disable=arguments-differ,abstract-method
-@with_input_types(Entity)
+@with_input_types(RootEntity)
 @with_output_types(Dict[str, Any])
 class SerializeEntities(beam.DoFn):
-    """A DoFn that serializes entities into JSON-serializable dictionaries for writing to BQ"""
+    """A DoFn that converts a RootEntity into N JSON-serializable dictionaries for
+    writing to BQ, where each one represents an entity in that root entity tree.
+    """
 
     def __init__(self, state_code: StateCode):
         super().__init__()
         self._state_code = state_code
         self._field_index = CoreEntityFieldIndex()
 
-    def process(self, element: Entity) -> Generator[Dict[str, Any], None, None]:
+    def process(self, element: RootEntity) -> Generator[Dict[str, Any], None, None]:
         """Generates appropriate dictionaries for all elements and association tables."""
-        many_to_many_relationships = get_many_to_many_relationships(
-            element.__class__, field_index=self._field_index
-        )
-        for relationship in many_to_many_relationships:
-            parent_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
-                element.__class__, relationship
-            )
-            if not parent_entity_cls_name:
-                raise ValueError(
-                    f"Could not find parent entity class name for {element.__class__}.{relationship}"
-                )
-            association_table = get_state_database_association_with_names(
-                element.__class__.__name__, parent_entity_cls_name
-            )
-            parent_entities = element.get_field_as_list(relationship)
-            for parent_entity in parent_entities:
-                yield beam.pvalue.TaggedOutput(
-                    association_table.name,
-                    {
-                        parent_entity.get_class_id_name(): parent_entity.get_id(),
-                        element.get_class_id_name(): element.get_id(),
-                        "state_code": self._state_code.value,
-                    },
-                )
 
-        yield beam.pvalue.TaggedOutput(
-            element.get_entity_name(),
-            serialize_entity_into_json(
-                cast(CoreEntity, element), field_index=self._field_index
-            ),
-        )
+        for entity in get_all_entities_from_tree(
+            entity=cast(Entity, element), field_index=self._field_index
+        ):
+            many_to_many_relationships = get_many_to_many_relationships(
+                entity.__class__, field_index=self._field_index
+            )
+            for relationship in many_to_many_relationships:
+                parent_entity_cls_name = attr_field_referenced_cls_name_for_field_name(
+                    entity.__class__, relationship
+                )
+                if not parent_entity_cls_name:
+                    raise ValueError(
+                        f"Could not find parent entity class name for {entity.__class__}.{relationship}"
+                    )
+                association_table = get_state_database_association_with_names(
+                    entity.__class__.__name__, parent_entity_cls_name
+                )
+                parent_entities = entity.get_field_as_list(relationship)
+                for parent_entity in parent_entities:
+                    yield beam.pvalue.TaggedOutput(
+                        association_table.name,
+                        {
+                            parent_entity.get_class_id_name(): parent_entity.get_id(),
+                            entity.get_class_id_name(): entity.get_id(),
+                            "state_code": self._state_code.value,
+                        },
+                    )
+
+            yield beam.pvalue.TaggedOutput(
+                entity.get_entity_name(),
+                serialize_entity_into_json(
+                    cast(CoreEntity, entity), field_index=self._field_index
+                ),
+            )
 
 
 def serialize_entity_into_json(

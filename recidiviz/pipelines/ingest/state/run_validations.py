@@ -58,6 +58,8 @@ ENTITIES_BY_ENTITY_KEY = "entities_by_entity_key"
 FINAL_ERRORS = "final_errors"
 
 
+# TODO(#24733): Write a cost-effective version of this transform that takes in
+#  PCollection[RootEntity] and spits out PCollection[RootEntity].
 class RunValidations(beam.PTransform):
     """A PTransform that validates root entities and their attached children entities."""
 
