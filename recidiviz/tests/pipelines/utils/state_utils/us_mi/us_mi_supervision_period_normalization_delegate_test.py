@@ -20,6 +20,7 @@ from datetime import date
 
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
@@ -203,5 +204,20 @@ class TestUsMiSupervisionNormalizationDelegate(unittest.TestCase):
         )
         self.assertEqual(
             [supervision_period],
+            self.delegate.drop_bad_periods([supervision_period]),
+        )
+
+    # This tests that normalization will drop INVESTIGATION
+    def test_drop_investigation(self) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="sp-2",
+            start_date=date(2023, 1, 1),
+            termination_date=date(2023, 7, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+        )
+        self.assertEqual(
+            [],
             self.delegate.drop_bad_periods([supervision_period]),
         )

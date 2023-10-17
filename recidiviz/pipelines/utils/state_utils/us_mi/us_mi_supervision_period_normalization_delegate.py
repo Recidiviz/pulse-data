@@ -19,6 +19,7 @@ from typing import List
 
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
@@ -40,6 +41,13 @@ class UsMiSupervisionNormalizationDelegate(
         periods_to_keep = []
 
         for idx, sp in enumerate(sorted_supervision_periods):
+
+            # If supervision type = INVESTIGATION, let's drop
+            if (
+                sp.supervision_type
+                == StateSupervisionPeriodSupervisionType.INVESTIGATION
+            ):
+                continue
 
             # Only consider droppping if ingest considered this the last supervision period for this person at some point
             # and there are more than one periods

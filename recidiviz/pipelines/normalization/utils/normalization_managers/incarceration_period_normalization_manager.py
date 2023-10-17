@@ -260,6 +260,7 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         self,
         person_id: int,
         incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
     ) -> List[StateIncarcerationPeriod]:
         """Some states may require additional incarceration periods to be inserted
         based on gaps in information.
@@ -404,10 +405,10 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
 
             # Infer missing periods
             if self._person_id:
-                mid_processing_periods = (
-                    self.normalization_delegate.infer_additional_periods(
-                        self._person_id, mid_processing_periods
-                    )
+                mid_processing_periods = self.normalization_delegate.infer_additional_periods(
+                    self._person_id,
+                    mid_processing_periods,
+                    supervision_period_index=self._normalized_supervision_period_index,
                 )
 
             original_sorted_periods = deepcopy(mid_processing_periods)
