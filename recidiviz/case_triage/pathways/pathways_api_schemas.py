@@ -50,7 +50,9 @@ for metric_class in ALL_METRICS:
         "demo": fields.Boolean(),
     }
     if any(
-        field.name == "group" for field in attr.fields(metric_class.get_params_class())
+        field.name == "group"
+        # TODO(python/mypy#16254): Remove type: ignore
+        for field in attr.fields(metric_class.get_params_class())  # type: ignore
     ):
         schema_fields["group"] = EnumField(
             Dimension,

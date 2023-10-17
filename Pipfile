@@ -101,7 +101,9 @@ scikit-learn = "*"
 shapely = "<2.0.0"
 SyntheticControlMethods = "*"
 tabulate = "*"
-ydata-profiling = "*"
+# TODO(#23809): > 4.5.1 breaks `recidiviz.tools.validate_source_visibility` due to the introduction of the `numba`
+# Retry unpinning ydata-profiling when the script has been moved to `ast`
+ydata-profiling = "==4.5.1"
 # end recidiviz-research dependencies
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
 urllib3 = "==1.26.15"
