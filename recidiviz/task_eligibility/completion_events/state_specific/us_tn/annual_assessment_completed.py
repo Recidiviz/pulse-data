@@ -33,7 +33,8 @@ of whether they were on time.
 """
 
 _QUERY_TEMPLATE = """
-    -- TODO(#23526): Pull from state_assessment once ClassificationDecisionDate is in metadata
+    -- TODO(#23526): Pull classification decision date from metadata once ingested and entity deletion issues resolved
+    -- TODO(#24737): Pull classification decision from metadata once ingested
     SELECT state_code,
            person_id, 
            DATE(ClassificationDecisionDate) AS completion_event_date, 
@@ -45,6 +46,7 @@ _QUERY_TEMPLATE = """
         classification.OffenderID = pei.external_id
     AND
         pei.state_code = 'US_TN'
+    WHERE ClassificationDecision = 'A'
     QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderId, CAFDate ORDER BY CAST(ClassificationSequenceNumber AS INT64) DESC) = 1
 """
 

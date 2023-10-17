@@ -167,16 +167,19 @@ def at_least_X_time_since_latest_assessment(
             (
                 SELECT asmt.* EXCEPT(assessment_date),
                         classification_decision_date,
+                        classification_decision,
                         COALESCE(
                             DATE(NULLIF(JSON_EXTRACT_SCALAR(assessment_metadata,"$.CLASSIFICATIONDATE"),"")),
                             assessment_date
-                        ) AS assessment_date,
+                        ) AS assessment_date,                        
                 FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` asmt
                 LEFT JOIN (
                     SELECT person_id, 
                             DATE(CAFDate) AS caf_date, 
-                            OverrideReason,
-                            DATE(ClassificationDecisionDate) AS classification_decision_date, 
+                            -- TODO(#24737): Pull from metadata once ClassificationDecision is ingested
+                            ClassificationDecision AS classification_decision,
+                            -- TODO(#23526): Pull classification decision date from metadata once ingested and entity deletion issues resolved
+                            DATE(ClassificationDecisionDate) AS classification_decision_date,
                     FROM
                         `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.Classification_latest` classification
                     INNER JOIN
@@ -194,6 +197,7 @@ def at_least_X_time_since_latest_assessment(
             assessment_type = "{assessment_type}"
             -- Removes a small number of spans where ClassificationDecisionDate appears to be 1 year after the ClassficationDate
             AND DATE_SUB(DATE_TRUNC(DATE_ADD(assessment_date, INTERVAL {date_interval} {date_part}), MONTH), INTERVAL 1 WEEK) > classification_decision_date
+            AND COALESCE(classification_decision,'A') = 'A'
         QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_type, assessment_date ORDER BY assessment_score DESC) = 1
     )
     ,
