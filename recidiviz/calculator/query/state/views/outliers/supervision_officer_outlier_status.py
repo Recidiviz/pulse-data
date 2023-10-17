@@ -46,8 +46,9 @@ officer_metrics_with_caseload_type AS (
     m.period,
     m.end_date,
     m.metric_value AS metric_rate,
-    -- Keep an entry for each officer that compares to the statewide target, e.g. benchmark where caseload type is NULL
-    NULL AS caseload_type
+    -- Keep an entry for each officer that compares to the statewide target, e.g. benchmark where caseload type is empty
+    -- Use an empty string instead of NULL since SQL doesn't join on NULLs
+    '' AS caseload_type
   FROM `{{project_id}}.outliers_views.supervision_officer_metrics_materialized` m 
   WHERE
     m.value_type = 'RATE'

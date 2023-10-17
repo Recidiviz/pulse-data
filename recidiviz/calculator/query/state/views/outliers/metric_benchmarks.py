@@ -47,7 +47,9 @@ statewide_iqrs AS (
         m.metric_id,
         m.period,
         m.end_date,
-        NULL AS caseload_type,
+        -- Keep an entry where caseload type is NULL to indicate that the benchmark is statewide
+        -- Use an empty string instead of NULL since SQL doesn't join on NULLs
+        '' AS caseload_type,
         m.metric_value AS target,
         statewide_iqrs.iqr AS threshold
     FROM `{project_id}.outliers_views.supervision_state_metrics_materialized` m
