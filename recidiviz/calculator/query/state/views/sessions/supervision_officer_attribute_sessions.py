@@ -231,6 +231,9 @@ attribute_arrays AS (
         )}
     FROM
         sub_sessions_with_attributes
+    -- Remove zero-day sessions
+    WHERE
+        start_date < {nonnull_end_date_clause("end_date")}
     GROUP BY 1, 2, 3, 4
 )
 SELECT
