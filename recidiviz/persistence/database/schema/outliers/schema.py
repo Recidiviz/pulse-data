@@ -90,17 +90,6 @@ class SupervisionDistrictManager(OutliersBase):
     supervision_district = Column(String, nullable=False)
 
 
-class SupervisionDirector(OutliersBase):
-    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_directors`"""
-
-    __tablename__ = "supervision_directors"
-
-    state_code = Column(String, primary_key=True)
-    # Should follow the Recidiviz-standard JSON struct string representation
-    full_name = Column(JSON, nullable=False)
-    email = Column(String, primary_key=True)
-
-
 class MetricBase:
     """Base class that includes attributes that all metrics must define"""
 

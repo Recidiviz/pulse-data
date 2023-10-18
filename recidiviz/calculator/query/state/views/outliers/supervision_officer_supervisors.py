@@ -37,7 +37,7 @@ supervision_officer_supervisors AS (
 ),
 us_pa_additional_supervisors AS (
     SELECT *
-    FROM `{{project_id}}.{{reference_views_dataset}}.us_pa_officer_supervisors_materialized`
+    FROM `{{project_id}}.reference_views.us_pa_officer_supervisors_materialized`
 )
 
 SELECT 
@@ -57,9 +57,6 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
     view_id=SUPERVISION_OFFICER_SUPERVISORS_VIEW_NAME,
     view_query_template=SUPERVISION_OFFICER_SUPERVISORS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICER_SUPERVISORS_DESCRIPTION,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     should_materialize=True,
     columns=[
         "state_code",

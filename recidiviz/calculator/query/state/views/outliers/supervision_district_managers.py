@@ -43,7 +43,7 @@ us_pa_supervision_district_managers AS (
     ) AS full_name,
     email,
     district AS supervision_district
-  FROM `{project_id}.{static_reference_dataset}.us_pa_upper_mgmt`  
+  FROM `{project_id}.static_reference_tables.us_pa_upper_mgmt`  
   WHERE role IN ('District Director', 'Deputy District Director')
 ),
 us_ix_supervision_district_managers AS (
@@ -60,13 +60,13 @@ us_ix_supervision_district_managers AS (
     ) AS full_name,
     email,
     supervision_district,
-    FROM `{project_id}.{static_reference_dataset}.us_ix_state_staff_leadership`
+    FROM `{project_id}.static_reference_tables.us_ix_state_staff_leadership`
     LEFT JOIN (
         SELECT
             state_code,
             location_external_id as LocationId,
             JSON_EXTRACT_SCALAR(location_metadata, "$.supervision_district_id") AS supervision_district,
-        FROM `{project_id}.{reference_views_dataset}.location_metadata_materialized`
+        FROM `{project_id}.reference_views.location_metadata_materialized`
         WHERE 
             state_code = "US_IX"
     ) districts USING (state_code, LocationId)
@@ -81,7 +81,7 @@ UNION ALL
 
 SELECT 
     {columns}
-FROM us_ix_supervision_district_managers  
+FROM us_ix_supervision_district_managers
 """
 
 SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -89,8 +89,6 @@ SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=SUPERVISION_DISTRICT_MANAGERS_VIEW_NAME,
     view_query_template=SUPERVISION_DISTRICT_MANAGERS_QUERY_TEMPLATE,
     description=SUPERVISION_DISTRICT_MANAGERS_DESCRIPTION,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     should_materialize=True,
     columns=[
         "state_code",

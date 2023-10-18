@@ -346,6 +346,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=OUTLIERS_VIEW_BUILDERS,
         output_directory_uri_template=OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="OUTLIERS",
+        allow_empty=True,
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
         },

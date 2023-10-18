@@ -44,13 +44,9 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officers import
 from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics import (
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.outliers.supervison_directors import (
-    SUPERVISION_DIRECTORS_VIEW_BUILDER,
-)
 
 OUTLIERS_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
     METRIC_BENCHMARKS_VIEW_BUILDER,
-    SUPERVISION_DIRECTORS_VIEW_BUILDER,
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
     SUPERVISION_DISTRICTS_VIEW_BUILDER,
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
