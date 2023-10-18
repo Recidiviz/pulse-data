@@ -38,10 +38,10 @@ if [[ ! ${VERSION} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     run_cmd exit 1
 fi
 
-PROD_IMAGE_BASE="us.gcr.io/recidiviz-123/justice-counts"
+PROD_IMAGE_BASE="us-central1-docker.pkg.dev/justice-counts-production/publisher-and-dashboard-images/main"
 
 # Find the Docker image currently deployed to production (i.e. with the tag 'latest')
-PROD_IMAGE_JSON=$(gcloud container images list-tags --filter="tags:latest" "${PROD_IMAGE_BASE}" --format=json)
+PROD_IMAGE_JSON=$(gcloud artifacts docker images list "${PROD_IMAGE_BASE}" --filter="tags:latest" --format=json --include-tags)
 
 if [[ ${PROD_IMAGE_JSON}  == "[]" ]]; then
     echo_error "No Docker images found in ${PROD_IMAGE_BASE} with tag 'latest'"
@@ -49,13 +49,16 @@ if [[ ${PROD_IMAGE_JSON}  == "[]" ]]; then
 fi
 
 # The first tag should be the version
-CURRENT_PROD_VERSION=$(jq -r '.[0].tags[0]' <<< "${PROD_IMAGE_JSON}")
+TAGS=$(jq -r '.[0].tags' <<< "${PROD_IMAGE_JSON}")
+CURRENT_PROD_VERSION=$(cut -d ',' -f 1 <<< "${TAGS}")
 
 echo "Commits in pulse-data since last deploy:"
+run_cmd git fetch
 run_cmd git log --oneline "tags/${CURRENT_PROD_VERSION}..tags/jc.${VERSION}" --grep="Justice Counts"
 echo ""
 
 cd ../justice-counts || exit
+run_cmd git fetch
 echo "Commits in justice-counts since last deploy:"
 run_cmd git log --oneline "tags/${CURRENT_PROD_VERSION}..tags/jc.${VERSION}"
 cd ../pulse-data || exit
