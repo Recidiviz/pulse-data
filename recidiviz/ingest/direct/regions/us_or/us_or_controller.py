@@ -49,6 +49,7 @@ class UsOrController(BaseDirectIngestController):
             "Incarceration_Incident",
             "Sentences",
             "Supervision_Period",
+            "Supervision_Violation_Responses",
         ]
 
         return tags

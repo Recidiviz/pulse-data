@@ -1,0 +1,356 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violations` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - RECORD_KEY
+  - SANC_NUMBER
+  - SANCTION_DATA
+  - SANC_DATE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: RECORD_KEY
+          id_type: $literal("US_OR_RECORD_KEY")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - RECORD_KEY
+                - SANC_NUMBER
+          violation_date: SANC_DATE # no violation dates, only sanction date
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type: $literal_enum(StateSupervisionViolationType.INTERNAL_UNKNOWN) # only have violated conditions
+          supervision_violated_conditions:
+            - $foreach:
+                $iterable:
+                  $split_json: SANCTION_DATA
+                $result:
+                  StateSupervisionViolatedConditionEntry:
+                    condition:
+                      $enum_mapping:
+                        $raw_text:
+                          $json_extract:
+                            $json: $iter_item
+                            $key: CONDITION_DESC
+                        $mappings:
+                          StateSupervisionViolatedConditionType.LAW:
+                            - OBEY ALL LAWS
+                          StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS:
+                            - REMAIN IN OREGON
+                            - NOT CHANGE RESIDENCE
+                            - Geographical restrictions
+                            - SEX OFF REPORTING INSTRUCTIONS
+                            - SUBMIT TO RISK/NEEDS ASSESSMEN
+                            - NO WEAPONS POSSESSION
+                            - APOLOGY TO VICTIM
+                            - No Contact with Minors
+                            - Prohibited Location Minors Use
+                            - S/O Polygraph Test
+                            - COMMUNITY SERVICE WORK
+                            - CURFEW
+                            - REGISTER AS SEX OFFENDER
+                            - COMMUNITY SVC WORK
+                            - COMPLETE GED
+                            - CRIMINAL VIOLENCE EVAL/TX
+                            - DRIVERS LICENSE SUSP/REVK
+                            - DROP PROGRAM
+                            - DOMESTIC VIOL EVAL/TX
+                            - ELEC MON/HOUSE ARREST
+                            - FAIL TO COMPLY W/IMPOSED SANC
+                            - FELONY ACKNOWL/CONVICTED
+                            - FORFEIT GUN/WEAPON
+                            - SUBMIT TO RISK/NEEDS ASSESSMNT
+                            - STATE TRUE NAME
+                            - NO ASSOCIATION/CONTACT
+                            - NO CONTACT MINOR FEMALES
+                            - NO CONTACT MINOR MALES
+                            - NO CONTACT MINOR
+                            - NO CONTACT VICTIM
+                            - NO DRUG PARAPHERNALIA
+                            - NO GAMBLING
+                            - NO ASSN W/KNOWN CRIMINAL
+                            - NO ASSN W/DRUG USERS
+                            - NO CONTACT/CO-DEFENDANT
+                            - NO OFFENSIVE CONTACT VICTIM
+                            - NO ENTRY ALCOHOL SOLD
+                            - NO ENTRY CHILDREN CONGRE
+                            - NO ENTRY DRUGS KEPT/SOLD
+                            - NO ENTRY PLACE OF MARIJ SALES
+                            - NO ASSOCIATION/GANG MEMBERS
+                            - NO DRIVING W/O LIC/INSUR
+                            - No Medical Marijuana Card
+                            - NO INTERNET
+                            - NO SCANNERS
+                            - NOT USE/POS/SEX PARAPHERNALIA
+                            - NOT RE-ENTER USA ILLEGALY
+                            - Polygraph Testing
+                            - Not allowed in OldtownPortland
+                            - OTHER CONDITION
+                          StateSupervisionViolatedConditionType.SUBSTANCE:
+                            - SUBMIT TO BREATH/URINE TEST
+                            - BODY SUBSTANCE/DNA TEST
+                            - BREATHALYZER TEST (GC03)
+                            - URINALYSIS (GC03)
+                            - NO MARIJUANA
+                            - No Intoxicating Beverages
+                            - NOT USE OR POSSESS CONTRL SUBS
+                            - No alcohol or intox substance
+                            - NO USE OR POSSESS CONTROL SUBS
+                            - SUBMIT TO BREATH/URINE TESTS
+                            - NO INTOXICANTS
+                            - NO ALCOHOL
+                            - NO ALCOHOL TO EXCESS
+                            - NO INTOX BEVERAGES/MARIJUANA
+                            - NO INTOXICATING SUBSTANCES
+                          StateSupervisionViolatedConditionType.FINANCIAL:
+                            - PAY COURT ORDERED FEES/FINES
+                            - RESTITUTION PACKAGE
+                            - ALCOHOL EVALUATION FEE (GC01)
+                            - ATTORNEY FEES (GC01)
+                            - SUPERVISION FEES (GC01)
+                            - JAIL FEES (GC01)
+                            - LAW ENFORCEMENT FEE (GC01)
+                            - UNITARY FEE (GC01)
+                            - FINE (GC01)
+                            - COURT COSTS (GC01)
+                            - COMMUNITY SERVICE FEES (GC01)
+                            - COMPENSATORY FINE
+                            - COURT ORDERD FINANCE OBL -GC01
+                            - RESTITUTION
+                            - SERVICE FEE
+                            - DMV/INTOX DRIVER FEES (GC01)
+                            - DOMESTIC VIOL ASSESSMENT FEE
+                            - Court Ordered Restitution
+                            - "PAY COURT ORDERED FEES, FINES"
+                          StateSupervisionViolatedConditionType.EMPLOYMENT:
+                            - EMPLOYMENT AND/OR SCHOOL
+                            - FIND/MAINTAIN GAINFUL EMPLMT
+                            - NO CHANGE EMPLOYMENT/ADDRESS
+                          StateSupervisionViolatedConditionType.FAILURE_TO_NOTIFY:
+                            - NOTIFY SUBSTANCE ABUSE B4 RX
+                            - Notify PO of all Prescriptions
+                          StateSupervisionViolatedConditionType.TREATMENT_COMPLIANCE:
+                            - PARTICIPATE IN SUB ABUSE EVAL
+                            - SEX OFFENDER TREATMENT/POLY
+                            - SUBMIT TO Mental Health Eval
+                            - MENTAL HEALTH EVALUATION
+                            - Psych Medication Monitoring
+                            - ALCOHOL EVAL/ASSESSMENT
+                            - ALCOHOL TREATMENT PROGRAM
+                            - ALCOHOL EVAL/COUNSELING-GC04
+                            - ANGER CONTROL COUNSELING
+                            - SEX OFFENDER EVAL/TREATMENT
+                            - MENTAL HEALTH COURT
+                            - MENTAL HEALTH EVALUATION (GC14
+                            - MENTAL HEALTH THERAPY
+                            - MENTAL HEALTH EVAL/TX (GC15)
+                            - OTHER COUNSELING
+                            - PARTICIPATE SUB ABUSE EVAL
+                            - ALCOHOL DRUG COUNSELING
+                            - ALC AND/OR DRUG EVAL AND/OR TX
+                            - SUBSTANCE ABUSE EVALUATION
+                            - Comply with Relapse Prevention
+                            - Alcohol & Drug Supprt Mtgs/TX
+                            - DRUG THERAPY
+                            - DRUG EVAL/TREATMENT (GC04)
+                            - Sex Offender Treatment Program
+                          StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN:
+                            - PERMIT VISIT WORK OR HOME
+                            - SEARCH CLAUSE
+                            - ANSWER ALL QUESTIONS TRUTHFUL
+                            - REPORT/ABIDE BY DIRECTION PO
+                            - ABIDE BY DIRECTIVE/COUNSEL
+                            - Sex Offender Notification
+                            - ANTABUSE
+                            - CUSTODY UNIT
+                            - DRUG FREE ZONE EXCLUSION
+                            - DRUG COURT
+                            - Drug Impact Area Exclusion
+                            - Execute Release of Information
+                            - FOREST PROJECT
+                            - Abide by Directive/Counsel
+                            - HOUSE ARREST
+                            - JAIL DAYS
+                            - Other Conditions as Listed
+                            - No Contact with Listed People
+                            - MISDMR TX SUCFL COMP PROB
+                            - NARCOTICS ANONYMOUS OR AA
+                            - NOT FREQ ADULT BUSINESS
+                            - PENITENTIARY/JAIL TOUR
+                            - DOMESTIC VIOLENCE PACKAGE
+                            - FINANCIAL CRIMES PACKAGE
+                            - GANG PACKAGE
+                            - SEX OFFENDER PACKAGE
+                            - POLYGRAPH
+                            - PROGRAM
+                            - PARENTING CLASSES
+                            - SEARCH PC/ELECTRONIC EQUIP
+                            - Submit to Mental Health Eval
+                            - SPOUSAL AND/OR CHILD SUPPORT
+                            - Theft/Property Class
+                            - Daily PO Contacts until Emplyd
+                            - Acceptable Community Behavior
+                            - Comply with Aftercare Plan
+                            - Attend Cognitive Programming
+                            - Other
+                            - NO TRESPASS
+                            - Abide curfew imposed by PO
+                            - VICTIM'S PANEL
+                            - WORK CREW
+                            - WORK RELEASE
+                            - No Contact with Minor
+                            - MENTAL HEALTH PACKAGE
+                            - PLETHYSMOGRAPH
+                            - Search PC/Electronic Equipment
+                            - Community Mtgs on a Schedule
+                            - JAIL CREDIT
+                            - LIFE
+          supervision_violation_responses:
+            - $foreach:
+                $iterable:
+                  $split_json: SANCTION_DATA
+                $result:
+                  StateSupervisionViolationResponse:
+                    external_id:
+                      $concat:
+                        $values:
+                          - $json_extract:
+                              $key: RECORD_KEY
+                              $json: $iter_item
+                          - $json_extract:
+                              $key: SANC_NUMBER
+                              $json: $iter_item
+                          - $json_extract:
+                              $key: CONDITION_CODE
+                              $json: $iter_item
+                          - $json_extract:
+                              $key: SEQUENCE_NO
+                              $json: $iter_item
+                    response_date:
+                      $json_extract:
+                        $key: SANC_DATE
+                        $json: $iter_item
+                    response_type:
+                      $enum_mapping:
+                        $raw_text:
+                          $json_extract:
+                            $key: SANCTION_DESC
+                            $json: $iter_item
+                        $mappings:
+                          StateSupervisionViolationResponseType.PERMANENT_DECISION:
+                            - Revoke to Prison
+                          StateSupervisionViolationResponseType.CITATION:
+                            - Multnomah Co. Forest Project
+                            - Community Service
+                            - Ordered Community Service Work
+                            - Curfew
+                            - Alcohol Electronic Monitoring
+                            - Electronic House Arrest
+                            - Increase Reporting
+                            - Non Electronic House Arrest
+                            - GPS Monitoring
+                            - Support Group
+                            - Structured Random UA Program
+                            - Secure Treatment
+                            - Verbal Reprimand
+                            - Jail
+                            - Modify Conditions
+                            - Cognitive Restructuring
+                            - Work Crew
+                            - Restitution/Work Center
+                            - Jackson Co. Violators Project
+                            - Jail Fees
+                            - Court Confinement
+                            - Outpatient Treatment
+                            - Detoxification Program
+                            - Inpatient Treatment
+                            - Fail Leave
+                            - Marion County Custody Sanction
+                            - Women's Short Term Sanc-No CU
+                            - Intensive Supervision Program
+                            - Job Search Programming
+                            - Mult.Co.ASSP-no cust.unit used
+                            - Day Rpt. no custody units used
+                            - No Action
+                            - Forest Camp-Permanent Bed Fac.
+                            - Admin Return For Leave Cases
+                          StateSupervisionViolationResponseType.VIOLATION_REPORT:
+                            - Written Reprimand
+                    supervision_violation_response_decisions:
+                      - StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: SANCTION_DESC
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
+                                  - Multnomah Co. Forest Project
+                                  - Community Service
+                                  - Ordered Community Service Work
+                                StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                  - Curfew
+                                  - Alcohol Electronic Monitoring
+                                  - Electronic House Arrest
+                                  - Increase Reporting
+                                  - Non Electronic House Arrest
+                                  - GPS Monitoring
+                                  - Support Group
+                                  - Structured Random UA Program
+                                  - Secure Treatment
+                                StateSupervisionViolationResponseDecision.WARNING:
+                                  - Written Reprimand
+                                  - Verbal Reprimand
+                                StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                  - Jail
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - Revoke to Prison
+                                StateSupervisionViolationResponseDecision.OTHER:
+                                  - Modify Conditions # or should this be under NEW_CONDITIONS?
+                                  - Cognitive Restructuring
+                                  - Work Crew
+                                  - Restitution/Work Center
+                                  - Jackson Co. Violators Project
+                                  - Jail Fees
+                                StateSupervisionViolationResponseDecision.SPECIALIZED_COURT:
+                                  - Court Confinement
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                  - Outpatient Treatment
+                                  - Detoxification Program
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
+                                  - Inpatient Treatment
+                                StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  - Fail Leave
+                                  - Marion County Custody Sanction
+                                  - Women's Short Term Sanc-No CU
+                                  - Intensive Supervision Program
+                                  - Job Search Programming
+                                  - Mult.Co.ASSP-no cust.unit used
+                                  - Day Rpt. no custody units used
+                                  - No Action
+                                  - Forest Camp-Permanent Bed Fac.
+                                  - Admin Return For Leave Cases
+                    violation_response_metadata:
+                      $json_dict:
+                        SANCTION_OR_INTERVENTION:
+                          $json_extract:
+                            $key: SANCTION_TYPE
+                            $json: $iter_item
+                        COURT_CASE_NO:
+                          $json_extract:
+                            $key: COURT_CASE_NUMBER
+                            $json: $iter_item
+                        STATE_OF_SANCTION:
+                          $json_extract:
+                            $key: SANCTION_ACTION
+                            $json: $iter_item
+                        COUNTY:
+                          $json_extract:
+                            $key: COUNTY
+                            $json: $iter_item
