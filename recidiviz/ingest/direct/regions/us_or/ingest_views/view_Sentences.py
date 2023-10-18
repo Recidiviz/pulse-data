@@ -205,7 +205,8 @@ final AS (
     charge.CRIME_CLASS, 
     crime_info.ORS_DESCRIPTION, 
     sentence.DANG_OFFENDER, 
-    crime_info.SEX_ASSAULT_CRIME, 
+    crime_info.SEX_ASSAULT_CRIME,
+    COURT_CASE_NUMBER, 
     COURT_CASE_COUNT, 
     JUDGE
   FROM sentence
