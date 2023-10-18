@@ -9,6 +9,7 @@ input_columns:
   - ClassificationDecisionDate
   - CAFScore
   - OverrideReason
+  - ClassificationDecision
   - ScheduleAScore
   - ScheduleBScore
   - CAFCustodyLevel
@@ -70,3 +71,4 @@ output:
               ClassificationDate: ClassificationDate
               ClassificationDecisionDate: ClassificationDecisionDate
               OverrideReason: OverrideReason
+              ClassificationDecision: ClassificationDecision

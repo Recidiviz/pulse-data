@@ -24,7 +24,13 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH latest_Classification AS (
-  SELECT t.OffenderID, ClassificationDate, ClassificationDecisionDate, (DATE(CAFDate)) AS CAFDate, OverrideReason
+  SELECT 
+    t.OffenderID, 
+    ClassificationDate, 
+    ClassificationDecisionDate, 
+    (DATE(CAFDate)) AS CAFDate, 
+    OverrideReason, 
+    ClassificationDecision
   FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY OffenderId, CAFDate ORDER BY ClassificationSequenceNumber DESC) AS seq 
         FROM {Classification}) t
   WHERE seq = 1
@@ -36,6 +42,7 @@ WITH latest_Classification AS (
         (DATE(ClassificationDecisionDate)) AS ClassificationDecisionDate,
         CAFScore,
         OverrideReason,
+        ClassificationDecision,
         ScheduleAScore,
         ScheduleBScore,
         CAFCustodyLevel,
