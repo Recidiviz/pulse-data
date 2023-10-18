@@ -15,9 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_TN implementation of the StateSpecificIncarcerationDelegate."""
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateSpecializedPurposeForIncarceration,
-)
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_delegate import (
@@ -35,14 +32,8 @@ class UsTnIncarcerationDelegate(StateSpecificIncarcerationDelegate):
         """In US_TN, only periods of incarceration that are under the custodial
         authority of the state prison or the courts are included in the state population.
 
-        Do not include people whose specialized_purpose_for_incarceration is TEMPORARY_CUSTODY.
         """
-        return (
-            incarceration_period.specialized_purpose_for_incarceration
-            != StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
-            and incarceration_period.custodial_authority
-            in (
-                StateCustodialAuthority.STATE_PRISON,
-                StateCustodialAuthority.COUNTY,
-            )
+        return incarceration_period.custodial_authority in (
+            StateCustodialAuthority.STATE_PRISON,
+            StateCustodialAuthority.COUNTY,
         )
