@@ -18,7 +18,10 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import (
+    get_pseudonymized_id_query_str,
+    list_to_query_string,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS,
@@ -48,23 +51,6 @@ CLIENT_RECORD_VIEW_NAME = "client_record"
 CLIENT_RECORD_DESCRIPTION = """
     Client records to be exported to Firestore to power the Workflows dashboard.
     """
-
-PSEUDONYMIZED_ID = """
-    # truncating hash string
-    SUBSTRING(
-        # hashing external ID to base64url
-        REPLACE(
-            REPLACE(
-                TO_BASE64(SHA256(IF(state_code="US_IX", "US_ID", state_code) || person_external_id)), 
-                '+', 
-                '-'
-            ), 
-            '/', 
-            '_'
-        ), 
-        1, 
-        16
-    )"""
 
 client_record_fields = [
     "person_external_id",
@@ -102,6 +88,10 @@ WORKFLOWS_SUPERVISION_STATES = [
 ]
 
 WORKFLOWS_MILESTONES_STATES = ["US_IX", "US_MI", "US_CA"]
+
+HASH_VALUE_QUERY_STR = (
+    "IF(state_code='US_IX', 'US_ID', state_code) || person_external_id"
+)
 
 
 def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
@@ -153,13 +143,13 @@ CLIENT_RECORD_QUERY_TEMPLATE = f"""
         )
         
         SELECT *,
-            {PSEUDONYMIZED_ID} AS pseudonymized_id FROM tn_clients_wrangle            
+            {get_pseudonymized_id_query_str(HASH_VALUE_QUERY_STR)} AS pseudonymized_id FROM tn_clients_wrangle            
         
         UNION ALL
             
         SELECT *,
             {{new_fields}}, 
-            {PSEUDONYMIZED_ID} AS pseudonymized_id FROM clients
+            {get_pseudonymized_id_query_str(HASH_VALUE_QUERY_STR)} AS pseudonymized_id FROM clients
             WHERE state_code != "US_TN"
 """
 

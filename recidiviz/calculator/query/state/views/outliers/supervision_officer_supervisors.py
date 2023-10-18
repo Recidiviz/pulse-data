@@ -18,6 +18,7 @@
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.bq_utils import get_pseudonymized_id_query_str
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.outliers.staff_query_template import (
     staff_query_template,
@@ -36,7 +37,9 @@ supervision_officer_supervisors AS (
     {staff_query_template(role="SUPERVISION_OFFICER_SUPERVISOR")}
 ),
 us_pa_additional_supervisors AS (
-    SELECT *
+    SELECT 
+        *,
+        {get_pseudonymized_id_query_str("state_code || external_id")} AS pseudonymized_id,
     FROM `{{project_id}}.reference_views.us_pa_officer_supervisors_materialized`
 )
 
@@ -63,6 +66,7 @@ SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilde
         "external_id",
         "staff_id",
         "full_name",
+        "pseudonymized_id",
         "supervision_district",
         "email",
     ],

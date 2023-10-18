@@ -389,3 +389,25 @@ def date_diff_in_full_months(
     return f"""  DATE_DIFF({date_column}, CURRENT_DATE('{time_zone}'), MONTH)
           - IF(EXTRACT(DAY FROM CURRENT_DATE('{time_zone}')) > EXTRACT(DAY FROM {date_column}), 
                 1, 0)"""
+
+
+def get_pseudonymized_id_query_str(hash_value_query_str: str) -> str:
+    """
+    Returns a string fragment for the pseudonymized_id in the product.
+    """
+    return f"""
+        SUBSTRING(
+        # hashing external ID to base64url
+            REPLACE(
+                REPLACE(
+                    TO_BASE64(SHA256({hash_value_query_str})), 
+                    '+', 
+                    '-'
+                ),
+                '/', 
+                '_'
+            ), 
+            1, 
+            16
+        )
+"""

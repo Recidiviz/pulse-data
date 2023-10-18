@@ -16,7 +16,10 @@
 #  =============================================================================
 """View to prepare resident records for Workflows for export to the frontend."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.bq_utils import (
+    get_pseudonymized_id_query_str,
+    list_to_query_string,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.state_specific_query_strings import (
@@ -50,23 +53,6 @@ RESIDENT_RECORD_DESCRIPTION = """
     Resident records to be exported to Firestore to power the Workflows dashboard.
     """
 
-PSEUDONYMIZED_ID = """
-    # truncating hash string
-    SUBSTRING(
-        # hashing external ID to base64url
-        REPLACE(
-            REPLACE(
-                TO_BASE64(SHA256(state_code || person_external_id || wk.value)), 
-                '+', 
-                '-'
-            ), 
-            '/', 
-            '_'
-        ), 
-        1, 
-        16
-    )"""
-
 WORKFLOWS_CONFIGS_WITH_RESIDENTS = [
     config
     for config in WORKFLOWS_OPPORTUNITY_CONFIGS
@@ -79,7 +65,7 @@ RESIDENT_RECORD_QUERY_TEMPLATE = f"""
         {full_resident_record()}
     SELECT
         * EXCEPT(key, value),
-        {PSEUDONYMIZED_ID} AS pseudonymized_id
+        {get_pseudonymized_id_query_str("state_code || person_external_id || wk.value")} AS pseudonymized_id
     FROM residents
     JOIN {{project_id}}.{{static_reference_dataset}}.workflows_keys wk
         ON wk.key = 'resident_record_salt'
