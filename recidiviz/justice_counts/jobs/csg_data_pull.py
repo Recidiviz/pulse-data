@@ -67,6 +67,7 @@ NUM_METRICS_WITH_DATA = "num_metrics_with_data"
 NUM_METRICS_CONFIGURED = "num_metrics_configured"
 NUM_METRICS_AVAILABLE = "num_metrics_available"
 NUM_METRICS_UNAVAILABLE = "num_metrics_unavailable"
+METRIC_CONFIG_THIS_WEEK = "metric_configured_this_week"
 IS_SUPERAGENCY = "is_superagency"
 IS_CHILD_AGENCY = "is_child_agency"
 NEW_STATE_THIS_WEEK = "new_state_this_week"
@@ -120,15 +121,38 @@ def summarize(
     # 1 report datapoint (does not consider agency datapoints). We do not consider null
     # values
     data_shared_this_week = False
+    # last_metric_config_update is the most recent date in which a metric was either
+    # enabled or disabled
+    last_metric_config_update = datetime.datetime(1970, 1, 1)
+    metric_configured_this_week = False
     for datapoint in datapoints:
         if datapoint["is_report_datapoint"] is True and datapoint["value"] is None:
             # Ignore report datapoints with no values
             continue
         datapoint_last_update = datapoint["last_updated"]
+
+        # Part 1: Things that involve a timestamp
         if datapoint_last_update is not None:
+            # last_update involves a timestamp and report and agency datapoints
             last_update = max(last_update, datapoint_last_update)
             if datapoint["is_report_datapoint"] is True:
+                # data_shared_this_week involves a timestamp and report datapoints
                 data_shared_this_week = last_update.replace(
+                    tzinfo=datetime.timezone.utc
+                ) > (today + datetime.timedelta(days=-7))
+            elif (
+                # The following filters to agency datapoints that contain information about whether
+                # the top-level metric is turned on or off
+                not datapoint["dimension_identifier_to_member"]
+                and not datapoint["context_key"]
+                and not datapoint["includes_excludes_key"]
+                and datapoint["enabled"] is not None
+            ):
+                # metric_configured_this_week involves a timestamp and agency datapoints
+                last_metric_config_update = max(
+                    last_metric_config_update, datapoint_last_update
+                )
+                metric_configured_this_week = last_metric_config_update.replace(
                     tzinfo=datetime.timezone.utc
                 ) > (today + datetime.timedelta(days=-7))
         elif datapoint["created_at"] is not None:
@@ -136,15 +160,16 @@ def summarize(
             # added to our schema, use the most recent created_at field
             last_update = max(last_update, datapoint["created_at"])
 
+        # Part 2: Things that do not involve a timestamp
         # Process report datapoints (i.e. those that contain data for a time period)
-        if datapoint["is_report_datapoint"] and datapoint["value"] is not None:
+        if datapoint["is_report_datapoint"] is True:
             # Group datapoints by report (i.e. time period)
             report_id_to_datapoints[datapoint["report_id"]].append(datapoint)
             # Group datapoints by metric
             metric_key_to_datapoints[datapoint["metric_definition_key"]].append(
                 datapoint
             )
-        # Process non-report datapoints (i.e. tthose that contain info about metric configuration)
+        # Process agency datapoints (i.e. those that contain info about metric configuration)
         elif (
             not datapoint["is_report_datapoint"]
             # The following filters to non-report datapoints that contain information about whether
@@ -170,6 +195,7 @@ def summarize(
         NUM_METRICS_CONFIGURED: len(metrics_configured),
         NUM_METRICS_AVAILABLE: len(metrics_available),
         NUM_METRICS_UNAVAILABLE: len(metrics_unavailable),
+        METRIC_CONFIG_THIS_WEEK: metric_configured_this_week,
         DATA_SHARED_THIS_WEEK: data_shared_this_week,
     }
 
@@ -279,6 +305,7 @@ def create_new_agency_columns(
         agency[NUM_METRICS_CONFIGURED] = 0
         agency[NUM_METRICS_AVAILABLE] = 0
         agency[NUM_METRICS_UNAVAILABLE] = 0
+        agency[METRIC_CONFIG_THIS_WEEK] = False
         agency[IS_SUPERAGENCY] = bool(agency["is_superagency"])
         agency[IS_CHILD_AGENCY] = bool(agency["super_agency_id"])
         agency[NEW_AGENCY_THIS_WEEK] = new_agency_this_week
@@ -398,6 +425,7 @@ def generate_agency_summary_csv(
         NUM_METRICS_CONFIGURED,
         NUM_METRICS_AVAILABLE,
         NUM_METRICS_UNAVAILABLE,
+        METRIC_CONFIG_THIS_WEEK,
         IS_SUPERAGENCY,
         IS_CHILD_AGENCY,
         NEW_AGENCY_THIS_WEEK,
