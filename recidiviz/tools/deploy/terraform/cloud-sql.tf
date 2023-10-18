@@ -130,6 +130,7 @@ locals {
       module.case_triage_database.connection_name,
       module.justice_counts_database.connection_name,
       module.pathways_database.connection_name,
+      module.outliers_database.connection_name,
       # v2 modules
       module.operations_database_v2.connection_name,
       module.state_database_v2.connection_name,
