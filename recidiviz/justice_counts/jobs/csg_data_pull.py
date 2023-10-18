@@ -23,6 +23,7 @@ pipenv run python -m recidiviz.justice_counts.jobs.csg_data_pull \
   --dry-run=true \
   --credentials-path=<path>
 """
+
 import argparse
 import datetime
 import logging
@@ -32,10 +33,9 @@ from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
 
 from recidiviz.auth.auth0_client import Auth0Client
+from recidiviz.justice_counts.control_panel.utils import write_data_to_spreadsheet
 from recidiviz.justice_counts.utils.constants import AGENCIES_TO_EXCLUDE
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -43,9 +43,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
-)
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.utils.environment import (
     GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
@@ -440,47 +437,17 @@ def generate_agency_summary_csv(
         .reindex(columns=columns)
     )
 
-    if dry_run is False:
-        write_data_to_spreadsheet(
-            google_credentials=google_credentials, df=df, columns=columns
-        )
-
-
-def write_data_to_spreadsheet(
-    google_credentials: Credentials, df: pd.DataFrame, columns: List[str]
-) -> None:
-    """Now that we have retrieved and cleaned all agency data, write this data to a new
-    sheet in the CSG Data Pull spreadsheet.
-    """
-    spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
-
     now = datetime.datetime.now()
     new_sheet_title = f"{now.month}-{now.day}-{now.year}"
-    # Create a new worksheet in the spreadsheet
-    request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 1}}}
-
-    # Create new sheet
-    spreadsheet_service.spreadsheets().batchUpdate(
-        spreadsheetId=SPREADSHEET_ID, body={"requests": [request]}
-    ).execute()
-
-    logger.info("New Sheet Created")
-
-    # Format data to fit Google API specifications.
-    # Google API spec requires a list of lists,
-    # each list representing a row.
-    data_to_write = [columns]
-    data_to_write.extend(df.astype(str).values.tolist())
-    body = {"values": data_to_write}
-    range_name = f"{new_sheet_title}!A1"  #
-    spreadsheet_service.spreadsheets().values().update(
-        spreadsheetId=SPREADSHEET_ID,
-        range=range_name,
-        valueInputOption="RAW",
-        body=body,
-    ).execute()
-
-    logger.info("Sheet '%s' added and data written.", new_sheet_title)
+    if dry_run is False:
+        write_data_to_spreadsheet(
+            google_credentials=google_credentials,
+            df=df,
+            columns=columns,
+            spreadsheet_id=SPREADSHEET_ID,
+            new_sheet_title=new_sheet_title,
+            logger=logger,
+        )
 
 
 if __name__ == "__main__":
@@ -508,19 +475,3 @@ if __name__ == "__main__":
                         dry_run=args.dry_run,
                         google_credentials=credentials,
                     )
-    else:
-        # When running via Cloud Run Job, GoogleCredentials.get_application_default()
-        # will use the service account assigned to the Cloud Run Job.
-        # The service account has access to the spreadsheet with editor permissions.
-        credentials = GoogleCredentials.get_application_default()
-        database_key = SQLAlchemyDatabaseKey.for_schema(
-            SchemaType.JUSTICE_COUNTS,
-        )
-        justice_counts_engine = SQLAlchemyEngineManager.init_engine(
-            database_key=database_key,
-            secret_prefix_override=JUSTICE_COUNTS_DB_SECRET_PREFIX,
-        )
-        global_session = Session(bind=justice_counts_engine)
-        generate_agency_summary_csv(
-            session=global_session, dry_run=args.dry_run, google_credentials=credentials
-        )
