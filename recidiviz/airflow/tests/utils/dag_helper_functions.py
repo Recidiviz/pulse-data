@@ -69,3 +69,16 @@ def fake_failure_task(*_args: Any, **kwargs: Any) -> EmptyOperator:
         raise ValueError("Test failure")
 
     return create_fake_failure_task()
+
+
+class FakeFailureOperator(BaseOperator):
+    def __init__(self, *_args: Any, **kwargs: Any) -> None:
+        super().__init__(
+            task_id=kwargs["task_id"],
+            trigger_rule=kwargs["trigger_rule"]
+            if "trigger_rule" in kwargs
+            else TriggerRule.ALL_SUCCESS,
+        )
+
+    def execute(self, context: Context) -> Any:
+        raise ValueError("Test failure")
