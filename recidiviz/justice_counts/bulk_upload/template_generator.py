@@ -22,7 +22,7 @@
 
 import datetime
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -69,7 +69,7 @@ def generate_bulk_upload_template(
 
     for metricfile in metricfiles:  # pylint: disable=too-many-nested-blocks
         rows: List[Dict[str, str]] = []
-        metric_interface = metric_key_to_interface.get(metricfile.definition.key)
+        metric_interface = metric_key_to_interface[metricfile.definition.key]
         high_level_metric = [
             curr_metricfile
             for curr_metricfile in metricfiles
@@ -77,17 +77,14 @@ def generate_bulk_upload_template(
             and curr_metricfile.disaggregation is None
         ][0].canonical_filename
 
-        enabled_status = (
-            metric_interface.is_metric_enabled if metric_interface is not None else True
-        )
+        enabled_status = metric_interface.is_metric_enabled
 
         if enabled_status is not True:
             continue
 
         reporting_frequency = (
             metric_interface.custom_reporting_frequency.frequency
-            if metric_interface is not None
-            and metric_interface.custom_reporting_frequency.frequency is not None
+            if metric_interface.custom_reporting_frequency.frequency is not None
             else metricfile.definition.reporting_frequency
         )
 
@@ -97,6 +94,9 @@ def generate_bulk_upload_template(
                 metricfile=metricfile,
                 is_single_page_template=is_single_page_template,
                 high_level_metric=high_level_metric,
+                is_disaggregated_by_supervision_subsystems=metric_interface.disaggregated_by_supervision_subsystems
+                is True,
+                agency=agency,
             )
 
         else:
@@ -105,6 +105,9 @@ def generate_bulk_upload_template(
                 metricfile=metricfile,
                 is_single_page_template=is_single_page_template,
                 high_level_metric=high_level_metric,
+                is_disaggregated_by_supervision_subsystems=metric_interface.disaggregated_by_supervision_subsystems
+                is True,
+                agency=agency,
             )
 
         if metricfile.disaggregation is not None:
@@ -157,10 +160,21 @@ def _add_rows_for_annual_metric(
     metricfile: MetricFile,
     is_single_page_template: bool,
     high_level_metric: str,
+    is_disaggregated_by_supervision_subsystems: bool,
+    agency: schema.Agency,
 ) -> List[Dict[str, str]]:
     """Creates rows for an annual metric."""
     if metricfile.definition.system == schema.System.SUPERVISION:
-        for s in [s.name for s in schema.System.supervision_subsystems()] + ["ALL"]:
+        systems = (
+            ["ALL"]
+            if is_disaggregated_by_supervision_subsystems is False
+            else [
+                s
+                for s in agency.systems
+                if schema.System[s] in schema.System.supervision_subsystems()
+            ]
+        )
+        for s in systems:
             for year in [LAST_YEAR, THIS_YEAR]:
                 row = (
                     # Columns will be  `year`, `system`, `value`
@@ -205,10 +219,21 @@ def _add_rows_for_monthly_metric(
     metricfile: MetricFile,
     is_single_page_template: bool,
     high_level_metric: str,
+    is_disaggregated_by_supervision_subsystems: bool,
+    agency: schema.Agency,
 ) -> List[Dict[str, str]]:
     """Creates rows for an monthly metric."""
     if metricfile.definition.system == schema.System.SUPERVISION:
-        for s in [s.name for s in schema.System.supervision_subsystems()] + ["ALL"]:
+        systems = (
+            ["ALL"]
+            if is_disaggregated_by_supervision_subsystems is False
+            else [
+                s
+                for s in agency.systems
+                if schema.System[s] in schema.System.supervision_subsystems()
+            ]
+        )
+        for s in systems:
             for year in [LAST_YEAR, THIS_YEAR]:
                 for month in range(1, 13):
                     row = (
@@ -259,18 +284,14 @@ def _add_rows_for_disaggregated_metric(
     rows: List[Dict[str, str]],
     metricfile: MetricFile,
     is_single_page_template: bool,
-    metric_interface: Optional[MetricInterface] = None,
+    metric_interface: MetricInterface,
 ) -> List[Dict[str, str]]:
     """Adds rows for a sheet representing a metric's disaggregation"""
     new_rows: List[Dict[str, str]] = []
-    dimension_id_to_dimension_metric_interface = (
-        {
-            aggregated_dim.dimension_identifier(): aggregated_dim
-            for aggregated_dim in metric_interface.aggregated_dimensions
-        }
-        if metric_interface is not None
-        else {}
-    )
+    dimension_id_to_dimension_metric_interface = {
+        aggregated_dim.dimension_identifier(): aggregated_dim
+        for aggregated_dim in metric_interface.aggregated_dimensions
+    }
     dimension_metric_interface = dimension_id_to_dimension_metric_interface.get(
         metricfile.disaggregation.dimension_identifier()  # type: ignore[union-attr]
     )
