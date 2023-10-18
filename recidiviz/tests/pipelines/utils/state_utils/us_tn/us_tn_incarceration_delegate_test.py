@@ -103,6 +103,25 @@ class TestUsTnIncarcerationDelegate(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
-        self.assertFalse(
+        self.assertTrue(
+            self.delegate.is_period_included_in_state_population(incarceration_period)
+        )
+
+    def test_is_period_included_in_state_population_temporary_custody(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            state_code=_STATE_CODE,
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+
+        self.assertTrue(
             self.delegate.is_period_included_in_state_population(incarceration_period)
         )
