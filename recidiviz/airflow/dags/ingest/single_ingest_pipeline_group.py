@@ -18,9 +18,9 @@
 Logic for state and ingest instance specific dataflow pipelines.
 """
 import logging
-from typing import Dict
+from typing import Dict, Tuple
 
-from airflow.decorators import task, task_group
+from airflow.decorators import task
 from airflow.models import BaseOperator
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
@@ -34,6 +34,9 @@ from recidiviz.airflow.dags.ingest.get_watermark_sql_query_generator import (
     GetWatermarkSqlQueryGenerator,
 )
 from recidiviz.airflow.dags.ingest.ingest_branching import get_ingest_branch_key
+from recidiviz.airflow.dags.ingest.set_watermark_sql_query_generator import (
+    SetWatermarkSqlQueryGenerator,
+)
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
@@ -75,41 +78,44 @@ def _should_run_based_on_watermarks(
     return True
 
 
-@task_group(group_id="initialize_dataflow_pipeline")
 def _initialize_dataflow_pipeline(
-    state_code: StateCode, instance: DirectIngestInstance
-) -> None:
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    operations_cloud_sql_conn_id: str,
+) -> Tuple[TaskGroup, CloudSqlQueryOperator]:
     """
     Initializes the dataflow pipeline by getting the max update datetimes and watermarks and checking if the pipeline should run.
+    Returns the task group and the get_max_update_datetimes task for use in downstream tasks.
     """
-    operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
-        SchemaType.OPERATIONS
-    )
 
-    get_max_update_datetimes = CloudSqlQueryOperator(
-        task_id="get_max_update_datetimes",
-        cloud_sql_conn_id=operations_cloud_sql_conn_id,
-        query_generator=GetMaxUpdateDateTimeSqlQueryGenerator(
-            region_code=state_code.value,
-            ingest_instance=instance.value,
-        ),
-    )
+    with TaskGroup("initialize_dataflow_pipeline") as initialize_dataflow_pipeline:
 
-    get_watermarks = CloudSqlQueryOperator(
-        task_id="get_watermarks",
-        cloud_sql_conn_id=operations_cloud_sql_conn_id,
-        query_generator=GetWatermarkSqlQueryGenerator(
-            region_code=state_code.value,
-            ingest_instance=instance.value,
-        ),
-    )
+        get_max_update_datetimes = CloudSqlQueryOperator(
+            task_id="get_max_update_datetimes",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=GetMaxUpdateDateTimeSqlQueryGenerator(
+                region_code=state_code.value,
+                ingest_instance=instance.value,
+            ),
+        )
 
-    should_run_based_on_watermarks = _should_run_based_on_watermarks(
-        watermarks=get_watermarks.output,  # type: ignore[arg-type]
-        max_update_datetimes=get_max_update_datetimes.output,  # type: ignore[arg-type]
-    )
+        get_watermarks = CloudSqlQueryOperator(
+            task_id="get_watermarks",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=GetWatermarkSqlQueryGenerator(
+                region_code=state_code.value,
+                ingest_instance=instance.value,
+            ),
+        )
 
-    [get_max_update_datetimes, get_watermarks] >> should_run_based_on_watermarks
+        should_run_based_on_watermarks = _should_run_based_on_watermarks(
+            watermarks=get_watermarks.output,  # type: ignore[arg-type]
+            max_update_datetimes=get_max_update_datetimes.output,  # type: ignore[arg-type]
+        )
+
+        [get_max_update_datetimes, get_watermarks] >> should_run_based_on_watermarks
+
+    return initialize_dataflow_pipeline, get_max_update_datetimes
 
 
 def _acquire_lock(
@@ -158,10 +164,17 @@ def create_single_ingest_pipeline_group(
     Creates a dataflow pipeline operator for the given state and ingest instance.
     """
 
+    operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
+        SchemaType.OPERATIONS
+    )
+
     with TaskGroup(get_ingest_branch_key(state_code.value, instance.value)) as dataflow:
 
-        initialize_dataflow_pipeline = _initialize_dataflow_pipeline(
-            state_code, instance
+        (
+            initialize_dataflow_pipeline,
+            get_max_update_datetimes,
+        ) = _initialize_dataflow_pipeline(
+            state_code, instance, operations_cloud_sql_conn_id
         )
 
         acquire_lock = _acquire_lock(state_code, instance)
@@ -170,8 +183,16 @@ def create_single_ingest_pipeline_group(
 
         release_lock = _release_lock(state_code, instance)
 
-        # TODO(#23986): Replace EmptyOperator with write upper bounds operator
-        write_upper_bounds = EmptyOperator(task_id="write_upper_bounds")
+        write_upper_bounds = CloudSqlQueryOperator(
+            task_id="write_upper_bounds",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=SetWatermarkSqlQueryGenerator(
+                region_code=state_code.value,
+                ingest_instance=instance.value,
+                get_max_update_datetime_task_id=get_max_update_datetimes.task_id,
+                dataflow_pipeline_task_id=dataflow_pipeline.task_id,
+            ),
+        )
 
         (
             initialize_dataflow_pipeline

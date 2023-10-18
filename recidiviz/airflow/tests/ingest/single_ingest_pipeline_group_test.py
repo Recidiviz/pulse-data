@@ -39,6 +39,7 @@ from recidiviz.airflow.dags.ingest.single_ingest_pipeline_group import (
 from recidiviz.airflow.tests import fixtures
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
+    FakeFailureOperator,
     fake_failure_task,
     fake_operator_constructor,
     fake_operator_with_return_value,
@@ -264,17 +265,11 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
     # TODO(#23986): Mock dataflow operator directly when it is implemented
-    @patch(
-        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._create_dataflow_pipeline"
-    )
+    @patch("recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.EmptyOperator")
     def test_failed_dataflow_pipeline(
         self, mock_create_dataflow_pipeline: MagicMock
     ) -> None:
-        mock_create_dataflow_pipeline.side_effect = (
-            lambda _state_code, _instance: fake_failure_task(
-                task_id="dataflow_pipeline"
-            )
-        )
+        mock_create_dataflow_pipeline.side_effect = FakeFailureOperator
 
         test_dag = _create_test_single_ingest_pipeline_group_dag(
             StateCode.US_XX, DirectIngestInstance.PRIMARY
