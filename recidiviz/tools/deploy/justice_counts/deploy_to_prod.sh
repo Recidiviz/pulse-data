@@ -93,20 +93,32 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
     --skip-db-name-check \
 
 # Deploy both Publisher and Agency Dashboard
-# This will deploy and also allocate traffic to the latest revision. 
-# Unlike in the deploy_to_staging script, we don't have to allocate traffic separately, 
-# because we currently never use the --no-traffic arg when deploying to prod.
+# Note: we need to manually update traffic in case we previously deployed a revision 
+# with no traffic (which we might do during playtesting deploys), in which case subsequent 
+# deploys also won't start sending traffic until traffic is manually updated via `update-traffic`.
 echo "Deploying new Publisher Cloud Run revision with image ${PROD_IMAGE_URL}..."
 run_cmd gcloud -q run deploy "${PUBLISHER_CLOUD_RUN_SERVICE}" \
     --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
     --region "us-central1" 
 
+echo "Directing 100% of traffic to new revision..."
+run_cmd gcloud -q run services update-traffic "${PUBLISHER_CLOUD_RUN_SERVICE}" \
+    --project "${JUSTICE_COUNTS_PROJECT_ID}" \
+    --to-latest \
+    --region "us-central1"
+
 echo "Deploying new Agency Dashboard Cloud Run revision with image ${PROD_IMAGE_URL}..."
 run_cmd gcloud -q run deploy "${DASHBOARD_CLOUD_RUN_SERVICE}" \
     --project "${JUSTICE_COUNTS_PROJECT_ID}" \
     --image "${PROD_IMAGE_URL}" \
     --region "us-central1" 
+
+echo "Directing 100% of traffic to new revision..."
+run_cmd gcloud -q run services update-traffic "${DASHBOARD_CLOUD_RUN_SERVICE}" \
+    --project "${JUSTICE_COUNTS_PROJECT_ID}" \
+    --to-latest \
+    --region "us-central1"
 
 # Update Image for Cloud Run Jobs
 echo "Updating Image for Cloud Run Jobs"
