@@ -37,6 +37,7 @@ input_columns:
   - SEX_ASSAULT_CRIME
   - CRIME_CLASS # classification_type
   - DANG_OFFENDER # is_violent
+  - COURT_CASE_NUMBER
   - COURT_CASE_COUNT # counts
   - JUDGE
 unused_columns:
@@ -108,6 +109,7 @@ output:
                   $json_dict:
                     CONSEC_SENT: CONSEC_TO
                     MERGED_SENT: MERGE_SENTENCE
+                    COURT_CASE_NUMBER: COURT_CASE_NUMBER
                 charges:
                   - StateCharge:
                       external_id:
@@ -239,6 +241,7 @@ output:
                   $json_dict:
                     CONSEC_SENT: CONSEC_TO
                     MERGED_SENT: MERGE_SENTENCE
+                    COURT_CASE_NUMBER: COURT_CASE_NUMBER
                 charges:
                   - StateCharge:
                       external_id:
