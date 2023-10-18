@@ -16,9 +16,12 @@
 # =============================================================================
 """Utils for Justice Counts Control Panel"""
 import logging
-from typing import Any, Dict, Set
+from typing import Any, Dict, List, Optional, Set
 
+import pandas as pd
 from flask import g, session
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
@@ -116,3 +119,45 @@ def get_auth0_user_id(request_dict: Dict[str, Any]) -> str:
         raise ValueError("Missing required parameter auth0_user_id.")
 
     return auth0_user_id
+
+
+def write_data_to_spreadsheet(
+    google_credentials: Credentials,
+    spreadsheet_id: str,
+    logger: logging.Logger,
+    new_sheet_title: str,
+    data_to_write: Optional[List[List[str]]] = None,
+    df: Optional[pd.DataFrame] = None,
+    columns: Optional[List[str]] = None,
+) -> None:
+    """
+    Writes data to the spreadsheet specified by the spreadsheet_id.
+    """
+    spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
+    # Create a new worksheet in the spreadsheet
+    request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 1}}}
+
+    # Create new sheet
+    spreadsheet_service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id, body={"requests": [request]}
+    ).execute()
+
+    logger.info("New Sheet Created")
+
+    # Format data to fit Google API specifications.
+    # Google API spec requires a list of lists,
+    # each list representing a row.
+    if columns is not None and df is not None:
+        data_to_write = [columns]
+        data_to_write.extend(df.astype(str).values.tolist())
+
+    body = {"values": data_to_write}
+    range_name = f"{new_sheet_title}!A1"
+    spreadsheet_service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range=range_name,
+        valueInputOption="RAW",
+        body=body,
+    ).execute()
+
+    logger.info("Sheet '%s' added and data written.", new_sheet_title)
