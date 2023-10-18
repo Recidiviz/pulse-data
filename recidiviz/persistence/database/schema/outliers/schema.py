@@ -53,6 +53,7 @@ class PersonBase:
     staff_id = Column(BigInteger, nullable=False)
     # Should follow the Recidiviz-standard JSON struct string representation
     full_name = Column(JSON, nullable=False)
+    pseudonymized_id = Column(String, nullable=False)
 
 
 class SupervisionOfficer(PersonBase, OutliersBase):

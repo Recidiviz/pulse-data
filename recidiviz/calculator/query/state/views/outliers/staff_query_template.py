@@ -16,6 +16,7 @@
 #  =============================================================================
 """Helpers for querying normalized_state.state_staff and other staff-related tables"""
 from recidiviz.calculator.query.bq_utils import (
+    get_pseudonymized_id_query_str,
     today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
@@ -38,6 +39,8 @@ def staff_query_template(role: str) -> str:
         attrs.staff_id,
         attrs.state_code,
         staff.full_name,
+        -- Note that the below hash will be different from the hash id for the user in the product_rosters view
+        {get_pseudonymized_id_query_str("attrs.state_code || attrs.officer_id")} AS pseudonymized_id,
         staff.email,
         COALESCE(attrs.supervision_district,attrs.supervision_district_inferred) AS supervision_district,
         attrs.supervisor_staff_external_id AS supervisor_external_id,
