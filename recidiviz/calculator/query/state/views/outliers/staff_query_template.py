@@ -42,8 +42,8 @@ def staff_query_template(role: str) -> str:
         COALESCE(attrs.supervision_district,attrs.supervision_district_inferred) AS supervision_district,
         attrs.supervisor_staff_external_id AS supervisor_external_id,
         attrs.specialized_caseload_type_primary AS specialized_caseload_type,
-    FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` attrs
-    INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff 
+    FROM `{{project_id}}.sessions.supervision_officer_attribute_sessions_materialized` attrs
+    INNER JOIN `{{project_id}}.normalized_state.state_staff` staff 
         USING (staff_id, state_code)
     WHERE staff.state_code = '{state}' 
       AND {today_between_start_date_and_nullable_end_date_exclusive_clause("start_date", "end_date_exclusive")}

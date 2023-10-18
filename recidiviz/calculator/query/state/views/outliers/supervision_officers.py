@@ -47,8 +47,6 @@ SUPERVISION_OFFICERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=SUPERVISION_OFFICERS_VIEW_NAME,
     view_query_template=SUPERVISION_OFFICERS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICERS_DESCRIPTION,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
     should_materialize=True,
     columns=[
         "state_code",
