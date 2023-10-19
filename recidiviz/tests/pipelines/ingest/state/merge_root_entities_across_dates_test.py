@@ -61,25 +61,45 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
 
         primary_key_person_1 = generate_primary_key(
             string_representation(
-                {(person_external_id_1.external_id, person_external_id_1.id_type)}
+                {
+                    (
+                        person_external_id_1.external_id,
+                        f"{person_external_id_1.id_type}#person_external_id_id",
+                    )
+                }
             ),
             StateCode.US_DD,
         )
         primary_key_person_2 = generate_primary_key(
             string_representation(
-                {(person_external_id_2.external_id, person_external_id_2.id_type)}
+                {
+                    (
+                        person_external_id_2.external_id,
+                        f"{person_external_id_2.id_type}#person_external_id_id",
+                    )
+                }
             ),
             StateCode.US_DD,
         )
         primary_key_staff_1 = generate_primary_key(
             string_representation(
-                {(staff_external_id_1.external_id, staff_external_id_1.id_type)}
+                {
+                    (
+                        staff_external_id_1.external_id,
+                        f"{staff_external_id_1.id_type}#staff_external_id_id",
+                    )
+                }
             ),
             StateCode.US_DD,
         )
         primary_key_staff_2 = generate_primary_key(
             string_representation(
-                {(staff_external_id_1.external_id, staff_external_id_1.id_type)}
+                {
+                    (
+                        staff_external_id_2.external_id,
+                        f"{staff_external_id_2.id_type}#staff_external_id_id",
+                    )
+                }
             ),
             StateCode.US_DD,
         )
@@ -175,7 +195,12 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 person=person_1,
                 person_external_id_id=generate_primary_key(
                     string_representation(
-                        {(person_external_id_1.external_id, "person_external_id_id")}
+                        {
+                            (
+                                person_external_id_1.external_id,
+                                f"{person_external_id_1.id_type}#person_external_id_id",
+                            )
+                        }
                     ),
                     StateCode.US_DD,
                 ),
@@ -217,7 +242,12 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 person=person_2,
                 person_external_id_id=generate_primary_key(
                     string_representation(
-                        {(person_external_id_2.external_id, "person_external_id_id")}
+                        {
+                            (
+                                person_external_id_2.external_id,
+                                f"{person_external_id_2.id_type}#person_external_id_id",
+                            )
+                        }
                     ),
                     StateCode.US_DD,
                 ),
@@ -259,7 +289,12 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 staff=staff_1,
                 staff_external_id_id=generate_primary_key(
                     string_representation(
-                        {(staff_external_id_1.external_id, "staff_external_id_id")}
+                        {
+                            (
+                                staff_external_id_1.external_id,
+                                f"{staff_external_id_1.id_type}#staff_external_id_id",
+                            )
+                        }
                     ),
                     StateCode.US_DD,
                 ),
@@ -275,7 +310,12 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                 staff=staff_2,
                 staff_external_id_id=generate_primary_key(
                     string_representation(
-                        {(staff_external_id_2.external_id, "staff_external_id_id")}
+                        {
+                            (
+                                staff_external_id_2.external_id,
+                                f"{staff_external_id_2.id_type}#staff_external_id_id",
+                            )
+                        }
                     ),
                     StateCode.US_DD,
                 ),

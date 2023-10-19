@@ -23,6 +23,10 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
 )
+from recidiviz.persistence.entity.state.entities import (
+    StatePerson,
+    StatePersonExternalId,
+)
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
     generate_primary_key,
     generate_primary_keys_for_root_entity_tree,
@@ -141,3 +145,57 @@ class TestGeneratePrimaryKey(unittest.TestCase):
             self.assertTrue(
                 str(entity.get_id()).startswith(str(int(state_code.get_state().fips)))
             )
+
+    def test_generate_primary_keys_for_root_entity_external_id_entities_share_same_id_value(
+        self,
+    ) -> None:
+        """There are certain circumstances where two ExternalIdEntity objects have the same
+        external_id value but not the same id_type. We should make primary key generation
+        resilient to that."""
+        external_id_1 = StatePersonExternalId.new_with_defaults(
+            state_code=StateCode.US_XX.value, external_id="ID", id_type="TYPE1"
+        )
+        external_id_2 = StatePersonExternalId.new_with_defaults(
+            state_code=StateCode.US_XX.value, external_id="ID", id_type="TYPE2"
+        )
+        person = StatePerson.new_with_defaults(
+            state_code=StateCode.US_XX.value,
+            external_ids=[external_id_1, external_id_2],
+        )
+        external_id_1.person = person
+        external_id_2.person = person
+
+        person_primary_key = generate_primary_key(
+            string_representation(
+                {
+                    (external_id.external_id, external_id.id_type)
+                    for external_id in person.external_ids
+                }
+            ),
+            state_code=StateCode.US_XX,
+        )
+        _ = generate_primary_keys_for_root_entity_tree(
+            root_primary_key=person_primary_key,
+            root_entity=person,
+            state_code=StateCode.US_XX,
+        )
+        self.assertEqual(person.get_id(), person_primary_key)
+        self.assertNotEqual(external_id_1.get_id(), external_id_2.get_id())
+        self.assertTrue(
+            str(external_id_1.get_id()).startswith(
+                str(int(StateCode.US_XX.get_state().fips))
+            )
+        )
+        self.assertTrue(
+            str(external_id_2.get_id()).startswith(
+                str(int(StateCode.US_XX.get_state().fips))
+            )
+        )
+        self.assertTrue(
+            str(external_id_1.get_id()).startswith(
+                str(int(StateCode.US_XX.get_state().fips))
+            )
+        )
+        self.assertTrue(
+            str(person.get_id()).startswith(str(int(StateCode.US_XX.get_state().fips)))
+        )
