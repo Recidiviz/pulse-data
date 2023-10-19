@@ -425,9 +425,9 @@ def generate_agency_summary_csv(
         .reindex(columns=columns)
     )
 
-    now = datetime.datetime.now()
-    new_sheet_title = f"{now.month}-{now.day}-{now.year}"
     if dry_run is False:
+        now = datetime.datetime.now()
+        new_sheet_title = f"{now.month}-{now.day}-{now.year}"
         write_data_to_spreadsheet(
             google_credentials=google_credentials,
             df=df,
