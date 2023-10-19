@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Script for generating data for JII in Maine explaining their SCCP eligibility.
+"""Script for generating PDF packets for JII in Maine explaining their SCCP eligibility.
 
 The script takes as input:
 - Name of a BigQuery view to query for the raw data. This view must contain the following columns:
@@ -26,24 +26,36 @@ The script takes as input:
     - case_manager_name
     - ineligible_criteria
     - array_reasons
-- Path to directory where the script will write the generated spreadsheet, which can be used 
-  to autofill Google Docs templates.
+- Path to Google credentials
 
-Usage: python -m recidiviz.tools.jii.generate_me_sccp_data \
+The script will create a folder of PDF packets to this folder in Google Drive:
+https://drive.google.com/drive/folders/1DW1ICTq5XjXyz3jbcZ3hJR7h55-qHhOS
+
+Usage: python -m recidiviz.tools.jii.generate_me_sccp_packets \
   --bigquery-view=recidiviz-staging.xxx_scratch.me_sccp_jii_unit_2_query \
-  --output-path=/Users/xxx/data.csv
+  --credentials-directory=/Users/xxx/.config/gcloud
 """
 
 import argparse
-import csv
 import datetime
+import io
 from ast import literal_eval
 from enum import Enum
 from typing import Any, Dict, List, Set
 
+from googleapiclient.http import MediaIoBaseUpload
+
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils.google_drive import (
+    get_credentials,
+    get_docs_service,
+    get_drive_service,
+)
 from recidiviz.utils.metadata import local_project_id_override
+
+# https://drive.google.com/drive/folders/1DW1ICTq5XjXyz3jbcZ3hJR7h55-qHhOS
+GENERATED_TEMPLATES_FOLDER_ID = "1nNIImRxeDERno-dgROODWNIv6RaEHF2S"
 
 US_ME_SERVED_X_PORTION_OF_SENTENCE = "US_ME_SERVED_X_PORTION_OF_SENTENCE"
 US_ME_X_MONTHS_REMAINING_ON_SENTENCE = "US_ME_X_MONTHS_REMAINING_ON_SENTENCE"
@@ -68,6 +80,13 @@ class Templates(Enum):
     THREE_REASONS_TIME_FRACTION_MONTHS_REMAINING_VIOLATIONS = 8
 
 
+# The values of this dictionary are Google Docs file ids
+TEMPLATE_TO_FILE_ID = {
+    Templates.ELIGIBLE: "1_3jd-LMreqI26FU77QSH7kKVDY9iFTlvsSUyBn6B0GA",
+    Templates.ONE_REASON_TIME_FRACTION: "1jeQ9OzYN1A2yL7wc2af6HGWck7j_YHOpS04G0SMjLfM",
+    Templates.TWO_REASONS_TIME_FRACTION_MONTHS_REMAINING: "1lAupNW03B7-XjHgnpJC_I7HpmJJX4jYZogSKzycpIwk",
+}
+
 # Input BigQuery view must contain the following columns
 REQUIRED_COLUMNS = {
     "external_id",
@@ -78,8 +97,9 @@ REQUIRED_COLUMNS = {
     "array_reasons",
 }
 
-# Output spreadsheet will have the following columns
-FIELD_NAMES = [
+# Google doc template will have the following fields in double brackets
+# e.g. {{external id}}
+TEMPLATE_COLUMNS = [
     "external id",
     "full name",
     "first name",
@@ -91,9 +111,6 @@ FIELD_NAMES = [
     "case manager name",
     "custody level",
     "eligibility date",
-    "template",
-    "ineligible reasons",
-    "eligible reasons",
 ]
 
 
@@ -106,46 +123,58 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
-        "--output-path",
-        help="Path to directory where the script will write the generated spreadsheet.",
-        required=True,
+        "--credentials-directory",
+        required=False,
+        default=".",
+        help="Directory where the Google API 'credentials.json' files lives. See recidiviz.utils.google_drive for instructions on downloading and storing credentials.",
     )
     return parser
 
 
-def get_template(ineligible_set: Set[str]) -> int:
-    """Given a combination of ineligible reasons, return the corresponding template."""
+def get_template_file_id(ineligible_set: Set[str]) -> str:
+    """Given a combination of ineligible reasons, return the file ID
+    of the corresponding Google Docs template.
+    """
+    template = None
     if ineligible_set == set():
-        return Templates.ELIGIBLE.value
-    if ineligible_set == {US_ME_SERVED_X_PORTION_OF_SENTENCE}:
-        return Templates.ONE_REASON_TIME_FRACTION.value
-    if ineligible_set == {US_ME_X_MONTHS_REMAINING_ON_SENTENCE}:
-        return Templates.ONE_REASON_MONTHS_REMAINING.value
-    if ineligible_set == {US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS}:
-        return Templates.ONE_REASON_VIOLATIONS.value
-    if ineligible_set == {
+        template = Templates.ELIGIBLE
+    elif ineligible_set == {US_ME_SERVED_X_PORTION_OF_SENTENCE}:
+        template = Templates.ONE_REASON_TIME_FRACTION
+    elif ineligible_set == {US_ME_X_MONTHS_REMAINING_ON_SENTENCE}:
+        template = Templates.ONE_REASON_MONTHS_REMAINING
+    elif ineligible_set == {US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS}:
+        template = Templates.ONE_REASON_VIOLATIONS
+    elif ineligible_set == {
         US_ME_SERVED_X_PORTION_OF_SENTENCE,
         US_ME_X_MONTHS_REMAINING_ON_SENTENCE,
     }:
-        return Templates.TWO_REASONS_TIME_FRACTION_MONTHS_REMAINING.value
-    if ineligible_set == {
+        template = Templates.TWO_REASONS_TIME_FRACTION_MONTHS_REMAINING
+    elif ineligible_set == {
         US_ME_SERVED_X_PORTION_OF_SENTENCE,
         US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS,
     }:
-        return Templates.TWO_REASONS_TIME_FRACTION_VIOLATIONS.value
-    if ineligible_set == {
+        template = Templates.TWO_REASONS_TIME_FRACTION_VIOLATIONS
+    elif ineligible_set == {
         US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS,
         US_ME_X_MONTHS_REMAINING_ON_SENTENCE,
     }:
-        return Templates.TWO_REASONS_MONTHS_REMAINING_VIOLATIONS.value
-    if ineligible_set == {
+        template = Templates.TWO_REASONS_MONTHS_REMAINING_VIOLATIONS
+    elif ineligible_set == {
         US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS,
         US_ME_X_MONTHS_REMAINING_ON_SENTENCE,
         US_ME_SERVED_X_PORTION_OF_SENTENCE,
     }:
-        return Templates.THREE_REASONS_TIME_FRACTION_MONTHS_REMAINING_VIOLATIONS.value
+        template = Templates.THREE_REASONS_TIME_FRACTION_MONTHS_REMAINING_VIOLATIONS
+    else:
+        raise ValueError(
+            f"No matching template for ineligible reasons {ineligible_set}."
+        )
 
-    raise ValueError(f"No matching template for ineligible reasons {ineligible_set}.")
+    file_id = TEMPLATE_TO_FILE_ID.get(template)
+    if not file_id:
+        raise ValueError(f"No matching Google Docs file ID for template {template}")
+
+    return file_id
 
 
 def str_to_date(date_str: str) -> datetime.datetime:
@@ -155,10 +184,19 @@ def str_to_date(date_str: str) -> datetime.datetime:
 def generate_me_sccp_data(bigquery_view: str) -> List[Dict[str, Any]]:
     """
     This method does the following:
-        1) Queries the given BigQuery view for the raw data.
-        2) Parses this data -- in particular the `ineligible_criteria` blob and `array_reasons` blob --
-           into a format that can be used to autofill a Google Doc template.
-        3) Returns a list of dictionaries, each corresponding to a row to write to the output spreadsheet.
+
+    Queries the given BigQuery view, which must include the following columns:
+        - external_id
+        - person_name
+        - release_date
+        - case_manager_name
+        - ineligible_criteria
+        - array_reasons
+
+    Parses this data -- in particular the `ineligible_criteria` blob and `array_reasons` blob --
+    into a format that can be used to autofill a Google Doc template.
+
+    Returns a list of dictionaries, each corresponding to a packet.
     """
     query = f"SELECT * FROM {bigquery_view}"
     query_job = BigQueryClientImpl().run_query_async(
@@ -176,6 +214,7 @@ def generate_me_sccp_data(bigquery_view: str) -> List[Dict[str, Any]]:
                 "The following required columns were missing from the BQ view: {missing_columns}"
             )
 
+    for row in query_job:  # pylint: disable=too-many-nested-blocks
         name_blob = literal_eval(row["person_name"])
         first_name = name_blob["given_names"].title()
         full_name = first_name + " " + name_blob["surname"].title()
@@ -302,7 +341,9 @@ def generate_me_sccp_data(bigquery_view: str) -> List[Dict[str, Any]]:
             else None,
             "ineligible reasons": "\n".join(ineligible_reasons),
             "eligible reasons": "\n".join(eligible_reasons),
-            "template": get_template(ineligible_set=ineligible_criterias),
+            "template_file_id": get_template_file_id(
+                ineligible_set=ineligible_criterias
+            ),
         }
         new_rows.append(new_row)
 
@@ -311,9 +352,126 @@ def generate_me_sccp_data(bigquery_view: str) -> List[Dict[str, Any]]:
 
 if __name__ == "__main__":
     args = create_parser().parse_args()
+
+    creds = get_credentials(
+        directory=args.credentials_directory,
+        readonly=False,
+        scopes=[
+            "https://www.googleapis.com/auth/documents",
+            "https://www.googleapis.com/auth/drive",
+        ],
+    )
+
+    docs_service = get_docs_service(creds=creds)
+    drive_service = get_drive_service(creds=creds)
+
     with local_project_id_override(GCP_PROJECT_PRODUCTION):
         data = generate_me_sccp_data(bigquery_view=args.bigquery_view)
-        with open(args.output_path, "w", encoding="utf-8") as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=FIELD_NAMES)
-            writer.writeheader()
-            writer.writerows(data)
+
+    # Create a top-level folder (named for the current date) to put the packets in
+    base_folder = (
+        drive_service.files()
+        .create(
+            body={
+                "name": datetime.date.today().strftime("%m-%d-%Y"),
+                "mimeType": "application/vnd.google-apps.folder",
+                "parents": [GENERATED_TEMPLATES_FOLDER_ID],
+            },
+            fields="id",
+            supportsAllDrives=True,
+        )
+        .execute()
+    )
+    base_folder_id = base_folder.get("id")
+
+    # Create separate folders for docs and pdfs within the top-level folder
+    doc_folder = (
+        drive_service.files()
+        .create(
+            body={
+                "name": "docs",
+                "mimeType": "application/vnd.google-apps.folder",
+                "parents": [base_folder_id],
+            },
+            fields="id",
+            supportsAllDrives=True,
+        )
+        .execute()
+    )
+    doc_folder_id = doc_folder.get("id")
+
+    pdf_folder = (
+        drive_service.files()
+        .create(
+            body={
+                "name": "pdfs",
+                "mimeType": "application/vnd.google-apps.folder",
+                "parents": [base_folder_id],
+            },
+            fields="id",
+            supportsAllDrives=True,
+        )
+        .execute()
+    )
+    pdf_folder_id = pdf_folder.get("id")
+
+    for data_row in data:
+        file_name = f"[{data_row['full name']}] SCCP Eligibility Details"
+
+        # Create a copy of the template file and put it in the docs folder
+        doc_file = (
+            drive_service.files()
+            .copy(
+                fileId=data_row["template_file_id"],
+                body={"name": file_name, "parents": [doc_folder_id]},
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
+        doc_file_id = doc_file.get("id")
+
+        # Run find/replace on all fields in the template file
+        requests = [
+            {
+                "replaceAllText": {
+                    "replaceText": data_row[field],
+                    "containsText": {
+                        "text": f"{{{{{field}}}}}",
+                        "matchCase": True,
+                    },
+                }
+            }
+            for field in TEMPLATE_COLUMNS
+        ]
+
+        # Execute the changes
+        docs_service.documents().batchUpdate(
+            documentId=doc_file_id, body={"requests": requests}
+        ).execute()
+
+        # Export file as a pdf
+        pdf_media = MediaIoBaseUpload(
+            io.BytesIO(
+                drive_service.files()
+                .export(fileId=doc_file_id, mimeType="application/pdf")
+                .execute()
+            ),
+            mimetype="application/pdf",
+            resumable=True,
+        )
+
+        # Write the pdf to the pdf folder
+        pdf_file = (
+            drive_service.files()
+            .create(
+                body={
+                    "name": file_name,
+                    "parents": [pdf_folder_id],
+                    "mimeType": "application/pdf",
+                },
+                media_body=pdf_media,
+                fields="id",
+                supportsAllDrives=True,
+            )
+            .execute()
+        )
