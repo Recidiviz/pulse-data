@@ -62,8 +62,6 @@ LAST_UPDATE = "last_update"
 NUM_RECORDS_WITH_DATA = "num_records_with_data"
 NUM_METRICS_WITH_DATA = "num_metrics_with_data"
 NUM_METRICS_CONFIGURED = "num_metrics_configured"
-NUM_METRICS_AVAILABLE = "num_metrics_available"
-NUM_METRICS_UNAVAILABLE = "num_metrics_unavailable"
 METRIC_CONFIG_THIS_WEEK = "metric_configured_this_week"
 IS_SUPERAGENCY = "is_superagency"
 IS_CHILD_AGENCY = "is_child_agency"
@@ -108,8 +106,6 @@ def summarize(
     report_id_to_datapoints = defaultdict(list)
     metric_key_to_datapoints = defaultdict(list)
     metrics_configured = set()
-    metrics_available = set()
-    metrics_unavailable = set()
 
     # last_update is the most recent date in which an agency or report datapoint
     # has been changed. For report datapoints, we do not consider null values
@@ -178,10 +174,6 @@ def summarize(
         ):
             # We consider a metric configured if it is either turned on or off
             metrics_configured.add(datapoint["metric_definition_key"])
-            if datapoint["enabled"] is True:
-                metrics_available.add(datapoint["metric_definition_key"])
-            elif datapoint["enabled"] is False:
-                metrics_unavailable.add(datapoint["metric_definition_key"])
 
     return {
         LAST_UPDATE: last_update.date()
@@ -190,8 +182,6 @@ def summarize(
         NUM_RECORDS_WITH_DATA: len(report_id_to_datapoints),
         NUM_METRICS_WITH_DATA: len(metric_key_to_datapoints),
         NUM_METRICS_CONFIGURED: len(metrics_configured),
-        NUM_METRICS_AVAILABLE: len(metrics_available),
-        NUM_METRICS_UNAVAILABLE: len(metrics_unavailable),
         METRIC_CONFIG_THIS_WEEK: metric_configured_this_week,
         DATA_SHARED_THIS_WEEK: data_shared_this_week,
     }
@@ -300,8 +290,6 @@ def create_new_agency_columns(
         agency[NUM_METRICS_WITH_DATA] = 0
         agency[DATA_SHARED_THIS_WEEK] = False
         agency[NUM_METRICS_CONFIGURED] = 0
-        agency[NUM_METRICS_AVAILABLE] = 0
-        agency[NUM_METRICS_UNAVAILABLE] = 0
         agency[METRIC_CONFIG_THIS_WEEK] = False
         agency[IS_SUPERAGENCY] = bool(agency["is_superagency"])
         agency[IS_CHILD_AGENCY] = bool(agency["super_agency_id"])
@@ -409,6 +397,9 @@ def generate_agency_summary_csv(
 
     agencies = list(agency_id_to_agency.values())
 
+    # Split out systems column into multiple columns
+    agencies, system_columns = process_systems(agencies=agencies)
+
     columns = [
         "name",
         "state",
@@ -420,15 +411,12 @@ def generate_agency_summary_csv(
         NUM_METRICS_WITH_DATA,
         DATA_SHARED_THIS_WEEK,
         NUM_METRICS_CONFIGURED,
-        NUM_METRICS_AVAILABLE,
-        NUM_METRICS_UNAVAILABLE,
         METRIC_CONFIG_THIS_WEEK,
         IS_SUPERAGENCY,
         IS_CHILD_AGENCY,
         NEW_AGENCY_THIS_WEEK,
         NEW_STATE_THIS_WEEK,
-        "systems",
-    ]
+    ] + system_columns
     df = (
         pd.DataFrame.from_records(agencies)
         # Sort agencies alphabetically by name
@@ -448,6 +436,29 @@ def generate_agency_summary_csv(
             new_sheet_title=new_sheet_title,
             logger=logger,
         )
+
+
+def process_systems(
+    agencies: List[Dict[str, Any]]
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Given a list of agencies (represented as dictionaries), split the 'systems'
+    column into multiple columns. This will result in max_num_systems new columns,
+    which is the number of systems that the agency with the most systems has. The new
+    columns will be labeled 'system_1', 'system_2', ...., 'system_n', where n is
+    max_num_systems"""
+    agencies_df = pd.DataFrame(agencies)
+    max_num_systems = pd.DataFrame(agencies_df["systems"].to_list()).shape[1]
+    system_cols = []
+    for n in range(1, max_num_systems + 1):
+        system_cols.append(f"system_{n}")
+
+    # Split 'systems' column into multiple columns
+    agencies_df[system_cols] = pd.DataFrame(
+        pd.DataFrame(agencies_df["systems"].to_list())
+    ).fillna("")
+    agencies_df = agencies_df.drop(labels="systems", axis=1)
+    agencies = agencies_df.to_dict("records")
+    return agencies, system_cols
 
 
 if __name__ == "__main__":
