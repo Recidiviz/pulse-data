@@ -40,6 +40,7 @@ from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     import_raw_files_to_bq_sandbox,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
@@ -53,6 +54,9 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
+)
+from recidiviz.ingest.direct.dataset_config import (
+    ingest_view_materialization_results_dataflow_dataset,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
@@ -805,6 +809,35 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         return (
             jsonify(job_info.for_api() if job_info else None),
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
+        "/api/ingest_operations/get_dataflow_job_additional_metadata_by_instance/<state_code_str>/<instance_str>"
+    )
+    @requires_gae_auth
+    def _get_dataflow_job_additional_metadata_by_instance(
+        state_code_str: str,
+        instance_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
+        try:
+            state_code = StateCode(state_code_str)
+            instance = DirectIngestInstance(instance_str)
+        except ValueError:
+            return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
+
+        ingest_view_results_dataset = (
+            ingest_view_materialization_results_dataflow_dataset(state_code, instance)
+        )
+        state_results_dataset = state_dataset_for_state_code(state_code, instance)
+
+        return (
+            jsonify(
+                {
+                    "ingestViewResultsDatasetName": ingest_view_results_dataset,
+                    "stateResultsDatasetName": state_results_dataset,
+                }
+            ),
             HTTPStatus.OK,
         )
 
