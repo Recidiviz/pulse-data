@@ -26,6 +26,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -79,7 +82,7 @@ includes electronic monitoring */
         AND pei.state_code = 'US_MI'
         AND pei.id_type = "US_MI_DOC"
     WHERE Specialty = 'GPS Monitoring'
-    AND SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) != COALESCE(SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE), "{MAGIC_END_DATE}")
+    AND SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) != {nonnull_end_date_clause('SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE)')}
 ),
 {create_sub_sessions_with_attributes('em_spans')},
 deduped_sub_sessions AS (

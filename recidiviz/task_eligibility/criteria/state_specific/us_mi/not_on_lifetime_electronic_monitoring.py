@@ -25,6 +25,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -33,6 +36,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
 
 _CRITERIA_NAME = "US_MI_NOT_ON_LIFETIME_ELECTRONIC_MONITORING"
 
@@ -76,6 +80,7 @@ WITH lifetime_em_sentences AS (
         AND pei.state_code = 'US_MI'
         AND pei.id_type = "US_MI_DOC"
     WHERE Specialty = 'Lifetime GPS Monitoring'
+    AND SAFE_CAST(SAFE_CAST(start_date AS DATETIME) AS DATE) != {nonnull_end_date_clause('SAFE_CAST(SAFE_CAST(end_date AS DATETIME) AS DATE)')}
     ),
     lifetime_em_spans AS (
     SELECT *
