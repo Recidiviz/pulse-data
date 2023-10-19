@@ -45,7 +45,6 @@ class UsTnController(BaseDirectIngestController):
 
         tags = [
             "OffenderName",
-            "OffenderMovementIncarcerationPeriod_v2",
             "AssignedStaffSupervisionPeriod_v2",
             "VantagePointAssessments",
             "DisciplinaryIncarcerationIncident",
@@ -58,9 +57,14 @@ class UsTnController(BaseDirectIngestController):
         if not environment.in_gcp_production():
             tags.extend(["ViolationsAndSanctions", "InferredViolations"])
 
-        # TODO(#11679): Remove gating once we are ready to ingest ContactNote file sizes
+        # TODO(#11679): Remove gating once we are READY to ingest ContactNote file sizes
         #  faster than current infra allows.
         if not environment.in_gcp():
             tags.extend(["SupervisionContacts"])
 
-        return tags
+        return tags + (  # TODO(#24852): Ungate after rerun and validations
+            ["OffenderMovementIncarcerationPeriod_v3"]
+            if not environment.in_gcp_production()
+            and ingest_instance == DirectIngestInstance.SECONDARY
+            else ["OffenderMovementIncarcerationPeriod_v2"]
+        )
