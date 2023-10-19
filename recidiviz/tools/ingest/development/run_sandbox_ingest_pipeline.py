@@ -38,7 +38,8 @@ Examples:
         --ingest_instance SECONDARY \
         --materialization_method original \
         --ingest_view_results_only True \
-        --skip_build True
+        --skip_build True \
+        --ingest_views_to_run "person staff" \
 """
 import argparse
 import json

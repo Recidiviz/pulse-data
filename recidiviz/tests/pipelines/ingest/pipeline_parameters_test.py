@@ -266,7 +266,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
             ingest_view_results_output="test_ingest_view_output",
             materialization_method="original",
             raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
-            ingest_view_results_only=True,  # type: ignore
+            ingest_view_results_only="True",
         )
 
         expected_parameters = {
@@ -283,3 +283,48 @@ class TestIngestPipelineParameters(unittest.TestCase):
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+
+    def test_ingest_views_to_run(self) -> None:
+        pipeline_parameters = IngestPipelineParameters(
+            project="recidiviz-456",
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test-job",
+            output="test_output",
+            ingest_view_results_output="test_ingest_view_output",
+            materialization_method="original",
+            raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            ingest_views_to_run="view1 view2",
+        )
+
+        expected_parameters = {
+            "state_code": "US_OZ",
+            "pipeline": "test_pipeline_name",
+            "output": "test_output",
+            "raw_data_table_input": "us_oz_raw_data",
+            "reference_view_input": "reference_views",
+            "ingest_view_results_output": "test_ingest_view_output",
+            "ingest_instance": "PRIMARY",
+            "materialization_method": "original",
+            "raw_data_upper_bound_dates_json": '{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+            "ingest_view_results_only": "False",
+            "ingest_views_to_run": "view1 view2",
+        }
+
+        self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
+
+    def test_ingest_views_to_run_non_sandbox(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError, r"^Invalid pipeline parameters for ingest_views_to_run. *"
+        ):
+            _ = IngestPipelineParameters(
+                project="recidiviz-456",
+                state_code="US_OZ",
+                pipeline="test_pipeline_name",
+                region="us-west1",
+                job_name="test-job",
+                materialization_method="original",
+                raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
+                ingest_views_to_run="view1 view2",
+            )

@@ -67,6 +67,13 @@
         "helpText": "If set to true, only run the pipeline to output ingest view results only to BigQuery.",
         "regexes": ["True|False"],
         "isOptional": true
+      },
+      {
+        "name": "ingest_views_to_run",
+        "label": "If set as a space-separated string, only run the pipeline for a subset of ingest views.",
+        "helpText": "If set as a space-separated string, only run the pipeline for a subset of ingest views.",
+        "regexes": ["[0-9a-z_ ]+"],
+        "isOptional": true
       }
     ]
   }
