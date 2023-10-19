@@ -22,6 +22,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.entity.root_entity_utils import (
+    get_entity_class_name_to_root_entity_class_name,
     get_root_entity_class_for_entity,
     get_root_entity_id,
 )
@@ -84,3 +85,14 @@ class RootEntityUtilsTest(unittest.TestCase):
         )
         self.assertEqual(789, get_root_entity_id(db_staff.external_ids[0]))
         self.assertEqual(789, get_root_entity_id(db_staff))
+
+    def test_get_entity_class_name_to_root_entity_class_name(self) -> None:
+        root_entity_mapping = get_entity_class_name_to_root_entity_class_name(
+            entities_module=entities
+        )
+
+        self.assertEqual("state_person", root_entity_mapping["state_assessment"])
+        self.assertEqual("state_person", root_entity_mapping["state_person"])
+
+        self.assertEqual("state_staff", root_entity_mapping["state_staff_role_period"])
+        self.assertEqual("state_staff", root_entity_mapping["state_staff"])

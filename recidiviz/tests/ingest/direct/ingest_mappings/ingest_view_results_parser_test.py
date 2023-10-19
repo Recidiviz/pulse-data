@@ -28,10 +28,8 @@ from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHand
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
-    EntityTreeManifest,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
+    IngestViewManifest,
     IngestViewResultsParser,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
@@ -280,7 +278,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         is_staging: bool = False,
         is_local: bool = False,
         results_update_datetime: datetime.datetime = datetime.datetime.now(),
-    ) -> EntityTreeManifest:
+    ) -> IngestViewManifest:
         delegate = FakeSchemaIngestViewResultsParserDelegate(
             ingest_instance,
             is_production,
@@ -289,10 +287,10 @@ class IngestViewFileParserTest(unittest.TestCase):
             results_update_datetime,
         )
         parser = IngestViewResultsParser(delegate)
-        manifest_ast = parser.parse_manifest(
+        manifest = parser.parse_manifest(
             manifest_path=delegate.get_ingest_view_manifest_path(ingest_view_name),
-        ).output
-        return manifest_ast
+        )
+        return manifest
 
     def test_simple_output(self) -> None:
         # Arrange
@@ -2544,7 +2542,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             "string_datetime_env_property"
         )
         self.assertSetEqual(
-            manifest.env_properties_referenced(), {"test_results_update_datetime"}
+            manifest.output.env_properties_referenced(),
+            {"test_results_update_datetime"},
         )
 
     def test_env_property_names_returned_bool_env_property(self) -> None:
@@ -2552,6 +2551,15 @@ class IngestViewFileParserTest(unittest.TestCase):
             "boolean_condition_env_property"
         )
         self.assertSetEqual(
-            manifest.env_properties_referenced(),
+            manifest.output.env_properties_referenced(),
             {"test_is_production", "test_is_primary_instance"},
         )
+
+    def test_get_hydrated_entities(self) -> None:
+        manifest = self._run_parse_manifest_for_ingest_view("enum_variable")
+        self.assertEqual(
+            {FakePerson, FakePersonExternalId}, manifest.hydrated_entity_classes()
+        )
+
+        manifest = self._run_parse_manifest_for_ingest_view("simple_variables")
+        self.assertEqual({FakePerson}, manifest.hydrated_entity_classes())

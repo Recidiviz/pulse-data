@@ -18,13 +18,10 @@
 system."""
 import os
 import re
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
-    EntityTreeManifest,
-)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
     IngestViewManifest,
     IngestViewResultsParser,
@@ -44,7 +41,6 @@ class IngestViewManifestCollector:
         self.region = region
         self.manifest_parser = IngestViewResultsParser(delegate)
         self._ingest_view_to_manifest: Optional[Dict[str, IngestViewManifest]] = None
-        self._hydrated_entity_names: Optional[Set[str]] = None
 
     @property
     def ingest_view_to_manifest(self) -> Dict[str, IngestViewManifest]:
@@ -65,19 +61,6 @@ class IngestViewManifestCollector:
             for ingest_view_name, manifest in self.ingest_view_to_manifest.items()
             if manifest.should_launch
         ]
-
-    @property
-    def hydrated_entity_names(self) -> Set[str]:
-        if not self._hydrated_entity_names:
-            self._hydrated_entity_names = set()
-            for ingest_view_name in self.launchable_ingest_views():
-                manifest = self.ingest_view_to_manifest[ingest_view_name]
-                self._hydrated_entity_names |= {
-                    node.entity_cls.get_entity_name()
-                    for node in manifest.output.all_nodes_referenced()
-                    if isinstance(node, EntityTreeManifest)
-                }
-        return self._hydrated_entity_names
 
     def _parse_ingest_view_name(self, manifest_path: str) -> str:
         file_name = os.path.basename(manifest_path)

@@ -15,15 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for managing root entities."""
-from typing import Type, cast
+from types import ModuleType
+from typing import Dict, Type, cast
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
     SchemaToEntityClassMapper,
 )
-from recidiviz.persistence.entity.base_entity import RootEntity
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.core_entity import CoreEntity
+from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities as state_entities
 
 
@@ -67,3 +69,21 @@ def get_root_entity_class_for_entity(entity_cls: Type[CoreEntity]) -> Type[RootE
         f"Expected non root entity {entity_cls} to have a field associated with a root "
         f"entity type but found none."
     )
+
+
+def get_entity_class_name_to_root_entity_class_name(
+    entities_module: ModuleType,
+) -> Dict[str, str]:
+    """Returns a dictionary that maps from entity name (e.g. 'state_assessment')
+    to the corresponding root entity name (e.g. 'state_person').
+    """
+    result = {}
+    for entity_cls in get_all_entity_classes_in_module(entities_module):
+        root_entity_class = get_root_entity_class_for_entity(entity_cls)
+        if not issubclass(root_entity_class, Entity):
+            raise ValueError(
+                f"Expected root_entity_class to be an Entity subclass, "
+                f"found: {root_entity_class}"
+            )
+        result[entity_cls.get_entity_name()] = root_entity_class.get_entity_name()
+    return result

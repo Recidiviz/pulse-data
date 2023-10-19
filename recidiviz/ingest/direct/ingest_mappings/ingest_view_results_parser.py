@@ -18,7 +18,7 @@
 manifest file for this ingest view.
 """
 import os
-from typing import Callable, Dict, Iterator, List, Optional, Set, Union
+from typing import Callable, Dict, Iterator, List, Optional, Set, Type, Union
 
 import attr
 from more_itertools import one
@@ -49,6 +49,13 @@ class IngestViewManifest:
     unused_columns: List[str]
     should_launch: bool
     output: EntityTreeManifest
+
+    def hydrated_entity_classes(self) -> Set[Type[Entity]]:
+        return {
+            node.entity_cls
+            for node in self.output.all_nodes_referenced()
+            if isinstance(node, EntityTreeManifest)
+        }
 
 
 class IngestViewResultsParser:
