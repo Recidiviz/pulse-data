@@ -156,7 +156,7 @@ class MetricBenchmark(OutliersBase):
     target = Column(Float, nullable=False)
     # The threshold for the given metric, specifically the IQR
     threshold = Column(Float, nullable=False)
-    # Caseload type, if applicable. Empty value indicates the metric benchmark is statewide.
+    # Caseload type, if applicable. 'ALL' indicates the metric benchmark is statewide.
     caseload_type = Column(String, primary_key=True)
 
 
@@ -168,7 +168,7 @@ class SupervisionOfficerOutlierStatus(OutliersBase):
     state_code = Column(String, primary_key=True)
     # The id of the officer the metric is measured for
     officer_id = Column(String, primary_key=True)
-    # Caseload type, if applicable. Empty value indicates the status is compared to a statewide metric.
+    # Caseload type, if applicable. 'ALL' value indicates the status is compared to a statewide metric.
     caseload_type = Column(String, primary_key=True)
     # The name of the metric, which corresponds to a column in the supervision_x_aggregated_metrics_materialized table
     metric_id = Column(String, primary_key=True)
