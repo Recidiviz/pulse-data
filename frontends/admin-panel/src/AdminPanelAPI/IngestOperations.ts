@@ -334,6 +334,16 @@ export const getLatestDataflowJobByInstance = async (
   );
 };
 
+// Get ingest dataflow pipeline output dataset names for state and instance
+export const getDataflowJobAdditionalMetadataByInstance = async (
+  stateCode: string,
+  instance: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/get_dataflow_job_additional_metadata_by_instance/${stateCode}/${instance}`
+  );
+};
+
 // Get latest ingest dataflow raw data watermarks for the state and instance
 export const getLatestDataflowRawDataWatermarks = async (
   stateCode: string,

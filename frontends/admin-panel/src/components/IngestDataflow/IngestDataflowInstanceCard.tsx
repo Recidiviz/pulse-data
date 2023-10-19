@@ -21,6 +21,7 @@ import Title from "antd/lib/typography/Title";
 import moment from "moment";
 import { useCallback } from "react";
 import {
+  getDataflowJobAdditionalMetadataByInstance,
   getLatestDataflowJobByInstance,
   getLatestDataflowRawDataWatermarks,
   getLatestRunIngestViewResults,
@@ -32,6 +33,7 @@ import NewTabLink from "../NewTabLink";
 import { formatDatetimeFromTimestamp } from "../Utilities/GeneralUtilities";
 import {
   ANCHOR_DATAFLOW_LATEST_JOB,
+  DataflowIngestPipelineAdditionalMetadata,
   DataflowIngestPipelineStatus,
   DataflowIngestRawDataWatermarks,
   IngestViewResultRowCounts,
@@ -86,6 +88,15 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
   } = useFetchedDataJSON<DataflowIngestPipelineStatus>(
     fetchDataflowPipelineInstance
   );
+
+  const fetchDataflowPipelineAdditionalMetadataInstance =
+    useCallback(async () => {
+      return getDataflowJobAdditionalMetadataByInstance(stateCode, instance);
+    }, [stateCode, instance]);
+  const { data: datasetNames } =
+    useFetchedDataJSON<DataflowIngestPipelineAdditionalMetadata>(
+      fetchDataflowPipelineAdditionalMetadataInstance
+    );
 
   const fetchRawDataWatermarks = useCallback(async () => {
     return getLatestDataflowRawDataWatermarks(stateCode, instance);
@@ -259,6 +270,36 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
             >
               go/prod-ingest-dataflow-logs/
               {mostRecentPipelineInfo.name}
+            </NewTabLink>
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label="Ingest View Results Output Table" span={3}>
+          {isProduction ? (
+            <NewTabLink
+              href={`http://go/prod-ingest-view-results/${stateCode}/${instance}`}
+            >
+              {datasetNames?.ingestViewResultsDatasetName}
+            </NewTabLink>
+          ) : (
+            <NewTabLink
+              href={`http://go/staging-ingest-view-results/${stateCode}/${instance}`}
+            >
+              {datasetNames?.ingestViewResultsDatasetName}
+            </NewTabLink>
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label="State Dataset Results Output Table" span={3}>
+          {isProduction ? (
+            <NewTabLink
+              href={`go/prod-state-dataset-table/${stateCode}/${instance}`}
+            >
+              {datasetNames?.stateResultsDatasetName}
+            </NewTabLink>
+          ) : (
+            <NewTabLink
+              href={`go/staging-state-dataset-table/${stateCode}/${instance}`}
+            >
+              {datasetNames?.stateResultsDatasetName}
             </NewTabLink>
           )}
         </Descriptions.Item>

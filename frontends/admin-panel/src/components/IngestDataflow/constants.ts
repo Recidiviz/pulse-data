@@ -34,6 +34,11 @@ export type DataflowIngestPipelineStatus = {
   duration: number;
 };
 
+export type DataflowIngestPipelineAdditionalMetadata = {
+  ingestViewResultsDatasetName: string;
+  stateResultsDatasetName: string;
+};
+
 export interface DataflowIngestRawDataWatermarks {
   [fileName: string]: Date;
 }
