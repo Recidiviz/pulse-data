@@ -1197,7 +1197,7 @@ class BigQueryClientImpl(BigQueryClient):
         results = self.run_query_async(
             query_str=f"""
                 SELECT _TABLE_SUFFIX as table_id, COUNT(*) as num_rows
-                FROM `{metadata.project_id()}.{dataset_id}.*`
+                FROM `{self.project_id}.{dataset_id}.*`
                 GROUP BY _TABLE_SUFFIX
                 """,
             use_query_cache=False,
