@@ -17,7 +17,7 @@
 """Class for ingest pipeline parameters"""
 import json
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import attr
 
@@ -84,6 +84,10 @@ class IngestPipelineParameters(PipelineParameters):
         raw_json = json.loads(self.raw_data_upper_bound_dates_json)
         return dict(raw_json.items())
 
+    ingest_views_to_run: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     @property
     def flex_template_name(self) -> str:
         return "ingest"
@@ -109,6 +113,11 @@ class IngestPipelineParameters(PipelineParameters):
                 "Invalid pipeline parameters for output datasets. Only one of the "
                 "following is a sandbox dataset (either both must be sandbox or neither): "
                 f"output is {self.output}, ingest_view_results_output is {self.ingest_view_results_output}"
+            )
+        if both_are_default and self.ingest_views_to_run:
+            raise ValueError(
+                "Invalid pipeline parameters for ingest_views_to_run. Cannot run a subset"
+                " of ingest views without specifying a sandbox dataset."
             )
 
     @classmethod

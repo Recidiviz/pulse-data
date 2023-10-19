@@ -125,15 +125,26 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 results_update_datetime=datetime.now(),
             ),
         )
+        all_launchable_views = ingest_manifest_collector.launchable_ingest_views()
         view_collector = DirectIngestViewQueryBuilderCollector(
-            region,
-            ingest_manifest_collector.launchable_ingest_views(),
+            region, all_launchable_views
         )
+
+        ingest_views_to_run = (
+            self.pipeline_parameters.ingest_views_to_run.split(" ")
+            if self.pipeline_parameters.ingest_views_to_run
+            else all_launchable_views
+        )
+
         merged_root_entities_with_dates_per_ingest_view: Dict[
             IngestViewName,
             beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]],
         ] = {}
-        for ingest_view in ingest_manifest_collector.launchable_ingest_views():
+        for ingest_view in ingest_views_to_run:
+            if ingest_view not in all_launchable_views:
+                raise ValueError(
+                    f"Found invalid ingest view for {state_code}: {ingest_view}"
+                )
             raw_data_tables_to_upperbound_dates: Dict[str, str] = {}
             for raw_data_dependency in view_collector.get_query_builder_by_view_name(
                 ingest_view

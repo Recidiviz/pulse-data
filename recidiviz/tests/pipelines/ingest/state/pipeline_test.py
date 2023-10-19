@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the state ingest pipeline."""
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, Optional
 
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
@@ -45,6 +45,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
         expected_entity_types: Iterable[str],
         ingest_view_results_only: bool = False,
+        ingest_views_to_run: Optional[str] = None,
     ) -> None:
         """Runs a test version of the state ingest pipeline."""
         project = BQ_EMULATOR_PROJECT_ID
@@ -71,6 +72,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             write_to_bq_constructor=write_to_bq_constructor,
             read_all_from_bq_constructor=read_all_from_bq_constructor,
             ingest_view_results_only=ingest_view_results_only,
+            ingest_views_to_run=ingest_views_to_run,
         )
 
     def test_state_ingest_pipeline(self) -> None:
@@ -101,4 +103,30 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         }
         self.run_test_pipeline(
             expected_ingest_view_output, [], ingest_view_results_only=True
+        )
+
+    def test_state_ingest_pipeline_ingest_views_to_run_subset(self) -> None:
+        self.setup_region_raw_data_bq_tables(test_name="ingest_integration")
+        subset_of_ingest_views = ["ingest12", "ingestTaskDeadline"]
+        expected_ingest_view_output = {
+            ingest_view: self.get_expected_ingest_view_results(
+                ingest_view_name=ingest_view, test_name="ingest_integration"
+            )
+            if ingest_view in subset_of_ingest_views
+            else []
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+        }
+        expected_entity_types = {
+            entity_type
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+            for entity_type in self.get_expected_output_entity_types(
+                ingest_view_name=ingest_view, test_name="ingest_integration"
+            )
+            if ingest_view in subset_of_ingest_views
+        }
+
+        self.run_test_pipeline(
+            expected_ingest_view_output,
+            list(expected_entity_types),
+            ingest_views_to_run=" ".join(subset_of_ingest_views),
         )

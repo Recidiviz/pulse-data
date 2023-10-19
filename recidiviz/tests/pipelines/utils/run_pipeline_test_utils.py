@@ -266,6 +266,8 @@ def default_arg_list_for_pipeline(
                     str(ingest_view_results_only),
                 ]
             )
+        if ingest_views_to_run := additional_pipeline_args.get("ingest_views_to_run"):
+            pipeline_args.extend(["--ingest_views_to_run", ingest_views_to_run])
     else:
         raise ValueError(f"Unexpected Pipeline type: {type(pipeline)}.")
 
