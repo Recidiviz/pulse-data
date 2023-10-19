@@ -16,6 +16,12 @@ input_columns:
   - CustodyLevel
   - HousingUnit
 unused_columns: []
+launch_env:
+  $or:
+    - $and:
+        - $env: is_staging
+        - $env: is_primary_instance
+    - $env: is_production
 variables:
   - is_kcsc_ncsc_mcrc_mtrc_bmsp_open_period:
       $and:
