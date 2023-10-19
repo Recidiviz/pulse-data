@@ -303,6 +303,13 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
             </NewTabLink>
           )}
         </Descriptions.Item>
+        <Descriptions.Item label="Ingest DAG" span={3}>
+          {isProduction ? (
+            <NewTabLink href="http://go/prod-ingest-dag">link</NewTabLink>
+          ) : (
+            <NewTabLink href="http://go/staging-ingest-dag">link</NewTabLink>
+          )}
+        </Descriptions.Item>
       </Descriptions>
       <br />
       <Card
