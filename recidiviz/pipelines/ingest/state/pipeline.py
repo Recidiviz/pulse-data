@@ -77,6 +77,7 @@ from recidiviz.pipelines.ingest.state.merge_ingest_view_root_entity_trees import
 from recidiviz.pipelines.ingest.state.merge_root_entities_across_dates import (
     MergeRootEntitiesAcrossDates,
 )
+from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
@@ -135,6 +136,16 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             if self.pipeline_parameters.ingest_views_to_run
             else all_launchable_views
         )
+        expected_output_entities = {
+            entity_cls.get_entity_name()
+            for ingest_view in ingest_views_to_run
+            for entity_cls in ingest_manifest_collector.ingest_view_to_manifest[
+                ingest_view
+            ].hydrated_entity_classes()
+        }
+
+        if not expected_output_entities:
+            raise ValueError("Pipeline has no expected output")
 
         merged_root_entities_with_dates_per_ingest_view: Dict[
             IngestViewName,
@@ -209,7 +220,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]
         ] = (merged_root_entities_with_dates_per_ingest_view.values() | beam.Flatten())
 
-        # pylint: disable=no-value-for-parameter
+        # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
+        # pylint: disable=E1120
         all_root_entities: beam.PCollection[RootEntity] = (
             merged_root_entities_with_dates
             | "Remove all of the external ids" >> beam.Values()
@@ -242,10 +254,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             }
             | AssociateRootEntitiesWithPrimaryKeys()
             | MergeRootEntitiesAcrossDates(state_code=state_code)
-            # TODO(#24733): Add back a cost-efficient version of invariant checking
-            #  that takes in PCollection[RootEntity] and spits out
-            #  PCollection[RootEntity].
-            # TODO(#24394) Update the write steps to only look at hydrated_entity_names
+            | RunValidations(expected_output_entities=expected_output_entities)
+            # TODO(#24394) Update the write steps to only look at expected_output_entities
             | beam.ParDo(SerializeEntities(state_code=state_code)).with_outputs(
                 *all_state_tables
             )

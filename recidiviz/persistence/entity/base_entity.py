@@ -26,7 +26,7 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.utils import environment
 
 
-@attr.define
+@attr.define(frozen=True)
 class UniqueConstraint:
     name: str
     fields: List[str]

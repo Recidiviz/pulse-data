@@ -36,12 +36,11 @@ from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
 from recidiviz.utils.types import assert_type
 
 
-def validate_root_entity(root_entity: RootEntityT) -> Tuple[EntityKey, Iterable[Error]]:
+def validate_root_entity(root_entity: RootEntityT) -> Iterable[Error]:
     """The assumed input is a root entity with hydrated children entities attached to it.
     This function checks if the root entity does not violate any entity tree specific
     constraints. If the root entity constraints are not met, an exception should be thrown.
     """
-    entity_key = get_entity_key(root_entity)
     error_messages: List[Error] = []
 
     if len(root_entity.external_ids) == 0:
@@ -96,7 +95,7 @@ def validate_root_entity(root_entity: RootEntityT) -> Tuple[EntityKey, Iterable[
                 error_msg += f"first entity found: [{entity.get_class_id_name()} {entity.get_id()}]"
                 error_messages.append(error_msg)
 
-    return entity_key, error_messages
+    return error_messages
 
 
 def get_entity_key(entity: Entity) -> EntityKey:

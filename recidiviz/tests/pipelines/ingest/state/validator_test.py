@@ -58,7 +58,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        _, error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_staff_entities(self) -> None:
@@ -66,7 +66,7 @@ class TestEntityValidations(unittest.TestCase):
             state_code="US_XX", staff_id=1111, external_ids=[]
         )
 
-        _, error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"^Found \[StateStaff\] with id \[1111\] missing an external_id:",
@@ -90,7 +90,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        _, error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
@@ -115,7 +115,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        _, error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
@@ -135,7 +135,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        _, error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_person_entities(self) -> None:
@@ -143,7 +143,7 @@ class TestEntityValidations(unittest.TestCase):
             state_code="US_XX", person_id=1111, external_ids=[]
         )
 
-        _, error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"^Found \[StatePerson\] with id \[1111\] missing an external_id:",
@@ -167,7 +167,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        _, error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
@@ -192,7 +192,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        _, error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
@@ -237,7 +237,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        _, error_messages = validate_root_entity(person)
+        error_messages = validate_root_entity(person)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_entity_tree_unique_constraints_simple_invalid(self) -> None:
@@ -289,7 +289,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        _, error_messages = validate_root_entity(person)
+        error_messages = validate_root_entity(person)
         self.assertRegex(
             one(error_messages),
             r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",
@@ -337,7 +337,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        _, error_messages = validate_root_entity(person)
+        error_messages = validate_root_entity(person)
         expected_regexes = [
             r"^Found \[StatePerson\] with id \[3111\] missing an external_id:",
             r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",

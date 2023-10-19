@@ -25,6 +25,7 @@ from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
+from recidiviz.persistence.entity.entity_utils import set_backedges
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
@@ -50,92 +51,59 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
     def test_validate_single_staff_entity(self) -> None:
         entities = [
-            StateStaff(
-                state_code="US_XX",
-                staff_id=1234,
-                external_ids=[
-                    StateStaffExternalId(
-                        staff_external_id_id=22222,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_ZZ_TYPE",
-                    )
-                ],
+            set_backedges(
+                StateStaff(
+                    state_code="US_XX",
+                    staff_id=1234,
+                    external_ids=[
+                        StateStaffExternalId(
+                            staff_external_id_id=22222,
+                            state_code="US_XX",
+                            external_id="12345",
+                            id_type="US_ZZ_TYPE",
+                        )
+                    ],
+                )
             )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
-        expected_entities = [
-            StateStaff(
-                state_code="US_XX",
-                staff_id=1234,
-                external_ids=[
-                    StateStaffExternalId(
-                        staff_external_id_id=22222,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_ZZ_TYPE",
-                    )
-                ],
-            ),
-            StateStaffExternalId(
-                staff_external_id_id=22222,
-                state_code="US_XX",
-                external_id="12345",
-                id_type="US_ZZ_TYPE",
-            ),
-        ]
-
-        output = input_entities | RunValidations(expected_output_entities=[])
-        assert_that(output, matches_all(expected_entities))
+        output = input_entities | RunValidations(
+            expected_output_entities=["state_staff", "state_staff_external_id"]
+        )
+        assert_that(output, matches_all(entities))
         self.test_pipeline.run()
 
     def test_validate_single_person_entity(self) -> None:
         entities = [
-            StatePerson(
-                state_code="US_XX",
-                person_id=1234,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11111,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_XX_TYPE",
-                    )
-                ],
+            set_backedges(
+                StatePerson(
+                    state_code="US_XX",
+                    person_id=1234,
+                    external_ids=[
+                        StatePersonExternalId(
+                            person_external_id_id=11111,
+                            state_code="US_XX",
+                            external_id="12345",
+                            id_type="US_XX_TYPE",
+                        )
+                    ],
+                )
             )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
 
-        expected_entities = [
-            StatePerson(
-                state_code="US_XX",
-                person_id=1234,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11111,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_XX_TYPE",
-                    )
-                ],
-            ),
-            StatePersonExternalId(
-                person_external_id_id=11111,
-                state_code="US_XX",
-                external_id="12345",
-                id_type="US_XX_TYPE",
-            ),
-        ]
-        output = input_entities | RunValidations(expected_output_entities=[])
-        assert_that(output, matches_all(expected_entities))
+        output = input_entities | RunValidations(
+            expected_output_entities=["state_person", "state_person_external_id"]
+        )
+        assert_that(output, matches_all(entities))
         self.test_pipeline.run()
 
     def test_validate_mixed_root_entities(self) -> None:
-        entities = [
+        entities_without_backedges = [
             StatePerson(
                 state_code="US_XX",
                 person_id=1237,
@@ -162,7 +130,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             ),
             StateStaff(
                 state_code="US_XX",
-                staff_id=1235,
+                staff_id=1237,
                 external_ids=[
                     StateStaffExternalId(
                         staff_external_id_id=22223,
@@ -196,122 +164,33 @@ class TestRunValidations(StateIngestPipelineTestCase):
                     ),
                 ],
             ),
+        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
+        input_entities = self.test_pipeline | "Create test input" >> beam.Create(
+            entities
+        )
+        output = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_staff",
+                "state_staff_external_id",
+            ]
+        )
+        assert_that(output, matches_all(entities))
+        self.test_pipeline.run()
+
+    def test_missing_external_ids_staff_entity(self) -> None:
+        entities = [
+            set_backedges(
+                StateStaff(state_code="US_XX", staff_id=1234, external_ids=[])
+            )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
 
-        expected_entities = [
-            StatePerson(
-                state_code="US_XX",
-                person_id=1237,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11111,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_XX_TYPE",
-                    )
-                ],
-            ),
-            StatePersonExternalId(
-                person_external_id_id=11111,
-                state_code="US_XX",
-                external_id="12345",
-                id_type="US_XX_TYPE",
-            ),
-            StateStaff(
-                state_code="US_XX",
-                staff_id=1234,
-                external_ids=[
-                    StateStaffExternalId(
-                        staff_external_id_id=22222,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_ZZ_TYPE",
-                    )
-                ],
-            ),
-            StateStaffExternalId(
-                staff_external_id_id=22222,
-                state_code="US_XX",
-                external_id="12345",
-                id_type="US_ZZ_TYPE",
-            ),
-            StateStaff(
-                state_code="US_XX",
-                staff_id=1235,
-                external_ids=[
-                    StateStaffExternalId(
-                        staff_external_id_id=22223,
-                        state_code="US_XX",
-                        external_id="2000",
-                        id_type="US_ZZ_TYPE",
-                    ),
-                    StateStaffExternalId(
-                        staff_external_id_id=22224,
-                        state_code="US_XX",
-                        external_id="3000",
-                        id_type="MOD",
-                    ),
-                ],
-            ),
-            StateStaffExternalId(
-                staff_external_id_id=22223,
-                state_code="US_XX",
-                external_id="2000",
-                id_type="US_ZZ_TYPE",
-            ),
-            StateStaffExternalId(
-                staff_external_id_id=22224,
-                state_code="US_XX",
-                external_id="3000",
-                id_type="MOD",
-            ),
-            StatePerson(
-                state_code="US_XX",
-                person_id=3000,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11112,
-                        state_code="US_XX",
-                        external_id="4000",
-                        id_type="US_XX_TYPE",
-                    ),
-                    StatePersonExternalId(
-                        person_external_id_id=11113,
-                        state_code="US_XX",
-                        external_id="5000",
-                        id_type="US_YY_TYPE",
-                    ),
-                ],
-            ),
-            StatePersonExternalId(
-                person_external_id_id=11112,
-                state_code="US_XX",
-                external_id="4000",
-                id_type="US_XX_TYPE",
-            ),
-            StatePersonExternalId(
-                person_external_id_id=11113,
-                state_code="US_XX",
-                external_id="5000",
-                id_type="US_YY_TYPE",
-            ),
-        ]
-        output = input_entities | RunValidations(expected_output_entities=[])
-        assert_that(output, matches_all(expected_entities))
-        self.test_pipeline.run()
-
-    def test_missing_external_ids_staff_entity(self) -> None:
-        expected_entities = [
-            StateStaff(state_code="US_XX", staff_id=1234, external_ids=[])
-        ]
-        input_entities = self.test_pipeline | "Create test input" >> beam.Create(
-            expected_entities
-        )
-
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(expected_output_entities=["state_staff"])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -320,14 +199,16 @@ class TestRunValidations(StateIngestPipelineTestCase):
             self.test_pipeline.run()
 
     def test_missing_external_ids_person_entity(self) -> None:
-        expected_entities = [
-            StatePerson(state_code="US_XX", person_id=1234, external_ids=[])
+        entities = [
+            set_backedges(
+                StatePerson(state_code="US_XX", person_id=1234, external_ids=[])
+            )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
-            expected_entities
+            entities
         )
 
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(expected_output_entities=["state_person"])
 
         with self.assertRaisesRegex(
             ValueError,
@@ -336,7 +217,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
             self.test_pipeline.run()
 
     def test_validate_mixed_root_entities_dup_staff_id(self) -> None:
-        expected_entities = [
+        entities_without_backedges = [
             StatePerson(
                 state_code="US_XX",
                 person_id=1234,
@@ -398,20 +279,29 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
-            expected_entities
+            entities
         )
 
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_staff",
+                "state_staff_external_id",
+            ]
+        )
 
         with self.assertRaisesRegex(
             ValueError,
-            r".*More than one state_staff entity found with staff_id 1234.*",
+            r"Found errors for root entity \(1234, 'state_staff'\):\n"
+            r"  \* More than one state_staff entity found with \(staff_id=1234\).*",
         ):
             self.test_pipeline.run()
 
     def test_validate_mixed_root_entities_dup_person_id(self) -> None:
-        expected_entities = [
+        entities_without_backedges = [
             StatePerson(
                 state_code="US_XX",
                 person_id=3000,
@@ -473,111 +363,29 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
-        input_entities = self.test_pipeline | "Create test input" >> beam.Create(
-            expected_entities
-        )
-
-        _ = input_entities | RunValidations(expected_output_entities=[])
-
-        with self.assertRaisesRegex(
-            ValueError,
-            r".*More than one state_person entity found with person_id 3000.*",
-        ):
-            self.test_pipeline.run()
-
-    def test_validate_simple_child_entities(self) -> None:
-        entities = [
-            StatePerson(
-                state_code="US_XX",
-                person_id=1237,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11111,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_XX_TYPE",
-                    )
-                ],
-                supervision_periods=[
-                    StateSupervisionPeriod.new_with_defaults(
-                        state_code="US_XX",
-                        supervision_period_id=2,
-                        external_id="sp2",
-                    ),
-                    StateSupervisionPeriod.new_with_defaults(
-                        state_code="US_XX",
-                        supervision_period_id=200,
-                        external_id="sp2",
-                    ),
-                    StateSupervisionPeriod.new_with_defaults(
-                        state_code="US_XX",
-                        supervision_period_id=300,
-                        external_id="sp3",
-                    ),
-                ],
-                supervision_contacts=[
-                    StateSupervisionContact.new_with_defaults(
-                        state_code="US_XX",
-                        external_id="c1",
-                        contact_date=date(2018, 4, 1),
-                        supervision_contact_id=101,
-                    )
-                ],
-            ),
-            StateStaff(
-                state_code="US_XX",
-                staff_id=1234,
-                external_ids=[
-                    StateStaffExternalId(
-                        staff_external_id_id=22222,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_ZZ_TYPE",
-                    )
-                ],
-            ),
-            StateStaff(
-                state_code="US_XX",
-                staff_id=1235,
-                external_ids=[
-                    StateStaffExternalId(
-                        staff_external_id_id=222223,
-                        state_code="US_XX",
-                        external_id="2000",
-                        id_type="US_ZZ_TYPE",
-                    ),
-                    StateStaffExternalId(
-                        staff_external_id_id=22223,
-                        state_code="US_XX",
-                        external_id="3000",
-                        id_type="MOD",
-                    ),
-                ],
-            ),
-            StatePerson(
-                state_code="US_XX",
-                person_id=3000,
-                external_ids=[
-                    StatePersonExternalId(
-                        person_external_id_id=11112,
-                        state_code="US_XX",
-                        external_id="4000",
-                        id_type="US_XX_TYPE",
-                    ),
-                    StatePersonExternalId(
-                        person_external_id_id=11113,
-                        state_code="US_XX",
-                        external_id="5000",
-                        id_type="US_YY_TYPE",
-                    ),
-                ],
-            ),
-        ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
 
-        expected_entities = [
+        _ = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_staff",
+                "state_staff_external_id",
+            ]
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found errors for root entity \(3000, 'state_person'\):\n"
+            r"  \* More than one state_person entity found with \(person_id=3000\).*",
+        ):
+            self.test_pipeline.run()
+
+    def test_validate_simple_child_entities(self) -> None:
+        entities_without_backedges = [
             StatePerson(
                 state_code="US_XX",
                 person_id=1237,
@@ -615,33 +423,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                     )
                 ],
             ),
-            StatePersonExternalId(
-                person_external_id_id=11111,
-                state_code="US_XX",
-                external_id="12345",
-                id_type="US_XX_TYPE",
-            ),
-            StateSupervisionPeriod.new_with_defaults(
-                state_code="US_XX",
-                supervision_period_id=2,
-                external_id="sp2",
-            ),
-            StateSupervisionPeriod.new_with_defaults(
-                state_code="US_XX",
-                supervision_period_id=200,
-                external_id="sp2",
-            ),
-            StateSupervisionPeriod.new_with_defaults(
-                state_code="US_XX",
-                supervision_period_id=300,
-                external_id="sp3",
-            ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_XX",
-                external_id="c1",
-                contact_date=date(2018, 4, 1),
-                supervision_contact_id=101,
-            ),
             StateStaff(
                 state_code="US_XX",
                 staff_id=1234,
@@ -653,12 +434,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                         id_type="US_ZZ_TYPE",
                     )
                 ],
-            ),
-            StateStaffExternalId(
-                staff_external_id_id=22222,
-                state_code="US_XX",
-                external_id="12345",
-                id_type="US_ZZ_TYPE",
             ),
             StateStaff(
                 state_code="US_XX",
@@ -678,18 +453,6 @@ class TestRunValidations(StateIngestPipelineTestCase):
                     ),
                 ],
             ),
-            StateStaffExternalId(
-                staff_external_id_id=222223,
-                state_code="US_XX",
-                external_id="2000",
-                id_type="US_ZZ_TYPE",
-            ),
-            StateStaffExternalId(
-                staff_external_id_id=22223,
-                state_code="US_XX",
-                external_id="3000",
-                id_type="MOD",
-            ),
             StatePerson(
                 state_code="US_XX",
                 person_id=3000,
@@ -708,25 +471,26 @@ class TestRunValidations(StateIngestPipelineTestCase):
                     ),
                 ],
             ),
-            StatePersonExternalId(
-                person_external_id_id=11112,
-                state_code="US_XX",
-                external_id="4000",
-                id_type="US_XX_TYPE",
-            ),
-            StatePersonExternalId(
-                person_external_id_id=11113,
-                state_code="US_XX",
-                external_id="5000",
-                id_type="US_YY_TYPE",
-            ),
         ]
-        output = input_entities | RunValidations(expected_output_entities=[])
-        assert_that(output, matches_all(expected_entities))
+        entities = [set_backedges(e) for e in entities_without_backedges]
+        input_entities = self.test_pipeline | "Create test input" >> beam.Create(
+            entities
+        )
+        output = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_supervision_period",
+                "state_supervision_contact",
+                "state_staff",
+                "state_staff_external_id",
+            ]
+        )
+        assert_that(output, matches_all(entities))
         self.test_pipeline.run()
 
     def test_validate_duplicate_id_same_child_entities(self) -> None:
-        expected_entities = [
+        entities_without_backedges = [
             StatePerson(
                 state_code="US_XX",
                 person_id=1237,
@@ -829,20 +593,32 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
-            expected_entities
+            entities
         )
 
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_supervision_contact",
+                "state_supervision_period",
+                "state_staff",
+                "state_staff_external_id",
+                "state_staff_role_period",
+            ]
+        )
 
         with self.assertRaisesRegex(
             ValueError,
-            r".*More than one state_staff_role_period entity found with staff_role_period_id 1111.*",
+            r"Found errors for root entity \(1235, 'state_staff'\):\n"
+            r"  \* More than one state_staff_role_period entity found with \(staff_role_period_id=1111\).*",
         ):
             self.test_pipeline.run()
 
     def test_validate_duplicate_id_diff_child_entities(self) -> None:
-        expected_entities = [
+        entities_without_backedges = [
             StatePerson(
                 state_code="US_XX",
                 person_id=1237,
@@ -936,20 +712,31 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
-            expected_entities
+            entities
         )
 
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_supervision_contact",
+                "state_supervision_period",
+                "state_staff",
+                "state_staff_external_id",
+            ]
+        )
 
         with self.assertRaisesRegex(
             ValueError,
-            r".*More than one state_supervision_period entity found with supervision_period_id 300.*",
+            r"Found errors for root entity \(1237, 'state_person'\):\n"
+            r"  \* More than one state_supervision_period entity found with \(supervision_period_id=300\).*",
         ):
             self.test_pipeline.run()
 
     def test_validate_duplicate_id_multiple_child_entities(self) -> None:
-        expected_entities = [
+        entities_without_backedges = [
             StatePerson(
                 state_code="US_XX",
                 person_id=1237,
@@ -1068,15 +855,26 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 ],
             ),
         ]
+        entities = [set_backedges(e) for e in entities_without_backedges]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
-            expected_entities
+            entities
         )
 
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_supervision_contact",
+                "state_supervision_period",
+                "state_staff",
+                "state_staff_external_id",
+            ]
+        )
 
         with self.assertRaisesRegex(
             ValueError,
-            r".*More than one state_supervision_period entity found with supervision_period_id 311.*",
+            r"Found errors for root entity \(3000, 'state_person'\):\n"
+            r"  \* More than one state_supervision_period entity found with \(supervision_period_id=311\).*",
         ):
             self.test_pipeline.run()
 
@@ -1109,19 +907,22 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person=person2,
             )
         )
-        entities = [person1, person2]
+        entities = [set_backedges(e) for e in [person1, person2]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
 
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(
+            expected_output_entities=["state_person", "state_person_external_id"]
+        )
 
         with self.assertRaisesRegex(
             ValueError,
-            r".*More than one state_person_external_id entity found with state_code=US_XX, id_type=US_XX_TYPE, external_id=12345, "
-            r"entities found: \[StatePersonExternalId: person_external_id_id 11111, associated with root entity: StatePerson id 1234\], "
-            r"\[StatePersonExternalId: person_external_id_id 11112, associated with root entity: StatePerson id 1235\], This may indicate an error with the raw data..*",
+            r"Found errors for root entity \(1234, 'state_person'\):\n"
+            r"  \* More than one state_person_external_id entity found with "
+            r"\(state_code=US_XX, id_type=US_XX_TYPE, external_id=12345\). "
+            r"Referencing root entities: \[\(1234, 'state_person'\), \(1235, 'state_person'\)\]",
         ):
             self.test_pipeline.run()
 
@@ -1239,20 +1040,29 @@ class TestRunValidations(StateIngestPipelineTestCase):
                 person=person2,
             ),
         )
-        entities = [person1, staff1, person2]
+        entities = [set_backedges(e) for e in [person1, staff1, person2]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
 
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_supervision_contact",
+                "state_supervision_period",
+                "state_staff",
+                "state_staff_external_id",
+            ]
+        )
 
         with self.assertRaisesRegex(
             ValueError,
-            r".*More than one state_supervision_contact entity found with state_code=US_XX, external_id=c2, entities found: "
-            r"\[StateSupervisionContact: supervision_contact_id 102, associated with root entity: StatePerson id 1237\], "
-            r"\[StateSupervisionContact: supervision_contact_id 105, associated with root entity: StatePerson id 3000\], "
-            r"This may indicate an error with the raw data..*",
+            r"Found errors for root entity \(1237, 'state_person'\):\n"
+            r"  \* More than one state_supervision_contact entity found with "
+            r"\(state_code=US_XX, external_id=c2\). Referencing root entities: "
+            r"\[\(1237, 'state_person'\), \(3000, 'state_person'\)\]",
         ):
             self.test_pipeline.run()
 
@@ -1305,13 +1115,19 @@ class TestRunValidations(StateIngestPipelineTestCase):
             )
         )
 
-        entities = [person]
+        entities = [set_backedges(e) for e in [person]]
 
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(
             entities
         )
 
-        _ = input_entities | RunValidations(expected_output_entities=[])
+        _ = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_task_deadline",
+            ]
+        )
 
         with self.assertRaisesRegex(
             ValueError,
@@ -1321,17 +1137,19 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
     def test_validate_non_zero_entities(self) -> None:
         entities = [
-            StateStaff(
-                state_code="US_XX",
-                staff_id=1234,
-                external_ids=[
-                    StateStaffExternalId(
-                        staff_external_id_id=22222,
-                        state_code="US_XX",
-                        external_id="12345",
-                        id_type="US_ZZ_TYPE",
-                    )
-                ],
+            set_backedges(
+                StateStaff(
+                    state_code="US_XX",
+                    staff_id=1234,
+                    external_ids=[
+                        StateStaffExternalId(
+                            staff_external_id_id=22222,
+                            state_code="US_XX",
+                            external_id="12345",
+                            id_type="US_ZZ_TYPE",
+                        )
+                    ],
+                )
             )
         ]
         input_entities = self.test_pipeline | "Create test input" >> beam.Create(

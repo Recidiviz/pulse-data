@@ -15,14 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility classes for validating state entities and entity trees."""
-import logging
-from typing import Any, Dict, Iterable, List, Tuple, cast
+from typing import Any, Dict, Generator, Iterable, List, Tuple, cast
 
 import apache_beam as beam
-from more_itertools import one
+import attr
+from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.common.str_field_utils import snake_to_camel
-from recidiviz.persistence.database.schema_utils import get_state_entity_names
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     RootEntity,
@@ -31,265 +29,360 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
-    get_entity_class_in_module_with_name,
+    get_all_entity_classes_in_module,
 )
 from recidiviz.persistence.entity.root_entity_utils import (
-    get_root_entity_class_for_entity,
+    get_entity_class_name_to_root_entity_class_name,
     get_root_entity_id,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.pipelines.ingest.state.constants import (
-    EntityClassName,
-    EntityKey,
-    Error,
-    UniqueConstraintName,
-)
+from recidiviz.pipelines.ingest.state.constants import EntityClassName, EntityKey
 from recidiviz.pipelines.ingest.state.validator import (
     get_entity_key,
     validate_root_entity,
 )
+from recidiviz.utils.types import assert_type, assert_type_list
 
-ROOT_ENTITY_VALIDATION_ERRORS = "root_entity_validation_errors"
-ENTITY_UNIQUE_ID_VALIDATION_ERRORS = "entity_unique_id_validation_errors"
-ENTITY_UNIQUE_CONSTRAINT_VALIDATION_ERRORS = (
-    "entity_unique_constraint_validation_errors"
+RootEntityPrimaryKey = EntityKey
+EntityCriticalFieldsDict = Dict[str, Any]
+UniqueConstraintKey = Tuple[Any, ...]
+
+ROOT_ENTITY = "root_entity"
+UNIQUENESS_CONSTRAINT_ERRORS = "uniqueness_constraint_errors"
+CRITICAL_FIELDS_ROOT_ENTITY_ID = "root_entity_id"
+
+ENTITY_CLASS_NAME_TO_ROOT_ENTITY_CLASS_NAME = (
+    get_entity_class_name_to_root_entity_class_name(entities_module=entities)
 )
-ENTITIES_BY_ENTITY_KEY = "entities_by_entity_key"
-FINAL_ERRORS = "final_errors"
 
 
-# TODO(#24733): Write a cost-effective version of this transform that takes in
-#  PCollection[RootEntity] and spits out PCollection[RootEntity].
+@with_input_types(RootEntity)
+@with_output_types(Tuple[EntityClassName, EntityCriticalFieldsDict])
+class GetEntityCriticalFields(beam.DoFn):
+    """Given an input PCollection of RootEntity, returns a PCollection with one
+    "critical fields" dictionary for any Entity referenced in any of the input root
+    entities. A "critical fields" dictionary contains a mapping of field name to value
+    for any field referenced by any uniqueness constraint on that entity class.
+    """
+
+    # Silence `Method 'process_batch' is abstract in class 'DoFn' but is not overridden (abstract-method)`
+    # pylint: disable=W0223
+
+    def __init__(
+        self,
+        field_index: CoreEntityFieldIndex,
+        constraints_by_entity_type: Dict[EntityClassName, List[UniqueConstraint]],
+    ) -> None:
+        super().__init__()
+        self.field_index = field_index
+        self.constraints_by_entity_type = constraints_by_entity_type
+
+    def process(
+        self, element: RootEntity, *_args: Any, **kwargs: Any
+    ) -> Generator[Tuple[EntityClassName, EntityCriticalFieldsDict], None, None]:
+        """Outputs "critical fields" dictionaries for every entity in the input
+        root entity tree.
+        """
+
+        for e in get_all_entities_from_tree(
+            cast(Entity, element), field_index=self.field_index
+        ):
+            entity_name = e.get_entity_name()
+            yield (
+                entity_name,
+                self._get_critical_fields_dict(
+                    e, self.constraints_by_entity_type[entity_name]
+                ),
+            )
+
+    @staticmethod
+    def _get_critical_fields_dict(
+        entity: Entity, constraints: List[UniqueConstraint]
+    ) -> EntityCriticalFieldsDict:
+        return {
+            CRITICAL_FIELDS_ROOT_ENTITY_ID: get_root_entity_id(entity),
+            **{f: getattr(entity, f) for c in constraints for f in c.fields},
+        }
+
+
+@attr.define
+class UniqueConstraintFailure:
+    entity_class_name: EntityClassName
+    unique_constraint: UniqueConstraint
+    violating_unique_constraint_key: UniqueConstraintKey
+    referencing_root_entities: List[RootEntityPrimaryKey]
+
+    def error_string(self) -> str:
+        violating_values_string = ", ".join(
+            [
+                f"{field}={self.violating_unique_constraint_key[i]}"
+                for i, field in enumerate(self.unique_constraint.fields)
+            ]
+        )
+        return (
+            f"More than one {self.entity_class_name} entity found with "
+            f"({violating_values_string}). Referencing root entities: "
+            f"{self.referencing_root_entities}"
+        )
+
+
+class FindUniqueConstraintFailuresByRootEntity(beam.PTransform):
+    """Given an input PCollection with one "critical fields" dictionary per entity of
+    the provided |entity_class_name|, returns a PCollection with all root entities
+    that violate the given |unique_constraint|, along with info about what entity in the
+    tree violated that constraint.
+    """
+
+    def __init__(
+        self,
+        entity_class_name: EntityClassName,
+        unique_constraint: UniqueConstraint,
+        field_index: CoreEntityFieldIndex,
+    ) -> None:
+        super().__init__()
+        self.entity_class_name = entity_class_name
+        self.unique_constraint = unique_constraint
+        self.field_index = field_index
+
+    def expand(
+        self, input_or_inputs: beam.PCollection[EntityCriticalFieldsDict]
+    ) -> beam.PCollection[
+        Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
+    ]:
+        failures_by_root_entity: beam.PCollection[
+            Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
+        ] = (
+            input_or_inputs
+            | "Convert entity info to keys for the specific constraint"
+            >> beam.Map(
+                lambda d: (
+                    self._generate_constraint_key(d),
+                    self._generate_root_entity_key(d),
+                )
+            )
+            | "Group constraint keys to find all referencing root entities"
+            >> beam.GroupByKey()
+            | "Filter down to keys with more than one reference"
+            >> beam.Filter(self._has_more_than_one_reference)
+            | "Generate constraint failure objects"
+            >> beam.FlatMap(self._generate_failure_objects)
+            | "Group failures by root entity key" >> beam.GroupByKey()
+        )
+        return failures_by_root_entity
+
+    def _generate_constraint_key(
+        self, entity_fields: EntityCriticalFieldsDict
+    ) -> UniqueConstraintKey:
+        """Returns a tuple with the values of the fields checked by the uniqueness
+        constraint, in the same order as the fields are listed in the constraint
+        definition.
+        """
+        return tuple(entity_fields[field] for field in self.unique_constraint.fields)
+
+    def _generate_root_entity_key(
+        self, entity_fields: EntityCriticalFieldsDict
+    ) -> RootEntityPrimaryKey:
+        """For the entity represented by the provided fields, returns the entity key
+        (i.e. (primary key, entity name) tuple) for the root entity associated with
+        this entity.
+        """
+        return (
+            assert_type(entity_fields[CRITICAL_FIELDS_ROOT_ENTITY_ID], int),
+            ENTITY_CLASS_NAME_TO_ROOT_ENTITY_CLASS_NAME[self.entity_class_name],
+        )
+
+    @staticmethod
+    def _has_more_than_one_reference(
+        element: Tuple[UniqueConstraintKey, Iterable[RootEntityPrimaryKey]]
+    ) -> bool:
+        _constraint_key, referencing_root_entities = element
+        return len(list(referencing_root_entities)) > 1
+
+    def _generate_failure_objects(
+        self, element: Tuple[UniqueConstraintKey, Iterable[RootEntityPrimaryKey]]
+    ) -> List[Tuple[RootEntityPrimaryKey, UniqueConstraintFailure]]:
+        constraint_key, referencing_root_entities = element
+        return [
+            (
+                root_entity_key,
+                UniqueConstraintFailure(
+                    entity_class_name=self.entity_class_name,
+                    unique_constraint=self.unique_constraint,
+                    violating_unique_constraint_key=constraint_key,
+                    referencing_root_entities=list(referencing_root_entities),
+                ),
+            )
+            for root_entity_key in referencing_root_entities
+        ]
+
+
 class RunValidations(beam.PTransform):
-    """A PTransform that validates root entities and their attached children entities."""
+    """A PTransform that validates root entities and their attached child entities.
+    Will throw on any constraint violation or
+    """
 
     def __init__(self, expected_output_entities: Iterable[str]) -> None:
         super().__init__()
-        self.expected_output_entities = expected_output_entities
+        self.expected_output_entities = list(expected_output_entities)
+        self.constraints_by_entity_type = self._get_constraints_by_entity_type(
+            self.expected_output_entities
+        )
+        self.field_index = CoreEntityFieldIndex()
+
+    @staticmethod
+    def _get_constraints_by_entity_type(
+        expected_output_entities: List[str],
+    ) -> Dict[EntityClassName, List[UniqueConstraint]]:
+        """Returns a dictionary mapping entity name (e.g. 'state_assessment') to the
+        list of unique constraints that should be checked for that entity. For all
+        entities, adds a default constraint check on the primary key column for that
+        entity (e.g. person_id for StatePerson).
+        """
+        constraints_by_entity_type = {}
+        for entity_cls in get_all_entity_classes_in_module(entities):
+            if entity_cls.get_entity_name() not in expected_output_entities:
+                continue
+
+            constraints_by_entity_type[
+                entity_cls.get_entity_name()
+            ] = entity_cls.global_unique_constraints() + [
+                UniqueConstraint(
+                    name=f"{entity_cls.get_entity_name()}_primary_keys_unique",
+                    fields=[entity_cls.get_primary_key_column_name()],
+                )
+            ]
+        return constraints_by_entity_type
 
     def expand(
         self, input_or_inputs: beam.PCollection[RootEntity]
-    ) -> beam.PCollection[Entity]:
-        # Execute individual root entity validations
-        root_entity_to_validation_errors: beam.PCollection[
-            Tuple[EntityKey, Iterable[Error]]
-        ] = input_or_inputs | "Validate root entities" >> beam.Map(validate_root_entity)
-
-        field_index = CoreEntityFieldIndex()
-
-        all_entities = (
+    ) -> beam.PCollection[RootEntity]:
+        entity_names = sorted(self.expected_output_entities)
+        entity_type_partitions: List[
+            beam.PCollection[Tuple[EntityClassName, EntityCriticalFieldsDict]]
+        ] = (
             input_or_inputs
-            | "Extract all entities from root entity trees"
-            >> beam.FlatMap(
-                lambda element: get_all_entities_from_tree(
-                    cast(Entity, element), field_index=field_index
-                ),
+            | "Generate entity critical fields"
+            >> beam.ParDo(
+                GetEntityCriticalFields(
+                    field_index=self.field_index,
+                    constraints_by_entity_type=self.constraints_by_entity_type,
+                )
             )
-        )
-
-        # Validate that entities have unique ids by type
-        entity_names = sorted(
-            [name for name in get_state_entity_names() if "association" not in name]
-        )
-        entity_type_partitions = (
-            all_entities
             | "Partition all entities by type"
             >> beam.Partition(
-                lambda entity, num_partitions: entity_names.index(
-                    entity.get_entity_name()
+                lambda entity_name_and_fields, num_partitions: entity_names.index(
+                    entity_name_and_fields[0]
                 ),
                 len(entity_names),
             )
         )
 
-        entities_expected_to_be_hydrated_errors: Dict[
+        hydrated_entity_counts_by_entity_name: Dict[
             EntityClassName, beam.PCollection[int]
         ] = {}
-        unique_id_validation_errors: Dict[
-            EntityClassName, beam.PCollection[Tuple[EntityKey, Iterable[Error]]]
-        ] = {}
-        unique_constraint_validation_errors: Dict[
-            Tuple[EntityClassName, UniqueConstraintName],
-            beam.PCollection[Tuple[EntityKey, Iterable[Error]]],
-        ] = {}
-        for i, partition in enumerate(entity_type_partitions):
+        unique_constraint_failure_pcollections: List[
+            beam.PCollection[
+                Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
+            ]
+        ] = []
+        for i, entity_infos_for_entity_cls in enumerate(entity_type_partitions):
             entity_name = entity_names[i]
-
-            entities_expected_to_be_hydrated_errors[entity_name] = (
-                partition
+            hydrated_entity_counts_by_entity_name[entity_name] = (
+                entity_infos_for_entity_cls
                 | f"Count {entity_name} objects" >> beam.combiners.Count.Globally()
             )
 
-            unique_id_validation_errors[entity_name] = (
-                partition
-                | f"Group {entity_name} entities by primary key"
-                >> beam.GroupBy(
-                    lambda entity: get_entity_key(cast(Entity, entity)),
+            # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
+            # pylint: disable=E1120
+            entity_critical_dicts: beam.PCollection[EntityCriticalFieldsDict] = (
+                entity_infos_for_entity_cls
+                | f"Remove {entity_name} entity names" >> beam.Values()
+            )
+            for constraint in self.constraints_by_entity_type[entity_name]:
+                root_entity_to_child_constraint_failures = (
+                    entity_critical_dicts
+                    | f"Find all {constraint.name} failures"
+                    >> FindUniqueConstraintFailuresByRootEntity(
+                        entity_class_name=entity_name,
+                        field_index=self.field_index,
+                        unique_constraint=constraint,
+                    )
                 )
-                | f"Check for {entity_name} primary key duplicates"
-                >> beam.MapTuple(self.check_id)
-            )
-
-            entity_cls = get_entity_class_in_module_with_name(
-                entities, snake_to_camel(entity_name, capitalize_first_letter=True)
-            )
-
-            for constraint in entity_cls.global_unique_constraints():
-                unique_constraint_validation_errors[(entity_name, constraint.name)] = (
-                    partition
-                    | f"Group {entity_name} by {constraint.fields}"
-                    >> beam.GroupBy(*constraint.fields)
-                    | f"Check for {entity_name} duplicates"
-                    >> beam.FlatMap(self.check_for_duplicates, constraint=constraint)
+                unique_constraint_failure_pcollections.append(
+                    root_entity_to_child_constraint_failures
                 )
 
-        unique_id_errors: beam.PCollection[Tuple[EntityKey, Iterable[Error]]] = (
-            unique_id_validation_errors.values()
-            | "Flatten all unique id errors" >> beam.Flatten()
-        )
-        unique_constraint_errors: beam.PCollection[
-            Tuple[EntityKey, Iterable[Error]]
+        all_constraint_failures: beam.PCollection[
+            Tuple[RootEntityPrimaryKey, Iterable[UniqueConstraintFailure]]
         ] = (
-            unique_constraint_validation_errors.values()
-            | "Flatten all unique constraint errors" >> beam.Flatten()
+            unique_constraint_failure_pcollections
+            | "Merge all constraint failures into one list" >> beam.Flatten()
         )
 
-        entities_by_entity_key: beam.PCollection[
-            Tuple[EntityKey, Entity]
-        ] = all_entities | beam.Map(
-            lambda entity: (
-                get_entity_key(cast(Entity, entity)),
-                cast(Entity, entity),
-            )
+        root_entity_by_key: beam.PCollection[
+            Tuple[RootEntityPrimaryKey, RootEntity]
+        ] = input_or_inputs | "Index RootEntities by primary key" >> beam.Map(
+            lambda root_entity: (get_entity_key(root_entity), root_entity)
         )
 
-        errors = (
+        final_entities: beam.PCollection[RootEntity] = (
             {
-                ROOT_ENTITY_VALIDATION_ERRORS: root_entity_to_validation_errors,
-                ENTITY_UNIQUE_ID_VALIDATION_ERRORS: unique_id_errors,
-                ENTITY_UNIQUE_CONSTRAINT_VALIDATION_ERRORS: unique_constraint_errors,
+                ROOT_ENTITY: root_entity_by_key,
+                UNIQUENESS_CONSTRAINT_ERRORS: all_constraint_failures,
             }
-            | "CoGroup errors by Key" >> beam.CoGroupByKey()
-            # TODO(#24140) Add the ability to sample errors for logging
+            | "Group by root entity key" >> beam.CoGroupByKey()
             | beam.Map(
-                self.log_any_errors,
+                self.raise_errors_or_return_root_entity,
                 **{
-                    entity_name: beam.pvalue.AsSingleton(rows)
-                    for entity_name, rows in entities_expected_to_be_hydrated_errors.items()
+                    entity_name: beam.pvalue.AsSingleton(count)
+                    for entity_name, count in hydrated_entity_counts_by_entity_name.items()
                 },
             )
-            | beam.MapTuple(self.raise_if_errors)
         )
-
-        # In order for writes to BigQuery to be explicit dependencies on the validations
-        # and error handling, we need to re-collect all entities after errors are handled
-        # to return to the rest of the pipeline execution.
-        final_entities = (
-            {ENTITIES_BY_ENTITY_KEY: entities_by_entity_key, FINAL_ERRORS: errors}
-            | "CoGroup to get final entities" >> beam.CoGroupByKey()
-            | beam.MapTuple(
-                lambda _, grouped_items: one(grouped_items[ENTITIES_BY_ENTITY_KEY])
-            )
-        )
-
         return final_entities
 
-    @staticmethod
-    def check_id(
-        entity_id_with_class_name: EntityKey,
-        grouped_entities: Iterable[Entity],
-    ) -> Tuple[EntityKey, Iterable[Error]]:
-        entity_id, _ = entity_id_with_class_name
-        entity_list = list(grouped_entities)
-        error_messages: List[Error] = []
-        if not entity_list:
-            return entity_id_with_class_name, [f"No entities found for id {entity_id}"]
-        if len(entity_list) > 1:
-            entity = entity_list[0]
-            error_messages.append(
-                f"More than one {entity.get_entity_name()} entity found with {entity.get_class_id_name()} {entity_id}: {entity_list}"
-            )
-        return entity_id_with_class_name, error_messages
-
-    @staticmethod
-    def check_for_duplicates(
-        element: Tuple[Any, Iterable[Entity]], *, constraint: UniqueConstraint
-    ) -> Iterable[Tuple[EntityKey, Iterable[Error]]]:
-        field_names_to_values_obj, grouped_entities = element
-        error_messages = []
-        if len(list(grouped_entities)) > 1:
-            entity = list(grouped_entities)[0]
-            error_msg = f"More than one {entity.get_entity_name()} entity found with "
-            for field in constraint.fields:
-                value = getattr(field_names_to_values_obj, field)
-                error_msg += f"{field}={value}, "
-
-            error_msg += "entities found: "
-            for e in grouped_entities:
-                root_entity_cls = get_root_entity_class_for_entity(type(entity))
-                error_msg += (
-                    f"[{snake_to_camel(e.get_entity_name(), capitalize_first_letter=True)}: {e.get_class_id_name()} {e.get_id()}, "
-                    f"associated with root entity: {root_entity_cls.__name__} id {get_root_entity_id(e)}], "
-                )
-
-            error_msg += "This may indicate an error with the raw data."
-            error_messages.append(error_msg)
+    def get_hydrated_entities_errors(
+        self, hydrated_entity_counts_by_entity_name: Dict[str, int]
+    ) -> List[str]:
         return [
-            (
-                get_entity_key(entity),
-                error_messages,
-            )
-            for entity in grouped_entities
-        ]
-
-    def log_any_errors(
-        self,
-        element: Tuple[EntityKey, Dict[str, Iterable[Iterable[Error]]]],
-        **kwargs: Dict[str, Any],
-    ) -> Tuple[EntityKey, List[Error], List[Error]]:
-        """This logs both entity-level and entity-type-level errors."""
-        entity_key, grouped_elements = element
-        entity_level_errors = (
-            [
-                error
-                for l in grouped_elements[ROOT_ENTITY_VALIDATION_ERRORS]
-                for error in l
-            ]
-            + [
-                error
-                for l in grouped_elements[ENTITY_UNIQUE_ID_VALIDATION_ERRORS]
-                for error in l
-            ]
-            + [
-                error
-                for l in grouped_elements[ENTITY_UNIQUE_CONSTRAINT_VALIDATION_ERRORS]
-                for error in l
-            ]
-        )
-
-        entity_type_level_errors = [
             f"Expected non-zero {entity_name} entities to be ingested, but none were ingested."
             for entity_name in self.expected_output_entities
-            if kwargs[entity_name] == 0
+            if assert_type(hydrated_entity_counts_by_entity_name[entity_name], int) == 0
         ]
-        if entity_level_errors:
-            error_str = "\n".join(entity_level_errors)
-            logging.error("Found errors for entity %s\n%s", entity_key, error_str)
-        if entity_type_level_errors:
-            error_str = "\n".join(entity_type_level_errors)
-            logging.error(error_str)
-        return (entity_key, entity_level_errors, entity_type_level_errors)
 
-    @staticmethod
-    def raise_if_errors(
-        entity_key: EntityKey,
-        entity_level_errors: List[Error],
-        entity_type_level_errors: List[Error],
-    ) -> Tuple[EntityKey, bool]:
-        if entity_level_errors:
-            raise ValueError(
-                f"Found errors for entity {entity_key}\n{entity_level_errors}"
-            )
+    def raise_errors_or_return_root_entity(
+        self,
+        element: Tuple[RootEntityPrimaryKey, Dict[str, Any]],
+        **hydrated_entity_counts_by_entity_name: int,
+    ) -> RootEntity:
+        """For the provided root entity and associated information, raises if there are
+        any validation errors associated with this root entity. Returns the root entity
+        if there are no errors.
+
+        Will also raise if for any expected entity type we find no output entities.
+        """
+        entity_type_level_errors = self.get_hydrated_entities_errors(
+            hydrated_entity_counts_by_entity_name
+        )
         if entity_type_level_errors:
             raise ValueError(f"Found errors: {entity_type_level_errors}")
-        return (entity_key, True)
+
+        root_entity_key, grouped_elements = element
+
+        root_entity = grouped_elements[ROOT_ENTITY][0]
+
+        entity_level_errors: List[str] = list(validate_root_entity(root_entity))
+        entity_level_errors += list(
+            {
+                f.error_string()
+                for failure_list in grouped_elements[UNIQUENESS_CONSTRAINT_ERRORS]
+                for f in assert_type_list(failure_list, UniqueConstraintFailure)
+            }
+        )
+        if entity_level_errors:
+            errors_str = "\n  * ".join(entity_level_errors)
+            raise ValueError(
+                f"Found errors for root entity {root_entity_key}:\n  * {errors_str}"
+            )
+
+        return root_entity
