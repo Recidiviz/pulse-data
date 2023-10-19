@@ -208,3 +208,25 @@ class OfficerSupervisorReportData:
 
     def to_dict(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
+
+
+@attr.s
+class SupervisionOfficerEntity:
+    # The full name of the officer
+    full_name: PersonName = attr.ib()
+    # The officer's external id
+    external_id: str = attr.ib()
+    # The officer's pseudonymized id
+    pseudonymized_id: str = attr.ib()
+    # The officer's supervisor's external id
+    supervisor_external_id: str = attr.ib()
+    # The district the officer
+    district: str = attr.ib()
+    # The officer's caseload type in the latest period
+    caseload_type: Optional[str] = attr.ib()
+    # List of objects that represent what metrics the officer is an Outlier for
+    # If the list is empty, then the officer is not an Outlier on any metric.
+    outlier_metrics: list = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)

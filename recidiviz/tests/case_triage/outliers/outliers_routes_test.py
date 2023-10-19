@@ -31,7 +31,12 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
 )
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
 from recidiviz.outliers.constants import INCARCERATION_STARTS_AND_INFERRED
-from recidiviz.outliers.types import OutliersConfig, OutliersMetricConfig
+from recidiviz.outliers.types import (
+    OutliersConfig,
+    OutliersMetricConfig,
+    PersonName,
+    SupervisionOfficerEntity,
+)
 from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficerSupervisor,
 )
@@ -79,8 +84,8 @@ class OutliersBlueprintTestCase(TestCase):
     @staticmethod
     def auth_side_effect(
         state_code: str,
-        allowed_states: Optional[list[str]] = None,
         external_id: str = "A1B2",
+        allowed_states: Optional[list[str]] = None,
         outliers_routes_enabled: Optional[bool] = True,
     ) -> Callable:
         if allowed_states is None:
@@ -216,17 +221,168 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 headers={"Origin": "http://localhost:3000"},
             )
 
-            expected_json = [
-                {
-                    "externalId": "102",
-                    "fullName": {
-                        "givenNames": "Supervisor",
-                        "middleNames": None,
-                        "surname": "2",
-                    },
-                    "supervisionDistrict": "2",
-                    "email": "supervisor2@recidiviz.org",
-                }
-            ]
+            expected_json = {
+                "supervisors": [
+                    {
+                        "externalId": "102",
+                        "fullName": {
+                            "givenNames": "Supervisor",
+                            "middleNames": None,
+                            "surname": "2",
+                        },
+                        "supervisionDistrict": "2",
+                        "email": "supervisor2@recidiviz.org",
+                    }
+                ]
+            }
 
             self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_officers_for_supervisor(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_outliers: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        with SessionFactory.using_database(self.database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+
+            mock_get_outliers.return_value = [
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "HARRY", "surname": "POTTER"}
+                    ),
+                    external_id="123",
+                    pseudonymized_id="hashhash",
+                    supervisor_external_id="102",
+                    district="Hogwarts",
+                    caseload_type=None,
+                    outlier_metrics=[
+                        {
+                            "metric_id": "metric_one",
+                            "statuses_over_time": [
+                                {
+                                    "end_date": "2023-05-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                                {
+                                    "end_date": "2023-04-01",
+                                    "metric_rate": 0.1,
+                                    "status": "FAR",
+                                },
+                            ],
+                        }
+                    ],
+                ),
+                SupervisionOfficerEntity(
+                    full_name=PersonName(
+                        **{"given_names": "RON", "surname": "WEASLEY"}
+                    ),
+                    external_id="456",
+                    pseudonymized_id="hashhashhash",
+                    supervisor_external_id="102",
+                    district="Hogwarts",
+                    caseload_type=None,
+                    outlier_metrics=[],
+                ),
+            ]
+
+            response = self.test_client.get(
+                "/outliers/US_XX/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            expected_json = {
+                "officers": [
+                    {
+                        "fullName": {
+                            "givenNames": "Harry",
+                            "middleNames": None,
+                            "surname": "Potter",
+                            "nameSuffix": None,
+                        },
+                        "externalId": "123",
+                        "pseudonymizedId": "hashhash",
+                        "supervisorExternalId": "102",
+                        "district": "Hogwarts",
+                        "caseloadType": None,
+                        "outlierMetrics": [
+                            {
+                                "metricId": "metric_one",
+                                "statusesOverTime": [
+                                    {
+                                        "endDate": "2023-05-01",
+                                        "metricRate": 0.1,
+                                        "status": "FAR",
+                                    },
+                                    {
+                                        "endDate": "2023-04-01",
+                                        "metricRate": 0.1,
+                                        "status": "FAR",
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "fullName": {
+                            "givenNames": "Ron",
+                            "middleNames": None,
+                            "surname": "Weasley",
+                            "nameSuffix": None,
+                        },
+                        "externalId": "456",
+                        "pseudonymizedId": "hashhashhash",
+                        "supervisorExternalId": "102",
+                        "district": "Hogwarts",
+                        "caseloadType": None,
+                        "outlierMetrics": [],
+                    },
+                ]
+            }
+
+            self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_officers_for_supervisor_failure(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_get_supervisor.return_value = None
+
+        response = self.test_client.get(
+            "/outliers/US_XX/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(
+            response.json,
+            "Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: hash1",
+        )
