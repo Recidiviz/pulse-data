@@ -32,8 +32,16 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import Resource, build
 
 
+def get_drive_service(creds: Credentials) -> Resource:
+    return build("drive", "v3", credentials=creds)
+
+
 def get_sheets_service(creds: Credentials) -> Resource:
     return build("sheets", "v4", credentials=creds)
+
+
+def get_docs_service(creds: Credentials) -> Resource:
+    return build("docs", "v1", credentials=creds)
 
 
 def get_credentials(
