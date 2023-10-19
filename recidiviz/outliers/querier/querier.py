@@ -21,10 +21,12 @@ from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, func
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Session
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.common.constants.states import StateCode
+from recidiviz.outliers.constants import DEFAULT_NUM_LOOKBACK_PERIODS
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 from recidiviz.outliers.types import (
     MetricContext,
@@ -35,6 +37,7 @@ from recidiviz.outliers.types import (
     OutliersConfig,
     OutliersMetricConfig,
     PersonName,
+    SupervisionOfficerEntity,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -385,3 +388,170 @@ class OutliersQuerier:
                 .all()
             )
             return supervisor_entities
+
+    @staticmethod
+    def _get_latest_period_end_date(session: Session) -> date:
+        end_date = (
+            session.query(func.max(SupervisionOfficerOutlierStatus.end_date))
+            .filter(
+                SupervisionOfficerOutlierStatus.period == MetricTimePeriod.YEAR.value,
+            )
+            .scalar()
+        )
+
+        return end_date
+
+    def get_officers_for_supervisor(
+        self,
+        state_code: StateCode,
+        supervisor_external_id: str,
+        num_lookback_periods: Optional[int],
+        period_end_date: Optional[date] = None,
+    ) -> List[SupervisionOfficerEntity]:
+        """
+        Returns a list of SupervisionOfficerEntity objects that represent the supervisor's officers and
+        includes information on the state's metrics that the officer is an outlier for.
+
+        :param state_code: The user's state code
+        :param supervisor_external_id: The external id of the supervisor to get outlier information for
+        :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
+        :param period_end_date: The end date of the period to get Outliers for. If not provided, use the latest end date available.
+        :rtype: List[SupervisionOfficerEntity]
+        """
+        db_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name=state_code.value.lower()
+        )
+
+        num_lookback_periods = num_lookback_periods or DEFAULT_NUM_LOOKBACK_PERIODS
+
+        with SessionFactory.using_database(db_key, autocommit=False) as session:
+            end_date = (
+                self._get_latest_period_end_date(session)
+                if period_end_date is None
+                else period_end_date
+            )
+
+            earliest_end_date = end_date - relativedelta(months=num_lookback_periods)
+
+            officer_status_records = (
+                session.query(SupervisionOfficer)
+                .join(
+                    SupervisionOfficerOutlierStatus,
+                    SupervisionOfficer.external_id
+                    == SupervisionOfficerOutlierStatus.officer_id,
+                )
+                .filter(
+                    # Get officers who are supervised by this supervisor
+                    SupervisionOfficer.supervisor_external_id == supervisor_external_id,
+                    # Get the statuses for all periods between requested or latest end_date and earliest end date
+                    SupervisionOfficerOutlierStatus.end_date.between(
+                        earliest_end_date, end_date
+                    ),
+                )
+                .group_by(
+                    SupervisionOfficer.external_id,
+                    SupervisionOfficer.full_name,
+                    SupervisionOfficer.pseudonymized_id,
+                    SupervisionOfficer.supervisor_external_id,
+                    SupervisionOfficer.supervision_district,
+                    SupervisionOfficer.specialized_caseload_type,
+                    SupervisionOfficerOutlierStatus.metric_id,
+                )
+                .with_entities(
+                    SupervisionOfficer.external_id,
+                    SupervisionOfficer.full_name,
+                    SupervisionOfficer.pseudonymized_id,
+                    SupervisionOfficer.supervisor_external_id,
+                    SupervisionOfficer.supervision_district,
+                    SupervisionOfficer.specialized_caseload_type,
+                    SupervisionOfficerOutlierStatus.metric_id,
+                    # Get an array of JSON objects for the officer's rates and statuses in the selected periods
+                    func.array_agg(
+                        aggregate_order_by(
+                            func.jsonb_build_object(
+                                "end_date",
+                                SupervisionOfficerOutlierStatus.end_date,
+                                "metric_rate",
+                                SupervisionOfficerOutlierStatus.metric_rate,
+                                "status",
+                                SupervisionOfficerOutlierStatus.status,
+                            ),
+                            SupervisionOfficerOutlierStatus.end_date.desc(),
+                        )
+                    ).label("statuses_over_time"),
+                )
+                .all()
+            )
+
+            officer_external_id_to_entity: Dict[str, SupervisionOfficerEntity] = {}
+
+            for record in officer_status_records:
+                officer_external_id = record.external_id
+
+                try:
+                    # Since statuses_over_time is sorted by end_date descending, the first item should be the latest.
+                    latest_period_status_obj = record.statuses_over_time[0]
+                except IndexError:
+                    # If the officer doesn't have any status between the earliest_end_date and end_date, skip this row.
+                    continue
+
+                if latest_period_status_obj["end_date"] != str(end_date):
+                    # If the latest status for the officer isn't the same as the requested end date, skip this row.
+                    continue
+
+                is_outlier = latest_period_status_obj["status"] == "FAR"
+
+                if record.external_id in officer_external_id_to_entity:
+                    if is_outlier:
+                        officer_external_id_to_entity[
+                            officer_external_id
+                        ].outlier_metrics.append(
+                            {
+                                "metric_id": record.metric_id,
+                                "statuses_over_time": record.statuses_over_time,
+                            }
+                        )
+                else:
+                    officer_external_id_to_entity[
+                        officer_external_id
+                    ] = SupervisionOfficerEntity(
+                        full_name=PersonName(**record.full_name),
+                        external_id=officer_external_id,
+                        pseudonymized_id=record.pseudonymized_id,
+                        supervisor_external_id=supervisor_external_id,
+                        district=record.supervision_district,
+                        caseload_type=record.specialized_caseload_type,
+                        outlier_metrics=[
+                            {
+                                "metric_id": record.metric_id,
+                                "statuses_over_time": record.statuses_over_time,
+                            }
+                        ]
+                        if is_outlier
+                        else [],
+                    )
+
+            return list(officer_external_id_to_entity.values())
+
+    @staticmethod
+    def get_supervisor_from_pseudonymized_id(
+        state_code: StateCode, supervisor_pseudonymized_id: str
+    ) -> Optional[SupervisionOfficerSupervisor]:
+        """
+        Returns the SupervisionOfficerSupervisor given the supervisor_pseudonymized_id.
+        """
+        db_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name=state_code.value.lower()
+        )
+
+        with SessionFactory.using_database(db_key, autocommit=False) as session:
+            supervisor = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(
+                    SupervisionOfficerSupervisor.pseudonymized_id
+                    == supervisor_pseudonymized_id
+                )
+                .scalar()
+            )
+
+            return supervisor

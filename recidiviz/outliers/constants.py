@@ -19,6 +19,8 @@
 import recidiviz.aggregated_metrics.models.aggregated_metric_configurations as metric_config
 from recidiviz.outliers.types import MetricOutcome, OutliersMetric
 
+DEFAULT_NUM_LOOKBACK_PERIODS = 5
+
 ###############################################
 # Outliers Metrics used to configure by states
 # Note: some of these metrics use string literals because the corresponding aggregated metric configuration objects

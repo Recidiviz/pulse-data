@@ -27,6 +27,7 @@ import pytest
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import (
+    ABSCONSIONS_BENCH_WARRANTS,
     INCARCERATION_STARTS_AND_INFERRED,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
 )
@@ -38,6 +39,7 @@ from recidiviz.outliers.types import (
     OutliersConfig,
     OutliersMetricConfig,
     PersonName,
+    SupervisionOfficerEntity,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -66,8 +68,11 @@ def load_model_fixture(
     with open(fixture_path, "r", encoding="UTF-8") as fixture_file:
         reader = csv.DictReader(fixture_file)
         for row in reader:
-            if "full_name" in row:
-                row["full_name"] = json.loads(row["full_name"])
+            for k, v in row.items():
+                if k == "full_name":
+                    row["full_name"] = json.loads(row["full_name"])
+                if v == "":
+                    row[k] = None
             results.append(row)
 
     return results
@@ -88,6 +93,13 @@ TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
     title_display_name="Limited Supervision Unit Transfer Rate",
     body_display_name="Limited Supervision Unit transfer rate(s)",
     event_name="LSU transfers",
+)
+
+TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
+    metric=ABSCONSIONS_BENCH_WARRANTS,
+    title_display_name="Absconsion Rate",
+    body_display_name="absconsion rate",
+    event_name="absconsions",
 )
 
 
@@ -448,3 +460,131 @@ class TestOutliersQuerier(TestCase):
 
         self.assertEqual(actual[0].external_id, "102")
         self.assertEqual(len(actual), 1)
+
+    def test_get_officers_for_supervisor(self) -> None:
+        actual = OutliersQuerier().get_officers_for_supervisor(
+            state_code=StateCode.US_XX,
+            supervisor_external_id="102",
+            num_lookback_periods=5,
+        )
+
+        expected = [
+            SupervisionOfficerEntity(
+                full_name=PersonName(
+                    given_names="Officer",
+                    surname="3",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
+                external_id="03",
+                pseudonymized_id="officerhash3",
+                supervisor_external_id="102",
+                district="2",
+                caseload_type=None,
+                outlier_metrics=[
+                    {
+                        "metric_id": "absconsions_bench_warrants",
+                        "statuses_over_time": [
+                            {
+                                "status": "FAR",
+                                "end_date": "2023-05-01",
+                                "metric_rate": 0.8,
+                            },
+                            {
+                                "status": "FAR",
+                                "end_date": "2023-04-01",
+                                "metric_rate": 0.8,
+                            },
+                            {
+                                "status": "FAR",
+                                "end_date": "2023-03-01",
+                                "metric_rate": 0.8,
+                            },
+                            {
+                                "status": "FAR",
+                                "end_date": "2023-02-01",
+                                "metric_rate": 0.8,
+                            },
+                            {
+                                "status": "FAR",
+                                "end_date": "2023-01-01",
+                                "metric_rate": 0.8,
+                            },
+                            {
+                                "status": "FAR",
+                                "end_date": "2022-12-01",
+                                "metric_rate": 0.8,
+                            },
+                        ],
+                    }
+                ],
+            ),
+            SupervisionOfficerEntity(
+                full_name=PersonName(
+                    given_names="Officer",
+                    surname="4",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
+                external_id="04",
+                pseudonymized_id="officerhash4",
+                supervisor_external_id="102",
+                district="2",
+                caseload_type=None,
+                outlier_metrics=[
+                    {
+                        "metric_id": "task_completions_transfer_to_limited_supervision",
+                        "statuses_over_time": [
+                            {
+                                "status": "FAR",
+                                "end_date": "2023-05-01",
+                                "metric_rate": 0,
+                            },
+                            {
+                                "status": "FAR",
+                                "end_date": "2023-04-01",
+                                "metric_rate": 0,
+                            },
+                        ],
+                    }
+                ],
+            ),
+            SupervisionOfficerEntity(
+                full_name=PersonName(
+                    given_names="Officer",
+                    surname="6",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
+                external_id="06",
+                pseudonymized_id="officerhash6",
+                supervisor_external_id="102",
+                district="2",
+                caseload_type=None,
+                outlier_metrics=[],
+            ),
+        ]
+
+        self.assertEqual(actual, expected)
+
+    def test_get_supervisor_from_pseudonymized_id_no_match(self) -> None:
+        # If matching supervisor doesn't exist, return None
+        actual = OutliersQuerier().get_supervisor_from_pseudonymized_id(
+            state_code=StateCode.US_XX, supervisor_pseudonymized_id="invalidhash"
+        )
+        self.assertIsNone(actual)
+
+    def test_get_supervisor_from_pseudonymized_id_found_match(self) -> None:
+        # Return matching supervisor
+        with SessionFactory.using_database(self.database_key) as session:
+            expected = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "101")
+                .first()
+            )
+
+            actual = OutliersQuerier().get_supervisor_from_pseudonymized_id(
+                state_code=StateCode.US_XX, supervisor_pseudonymized_id="hash1"
+            )
+
+            self.assertEqual(expected.external_id, actual.external_id)  # type: ignore[union-attr]

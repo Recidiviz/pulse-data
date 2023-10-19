@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements routes for the Outliers Flask blueprint. """
 import re
+from datetime import datetime
 from http import HTTPStatus
 from typing import Optional
 
@@ -117,6 +118,56 @@ def create_outliers_api_blueprint() -> Blueprint:
             }
             for supervisor in supervisor_entities
         ]
-        return jsonify(supervisors)
+        return jsonify({"supervisors": supervisors})
+
+    @api.get("/<state>/supervisor/<supervisor_pseudonymized_id>/officers")
+    def officers_for_supervisor(
+        state: str, supervisor_pseudonymized_id: str
+    ) -> Response:
+        state_code = StateCode(state.upper())
+
+        try:
+            num_lookback_periods = (
+                int(request.args["num_lookback_periods"])
+                if "num_lookback_periods" in request.args
+                else None
+            )
+
+            period_end_date = (
+                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
+                if "period_end_date" in request.args
+                else None
+            )
+        except ValueError as e:
+            return make_response(
+                jsonify(f"Invalid parameters provided. Error: {str(e)}"),
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        querier = OutliersQuerier()
+        supervisor = querier.get_supervisor_from_pseudonymized_id(
+            state_code, supervisor_pseudonymized_id
+        )
+
+        if supervisor is None:
+            return make_response(
+                jsonify(
+                    f"Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: {supervisor_pseudonymized_id}"
+                ),
+                HTTPStatus.NOT_FOUND,
+            )
+
+        officer_entities = querier.get_officers_for_supervisor(
+            state_code, supervisor.external_id, num_lookback_periods, period_end_date
+        )
+
+        officers = [
+            convert_nested_dictionary_keys(
+                entity.to_json(),
+                snake_to_camel,
+            )
+            for entity in officer_entities
+        ]
+        return jsonify({"officers": officers})
 
     return api
