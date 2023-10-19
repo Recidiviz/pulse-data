@@ -17,6 +17,7 @@
 """The DAG configuration for downloading files from SFTP."""
 import logging
 import os
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Union
 
 from airflow.decorators import dag, task
@@ -311,6 +312,7 @@ def sftp_dag() -> None:
                     project_id=project_id,
                     region_code=state_code,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
+                    execution_timeout=timedelta(hours=8),
                 ).expand_kwargs(gather_discovered_remote_files.output)
                 post_process_downloaded_files = RecidivizGcsFileTransformOperator.partial(
                     task_id="post_process_downloaded_files",
