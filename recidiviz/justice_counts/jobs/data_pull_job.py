@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Job that runs both the Justice Counts Data Pull and the Agency Dashboard Data Pull.
+Cloud Run Job that runs the following scripts:
+    - Justice Counts Data Pull
+    - Agency Dashboard Data Pull
+    - Superagency Data Pull
 """
 import argparse
 import logging
@@ -25,6 +28,9 @@ from oauth2client.client import GoogleCredentials
 from recidiviz.justice_counts.jobs.csg_data_pull import generate_agency_summary_csv
 from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
     pull_agencies_with_published_capacity_and_cost_data,
+)
+from recidiviz.justice_counts.jobs.super_agency_data_pull import (
+    generate_superagency_summary,
 )
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -96,3 +102,12 @@ if __name__ == "__main__":
         )
     except Exception as e:
         logger.info("Agency Dashboard Script Failed %s", str(e))
+    try:
+        logger.info("Running Superagency Data Pull")
+        generate_superagency_summary(
+            session=global_session,
+            dry_run=args.dry_run,
+            google_credentials=credentials,
+        )
+    except Exception as e:
+        logger.info("Superagency Data Pull Script Failed: %s", str(e))

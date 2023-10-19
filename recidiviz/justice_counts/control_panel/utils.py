@@ -129,6 +129,7 @@ def write_data_to_spreadsheet(
     data_to_write: Optional[List[List[str]]] = None,
     df: Optional[pd.DataFrame] = None,
     columns: Optional[List[str]] = None,
+    overwrite_sheets: Optional[bool] = False,
 ) -> None:
     """
     Writes data to the spreadsheet specified by the spreadsheet_id.
@@ -136,6 +137,25 @@ def write_data_to_spreadsheet(
     spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
     # Create a new worksheet in the spreadsheet
     request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 1}}}
+
+    # Delete existing sheet if we want to overwrite with new
+    if overwrite_sheets is True:
+        # Get sheet_id to delete
+        sheets = (
+            spreadsheet_service.spreadsheets()
+            .get(spreadsheetId=spreadsheet_id)
+            .execute()["sheets"]
+        )
+        for sheet in sheets:
+            if sheet["properties"]["title"] == new_sheet_title:
+                sheet_id = sheet["properties"]["sheetId"]
+                # Delete old sheet
+                delete_request = {"deleteSheet": {"sheetId": sheet_id}}
+                spreadsheet_service.spreadsheets().batchUpdate(
+                    spreadsheetId=spreadsheet_id, body={"requests": [delete_request]}
+                ).execute()
+                logger.info("Old '%s' Sheet Deleted", new_sheet_title)
+                break
 
     # Create new sheet
     spreadsheet_service.spreadsheets().batchUpdate(
