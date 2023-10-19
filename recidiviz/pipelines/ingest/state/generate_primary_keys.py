@@ -22,7 +22,13 @@ from typing import List, Set, Union, cast
 from recidiviz.big_query.big_query_utils import MAX_BQ_INT
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.entity.base_entity import CoreEntity, Entity, RootEntity
+from recidiviz.persistence.entity.base_entity import (
+    CoreEntity,
+    Entity,
+    ExternalIdEntity,
+    HasExternalIdEntity,
+    RootEntity,
+)
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
@@ -94,7 +100,7 @@ def generate_primary_keys_for_root_entity_tree(
         entity = cast(Entity, queue.pop(0))
         if isinstance(entity, (StatePerson, StateStaff)):
             entity.set_id(root_primary_key)
-        elif hasattr(entity, "external_id"):
+        elif isinstance(entity, HasExternalIdEntity):
             external_id = assert_type(entity.get_external_id(), str)
             entity.set_id(
                 generate_primary_key(
@@ -108,6 +114,20 @@ def generate_primary_keys_for_root_entity_tree(
                     ),
                     state_code,
                 ),
+            )
+        elif isinstance(entity, ExternalIdEntity):
+            entity.set_id(
+                generate_primary_key(
+                    string_representation(
+                        {
+                            (
+                                entity.external_id,
+                                f"{entity.id_type}#{entity.get_class_id_name()}",
+                            )
+                        }
+                    ),
+                    state_code,
+                )
             )
         else:
             entity.set_id(
