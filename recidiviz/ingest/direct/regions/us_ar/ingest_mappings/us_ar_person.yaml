@@ -1,0 +1,122 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_person` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - OFFNBIRTHDATE
+  - OFFNRACE
+  - OFFNSEX
+  - OFFNETHNICGROUP
+  - OFFNEMAILADDR
+  - alias_list
+  - OFFNISHOMELESS
+  - STREETNUMBER
+  - STREETNAME
+  - STREETTYPE
+  - SUITENUMBER
+  - APARTMENTNUM
+  - POBOX
+  - CITY
+  - STATE
+  - ZIPCODE
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    aliases:
+      - $foreach:
+          $iterable:
+            $split_json: alias_list
+          $result:
+            StatePersonAlias:
+              alias_type:
+                $enum_mapping:
+                  $raw_text:
+                    $json_extract:
+                      $key: alias_type
+                      $json: $iter_item
+                  $mappings:
+                    StatePersonAliasType.GIVEN_NAME: "1" # Committed
+                    StatePersonAliasType.ALIAS: "2" # Alias
+                    StatePersonAliasType.MAIDEN_NAME: "3" # Maiden Name
+                    StatePersonAliasType.NICKNAME: "4" # Nickname
+                    StatePersonAliasType.AFFILIATION_NAME: "8" # Moniker
+                    StatePersonAliasType.INTERNAL_UNKNOWN:
+                      - "5" # Marital
+                      - "6" # Adopted
+                      - "7" # TRUE (?)
+                      - "9" # Clemency Application (?)
+              full_name:
+                $person_name:
+                  $given_names:
+                    $json_extract:
+                      $key: first
+                      $json: $iter_item
+                  $middle_names:
+                    $json_extract:
+                      $key: middle
+                      $json: $iter_item
+                  $surname:
+                    $json_extract:
+                      $key: last
+                      $json: $iter_item
+                  $name_suffix:
+                    $json_extract:
+                      $key: suffix
+                      $json: $iter_item
+    gender:
+      $enum_mapping:
+        $raw_text: OFFNSEX
+        $mappings:
+          StateGender.MALE: M
+          StateGender.FEMALE: F
+          StateGender.EXTERNAL_UNKNOWN: U
+    birthdate: OFFNBIRTHDATE
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: OFFNRACE
+              $mappings:
+                StateRace.BLACK: B
+                StateRace.WHITE: W
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+                StateRace.ASIAN: A
+                StateRace.EXTERNAL_UNKNOWN: U
+                StateRace.INTERNAL_UNKNOWN:
+                  - "N"
+                  - X
+                  - H
+                  - O
+                  - C
+                  - M
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: OFFNETHNICGROUP
+              $custom_parser: us_ar_custom_enum_parsers.parse_ethnic_group
+    current_address:
+      $custom:
+        $function: us_ar_custom_parsers.parse_address_pieces
+        $args:
+          stnum: STREETNUMBER
+          stname: STREETNAME
+          sttype: STREETTYPE
+          suite: SUITENUMBER
+          apt: APARTMENTNUM
+          po: POBOX
+          city: CITY
+          st: STATE
+          zipcode: ZIPCODE
+    residency_status:
+      $enum_mapping:
+        $raw_text: OFFNISHOMELESS
+        $mappings:
+          StateResidencyStatus.HOMELESS: "Y"
+          StateResidencyStatus.PERMANENT: "N"
+    current_email_address: OFFNEMAILADDR

@@ -5,14 +5,8 @@ file_description: |-
 data_classification: source
 encoding: WINDOWS-1252
 separator: ‡
-primary_key_cols:
-  - OFFENDERID
-  - OFFNNAMETYPE
-  - COMMITMENTPREFIX
-  - UOFFNLASTNAME
-  - UOFFNFIRSTNAME
-  - UOFFNMIDDLENAME
-  - UOFFNNAMESUFFIX
+no_valid_primary_keys: True
+primary_key_cols: []
 # TODO(#23025): Encode join relationships
 columns:
   - name: OFFENDERID
@@ -77,3 +71,4 @@ columns:
     description: |-
       Unknown
     is_pii: True
+always_historical_export: True
