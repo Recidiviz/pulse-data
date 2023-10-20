@@ -63,9 +63,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.super
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_prison_transitions_raw import (
     SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_population_snapshot_by_dimension import (
-    LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_incarceration_location_name_map import (
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
 )
@@ -74,27 +71,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_b
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_location_name_map import (
     PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.prison_population_snapshot_by_dimension import (
-    PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.prison_population_snapshot_person_level import (
-    PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.prison_to_supervision_population_snapshot_by_dimension import (
-    PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.prison_to_supervision_population_snapshot_person_level import (
-    PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_population_snapshot_by_dimension import (
-    SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_liberty_population_snapshot_by_dimension import (
-    SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_prison_population_snapshot_by_dimension import (
-    SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_prison_population_snapshot_by_officer import (
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER,
@@ -122,45 +98,13 @@ PATHWAYS_EVENT_LEVEL_VIEW_BUILDER_HELPERS: Set[SelectedColumnsBigQueryViewBuilde
     SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER,
 }
 
-PATHWAYS_PRISON_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
-    PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-    PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER,
-]
-
-PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
-    LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-]
-
-PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS: List[
-    PathwaysMetricBigQueryViewBuilder
-] = [
-    PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-    PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER,
-]
-
-PATHWAYS_SUPERVISION_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
-    SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-]
-
-PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS: List[
-    PathwaysMetricBigQueryViewBuilder
-] = [
-    SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-]
-
 PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS: List[
     PathwaysMetricBigQueryViewBuilder
 ] = [
-    SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER,
 ]
 
 PATHWAYS_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
-    *PATHWAYS_PRISON_VIEW_BUILDERS,
-    *PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS,
-    *PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS,
-    *PATHWAYS_SUPERVISION_VIEW_BUILDERS,
-    *PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS,
     *PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
 ]
 

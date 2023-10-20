@@ -34,12 +34,7 @@ from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
-    PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS,
-    PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS,
-    PATHWAYS_PRISON_VIEW_BUILDERS,
-    PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS,
     PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
-    PATHWAYS_SUPERVISION_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.population_projections.population_projections_views import (
     POPULATION_PROJECTION_VIEW_BUILDERS,
@@ -243,11 +238,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     # All modules for the Pathways product
     ExportViewCollectionConfig(
         view_builders_to_export=[
-            *PATHWAYS_PRISON_VIEW_BUILDERS,
-            *PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS,
-            *PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS,
-            *PATHWAYS_SUPERVISION_VIEW_BUILDERS,
-            *PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS,
             *PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
         ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
@@ -257,23 +247,11 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     # All modules for the Pathways with projected prison and supervision populations
     ExportViewCollectionConfig(
         view_builders_to_export=[
-            *PATHWAYS_PRISON_VIEW_BUILDERS,
-            *PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS,
-            *PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS,
-            *PATHWAYS_SUPERVISION_VIEW_BUILDERS,
-            *PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS,
             *PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS,
             *POPULATION_PROJECTION_VIEW_BUILDERS,
         ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_AND_PROJECTIONS",
-        export_override_state_codes=EXPORT_ATLAS_TO_ID,
-    ),
-    # Pathways Prison Module
-    ExportViewCollectionConfig(
-        view_builders_to_export=PATHWAYS_PRISON_VIEW_BUILDERS,
-        output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
-        export_name="PATHWAYS_PRISON",
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Pathways event level
