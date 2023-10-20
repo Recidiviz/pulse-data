@@ -75,7 +75,6 @@ products:
   - name: Pathways Prison Module
     description: Prison populations over time which can be drilled down by geographic region, demographic categories, time period, etc.
     exports:
-      - PATHWAYS_PRISON
       - PATHWAYS_PRISON_EVENT_LEVEL
     states:
       - state_code: US_MI
