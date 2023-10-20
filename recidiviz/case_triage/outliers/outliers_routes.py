@@ -170,4 +170,41 @@ def create_outliers_api_blueprint() -> Blueprint:
         ]
         return jsonify({"officers": officers})
 
+    @api.get("/<state>/benchmarks")
+    def benchmarks(
+        state: str,
+    ) -> Response:
+        try:
+            state_code = StateCode(state.upper())
+
+            num_lookback_periods = (
+                int(request.args["num_lookback_periods"])
+                if "num_lookback_periods" in request.args
+                else None
+            )
+
+            period_end_date = (
+                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
+                if "period_end_date" in request.args
+                else None
+            )
+        except ValueError as e:
+            return make_response(
+                jsonify(f"Invalid parameters provided. Error: {str(e)}"),
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        benchmarks = OutliersQuerier().get_benchmarks(
+            state_code, num_lookback_periods, period_end_date
+        )
+
+        result = [
+            convert_nested_dictionary_keys(
+                entity,
+                snake_to_camel,
+            )
+            for entity in benchmarks
+        ]
+        return jsonify({"metrics": result})
+
     return api

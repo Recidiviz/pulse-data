@@ -3,3 +3,9 @@ US_XX,incarceration_starts_and_inferred,YEAR,2023-04-01,ALL,0.14,0.21
 US_XX,incarceration_starts_and_inferred,YEAR,2023-05-01,ALL,0.13,0.2
 US_XX,task_completions_transfer_to_limited_supervision,YEAR,2023-04-01,ALL,0.008,0.1
 US_XX,task_completions_transfer_to_limited_supervision,YEAR,2023-05-01,ALL,0.008,0.1
+US_XX,absconsions_bench_warrants,YEAR,2023-05-01,ALL,0.14,0.21
+US_XX,absconsions_bench_warrants,YEAR,2023-04-01,ALL,0.14,0.21
+US_XX,absconsions_bench_warrants,YEAR,2023-03-01,ALL,0.14,0.21
+US_XX,absconsions_bench_warrants,YEAR,2023-02-01,ALL,0.14,0.21
+US_XX,absconsions_bench_warrants,YEAR,2023-01-01,ALL,0.14,0.21
+US_XX,absconsions_bench_warrants,YEAR,2022-12-01,ALL,0.14,0.21

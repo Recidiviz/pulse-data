@@ -588,3 +588,52 @@ class TestOutliersQuerier(TestCase):
             )
 
             self.assertEqual(expected.external_id, actual.external_id)  # type: ignore[union-attr]
+
+    def test_get_benchmarks(self) -> None:
+        actual = OutliersQuerier().get_benchmarks(
+            StateCode.US_XX,
+            4,
+        )
+
+        expected = [
+            {
+                "metric_id": "absconsions_bench_warrants",
+                "caseload_type": "ALL",
+                "benchmarks": [
+                    {"target": 0.14, "end_date": "2023-05-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2023-04-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2023-03-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2023-02-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2023-01-01", "threshold": 0.21},
+                ],
+                "latest_period_values": {"far": [0.8], "near": [0.32], "met": [0.1]},
+            },
+            {
+                "metric_id": "incarceration_starts_and_inferred",
+                "caseload_type": "ALL",
+                "benchmarks": [
+                    {"target": 0.13, "end_date": "2023-05-01", "threshold": 0.2},
+                    {"target": 0.14, "end_date": "2023-04-01", "threshold": 0.21},
+                ],
+                "latest_period_values": {
+                    "far": [0.333, 0.26],
+                    "near": [0.184, 0.17],
+                    "met": [0.0, 0.11, 0.04, 0.12],
+                },
+            },
+            {
+                "metric_id": "task_completions_transfer_to_limited_supervision",
+                "caseload_type": "ALL",
+                "benchmarks": [
+                    {"target": 0.008, "end_date": "2023-05-01", "threshold": 0.1},
+                    {"target": 0.008, "end_date": "2023-04-01", "threshold": 0.1},
+                ],
+                "latest_period_values": {
+                    "far": [0.0],
+                    "near": [],
+                    "met": [0.126, 0.171, 0.27, 0.11, 0.039, 0.184, 0.333],
+                },
+            },
+        ]
+
+        self.assertEqual(expected, actual)
