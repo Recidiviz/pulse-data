@@ -22,3 +22,32 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_ar_custom_enum_parsers.<function name>
 """
+
+from typing import Optional
+
+from recidiviz.common.constants.state.state_person import StateEthnicity
+
+
+def parse_ethnic_group(
+    raw_text: str,
+) -> Optional[StateEthnicity]:
+    if raw_text in [
+        "03",  # Cuban
+        "09",  # Hispanic or Latino
+        "10",  # South American
+        "11",  # Central America
+        "23",  # Mexican American
+        "24",  # Mexican National
+        "27",  # Puerto Rican
+        "33",  # Spain (note: by most definitions, Hispanic but not Latino)
+        "35",  # Peru
+        "36",  # Panama
+        "37",  # Boliva
+        "40",  # Mariel-Cuban
+    ]:
+        return StateEthnicity.HISPANIC
+
+    if raw_text in ["98", "99"]:
+        return StateEthnicity.EXTERNAL_UNKNOWN
+
+    return StateEthnicity.NOT_HISPANIC if raw_text else None
