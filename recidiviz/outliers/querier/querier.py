@@ -22,7 +22,7 @@ from typing import Dict, List, Optional, Tuple
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, func
 from sqlalchemy.dialects.postgresql import aggregate_order_by
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.common.constants.states import StateCode
@@ -555,3 +555,175 @@ class OutliersQuerier:
             )
 
             return supervisor
+
+    def get_benchmarks(
+        self,
+        state_code: StateCode,
+        num_lookback_periods: Optional[int] = 5,
+        period_end_date: Optional[date] = None,
+    ) -> List[dict]:
+        """
+        Returns a list of objects that have information for a given metric and benchmark. Each item in the returned
+        list adhere to the below format:
+            {
+              "metric_id": str,
+              "caseload_type": str,
+              "benchmarks": [  # a list of benchmark values for each period in window
+                {
+                  "target": float
+                  "threshold": float
+                  "end_date": date
+                }, ...
+              ]
+              "latest_period_values": {  # Officer rates by status for the latest period
+                "far": float[],
+                "near": float[],
+                "met": float[]
+              }
+            }
+
+        :param state_code: The user's state code
+        :param num_lookback_periods: The number of previous periods to get benchmark data for, prior to the period with end_date == period_end_date.
+        :param period_end_date: The end date of the period to get  for. If not provided, use the latest end date available.
+        :rtype: List of dictionary
+        """
+        db_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name=state_code.value.lower()
+        )
+
+        num_lookback_periods = num_lookback_periods or DEFAULT_NUM_LOOKBACK_PERIODS
+
+        with SessionFactory.using_database(db_key, autocommit=False) as session:
+            end_date = (
+                self._get_latest_period_end_date(session)
+                if period_end_date is None
+                else period_end_date
+            )
+
+            earliest_end_date = end_date - relativedelta(months=num_lookback_periods)
+
+            benchmarks_cte = (
+                session.query(MetricBenchmark)
+                .filter(
+                    # Get the benchmarks for all periods between requested or latest end_date and earliest end date
+                    MetricBenchmark.end_date.between(earliest_end_date, end_date),
+                )
+                .group_by(
+                    MetricBenchmark.metric_id,
+                    MetricBenchmark.caseload_type,
+                    MetricBenchmark.period,
+                )
+                .with_entities(
+                    MetricBenchmark.metric_id,
+                    MetricBenchmark.caseload_type,
+                    MetricBenchmark.period,
+                    # Get an array of JSON objects for the metric's targets and thresholds in the selected periods
+                    func.array_agg(
+                        aggregate_order_by(
+                            func.jsonb_build_object(
+                                "end_date",
+                                MetricBenchmark.end_date,
+                                "target",
+                                MetricBenchmark.target,
+                                "threshold",
+                                MetricBenchmark.threshold,
+                            ),
+                            MetricBenchmark.end_date.desc(),
+                        )
+                    ).label("benchmarks_over_time"),
+                )
+                .cte("benchmarks")
+            )
+
+            latest_period_rates_cte = (
+                session.query(SupervisionOfficerOutlierStatus)
+                .filter(
+                    SupervisionOfficerOutlierStatus.end_date == end_date,
+                )
+                .group_by(
+                    SupervisionOfficerOutlierStatus.caseload_type,
+                    SupervisionOfficerOutlierStatus.metric_id,
+                    SupervisionOfficerOutlierStatus.period,
+                    SupervisionOfficerOutlierStatus.status,
+                )
+                .with_entities(
+                    SupervisionOfficerOutlierStatus.caseload_type,
+                    SupervisionOfficerOutlierStatus.metric_id,
+                    SupervisionOfficerOutlierStatus.period,
+                    SupervisionOfficerOutlierStatus.status,
+                    # Aggregate the rates by caseload type, metric, id, and status
+                    func.array_agg(SupervisionOfficerOutlierStatus.metric_rate).label(
+                        "rates"
+                    ),
+                )
+                .cte("latest_period_rates")
+            )
+
+            # In order to get the aggregated arrays by metric and caseload type in a single row, join on
+            # the latest period CTEs repeatedly, once per status.
+            latest_period_rates_far = aliased(latest_period_rates_cte)
+            latest_period_rates_near = aliased(latest_period_rates_cte)
+            latest_period_rates_met = aliased(latest_period_rates_cte)
+
+            benchmarks = (
+                session.query(benchmarks_cte)
+                .join(
+                    latest_period_rates_far,
+                    and_(
+                        benchmarks_cte.c.caseload_type
+                        == latest_period_rates_far.c.caseload_type,
+                        benchmarks_cte.c.metric_id
+                        == latest_period_rates_far.c.metric_id,
+                        benchmarks_cte.c.period == latest_period_rates_far.c.period,
+                        latest_period_rates_far.c.status == "FAR",
+                    ),
+                    isouter=True,
+                )
+                .join(
+                    latest_period_rates_near,
+                    and_(
+                        benchmarks_cte.c.caseload_type
+                        == latest_period_rates_near.c.caseload_type,
+                        benchmarks_cte.c.metric_id
+                        == latest_period_rates_near.c.metric_id,
+                        benchmarks_cte.c.period == latest_period_rates_near.c.period,
+                        latest_period_rates_near.c.status == "NEAR",
+                    ),
+                    isouter=True,
+                )
+                .join(
+                    latest_period_rates_met,
+                    and_(
+                        benchmarks_cte.c.caseload_type
+                        == latest_period_rates_met.c.caseload_type,
+                        benchmarks_cte.c.metric_id
+                        == latest_period_rates_met.c.metric_id,
+                        benchmarks_cte.c.period == latest_period_rates_met.c.period,
+                        latest_period_rates_met.c.status == "MET",
+                    ),
+                    isouter=True,
+                )
+                .with_entities(
+                    benchmarks_cte.c.caseload_type,
+                    benchmarks_cte.c.metric_id,
+                    benchmarks_cte.c.benchmarks_over_time,
+                    func.coalesce(latest_period_rates_far.c.rates, []).label("far"),
+                    func.coalesce(latest_period_rates_near.c.rates, []).label("near"),
+                    func.coalesce(latest_period_rates_met.c.rates, []).label("met"),
+                )
+                .all()
+            )
+
+            return [
+                {
+                    "metric_id": record.metric_id,
+                    "caseload_type": record.caseload_type,
+                    "benchmarks": record.benchmarks_over_time,
+                    "latest_period_values": {
+                        "far": record.far,
+                        "near": record.near,
+                        "met": record.met,
+                    },
+                }
+                for record in benchmarks
+            ]

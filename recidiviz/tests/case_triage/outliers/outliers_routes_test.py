@@ -386,3 +386,58 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             response.json,
             "Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: hash1",
         )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_benchmarks",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_benchmarks(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_outliers: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_get_outliers.return_value = [
+            {
+                "metric_id": "absconsions_bench_warrants",
+                "caseload_type": "ALL",
+                "benchmarks": [
+                    {"target": 0.14, "end_date": "2023-05-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2023-04-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2023-03-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2023-02-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2023-01-01", "threshold": 0.21},
+                    {"target": 0.14, "end_date": "2022-12-01", "threshold": 0.21},
+                ],
+                "latest_period_values": {"far": [0.8], "near": [0.32], "met": [0.1]},
+            }
+        ]
+
+        response = self.test_client.get(
+            "/outliers/US_XX/benchmarks?num_periods=5&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        expected_json = {
+            "metrics": [
+                {
+                    "metricId": "absconsions_bench_warrants",
+                    "caseloadType": "ALL",
+                    "benchmarks": [
+                        {"target": 0.14, "endDate": "2023-05-01", "threshold": 0.21},
+                        {"target": 0.14, "endDate": "2023-04-01", "threshold": 0.21},
+                        {"target": 0.14, "endDate": "2023-03-01", "threshold": 0.21},
+                        {"target": 0.14, "endDate": "2023-02-01", "threshold": 0.21},
+                        {"target": 0.14, "endDate": "2023-01-01", "threshold": 0.21},
+                        {"target": 0.14, "endDate": "2022-12-01", "threshold": 0.21},
+                    ],
+                    "latestPeriodValues": {"far": [0.8], "near": [0.32], "met": [0.1]},
+                }
+            ]
+        }
+
+        self.assertEqual(response.json, expected_json)
