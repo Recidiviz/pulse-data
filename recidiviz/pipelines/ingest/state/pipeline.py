@@ -17,7 +17,7 @@
 """The ingest pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details
 on how to launch a local run."""
 from datetime import datetime
-from typing import Any, Dict, Tuple, Type
+from typing import Any, Dict, Optional, Tuple, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
@@ -156,20 +156,16 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 raise ValueError(
                     f"Found invalid ingest view for {state_code}: {ingest_view}"
                 )
-            raw_data_tables_to_upperbound_dates: Dict[str, str] = {}
+            raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]] = {}
             for raw_data_dependency in view_collector.get_query_builder_by_view_name(
                 ingest_view
             ).raw_table_dependency_configs:
                 file_tag = raw_data_dependency.raw_file_config.file_tag
-                if file_tag not in raw_data_upper_bound_dates:
-                    raise ValueError(
-                        f"Found raw table {raw_data_dependency.raw_file_config.file_tag}"
-                        f" dependency of ingest view {ingest_view} with no uploaded data."
-                        f" All raw table dependencies must have uploaded data before an ingest view can be enabled."
-                    )
-                raw_data_tables_to_upperbound_dates[
-                    file_tag
-                ] = raw_data_upper_bound_dates[file_tag]
+                raw_data_tables_to_upperbound_dates[file_tag] = (
+                    raw_data_upper_bound_dates[file_tag]
+                    if file_tag in raw_data_upper_bound_dates
+                    else None
+                )
 
             materialization_method = materialization_method_for_ingest_view(
                 ingest_manifest_collector.ingest_view_to_manifest[ingest_view],

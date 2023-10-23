@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Dict, Iterable, Optional
 
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
-from apache_beam.pipeline_test import TestPipeline, assert_that
+from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 from mock import patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -118,6 +118,23 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         )
         self.test_pipeline.run()
 
+    def test_materialize_ingest_view_results_for_empty_view(self) -> None:
+        self.setup_single_ingest_view_raw_data_bq_tables(
+            ingest_view_name="ingestCompletelyEmpty", test_name="ingestCompletelyEmpty"
+        )
+        output = self.test_pipeline | pipeline.GenerateIngestViewResults(
+            project_id=BQ_EMULATOR_PROJECT_ID,
+            state_code=self.region_code,
+            ingest_view_name="ingestCompletelyEmpty",
+            raw_data_tables_to_upperbound_dates={
+                "table6": None,
+            },
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            materialization_method=MaterializationMethod.ORIGINAL,
+        )
+        assert_that(output, equal_to([]))
+        self.test_pipeline.run()
+
 
 class TestGenerateDateBoundTuplesQuery(StateIngestPipelineTestCase):
     """Tests the generate_date_bound_tuples_query static method."""
@@ -157,6 +174,40 @@ UNION ALL
     GROUP BY update_date
 )
 ORDER BY 1;"""
+        self.assertEqual(result, expected)
+
+    def test_generate_date_bound_tuples_query_with_missing_raw_data_upperbounds(
+        self,
+    ) -> None:
+        result = pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
+            project_id="test-project",
+            state_code=self.region_code,
+            raw_data_tables_to_upperbound_dates={
+                "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                "table2": None,
+            },
+        )
+        expected = """
+SELECT
+    LAG(max_dt_on_date) OVER (
+        ORDER BY update_date
+    ) AS __lower_bound_datetime_exclusive,
+    max_dt_on_date AS __upper_bound_datetime_inclusive,
+FROM (
+    SELECT
+        update_date AS update_date,
+        MAX(update_datetime) AS max_dt_on_date
+    FROM (
+        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
+        FROM `test-project.us_dd_raw_data.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
+UNION ALL
+        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
+        FROM `test-project.us_dd_raw_data.table2` LIMIT 0
+    )
+    GROUP BY update_date
+)
+ORDER BY 1;"""
+        self.maxDiff = None
         self.assertEqual(result, expected)
 
     def test_generate_date_bound_tuples_query_returns_correct_data(self) -> None:
@@ -252,6 +303,31 @@ FROM (
 UNION ALL
         SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
         FROM `test-project.us_dd_raw_data.table2` WHERE update_datetime <= '2023-07-05T00:00:00'
+);"""
+        self.assertEqual(result, expected)
+
+    def test_generate_date_bound_tuples_query_latest_method_query_with_missing_raw_data_upperbounds(
+        self,
+    ) -> None:
+        result = pipeline.GenerateIngestViewResults.generate_date_bound_tuples_query(
+            project_id="test-project",
+            state_code=self.region_code,
+            raw_data_tables_to_upperbound_dates={
+                "table1": datetime.fromisoformat("2023-07-05:00:00:00").isoformat(),
+                "table2": None,
+            },
+            materialization_method=MaterializationMethod.LATEST,
+        )
+        expected = """
+SELECT
+    MAX(update_datetime) AS __upper_bound_datetime_inclusive,
+    CAST(NULL AS DATETIME) AS __lower_bound_datetime_exclusive
+FROM (
+        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
+        FROM `test-project.us_dd_raw_data.table1` WHERE update_datetime <= '2023-07-05T00:00:00'
+UNION ALL
+        SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
+        FROM `test-project.us_dd_raw_data.table2` LIMIT 0
 );"""
         self.assertEqual(result, expected)
 
