@@ -27,6 +27,9 @@ from typing import Dict, List, Optional
 import attr
 from google.cloud import bigquery
 
+from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
+)
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
@@ -67,7 +70,6 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
 )
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_ingest_pipeline_enabled_states,
     get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
@@ -341,17 +343,19 @@ def update_state_specific_ingest_state_schemas(
 ) -> None:
     """Updates the tables for each state-specific dataset that stores Dataflow
     state entity output to match expected schemas."""
-    for state_code in get_ingest_pipeline_enabled_states():
-        for ingest_instance in DirectIngestInstance:
-            update_bq_dataset_to_match_sqlalchemy_schema(
-                schema_type=SchemaType.STATE,
-                dataset_id=state_dataset_for_state_code(
-                    state_code, ingest_instance, sandbox_dataset_prefix
-                ),
-                default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-                if sandbox_dataset_prefix
-                else None,
-            )
+    for (
+        state_code,
+        ingest_instance,
+    ) in get_ingest_pipeline_enabled_state_and_instance_pairs():
+        update_bq_dataset_to_match_sqlalchemy_schema(
+            schema_type=SchemaType.STATE,
+            dataset_id=state_dataset_for_state_code(
+                state_code, ingest_instance, sandbox_dataset_prefix
+            ),
+            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+            if sandbox_dataset_prefix
+            else None,
+        )
 
 
 def update_state_specific_ingest_view_result_schema(
@@ -419,15 +423,17 @@ def update_state_specific_ingest_view_results_schemas(
     sandbox_dataset_prefix: Optional[str] = None,
 ) -> None:
     """Updates the datasets for ingest view results to match expected schemas."""
-    for state_code in get_ingest_pipeline_enabled_states():
-        for ingest_instance in DirectIngestInstance:
-            update_state_specific_ingest_view_result_schema(
-                ingest_view_materialization_results_dataflow_dataset(
-                    state_code, ingest_instance, sandbox_dataset_prefix
-                ),
-                state_code,
-                ingest_instance,
-                TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-                if sandbox_dataset_prefix
-                else None,
-            )
+    for (
+        state_code,
+        ingest_instance,
+    ) in get_ingest_pipeline_enabled_state_and_instance_pairs():
+        update_state_specific_ingest_view_result_schema(
+            ingest_view_materialization_results_dataflow_dataset(
+                state_code, ingest_instance, sandbox_dataset_prefix
+            ),
+            state_code,
+            ingest_instance,
+            TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+            if sandbox_dataset_prefix
+            else None,
+        )

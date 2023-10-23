@@ -31,6 +31,8 @@ from recidiviz.ingest.direct.dataset_config import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
+INGEST_PIPELINE_NAME = "ingest"
+
 
 class MaterializationMethod(Enum):
     # The latest materialization method produces one date per ingest view which is the

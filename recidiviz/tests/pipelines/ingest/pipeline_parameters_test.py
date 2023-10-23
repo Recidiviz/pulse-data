@@ -17,7 +17,13 @@
 """Unit tests for IngestPipelineParameters"""
 import unittest
 
+from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
+)
 from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 
 
 class TestIngestPipelineParameters(unittest.TestCase):
@@ -327,4 +333,18 @@ class TestIngestPipelineParameters(unittest.TestCase):
                 materialization_method="original",
                 raw_data_upper_bound_dates_json='{"TEST_RAW_DATA":"2020-01-01T00:00:00.000000"}',
                 ingest_views_to_run="view1 view2",
+            )
+
+    def test_default_ingest_pipeline_regions_by_state_code_filled_out(self) -> None:
+        pipeline_enabled_states = {
+            state_code
+            for state_code, _instance in get_ingest_pipeline_enabled_state_and_instance_pairs()
+        }
+
+        states_with_regions = set(DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE.keys())
+        states_missing_regions = pipeline_enabled_states - states_with_regions
+        if states_missing_regions:
+            self.fail(
+                f"Missing a region in DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE "
+                f"for these ingest pipeline enabled states: {states_missing_regions}."
             )

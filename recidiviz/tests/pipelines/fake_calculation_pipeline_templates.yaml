@@ -50,9 +50,3 @@ supplemental_dataset_pipelines:
     job_name: us-yy-pipeline-to-run-daily
     state_code: US_YY
     region: us-east1
-
-ingest_pipelines:
-  - state_code: US_XX
-    region: us-east1
-  - state_code: US_YY
-    region: us-east2

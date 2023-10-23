@@ -22,16 +22,16 @@ from unittest import mock
 from unittest.case import TestCase
 from unittest.mock import patch
 
-import recidiviz
 from recidiviz.admin_panel.ingest_dataflow_operations import (
     DataflowPipelineMetadataResponse,
     get_all_latest_ingest_jobs,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.ingest.pipeline_utils import ingest_pipeline_name
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
-from recidiviz.utils.yaml_dict import YAMLDict
 
 PIPELINES_TESTS_WORKING_DIRECTORY = os.path.dirname(
     recidiviz_pipelines_tests_module.__file__
@@ -43,6 +43,10 @@ FAKE_PIPELINE_CONFIG_YAML_PATH = os.path.join(
 )
 
 
+@patch.dict(
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+    values={StateCode.US_XX: "us-east1", StateCode.US_YY: "us-east2"},
+)
 class IngestDataflowOperations(TestCase):
     """Implements tests for get_all_latest_ingest_dataflow_jobs and helpers."""
 
@@ -180,18 +184,3 @@ class IngestDataflowOperations(TestCase):
             },
         ):
             self.assertEqual(expected, get_all_latest_ingest_jobs())
-
-    def test_ingest_pipelines_correct_job_names(self) -> None:
-        PIPELINE_CONFIG_YAML_PATH = os.path.join(
-            os.path.dirname(recidiviz.__file__),
-            "pipelines/calculation_pipeline_templates.yaml",
-        )
-        pipeline_configs = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
-
-        for ingest_pipeline in pipeline_configs.pop_dicts("ingest_pipelines"):
-            state_code = ingest_pipeline.peek("state_code", str)
-            expected_name = ingest_pipeline_name(
-                StateCode(state_code), DirectIngestInstance.PRIMARY
-            )
-            name = ingest_pipeline.peek("job_name", str)
-            self.assertEqual(expected_name, name)

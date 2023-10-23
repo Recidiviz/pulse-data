@@ -36,6 +36,9 @@ from recidiviz.airflow.dags.ingest.single_ingest_pipeline_group import (
     _should_run_based_on_watermarks,
     create_single_ingest_pipeline_group,
 )
+from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
+    RecidivizDataflowFlexTemplateOperator,
+)
 from recidiviz.airflow.tests import fixtures
 from recidiviz.airflow.tests.test_utils import AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import (
@@ -46,6 +49,9 @@ from recidiviz.airflow.tests.utils.dag_helper_functions import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+)
 from recidiviz.utils.environment import GCPEnvironment
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
@@ -77,6 +83,10 @@ def _create_test_single_ingest_pipeline_group_dag(
     return test_single_ingest_pipeline_group_dag()
 
 
+@patch.dict(
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+    values={StateCode.US_XX: "us-east1-test"},
+)
 class TestSingleIngestPipelineGroup(unittest.TestCase):
     """Tests for the single ingest pipeline group ."""
 
@@ -163,11 +173,53 @@ class TestSingleIngestPipelineGroup(unittest.TestCase):
             self.entrypoint_args_fixture["test_ingest_dag_release_lock_task"],
         )
 
+    def test_dataflow_pipeline_task_exists(self) -> None:
+        """Tests that dataflow_pipeline triggers the proper script."""
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        dataflow_pipeline_task = test_dag.get_task(
+            f"{get_ingest_branch_key(StateCode.US_XX.value, DirectIngestInstance.PRIMARY.value)}.dataflow_pipeline.run_pipeline"
+        )
+
+        if not isinstance(
+            dataflow_pipeline_task, RecidivizDataflowFlexTemplateOperator
+        ):
+            raise ValueError(
+                f"Expected type RecidivizDataflowFlexTemplateOperator, found "
+                f"[{type(dataflow_pipeline_task)}]."
+            )
+
+    def test_dataflow_pipeline_task(self) -> None:
+        """Tests that dataflow_pipeline get the expected arguments."""
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        ingest_branch_key = get_ingest_branch_key(
+            StateCode.US_XX.value, DirectIngestInstance.PRIMARY.value
+        )
+
+        task: RecidivizDataflowFlexTemplateOperator = test_dag.get_task(  # type: ignore
+            f"{ingest_branch_key}.dataflow_pipeline.run_pipeline"
+        )
+
+        self.assertEqual(task.location, "us-east1-test")
+        self.assertEqual(task.project_id, _PROJECT_ID)
+        self.assertEqual(task.body.operator.task_id, f"{ingest_branch_key}.dataflow_pipeline.create_flex_template")  # type: ignore
+
 
 def _fake_failure_execute(*args: Any, **kwargs: Any) -> None:
     raise ValueError("Fake failure")
 
 
+@patch.dict(
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+    values={StateCode.US_XX: "us-east1-test"},
+)
 class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
     """Tests for the single ingest pipeline group ."""
 
@@ -193,10 +245,17 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         )
         self.cloud_sql_query_operator_patcher.start()
 
+        self.recidiviz_dataflow_operator_patcher = patch(
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.RecidivizDataflowFlexTemplateOperator",
+            side_effect=fake_operator_constructor,
+        )
+        self.mock_dataflow_operator = self.recidiviz_dataflow_operator_patcher.start()
+
     def tearDown(self) -> None:
         self.environment_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
         self.cloud_sql_query_operator_patcher.stop()
+        self.recidiviz_dataflow_operator_patcher.stop()
         super().tearDown()
 
     def test_single_ingest_pipeline_group(self) -> None:
@@ -230,10 +289,11 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 test_dag,
                 session,
                 expected_skipped_ids=[
-                    ".*acquire_lock",
-                    ".*dataflow_pipeline$",
-                    ".*release_lock",
-                    ".*write_upper_bounds",
+                    r".*acquire_lock",
+                    r".*_dataflow\.dataflow_pipeline.*",
+                    r".*release_lock",
+                    r".*write_ingest_job_completion",
+                    r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -264,12 +324,8 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-    # TODO(#23986): Mock dataflow operator directly when it is implemented
-    @patch("recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.EmptyOperator")
-    def test_failed_dataflow_pipeline(
-        self, mock_create_dataflow_pipeline: MagicMock
-    ) -> None:
-        mock_create_dataflow_pipeline.side_effect = FakeFailureOperator
+    def test_failed_dataflow_pipeline(self) -> None:
+        self.mock_dataflow_operator.side_effect = FakeFailureOperator
 
         test_dag = _create_test_single_ingest_pipeline_group_dag(
             StateCode.US_XX, DirectIngestInstance.PRIMARY
@@ -280,8 +336,9 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 test_dag,
                 session,
                 expected_failure_ids=[
-                    ".*dataflow_pipeline$",
-                    ".*write_upper_bounds",
+                    r".*dataflow_pipeline.run_pipeline",
+                    r".*write_ingest_job_completion",
+                    r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
@@ -302,9 +359,10 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 test_dag,
                 session,
                 expected_failure_ids=[
-                    ".*acquire_lock",
-                    ".*dataflow_pipeline$",
-                    ".*write_upper_bounds",
+                    r".*acquire_lock",
+                    r".*_dataflow\.dataflow_pipeline.*",
+                    r".*write_ingest_job_completion",
+                    r".*write_upper_bounds",
                     _DOWNSTREAM_TASK_ID,
                 ],
             )
