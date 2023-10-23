@@ -42,6 +42,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
         description=_DESCRIPTION,
         additional_filters=[
             'compartment_level_2 = "GENERAL" ',
+            "name_map_facility IS NOT NULL",
             f"{state_specific_query_strings.pathways_state_specific_facility_filter()}",
         ],
         compartment_level_1=["INCARCERATION"],
