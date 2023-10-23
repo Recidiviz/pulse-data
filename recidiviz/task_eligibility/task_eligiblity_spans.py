@@ -386,7 +386,7 @@ def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuild
     def get_completion_event_select_statement(
         vb: TaskCompletionEventBigQueryViewBuilder,
     ) -> str:
-        return f"SELECT '{vb.completion_event_type}' AS completion_event_type, state_code, person_id, completion_event_date"
+        return f"SELECT '{vb.completion_event_type.name}' AS completion_event_type, state_code, person_id, completion_event_date"
 
     subpart_unioned_view_builders = []
     for (
