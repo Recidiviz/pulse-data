@@ -31,11 +31,11 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
     IS_SECONDARY_INSTANCE_PROPERTY_NAME,
     IngestViewResultsParserDelegateImpl,
 )
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_ingest_pipeline_enabled_states,
-)
 
 
 def should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
@@ -122,14 +122,14 @@ def _should_enable_state_and_instance(
     )
 
 
-def get_all_enabled_state_and_instance_pairs() -> List[
+def get_ingest_pipeline_enabled_state_and_instance_pairs() -> List[
     Tuple[StateCode, DirectIngestInstance]
 ]:
     """
     Returns a list of all state and ingest instance pairs that the ingest pipeline should be run for.
     """
     states_and_instances: List[Tuple[StateCode, DirectIngestInstance]] = []
-    for state in get_ingest_pipeline_enabled_states():
+    for state in get_direct_ingest_states_existing_in_env():
         for instance in DirectIngestInstance:
             if _should_enable_state_and_instance(state, instance):
                 states_and_instances.append((state, instance))

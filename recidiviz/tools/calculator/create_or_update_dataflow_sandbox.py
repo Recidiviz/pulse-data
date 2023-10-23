@@ -36,6 +36,9 @@ import logging
 import sys
 from typing import List, Optional
 
+from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
+)
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
@@ -52,7 +55,6 @@ from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_ingest_pipeline_enabled_states,
     get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.dataflow_output_table_manager import (
@@ -255,25 +257,21 @@ def _create_or_update_dataflow_sandbox(
 
     # Create the ingest view results dataset and state datasets:
     if "ingest" in datasets_to_create:
-        state_codes = (
-            {state_code_filter}
-            if state_code_filter
-            else get_ingest_pipeline_enabled_states()
-        )
-        ingest_instances = (
-            {ingest_instance_filter}
-            if ingest_instance_filter
-            else set(DirectIngestInstance)
-        )
-        for state_code in state_codes:
-            for ingest_instance in ingest_instances:
-                create_or_update_ingest_output_sandbox(
-                    bq_client,
-                    state_code,
-                    ingest_instance,
-                    sandbox_dataset_prefix,
-                    allow_overwrite,
-                )
+        state_instance_pairs = {
+            (state_code, instance)
+            for state_code, instance in get_ingest_pipeline_enabled_state_and_instance_pairs()
+            if (not state_code_filter or state_code == state_code_filter)
+            and (not ingest_instance_filter or instance == ingest_instance_filter)
+        }
+
+        for state_code, ingest_instance in state_instance_pairs:
+            create_or_update_ingest_output_sandbox(
+                bq_client,
+                state_code,
+                ingest_instance,
+                sandbox_dataset_prefix,
+                allow_overwrite,
+            )
 
     # Create the sandbox normalized datasets
     if "normalization" in datasets_to_create:

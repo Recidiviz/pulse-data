@@ -17,16 +17,19 @@
 """
 Logic for state and ingest instance specific dataflow pipelines.
 """
+import json
 import logging
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple, Union
 
 from airflow.decorators import task
 from airflow.models import BaseOperator
-from airflow.operators.empty import EmptyOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
+from recidiviz.airflow.dags.ingest.add_ingest_job_completion_sql_query_generator import (
+    AddIngestJobCompletionSqlQueryGenerator,
+)
 from recidiviz.airflow.dags.ingest.get_max_update_datetime_sql_query_generator import (
     GetMaxUpdateDateTimeSqlQueryGenerator,
 )
@@ -40,13 +43,27 @@ from recidiviz.airflow.dags.ingest.set_watermark_sql_query_generator import (
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
+from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
+    RecidivizDataflowFlexTemplateOperator,
+)
 from recidiviz.airflow.dags.operators.recidiviz_kubernetes_pod_operator import (
     build_kubernetes_pod_task,
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
+from recidiviz.airflow.dags.utils.environment import get_project_id
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.pipelines.dataflow_config import PIPELINE_CONFIG_YAML_PATH
+from recidiviz.pipelines.ingest.pipeline_parameters import (
+    INGEST_PIPELINE_NAME,
+    IngestPipelineParameters,
+)
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+    ingest_pipeline_name,
+)
+from recidiviz.utils.yaml_dict import YAMLDict
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -149,11 +166,47 @@ def _release_lock(
     )
 
 
+def _get_ingest_pipeline_configs() -> List[YAMLDict]:
+    return YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH).pop_dicts("ingest_pipelines")
+
+
 def _create_dataflow_pipeline(
-    _state_code: StateCode, _instance: DirectIngestInstance
-) -> BaseOperator:
-    # TODO(#23962): Replace EmptyOperator with dataflow operator
-    return EmptyOperator(task_id="dataflow_pipeline")
+    state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
+    max_update_datetimes_operator: BaseOperator,
+) -> Tuple[TaskGroup, BaseOperator]:
+    """Builds a task Group that handles creating the flex template operator for a given
+    pipeline parameters.
+    """
+
+    with TaskGroup(group_id="dataflow_pipeline") as dataflow_pipeline_group:
+        region = DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
+
+        @task(task_id="create_flex_template")
+        def create_flex_template(
+            max_update_datetimes: Dict[str, str]
+        ) -> Dict[str, Union[str, int, bool]]:
+
+            parameters = IngestPipelineParameters(
+                project=get_project_id(),
+                ingest_instance=ingest_instance.value,
+                raw_data_upper_bound_dates_json=json.dumps(max_update_datetimes),
+                job_name=ingest_pipeline_name(state_code, ingest_instance),
+                pipeline=INGEST_PIPELINE_NAME,
+                state_code=state_code.value,
+                region=region,
+            )
+
+            return parameters.flex_template_launch_body()
+
+        run_pipeline = RecidivizDataflowFlexTemplateOperator(
+            task_id="run_pipeline",
+            location=region,
+            body=create_flex_template(max_update_datetimes_operator.output),  # type: ignore[arg-type]
+            project_id=get_project_id(),
+        )
+
+    return dataflow_pipeline_group, run_pipeline
 
 
 def create_single_ingest_pipeline_group(
@@ -179,7 +232,11 @@ def create_single_ingest_pipeline_group(
 
         acquire_lock = _acquire_lock(state_code, instance)
 
-        dataflow_pipeline = _create_dataflow_pipeline(state_code, instance)
+        dataflow_pipeline_group, run_pipeline = _create_dataflow_pipeline(
+            state_code=state_code,
+            ingest_instance=instance,
+            max_update_datetimes_operator=get_max_update_datetimes,
+        )
 
         release_lock = _release_lock(state_code, instance)
 
@@ -190,17 +247,27 @@ def create_single_ingest_pipeline_group(
                 region_code=state_code.value,
                 ingest_instance=instance.value,
                 get_max_update_datetime_task_id=get_max_update_datetimes.task_id,
-                dataflow_pipeline_task_id=dataflow_pipeline.task_id,
+                run_pipeline_task_id=run_pipeline.task_id,
+            ),
+        )
+
+        write_ingest_job_completion = CloudSqlQueryOperator(
+            task_id="write_ingest_job_completion",
+            cloud_sql_conn_id=operations_cloud_sql_conn_id,
+            query_generator=AddIngestJobCompletionSqlQueryGenerator(
+                region_code=state_code.value,
+                ingest_instance=instance.value,
+                run_pipeline_task_id=run_pipeline.task_id,
             ),
         )
 
         (
             initialize_dataflow_pipeline
             >> acquire_lock
-            >> dataflow_pipeline
+            >> dataflow_pipeline_group
             >> release_lock
         )
 
-        dataflow_pipeline >> write_upper_bounds
+        dataflow_pipeline_group >> write_ingest_job_completion >> write_upper_bounds
 
     return dataflow

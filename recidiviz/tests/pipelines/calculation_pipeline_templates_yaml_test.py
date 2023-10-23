@@ -20,6 +20,9 @@ from collections import defaultdict
 from typing import Dict, List, Set
 from unittest.mock import Mock, patch
 
+from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
@@ -28,7 +31,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines import dataflow_config
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_ingest_pipeline_enabled_states,
     get_metric_pipeline_enabled_states,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -98,14 +100,18 @@ class TestConfiguredPipelines(unittest.TestCase):
         Mock(return_value="staging"),
     )
     def test_ingest_in_dataflow_pipeline_parity(self) -> None:
-        states_launched = get_direct_ingest_states_launched_in_env()
+        states_launched_in_env = get_direct_ingest_states_launched_in_env()
+        pairs_with_pipelines_enabled = (
+            get_ingest_pipeline_enabled_state_and_instance_pairs()
+        )
 
-        for state_code in get_ingest_pipeline_enabled_states():
-            if is_ingest_in_dataflow_enabled(state_code, DirectIngestInstance.PRIMARY):
-                self.assertIn(state_code, states_launched)
+        for (state_code, ingest_instance) in pairs_with_pipelines_enabled:
+            if is_ingest_in_dataflow_enabled(state_code, ingest_instance):
+                self.assertIn(state_code, states_launched_in_env)
 
-        states_with_ingest_pipelines = get_ingest_pipeline_enabled_states()
-
-        for state_code in get_direct_ingest_states_launched_in_env():
-            if is_ingest_in_dataflow_enabled(state_code, DirectIngestInstance.PRIMARY):
-                self.assertIn(state_code, states_with_ingest_pipelines)
+        for state_code in states_launched_in_env:
+            for ingest_instance in DirectIngestInstance:
+                if is_ingest_in_dataflow_enabled(state_code, ingest_instance):
+                    self.assertIn(
+                        (state_code, ingest_instance), pairs_with_pipelines_enabled
+                    )

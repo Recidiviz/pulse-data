@@ -19,6 +19,7 @@ import os
 import unittest
 from typing import List, cast
 from unittest import mock
+from unittest.mock import MagicMock
 
 from google.cloud import bigquery
 from mock import patch
@@ -39,7 +40,6 @@ from recidiviz.pipelines.dataflow_config import (
     METRIC_CLUSTERING_FIELDS,
 )
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_ingest_pipeline_enabled_states,
     get_normalization_pipeline_enabled_states,
 )
 from recidiviz.pipelines.metrics.population_spans.metrics import (
@@ -523,10 +523,17 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
         self.query_builder_patcher.stop()
 
     @mock.patch(
-        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
-        FAKE_PIPELINE_CONFIG_YAML_PATH,
+        "recidiviz.pipelines.dataflow_output_table_manager.get_ingest_pipeline_enabled_state_and_instance_pairs",
+        return_value=[
+            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
+            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+        ],
     )
-    def test_update_state_specific_ingest_view_results_datasets(self) -> None:
+    def test_update_state_specific_ingest_view_results_datasets(
+        self, _mock_get_ingest_pipeline_enabled_state_and_instance_pairs: MagicMock
+    ) -> None:
         def mock_dataset_ref_for_id(
             dataset_id: str,
         ) -> bigquery.dataset.DatasetReference:
@@ -569,11 +576,16 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
         )
 
     @mock.patch(
-        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
-        FAKE_PIPELINE_CONFIG_YAML_PATH,
+        "recidiviz.pipelines.dataflow_output_table_manager.get_ingest_pipeline_enabled_state_and_instance_pairs",
+        return_value=[
+            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
+            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+        ],
     )
     def test_update_state_specific_ingest_view_results_datasets_with_dataset_prefix(
-        self,
+        self, _mock_get_ingest_pipeline_enabled_state_and_instance_pairs: MagicMock
     ) -> None:
         def mock_dataset_ref_for_id(
             dataset_id: str,
@@ -688,26 +700,3 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
         )
         self.mock_client.update_schema.assert_called()
         self.mock_client.create_table_with_schema.assert_not_called()
-
-    @mock.patch(
-        "recidiviz.pipelines.dataflow_orchestration_utils.PIPELINE_CONFIG_YAML_PATH",
-        FAKE_PIPELINE_CONFIG_YAML_PATH,
-    )
-    def test_get_all_state_specific_ingest_state_datasets(self) -> None:
-        dataset_ids: List[str] = []
-        for state_code in get_ingest_pipeline_enabled_states():
-            for ingest_instance in DirectIngestInstance:
-                dataset_ids.append(
-                    dataflow_output_table_manager.state_dataset_for_state_code(
-                        state_code, ingest_instance
-                    )
-                )
-
-        expected_dataset_ids = [
-            "us_xx_state_primary",
-            "us_xx_state_secondary",
-            "us_yy_state_primary",
-            "us_yy_state_secondary",
-        ]
-
-        self.assertCountEqual(expected_dataset_ids, dataset_ids)

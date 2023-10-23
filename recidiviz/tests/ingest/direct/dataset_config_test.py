@@ -17,6 +17,7 @@
 """Tests for raw_data/dataset_config.py."""
 import unittest
 
+from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataflow_dataset,
@@ -93,5 +94,21 @@ class TestDatasetConfig(unittest.TestCase):
             "us_xx_dataflow_ingest_view_results_secondary",
             ingest_view_materialization_results_dataflow_dataset(
                 state_code=StateCode.US_XX, instance=DirectIngestInstance.SECONDARY
+            ),
+        )
+
+    def test_state_dataset_for_state_code(
+        self,
+    ) -> None:
+        self.assertEqual(
+            "us_xx_state_secondary",
+            state_dataset_for_state_code(
+                state_code=StateCode.US_XX, instance=DirectIngestInstance.SECONDARY
+            ),
+        )
+        self.assertEqual(
+            "us_yy_state_primary",
+            state_dataset_for_state_code(
+                state_code=StateCode.US_YY, instance=DirectIngestInstance.PRIMARY
             ),
         )

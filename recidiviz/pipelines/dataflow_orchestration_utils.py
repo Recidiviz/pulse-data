@@ -43,13 +43,3 @@ def get_metric_pipeline_enabled_states() -> Set[StateCode]:
     return {
         StateCode(pipeline.peek("state_code", str)) for pipeline in metric_pipelines
     }
-
-
-def get_ingest_pipeline_enabled_states() -> Set[StateCode]:
-    """Returns all states that have scheduled ingest pipelines that run."""
-    pipeline_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
-
-    ingest_pipelines = pipeline_templates_yaml.pop_dicts("ingest_pipelines")
-    return {
-        StateCode(pipeline.peek("state_code", str)) for pipeline in ingest_pipelines
-    }

@@ -20,7 +20,6 @@ import unittest
 from typing import Any
 
 import recidiviz
-from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
@@ -71,13 +70,6 @@ class TestValidPipelineParameters(unittest.TestCase):
         for pipeline in supplemental_pipelines:
             d: dict[str, Any] = pipeline.get()
             SupplementalPipelineParameters(project=self.PROJECT_ID, **d)
-
-    def test_ingest_pipelines_for_valid_parameters(self) -> None:
-        ingest_pipelines = self.PIPELINE_CONFIG.pop_dicts("ingest_pipelines")
-
-        for pipeline in ingest_pipelines:
-            d: dict[str, Any] = pipeline.get()
-            IngestPipelineParameters(project=self.PROJECT_ID, **d)
 
     def test_valid_get_sandboxable_dataset_param_names(self) -> None:
         for pipeline_params_subclass in PipelineParameters.__subclasses__():

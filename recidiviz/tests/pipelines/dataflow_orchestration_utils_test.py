@@ -21,10 +21,7 @@ import unittest
 import mock
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.dataflow_orchestration_utils import (
-    get_ingest_pipeline_enabled_states,
     get_metric_pipeline_enabled_states,
 )
 
@@ -47,11 +44,3 @@ class DataflowOrchestrationConfigTest(unittest.TestCase):
         expected_states = {StateCode.US_XX, StateCode.US_YY}
 
         self.assertCountEqual(expected_states, states)
-
-    def test_consistency_of_get_ingest_pipeline_enabled_states(self) -> None:
-        """Tests that get_ingest_pipeline_enabled_states is consistent with is_ingest_in_dataflow_enabled."""
-        ingest_pipeline_enabled_states = get_ingest_pipeline_enabled_states()
-        for state_code in StateCode:
-            for ingest_instance in DirectIngestInstance:
-                if is_ingest_in_dataflow_enabled(state_code, ingest_instance):
-                    self.assertIn(state_code, ingest_pipeline_enabled_states)

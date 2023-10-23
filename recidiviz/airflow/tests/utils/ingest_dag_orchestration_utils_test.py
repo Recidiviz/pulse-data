@@ -19,7 +19,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
-    get_all_enabled_state_and_instance_pairs,
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
@@ -31,8 +31,8 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
     """Tests for ingest dag orchestration utils."""
 
     def setUp(self) -> None:
-        self.get_ingest_pipeline_enabled_states_patcher = patch(
-            "recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils.get_ingest_pipeline_enabled_states",
+        self.get_existing_states_patcher = patch(
+            "recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils.get_direct_ingest_states_existing_in_env",
             return_value={
                 # Has views, environment=production, has env variables in mappings
                 StateCode.US_DD,
@@ -44,7 +44,7 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
                 StateCode.US_WW,
             },
         )
-        self.get_ingest_pipeline_enabled_states_patcher.start()
+        self.get_existing_states_patcher.start()
 
         self.direct_ingest_regions_patcher = patch(
             "recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils.direct_ingest_regions",
@@ -66,12 +66,12 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        self.get_ingest_pipeline_enabled_states_patcher.stop()
+        self.get_existing_states_patcher.stop()
         self.direct_ingest_regions_patcher.stop()
         self.is_ingest_in_dataflow_enabled_patcher.stop()
 
-    def test_get_all_enabled_state_and_instance_pairs(self) -> None:
-        result = get_all_enabled_state_and_instance_pairs()
+    def test_get_ingest_pipeline_enabled_state_and_instance_pairs(self) -> None:
+        result = get_ingest_pipeline_enabled_state_and_instance_pairs()
 
         self.assertSetEqual(
             set(result),
@@ -90,10 +90,10 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
         "recidiviz.ingest.direct.direct_ingest_regions.environment.in_gcp_production",
         return_value=True,
     )
-    def test_get_all_enabled_state_and_instance_pairs_only_us_xx_launched_in_env(
+    def test_get_ingest_pipeline_enabled_state_and_instance_pairs_only_us_xx_launched_in_env(
         self, _mock_in_gcp_production: MagicMock, _mock_get_gcp_environment: MagicMock
     ) -> None:
-        result = get_all_enabled_state_and_instance_pairs()
+        result = get_ingest_pipeline_enabled_state_and_instance_pairs()
 
         self.assertSetEqual(
             set(result),
@@ -102,14 +102,14 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             },
         )
 
-    def test_get_all_enabled_state_and_instance_pairs_ingest_in_dataflow_not_enabled(
+    def test_get_ingest_pipeline_enabled_state_and_instance_pairs_ingest_in_dataflow_not_enabled(
         self,
     ) -> None:
         self.mock_is_ingest_in_dataflow_enabled.side_effect = (
             lambda state_code, ingest_instance: state_code != StateCode.US_DD
         )
 
-        result = get_all_enabled_state_and_instance_pairs()
+        result = get_ingest_pipeline_enabled_state_and_instance_pairs()
 
         self.assertSetEqual(
             set(result),

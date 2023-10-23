@@ -34,7 +34,7 @@ from recidiviz.airflow.dags.utils.config_utils import (
     handle_queueing_result,
 )
 from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
-    get_all_enabled_state_and_instance_pairs,
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -79,10 +79,10 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
     if (state_code_filter and ingest_instance) and (
         StateCode(state_code_filter),
         DirectIngestInstance(ingest_instance),
-    ) not in get_all_enabled_state_and_instance_pairs():
+    ) not in get_ingest_pipeline_enabled_state_and_instance_pairs():
         raise ValueError(
             f"{state_code_filter} in {ingest_instance} must be a enabled for ingest. "
-            f"Valid pairs are: {get_all_enabled_state_and_instance_pairs()}"
+            f"Valid pairs are: {get_ingest_pipeline_enabled_state_and_instance_pairs()}"
         )
 
     return True

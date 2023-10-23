@@ -75,13 +75,13 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         ]
 
         self.ingest_branching_get_all_enabled_state_and_instance_pairs_patcher = patch(
-            "recidiviz.airflow.dags.ingest.ingest_branching.get_all_enabled_state_and_instance_pairs",
+            "recidiviz.airflow.dags.ingest.ingest_branching.get_ingest_pipeline_enabled_state_and_instance_pairs",
             return_value=test_state_code_and_instance_pairs,
         )
         self.ingest_branching_get_all_enabled_state_and_instance_pairs_patcher.start()
 
         self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher = patch(
-            "recidiviz.airflow.dags.ingest.initialize_ingest_dag_group.get_all_enabled_state_and_instance_pairs",
+            "recidiviz.airflow.dags.ingest.initialize_ingest_dag_group.get_ingest_pipeline_enabled_state_and_instance_pairs",
             return_value=test_state_code_and_instance_pairs,
         )
         self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher.start()
@@ -98,6 +98,18 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         )
         self.cloud_sql_query_operator_patcher.start()
 
+        self.recidiviz_dataflow_operator_patcher = patch(
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.RecidivizDataflowFlexTemplateOperator",
+            side_effect=fake_operator_constructor,
+        )
+        self.mock_dataflow_operator = self.recidiviz_dataflow_operator_patcher.start()
+
+        self.default_ingest_pipeline_regions_by_state_code_patcher = patch.dict(
+            "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE",
+            values={StateCode.US_XX: "us-east1-test", StateCode.US_YY: "us-east2-test"},
+        )
+        self.default_ingest_pipeline_regions_by_state_code_patcher.start()
+
         # Need to import ingest_dag inside test suite so environment variables are set before importing,
         # otherwise ingest_dag will raise an Error and not import.
         from recidiviz.airflow.dags.ingest_dag import (  # pylint: disable=import-outside-toplevel
@@ -112,6 +124,8 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
         self.initialize_ingest_dag_get_all_enabled_state_and_instance_pairs_patcher.stop()
         self.kubernetes_pod_operator_patcher.stop()
         self.cloud_sql_query_operator_patcher.stop()
+        self.recidiviz_dataflow_operator_patcher.stop()
+        self.default_ingest_pipeline_regions_by_state_code_patcher.stop()
         super().tearDown()
 
     def test_ingest_dag(self) -> None:
@@ -222,6 +236,7 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 expected_failure_ids=[
                     ".*us_xx_primary_dataflow.acquire_lock.*",
                     ".*us_xx_primary_dataflow.dataflow_pipeline.*",
+                    ".*us_xx_primary_dataflow.write_ingest_job_completion",
                     ".*us_xx_primary_dataflow.write_upper_bounds.*",
                     ".*ingest_branching.branch_end.*",
                 ],

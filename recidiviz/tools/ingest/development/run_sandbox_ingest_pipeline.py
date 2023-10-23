@@ -70,6 +70,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.ingest.pipeline_parameters import (
+    INGEST_PIPELINE_NAME,
     IngestPipelineParameters,
     MaterializationMethod,
 )
@@ -186,7 +187,7 @@ def get_extra_pipeline_parameter_args(
         # TODO(#18108): Once we have a distinct entrypoint for each pipeline type, we
         #  likely won't need this arg.
         "--pipeline",
-        "ingest",
+        INGEST_PIPELINE_NAME,
         "--state_code",
         state_code.value,
         "--job_name",

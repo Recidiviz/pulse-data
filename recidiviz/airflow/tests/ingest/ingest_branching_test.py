@@ -37,7 +37,7 @@ class TestIngestBranching(unittest.TestCase):
 
     def setUp(self) -> None:
         self.get_all_enabled_state_and_instance_pairs_patcher = patch(
-            "recidiviz.airflow.dags.ingest.ingest_branching.get_all_enabled_state_and_instance_pairs",
+            "recidiviz.airflow.dags.ingest.ingest_branching.get_ingest_pipeline_enabled_state_and_instance_pairs",
             return_value=[
                 (StateCode.US_XX, DirectIngestInstance.PRIMARY),
                 (StateCode.US_XX, DirectIngestInstance.SECONDARY),

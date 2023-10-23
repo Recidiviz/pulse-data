@@ -40,9 +40,11 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.pipelines.ingest.pipeline_utils import ingest_pipeline_name
+from recidiviz.pipelines.ingest.pipeline_utils import (
+    DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
+    ingest_pipeline_name,
+)
 from recidiviz.utils import metadata
-from recidiviz.utils.yaml_dict import YAMLDict
 
 
 @attr.define(kw_only=True)
@@ -135,12 +137,7 @@ def get_all_latest_ingest_jobs() -> (
     ]
 ):
     """Get the latest job for each ingest pipeline."""
-    pipeline_configs = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
-
-    all_locations = {
-        ingest_pipeline.peek("region", str)
-        for ingest_pipeline in pipeline_configs.pop_dicts("ingest_pipelines")
-    }
+    all_locations = set(DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE.values())
 
     # TODO(#24241) cache results inside the ingest operations store
     with futures.ThreadPoolExecutor(max_workers=20) as executor:

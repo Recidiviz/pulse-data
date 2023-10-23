@@ -27,7 +27,7 @@ from recidiviz.airflow.dags.utils.config_utils import (
     get_state_code_filter,
 )
 from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
-    get_all_enabled_state_and_instance_pairs,
+    get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -68,7 +68,10 @@ def create_ingest_branch_map(
 
     pipeline_task_group_by_task_id: Dict[str, Union[BaseOperator, TaskGroup]] = {}
 
-    for state_code, ingest_instance in get_all_enabled_state_and_instance_pairs():
+    for (
+        state_code,
+        ingest_instance,
+    ) in get_ingest_pipeline_enabled_state_and_instance_pairs():
         pipeline_task_group_by_task_id[
             get_ingest_branch_key(state_code.value, ingest_instance.value)
         ] = branched_task_function(state_code, ingest_instance)

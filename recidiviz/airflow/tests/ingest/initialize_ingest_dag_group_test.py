@@ -78,7 +78,7 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
     def setUp(self) -> None:
         super().setUp()
         self.get_all_enabled_state_and_instance_pairs_patcher = patch(
-            "recidiviz.airflow.dags.ingest.initialize_ingest_dag_group.get_all_enabled_state_and_instance_pairs",
+            "recidiviz.airflow.dags.ingest.initialize_ingest_dag_group.get_ingest_pipeline_enabled_state_and_instance_pairs",
             return_value=[
                 (StateCode.US_XX, DirectIngestInstance.PRIMARY),
                 (StateCode.US_XX, DirectIngestInstance.SECONDARY),
