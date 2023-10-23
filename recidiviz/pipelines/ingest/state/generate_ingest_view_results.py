@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A PTransform that generates ingest view results for a given ingest view."""
-from typing import Any, Dict
+from typing import Any, Dict, Generator, Optional
 
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
@@ -70,7 +70,15 @@ FROM (
 );"""
 
 INDIVIDUAL_TABLE_QUERY_TEMPLATE = """SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `{project_id}.{state_code}_raw_data.{file_tag}` WHERE update_datetime <= '{upper_bound_date}'"""
+        FROM `{project_id}.{state_code}_raw_data.{file_tag}`"""
+INDIVIDUAL_TABLE_QUERY_WHERE_CLAUSE = " WHERE update_datetime <= '{upper_bound_date}'"
+INDIVIDUAL_TABLE_LIMIT_ZERO_CLAUSE = " LIMIT 0"
+INDIVIDUAL_TABLE_QUERY_WITH_WHERE_CLAUSE_TEMPLATE = (
+    f"{INDIVIDUAL_TABLE_QUERY_TEMPLATE}{INDIVIDUAL_TABLE_QUERY_WHERE_CLAUSE}"
+)
+INDIVIDUAL_TABLE_QUERY_LIMIT_ZERO_TEMPLATE = (
+    f"{INDIVIDUAL_TABLE_QUERY_TEMPLATE}{INDIVIDUAL_TABLE_LIMIT_ZERO_CLAUSE}"
+)
 
 ADDITIONAL_SCHEMA_COLUMNS = [
     bigquery.SchemaField(
@@ -99,7 +107,7 @@ class GenerateIngestViewResults(beam.PTransform):
         project_id: str,
         state_code: StateCode,
         ingest_view_name: str,
-        raw_data_tables_to_upperbound_dates: Dict[str, str],
+        raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
         ingest_instance: DirectIngestInstance,
         materialization_method: MaterializationMethod,
     ) -> None:
@@ -125,7 +133,7 @@ class GenerateIngestViewResults(beam.PTransform):
                 )
             )
             | f"Generate date diff queries for {self.ingest_view_name} based on date pairs."
-            >> beam.Map(
+            >> beam.ParDo(
                 self.get_ingest_view_date_diff_query,
                 state_code=self.state_code,
                 ingest_view_name=self.ingest_view_name,
@@ -139,20 +147,27 @@ class GenerateIngestViewResults(beam.PTransform):
     def generate_date_bound_tuples_query(
         project_id: str,
         state_code: StateCode,
-        raw_data_tables_to_upperbound_dates: Dict[str, str],
+        raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
         materialization_method: MaterializationMethod = MaterializationMethod.ORIGINAL,
     ) -> str:
         """Returns a SQL query that will return a list of upper and lower bound date tuples
         which can each be used to generate an individual ingest view query."""
         raw_data_table_sql_statements = [
             StrictStringFormatter().format(
-                INDIVIDUAL_TABLE_QUERY_TEMPLATE,
+                INDIVIDUAL_TABLE_QUERY_WITH_WHERE_CLAUSE_TEMPLATE,
                 project_id=project_id,
                 state_code=state_code.value.lower(),
                 file_tag=table,
-                upper_bound_date=upper_bound_date_str,
+                upper_bound_date=upper_bound_date_str_opt,
             )
-            for table, upper_bound_date_str in sorted(
+            if upper_bound_date_str_opt
+            else StrictStringFormatter().format(
+                INDIVIDUAL_TABLE_QUERY_LIMIT_ZERO_TEMPLATE,
+                project_id=project_id,
+                state_code=state_code.value.lower(),
+                file_tag=table,
+            )
+            for table, upper_bound_date_str_opt in sorted(
                 raw_data_tables_to_upperbound_dates.items()
             )
         ]
@@ -173,33 +188,34 @@ class GenerateIngestViewResults(beam.PTransform):
         state_code: StateCode,
         ingest_view_name: str,
         ingest_instance: DirectIngestInstance,
-    ) -> beam.io.ReadFromBigQueryRequest:
+    ) -> Generator[beam.io.ReadFromBigQueryRequest, None, None]:
         """Returns a query that calculates the date diff between the upper and lower bound dates."""
-        region = direct_ingest_regions.get_direct_ingest_region(
-            region_code=state_code.value
-        )
-        view_builder: DirectIngestViewQueryBuilder = (
-            DirectIngestViewQueryBuilderCollector(
-                region, [ingest_view_name]
-            ).get_query_builder_by_view_name(ingest_view_name=ingest_view_name)
-        )
-        ingest_view_materialization_args = IngestViewMaterializationArgs(
-            ingest_view_name=ingest_view_name,
-            lower_bound_datetime_exclusive=parser.isoparse(
-                date_pair[LOWER_BOUND_DATETIME_COL_NAME]
+        if date_pair[UPPER_BOUND_DATETIME_COL_NAME]:
+            region = direct_ingest_regions.get_direct_ingest_region(
+                region_code=state_code.value
             )
-            if date_pair[LOWER_BOUND_DATETIME_COL_NAME]
-            else None,
-            upper_bound_datetime_inclusive=parser.isoparse(
-                date_pair[UPPER_BOUND_DATETIME_COL_NAME]
-            ),
-            ingest_instance=ingest_instance,
-        )
+            view_builder: DirectIngestViewQueryBuilder = (
+                DirectIngestViewQueryBuilderCollector(
+                    region, [ingest_view_name]
+                ).get_query_builder_by_view_name(ingest_view_name=ingest_view_name)
+            )
+            ingest_view_materialization_args = IngestViewMaterializationArgs(
+                ingest_view_name=ingest_view_name,
+                lower_bound_datetime_exclusive=parser.isoparse(
+                    date_pair[LOWER_BOUND_DATETIME_COL_NAME]
+                )
+                if date_pair[LOWER_BOUND_DATETIME_COL_NAME]
+                else None,
+                upper_bound_datetime_inclusive=parser.isoparse(
+                    date_pair[UPPER_BOUND_DATETIME_COL_NAME]
+                ),
+                ingest_instance=ingest_instance,
+            )
 
-        query = IngestViewMaterializerImpl.dataflow_query_for_args(
-            view_builder=view_builder,
-            raw_data_source_instance=ingest_instance,
-            ingest_view_materialization_args=ingest_view_materialization_args,
-        )
+            query = IngestViewMaterializerImpl.dataflow_query_for_args(
+                view_builder=view_builder,
+                raw_data_source_instance=ingest_instance,
+                ingest_view_materialization_args=ingest_view_materialization_args,
+            )
 
-        return beam.io.ReadFromBigQueryRequest(query=query, use_standard_sql=True)
+            yield beam.io.ReadFromBigQueryRequest(query=query, use_standard_sql=True)

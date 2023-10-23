@@ -254,7 +254,7 @@ def default_arg_list_for_pipeline(
         pipeline_args.extend(
             [
                 "--raw_data_upper_bound_dates_json",
-                '{"table1":"2023-07-05T00:00:00.000000","table2":"2023-07-05T00:00:00.000000","table3":"2023-07-05T00:00:00.000000","table4":"2023-07-05T00:00:00.000000","table5":"2023-07-05T00:00:00.000000"}',
+                '{"table1":"2023-07-05T00:00:00.000000","table2":"2023-07-05T00:00:00.000000","table3":"2023-07-05T00:00:00.000000","table4":"2023-07-05T00:00:00.000000","table5":"2023-07-05T00:00:00.000000", "table6":"2023-07-05T00:00:00.000000"}',
             ]
         )
         if ingest_view_results_only := additional_pipeline_args.get(
