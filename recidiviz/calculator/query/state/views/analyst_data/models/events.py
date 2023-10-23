@@ -34,31 +34,6 @@ from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_se
     ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
 )
 
-# CTE for generating task eligibility spans with completion events
-_TASK_ELIGIBILITY_SPANS_CTE = """
-    -- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        end_reason,
-        is_eligible,
-        task_name,
-        completion_event_type AS task_type,
-        ARRAY_TO_STRING(ineligible_criteria, ";") AS ineligible_criteria,
-    FROM
-        `{project_id}.task_eligibility.all_tasks_materialized`
-    INNER JOIN
-        `{project_id}.reference_views.task_to_completion_event`
-    USING
-        (task_name)
-    WHERE
-        -- remove any spans that start after the current millennium, e.g.
-        -- eligibility following a life sentence
-        start_date < "3000-01-01"
-"""
-
 
 def get_task_eligible_event_query_builder(
     event_type: EventType, days_overdue: int
@@ -89,9 +64,19 @@ def get_task_eligible_event_query_builder(
         person_id,
         DATE_ADD(start_date, INTERVAL {days_overdue} DAY) AS overdue_date,
         task_name,
-        task_type,
-    FROM ({_TASK_ELIGIBILITY_SPANS_CTE})
-    WHERE is_eligible{date_condition_query_str}
+        completion_event_type AS task_type,
+    FROM
+        -- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
+        `{{project_id}}.task_eligibility.all_tasks_materialized`
+    INNER JOIN
+        `{{project_id}}.reference_views.task_to_completion_event`
+    USING
+        (task_name)
+    WHERE
+        -- remove any spans that start after the current millennium, e.g.
+        -- eligibility following a life sentence
+        start_date < "3000-01-01"
+        AND is_eligible{date_condition_query_str}
     """,
         attribute_cols=[
             "task_name",
@@ -791,9 +776,37 @@ QUALIFY ROW_NUMBER() OVER (
         event_type=EventType.TASK_COMPLETED,
         description="Task completion events for all Workflows opportunities",
         unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
-        sql_source=f'SELECT * FROM ({_TASK_ELIGIBILITY_SPANS_CTE}) WHERE end_reason = "TASK_COMPLETED"',
-        attribute_cols=["task_name", "task_type", "is_eligible", "ineligible_criteria"],
-        event_date_col="end_date",
+        sql_source=f"""
+SELECT
+    e.state_code,
+    e.person_id,
+    e.completion_event_date,
+    e.completion_event_type AS task_type,
+    -- Mark as is_eligible = True if person was eligible for at least one associated opportunity
+    LOGICAL_OR(COALESCE(t.is_eligible, FALSE)) 
+        OVER (PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type) AS is_eligible,
+FROM
+    `{{project_id}}.task_eligibility.all_completion_events_materialized` e
+-- Join to all_tasks to get task_name and eligibility criteria
+LEFT JOIN
+    `{{project_id}}.reference_views.task_to_completion_event` r
+USING
+    (completion_event_type)
+LEFT JOIN
+    `{{project_id}}.task_eligibility.all_tasks_materialized` t
+ON
+    e.person_id = t.person_id
+    AND r.task_name = t.task_name
+    AND e.completion_event_date BETWEEN t.start_date AND {nonnull_end_date_exclusive_clause("t.end_date")}
+-- If completion event falls exactly on the border between two sessions, take the eligibility
+-- attributes associated with the first span (i.e., the span that ended, rather than the span that started).
+-- Uses RANK so that if there are multiple completion events for the same task type on the same day,
+-- (e.g., multiple assessments), we don't drop these.
+QUALIFY
+    RANK() OVER (PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type ORDER BY t.start_date) = 1
+""",
+        attribute_cols=["task_type", "is_eligible"],
+        event_date_col="completion_event_date",
     ),
     get_task_eligible_event_query_builder(
         EventType.TASK_ELIGIBILITY_START, days_overdue=0
