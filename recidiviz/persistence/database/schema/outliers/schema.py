@@ -189,3 +189,25 @@ class SupervisionOfficerOutlierStatus(OutliersBase):
     threshold = Column(Float, nullable=False)
     # Whether the officer is either FAR, MET or NEAR the metric's target
     status = Column(String, nullable=False)
+
+
+class SupervisionClientEvent(OutliersBase):
+    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_client_events`"""
+
+    __tablename__ = "supervision_client_events"
+
+    state_code = Column(String, primary_key=True)
+    # The metric id that this event applies to
+    metric_id = Column(String, primary_key=True)
+    # The date the event occurred
+    event_date = Column(Date, primary_key=True)
+    # The id of the JII the event applies to
+    client_id = Column(String, primary_key=True)
+    # Should follow the Recidiviz-standard JSON struct string representation
+    client_name = Column(JSON, nullable=False)
+    # The external id of the officer assigned to this person at the time the event occurred
+    officer_id = Column(String, nullable=False)
+    # JSON object of information related to this event
+    attributes = Column(JSON, nullable=True)
+    pseudonymized_client_id = Column(String, nullable=False)
+    pseudonymized_officer_id = Column(String, nullable=False)

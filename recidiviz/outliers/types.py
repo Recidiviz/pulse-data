@@ -22,6 +22,7 @@ import attr
 import cattrs
 from cattrs.gen import make_dict_unstructure_fn, override
 
+from recidiviz.aggregated_metrics.models.aggregated_metric import EventCountMetric
 from recidiviz.common.str_field_utils import person_name_case
 
 
@@ -75,12 +76,26 @@ class PersonName:
 
 @attr.s(eq=False)
 class OutliersMetric:
-    # The metric name/id, which should reference the name from an object in aggregated_metric_configurations.py
-    # This also corresponds to a column name in an aggregated_metric view
-    name: str = attr.ib()
+    # The aggregated metric, which is an object from aggregated_metric_configurations.py
+    aggregated_metric: EventCountMetric = attr.ib()
 
     # Whether the metric outcome is favorable or adverse to the best path of a JII
     outcome_type: MetricOutcome = attr.ib()
+
+    @property
+    def name(self) -> str:
+        """
+        The metric name/id, which should reference the name from an object in aggregated_metric_configurations.py
+        This also corresponds to a column name in an aggregated_metric view
+        """
+        return self.aggregated_metric.name
+
+    @property
+    def metric_event_conditions_string(self) -> str:
+        """
+        The query fragment to use to filter analyst_data.person_events for this metric's events
+        """
+        return self.aggregated_metric.get_metric_conditions_string_no_newline()
 
 
 @attr.s(eq=False)
@@ -98,6 +113,9 @@ class OutliersMetricConfig:
     # Event name corresponding to the metric
     event_name: str = attr.ib()
 
+    # The query fragment to use to filter analyst_data.person_events for this metric's events
+    metric_event_conditions_string: str = attr.ib(default=None)
+
     @classmethod
     def build_from_metric(
         cls,
@@ -112,11 +130,14 @@ class OutliersMetricConfig:
             title_display_name,
             body_display_name,
             event_name,
+            metric.metric_event_conditions_string,
         )
 
 
 @attr.s
 class OutliersConfig:
+    """Information for a state's Outliers configuration represented as structured data."""
+
     # List of metrics that are relevant for this state,
     # where each element corresponds to a column name in an aggregated_metrics views
     metrics: List[OutliersMetricConfig] = attr.ib()
@@ -135,6 +156,13 @@ class OutliersConfig:
 
     def to_json(self) -> Dict[str, Any]:
         c = cattrs.Converter()
+
+        # Omit the conditions string since this is only used in BQ views.
+        metrics_unst_hook = make_dict_unstructure_fn(
+            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+        )
+        c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
+
         # Omit the exclusions since they are only for internal (backend) use.
         unst_hook = make_dict_unstructure_fn(
             OutliersConfig,
@@ -207,7 +235,15 @@ class OfficerSupervisorReportData:
     additional_recipients: List[str] = attr.ib()
 
     def to_dict(self) -> Dict[str, Any]:
-        return cattrs.unstructure(self)
+        c = cattrs.Converter()
+
+        # Omit the conditions string since this is only used in BQ views.
+        metrics_unst_hook = make_dict_unstructure_fn(
+            OutliersMetricConfig, c, metric_event_conditions_string=override(omit=True)
+        )
+        c.register_unstructure_hook(OutliersMetricConfig, metrics_unst_hook)
+
+        return c.unstructure(self)
 
 
 @attr.s
