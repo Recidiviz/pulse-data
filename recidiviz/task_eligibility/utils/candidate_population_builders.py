@@ -49,6 +49,7 @@ def state_agnostic_candidate_population_query(
     WITH facility_mapping AS (
         SELECT ss.* EXCEPT(facility),
             IFNULL(name_map.aggregating_location_id, ss.facility) AS facility,
+            name_map.facility AS name_map_facility,
         FROM (
             SELECT * EXCEPT(facility),
                     UPPER(facility) AS facility,
@@ -71,7 +72,7 @@ def state_agnostic_candidate_population_query(
         end_date_exclusive AS end_date,
     FROM facility_mapping
     WHERE compartment_level_1 IN ('{compartment_level_1_string}')
-    AND metric_source != "INFERRED" 
+    AND metric_source != "INFERRED"
         {filter_string}
  """
 
