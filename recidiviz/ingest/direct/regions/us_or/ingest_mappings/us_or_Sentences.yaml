@@ -126,6 +126,7 @@ output:
                       county_code: COUNTY
                       ncic_code: NCIC_CODE
                       statute: ORS_NUMBER
+                      description: CRIME_DESCRIPTION
                       classification_type:
                         $enum_mapping:
                           $raw_text: CRIME_CLASS
