@@ -29,8 +29,8 @@ DEFAULT_NUM_LOOKBACK_PERIODS = 5
 
 # Adverse metrics
 INCARCERATION_STARTS_TECHNICAL_VIOLATION = OutliersMetric(
-    name=next(
-        metric.name
+    aggregated_metric=next(
+        metric
         for metric in metric_config.INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS
         if metric.name == "incarceration_starts_technical_violation"
     ),
@@ -38,29 +38,29 @@ INCARCERATION_STARTS_TECHNICAL_VIOLATION = OutliersMetric(
 )
 
 ABSCONSIONS_BENCH_WARRANTS = OutliersMetric(
-    name=metric_config.ABSCONSIONS_BENCH_WARRANTS.name,
+    aggregated_metric=metric_config.ABSCONSIONS_BENCH_WARRANTS,
     outcome_type=MetricOutcome.ADVERSE,
 )
 
 INCARCERATION_STARTS = OutliersMetric(
-    name=metric_config.INCARCERATION_STARTS.name,
+    aggregated_metric=metric_config.INCARCERATION_STARTS,
     outcome_type=MetricOutcome.ADVERSE,
 )
 
 INCARCERATION_STARTS_AND_INFERRED = OutliersMetric(
-    name=metric_config.INCARCERATION_STARTS_AND_INFERRED.name,
+    aggregated_metric=metric_config.INCARCERATION_STARTS_AND_INFERRED,
     outcome_type=MetricOutcome.ADVERSE,
 )
 
 # Favorable metrics
 EARLY_DISCHARGE_REQUESTS = OutliersMetric(
-    name=metric_config.EARLY_DISCHARGE_REQUESTS.name,
+    aggregated_metric=metric_config.EARLY_DISCHARGE_REQUESTS,
     outcome_type=MetricOutcome.FAVORABLE,
 )
 
 TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION = OutliersMetric(
-    name=next(
-        metric.name
+    aggregated_metric=next(
+        metric
         for metric in metric_config.TASK_COMPLETED_METRICS_SUPERVISION
         if metric.name == "task_completions_transfer_to_limited_supervision"
     ),
@@ -68,8 +68,8 @@ TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION = OutliersMetric(
 )
 
 TASK_COMPLETIONS_FULL_TERM_DISCHARGE = OutliersMetric(
-    name=next(
-        metric.name
+    aggregated_metric=next(
+        metric
         for metric in metric_config.TASK_COMPLETED_METRICS_SUPERVISION
         if metric.name == "task_completions_full_term_discharge"
     ),

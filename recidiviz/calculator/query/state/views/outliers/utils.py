@@ -39,3 +39,26 @@ def format_state_specific_officer_aggregated_metric_filters() -> str:
         )
 
     return "\n      UNION ALL\n".join(state_specific_ctes)
+
+
+def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
+
+    state_specific_ctes = []
+
+    for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
+        for metric in config.metrics:
+            state_specific_ctes.append(
+                f"""
+    SELECT 
+        e.*,
+        "{metric.name}" AS metric_id
+    FROM `{{project_id}}.analyst_data.person_events_materialized` e
+    WHERE 
+        e.state_code = '{state_code.value}' 
+        -- Limit the events lookback to minimize the size of the subqueries
+        AND e.event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {str(years_lookback)} YEAR)
+        {f"AND {metric.metric_event_conditions_string}" if metric.metric_event_conditions_string else ""}
+"""
+            )
+
+    return "\n    UNION ALL\n".join(state_specific_ctes)
