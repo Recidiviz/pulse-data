@@ -38,9 +38,12 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
     """A PTransform that merges entity trees together via entity matching and then
     properly sets backedges and then primary keys."""
 
-    def __init__(self, state_code: StateCode) -> None:
+    def __init__(
+        self, state_code: StateCode, field_index: CoreEntityFieldIndex
+    ) -> None:
         super().__init__()
         self.state_code = state_code
+        self.field_index = field_index
 
     def expand(
         self,
@@ -51,27 +54,26 @@ class MergeRootEntitiesAcrossDates(beam.PTransform):
         return (
             input_or_inputs
             | "Merge all root entities together via entity matching"
-            >> beam.Map(self.entity_match)
+            >> beam.Map(self._entity_match)
             | "Set backedges for all entities in root entity tree"
             >> beam.MapTuple(
                 lambda primary_key, root_entity: (
                     primary_key,
-                    set_backedges(root_entity),
+                    set_backedges(root_entity, self.field_index),
                 )
             )
             | "Set primary keys for all entities in root entity tree"
             >> beam.MapTuple(
                 lambda primary_key, root_entity: generate_primary_keys_for_root_entity_tree(
-                    primary_key, root_entity, self.state_code
+                    primary_key, root_entity, self.state_code, self.field_index
                 )
             )
         )
 
-    @staticmethod
-    def entity_match(
-        element: Tuple[PrimaryKey, Dict[UpperBoundDate, Iterable[RootEntity]]]
+    def _entity_match(
+        self, element: Tuple[PrimaryKey, Dict[UpperBoundDate, Iterable[RootEntity]]]
     ) -> Tuple[PrimaryKey, RootEntity]:
-        root_entity_merger = RootEntityUpdateMerger(CoreEntityFieldIndex())
+        root_entity_merger = RootEntityUpdateMerger(self.field_index)
         primary_key, root_entity_dictionary = element
         merged_root_entity = None
         for date_timestamp in sorted(root_entity_dictionary.keys()):

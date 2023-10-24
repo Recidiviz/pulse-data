@@ -41,6 +41,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector im
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import get_state_entity_names
 from recidiviz.persistence.entity.base_entity import RootEntity
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.pipeline_parameters import (
     IngestPipelineParameters,
@@ -107,6 +108,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         return "INGEST"
 
     def run_pipeline(self, p: Pipeline) -> None:
+        field_index = CoreEntityFieldIndex()
         ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
         state_code = StateCode(self.pipeline_parameters.state_code)
         default_materialization_method = MaterializationMethod(
@@ -205,7 +207,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 )
                 | f"Merge {ingest_view} entities using IngestViewTreeMerger within same date and external ID."
                 >> MergeIngestViewRootEntityTrees(
-                    ingest_view_name=ingest_view, state_code=state_code
+                    ingest_view_name=ingest_view,
+                    state_code=state_code,
+                    field_index=field_index,
                 )
             )
 
@@ -249,12 +253,17 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
             }
             | AssociateRootEntitiesWithPrimaryKeys()
-            | MergeRootEntitiesAcrossDates(state_code=state_code)
-            | RunValidations(expected_output_entities=expected_output_entities)
-            # TODO(#24394) Update the write steps to only look at expected_output_entities
-            | beam.ParDo(SerializeEntities(state_code=state_code)).with_outputs(
-                *all_state_tables
+            | MergeRootEntitiesAcrossDates(
+                state_code=state_code, field_index=field_index
             )
+            | RunValidations(
+                expected_output_entities=expected_output_entities,
+                field_index=field_index,
+            )
+            # TODO(#24394) Update the write steps to only look at expected_output_entities
+            | beam.ParDo(
+                SerializeEntities(state_code=state_code, field_index=field_index)
+            ).with_outputs(*all_state_tables)
         )
 
         for table_name in all_state_tables:

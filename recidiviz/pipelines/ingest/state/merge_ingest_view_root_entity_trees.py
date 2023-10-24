@@ -60,10 +60,16 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
     merged via the IngestViewTreeMerger.
     """
 
-    def __init__(self, ingest_view_name: str, state_code: StateCode):
+    def __init__(
+        self,
+        ingest_view_name: str,
+        state_code: StateCode,
+        field_index: CoreEntityFieldIndex,
+    ):
         super().__init__()
         self.ingest_view = ingest_view_name
         self.state_code = state_code
+        self.field_index = field_index
 
     def expand(
         self, input_or_inputs: beam.PCollection[Tuple[UpperBoundDate, RootEntity]]
@@ -120,9 +126,7 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
         key, entities = element
         external_id_key, upperbound_date = key
 
-        ingest_view_tree_merger = IngestViewTreeMerger(
-            field_index=CoreEntityFieldIndex()
-        )
+        ingest_view_tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         root_entities: Union[List[StatePerson], List[StateStaff]]
         if all(isinstance(e, StatePerson) for e in entities):

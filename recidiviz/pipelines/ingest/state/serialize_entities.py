@@ -46,10 +46,10 @@ class SerializeEntities(beam.DoFn):
     writing to BQ, where each one represents an entity in that root entity tree.
     """
 
-    def __init__(self, state_code: StateCode):
+    def __init__(self, state_code: StateCode, field_index: CoreEntityFieldIndex):
         super().__init__()
         self._state_code = state_code
-        self._field_index = CoreEntityFieldIndex()
+        self._field_index = field_index
 
     def process(self, element: RootEntity) -> Generator[Dict[str, Any], None, None]:
         """Generates appropriate dictionaries for all elements and association tables."""

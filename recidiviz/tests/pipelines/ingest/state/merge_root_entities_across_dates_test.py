@@ -24,6 +24,7 @@ from apache_beam.pipeline_test import TestPipeline, assert_that
 from apache_beam.testing.util import matches_all
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.pipelines.ingest.state.generate_primary_keys import (
@@ -41,6 +42,7 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
         apache_beam_pipeline_options = PipelineOptions()
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
+        self.field_index = CoreEntityFieldIndex()
 
     def test_merge_root_entities_across_dates(self) -> None:
         date_1 = datetime(2020, 1, 1).timestamp()
@@ -183,7 +185,7 @@ class TestMergeRootEntitiesAcrossDates(StateIngestPipelineTestCase):
                     {date_1: [staff_2_date_1], date_2: [staff_2_date_2]},
                 ),
             ]
-            | pipeline.MergeRootEntitiesAcrossDates(StateCode.US_DD)
+            | pipeline.MergeRootEntitiesAcrossDates(StateCode.US_DD, self.field_index)
         )
 
         person_1 = entities.StatePerson(
