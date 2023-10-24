@@ -294,7 +294,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 6: Test that an additional period is inferred when a revocation admission reason is encountered
     def test_infer_additional_periods_revocation_basic(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2021, 8, 1),
@@ -310,7 +309,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             external_id="sp1",
             state_code=_STATE_CODE,
             start_date=date(2021, 3, 5),
-            termination_date=date(2021, 5, 1),
+            termination_date=date(2021, 7, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             sequence_num=0,
@@ -329,7 +328,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
         incarceration_period_0 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             incarceration_period_id=260000012345678,
-            admission_date=date(2021, 5, 1),
+            admission_date=date(2021, 7, 1),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
@@ -346,7 +345,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 7: Test that an additional period is inferred when a revocation admission reason is encountered and there's an existing preceding IP
     def test_infer_additional_periods_revocation_overlapping(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2021, 7, 1),
@@ -370,7 +368,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             external_id="sp1",
             state_code=_STATE_CODE,
             start_date=date(2021, 3, 5),
-            termination_date=date(2021, 5, 1),
+            termination_date=date(2021, 7, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             sequence_num=0,
@@ -389,7 +387,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
         incarceration_period_0 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             incarceration_period_id=260000012345678,
-            admission_date=date(2021, 5, 1),
+            admission_date=date(2021, 7, 1),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
@@ -410,7 +408,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 8: Test that an additional period is not inferred when a revocation admission reason is encountered but there's no preceding SP
     def test_infer_additional_periods_revocation_without_sup(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2021, 8, 1),
@@ -448,7 +445,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 8: Test that an additional period is not inferred when there's no revocation admission
     def test_infer_additional_periods_no_revocation(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2021, 8, 1),
@@ -486,7 +482,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
 
     # Test case 8: Test that an additional period is inferred when the previous SP ended with REVOCATION/ADMITTED_TO_INCARCERATION
     def test_infer_additional_periods_sp_revocation_end_basic(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2021, 8, 1),
@@ -510,7 +505,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
             external_id="sp1",
             state_code=_STATE_CODE,
             start_date=date(2021, 3, 5),
-            termination_date=date(2021, 5, 1),
+            termination_date=date(2021, 7, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             sequence_num=0,
@@ -529,7 +524,7 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
         incarceration_period_0 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             incarceration_period_id=260000012345678,
-            admission_date=date(2021, 5, 1),
+            admission_date=date(2021, 7, 1),
             release_date=date(2021, 8, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
@@ -551,7 +546,6 @@ class TestUsMiIncarcerationNormalizationDelegate(unittest.TestCase):
     # Test case 9: Test that an additional period is not inferred when the previous SP
     # ended with REVOCATION/ADMITTED_TO_INCARCERATION but there was already an adjacent/overlapping IP
     def test_infer_additional_periods_sp_revocation_end_none(self) -> None:
-
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=date(2021, 4, 1),

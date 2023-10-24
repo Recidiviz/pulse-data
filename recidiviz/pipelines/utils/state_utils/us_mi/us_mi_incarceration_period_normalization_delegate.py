@@ -161,11 +161,12 @@ class UsMiIncarcerationNormalizationDelegate(
 
             if supervision_period_index and incarceration_period.admission_date:
                 # identify the most recent supervision period with a SUPERVISION type
-                most_recent_supervision_period = find_last_terminated_period_on_or_before_date(
-                    upper_bound_date_inclusive=incarceration_period.admission_date,
-                    periods=supervision_periods,
-                    # Setting this as 12 months to start
-                    maximum_months_proximity=12,
+                most_recent_supervision_period = (
+                    find_last_terminated_period_on_or_before_date(
+                        upper_bound_date_inclusive=incarceration_period.admission_date,
+                        periods=supervision_periods,
+                        maximum_months_proximity=1,
+                    )
                 )
 
                 # identify the most recent incarceration period
