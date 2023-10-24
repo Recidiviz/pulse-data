@@ -57,6 +57,7 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_collector i
 
 # List of incarceration-specific Workflows opportunities
 _TASK_TYPE_NAME_INCARCERATION = [
+    "ANNUAL_ASSESSMENT_COMPLETED",
     "CUSTODY_LEVEL_DOWNGRADE",
     "RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION",
     "RELEASE_TO_PAROLE",
@@ -1546,6 +1547,46 @@ TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION = [
             "task_type": [b.task_type_name],
             "is_eligible": ["true"],
         },
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION
+]
+
+DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_INCARCERATION = [
+    EventValueMetric(
+        name=f"days_eligible_at_task_completion_{b.task_type_name.lower()}",
+        display_name=f"Days Eligible At Task Completion: {b.task_title}",
+        description=f"Number of days spent eligible for {b.task_title.lower()} opportunity at task completion",
+        event_types=[EventType.TASK_COMPLETED],
+        event_attribute_filters={
+            "task_type": [b.task_type_name],
+        },
+        event_value_numeric="days_eligible",
+        event_count_metric=next(
+            metric
+            for metric in TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_INCARCERATION
+            if metric.event_attribute_filters["task_type"] == [b.task_type_name]
+        ),
+    )
+    for b in DEDUPED_TASK_COMPLETION_EVENT_VB
+    if b.task_type_name in _TASK_TYPE_NAME_INCARCERATION
+]
+
+DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_SUPERVISION = [
+    EventValueMetric(
+        name=f"days_eligible_at_task_completion_{b.task_type_name.lower()}",
+        display_name=f"Days Eligible At Task Completion: {b.task_title}",
+        description=f"Number of days spent eligible for {b.task_title.lower()} opportunity at task completion",
+        event_types=[EventType.TASK_COMPLETED],
+        event_attribute_filters={
+            "task_type": [b.task_type_name],
+        },
+        event_value_numeric="days_eligible",
+        event_count_metric=next(
+            metric
+            for metric in TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION
+            if metric.event_attribute_filters["task_type"] == [b.task_type_name]
+        ),
     )
     for b in DEDUPED_TASK_COMPLETION_EVENT_VB
     if b.task_type_name not in _TASK_TYPE_NAME_INCARCERATION

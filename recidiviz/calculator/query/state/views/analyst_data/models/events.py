@@ -19,6 +19,7 @@
 from typing import List
 
 from recidiviz.calculator.query.sessions_query_fragments import (
+    nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.event_query_builder import (
@@ -785,6 +786,8 @@ SELECT
     -- Mark as is_eligible = True if person was eligible for at least one associated opportunity
     LOGICAL_OR(COALESCE(t.is_eligible, FALSE)) 
         OVER (PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type) AS is_eligible,
+    MAX(IF(t.is_eligible, DATE_DIFF(e.completion_event_date, t.start_date, DAY), NULL)) 
+        OVER (PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type) AS days_eligible,
 FROM
     `{{project_id}}.task_eligibility.all_completion_events_materialized` e
 -- Join to all_tasks to get task_name and eligibility criteria
@@ -797,7 +800,7 @@ LEFT JOIN
 ON
     e.person_id = t.person_id
     AND r.task_name = t.task_name
-    AND e.completion_event_date BETWEEN t.start_date AND {nonnull_end_date_exclusive_clause("t.end_date")}
+    AND e.completion_event_date BETWEEN t.start_date AND {nonnull_end_date_clause("t.end_date")}
 -- If completion event falls exactly on the border between two sessions, take the eligibility
 -- attributes associated with the first span (i.e., the span that ended, rather than the span that started).
 -- Uses RANK so that if there are multiple completion events for the same task type on the same day,
@@ -805,7 +808,7 @@ ON
 QUALIFY
     RANK() OVER (PARTITION BY e.person_id, e.completion_event_date, e.completion_event_type ORDER BY t.start_date) = 1
 """,
-        attribute_cols=["task_type", "is_eligible"],
+        attribute_cols=["task_type", "is_eligible", "days_eligible"],
         event_date_col="completion_event_date",
     ),
     get_task_eligible_event_query_builder(
