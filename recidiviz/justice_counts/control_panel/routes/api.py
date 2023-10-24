@@ -456,6 +456,17 @@ def get_api_blueprint(
                 session=current_session, agency_ids=agency_ids
             )
 
+            if in_development():
+                # As above, when running locally, fill the AgencyUserAccountAssociation
+                # to give user access to all agencies
+                UserAccountInterface.add_or_update_user_agency_association(
+                    session=current_session,
+                    user=user,
+                    agencies=agencies,
+                    invitation_status=schema.UserAccountInvitationStatus.ACCEPTED,
+                    role=role,
+                )
+
             if is_email_verified is True:
                 for assoc in user.agency_assocs:
                     if (

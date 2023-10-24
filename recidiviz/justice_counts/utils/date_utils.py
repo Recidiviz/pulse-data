@@ -16,12 +16,12 @@
 # =============================================================================
 """Contains utilities for working with datetimes."""
 
-from datetime import datetime
+import datetime
 from typing import Optional, Tuple
 
 
 def convert_date_range_to_year_month(
-    start_date: datetime, end_date: datetime
+    start_date: datetime.date, end_date: datetime.date
 ) -> Tuple[int, Optional[int]]:
     if (
         # this case handles Jan - Nov

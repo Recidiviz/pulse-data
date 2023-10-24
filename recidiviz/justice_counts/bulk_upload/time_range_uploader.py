@@ -76,7 +76,6 @@ class TimeRangeUploader:
         time_range_to_year_month: Dict[
             Tuple[datetime.date, datetime.date], Tuple[int, int]
         ],
-        reporting_frequency: schema.ReportingFrequency,
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
@@ -92,6 +91,9 @@ class TimeRangeUploader:
             report = existing_report[0]
         else:  # existing report is None, so create the report
             year, month = time_range_to_year_month[self.time_range]
+            reporting_frequency = ReportInterface.infer_reporting_frequency(
+                self.time_range[0], self.time_range[1]
+            )
             report = ReportInterface.create_report(
                 session=session,
                 agency_id=self.agency.id,

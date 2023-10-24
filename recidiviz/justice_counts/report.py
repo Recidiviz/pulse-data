@@ -660,13 +660,9 @@ class ReportInterface:
 
     @staticmethod
     def get_reporting_frequency(report: schema.Report) -> ReportingFrequency:
-        _, month = convert_date_range_to_year_month(
-            start_date=report.date_range_start, end_date=report.date_range_end
+        inferred_frequency = ReportInterface.infer_reporting_frequency(
+            report.date_range_start, report.date_range_end
         )
-        if month is None:
-            inferred_frequency = ReportingFrequency.ANNUAL
-        else:
-            inferred_frequency = ReportingFrequency.MONTHLY
 
         report_type_string = str(report.type)
         if report_type_string.strip() != str(inferred_frequency.value):
@@ -676,6 +672,18 @@ class ReportInterface:
                 "from the report date range."
             )
         return inferred_frequency
+
+    @staticmethod
+    def infer_reporting_frequency(
+        start_date: datetime.date, end_date: datetime.date
+    ) -> ReportingFrequency:
+        _, month = convert_date_range_to_year_month(
+            start_date=start_date, end_date=end_date
+        )
+        if month is None:
+            return ReportingFrequency.ANNUAL
+
+        return ReportingFrequency.MONTHLY
 
     ### Misc ###
 

@@ -358,7 +358,6 @@ class SpreadsheetUploader:
                     session=session,
                     time_range_to_year_month=time_range_to_year_month,
                     existing_report=existing_report,
-                    reporting_frequency=reporting_frequency,
                     metric_key_to_errors=metric_key_to_errors,
                     metric_key=metricfile.definition.key,
                 )
