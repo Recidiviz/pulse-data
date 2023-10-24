@@ -34,11 +34,10 @@ output:
                       StateSupervisionViolationType.ABSCONDED:
                         - ABSV # ABSCONDED SUPERVISION
                       StateSupervisionViolationType.FELONY:
-                        - NCAF # NEW CRIMINAL FELONY ARREST/CONVICTION
-                      StateSupervisionViolationType.LAW:
-                        - NCAC # NEW CRIMINAL CHARGE - VIOLATION WARRANT REQUIRED TODO(#23411) - Find out if this should be mapped to FELONY or MISDEMEANOR
+                        - NCAF # NEW CRIMINAL FELONY ARREST/CONVICTION, USED FOR FELONIES
                       StateSupervisionViolationType.MISDEMEANOR:
-                        - NMCB # NEW CRIMINAL CHARGE/CITATION (CLASS B MISDEMEANOR OR BELOW)
+                        - NMCB # NEW CRIMINAL CHARGE/CITATION (CLASS B MISDEMEANOR OR BELOW), USED FOR CLASS B MISDEMEANORS OR LOWER
+                        - NCAC # NEW CRIMINAL CHARGE - VIOLATION WARRANT REQUIRED, USED FOR CLASS A MISDEMEANORS
                       StateSupervisionViolationType.TECHNICAL: #TODO(#23409)- Evaluate if we need new enum for zero tolerance violations
                         - RFRS # REFUSAL TO SUBMIT TO A SEARCH
                         - NCS2 # 2 OR MORE NON-COMPLIANCE W/ LEVEL 2 SANCTIONS IN ONE YEAR
