@@ -20,9 +20,8 @@ import os
 from http import HTTPStatus
 from typing import Optional, Tuple
 
-import pandas as pd
 import sentry_sdk
-from flask import Flask, Response, make_response, request, send_from_directory, url_for
+from flask import Flask, Response, request, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy_session import current_session
@@ -37,7 +36,6 @@ from recidiviz.justice_counts.control_panel.error_handlers import (
 from recidiviz.justice_counts.control_panel.routes.admin import get_admin_blueprint
 from recidiviz.justice_counts.control_panel.routes.api import get_api_blueprint
 from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprint
-from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
@@ -195,76 +193,17 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     @app.route("/feed/<agency_id>", methods=["GET"])
     def get_feed_for_agency_id(agency_id: int) -> Response:
-        """Returns a feed for an agency, formatted according to the Technical Specification."""
-        system_to_filename_to_rows = FeedInterface.get_feed_for_agency_id(
-            current_session, agency_id=agency_id
+        """
+        Returns a feed for an agency, formatted according to the Technical Specification.
+        This is a public endpoint used by the agency dashboards.
+        """
+        return FeedInterface.get_csv_of_feed(
+            session=current_session,
+            agency_id=agency_id,
+            metric=request.args.get("metric"),
+            include_unpublished_data=False,
+            system=request.args.get("system"),
         )
-
-        if not system_to_filename_to_rows:
-            feed_response = make_response("")
-            feed_response.headers["Content-type"] = "text/plain"
-            return feed_response
-
-        metric = request.args.get("metric")
-        system: Optional[str]
-        if len(system_to_filename_to_rows) == 1:
-            # If the agency has only provided for one system,
-            # no need to specify `system` parameter
-            system = list(system_to_filename_to_rows.items())[0][0]
-        else:
-            system = request.args.get("system")
-
-        # Invalid state: metric parameter is present, but not system
-        # Since some metrics are present in multiple systems, we can't
-        # figure out which data to render
-        if metric and not system:
-            raise JusticeCountsServerError(
-                code="justice_counts_bad_request",
-                description="If the `metric` parameter is specified and the agency is "
-                "multi-system, then you must also provide the `system` parameter.",
-            )
-
-        # Valid state: metric parameter is not present, system may or may not be
-        # Return plaintext list of rows, one for each <system, metric> pair
-        if not metric:
-            rows = []
-            for current_system, filename_to_rows in system_to_filename_to_rows.items():
-                if system and current_system != system:
-                    # If system parameter is present, skip over systems that don't match
-                    continue
-
-                for metric_name in sorted(list(filename_to_rows.keys())):
-                    metric_url = url_for(
-                        "get_feed_for_agency_id",
-                        agency_id=agency_id,
-                        system=current_system,
-                        metric=metric_name,
-                    )
-                    rows.append(
-                        {
-                            "system": current_system,
-                            "metric_name": metric_name,
-                            "metric_url": metric_url,
-                        }
-                    )
-
-        # Valid state: both metric and system parameters are present
-        # Return plaintext feed of metric rows
-        elif system and metric:
-            if (
-                system in system_to_filename_to_rows
-                and metric in system_to_filename_to_rows[system]
-            ):
-                rows = system_to_filename_to_rows[system][metric]
-            else:
-                rows = []
-
-        df = pd.DataFrame.from_dict(rows)
-        csv = df.to_csv(index=False)
-
-        feed_response = make_response(csv)
-        feed_response.headers["Content-type"] = "text/plain"
-        return feed_response
 
     # Based on this answer re: serving React app with Flask:
     # https://stackoverflow.com/a/45634550

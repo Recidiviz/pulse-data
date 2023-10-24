@@ -2565,7 +2565,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         self.assertEqual(source.name, name)
 
-    def test_feed(self) -> None:
+    def test_feed_unauthenticated(self) -> None:
         self.session.add_all(
             [
                 self.test_schema_objects.test_user_A,
@@ -2624,6 +2624,45 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             f"/feed/{agency.id}", query_string={"metric": "arrests"}
         )
         self.assertEqual(feed_response_with_metric.status_code, 200)
+
+    def test_feed_authenticated(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_A,
+            ]
+        )
+        self.session.commit()
+        self.session.flush()
+        agency = self.test_schema_objects.test_agency_A
+
+        law_enforcement_excel = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "bulk_upload/bulk_upload_fixtures/law_enforcement/law_enforcement_metrics.xlsx",
+            )
+        )
+        uploader = WorkbookUploader(
+            agency=agency,
+            system=schema.System.LAW_ENFORCEMENT,
+            user_account=self.test_schema_objects.test_user_A,
+            metric_key_to_agency_datapoints={},
+        )
+        uploader.upload_workbook(
+            session=self.session,
+            xls=pd.ExcelFile(law_enforcement_excel),
+            metric_definitions=METRICS_BY_SYSTEM[schema.System.LAW_ENFORCEMENT.value],
+            filename=law_enforcement_excel,
+        )
+        self.session.commit()
+
+        # No data has been published; feed should not be empty
+        empty_feed_response = self.client.get(
+            f"api/feed/{agency.id}", query_string={"metric": "arrests"}
+        )
+        self.assertEqual(empty_feed_response.status_code, 200)
+        self.assertNotEqual(empty_feed_response.data, b"")
 
     def test_update_agency_systems(self) -> None:
         user = self.test_schema_objects.test_user_A
