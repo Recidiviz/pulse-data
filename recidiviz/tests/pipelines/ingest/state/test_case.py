@@ -125,6 +125,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             self.region,
             self.ingest_view_manifest_collector.launchable_ingest_views(),
         )
+        self.field_index = CoreEntityFieldIndex()
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -269,9 +270,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             for root_entity in self.get_expected_root_entities(
                 ingest_view_name=ingest_view_name, test_name=test_name
             )
-            for entity in get_all_entities_from_tree(
-                root_entity, CoreEntityFieldIndex()
-            )
+            for entity in get_all_entities_from_tree(root_entity, self.field_index)
         }
 
     def create_fake_bq_read_source_constructor(

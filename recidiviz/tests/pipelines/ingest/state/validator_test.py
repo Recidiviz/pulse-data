@@ -26,7 +26,10 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
-from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_all_entity_classes_in_module,
+)
 from recidiviz.persistence.entity.state import entities as entities_schema
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
@@ -39,6 +42,9 @@ from recidiviz.pipelines.ingest.state.validator import validate_root_entity
 
 class TestEntityValidations(unittest.TestCase):
     """Tests validations functions"""
+
+    def setUp(self) -> None:
+        self.field_index = CoreEntityFieldIndex()
 
     def test_valid_external_id_state_staff_entities(self) -> None:
         entity = state_entities.StateStaff(
@@ -58,7 +64,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_staff_entities(self) -> None:
@@ -66,7 +72,7 @@ class TestEntityValidations(unittest.TestCase):
             state_code="US_XX", staff_id=1111, external_ids=[]
         )
 
-        error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"^Found \[StateStaff\] with id \[1111\] missing an external_id:",
@@ -90,7 +96,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
@@ -115,7 +121,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StateStaff\] with id "
@@ -135,7 +141,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_missing_external_id_state_person_entities(self) -> None:
@@ -143,7 +149,7 @@ class TestEntityValidations(unittest.TestCase):
             state_code="US_XX", person_id=1111, external_ids=[]
         )
 
-        error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"^Found \[StatePerson\] with id \[1111\] missing an external_id:",
@@ -167,7 +173,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
@@ -192,7 +198,7 @@ class TestEntityValidations(unittest.TestCase):
             ],
         )
 
-        error_messages = validate_root_entity(entity)
+        error_messages = validate_root_entity(entity, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"Duplicate external id types for \[StatePerson\] with id "
@@ -237,7 +243,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person)
+        error_messages = validate_root_entity(person, self.field_index)
         self.assertTrue(len(list(error_messages)) == 0)
 
     def test_entity_tree_unique_constraints_simple_invalid(self) -> None:
@@ -289,7 +295,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person)
+        error_messages = validate_root_entity(person, self.field_index)
         self.assertRegex(
             one(error_messages),
             r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",
@@ -337,7 +343,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
-        error_messages = validate_root_entity(person)
+        error_messages = validate_root_entity(person, self.field_index)
         expected_regexes = [
             r"^Found \[StatePerson\] with id \[3111\] missing an external_id:",
             r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",

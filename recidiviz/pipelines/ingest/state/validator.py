@@ -36,7 +36,9 @@ from recidiviz.pipelines.ingest.state.constants import EntityKey, Error
 from recidiviz.utils.types import assert_type
 
 
-def validate_root_entity(root_entity: RootEntityT) -> Iterable[Error]:
+def validate_root_entity(
+    root_entity: RootEntityT, field_index: CoreEntityFieldIndex
+) -> Iterable[Error]:
     """The assumed input is a root entity with hydrated children entities attached to it.
     This function checks if the root entity does not violate any entity tree specific
     constraints. If the root entity constraints are not met, an exception should be thrown.
@@ -73,7 +75,6 @@ def validate_root_entity(root_entity: RootEntityT) -> Iterable[Error]:
 
             external_id_types.add(external_id.id_type)
 
-    field_index = CoreEntityFieldIndex()
     child_entities = get_all_entities_from_tree(root_entity, field_index=field_index)
 
     entities_by_cls: Dict[Type[Entity], List[Entity]] = defaultdict(list)

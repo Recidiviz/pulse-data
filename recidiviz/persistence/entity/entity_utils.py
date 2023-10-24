@@ -319,6 +319,8 @@ class CoreEntityFieldIndex:
             direction_checker or SchemaEdgeDirectionChecker.state_direction_checker()
         )
 
+        # TODO(#24930): Cache these at the process level by SchemaType so that we always
+        #  use a cached version where possible.
         # Cache of fields by field type for DatabaseEntity classes
         self.database_entity_fields_by_field_type: Dict[
             str, Dict[EntityFieldType, Set[str]]
@@ -1028,10 +1030,9 @@ def deep_entity_update(
     return updated_entity
 
 
-def set_backedges(element: RootEntity) -> RootEntity:
+def set_backedges(element: RootEntity, field_index: CoreEntityFieldIndex) -> RootEntity:
     """Set the backedges of the root entity tree using DFS traversal of the root
     entity tree."""
-    field_index = CoreEntityFieldIndex()
     root = cast(Entity, element)
     root_entity_cls = root.__class__
     stack: List[Entity] = [root]

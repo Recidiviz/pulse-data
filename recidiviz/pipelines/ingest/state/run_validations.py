@@ -221,13 +221,15 @@ class RunValidations(beam.PTransform):
     Will throw on any constraint violation or
     """
 
-    def __init__(self, expected_output_entities: Iterable[str]) -> None:
+    def __init__(
+        self, expected_output_entities: Iterable[str], field_index: CoreEntityFieldIndex
+    ) -> None:
         super().__init__()
         self.expected_output_entities = list(expected_output_entities)
         self.constraints_by_entity_type = self._get_constraints_by_entity_type(
             self.expected_output_entities
         )
-        self.field_index = CoreEntityFieldIndex()
+        self.field_index = field_index
 
     @staticmethod
     def _get_constraints_by_entity_type(
@@ -371,7 +373,9 @@ class RunValidations(beam.PTransform):
 
         root_entity = grouped_elements[ROOT_ENTITY][0]
 
-        entity_level_errors: List[str] = list(validate_root_entity(root_entity))
+        entity_level_errors: List[str] = list(
+            validate_root_entity(root_entity, self.field_index)
+        )
         entity_level_errors += list(
             {
                 f.error_string()

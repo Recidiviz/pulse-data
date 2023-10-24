@@ -89,11 +89,12 @@ def _string_representation_of_key(external_id_key: ExternalIdKey) -> str:
 
 
 def generate_primary_keys_for_root_entity_tree(
-    root_primary_key: PrimaryKey, root_entity: RootEntity, state_code: StateCode
+    root_primary_key: PrimaryKey,
+    root_entity: RootEntity,
+    state_code: StateCode,
+    field_index: CoreEntityFieldIndex,
 ) -> RootEntity:
     """Generate primary keys for a root entity tree by doing a Queue BFS traversal of the tree."""
-    field_index = CoreEntityFieldIndex()
-
     queue: List[Union[RootEntity, Entity]] = [root_entity]
 
     while queue:

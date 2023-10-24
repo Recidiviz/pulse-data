@@ -1189,8 +1189,8 @@ class TestBidirectionalUpdates(TestCase):
         person = generate_full_graph_state_person(
             set_back_edges=False, include_person_back_edges=False, set_ids=False
         )
-        _ = set_backedges(person)
         field_index = CoreEntityFieldIndex()
+        _ = set_backedges(person, field_index)
         all_entities = get_all_entities_from_tree(person, field_index)
         for entity in all_entities:
             if isinstance(entity, StatePerson):
@@ -1204,8 +1204,8 @@ class TestBidirectionalUpdates(TestCase):
 
     def test_set_backedges_staff(self) -> None:
         staff = generate_full_graph_state_staff(set_back_edges=False, set_ids=True)
-        _ = set_backedges(staff)
         field_index = CoreEntityFieldIndex()
+        _ = set_backedges(staff, field_index)
         all_entities = get_all_entities_from_tree(staff, field_index)
         for entity in all_entities:
             if isinstance(entity, StateStaff):
