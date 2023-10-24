@@ -54,6 +54,7 @@ from recidiviz.justice_counts.exceptions import (
     JusticeCountsBulkUploadException,
     JusticeCountsServerError,
 )
+from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import (
     DatapointGetRequestEntryPoint,
@@ -2009,6 +2010,19 @@ def get_api_blueprint(
 
         except Exception as e:
             raise _get_error(error=e) from e
+
+    @api_blueprint.route("/feed/<agency_id>", methods=["GET"])
+    def get_csv_for_upload_data(agency_id: int) -> Response:
+        """Returns a csv for an agency containing all of their uploaded data,
+        formatted according to the Technical Specification."""
+
+        return FeedInterface.get_csv_of_feed(
+            session=current_session,
+            agency_id=agency_id,
+            metric=assert_type(request.args.get("metric"), str),
+            include_unpublished_data=True,
+            system=request.args.get("system"),
+        )
 
     return api_blueprint
 
