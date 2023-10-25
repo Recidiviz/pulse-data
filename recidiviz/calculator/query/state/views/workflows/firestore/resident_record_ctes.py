@@ -170,7 +170,7 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
       WHERE
           release_date IS NULL
-          AND state_code!='US_MO'
+          AND state_code NOT IN ('US_MO','US_TN')
       QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY admission_date DESC) = 1
 
       UNION ALL
@@ -179,6 +179,18 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
         person_id,
         IF(complex_number=building_number, complex_number, complex_number || " " || building_number) AS unit_id
       FROM current_bed_stay
+      
+      UNION ALL
+      
+      --TODO(#24959): Deprecate usage when re-run is over
+      SELECT
+        person_id, 
+        COALESCE(RequestedUnitID, ActualUnitID, AssignedUnitID) AS unit_id,
+      FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CellBedAssignment_latest` c
+      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        ON c.OffenderID = pei.external_id
+        AND pei.state_code = "US_TN"
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(AssignmentDateTime AS DATETIME) ASC) = 1
     ),
 """
 
