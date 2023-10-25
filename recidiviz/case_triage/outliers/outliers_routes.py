@@ -15,19 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements routes for the Outliers Flask blueprint. """
+import logging
 import re
 from datetime import datetime
 from http import HTTPStatus
 from typing import Optional
 
 import werkzeug
-from flask import Blueprint, Response, jsonify, make_response, request
+from flask import Blueprint, Response, g, jsonify, make_response, request
 from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
 )
+from recidiviz.case_triage.outliers.user_context import UserContext
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
@@ -206,5 +208,141 @@ def create_outliers_api_blueprint() -> Blueprint:
             for entity in benchmarks
         ]
         return jsonify({"metrics": result})
+
+    @api.get("/<state>/officer/<pseudonymized_officer_id>/events")
+    def events_by_officer(state: str, pseudonymized_officer_id: str) -> Response:
+        try:
+            state_code = StateCode(state.upper())
+
+            # Get all requested metrics from URL
+            metric_ids = request.args.getlist("metric_id")
+
+            period_end_date = (
+                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
+                if "period_end_date" in request.args
+                else None
+            )
+        except ValueError as e:
+            return make_response(
+                jsonify(f"Invalid parameters provided. Error: {str(e)}"),
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        querier = OutliersQuerier()
+
+        state_config = querier.get_outliers_config(state_code)
+        state_metrics = [metric.name for metric in state_config.metrics]
+
+        # Check that the requested metrics are configured for the state
+        if len(metric_ids) > 0:
+            allowed_metric_ids = [
+                metric_id for metric_id in metric_ids if metric_id in state_metrics
+            ]
+
+            disallowed_metric_ids = [
+                metric_id
+                for metric_id in metric_ids
+                if metric_id not in allowed_metric_ids
+            ]
+
+            # Return an error if there are invalid requested metrics
+            if len(disallowed_metric_ids) > 0:
+                return make_response(
+                    jsonify(
+                        f"Must provide valid metric_ids for {state_code.value} in the request"
+                    ),
+                    HTTPStatus.BAD_REQUEST,
+                )
+        # If no metric ids are provided, use the configured metrics for the state.
+        else:
+            allowed_metric_ids = state_metrics
+
+        # Check that the requested officer exists
+        officer_entity = querier.get_supervision_officer_entity(
+            state_code=state_code,
+            pseudonymized_officer_id=pseudonymized_officer_id,
+            num_lookback_periods=0,
+            period_end_date=period_end_date,
+        )
+        if officer_entity is None:
+            return make_response(
+                jsonify(
+                    f"Officer with psuedonymized id not found: {pseudonymized_officer_id}"
+                ),
+                HTTPStatus.NOT_FOUND,
+            )
+
+        user_context: UserContext = g.user_context
+        supervisor = querier.get_supervisor_from_external_id(
+            state_code, user_context.user_external_id
+        )
+
+        # If the current user is identified as a supervisor, ensure that they supervise the requested officer.
+        # If the user is not a supervisor, we can assume that the user is leadership or Recidiviz and can thus view any officer.
+        if (
+            supervisor
+            and officer_entity.supervisor_external_id != supervisor.external_id
+        ):
+            return make_response(
+                jsonify(
+                    "User is a supervisor, but does not supervise the requested officer."
+                ),
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        # Get the metric ids the officer is an Outlier for
+        outlier_metric_ids = [
+            metric_id
+            for metric_id in allowed_metric_ids
+            if any(
+                metric["metric_id"] == metric_id
+                for metric in officer_entity.outlier_metrics
+            )
+        ]
+
+        # If the officer is not an Outlier on any of the requested metrics, do not return the events.
+        if len(outlier_metric_ids) == 0:
+            return make_response(
+                jsonify("Officer is not an outlier on any of the requested metrics."),
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        # If the officer is not an Outlier on requested metrics, log and continue.
+        if len(outlier_metric_ids) != allowed_metric_ids:
+            nonoutlier_metric_ids = [
+                metric_id
+                for metric_id in allowed_metric_ids
+                if metric_id not in outlier_metric_ids
+            ]
+            logging.error(
+                "Officer %s is not an outlier on the following requested metrics: %s",
+                officer_entity.external_id,
+                nonoutlier_metric_ids,
+            )
+
+        events = querier.get_events_by_officer(
+            state_code,
+            officer_entity.pseudonymized_id,
+            outlier_metric_ids,
+            period_end_date,
+        )
+
+        results = [
+            {
+                "stateCode": event.state_code,
+                "metricId": event.metric_id,
+                "eventDate": datetime.strftime(event.event_date, "%Y-%m-%d"),
+                "clientId": event.client_id,
+                "clientName": {
+                    "givenNames": PersonName(**event.client_name).given_names,
+                    "middleNames": PersonName(**event.client_name).middle_names,
+                    "surname": PersonName(**event.client_name).surname,
+                },
+                "officerId": event.officer_id,
+                "attributes": event.attributes,
+            }
+            for event in events
+        ]
+        return jsonify({"events": results})
 
     return api

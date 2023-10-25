@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for Outliers api routes."""
 import os
+from datetime import datetime
 from http import HTTPStatus
 from typing import Callable, Optional
 from unittest import TestCase, mock
@@ -30,6 +31,7 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
 )
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
+from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import INCARCERATION_STARTS_AND_INFERRED
 from recidiviz.outliers.types import (
     OutliersConfig,
@@ -38,12 +40,13 @@ from recidiviz.outliers.types import (
     SupervisionOfficerEntity,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
+    SupervisionClientEvent,
     SupervisionOfficerSupervisor,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.outliers.querier_test import load_model_fixture
+from recidiviz.tests.outliers.querier_test import TEST_METRIC_3, load_model_fixture
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
@@ -132,6 +135,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         with SessionFactory.using_database(self.database_key) as session:
             for supervisor in load_model_fixture(SupervisionOfficerSupervisor):
                 session.add(SupervisionOfficerSupervisor(**supervisor))
+            for event in load_model_fixture(SupervisionClientEvent):
+                session.add(SupervisionClientEvent(**event))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -441,3 +446,496 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         }
 
         self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_events_by_officer_invalid_date(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        response = self.test_client.get(
+            "/outliers/US_XX/officer/officerhash3/events?metric_id=absconsions_bench_warrants&period_end_date=23-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            response.json,
+            "Invalid parameters provided. Error: time data '23-05-01' does not match format '%Y-%m-%d'",
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_only_invalid_metric_ids(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        response = self.test_client.get(
+            "/outliers/US_XX/officer/officerhash3/events?metric_id=fake_metric&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            response.json,
+            "Must provide valid metric_ids for US_XX in the request",
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_one_valid_one_invalid_metric_id(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        response = self.test_client.get(
+            "/outliers/US_XX/officer/officerhash3/events?metric_id=absconsions_bench_warrants&metric_id=fake_metric&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(
+            response.json,
+            "Must provide valid metric_ids for US_XX in the request",
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_officer_not_found(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        mock_get_officer_entity.return_value = None
+
+        response = self.test_client.get(
+            "/outliers/US_XX/officer/invalidhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(
+            response.json,
+            "Officer with psuedonymized id not found: invalidhash",
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_mismatched_supervisor(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_xx", "101"
+        )
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            district="Guts",
+            caseload_type=None,
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            # The supervisor object returned doesn't match the supervisor of the officer
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "101")
+                .first()
+            )
+
+            response = self.test_client.get(
+                "/outliers/US_XX/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+            self.assertEqual(
+                response.json,
+                "User is a supervisor, but does not supervise the requested officer.",
+            )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_no_outlier_metrics(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_xx", "101"
+        )
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            district="Guts",
+            caseload_type=None,
+            outlier_metrics=[],
+        )
+        mock_get_supervisor.return_value = None
+
+        response = self.test_client.get(
+            "/outliers/US_XX/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            "Officer is not an outlier on any of the requested metrics.",
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_correct_supervisor_but_not_outlier_on_requested(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            district="Guts",
+            caseload_type=None,
+            outlier_metrics=[
+                {
+                    "metric_id": "other_metric",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            mock_get_supervisor.return_value = (
+                session.query(SupervisionOfficerSupervisor)
+                .filter(SupervisionOfficerSupervisor.external_id == "102")
+                .first()
+            )
+
+            response = self.test_client.get(
+                "/outliers/US_XX/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+            self.assertEqual(
+                response.json,
+                "Officer is not an outlier on any of the requested metrics.",
+            )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_events_by_officer",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_called_with_one_requested_metric(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+        mock_get_supervisor: MagicMock,
+        mock_get_events: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_xx", "101"
+        )
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3, TEST_METRIC_1],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            district="Guts",
+            caseload_type=None,
+            outlier_metrics=[
+                {
+                    "metric_id": TEST_METRIC_1.name,
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                },
+                {
+                    "metric_id": TEST_METRIC_3.name,
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                },
+            ],
+        )
+
+        mock_get_supervisor.return_value = None
+        mock_get_events.return_value = []
+        response = self.test_client.get(
+            "/outliers/US_XX/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        mock_get_events.assert_called_with(
+            StateCode.US_XX,
+            "hashhash",
+            [TEST_METRIC_3.name],
+            datetime.strptime("2023-05-01", "%Y-%m-%d"),
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_events_by_officer",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_success(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+        mock_get_supervisor: MagicMock,
+        mock_get_events: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_xx", "101"
+        )
+        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3, TEST_METRIC_1],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            district="Guts",
+            caseload_type=None,
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+        )
+
+        with SessionFactory.using_database(self.database_key) as session:
+            mock_get_supervisor.return_value = None
+            mock_get_events.return_value = (
+                session.query(SupervisionClientEvent)
+                .filter(
+                    SupervisionClientEvent.metric_id == TEST_METRIC_3.name,
+                    SupervisionClientEvent.client_id == "222",
+                )
+                .all()
+            )
+
+            response = self.test_client.get(
+                "/outliers/US_XX/officer/hashhash/events?period_end_date=2023-05-01",
+                headers={"Origin": "http://localhost:3000"},
+            )
+
+            mock_get_events.assert_called_with(
+                StateCode.US_XX,
+                "hashhash",
+                ["absconsions_bench_warrants"],
+                datetime.strptime("2023-05-01", "%Y-%m-%d"),
+            )
+
+            expected_json = {
+                "events": [
+                    {
+                        "attributes": None,
+                        "clientId": "222",
+                        "clientName": {
+                            "givenNames": "Olivia",
+                            "middleNames": None,
+                            "surname": "Rodrigo",
+                        },
+                        "eventDate": "2023-04-01",
+                        "metricId": "absconsions_bench_warrants",
+                        "officerId": "03",
+                        "stateCode": "US_XX",
+                    }
+                ]
+            }
+
+            mock_get_events.assert_called_with(
+                StateCode.US_XX,
+                "hashhash",
+                [TEST_METRIC_3.name],
+                datetime.strptime("2023-05-01", "%Y-%m-%d"),
+            )
+            self.assertEqual(response.json, expected_json)
