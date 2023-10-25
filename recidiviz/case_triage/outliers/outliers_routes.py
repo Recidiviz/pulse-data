@@ -101,26 +101,21 @@ def create_outliers_api_blueprint() -> Blueprint:
         return jsonify({"config": config_json})
 
     @api.get("/<state>/supervisors")
-    def supervisors_with_outliers(state: str) -> Response:
+    def supervisors(state: str) -> Response:
         state_code = StateCode(state.upper())
-        supervisor_entities = OutliersQuerier().get_supervisors_with_outliers(
-            state_code
-        )
+        supervisor_entities = OutliersQuerier().get_supervisors(state_code)
 
-        supervisors = [
+        return jsonify(
             {
-                "externalId": supervisor.external_id,
-                "fullName": {
-                    "givenNames": PersonName(**supervisor.full_name).given_names,
-                    "middleNames": PersonName(**supervisor.full_name).middle_names,
-                    "surname": PersonName(**supervisor.full_name).surname,
-                },
-                "supervisionDistrict": supervisor.supervision_district,
-                "email": supervisor.email,
+                "supervisors": [
+                    convert_nested_dictionary_keys(
+                        entity.to_json(),
+                        snake_to_camel,
+                    )
+                    for entity in supervisor_entities
+                ]
             }
-            for supervisor in supervisor_entities
-        ]
-        return jsonify({"supervisors": supervisors})
+        )
 
     @api.get("/<state>/supervisor/<supervisor_pseudonymized_id>/officers")
     def officers_for_supervisor(

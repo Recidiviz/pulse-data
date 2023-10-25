@@ -52,3 +52,4 @@ US_XX,01,absconsions_bench_warrants,YEAR,2022-12-01,0.32,ALL,0.14,0.21,NEAR
 US_XX,02,absconsions_bench_warrants,YEAR,2022-12-01,0.1,ALL,0.14,0.21,MET
 US_XX,03,absconsions_bench_warrants,YEAR,2022-12-01,0.8,ALL,0.14,0.21,FAR
 US_XX,04,absconsions_bench_warrants,YEAR,2022-12-01,0.0,ALL,0.14,0.21,MET
+US_XX,09,absconsions_bench_warrants,YEAR,2023-05-01,0.1,ALL,0.14,0.21,MET

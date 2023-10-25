@@ -38,6 +38,7 @@ from recidiviz.outliers.types import (
     OutliersMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
+    SupervisionOfficerSupervisorEntity,
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionClientEvent,
@@ -202,46 +203,56 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(expected_json, response.json)
 
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisors_with_outliers",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisors",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
-    def test_get_supervisors_with_outliers(
+    def test_get_supervisors(
         self, mock_enabled_states: MagicMock, mock_get_supervisors: MagicMock
     ) -> None:
         mock_enabled_states.return_value = ["US_XX", "US_IX"]
 
-        with SessionFactory.using_database(self.database_key) as session:
-            mock_get_supervisors.return_value = [
-                (
-                    session.query(SupervisionOfficerSupervisor)
-                    .filter(SupervisionOfficerSupervisor.external_id == "102")
-                    .first()
-                )
+        mock_get_supervisors.return_value = [
+            SupervisionOfficerSupervisorEntity(
+                full_name=PersonName(
+                    given_names="Supervisor",
+                    surname="2",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
+                external_id="102",
+                pseudonymized_id="hash2",
+                supervision_district="2",
+                email="supervisor2@recidiviz.org",
+                has_outliers=True,
+            ),
+        ]
+
+        response = self.test_client.get(
+            "/outliers/US_XX/supervisors",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        expected_json = {
+            "supervisors": [
+                {
+                    "fullName": {
+                        "givenNames": "Supervisor",
+                        "middleNames": None,
+                        "nameSuffix": None,
+                        "surname": "2",
+                    },
+                    "externalId": "102",
+                    "pseudonymizedId": "hash2",
+                    "supervisionDistrict": "2",
+                    "email": "supervisor2@recidiviz.org",
+                    "hasOutliers": True,
+                }
             ]
+        }
 
-            response = self.test_client.get(
-                "/outliers/US_XX/supervisors",
-                headers={"Origin": "http://localhost:3000"},
-            )
-
-            expected_json = {
-                "supervisors": [
-                    {
-                        "externalId": "102",
-                        "fullName": {
-                            "givenNames": "Supervisor",
-                            "middleNames": None,
-                            "surname": "2",
-                        },
-                        "supervisionDistrict": "2",
-                        "email": "supervisor2@recidiviz.org",
-                    }
-                ]
-            }
-
-            self.assertEqual(response.json, expected_json)
+        self.assertEqual(response.json, expected_json)
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_pseudonymized_id",
