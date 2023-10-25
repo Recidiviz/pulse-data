@@ -266,3 +266,21 @@ class SupervisionOfficerEntity:
 
     def to_json(self) -> Dict[str, Any]:
         return cattrs.unstructure(self)
+
+
+@attr.s
+class SupervisionOfficerSupervisorEntity:
+    # The full name of the supervisor
+    full_name: PersonName = attr.ib()
+    # The supervisor's external id
+    external_id: str = attr.ib()
+    # The officer's pseudonymized id
+    pseudonymized_id: str = attr.ib()
+    # The district the supervisor's in
+    supervision_district: Optional[str] = attr.ib()
+    email: str = attr.ib()
+    # Whether the supervisor has outliers in the latest period
+    has_outliers: bool = attr.ib()
+
+    def to_json(self) -> Dict[str, Any]:
+        return cattrs.unstructure(self)

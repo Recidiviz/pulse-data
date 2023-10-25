@@ -21,7 +21,7 @@ from datetime import date
 from typing import Dict, List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import and_, func
+from sqlalchemy import and_, case, func
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Session, aliased
 
@@ -39,6 +39,7 @@ from recidiviz.outliers.types import (
     OutliersMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
+    SupervisionOfficerSupervisorEntity,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -351,45 +352,82 @@ class OutliersQuerier:
     def get_outliers_config(state_code: StateCode) -> OutliersConfig:
         return OUTLIERS_CONFIGS_BY_STATE[state_code]
 
-    def get_supervisors_with_outliers(
+    def get_supervisors(
         self, state_code: StateCode
-    ) -> List[SupervisionOfficerSupervisor]:
+    ) -> List[SupervisionOfficerSupervisorEntity]:
         """
-        Return a list of SupervisionOfficerSupervisors who have outliers in the latest period.
+        Return a list of SupervisionOfficerSupervisorEntity objects that indicate whether supervisors are supervising
+        officers that are outliers compared to statewide benchmarks in the latest period.
         """
         db_key = SQLAlchemyDatabaseKey(
             SchemaType.OUTLIERS, db_name=state_code.value.lower()
         )
 
         with SessionFactory.using_database(db_key, autocommit=False) as session:
-            latest_period_end_date = (
-                session.query(func.max(SupervisionOfficerOutlierStatus.end_date))
-                .filter(
-                    SupervisionOfficerOutlierStatus.period
-                    == MetricTimePeriod.YEAR.value,
-                )
-                .scalar()
-            )
+            end_date = self._get_latest_period_end_date(session)
 
-            # Get external ids of officers with outliers
-            supervisor_ids_with_outliers = [
-                external_id
-                for external_id, report_data in self.get_officer_level_report_data_for_all_officer_supervisors(
-                    state_code, latest_period_end_date
-                ).items()
-                if report_data.metrics
-            ]
-
-            supervisor_entities = (
+            records = (
                 session.query(SupervisionOfficerSupervisor)
-                .filter(
-                    SupervisionOfficerSupervisor.external_id.in_(
-                        supervisor_ids_with_outliers
-                    )
+                .join(
+                    SupervisionOfficer,
+                    and_(
+                        SupervisionOfficer.supervisor_external_id
+                        == SupervisionOfficerSupervisor.external_id
+                    ),
+                )
+                .join(
+                    SupervisionOfficerOutlierStatus,
+                    and_(
+                        SupervisionOfficer.external_id
+                        == SupervisionOfficerOutlierStatus.officer_id,
+                        SupervisionOfficerOutlierStatus.end_date == end_date,
+                        # TODO(#24998): Account for comparing benchmarks by caseload type
+                        SupervisionOfficerOutlierStatus.caseload_type == "ALL",
+                    ),
+                )
+                .group_by(
+                    SupervisionOfficerSupervisor.external_id,
+                    SupervisionOfficerSupervisor.full_name,
+                    SupervisionOfficerSupervisor.supervision_district,
+                    SupervisionOfficerSupervisor.pseudonymized_id,
+                    SupervisionOfficerSupervisor.email,
+                )
+                .with_entities(
+                    SupervisionOfficerSupervisor.external_id,
+                    SupervisionOfficerSupervisor.full_name,
+                    SupervisionOfficerSupervisor.supervision_district,
+                    SupervisionOfficerSupervisor.pseudonymized_id,
+                    SupervisionOfficerSupervisor.email,
+                    (
+                        func.sum(
+                            case(
+                                [
+                                    (
+                                        SupervisionOfficerOutlierStatus.status
+                                        == TargetStatus.FAR.value,
+                                        1,
+                                    )
+                                ],
+                                else_=0,
+                            ),
+                        )
+                        > 0
+                    ).label("has_outliers"),
                 )
                 .all()
             )
-            return supervisor_entities
+
+            return [
+                SupervisionOfficerSupervisorEntity(
+                    full_name=PersonName(**record.full_name),
+                    external_id=record.external_id,
+                    pseudonymized_id=record.pseudonymized_id,
+                    supervision_district=record.supervision_district,
+                    email=record.email,
+                    has_outliers=record.has_outliers,
+                )
+                for record in records
+            ]
 
     @staticmethod
     def _get_latest_period_end_date(session: Session) -> date:
@@ -547,9 +585,12 @@ class OutliersQuerier:
                     SupervisionOfficerOutlierStatus.period,
                     SupervisionOfficerOutlierStatus.status,
                     # Aggregate the rates by caseload type, metric, id, and status
-                    func.array_agg(SupervisionOfficerOutlierStatus.metric_rate).label(
-                        "rates"
-                    ),
+                    func.array_agg(
+                        aggregate_order_by(
+                            SupervisionOfficerOutlierStatus.metric_rate,
+                            SupervisionOfficerOutlierStatus.metric_rate.asc(),
+                        )
+                    ).label("rates"),
                 )
                 .cte("latest_period_rates")
             )

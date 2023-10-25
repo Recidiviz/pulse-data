@@ -40,6 +40,7 @@ from recidiviz.outliers.types import (
     OutliersMetricConfig,
     PersonName,
     SupervisionOfficerEntity,
+    SupervisionOfficerSupervisorEntity,
     TargetStatus,
     TargetStatusStrategy,
 )
@@ -406,65 +407,57 @@ class TestOutliersQuerier(TestCase):
         }
         self.assertEqual(expected_json, actual_json)
 
-    @patch(
-        "recidiviz.outliers.querier.querier.OutliersQuerier.get_officer_level_report_data_for_all_officer_supervisors"
-    )
-    def test_get_supervisors_with_outliers(
-        self, mock_get_supervisor_report_data: MagicMock
+    def test_get_supervisors(
+        self,
     ) -> None:
-        mock_get_supervisor_report_data.return_value = {
-            "103": OfficerSupervisorReportData(
-                metrics=[],
-                metrics_without_outliers=[
-                    TEST_METRIC_1,
-                    TEST_METRIC_2,
-                ],
-                recipient_email_address="manager3@recidiviz.org",
-                additional_recipients=[
-                    "manager2@recidiviz.org",
-                ],
-            ),
-            "102": OfficerSupervisorReportData(
-                metrics=[
-                    OutlierMetricInfo(
-                        metric=TEST_METRIC_1,
-                        target=0.13,
-                        other_officers={
-                            TargetStatus.FAR: [],
-                            TargetStatus.MET: [0.111, 0.0399, 0.0, 0.126],
-                            TargetStatus.NEAR: [0.184, 0.17],
-                        },
-                        highlighted_officers=[
-                            OfficerMetricEntity(
-                                name=PersonName(
-                                    given_names="Officer",
-                                    surname="1",
-                                    middle_names=None,
-                                    name_suffix=None,
-                                ),
-                                rate=0.266,
-                                target_status=TargetStatus.FAR,
-                                prev_rate=0.319,
-                                supervisor_external_id="101",
-                                supervision_district="1",
-                                prev_target_status=TargetStatus.NEAR,
-                            )
-                        ],
-                        target_status_strategy=TargetStatusStrategy.IQR_THRESHOLD,
-                    )
-                ],
-                metrics_without_outliers=[TEST_METRIC_2],
-                recipient_email_address="supervisor1@recidiviz.org",
-                additional_recipients=[],
-            ),
-        }
 
-        actual = OutliersQuerier().get_supervisors_with_outliers(
+        expected = [
+            SupervisionOfficerSupervisorEntity(
+                full_name=PersonName(
+                    given_names="Supervisor",
+                    surname="1",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
+                external_id="101",
+                pseudonymized_id="hash1",
+                supervision_district=None,
+                email="supervisor1@recidiviz.org",
+                has_outliers=True,
+            ),
+            SupervisionOfficerSupervisorEntity(
+                full_name=PersonName(
+                    given_names="Supervisor",
+                    surname="2",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
+                external_id="102",
+                pseudonymized_id="hash2",
+                supervision_district="2",
+                email="supervisor2@recidiviz.org",
+                has_outliers=True,
+            ),
+            SupervisionOfficerSupervisorEntity(
+                full_name=PersonName(
+                    given_names="Supervisor",
+                    surname="3",
+                    middle_names=None,
+                    name_suffix=None,
+                ),
+                external_id="103",
+                pseudonymized_id="hash3",
+                supervision_district="2",
+                email="manager3@recidiviz.org",
+                has_outliers=False,
+            ),
+        ]
+
+        actual = OutliersQuerier().get_supervisors(
             state_code=StateCode.US_XX,
         )
 
-        self.assertEqual(actual[0].external_id, "102")
-        self.assertEqual(len(actual), 1)
+        self.assertEqual(expected, actual)
 
     def test_get_officers_for_supervisor(self) -> None:
         actual = OutliersQuerier().get_officers_for_supervisor(
@@ -611,7 +604,11 @@ class TestOutliersQuerier(TestCase):
                     {"target": 0.14, "end_date": "2023-02-01", "threshold": 0.21},
                     {"target": 0.14, "end_date": "2023-01-01", "threshold": 0.21},
                 ],
-                "latest_period_values": {"far": [0.8], "near": [0.32], "met": [0.1]},
+                "latest_period_values": {
+                    "far": [0.8],
+                    "near": [0.32],
+                    "met": [0.1, 0.1],
+                },
             },
             {
                 "metric_id": "incarceration_starts_and_inferred",
@@ -621,9 +618,9 @@ class TestOutliersQuerier(TestCase):
                     {"target": 0.14, "end_date": "2023-04-01", "threshold": 0.21},
                 ],
                 "latest_period_values": {
-                    "far": [0.333, 0.26],
-                    "near": [0.184, 0.17],
-                    "met": [0.0, 0.11, 0.04, 0.12],
+                    "far": [0.26, 0.333],
+                    "near": [0.17, 0.184],
+                    "met": [0.0, 0.04, 0.11, 0.12],
                 },
             },
             {
@@ -636,7 +633,7 @@ class TestOutliersQuerier(TestCase):
                 "latest_period_values": {
                     "far": [0.0],
                     "near": [],
-                    "met": [0.126, 0.171, 0.27, 0.11, 0.039, 0.184, 0.333],
+                    "met": [0.039, 0.11, 0.126, 0.171, 0.184, 0.27, 0.333],
                 },
             },
         ]
