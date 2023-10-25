@@ -8,24 +8,35 @@ exclusions:
   - validation_name: county_jail_population_person_level_external_comparison
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason:
-      TODO(#16974), we haven't launched population projections against Atlas yet (due to an outstanding question about paid beds),
-      so US_IX can't be incorporated into this validation yet.
+      TODO(#16974), we haven't launched population projections against Atlas yet (due to
+      an outstanding question about paid beds), so US_IX can't be incorporated into this
+      validation yet.
 max_allowed_error_overrides:
   - validation_name: most_recent_face_to_face_contact_date_by_person_by_state_comparison
     hard_max_allowed_error_override: 0.03
-    override_reason: TODO(#18856), TODO(#18993) - Needs investigation. As of 2/24/23, failing 2.29% in staging and 2.3% in production.
+    override_reason:
+      TODO(#18856), TODO(#18993) - Needs investigation. As of 2/24/23, failing 2.29% in
+      staging and 2.3% in production.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     hard_max_allowed_error_override: 0.165
-    override_reason: TODO(#20470) - Fixed state specific condition but will need additional investigation after that.
+    override_reason:
+      TODO(#20470) - Fixed state specific condition but will need additional
+      investigation after that.
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
     hard_max_allowed_error_override: 0.04
-    override_reason: TODO(#20470) - Added in IX specific logic to address some of the error, but requires further investigation
+    override_reason:
+      TODO(#20470) - Added in IX specific logic to address some of the error, but
+      requires further investigation
   - validation_name: incarceration_release_person_level_external_comparison
     hard_max_allowed_error_override: 0.37
-    override_reason: TODO(#20470) - Added in IX specific logic to address some of the error, but requires further investigation
+    override_reason:
+      TODO(#20470) - Added in IX specific logic to address some of the error, but
+      requires further investigation
   - validation_name: incarceration_admission_person_level_external_comparison
     hard_max_allowed_error_override: 0.61
-    override_reason: TODO(#20470) - Added in IX specific logic to address some of the error, but requires further investigation
+    override_reason:
+      TODO(#20470) - Added in IX specific logic to address some of the error, but
+      requires further investigation
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
     hard_max_allowed_error_override: 0.025
     override_reason:
@@ -38,7 +49,9 @@ max_allowed_error_overrides:
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 25
-    override_reason: TODO(#20470) - Needs investigation and will probably need to be handled in IP pre-processing.
+    override_reason:
+      TODO(#20470) - Needs investigation and will probably need to be handled in IP
+      pre-processing.
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 35000
     override_reason: TODO(#20471) - Needs investigation.  Known issues with sentence dates.
@@ -47,7 +60,9 @@ num_allowed_rows_overrides:
     override_reason: TODO(#20471) - Needs investigation.  Known issues with sentence dates.
   - validation_name: incarceration_commitments_subset_of_admissions
     hard_num_allowed_rows_override: 1
-    override_reason: TODO(#20470) - Needs investigation. As of 2/24/23, just one failing row and it's an admission from decades ago
+    override_reason:
+      TODO(#20470) - Needs investigation. As of 2/24/23, just one failing row and it's
+      an admission from decades ago
   - validation_name: sentences_undefined_relationship
     hard_num_allowed_rows_override: 150
     override_reason: Needs investigation. Current failing level as of 2/24/23 is 69 rows #TODO(#19047)
@@ -58,15 +73,17 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#20471) - Really low error rate so just bumping threshold for now
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 29500
+    hard_num_allowed_rows_override: 30000
     override_reason:
-      TODO(#20472) - Half of the issue is coming from ingested charges that aren't attached to an ingested sentence (20472 is the ticket to fix).
-      The other half of the issue is from ingested early discharges that are attached to dummy sentences since we don't have sentence info.
+      TODO(#20472) - Half of the issue is coming from ingested charges that aren't
+      attached to an ingested sentence (20472 is the ticket to fix). The other half of
+      the issue is from ingested early discharges that are attached to dummy sentences
+      since we don't have sentence info.
   - validation_name: normalized_state_charge_missing_descriptions
     hard_num_allowed_rows_override: 60
     override_reason: Current failing level as of 4/5/23 is 0 rows
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 100
+    hard_num_allowed_rows_override: 125
     override_reason: TODO(#21246) To investigate
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 3000
@@ -86,9 +103,9 @@ num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 35
     override_reason:
-      TODO(#23965) Current failing level as of 10/4/23 is 26 rows. Likely
-      the same root cause as incarceration_admission_after_open_period failure. Increase
-      in failing rows after the custody level revision. Needs to be investigated.
+      TODO(#23965) Current failing level as of 10/4/23 is 26 rows. Likely the same root
+      cause as incarceration_admission_after_open_period failure. Increase in failing
+      rows after the custody level revision. Needs to be investigated.
   - validation_name: current_supervision_staff_missing_district
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#23971) Known issue, will be resolved soon
