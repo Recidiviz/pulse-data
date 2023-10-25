@@ -1,0 +1,5 @@
+state_code,metric_id,event_date,client_id,client_name,officer_id,attributes,pseudonymized_client_id,pseudonymized_officer_id
+US_XX,absconsions_bench_warrants,2023-05-01,111,"{""given_names"": ""HARRY"", ""surname"": ""POTTER""}",03,,clienthash1,officerhash3
+US_XX,absconsions_bench_warrants,2023-04-01,222,"{""given_names"": ""OLIVIA"", ""surname"": ""RODRIGO""}",03,,clienthash2,officerhash3
+US_XX,absconsions_bench_warrants,2022-04-01,333,"{""given_names"": ""TAYLOR"", ""surname"": ""SWIFT""}",03,,clienthash3,officerhash3
+US_XX,incarceration_starts_and_inferred,2023-04-01,222,"{""given_names"": ""OLIVIA"", ""surname"": ""RODRIGO""}",03,,clienthash2,officerhash3

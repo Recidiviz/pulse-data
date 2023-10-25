@@ -46,6 +46,7 @@ from recidiviz.outliers.types import (
 from recidiviz.persistence.database.schema.outliers.schema import (
     MetricBenchmark,
     OutliersBase,
+    SupervisionClientEvent,
     SupervisionDistrict,
     SupervisionDistrictManager,
     SupervisionOfficer,
@@ -71,6 +72,8 @@ def load_model_fixture(
             for k, v in row.items():
                 if k == "full_name":
                     row["full_name"] = json.loads(row["full_name"])
+                if k == "client_name":
+                    row["client_name"] = json.loads(row["client_name"])
                 if v == "":
                     row[k] = None
             results.append(row)
@@ -131,6 +134,8 @@ class TestOutliersQuerier(TestCase):
                 session.add(SupervisionDistrictManager(**manager))
             for benchmark in load_model_fixture(MetricBenchmark):
                 session.add(MetricBenchmark(**benchmark))
+            for event in load_model_fixture(SupervisionClientEvent):
+                session.add(SupervisionClientEvent(**event))
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -637,3 +642,88 @@ class TestOutliersQuerier(TestCase):
         ]
 
         self.assertEqual(expected, actual)
+
+    def test_get_events_by_officer(self) -> None:
+        # Return matching event
+        with SessionFactory.using_database(self.database_key) as session:
+            metric_id = TEST_METRIC_3.name
+            expected = (
+                session.query(SupervisionClientEvent)
+                .filter(SupervisionClientEvent.event_date == "2023-04-01")
+                .first()
+            )
+
+            actual = OutliersQuerier().get_events_by_officer(
+                StateCode.US_XX, "officerhash3", [metric_id]
+            )
+            self.assertEqual(len(actual), 1)
+            self.assertEqual(expected.event_date, actual[0].event_date)
+            self.assertEqual(expected.client_id, actual[0].client_id)
+            self.assertEqual(metric_id, actual[0].metric_id)
+
+    def test_get_events_by_officer_none_found(self) -> None:
+        actual = OutliersQuerier().get_events_by_officer(
+            StateCode.US_XX, "officerhash1", ["absconsions_bench_warrants"]
+        )
+        self.assertEqual(actual, [])
+
+    def test_get_supervision_officer_entity_found_match(self) -> None:
+        # Return matching supervision officer entity
+        actual = OutliersQuerier().get_supervision_officer_entity(
+            state_code=StateCode.US_XX,
+            pseudonymized_officer_id="officerhash3",
+            num_lookback_periods=0,
+        )
+
+        expected = SupervisionOfficerEntity(
+            full_name=PersonName(
+                given_names="Officer",
+                surname="3",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="03",
+            pseudonymized_id="officerhash3",
+            supervisor_external_id="102",
+            district="2",
+            caseload_type=None,
+            outlier_metrics=[
+                {
+                    "metric_id": "absconsions_bench_warrants",
+                    "statuses_over_time": [
+                        {
+                            "status": "FAR",
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.8,
+                        },
+                    ],
+                }
+            ],
+        )
+
+        self.assertEqual(expected, actual)
+
+    def test_get_supervision_officer_entity_no_match(self) -> None:
+        # Return None because none found
+        actual = OutliersQuerier().get_supervision_officer_entity(
+            state_code=StateCode.US_XX,
+            pseudonymized_officer_id="invalidhash",
+            num_lookback_periods=0,
+        )
+
+        self.assertIsNone(actual)
+
+    def test_get_supervisor_from_external_id_no_match(self) -> None:
+        # If matching supervisor doesn't exist, return None
+        actual = OutliersQuerier().get_supervisor_from_external_id(
+            state_code=StateCode.US_XX, external_id="invalidid"
+        )
+        self.assertIsNone(actual)
+
+    def test_get_supervisor_from_external_id_found_match(self) -> None:
+        # Return matching supervisor
+        actual = OutliersQuerier().get_supervisor_from_external_id(
+            state_code=StateCode.US_XX, external_id="101"
+        )
+
+        self.assertEqual("101", actual.external_id)  # type: ignore[union-attr]
