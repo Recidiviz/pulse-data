@@ -1052,6 +1052,24 @@ INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
 
+# TODO(#24974): Deprecate inferred only violation type metric
+INCARCERATION_STARTS_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
+    EventCountMetric(
+        name=f"incarceration_starts_{category.lower()}_violation_inferred",
+        display_name=f"Incarceration Starts, Inferred {category.replace('_', ' ').title()} "
+        "Violation",
+        description="Number of observed incarceration starts for which the most severe "
+        f"violation type was {category.replace('_', ' ').lower()}, based on an inferred violation type",
+        event_types=[EventType.INCARCERATION_START],
+        event_attribute_filters={
+            "most_severe_violation_type": types,
+            "violation_is_inferred": ["true"],
+        },
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+    if category in ["TECHNICAL", "UNKNOWN"]
+]
+
 INCARCERATION_STARTS_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCountMetric(
     name="incarceration_starts_technical_violation_no_prior_treatment_referral",
     display_name="Incarceration Starts, Technical Violation, No Prior Treatment "
@@ -1093,6 +1111,28 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         event_attribute_filters={"most_severe_violation_type": types},
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]
+
+# TODO(#24974): Deprecate inferred only violation type metric
+INCARCERATION_STARTS_AND_INFERRED_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
+    EventCountMetric(
+        name=f"incarceration_starts_and_inferred_{category.lower()}_violation_inferred",
+        display_name="Incarceration Starts And Inferred Incarcerations, "
+        f"Inferred {category.replace('_', ' ').title()} Violation",
+        description="Number of total observed incarceration starts or inferred "
+        f"incarcerations for which the most severe violation type was "
+        f"{category.replace('_', ' ').lower()}, based on an inferred violation type",
+        event_types=[
+            EventType.INCARCERATION_START,
+            EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+        ],
+        event_attribute_filters={
+            "most_severe_violation_type": types,
+            "violation_is_inferred": ["true"],
+        },
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+    if category in ["TECHNICAL", "UNKNOWN"]
 ]
 
 INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCountMetric(

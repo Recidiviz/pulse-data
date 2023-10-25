@@ -366,6 +366,7 @@ ON
     -- Get the first non-null start_sub_reason among incarceration starts occurring during the super session
     COALESCE(b.start_sub_reason, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
     viol.violation_date AS most_severe_violation_date,
+    COALESCE(JSON_EXTRACT_SCALAR(viol.violation_metadata, '$.ViolationType'), '') = 'INFERRED' as violation_is_inferred,
     COUNT(DISTINCT c.referral_date)
         OVER (PARTITION BY a.person_id, a.start_date) AS prior_treatment_referrals_1y,
 FROM
@@ -404,6 +405,7 @@ QUALIFY ROW_NUMBER() OVER (
             "start_reason",
             "most_severe_violation_date",
             "most_severe_violation_type",
+            "violation_is_inferred",
             "prior_treatment_referrals_1y",
         ],
         event_date_col="start_date",
@@ -723,6 +725,7 @@ WHERE compartment_level_1 = "SUPERVISION"
     a.end_reason,
     -- Get the first non-null violation type among supervision terminations occurring during the super session
     COALESCE(c.most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
+    COALESCE(JSON_EXTRACT_SCALAR(viol.violation_metadata, '$.ViolationType'), '') = 'INFERRED' as violation_is_inferred,
     viol.violation_date AS most_severe_violation_date,
     c.termination_date AS most_severe_violation_type_termination_date,
     COUNT(DISTINCT d.referral_date)
@@ -766,6 +769,7 @@ QUALIFY ROW_NUMBER() OVER (
             "compartment_level_2",
             "outflow_to_incarceration",
             "end_reason",
+            "violation_is_inferred",
             "most_severe_violation_date",
             "most_severe_violation_type",
             "most_severe_violation_type_termination_date",
