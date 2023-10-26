@@ -25,6 +25,7 @@ from more_itertools import one
 
 from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
@@ -38,6 +39,7 @@ from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
     make_staff,
     make_staff_external_id,
     make_staff_role_period,
+    make_task_deadline,
 )
 
 
@@ -278,6 +280,75 @@ class TestIngestViewTreeMerger(unittest.TestCase):
                 incarceration_incidents=[
                     make_incarceration_incident(external_id="ID_1"),
                     make_incarceration_incident(external_id="ID_2"),
+                ],
+            ),
+        ]
+
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
+
+        merge_result = tree_merger.merge(ingested_persons)
+
+        self.assertCountEqual(expected_people, merge_result)
+
+    def test_merge_people_with_task_deadline_children(self) -> None:
+        update_datetime = datetime.datetime(2000, 1, 2, 3, 4, 5, 6)
+        ingested_persons = [
+            make_person(
+                external_ids=[
+                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                task_deadlines=[
+                    make_task_deadline(
+                        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                        update_datetime=update_datetime,
+                        task_metadata="metadata1",
+                    )
+                ],
+            ),
+            # This tree has exactly the same task deadline
+            make_person(
+                external_ids=[
+                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                task_deadlines=[
+                    make_task_deadline(
+                        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                        update_datetime=update_datetime,
+                        task_metadata="metadata1",
+                    )
+                ],
+            ),
+            # This tree's task deadline has different metadata
+            make_person(
+                external_ids=[
+                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                task_deadlines=[
+                    make_task_deadline(
+                        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                        update_datetime=update_datetime,
+                        task_metadata="metadata2",
+                    )
+                ],
+            ),
+        ]
+        expected_people = [
+            make_person(
+                external_ids=[
+                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                task_deadlines=[
+                    # No duplicate
+                    make_task_deadline(
+                        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                        update_datetime=update_datetime,
+                        task_metadata="metadata1",
+                    ),
+                    make_task_deadline(
+                        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                        update_datetime=update_datetime,
+                        task_metadata="metadata2",
+                    ),
                 ],
             ),
         ]

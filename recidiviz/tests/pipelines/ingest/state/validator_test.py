@@ -17,6 +17,7 @@
 """Unit tests to test validations for ingested entities."""
 import unittest
 from datetime import date, datetime
+from typing import Dict, List, Type
 
 import sqlalchemy
 from more_itertools import one
@@ -26,6 +27,7 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entity_classes_in_module,
@@ -265,6 +267,7 @@ class TestEntityValidations(unittest.TestCase):
                 task_deadline_id=1,
                 state_code="US_XX",
                 task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                task_subtype=None,
                 eligible_date=date(2020, 9, 11),
                 update_datetime=datetime(2023, 2, 1, 11, 19),
                 task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
@@ -272,22 +275,26 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
+        # Add exact duplicate (only primary key is changed)
         person.task_deadlines.append(
             StateTaskDeadline(
                 task_deadline_id=2,
                 state_code="US_XX",
                 task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                task_subtype=None,
                 eligible_date=date(2020, 9, 11),
                 update_datetime=datetime(2023, 2, 1, 11, 19),
                 task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
                 person=person,
             )
         )
+        # Add similar with different task_type
         person.task_deadlines.append(
             StateTaskDeadline(
                 task_deadline_id=3,
                 state_code="US_XX",
                 task_type=StateTaskType.INTERNAL_UNKNOWN,
+                task_subtype=None,
                 eligible_date=date(2020, 9, 11),
                 update_datetime=datetime(2023, 2, 1, 11, 19),
                 task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
@@ -298,8 +305,97 @@ class TestEntityValidations(unittest.TestCase):
         error_messages = validate_root_entity(person, self.field_index)
         self.assertRegex(
             one(error_messages),
-            r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",
+            r'More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]',
         )
+
+    def test_entity_tree_unique_constraints_invalid_all_nonnull(self) -> None:
+        person = state_entities.StatePerson(
+            state_code="US_XX",
+            person_id=3111,
+            external_ids=[
+                StatePersonExternalId(
+                    person_external_id_id=11114,
+                    state_code="US_XX",
+                    external_id="4001",
+                    id_type="PERSON",
+                ),
+            ],
+        )
+
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=1,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                task_subtype="my_subtype",
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+
+        # Add exact duplicate (only primary key is changed)
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=2,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                task_subtype="my_subtype",
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+
+        error_messages = validate_root_entity(person, self.field_index)
+        self.assertRegex(
+            one(error_messages),
+            r'More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=my_subtype, task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]',
+        )
+
+    def test_entity_tree_unique_constraints_task_deadline_valid_tree(self) -> None:
+        person = state_entities.StatePerson(
+            state_code="US_XX",
+            person_id=3111,
+            external_ids=[
+                StatePersonExternalId(
+                    person_external_id_id=11114,
+                    state_code="US_XX",
+                    external_id="4001",
+                    id_type="PERSON",
+                ),
+            ],
+        )
+
+        person.task_deadlines.append(
+            StateTaskDeadline(
+                task_deadline_id=1,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}',
+                person=person,
+            )
+        )
+
+        person.task_deadlines.append(
+            # Task is exactly identical except for task_deadline_id and task_metadata
+            StateTaskDeadline(
+                task_deadline_id=2,
+                state_code="US_XX",
+                task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                eligible_date=date(2020, 9, 11),
+                update_datetime=datetime(2023, 2, 1, 11, 19),
+                task_metadata='{"external_id": "00000001-111123-371006", "sentence_type": "SUPERVISION"}',
+                person=person,
+            )
+        )
+
+        error_messages = validate_root_entity(person, self.field_index)
+        self.assertTrue(len(list(error_messages)) == 0)
 
     def test_multiple_errors_returned_for_root_enities(self) -> None:
         person = state_entities.StatePerson(
@@ -320,6 +416,7 @@ class TestEntityValidations(unittest.TestCase):
             )
         )
 
+        # Add exact duplicate (only primary key is changed)
         person.task_deadlines.append(
             StateTaskDeadline(
                 task_deadline_id=2,
@@ -331,6 +428,7 @@ class TestEntityValidations(unittest.TestCase):
                 person=person,
             )
         )
+        # Add similar with different task_type
         person.task_deadlines.append(
             StateTaskDeadline(
                 task_deadline_id=3,
@@ -346,7 +444,7 @@ class TestEntityValidations(unittest.TestCase):
         error_messages = validate_root_entity(person, self.field_index)
         expected_regexes = [
             r"^Found \[StatePerson\] with id \[3111\] missing an external_id:",
-            r"More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]",
+            r'More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]',
         ]
         for i, error_message in enumerate(error_messages):
             self.assertRegex(error_message, expected_regexes[i])
@@ -376,6 +474,11 @@ class TestUniqueConstraintValid(unittest.TestCase):
                     self.assertTrue(hasattr(schema_entity, column_name))
 
     def test_equal_schema_uniqueness_constraint(self) -> None:
+        expected_missing_schema_constraints: Dict[Type[Entity], List[str]] = {
+            state_entities.StateTaskDeadline: [
+                "state_task_deadline_unique_per_person_update_date_type"
+            ]
+        }
         all_entities = get_all_entity_classes_in_module(entities_schema)
         for entity in all_entities:
             constraints = (
@@ -386,9 +489,11 @@ class TestUniqueConstraintValid(unittest.TestCase):
                 schema, entity.get_entity_name()
             )
             constraint_names = [constraint.name for constraint in constraints]
+
+            expected_missing = expected_missing_schema_constraints.get(entity) or []
             schema_constraint_names = [
                 arg.name
                 for arg in schema_entity.__table_args__
                 if isinstance(arg, sqlalchemy.UniqueConstraint)
-            ]
+            ] + expected_missing
             self.assertListEqual(constraint_names, schema_constraint_names)

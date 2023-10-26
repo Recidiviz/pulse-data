@@ -192,6 +192,76 @@ class TestRunValidations(StateIngestPipelineTestCase):
         assert_that(output, matches_all(entities))
         self.test_pipeline.run()
 
+    def test_validate_task_deadlines(self) -> None:
+        """Exact sane task deadline on two different people should not violate
+        constraints.
+        """
+        update_datetime = datetime(2023, 2, 1, 11, 19)
+        eligible_date = date(2020, 9, 11)
+        entities_without_backedges = [
+            StatePerson(
+                state_code="US_XX",
+                person_id=1234,
+                external_ids=[
+                    StatePersonExternalId(
+                        person_external_id_id=11111,
+                        state_code="US_XX",
+                        external_id="12345",
+                        id_type="US_XX_TYPE",
+                    )
+                ],
+                task_deadlines=[
+                    StateTaskDeadline(
+                        task_deadline_id=1,
+                        state_code="US_XX",
+                        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                        eligible_date=eligible_date,
+                        update_datetime=update_datetime,
+                        task_metadata=None,
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_XX",
+                person_id=4567,
+                external_ids=[
+                    StatePersonExternalId(
+                        person_external_id_id=22222,
+                        state_code="US_XX",
+                        external_id="45678",
+                        id_type="US_XX_TYPE",
+                    )
+                ],
+                task_deadlines=[
+                    StateTaskDeadline(
+                        task_deadline_id=2,
+                        state_code="US_XX",
+                        task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+                        eligible_date=eligible_date,
+                        update_datetime=update_datetime,
+                        task_metadata=None,
+                    )
+                ],
+            ),
+        ]
+        entities = [
+            set_backedges(e, self.field_index) for e in entities_without_backedges
+        ]
+        input_entities = self.test_pipeline | "Create test input" >> beam.Create(
+            entities
+        )
+
+        output = input_entities | RunValidations(
+            expected_output_entities=[
+                "state_person",
+                "state_person_external_id",
+                "state_task_deadline",
+            ],
+            field_index=self.field_index,
+        )
+        assert_that(output, matches_all(entities))
+        self.test_pipeline.run()
+
     def test_missing_external_ids_staff_entity(self) -> None:
         entities = [
             set_backedges(
@@ -1181,7 +1251,7 @@ class TestRunValidations(StateIngestPipelineTestCase):
 
         with self.assertRaisesRegex(
             ValueError,
-            r".*More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\].*",
+            r'.*More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, task_metadata=\{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"\}, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\].*',
         ):
             self.test_pipeline.run()
 

@@ -34,6 +34,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateStaffExternalId,
     StateStaffRolePeriod,
     StateSupervisionSentence,
+    StateTaskDeadline,
 )
 
 _STATE_CODE = StateCode.US_XX.value
@@ -104,3 +105,9 @@ def make_incarceration_incident_outcome(
     return StateIncarcerationIncidentOutcome.new_with_defaults(
         state_code=_STATE_CODE, **kwargs
     )
+
+
+def make_task_deadline(
+    **kwargs: Any,
+) -> StateTaskDeadline:
+    return StateTaskDeadline.new_with_defaults(state_code=_STATE_CODE, **kwargs)

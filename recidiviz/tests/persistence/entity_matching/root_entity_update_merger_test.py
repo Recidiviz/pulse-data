@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.root_entity_update_merger import (
@@ -52,6 +53,7 @@ from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
     make_staff_external_id,
     make_state_charge,
     make_supervision_sentence,
+    make_task_deadline,
 )
 from recidiviz.utils.environment import in_ci
 
@@ -74,6 +76,21 @@ _ASSESSMENT_2 = make_assessment(
 _EXTERNAL_ID_ENTITY_1 = make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
 _EXTERNAL_ID_ENTITY_2 = make_person_external_id(external_id="ID_2", id_type="ID_TYPE_2")
 _EXTERNAL_ID_ENTITY_3 = make_person_external_id(external_id="ID_3", id_type="ID_TYPE_3")
+
+
+_UPDATE_DATETIME_1 = datetime.datetime(2000, 1, 2, 3, 4, 5, 6)
+_UPDATE_DATETIME_2 = datetime.datetime(2000, 2, 3, 4, 5, 6, 7)
+
+_TASK_DEADLINE_1 = make_task_deadline(
+    task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+    update_datetime=_UPDATE_DATETIME_1,
+    task_metadata="metadata1",
+)
+_TASK_DEADLINE_2 = make_task_deadline(
+    task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION,
+    update_datetime=_UPDATE_DATETIME_2,
+    task_metadata="metadata2",
+)
 
 
 class TestRootEntityUpdateMerger(unittest.TestCase):
@@ -886,3 +903,137 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
         self.assert_expected_matches_result(
             expected_result=expected_result, result=result
         )
+
+    def test_merge_task_deadline(self) -> None:
+        # Arrange
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[attr.evolve(_TASK_DEADLINE_1)],
+        )
+
+        slightly_different_task_deadline = attr.evolve(
+            _TASK_DEADLINE_1, task_metadata="metadata3"
+        )
+
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[slightly_different_task_deadline],
+        )
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[
+                attr.evolve(_TASK_DEADLINE_1),
+                attr.evolve(slightly_different_task_deadline),
+            ],
+        )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_task_deadline_similar_deadlines_on_previous(self) -> None:
+        # Arrange
+        task_deadline = attr.evolve(_TASK_DEADLINE_1)
+        slightly_different_task_deadline = attr.evolve(
+            _TASK_DEADLINE_1, task_metadata="metadata3"
+        )
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[
+                # These two deadlines only differ in the task_metadata but still should
+                # not end up merged.
+                task_deadline,
+                slightly_different_task_deadline,
+            ],
+        )
+
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[attr.evolve(_TASK_DEADLINE_2)],
+        )
+
+        # Act
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        # Assert
+        expected_result = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[
+                attr.evolve(task_deadline),
+                attr.evolve(slightly_different_task_deadline),
+                attr.evolve(_TASK_DEADLINE_2),
+            ],
+        )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_throws_if_old_root_entity_has_improperly_merged_values(self) -> None:
+        # Arrange
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[
+                # We would expect these two deadlines to be merged by the time we get
+                # to this point, but they are not
+                attr.evolve(_TASK_DEADLINE_1),
+                attr.evolve(_TASK_DEADLINE_1),
+            ],
+        )
+
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[attr.evolve(_TASK_DEADLINE_2)],
+        )
+
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            (
+                r"Found duplicate item "
+                r"\[.*DISCHARGE_FROM_INCARCERATION||2000-01-02T03:04:05.000006|metadata1\]"
+            ),
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=previous_root_entity,
+                root_entity_updates=entity_updates,
+            )
+
+    def test_throws_if_new_root_entity_has_improperly_merged_values(self) -> None:
+        # Arrange
+        previous_root_entity = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[attr.evolve(_TASK_DEADLINE_1)],
+        )
+
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            task_deadlines=[
+                # We would expect these two deadlines to be merged by the time we get
+                # to this point, but they are not
+                attr.evolve(_TASK_DEADLINE_2),
+                attr.evolve(_TASK_DEADLINE_2),
+            ],
+        )
+
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            (
+                r"Found duplicate item "
+                r"\[.*#DISCHARGE_FROM_INCARCERATION||2000-02-03T04:05:06.000007|metadata2\]"
+            ),
+        ):
+            _ = self.merger.merge_root_entity_trees(
+                old_root_entity=previous_root_entity,
+                root_entity_updates=entity_updates,
+            )

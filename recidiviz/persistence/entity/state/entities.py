@@ -1895,6 +1895,7 @@ class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
                     "state_code",
                     "task_type",
                     "task_subtype",
+                    "task_metadata",
                     "update_datetime",
                 ],
             )
