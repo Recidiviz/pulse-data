@@ -2,7 +2,7 @@
 """rm_sp_caseload_field
 
 Revision ID: 19c1e900f88c
-Revises: e284041ae6d4
+Revises: c2da8c1ade37
 Create Date: 2023-10-26 11:08:50.075612
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "19c1e900f88c"
-down_revision = "e284041ae6d4"
+down_revision = "c2da8c1ade37"
 branch_labels = None
 depends_on = None
 
