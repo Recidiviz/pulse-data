@@ -751,24 +751,6 @@ state_staff_caseload_type = Enum(
     name="state_staff_caseload_type",
 )
 
-# TODO(#24278): Delete this once StateStaffCaseloadType is fully implemented and
-# appropriately hydrated.
-state_staff_specialized_caseload_type = Enum(
-    state_enum_strings.state_staff_specialized_caseload_type_sex_offense,
-    state_enum_strings.state_staff_specialized_caseload_type_administrative_supervision,
-    state_enum_strings.state_staff_specialized_caseload_type_alcohol_and_drug,
-    state_enum_strings.state_staff_specialized_caseload_type_intensive,
-    state_enum_strings.state_staff_specialized_caseload_type_mental_health,
-    state_enum_strings.state_staff_specialized_caseload_type_electronic_monitoring,
-    state_enum_strings.state_staff_specialized_caseload_type_other_court,
-    state_enum_strings.state_staff_specialized_caseload_type_drug_court,
-    state_enum_strings.state_staff_specialized_caseload_type_veterans_court,
-    state_enum_strings.state_staff_specialized_caseload_type_community_facility,
-    state_enum_strings.state_staff_specialized_caseload_type_other,
-    state_enum_strings.internal_unknown,
-    state_enum_strings.external_unknown,
-    name="state_staff_specialized_caseload_type",
-)
 
 # Join tables
 state_charge_incarceration_sentence_association_table = Table(
@@ -3436,18 +3418,6 @@ class StateStaffCaseloadTypePeriod(StateBase, _ReferencesStateStaffSharedColumns
         nullable=False,
         index=True,
         comment=STATE_CODE_COMMENT,
-    )
-
-    # TODO(#24278): Delete this field once caseload_type is appropriately hydrated.
-    state_staff_specialized_caseload_type = Column(
-        state_staff_specialized_caseload_type,
-        nullable=False,
-        comment="Indicates the specialized type of the caseload an officer supervises",
-    )
-
-    # TODO(#24278): Delete this field once caseload_type is appropriately hydrated.
-    state_staff_specialized_caseload_type_raw_text = Column(
-        String(255), comment="Raw text for the specialized caseload type field."
     )
 
     caseload_type = Column(

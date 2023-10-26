@@ -78,13 +78,12 @@ from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
 )
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
-)
-from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
-    StateStaffCaseloadType,
-    StateStaffSpecializedCaseloadType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
@@ -2130,16 +2129,6 @@ class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, Defaultab
     # State Code
     # State providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # The specialized case type that the officer supervises
-    # TODO(#24278): Delete these "_specialized_" fields once caseload_type is appropriately
-    # hydrated.
-    state_staff_specialized_caseload_type: StateStaffSpecializedCaseloadType = attr.ib(
-        validator=attr_validators.is_opt(StateStaffSpecializedCaseloadType),
-    )
-    state_staff_specialized_caseload_type_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
 
     # The caseload type that the officer supervises
     caseload_type: StateStaffCaseloadType = attr.ib(

@@ -17,12 +17,12 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
-)
-from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
-    StateStaffSpecializedCaseloadType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
@@ -471,8 +471,8 @@ def generate_test_staff_caseload_type_period(
         staff_caseload_type_period_id=123,
         external_id="123",
         state_code="US_XX",
-        state_staff_specialized_caseload_type=StateStaffSpecializedCaseloadType.ADMINISTRATIVE_SUPERVISION,
-        state_staff_specialized_caseload_type_raw_text="AS",
+        caseload_type=StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION,
+        caseload_type_raw_text="AS",
         start_date=datetime.date(2023, 1, 1),
         end_date=datetime.date(2023, 6, 1),
         staff_id=staff_id,

@@ -67,13 +67,12 @@ from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
 )
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
-)
-from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
-    StateStaffCaseloadType,
-    StateStaffSpecializedCaseloadType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
@@ -1009,8 +1008,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             external_id="123A",
             start_date="2022-05-08",
             end_date="2022-05-10",
-            state_staff_specialized_caseload_type=StateStaffSpecializedCaseloadType.ADMINISTRATIVE_SUPERVISION,
-            state_staff_specialized_caseload_type_raw_text="ADMINSTRATIVE",
             caseload_type=StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION,
             caseload_type_raw_text="ADMINSTRATIVE",
         )
@@ -1021,8 +1018,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             external_id="123A",
             start_date=datetime.date(2022, 5, 8),
             end_date=datetime.date(2022, 5, 10),
-            state_staff_specialized_caseload_type=StateStaffSpecializedCaseloadType.ADMINISTRATIVE_SUPERVISION,
-            state_staff_specialized_caseload_type_raw_text="ADMINSTRATIVE",
             caseload_type=StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION,
             caseload_type_raw_text="ADMINSTRATIVE",
         )

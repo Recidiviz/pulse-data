@@ -23,7 +23,6 @@ output:
               $values:
                 - officer_EmployeeId
                 - period_id
-          state_staff_specialized_caseload_type: $literal_enum(StateStaffSpecializedCaseloadType.INTERNAL_UNKNOWN)
           caseload_type:
             $enum_mapping:
               $raw_text:
