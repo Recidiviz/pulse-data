@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_PP_directory
+file_description: |-
+  The montly Probation and Parole Directory received via email listserv from DOCR. As of 10/4/2023,
+  we have received this directory exactly once. OFFICER ID numbers were filled in by matching
+  officers by name to docstars_officers raw data, and subsequently by matching them to a provided
+  list of officers with ID numbers provided by ND.
+data_classification: source
+primary_key_cols:
+  - OFFICER
+columns:
+  - name: OFFICER
+    description: The officer's Docstars ID number.
+    is_pii: True
+  - name: LastName
+    description: The officer's surname.
+    is_pii: True
+  - name: FirstName
+    description: The officer's given name.
+    is_pii: True
+  - name: JobTitle
+    description: The officer's job title. This can include a role, level, and specialization.
+  - name: OfficePhone
+    description: The officer's office phone number.
+  - name: CellPhone
+    description: The officer's cell phone number.
+    is_pii: True
+  - name: Location
+    description: The city in which the officer works, or "Central Office".
+  - name: Section
+    description: The section of the DOCR in which the officer works.
