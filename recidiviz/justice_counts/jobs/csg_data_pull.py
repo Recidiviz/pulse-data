@@ -35,7 +35,10 @@ import pandas as pd
 from google.oauth2.service_account import Credentials
 
 from recidiviz.auth.auth0_client import Auth0Client
-from recidiviz.justice_counts.control_panel.utils import write_data_to_spreadsheet
+from recidiviz.justice_counts.control_panel.utils import (
+    append_row_to_spreadsheet,
+    write_data_to_spreadsheet,
+)
 from recidiviz.justice_counts.utils.constants import AGENCIES_TO_EXCLUDE
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -51,9 +54,10 @@ from recidiviz.utils.environment import (
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
-# Spreadsheet Name: Justice Counts Data Pull Spreadsheet
+# Spreadsheet Name: Justice Counts Data Pull
 # https://docs.google.com/spreadsheets/d/1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0/edit#gid=870547342
-SPREADSHEET_ID = "1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0"
+DATA_PULL_SPREADSHEET_ID = "1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0"
+SCOREBOARD_SHEET_ID = 659567415
 
 CREATED_AT = "created_at"
 LAST_LOGIN = "last_login"
@@ -327,7 +331,9 @@ def populate_new_state_this_week(
 
 
 def generate_agency_summary_csv(
-    session: Session, dry_run: bool, google_credentials: Any
+    session: Session,
+    dry_run: bool,
+    google_credentials: Any,
 ) -> None:
     """Generates a CSV with data about all agencies with Publisher accounts."""
 
@@ -427,15 +433,44 @@ def generate_agency_summary_csv(
 
     if dry_run is False:
         now = datetime.datetime.now()
-        new_sheet_title = f"{now.month}-{now.day}-{now.year}"
+        today_str = f"{now.month}-{now.day}-{now.year}"
+        generate_and_write_scoreboard(
+            df=df,
+            updated=today_str,
+            google_credentials=google_credentials,
+        )
         write_data_to_spreadsheet(
             google_credentials=google_credentials,
             df=df,
             columns=columns,
-            spreadsheet_id=SPREADSHEET_ID,
-            new_sheet_title=new_sheet_title,
+            spreadsheet_id=DATA_PULL_SPREADSHEET_ID,
+            new_sheet_title=today_str,
             logger=logger,
         )
+
+
+def generate_and_write_scoreboard(
+    df: pd.DataFrame,
+    updated: str,
+    google_credentials: Credentials,
+) -> None:
+    num_total_agencies = str(len(df))
+    num_agencies_logged_in_last_week = str(len(df[df["login_this_week"]]))
+
+    # data_to_write is a list containing lists that represent new rows to append to the
+    # existing Justice Counts Scoreboard spreadsheet. The order of these rows matters,
+    # and should coincide with the following columns:
+    # date_last_updated, num_total_agencies, num_agencies_logged_in_last_week
+    data_to_write = [[updated, num_total_agencies, num_agencies_logged_in_last_week]]
+    append_row_to_spreadsheet(
+        google_credentials=google_credentials,
+        data_to_write=data_to_write,
+        spreadsheet_id=DATA_PULL_SPREADSHEET_ID,
+        sheet_title="Scoreboard",
+        logger=logger,
+        sort_by="date_last_updated",
+        sheet_id=SCOREBOARD_SHEET_ID,
+    )
 
 
 def process_systems(
