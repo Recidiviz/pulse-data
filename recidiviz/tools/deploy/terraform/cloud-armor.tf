@@ -142,7 +142,7 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
       action      = rule.value.action
       priority    = rule.value.priority
       description = rule.value.description
-      preview     = var.project_id == "recidiviz-123" ? true : false
+      preview     = false
       match {
         expr {
           expression = rule.value.expression
