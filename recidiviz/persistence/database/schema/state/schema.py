@@ -2921,16 +2921,6 @@ class StateTaskDeadline(StateBase, _ReferencesStatePersonSharedColumns):
 
     __tablename__ = "state_task_deadline"
     __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "person_id",
-            "task_type",
-            "task_subtype",
-            "update_datetime",
-            name="state_task_deadline_unique_per_person_update_date_type",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
         CheckConstraint(
             "eligible_date IS NULL OR due_date IS NULL OR eligible_date <= due_date",
             name="eligible_date_before_due_date",

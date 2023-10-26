@@ -764,48 +764,6 @@ class TestStateTaskDeadline(unittest.TestCase):
             ):
                 session.flush()
 
-    def test_multiple_deadlines_same_update_datetime_violates_constraint(self) -> None:
-        # Arrange
-        db_person = generate_person(state_code=self.state_code)
-
-        update_datetime = datetime.datetime(2022, 7, 1, 1, 2, 3)
-        db_task_deadline_1 = schema.StateTaskDeadline(
-            person=db_person,
-            state_code=self.state_code,
-            eligible_date=None,
-            due_date=datetime.date(2022, 5, 8),
-            update_datetime=update_datetime,
-            task_type=StateTaskType.DRUG_SCREEN.value,
-            task_type_raw_text=None,
-            task_subtype="MY_SUBTYPE",
-        )
-        db_task_deadline_2 = schema.StateTaskDeadline(
-            person=db_person,
-            state_code=self.state_code,
-            eligible_date=None,
-            due_date=datetime.date(2022, 5, 1),
-            update_datetime=update_datetime,
-            task_type=StateTaskType.DRUG_SCREEN.value,
-            task_type_raw_text=None,
-            task_subtype="MY_SUBTYPE",
-        )
-
-        # Act
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(db_task_deadline_1)
-            session.add(db_task_deadline_2)
-
-            session.flush()
-
-            with self.assertRaisesRegex(
-                sqlalchemy.exc.IntegrityError,
-                "duplicate key value violates unique constraint "
-                '"state_task_deadline_unique_per_person_update_date_type"',
-            ):
-                session.commit()
-
 
 @pytest.mark.uses_db
 class TestStateSupervisionPeriod(unittest.TestCase):

@@ -19,7 +19,7 @@ into an existing version of that root entity.
 """
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Set, Type
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type
 
 from more_itertools import one
 
@@ -51,7 +51,7 @@ from recidiviz.persistence.entity_matching.entity_merger_utils import (
 )
 from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.pipelines.ingest.state.constants import ExternalId
-from recidiviz.utils.types import assert_type
+from recidiviz.utils.types import T, assert_type
 
 # Schema classes that can have multiple parents of different types.
 _MULTI_PARENT_ENTITY_TYPES = [entities.StateCharge]
@@ -66,9 +66,26 @@ def state_task_deadline_key(deadline: StateTaskDeadline) -> str:
         deadline.task_type.value,
         deadline.task_subtype or "",
         deadline.update_datetime.isoformat(),
+        deadline.task_metadata or "",
     ]
 
     return f"{type(deadline)}#{'|'.join(key_parts)}"
+
+
+def _to_set_assert_no_dupes(item_list: Iterable[T]) -> Set[T]:
+    """Throws on the first found duplicate value if the provided iterable yields any
+    duplicate values, otherwise, returns a set with the values.
+    """
+    result = set()
+    for item in item_list:
+        if item in result:
+            raise ValueError(
+                f"Found duplicate item [{item}] in list within the same entity tree"
+                f"- merging before this step should have eliminated this duplicate "
+                f"already."
+            )
+        result.add(item)
+    return result
 
 
 class RootEntityUpdateMerger:
@@ -189,8 +206,8 @@ class RootEntityUpdateMerger:
         single list that applies updates. Any children with the same |key_fn| result
         will be merged together.
         """
-        new_keys = {key_fn(e) for e in new_or_updated_children}
-
+        new_keys = _to_set_assert_no_dupes(key_fn(e) for e in new_or_updated_children)
+        _to_set_assert_no_dupes(key_fn(e) for e in old_children)
         return [
             *new_or_updated_children,
             *[
@@ -215,6 +232,9 @@ class RootEntityUpdateMerger:
                 raise ValueError(
                     f"Found null external_id for [{e.__class__.__name__}] entity [{e}]."
                 )
+
+        _to_set_assert_no_dupes(e.external_id for e in new_or_updated_children)
+        _to_set_assert_no_dupes(e.external_id for e in old_children)
 
         old_by_external_id = {assert_type(e.external_id, str): e for e in old_children}
         new_by_external_id = {
