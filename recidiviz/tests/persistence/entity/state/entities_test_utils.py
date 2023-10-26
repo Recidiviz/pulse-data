@@ -49,12 +49,12 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
-)
-from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
-    StateStaffSpecializedCaseloadType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
@@ -710,8 +710,8 @@ def generate_full_graph_state_staff(
         entities.StateStaffCaseloadTypePeriod.new_with_defaults(
             state_code="US_XX",
             external_id="C1",
-            state_staff_specialized_caseload_type=StateStaffSpecializedCaseloadType.OTHER,
-            state_staff_specialized_caseload_type_raw_text="O",
+            caseload_type=StateStaffCaseloadType.OTHER,
+            caseload_type_raw_text="O",
             start_date=datetime.date(2023, 1, 1),
             end_date=datetime.date(2023, 6, 1),
             staff=staff if set_back_edges else None,

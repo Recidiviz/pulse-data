@@ -22,58 +22,6 @@ output:
                 - period_seq_num
           start_date: start_date
           end_date: end_date
-          state_staff_specialized_caseload_type:
-            $enum_mapping:
-              $raw_text: AgentType
-              $mappings:
-                StateStaffSpecializedCaseloadType.SEX_OFFENSE:
-                  - SEX OFFENDER
-                StateStaffSpecializedCaseloadType.ADMINISTRATIVE_SUPERVISION:
-                  - ADMINISTRATIVE
-                  - ADMINSTRATIVE
-                  - ADMINISTRATIVE / COURT LIAISON
-                StateStaffSpecializedCaseloadType.ALCOHOL_AND_DRUG:
-                  - AOD
-                  - INTENSIVE DRUG
-                StateStaffSpecializedCaseloadType.INTENSIVE:
-                  - INTENSIVE CASELOAD
-                  - INTENSIVE
-                  - INTENSIVE SUPERVISION
-                StateStaffSpecializedCaseloadType.MENTAL_HEALTH:
-                  - MENTAL HEALTH
-                  - MENTAL HEALTH (MIXED)
-                StateStaffSpecializedCaseloadType.ELECTRONIC_MONITORING:
-                  - GPS
-                  - ADMINISTRATIVE & MONITOR CASES
-                  - ADMINISTRATIVE/MON/SPECIAL CIRCUMSTANCE
-                StateStaffSpecializedCaseloadType.OTHER_COURT:
-                  - HEARING
-                StateStaffSpecializedCaseloadType.DRUG_COURT:
-                  - DRUG COURT LIASON
-                StateStaffSpecializedCaseloadType.VETERANS_COURT:
-                  - VETERANS (MIXED)
-                StateStaffSpecializedCaseloadType.COMMUNITY_FACILITY:
-                  - CCC AGENT
-                  - REENTRY
-                StateStaffSpecializedCaseloadType.INTERNAL_UNKNOWN:
-                  - TASK FORCE AGENT
-                  - TRANSPORT
-                  - JUVENILE LIFER/VICTIM WRAPAROUND
-                  - JUVENILE LIFERS
-                  - JUVENILE LIFER
-                  - JUVENILE LIFER/WRAP AROUNDS
-                  - JUVENILE LIFER/PSN # Project Safe Neighborhoods
-                  - PROJECT SAFE NEIGHBORHOODS
-                  - STREET CRIME
-                  - STREET CRIMES
-                  - FTA # Field Training Agent
-                  - FIELD TRAINING AGENT
-                  - INTELLIGENCE AGENT
-                  - INTERSTATE
-                  - FAST # Fugitive Apprehension Search Teams
-                  - FTTD # ?
-                  - HBG PD LIAISON # Harrisburg PD Liaison
-                  - K9
           caseload_type:
             $enum_mapping:
               $raw_text: AgentType

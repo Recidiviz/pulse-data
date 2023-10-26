@@ -26,7 +26,7 @@ my_enum_field:
 from datetime import date
 
 from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
-from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
+from recidiviz.common.constants.state.state_staff_caseload_type import (
     StateStaffCaseloadType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
