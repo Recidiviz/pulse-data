@@ -110,8 +110,8 @@ def copy_metric_settings(super_agency_id: int, dry_run: bool) -> None:
                             agency_metric=metric_setting,
                         )
 
-        if dry_run is False:
-            session.commit()
+            if dry_run is False:
+                session.commit()
 
 
 if __name__ == "__main__":
