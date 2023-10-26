@@ -131,12 +131,16 @@ def write_data_to_spreadsheet(
     columns: Optional[List[str]] = None,
     overwrite_sheets: Optional[bool] = False,
 ) -> None:
-    """
-    Writes data to the spreadsheet specified by the spreadsheet_id.
+    """Writes data to the spreadsheet specified by the spreadsheet_id.
+
+    If overwrite_sheets is True and the sheet already exists, we delete the old
+    spreadsheet before creating a new one.
     """
     spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
+
     # Create a new worksheet in the spreadsheet
-    request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 1}}}
+    # Index is 2 since we have Key and Scoreboard sheets
+    request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 2}}}
 
     # Delete existing sheet if we want to overwrite with new
     if overwrite_sheets is True:
@@ -181,3 +185,51 @@ def write_data_to_spreadsheet(
     ).execute()
 
     logger.info("Sheet '%s' added and data written.", new_sheet_title)
+
+
+def append_row_to_spreadsheet(
+    google_credentials: Credentials,
+    spreadsheet_id: str,
+    logger: logging.Logger,
+    sheet_title: str,
+    data_to_write: Optional[List[List[str]]] = None,
+    sort_by: Optional[str] = None,
+    sheet_id: Optional[int] = None,
+) -> None:
+    """Append data as new rows to an existing spreadsheet.
+    If sort_by and sheet_id are both not None, we sort the sheet in descending order
+    by the provided sort_by column after the new row is appended.
+    """
+    spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
+
+    # Append row to end of spreasheet
+    spreadsheet_service.spreadsheets().values().append(
+        body={"values": data_to_write},
+        spreadsheetId=spreadsheet_id,
+        range=sheet_title,
+        valueInputOption="USER_ENTERED",
+        insertDataOption="INSERT_ROWS",
+    ).execute()
+    logger.info("Data has been appended to sheet '%s'.", sheet_title)
+
+    # Sort spreadsheet by sort_by column in descending order
+    if sort_by is not None and sheet_id is not None:
+        sort_request = {
+            "sortRange": {
+                "range": {
+                    "sheetId": sheet_id,
+                },
+                "sortSpecs": [
+                    {
+                        "dataSourceColumnReference": {"name": sort_by},
+                        "sortOrder": "DESCENDING",
+                    },
+                ],
+            }
+        }
+        spreadsheet_service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id, body={"requests": [sort_request]}
+        ).execute()
+        logger.info(
+            "'%s' sheet has been sorted by the %s column.", sheet_title, sort_by
+        )
