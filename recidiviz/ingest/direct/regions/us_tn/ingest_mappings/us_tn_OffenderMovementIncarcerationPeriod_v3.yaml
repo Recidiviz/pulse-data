@@ -17,9 +17,11 @@ input_columns:
   - HousingUnit
 unused_columns: []
 launch_env:
-  $and:
+  $or:
+    - $and:
+        - $env: is_production
+        - $env: is_secondary_instance
     - $env: is_staging
-    - $env: is_secondary_instance
 variables:
   - is_kcsc_ncsc_mcrc_mtrc_bmsp_open_period:
       $and:
