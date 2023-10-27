@@ -206,7 +206,7 @@ class SupervisionClientEvent(OutliersBase):
     # Should follow the Recidiviz-standard JSON struct string representation
     client_name = Column(JSON, nullable=False)
     # The external id of the officer assigned to this person at the time the event occurred
-    officer_id = Column(String, nullable=False)
+    officer_id = Column(String, primary_key=True)
     # JSON object of information related to this event
     attributes = Column(JSON, nullable=True)
     pseudonymized_client_id = Column(String, nullable=False)
