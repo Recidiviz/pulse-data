@@ -831,6 +831,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             drug_screen_result_raw_text="DRUN",
             sample_type=StateDrugScreenSampleType.BREATH,
             sample_type_raw_text="BREATH",
+            drug_screen_metadata='{"DrugType": "meth"}',
         )
 
         # Assert
@@ -842,6 +843,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             drug_screen_result_raw_text="DRUN",
             sample_type=StateDrugScreenSampleType.BREATH,
             sample_type_raw_text="BREATH",
+            drug_screen_metadata='{"DRUGTYPE": "METH"}',
         )
 
         self.assertEqual(expected_result, result)

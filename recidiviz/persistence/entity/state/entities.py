@@ -1819,6 +1819,10 @@ class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
+    drug_screen_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
     #   - Who
     # See |person| in entity relationships below.
 

@@ -2915,6 +2915,12 @@ class StateDrugScreen(StateBase, _ReferencesStatePersonSharedColumns):
         String(255), comment="Raw text for the sample_type field."
     )
 
+    drug_screen_metadata = Column(
+        Text,
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "this drug screen.",
+    )
+
 
 class StateTaskDeadline(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateTaskDeadline in the SQL schema."""
