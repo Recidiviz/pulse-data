@@ -717,6 +717,17 @@ class TestOutliersQuerier(TestCase):
         )
         self.assertIsNone(actual)
 
+    def test_get_supervision_officer_entity_no_metrics(self) -> None:
+        # Return None because none found
+        actual = OutliersQuerier().get_supervision_officer_entity(
+            state_code=StateCode.US_XX,
+            pseudonymized_officer_id="officerhash9",
+            num_lookback_periods=0,
+            period_end_date=TEST_PREV_END_DATE,
+        )
+
+        self.assertIsNone(actual)
+
     def test_get_supervisor_from_external_id_found_match(self) -> None:
         # Return matching supervisor
         actual = OutliersQuerier().get_supervisor_from_external_id(

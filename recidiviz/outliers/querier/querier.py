@@ -718,12 +718,13 @@ class OutliersQuerier:
     ) -> Optional[SupervisionOfficerEntity]:
         """
         Get the SupervisionOfficerEntity object for the requested officer, an entity that includes information on the state's metrics that the officer is an outlier for.
+        If the officer doesn't have metrics for the period, return None.
 
         :param state_code: The user's state code
         :param pseudonymized_officer_id: The pseudonymized id of the officer to get information for.
         :param num_lookback_periods: The number of previous periods to get benchmark data for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get for. If not provided, use the latest end date available.
-        :rtype: SupervisionOfficerEntity
+        :rtype: Optional[SupervisionOfficerEntity]
         """
         db_key = SQLAlchemyDatabaseKey(
             SchemaType.OUTLIERS, db_name=state_code.value.lower()
@@ -749,6 +750,19 @@ class OutliersQuerier:
                 period_end_date=period_end_date,
                 officer_external_id=officer_external_id,
             )
+
+            if officer_external_id not in id_to_entities:
+                end_date_str = (
+                    period_end_date.strftime("%Y-%m-%d")
+                    if period_end_date
+                    else self._get_latest_period_end_date(session).strftime("%Y-%m-%d")
+                )
+                logging.info(
+                    "Requested officer with external id %s does not have metrics for the period ending in %s",
+                    officer_external_id,
+                    end_date_str,
+                )
+                return None
 
             return id_to_entities[officer_external_id]
 
