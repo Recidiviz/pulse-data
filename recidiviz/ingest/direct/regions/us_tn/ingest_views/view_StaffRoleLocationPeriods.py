@@ -60,7 +60,7 @@ key_status_change_dates AS(
         StaffTitle, 
         update_datetime
     FROM {Staff@ALL}
-    WHERE StaffID IS NOT NULL AND StatusDate IS NOT NULL
+    WHERE StaffID IS NOT NULL
 ), 
 ranked_rows AS(
     SELECT 
@@ -73,7 +73,7 @@ create_unique_rows AS (
         StaffID,
         Status,
         SiteID, 
-        StatusDate,
+        CASE WHEN Status = 'I' THEN LAG(update_datetime) OVER (PARTITION BY StaffID ORDER BY update_datetime ASC) ELSE CAST(StatusDate AS DATETIME) END as StatusDate,
         StaffTitle,
         update_datetime,
         ROW_NUMBER() OVER (PARTITION BY StaffID ORDER BY update_datetime ASC) AS StatusChangeOrder
