@@ -573,6 +573,7 @@ class Roster(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     first_name = Column(String(255), nullable=True)
     last_name = Column(String(255), nullable=True)
     user_hash = Column(String(255), nullable=False)
+    pseudonymized_id = Column(String(255), nullable=True)
 
 
 class UserOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):

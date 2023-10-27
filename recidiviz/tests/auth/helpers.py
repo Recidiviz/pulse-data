@@ -48,6 +48,7 @@ def generate_fake_rosters(
     district: Optional[str] = None,
     first_name: Optional[str] = None,
     last_name: Optional[str] = None,
+    pseudonymized_id: Optional[str] = None,
 ) -> Roster:
     return Roster(
         state_code=region_code,
@@ -57,6 +58,7 @@ def generate_fake_rosters(
         district=district,
         first_name=first_name,
         last_name=last_name,
+        pseudonymized_id=pseudonymized_id,
         user_hash=generate_user_hash(email.lower()),
     )
 
