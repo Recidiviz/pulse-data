@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+manifest_language: 1.0.0
+input_columns:
+  - StaffID
+  - StaffSupervisorID
+  - StartDate
+  - EndDate
+  - SupervisorChangeOrder
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: StaffID
+          id_type: $literal("US_TN_STAFF_TOMIS")
+    supervisor_periods:
+      - StateStaffSupervisorPeriod:
+          external_id:
+            $concat:
+              $values:
+                - StaffID
+                - SupervisorChangeOrder
+          supervisor_staff_external_id: StaffSupervisorID
+          supervisor_staff_external_id_type: $literal("US_TN_STAFF_TOMIS")
+          start_date: StartDate
+          end_date: EndDate
