@@ -51,7 +51,11 @@ def on_successful_authorization(
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     user_state_code = app_metadata["stateCode"].upper()
 
-    user_external_id = app_metadata["externalId"]
+    user_external_id = (
+        user_state_code
+        if user_state_code == "RECIDIVIZ"
+        else app_metadata["externalId"]
+    )
     g.user_context = UserContext(
         state_code_str=user_state_code, user_external_id=user_external_id
     )
