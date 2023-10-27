@@ -45,6 +45,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
             emp_info.BDGNO as external_id,
             ARRAY_AGG(first_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS first_name,
             ARRAY_AGG(last_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS last_name,
+            CAST(NULL AS STRING) AS pseudonymized_id,
         FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest`
         LEFT JOIN `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LBCMDATA_APFX90_latest` emp_info
             ON UPPER(lname) LIKE '%' || UPPER(last_name) || '%'
@@ -62,6 +63,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
             OFFICER as external_id,
             FNAME AS first_name,
             LNAME AS last_name,
+            CAST(NULL AS STRING) AS pseudonymized_id,
         FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest`
         LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
             ON OFFICER = ids.external_id_to_map AND 'US_ND' = ids.state_code
@@ -99,6 +101,7 @@ INGESTED_PRODUCT_USERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "district",
         "first_name",
         "last_name",
+        "pseudonymized_id",
     ],
 )
 

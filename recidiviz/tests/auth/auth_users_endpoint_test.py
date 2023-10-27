@@ -145,6 +145,7 @@ class AuthUsersEndpointTestCase(TestCase):
             district="D3",
             first_name="John",
             last_name="Doe",
+            pseudonymized_id="pseudo-abc",
         )
         user_1_override = generate_fake_user_overrides(
             email="leadership@domain.org",
@@ -200,6 +201,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 "routes": {"overridden route": True},
                 "featureVariants": {"overridden variant": True},
                 "userHash": _LEADERSHIP_USER_HASH,
+                "pseudonymizedId": None,
             },
             {
                 "allowedSupervisionLocationIds": "",
@@ -215,6 +217,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 "routes": None,
                 "featureVariants": None,
                 "userHash": _SUPERVISION_STAFF_HASH,
+                "pseudonymizedId": "pseudo-abc",
             },
         ]
         with self.app.test_request_context():
@@ -255,6 +258,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 "routes": {"A": True},
                 "featureVariants": None,
                 "userHash": _LEADERSHIP_USER_HASH,
+                "pseudonymizedId": None,
             },
         ]
         with self.app.test_request_context():
@@ -304,6 +308,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 "routes": {"A": True, "C": False},
                 "featureVariants": {"C": True},
                 "userHash": _LEADERSHIP_USER_HASH,
+                "pseudonymizedId": None,
             },
         ]
         with self.app.test_request_context():
@@ -348,6 +353,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 "routes": None,
                 "featureVariants": None,
                 "userHash": _LEADERSHIP_USER_HASH,
+                "pseudonymizedId": None,
             },
         ]
         with self.app.test_request_context():
@@ -368,6 +374,7 @@ class AuthUsersEndpointTestCase(TestCase):
             external_id="ABC",
             role="leadership_role",
             district="District",
+            pseudonymized_id="pseudo-ABC",
         )
         user_2 = generate_fake_rosters(
             email="user@domain.org",
@@ -398,6 +405,7 @@ class AuthUsersEndpointTestCase(TestCase):
             "routes": {"A": True, "B": False},
             "featureVariants": {"D": "E"},
             "userHash": _PARAMETER_USER_HASH,
+            "pseudonymizedId": "pseudo-ABC",
         }
         response = self.client.get(
             self.user,
@@ -477,6 +485,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _ADD_USER_HASH,
+                    "pseudonymizedId": None,
                 },
                 {  # handles MO's specific logic
                     "allowedSupervisionLocationIds": "1, 2",
@@ -492,6 +501,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"A": True, "B": False},
                     "featureVariants": {"D": "E"},
                     "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -669,6 +679,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"A": True},
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -684,6 +695,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"B": True},
                     "featureVariants": None,
                     "userHash": _SUPERVISION_STAFF_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -736,6 +748,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -786,6 +799,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -837,6 +851,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -915,6 +930,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"A": True},
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -930,6 +946,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"B": True},
                     "featureVariants": None,
                     "userHash": _SUPERVISION_STAFF_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -1007,6 +1024,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"A": True},
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -1077,6 +1095,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": {"A": True},
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -1098,6 +1117,7 @@ class AuthUsersEndpointTestCase(TestCase):
             district="D1",
             first_name="Test",
             last_name="User",
+            pseudonymized_id="pseudo-123",
         )
         override_user = generate_fake_user_overrides(
             email="user@domain.org",
@@ -1145,6 +1165,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": "pseudo-123",
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -1160,6 +1181,7 @@ class AuthUsersEndpointTestCase(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(

@@ -86,6 +86,7 @@ def get_users_query(session: Session) -> Query:
                 UserOverride.user_hash,
                 Roster.user_hash,
             ).label("user_hash"),
+            Roster.pseudonymized_id,
         )
         .select_from(Roster)
         .join(

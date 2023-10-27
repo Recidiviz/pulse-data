@@ -192,6 +192,7 @@ class AuthEndpointTests(TestCase):
             district="D1",
             first_name="Test",
             last_name="User",
+            pseudonymized_id="pseudo-123",
         )
         add_entity_to_database_session(self.database_key, [user])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -220,6 +221,7 @@ class AuthEndpointTests(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": "pseudo-123",
                 }
             ]
             response = self.client.get(
@@ -269,6 +271,7 @@ class AuthEndpointTests(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
                 }
             ]
             response = self.client.get(
@@ -365,6 +368,7 @@ class AuthEndpointTests(TestCase):
                         "variant1": "true",
                     },
                     "userHash": _USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             response = self.client.get(
@@ -428,6 +432,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {"C": "D"},
                     "stateCode": "US_TN",
                     "userHash": _USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
         response = self.client.get(
@@ -520,6 +525,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {"E": "F"},
                     "stateCode": "US_MO",
                     "userHash": _USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
         response = self.client.get(
@@ -578,6 +584,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {"E": "F", "G": "H"},
                     "stateCode": "US_CO",
                     "userHash": _USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
         response = self.client.get(
@@ -638,6 +645,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": None,
                     "stateCode": "US_ID",
                     "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
@@ -684,6 +692,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": None,
                     "stateCode": "US_TN",
                     "userHash": _PARAMETER_USER_HASH,
+                    "pseudonymizedId": None,
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
@@ -1237,6 +1246,7 @@ class AuthEndpointTests(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
+                    "pseudonymizedId": None,
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -1252,6 +1262,7 @@ class AuthEndpointTests(TestCase):
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _SUPERVISION_STAFF_HASH,
+                    "pseudonymizedId": "pseudo-3706",
                 },
             ]
             response = self.client.get(
