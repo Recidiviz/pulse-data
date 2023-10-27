@@ -15,8 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_TN implementation of the StateSpecificViolationDelegate."""
+import datetime
+from typing import List
 
+from dateutil.relativedelta import relativedelta
 
+from recidiviz.common.date import DateRange
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
@@ -24,3 +31,24 @@ from recidiviz.pipelines.utils.state_utils.state_specific_violations_delegate im
 
 class UsTnViolationDelegate(StateSpecificViolationDelegate):
     """US_TN implementation of the StateSpecificViolationDelegate."""
+
+    def violation_history_window_relevant_to_critical_date(
+        self,
+        critical_date: datetime.date,
+        sorted_and_filtered_violation_responses: List[
+            NormalizedStateSupervisionViolationResponse
+        ],
+        default_violation_history_window_months: int,
+    ) -> DateRange:
+        """For US_TN we look for violation responses with a response_date within 10 days after
+        a critical date. We set the lower bound to 12 months like the default.
+        """
+
+        violation_window_lower_bound_inclusive = critical_date - relativedelta(
+            months=12
+        )
+        violation_window_upper_bound_exclusive = critical_date + relativedelta(days=10)
+        return DateRange(
+            lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
+            upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
+        )

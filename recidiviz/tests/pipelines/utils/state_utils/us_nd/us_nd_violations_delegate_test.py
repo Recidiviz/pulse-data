@@ -132,14 +132,14 @@ class TestFilterViolationResponses(unittest.TestCase):
 
 
 class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
-    """Tests the US_ND specific implementation of violation_history_window_pre_critical_date
+    """Tests the US_ND specific implementation of violation_history_window_relevant_to_critical_date
     function on the UsNDViolationDelegate."""
 
-    def test_us_nd_violation_history_window_pre_critical_date(
+    def test_us_nd_violation_history_window_relevant_to_critical_date(
         self,
     ) -> None:
         violation_window = (
-            UsNdViolationDelegate().violation_history_window_pre_critical_date(
+            UsNdViolationDelegate().violation_history_window_relevant_to_critical_date(
                 critical_date=date(2000, 1, 1),
                 sorted_and_filtered_violation_responses=[],
                 default_violation_history_window_months=0,

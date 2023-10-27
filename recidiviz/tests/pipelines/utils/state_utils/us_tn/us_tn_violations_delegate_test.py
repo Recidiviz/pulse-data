@@ -16,8 +16,10 @@
 #  =============================================================================
 """"Tests the us_tn_violation_delegate.py file."""
 import unittest
+from datetime import date
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import DateRange
 from recidiviz.pipelines.utils.state_utils.us_tn.us_tn_violations_delegate import (
     UsTnViolationDelegate,
 )
@@ -32,3 +34,28 @@ class TestUsTnViolationsDelegate(unittest.TestCase):
         self.delegate = UsTnViolationDelegate()
 
     # ~~ Add new tests here ~~
+
+
+class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
+    """Tests the US_TN specific implementation of violation_history_window_relevant_to_critical_date
+    function on the UsNDViolationDelegate."""
+
+    def test_us_tn_violation_history_window_relevant_to_critical_date(
+        self,
+    ) -> None:
+        violation_window = (
+            UsTnViolationDelegate().violation_history_window_relevant_to_critical_date(
+                critical_date=date(2000, 1, 1),
+                sorted_and_filtered_violation_responses=[],
+                default_violation_history_window_months=0,
+            )
+        )
+
+        expected_violation_window = DateRange(
+            # 12 months before
+            lower_bound_inclusive_date=date(1999, 1, 1),
+            # 10 days, including admission_date
+            upper_bound_exclusive_date=date(2000, 1, 11),
+        )
+
+        self.assertEqual(expected_violation_window, violation_window)
