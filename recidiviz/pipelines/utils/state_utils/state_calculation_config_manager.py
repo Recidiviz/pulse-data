@@ -1316,7 +1316,13 @@ def _get_state_specific_violation_response_normalization_delegate(
     if state_code == StateCode.US_PA.value:
         return UsPaViolationResponseNormalizationDelegate()
     if state_code == StateCode.US_TN.value:
-        return UsTnViolationResponseNormalizationDelegate()
+        if incarceration_periods is None:
+            raise ValueError(
+                "Missing StateIncarcerationPeriod entity for UsTnViolationResponseNormalizationDelegate"
+            )
+        return UsTnViolationResponseNormalizationDelegate(
+            incarceration_periods=incarceration_periods
+        )
     if state_code == StateCode.US_OZ.value:
         return UsOzViolationResponseNormalizationDelegate()
     # TODO(#10703): Remove this state_code after merging US_IX into US_ID
