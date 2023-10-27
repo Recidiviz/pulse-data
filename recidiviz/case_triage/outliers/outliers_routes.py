@@ -340,4 +340,68 @@ def create_outliers_api_blueprint() -> Blueprint:
         ]
         return jsonify({"events": results})
 
+    @api.get("/<state>/officer/<pseudonymized_officer_id>")
+    def officer(state: str, pseudonymized_officer_id: str) -> Response:
+
+        state_code = StateCode(state.upper())
+
+        try:
+            num_lookback_periods = (
+                int(request.args["num_lookback_periods"])
+                if "num_lookback_periods" in request.args
+                else None
+            )
+
+            period_end_date = (
+                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
+                if "period_end_date" in request.args
+                else None
+            )
+        except ValueError as e:
+            return make_response(
+                jsonify(f"Invalid parameters provided. Error: {str(e)}"),
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        querier = OutliersQuerier()
+
+        # Check that the requested officer exists
+        officer_entity = querier.get_supervision_officer_entity(
+            state_code, pseudonymized_officer_id, num_lookback_periods, period_end_date
+        )
+        if officer_entity is None:
+            return make_response(
+                jsonify(
+                    f"Officer with psuedonymized id not found: {pseudonymized_officer_id}"
+                ),
+                HTTPStatus.NOT_FOUND,
+            )
+
+        user_context: UserContext = g.user_context
+        supervisor = querier.get_supervisor_from_external_id(
+            state_code, user_context.user_external_id
+        )
+
+        # If the current user is identified as a supervisor, ensure that they supervise the requested officer.
+        # If the user is not a supervisor, we can assume that the user is leadership or Recidiviz and can thus view any officer.
+        if (
+            supervisor
+            and officer_entity.supervisor_external_id != supervisor.external_id
+        ):
+            return make_response(
+                jsonify(
+                    "User is supervisor, but does not supervise the requested officer."
+                ),
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        return jsonify(
+            {
+                "officer": convert_nested_dictionary_keys(
+                    officer_entity.to_json(),
+                    snake_to_camel,
+                )
+            }
+        )
+
     return api
