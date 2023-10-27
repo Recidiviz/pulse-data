@@ -9,8 +9,6 @@ input_columns:
   - sanction_info
   - ContactNoteType
 unused_columns: []
-launch_env:
-  $env: is_staging
 output:
   StatePerson:
     external_ids:
