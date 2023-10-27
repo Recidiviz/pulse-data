@@ -25,6 +25,7 @@ from airflow.models import DagBag
 
 from recidiviz.airflow.dags.monitoring.task_failure_alerts import (
     DISCRETE_CONFIGURATION_PARAMETERS,
+    KNOWN_CONFIGURATION_PARAMETERS,
 )
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER
 
@@ -89,3 +90,19 @@ class TestDagIntegrity(unittest.TestCase):
             set(parameter_keys_with_project),
             set(dag_bag.dag_ids),
         )
+
+    def test_discrete_parameters_match_known_configuration_parameters(self) -> None:
+        for (
+            dag_id,
+            discrete_parameters_list,
+        ) in DISCRETE_CONFIGURATION_PARAMETERS.items():
+
+            known_params_set = set(KNOWN_CONFIGURATION_PARAMETERS[dag_id])
+
+            missing_params = set(discrete_parameters_list) - known_params_set
+            if missing_params:
+                self.fail(
+                    f"Found parameters defined in DISCRETE_CONFIGURATION_PARAMETERS "
+                    f"for dag [{dag_id}] which are not defined for that DAG in "
+                    f"KNOWN_CONFIGURATION_PARAMETERS: {missing_params}"
+                )
