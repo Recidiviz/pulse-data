@@ -51,14 +51,14 @@ def on_successful_authorization(
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     user_state_code = app_metadata["stateCode"].upper()
 
+    user_external_id = app_metadata["externalId"]
+    g.user_context = UserContext(
+        state_code_str=user_state_code, user_external_id=user_external_id
+    )
+
     # If the user is a recidiviz user, skip endpoint checks
     if user_state_code == "RECIDIVIZ":
         return
 
     if not app_metadata.get("routes", {}).get("outliers", False):
         raise AuthorizationError(code="not_authorized", description="Access denied")
-
-    user_external_id = app_metadata["externalId"]
-    g.user_context = UserContext(
-        state_code_str=user_state_code, user_external_id=user_external_id
-    )
