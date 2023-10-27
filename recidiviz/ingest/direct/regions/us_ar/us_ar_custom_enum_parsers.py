@@ -26,6 +26,10 @@ my_enum_field:
 from typing import Optional
 
 from recidiviz.common.constants.state.state_person import StateEthnicity
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodTerminationReason,
+)
 
 
 def parse_ethnic_group(
@@ -51,3 +55,119 @@ def parse_ethnic_group(
         return StateEthnicity.EXTERNAL_UNKNOWN
 
     return StateEthnicity.NOT_HISPANIC if raw_text else None
+
+
+def parse_non_parole_period_start_reason(
+    raw_text: str,
+) -> StateSupervisionPeriodAdmissionReason:
+    """Custom parser for concatenated non-parole start reason codes."""
+    # TODO(#21687): Separate parsers are currently needed to correctly interpret G01
+    # (Intake new case) for parole and non-parole periods. This could be handled more cleanly
+    # by pulling event reason into the supervision period view, since that data distinguishes
+    # between court sentences/incarceration releases for G01 events.
+    codes = raw_text.split("-")
+
+    if "G01" in codes:
+        return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+    if "S41" in codes:
+        return StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION
+    if "G05" in codes:
+        return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
+    if "L05" in codes:
+        return StateSupervisionPeriodAdmissionReason.ABSCONSION
+    if any(code in ["S48", "S31"] for code in codes):
+        return StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
+    if "G03" in codes:
+        return StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
+    if any(
+        code
+        in [
+            "G02",
+            "G07",
+            "G08",
+            "S02",
+            "S04",
+            "S05",
+            "S11",
+            "S12",
+            "S27",
+            "S28",
+            "S35",
+            "S36",
+            "S37",
+            "S38",
+            "S40",
+        ]
+        for code in codes
+    ):
+        return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+
+    return StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN
+
+
+def parse_parole_period_start_reason(
+    raw_text: str,
+) -> StateSupervisionPeriodAdmissionReason:
+    """Custom parser for concatenated parole start reason codes."""
+    codes = raw_text.split("-")
+
+    if "G01" in codes:
+        return StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION
+
+    return parse_non_parole_period_start_reason(raw_text)
+
+
+def parse_supervision_period_end_reason(
+    raw_text: str,
+) -> StateSupervisionPeriodTerminationReason:
+    """Custom parser for concatenated end reason codes."""
+    codes = raw_text.split("-")
+    if any(code in ["L05", "S25"] for code in codes):
+        if "G05" in codes:
+            # Same-day absconsions and returns are treated as unknown.
+            return StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
+        return StateSupervisionPeriodTerminationReason.ABSCONSION
+    if "G05" in codes:
+        return StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION
+    if any(code in ["L21", "S30", "S47"] for code in codes):
+        return StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION
+    if "L10" in codes:
+        return StateSupervisionPeriodTerminationReason.DEATH
+    if any(code in ["L12", "L13"] for code in codes):
+        return StateSupervisionPeriodTerminationReason.DISCHARGE
+    if "L11" in codes:
+        return StateSupervisionPeriodTerminationReason.EXPIRATION
+    if "L09" in codes:
+        return StateSupervisionPeriodTerminationReason.PARDONED
+    if any(code in ["L06", "L07", "L08"] for code in codes):
+        return StateSupervisionPeriodTerminationReason.REVOCATION
+    if "L03" in codes:
+        return StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION
+    if any(
+        code
+        in [
+            "G02",
+            "G07",
+            "G08",
+            "S02",
+            "S04",
+            "S05",
+            "S11",
+            "S12",
+            "S13",
+            "S27",
+            "S28",
+            "S31",
+            "S35",
+            "S36",
+            "S37",
+            "S38",
+            "S40",
+            "S41",
+        ]
+        for code in codes
+    ):
+        return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+    if "S90" in codes:
+        return StateSupervisionPeriodTerminationReason.VACATED
+    return StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN

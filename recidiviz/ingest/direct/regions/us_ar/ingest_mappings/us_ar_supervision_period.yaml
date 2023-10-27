@@ -1,0 +1,164 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - SUPVEVNTDATETIME
+  - END_DATE
+  - SUPVTYPE
+  - SUPVCOUNTY
+  - PPOFFICE
+  - PPOFFICERID
+  - SPECIAL_STATUS
+  - SEQ
+  - START_REASON
+  - END_REASON
+unused_columns: []
+variables:
+  - is_isc:
+      $in:
+        $value: SUPVTYPE
+        $options:
+          - $literal("02") # Parole (ISC)
+          - $literal("17") # Dual - Parole & ISC
+          - $literal("23") # Probation (ISC)
+          - $literal("19") # Dual - Probation & ISC
+          - $literal("26") # Dual - Drug Court/Probation ISC
+          - $literal("27") # Dual - Drug Court/Parole ISC
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    supervision_periods:
+      - StateSupervisionPeriod:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - SEQ
+          supervision_type:
+            $conditional:
+              - $if:
+                  $equal:
+                    - SPECIAL_STATUS
+                    - $literal("ABSCONDED")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SUPVTYPE
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.PAROLE:
+                        - "02" # Parole (ISC)
+                        - "03" # Parole (PE)
+                        - "04" # Parole (TE)
+                        - "05" # Parole (Parole Board)
+                        - "09" # Dual - Parole & SIS
+                        - "15" # Dual - Parole & SIS
+                        - "17" # Dual - Parole & ISC
+                        - "0A" # Parole (Act 539)
+                        - "0F" # Dual Act 539 & Parole (TE)
+                      StateSupervisionPeriodSupervisionType.PROBATION:
+                        - "11" # Probation (Regular)
+                        - "12" # Probation Plus
+                        - "14" # Drug Court Probation
+                        - "18" # Probation (Unsupervised)
+                        - "23" # Probation (ISC)
+                        - "07" # Dual - Boot Camp/Probation
+                        - "16" # Dual - Probation & SIS
+                        - "19" # Dual - Probation & ISC
+                        - "24" # Dual - Drug Court and Probation
+                        - "25" # Dual - Drug Court/SIS
+                        - "26" # Dual - Drug Court/Probation ISC
+                        - "0B" # Dual Act 539 & Probation
+                      StateSupervisionPeriodSupervisionType.DUAL:
+                        - "08" # Dual - Parole & Probation
+                        - "22" # Dual - Drug Court and Parole
+                        - "27" # Dual - Drug Court/Parole ISC
+                      StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
+                        - "06" # Boot Camp
+                        - "13" # ACT 1994 / 346
+                        - "20" # Suspended (Direct)
+                        - "21" # Suspended (Indirect)
+                        - "32" # Sex Offender Extended Supervision
+                        - "40" # Re-Entry Program
+                        - "99" # Conversion data
+                      StateSupervisionPeriodSupervisionType.INVESTIGATION:
+                        - "30" # Pre-Trial
+                        - "31" # Holding for ADC
+          start_date: SUPVEVNTDATETIME
+          termination_date: END_DATE
+          supervision_site: PPOFFICE
+          county_code: SUPVCOUNTY
+          supervising_officer_staff_external_id: PPOFFICERID
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: PPOFFICERID
+                $then: $literal("US_AR_PARTYID")
+          custodial_authority:
+            $conditional:
+              - $if:
+                  $equal:
+                    - SPECIAL_STATUS
+                    - $literal("INCARCERATED")
+                $then: $literal_enum(StateCustodialAuthority.STATE_PRISON) # TODO(#21687): distinguish between prison/jail auth.
+              - $else_if: $variable(is_isc)
+                $then: $literal_enum(StateCustodialAuthority.OTHER_STATE)
+              - $else: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
+          admission_reason:
+            $conditional:
+              - $if:
+                  $not_null: START_REASON
+                $then:
+                  $conditional:
+                    - $if:
+                        $in:
+                          $value: SUPVTYPE
+                          $options:
+                            - $literal("02") # Parole (ISC)
+                            - $literal("03") # Parole (PE)
+                            - $literal("04") # Parole (TE)
+                            - $literal("05") # Parole (Parole Board)
+                            - $literal("09") # Dual - Parole & SIS
+                            - $literal("17") # Dual - Parole & ISC
+                            - $literal("0A") # Parole (Act 539)
+                      $then:
+                        $enum_mapping:
+                          $raw_text: START_REASON
+                          $custom_parser: us_ar_custom_enum_parsers.parse_parole_period_start_reason
+                    - $else:
+                        $enum_mapping:
+                          $raw_text: START_REASON
+                          $custom_parser: us_ar_custom_enum_parsers.parse_non_parole_period_start_reason
+          termination_reason:
+            $conditional:
+              - $if:
+                  $not_null: END_REASON
+                $then:
+                  $enum_mapping:
+                    $raw_text: END_REASON
+                    $custom_parser: us_ar_custom_enum_parsers.parse_supervision_period_end_reason
+          supervision_level:
+            $conditional:
+              - $if: $variable(is_isc)
+                $then: $literal_enum(StateSupervisionLevel.INTERSTATE_COMPACT)
+              - $else_if:
+                  $equal:
+                    - SUPVTYPE
+                    - $literal("30")
+                $then: $literal_enum(StateSupervisionLevel.INTAKE)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: SPECIAL_STATUS
+                    $mappings:
+                      StateSupervisionLevel.ABSCONSION: "ABSCONDED"
+                      StateSupervisionLevel.IN_CUSTODY: "INCARCERATED"
+                      StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: "ELECTRONIC_MONITORING"
+                      StateSupervisionLevel.RESIDENTIAL_PROGRAM: "TRANSITIONAL_LIVING"
+                      StateSupervisionLevel.UNSUPERVISED: "UNSUPERVISED"
+                      StateSupervisionLevel.INTERNAL_UNKNOWN:
+                        - "NONE"
+                        - "INACTIVE"
