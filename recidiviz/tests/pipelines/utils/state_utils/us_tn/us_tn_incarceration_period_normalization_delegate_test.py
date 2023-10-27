@@ -16,8 +16,13 @@
 #  =============================================================================
 """Tests us_tn_incarceration_period_normalization_delegate.py."""
 import unittest
+from datetime import date
 
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.utils.state_utils.us_tn.us_tn_incarceration_period_normalization_delegate import (
     UsTnIncarcerationNormalizationDelegate,
 )
@@ -31,4 +36,47 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate = UsTnIncarcerationNormalizationDelegate()
 
-    # ~~ Add new tests here ~~
+    def test_get_incarceration_admission_violation_type_technical(self) -> None:
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 6, 1),
+            release_date=date(2022, 7, 1),
+            admission_reason_raw_text="PAFA-VIOLT",
+            external_id="ip-1",
+        )
+
+        result = self.delegate.get_incarceration_admission_violation_type(
+            incarceration_period_1
+        )
+
+        self.assertEqual(result, StateSupervisionViolationType.TECHNICAL)
+
+    def test_get_incarceration_admission_violation_type_law(self) -> None:
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 6, 1),
+            release_date=date(2022, 7, 1),
+            admission_reason_raw_text="PRFA-VIOLW",
+            external_id="ip-2",
+        )
+
+        result = self.delegate.get_incarceration_admission_violation_type(
+            incarceration_period_2
+        )
+
+        self.assertEqual(result, StateSupervisionViolationType.LAW)
+
+    def test_get_incarceration_admission_violation_type_none(self) -> None:
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            admission_date=date(2022, 6, 1),
+            release_date=date(2022, 7, 1),
+            admission_reason_raw_text="PRFA-NEWCH",
+            external_id="ip-2",
+        )
+
+        result = self.delegate.get_incarceration_admission_violation_type(
+            incarceration_period_2
+        )
+
+        self.assertEqual(result, None)
