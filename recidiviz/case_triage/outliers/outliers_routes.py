@@ -252,7 +252,7 @@ def create_outliers_api_blueprint() -> Blueprint:
         else:
             allowed_metric_ids = state_metrics
 
-        # Check that the requested officer exists
+        # Check that the requested officer exists and has metrics for the period.
         officer_entity = querier.get_supervision_officer_entity(
             state_code=state_code,
             pseudonymized_officer_id=pseudonymized_officer_id,
