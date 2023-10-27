@@ -84,7 +84,7 @@ class StateSpecificViolationDelegate(abc.ABC, StateSpecificDelegate):
             StateSupervisionViolationResponseType.CITATION,
         )
 
-    def violation_history_window_pre_critical_date(
+    def violation_history_window_relevant_to_critical_date(
         self,
         critical_date: datetime.date,
         sorted_and_filtered_violation_responses: List[

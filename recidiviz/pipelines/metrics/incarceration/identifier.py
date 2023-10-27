@@ -387,7 +387,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         )
 
         violation_history_window = (
-            violation_delegate.violation_history_window_pre_critical_date(
+            violation_delegate.violation_history_window_relevant_to_critical_date(
                 critical_date=admission_date,
                 sorted_and_filtered_violation_responses=violation_responses_for_history,
                 default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,

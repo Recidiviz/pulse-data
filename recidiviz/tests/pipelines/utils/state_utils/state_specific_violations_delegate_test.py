@@ -35,10 +35,10 @@ from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violations_dele
 
 class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
     """Tests the default behavior of the
-    violation_history_window_pre_critical_date function on the
+    violation_history_window_relevant_to_critical_date function on the
     StateSpecificViolationsDelegate."""
 
-    def test_default_violation_history_window_pre_critical_date(
+    def test_default_violation_history_window_relevant_to_critical_date(
         self,
     ) -> None:
         state_code = "US_XX"
@@ -74,7 +74,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
         )
 
         violation_window = (
-            UsXxViolationDelegate().violation_history_window_pre_critical_date(
+            UsXxViolationDelegate().violation_history_window_relevant_to_critical_date(
                 critical_date=date(2009, 12, 14),
                 sorted_and_filtered_violation_responses=[
                     supervision_violation_response_1,
@@ -92,7 +92,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
 
         self.assertEqual(expected_violation_window, violation_window)
 
-    def test_default_violation_history_window_pre_critical_date_filter_after(
+    def test_default_violation_history_window_relevant_to_critical_date_filter_after(
         self,
     ) -> None:
         state_code = "US_XX"
@@ -129,7 +129,7 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
         )
 
         violation_window = (
-            UsXxViolationDelegate().violation_history_window_pre_critical_date(
+            UsXxViolationDelegate().violation_history_window_relevant_to_critical_date(
                 critical_date=date(2009, 12, 14),
                 sorted_and_filtered_violation_responses=[
                     supervision_violation_response_1,
@@ -147,11 +147,11 @@ class TestDefaultViolationHistoryWindowPreCriticalDate(unittest.TestCase):
 
         self.assertEqual(expected_violation_window, violation_window)
 
-    def test_default_violation_history_window_pre_critical_date_no_responses(
+    def test_default_violation_history_window_relevant_to_critical_date_no_responses(
         self,
     ) -> None:
         violation_window = (
-            UsXxViolationDelegate().violation_history_window_pre_critical_date(
+            UsXxViolationDelegate().violation_history_window_relevant_to_critical_date(
                 critical_date=date(2009, 12, 14),
                 sorted_and_filtered_violation_responses=[],
                 default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
