@@ -303,10 +303,16 @@ class TestEntityValidations(unittest.TestCase):
         )
 
         error_messages = validate_root_entity(person, self.field_index)
-        self.assertRegex(
-            one(error_messages),
-            r'More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]',
+        expected_error_message = (
+            "Found [2] state_task_deadline entities with (state_code=US_XX, "
+            "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
+            "task_subtype=None, "
+            'task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, '
+            "update_datetime=2023-02-01 11:19:00). First 2 entities found:\n"
+            "  * StateTaskDeadline(task_deadline_id=1)\n"
+            "  * StateTaskDeadline(task_deadline_id=2)"
         )
+        self.assertEqual(expected_error_message, one(error_messages))
 
     def test_entity_tree_unique_constraints_invalid_all_nonnull(self) -> None:
         person = state_entities.StatePerson(
@@ -350,10 +356,16 @@ class TestEntityValidations(unittest.TestCase):
         )
 
         error_messages = validate_root_entity(person, self.field_index)
-        self.assertRegex(
-            one(error_messages),
-            r'More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=my_subtype, task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]',
+        expected_error_message = (
+            "Found [2] state_task_deadline entities with (state_code=US_XX, "
+            "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
+            "task_subtype=my_subtype, "
+            'task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, '
+            "update_datetime=2023-02-01 11:19:00). First 2 entities found:\n"
+            "  * StateTaskDeadline(task_deadline_id=1)\n"
+            "  * StateTaskDeadline(task_deadline_id=2)"
         )
+        self.assertEqual(expected_error_message, one(error_messages))
 
     def test_entity_tree_unique_constraints_task_deadline_valid_tree(self) -> None:
         person = state_entities.StatePerson(
@@ -442,12 +454,22 @@ class TestEntityValidations(unittest.TestCase):
         )
 
         error_messages = validate_root_entity(person, self.field_index)
-        expected_regexes = [
+        self.assertEqual(2, len(error_messages))
+        self.assertRegex(
+            error_messages[0],
             r"^Found \[StatePerson\] with id \[3111\] missing an external_id:",
-            r'More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\]',
-        ]
-        for i, error_message in enumerate(error_messages):
-            self.assertRegex(error_message, expected_regexes[i])
+        )
+
+        expected_error_message = (
+            "Found [2] state_task_deadline entities with (state_code=US_XX, "
+            "task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, "
+            "task_subtype=None, "
+            'task_metadata={"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"}, '
+            "update_datetime=2023-02-01 11:19:00). First 2 entities found:\n"
+            "  * StateTaskDeadline(task_deadline_id=1)\n"
+            "  * StateTaskDeadline(task_deadline_id=2)"
+        )
+        self.assertEqual(expected_error_message, error_messages[1])
 
 
 class TestUniqueConstraintValid(unittest.TestCase):
