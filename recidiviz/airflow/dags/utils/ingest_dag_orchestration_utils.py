@@ -17,19 +17,21 @@
 """
 Helper functions for orchestrating the Ingest Airflow Dag.
 """
-from datetime import datetime
 from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IS_PRIMARY_INSTANCE_PROPERTY_NAME,
     IS_SECONDARY_INSTANCE_PROPERTY_NAME,
-    IngestViewResultsParserDelegateImpl,
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
@@ -48,43 +50,28 @@ def should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value.lower()
     )
-    primary_manifest_collector = IngestViewManifestCollector(
+    manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewResultsParserDelegateImpl(
-            region=region,
-            schema_type=SchemaType.STATE,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            results_update_datetime=datetime.now(),
-        ),
-    )
-
-    secondary_manifest_collector = IngestViewManifestCollector(
-        region=region,
-        delegate=IngestViewResultsParserDelegateImpl(
-            region=region,
-            schema_type=SchemaType.STATE,
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            results_update_datetime=datetime.now(),
+        delegate=IngestViewManifestCompilerDelegateImpl(
+            region=region, schema_type=SchemaType.STATE
         ),
     )
 
     differing_launch_envs = False
-    for (
-        ingest_view_name,
-        primary_manifest,
-    ) in primary_manifest_collector.ingest_view_to_manifest.items():
-        secondary_manifest = secondary_manifest_collector.ingest_view_to_manifest[
-            ingest_view_name
-        ]
-        differing_launch_envs |= (
-            primary_manifest.should_launch != secondary_manifest.should_launch
+    for manifest in manifest_collector.ingest_view_to_manifest.values():
+        differing_launch_envs |= manifest.should_launch(
+            IngestViewContentsContextImpl(ingest_instance=DirectIngestInstance.PRIMARY)
+        ) != manifest.should_launch(
+            IngestViewContentsContextImpl(
+                ingest_instance=DirectIngestInstance.SECONDARY
+            )
         )
 
     return differing_launch_envs or any(
         manifest.output.env_properties_referenced().intersection(
             {IS_PRIMARY_INSTANCE_PROPERTY_NAME, IS_SECONDARY_INSTANCE_PROPERTY_NAME}
         )
-        for manifest in primary_manifest_collector.ingest_view_to_manifest.values()
+        for manifest in manifest_collector.ingest_view_to_manifest.values()
     )
 
 
@@ -96,14 +83,18 @@ def has_launchable_ingest_views(
     )
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewResultsParserDelegateImpl(
-            region=region,
-            schema_type=SchemaType.STATE,
-            ingest_instance=ingest_instance,
-            results_update_datetime=datetime.now(),
+        delegate=IngestViewManifestCompilerDelegateImpl(
+            region=region, schema_type=SchemaType.STATE
         ),
     )
-    return len(ingest_manifest_collector.launchable_ingest_views()) > 0
+    return (
+        len(
+            ingest_manifest_collector.launchable_ingest_views(
+                ingest_instance=ingest_instance
+            )
+        )
+        > 0
+    )
 
 
 def _should_enable_state_and_instance(

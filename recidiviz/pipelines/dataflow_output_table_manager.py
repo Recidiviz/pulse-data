@@ -53,8 +53,8 @@ from recidiviz.ingest.direct.dataset_config import (
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
@@ -373,16 +373,15 @@ def _get_ingest_view_builders(
     )
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewResultsParserDelegateImpl(
-            region=region,
-            schema_type=SchemaType.STATE,
-            ingest_instance=ingest_instance,
-            results_update_datetime=datetime.datetime.now(),
+        delegate=IngestViewManifestCompilerDelegateImpl(
+            region=region, schema_type=SchemaType.STATE
         ),
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
-        ingest_manifest_collector.launchable_ingest_views(),
+        ingest_manifest_collector.launchable_ingest_views(
+            ingest_instance=ingest_instance
+        ),
     )
 
     return view_collector.collect_query_builders()

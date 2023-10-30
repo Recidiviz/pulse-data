@@ -15,16 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for ingest_view_manifest_collector.py."""
-import datetime
 import unittest
 
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
@@ -41,11 +39,8 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
         )
         self.ingest_view_manifest_collector = IngestViewManifestCollector(
             self.fake_region,
-            IngestViewResultsParserDelegateImpl(
-                region=self.fake_region,
-                schema_type=SchemaType.STATE,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                results_update_datetime=datetime.datetime.now(),
+            IngestViewManifestCompilerDelegateImpl(
+                region=self.fake_region, schema_type=SchemaType.STATE
             ),
         )
 

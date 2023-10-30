@@ -16,7 +16,6 @@
 # =============================================================================
 """The ingest pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details
 on how to launch a local run."""
-from datetime import datetime
 from typing import Any, Dict, Optional, Tuple, Type
 
 import apache_beam as beam
@@ -27,12 +26,12 @@ from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
     IngestViewManifest,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     INGEST_VIEW_RESULTS_UPDATE_DATETIME,
-    IngestViewResultsParserDelegateImpl,
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
@@ -121,14 +120,13 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         )
         ingest_manifest_collector = IngestViewManifestCollector(
             region=region,
-            delegate=IngestViewResultsParserDelegateImpl(
-                region=region,
-                schema_type=SchemaType.STATE,
-                ingest_instance=ingest_instance,
-                results_update_datetime=datetime.now(),
+            delegate=IngestViewManifestCompilerDelegateImpl(
+                region=region, schema_type=SchemaType.STATE
             ),
         )
-        all_launchable_views = ingest_manifest_collector.launchable_ingest_views()
+        all_launchable_views = ingest_manifest_collector.launchable_ingest_views(
+            ingest_instance=ingest_instance
+        )
         view_collector = DirectIngestViewQueryBuilderCollector(
             region, all_launchable_views
         )
@@ -203,7 +201,9 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 >> GenerateEntities(
                     state_code=state_code,
                     ingest_instance=ingest_instance,
-                    ingest_view_name=ingest_view,
+                    ingest_view_manifest=ingest_manifest_collector.ingest_view_to_manifest[
+                        ingest_view
+                    ],
                 )
                 | f"Merge {ingest_view} entities using IngestViewTreeMerger within same date and external ID."
                 >> MergeIngestViewRootEntityTrees(

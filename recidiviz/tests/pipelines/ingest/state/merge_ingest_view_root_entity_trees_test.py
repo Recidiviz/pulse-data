@@ -16,16 +16,26 @@
 # =============================================================================
 """Tests the MergeIngestViewRootEntityTrees PTransform."""
 from datetime import date, datetime
+from typing import Iterable, List, Tuple
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
+from dateutil import parser
 from mock import patch
+from more_itertools import one
 
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
+from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
+    UPPER_BOUND_DATETIME_COL_NAME,
+)
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
@@ -35,6 +45,9 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
 )
 from recidiviz.pipelines.ingest.state import pipeline
+from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
+    ADDITIONAL_SCHEMA_COLUMNS,
+)
 from recidiviz.tests.pipelines.ingest.state.test_case import StateIngestPipelineTestCase
 
 
@@ -47,6 +60,41 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
         self.field_index = CoreEntityFieldIndex()
+
+    def _get_input_root_entities_with_upperbound_dates(
+        self, *, ingest_view_name: str, test_name: str
+    ) -> Iterable[Tuple[float, Entity]]:
+        """Reads fake ingest view input rows from the fixture file associated with the
+        provided |ingest_view_name| and |test_name|, then parses the rows into root
+        entity trees, returning those along with their associated upper bound date.
+        """
+        rows = list(
+            self.get_ingest_view_results_from_fixture(
+                ingest_view_name=ingest_view_name, test_name=test_name
+            )
+        )
+        results: List[Tuple[float, Entity]] = []
+        for row in rows:
+            upper_bound_date = parser.isoparse(row[UPPER_BOUND_DATETIME_COL_NAME])
+            for column in ADDITIONAL_SCHEMA_COLUMNS:
+                row.pop(column.name)
+            results.append(
+                (
+                    upper_bound_date.timestamp(),
+                    one(
+                        self.ingest_view_manifest_collector.ingest_view_to_manifest[
+                            ingest_view_name
+                        ].parse_contents(
+                            contents_iterator=iter([row]),
+                            context=IngestViewContentsContextImpl(
+                                ingest_instance=self.ingest_instance,
+                                results_update_datetime=upper_bound_date,
+                            ),
+                        )
+                    ),
+                )
+            )
+        return iter(results)
 
     def test_merge_root_entity_trees(self) -> None:
         expected_output = [
@@ -102,7 +150,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
         output = (
             self.test_pipeline
             | beam.Create(
-                self.get_expected_root_entities_with_upperbound_dates(
+                self._get_input_root_entities_with_upperbound_dates(
                     ingest_view_name="ingestMultipleChildren",
                     test_name="ingestMultipleChildren",
                 )

@@ -64,7 +64,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         self.setup_single_ingest_view_raw_data_bq_tables(
             ingest_view_name="ingest12", test_name="ingest12"
         )
-        expected_ingest_view_output = self.get_expected_ingest_view_results(
+        expected_ingest_view_output = self.get_ingest_view_results_from_fixture(
             ingest_view_name="ingest12", test_name="ingest12"
         )
 
@@ -95,7 +95,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         self.setup_single_ingest_view_raw_data_bq_tables(
             ingest_view_name="ingest12", test_name="ingest12_latest"
         )
-        expected_latest_ingest_view_output = self.get_expected_ingest_view_results(
+        expected_latest_ingest_view_output = self.get_ingest_view_results_from_fixture(
             ingest_view_name="ingest12", test_name="ingest12_latest"
         )
 

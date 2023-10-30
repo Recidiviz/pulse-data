@@ -78,14 +78,18 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
     def test_state_ingest_pipeline(self) -> None:
         self.setup_region_raw_data_bq_tables(test_name="ingest_integration")
         expected_ingest_view_output = {
-            ingest_view: self.get_expected_ingest_view_results(
+            ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name="ingest_integration"
             )
-            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views(
+                ingest_instance=self.ingest_instance
+            )
         }
         expected_entity_types = {
             entity_type
-            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views(
+                ingest_instance=self.ingest_instance
+            )
             for entity_type in self.get_expected_output_entity_types(
                 ingest_view_name=ingest_view, test_name="ingest_integration"
             )
@@ -96,10 +100,12 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
     def test_state_ingest_pipeline_ingest_view_results_only(self) -> None:
         self.setup_region_raw_data_bq_tables(test_name="ingest_integration")
         expected_ingest_view_output = {
-            ingest_view: self.get_expected_ingest_view_results(
+            ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name="ingest_integration"
             )
-            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views(
+                ingest_instance=self.ingest_instance
+            )
         }
         self.run_test_pipeline(
             expected_ingest_view_output, [], ingest_view_results_only=True
@@ -109,16 +115,20 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
         self.setup_region_raw_data_bq_tables(test_name="ingest_integration")
         subset_of_ingest_views = ["ingest12", "ingestTaskDeadline"]
         expected_ingest_view_output = {
-            ingest_view: self.get_expected_ingest_view_results(
+            ingest_view: self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view, test_name="ingest_integration"
             )
             if ingest_view in subset_of_ingest_views
             else []
-            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views(
+                ingest_instance=self.ingest_instance
+            )
         }
         expected_entity_types = {
             entity_type
-            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views()
+            for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views(
+                ingest_instance=self.ingest_instance
+            )
             for entity_type in self.get_expected_output_entity_types(
                 ingest_view_name=ingest_view, test_name="ingest_integration"
             )

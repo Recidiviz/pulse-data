@@ -44,11 +44,14 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 )
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
-    IngestViewResultsParser,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifestCompiler,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     to_string_value_converter,
@@ -126,12 +129,11 @@ def parse_results(
     write_results: bool,
 ) -> None:
     """Parses the ingest view results, collecting any errors and writing them to a file."""
-    ingest_view_file_parser = IngestViewResultsParser(
-        delegate=IngestViewResultsParserDelegateImpl(
-            region=region,
-            schema_type=SchemaType.STATE,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            results_update_datetime=datetime.now(),
+    ingest_instance = DirectIngestInstance.PRIMARY
+    results_update_datetime = datetime.now()
+    manifest_compiler = IngestViewManifestCompiler(
+        delegate=IngestViewManifestCompilerDelegateImpl(
+            region=region, schema_type=SchemaType.STATE
         )
     )
 
@@ -170,10 +172,15 @@ def parse_results(
                 print_entity_tree(result, file=results_file)
             progress.update()
 
-        ingest_view_file_parser.parse(
-            ingest_view_name=ingest_view_name,
+        manifest_compiler.compile_manifest(
+            ingest_view_name=ingest_view_name
+        ).parse_contents(
             contents_iterator=contents_handle.get_contents_iterator(),
             result_callable=result_processor,
+            context=IngestViewContentsContextImpl(
+                ingest_instance=ingest_instance,
+                results_update_datetime=results_update_datetime,
+            ),
         )
 
         progress.close()

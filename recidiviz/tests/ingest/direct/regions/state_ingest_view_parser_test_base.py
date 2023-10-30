@@ -31,16 +31,22 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     get_direct_ingest_region,
 )
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
     EntityTreeManifest,
     EnumMappingManifest,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
-    MANIFEST_LANGUAGE_VERSION_KEY,
-    IngestViewResultsParser,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
+    IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    MANIFEST_LANGUAGE_VERSION_KEY,
+    IngestViewManifestCompiler,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
     ingest_view_manifest_dir,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -100,31 +106,28 @@ class StateIngestViewParserTestBase:
     def _region(self) -> DirectIngestRegion:
         return get_direct_ingest_region(self.region_code())
 
-    def _build_parser(
-        self, ingest_instance: DirectIngestInstance
-    ) -> IngestViewResultsParser:
-        results_update_datetime = DEFAULT_UPDATE_DATETIME
-        region = self._region()
-        return IngestViewResultsParser(
-            delegate=IngestViewResultsParserDelegateImpl(
-                region=region,
+    @property
+    def _manifest_compiler(self) -> IngestViewManifestCompiler:
+        return IngestViewManifestCompiler(
+            delegate=IngestViewManifestCompilerDelegateImpl(
+                region=self._region(),
                 schema_type=self.schema_type(),
-                ingest_instance=ingest_instance,
-                results_update_datetime=results_update_datetime,
             )
         )
 
-    def _parse_manifest(self, file_tag: str) -> EntityTreeManifest:
-        # We arbitrarily pick the SECONDARY instance here - it should not matter for
-        # parsing the manifest.
-        parser = self._build_parser(DirectIngestInstance.SECONDARY)
-        manifest_ast = parser.parse_manifest(
-            manifest_path=parser.delegate.get_ingest_view_manifest_path(file_tag),
+    def _parse_manifest(self, ingest_view_name: str) -> EntityTreeManifest:
+        manifest_ast = self._manifest_compiler.compile_manifest(
+            ingest_view_name=ingest_view_name
         ).output
         return manifest_ast
 
     def _parse_enum_manifest_test(
-        self, file_tag: str, enum_parser_manifest: EnumMappingManifest
+        self,
+        file_tag: str,
+        enum_parser_manifest: EnumMappingManifest,
+        # By default, we assume we're ingesting into the SECONDARY ingest instance,
+        # which should always have the latest ingest logic updates released to it.
+        ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
     ) -> None:
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
@@ -134,7 +137,10 @@ class StateIngestViewParserTestBase:
 
         contents_handle = LocalFileContentsHandle(fixture_path, cleanup_file=False)
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
-            _ = enum_parser_manifest.build_from_row(row)
+            _ = enum_parser_manifest.build_from_row(
+                row,
+                context=IngestViewContentsContextImpl(ingest_instance=ingest_instance),
+            )
 
     def _run_parse_ingest_view_test(
         self,
@@ -156,7 +162,6 @@ class StateIngestViewParserTestBase:
 
         in_gcp_staging = project == GCP_PROJECT_STAGING
         in_gcp_prod = project == GCP_PROJECT_PRODUCTION
-        parser = self._build_parser(ingest_instance)
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
             file_name=f"{ingest_view_name}.csv",
@@ -165,12 +170,17 @@ class StateIngestViewParserTestBase:
         with patch.object(
             environment, "in_gcp_staging", return_value=in_gcp_staging
         ), patch.object(environment, "in_gcp_production", return_value=in_gcp_prod):
-            parsed_output = parser.parse(
-                ingest_view_name=ingest_view_name,
+            parsed_output = self._manifest_compiler.compile_manifest(
+                ingest_view_name=ingest_view_name
+            ).parse_contents(
                 contents_iterator=csv.DictReader(
                     LocalFileContentsHandle(
                         fixture_path, cleanup_file=False
                     ).get_contents_iterator()
+                ),
+                context=IngestViewContentsContextImpl(
+                    ingest_instance=ingest_instance,
+                    results_update_datetime=DEFAULT_UPDATE_DATETIME,
                 ),
             )
 
@@ -231,15 +241,16 @@ class StateIngestViewParserTestBase:
         if self.state_code() == StateCode.US_XX:
             # Skip template region
             return
-
-        # Make sure building all manifests doesn't crash
-        parser = self._build_parser(
-            # We arbitrarily pick the SECONDARY instance here - it should not matter for
-            # parsing the manifest.
-            DirectIngestInstance.SECONDARY
+        region = self._region()
+        collector = IngestViewManifestCollector(
+            region=region,
+            delegate=IngestViewManifestCompilerDelegateImpl(
+                region=region,
+                schema_type=self.schema_type(),
+            ),
         )
-        for manifest_path in self._ingest_view_manifest_paths():
-            manifest_ast = parser.parse_manifest(manifest_path).output
+        for manifest in collector.ingest_view_to_manifest.values():
+            manifest_ast = manifest.output
             self.test.assertIsInstance(manifest_ast, EntityTreeManifest)
 
     def test_all_ingest_view_manifests_are_tested(self) -> None:

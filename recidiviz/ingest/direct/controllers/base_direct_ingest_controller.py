@@ -67,11 +67,11 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
-    IngestViewResultsParser,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifestCompiler,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
@@ -861,12 +861,9 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             )
 
         processor = IngestViewProcessor(
-            ingest_view_file_parser=IngestViewResultsParser(
-                delegate=IngestViewResultsParserDelegateImpl(
-                    region=self.region,
-                    schema_type=SchemaType.STATE,
-                    ingest_instance=self.ingest_instance,
-                    results_update_datetime=args.upper_bound_datetime_inclusive,
+            ingest_view_manifest_compiler=IngestViewManifestCompiler(
+                delegate=IngestViewManifestCompilerDelegateImpl(
+                    region=self.region, schema_type=SchemaType.STATE
                 )
             )
         )

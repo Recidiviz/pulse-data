@@ -15,15 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Interface and implementation for a delegate that abstracts state/schema specific
-logic from the ingest view parser.
+logic from the IngestViewManifestCompiler.
 """
 
 import abc
-import datetime
 import os
 from enum import Enum
 from types import ModuleType
-from typing import Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Type
 
 from recidiviz.common.constants import state as state_constants
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
@@ -31,7 +30,6 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
 from recidiviz.persistence.entity.entity_deserialize import (
@@ -46,17 +44,22 @@ from recidiviz.persistence.entity.state import (
     deserialize_entity_factories as state_deserialize_entity_factories,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.utils import environment
 
 
-class IngestViewResultsParserDelegate:
-    """Interface and for a delegate that abstracts state/schema specific logic from the
-    ingest view parser.
+class IngestViewManifestCompilerDelegate:
+    """Interface for a delegate that abstracts state/schema specific logic from the
+    IngestViewManifestCompiler.
     """
 
     @abc.abstractmethod
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
-        """Returns the path to the ingest view manifest for a given file tag."""
+        """Returns the path to the ingest view manifest for a given ingest name."""
+
+    @abc.abstractmethod
+    def get_env_property_type(self, property_name: str) -> Type:
+        """Returns the expected value type for the given env property (i.e. the type
+        of the value returned by IngestViewContentsContext.get_env_property()).
+        """
 
     @abc.abstractmethod
     def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
@@ -82,13 +85,6 @@ class IngestViewResultsParserDelegate:
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
         """Returns an object that gives the parser access to custom python functions
         that can be used for parsing.
-        """
-
-    @abc.abstractmethod
-    def get_env_property(self, property_name: str) -> Union[bool, str]:
-        """Returns a value associated with an environment or other metadata property
-        associated with this parsing job. Throws ValueError for all unexpected
-        property names.
         """
 
     @abc.abstractmethod
@@ -134,29 +130,36 @@ def yaml_mappings_filepath(region: DirectIngestRegion, ingest_view_name: str) ->
     )
 
 
-class IngestViewResultsParserDelegateImpl(
-    IngestViewResultsParserDelegate, ModuleCollectorMixin
+class IngestViewManifestCompilerDelegateImpl(
+    IngestViewManifestCompilerDelegate, ModuleCollectorMixin
 ):
-    """Standard implementation of the IngestViewFileParserDelegate, for use in
+    """Standard implementation of the IngestViewManifestCompilerDelegate, for use in
     production code.
     """
 
-    def __init__(
-        self,
-        region: DirectIngestRegion,
-        schema_type: SchemaType,
-        ingest_instance: DirectIngestInstance,
-        results_update_datetime: datetime.datetime,
-    ) -> None:
+    def __init__(self, region: DirectIngestRegion, schema_type: SchemaType) -> None:
         self.region = region
         self.schema_type = schema_type
-        self.ingest_instance = ingest_instance
-        self.results_update_datetime = results_update_datetime
         self.entity_cls_cache: Dict[str, Type[Entity]] = {}
         self.enum_cls_cache: Dict[str, Type[Enum]] = {}
 
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
         return yaml_mappings_filepath(self.region, ingest_view_name)
+
+    def get_env_property_type(self, property_name: str) -> Type:
+        if property_name in (
+            IS_LOCAL_PROPERTY_NAME,
+            IS_STAGING_PROPERTY_NAME,
+            IS_PRODUCTION_PROPERTY_NAME,
+            IS_PRIMARY_INSTANCE_PROPERTY_NAME,
+            IS_SECONDARY_INSTANCE_PROPERTY_NAME,
+        ):
+            return bool
+
+        if property_name == INGEST_VIEW_RESULTS_UPDATE_DATETIME:
+            return str
+
+        raise ValueError(f"Unexpected environment property: [{property_name}]")
 
     def get_common_args(self) -> Dict[str, DeserializableEntityFieldValue]:
         if self.schema_type == SchemaType.STATE:
@@ -235,23 +238,6 @@ class IngestViewResultsParserDelegateImpl(
                 self.region.region_module, [region_code]
             )
         )
-
-    def get_env_property(self, property_name: str) -> Union[bool, str]:
-        if property_name == IS_LOCAL_PROPERTY_NAME:
-            return not environment.in_gcp()
-        if property_name == IS_STAGING_PROPERTY_NAME:
-            return environment.in_gcp_staging()
-        if property_name == IS_PRODUCTION_PROPERTY_NAME:
-            return environment.in_gcp_production()
-        if property_name == IS_PRIMARY_INSTANCE_PROPERTY_NAME:
-            return self.ingest_instance == DirectIngestInstance.PRIMARY
-        if property_name == IS_SECONDARY_INSTANCE_PROPERTY_NAME:
-            return self.ingest_instance == DirectIngestInstance.SECONDARY
-        if property_name == INGEST_VIEW_RESULTS_UPDATE_DATETIME:
-            results_update_datetime_str = self.results_update_datetime.isoformat()
-            return results_update_datetime_str
-
-        raise ValueError(f"Unexpected environment property: [{property_name}]")
 
     def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> Optional[str]:
         if issubclass(entity_cls, state_entities.StatePersonAlias):

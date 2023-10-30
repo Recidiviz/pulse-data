@@ -59,8 +59,8 @@ from recidiviz.ingest.direct.dataset_config import (
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -161,23 +161,23 @@ def get_extra_pipeline_parameter_args(
     )
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewResultsParserDelegateImpl(
-            region=region,
-            schema_type=SchemaType.STATE,
-            ingest_instance=ingest_instance,
-            results_update_datetime=right_now,
+        delegate=IngestViewManifestCompilerDelegateImpl(
+            region=region, schema_type=SchemaType.STATE
         ),
+    )
+    launchable_ingest_views = ingest_manifest_collector.launchable_ingest_views(
+        ingest_instance=ingest_instance
     )
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
-        ingest_manifest_collector.launchable_ingest_views(),
+        launchable_ingest_views,
     )
 
     # TODO(#24519) Update to use Cloud SQL proxy and reuse query from raw file metadata.
     raw_data_upper_bound_dates_json = json.dumps(
         {
             raw_data_dependency.raw_file_config.file_tag: right_now.isoformat()
-            for ingest_view in ingest_manifest_collector.launchable_ingest_views()
+            for ingest_view in launchable_ingest_views
             for raw_data_dependency in view_collector.get_query_builder_by_view_name(
                 ingest_view
             ).raw_table_dependency_configs

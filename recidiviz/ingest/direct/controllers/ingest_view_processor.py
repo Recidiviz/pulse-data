@@ -27,8 +27,11 @@ from recidiviz.big_query.big_query_results_contents_handle import (
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
-    IngestViewResultsParser,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifestCompiler,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
 from recidiviz.persistence import persistence
@@ -36,13 +39,14 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 
 
+# TODO(#20930): Delete this class once ingest in dataflow is shipped to all states
 class IngestViewProcessor:
     """Class which takes ingest view query results and persists the contents
     appropriately to the Recidiviz schema in Postgres.
     """
 
-    def __init__(self, ingest_view_file_parser: IngestViewResultsParser):
-        self.ingest_view_file_parser = ingest_view_file_parser
+    def __init__(self, ingest_view_manifest_compiler: IngestViewManifestCompiler):
+        self.ingest_view_manifest_compiler = ingest_view_manifest_compiler
 
     def parse_and_persist_contents(
         self,
@@ -50,9 +54,14 @@ class IngestViewProcessor:
         contents_handle: ContentsHandle,
         ingest_metadata: IngestMetadata,
     ) -> bool:
-        parsed_entities = self.ingest_view_file_parser.parse(
-            ingest_view_name=args.ingest_view_name,
+        parsed_entities = self.ingest_view_manifest_compiler.compile_manifest(
+            ingest_view_name=args.ingest_view_name
+        ).parse_contents(
             contents_iterator=self.row_iterator_from_contents_handle(contents_handle),
+            context=IngestViewContentsContextImpl(
+                ingest_instance=args.ingest_instance,
+                results_update_datetime=args.upper_bound_datetime_inclusive,
+            ),
         )
 
         root_entities: Union[
