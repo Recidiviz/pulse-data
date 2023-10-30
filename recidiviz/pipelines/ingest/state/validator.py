@@ -17,7 +17,7 @@
 """Utility classes for validating state entities and entity trees."""
 
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Set, Tuple, Type
+from typing import Any, Dict, List, Tuple, Type
 
 from recidiviz.persistence.database_invariant_validator.state.state_person_invariant_validators import (
     state_allows_multiple_ids_same_type as state_allows_multiple_ids_same_type_for_state_person,
@@ -38,7 +38,7 @@ from recidiviz.utils.types import assert_type
 
 def validate_root_entity(
     root_entity: RootEntityT, field_index: CoreEntityFieldIndex
-) -> Iterable[Error]:
+) -> List[Error]:
     """The assumed input is a root entity with hydrated children entities attached to it.
     This function checks if the root entity does not violate any entity tree specific
     constraints. If the root entity constraints are not met, an exception should be thrown.
@@ -83,17 +83,31 @@ def validate_root_entity(
 
     for entity_cls, entities_of_type in entities_by_cls.items():
         for constraint in entity_cls.entity_tree_unique_constraints():
-            seen_tuples: Set[Tuple[Any, ...]] = set()
+            seen_tuples: Dict[Tuple[Any, ...], List[Entity]] = defaultdict(list)
+
             for entity in entities_of_type:
                 value_tup = tuple(getattr(entity, field) for field in constraint.fields)
-                if value_tup not in seen_tuples:
-                    seen_tuples.add(value_tup)
-                    continue
+                seen_tuples[value_tup].append(entity)
 
-                error_msg = f"More than one {entity.get_entity_name()} entity found for root entity [{root_entity.get_class_id_name()} {root_entity.get_id()}] with "
-                for i, field in enumerate(constraint.fields):
-                    error_msg += f"{field}={value_tup[i]}, "
-                error_msg += f"first entity found: [{entity.get_class_id_name()} {entity.get_id()}]"
+            for value_tup, entities in seen_tuples.items():
+                if len(entities) == 1:
+                    continue
+                tuple_str = ", ".join(
+                    f"{field}={value_tup[i]}"
+                    for i, field in enumerate(constraint.fields)
+                )
+                error_msg = (
+                    f"Found [{len(entities)}] {entity_cls.get_entity_name()} entities "
+                    f"with ({tuple_str})"
+                )
+
+                entities_to_show = min(3, len(entities))
+                entities_str = "\n  * ".join(
+                    e.limited_pii_repr() for e in entities[:entities_to_show]
+                )
+                error_msg += (
+                    f". First {entities_to_show} entities found:\n  * {entities_str}"
+                )
                 error_messages.append(error_msg)
 
     return error_messages

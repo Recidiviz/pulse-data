@@ -369,7 +369,7 @@ class RunValidations(beam.PTransform):
         if entity_type_level_errors:
             raise ValueError(f"Found errors: {entity_type_level_errors}")
 
-        root_entity_key, grouped_elements = element
+        _, grouped_elements = element
 
         root_entity = grouped_elements[ROOT_ENTITY][0]
 
@@ -386,7 +386,7 @@ class RunValidations(beam.PTransform):
         if entity_level_errors:
             errors_str = "\n  * ".join(entity_level_errors)
             raise ValueError(
-                f"Found errors for root entity {root_entity_key}:\n  * {errors_str}"
+                f"Found errors for root entity {root_entity.limited_pii_repr()}:\n  * {errors_str}"
             )
 
         return root_entity

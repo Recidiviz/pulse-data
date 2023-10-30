@@ -165,13 +165,20 @@ class CoreEntity:
     def limited_pii_repr(self) -> str:
         """String representation of a Core object that prints DB IDs and external ids
         for better debugging but does not print other information."""
+        flat_properties = {self.get_primary_key_column_name(), "external_id", "id_type"}
         property_strs = sorted(
             [
-                f"{key}={value}"
-                for key, value in self.__dict__.items()
-                if key in {self.get_primary_key_column_name(), "external_id"}
+                f"{key}={repr(self.get_field(key))}"
+                for key in flat_properties
+                if self.has_field(key)
             ]
         )
+
+        if self.has_field("external_ids"):
+            external_ids = ",".join(
+                [e.limited_pii_repr() for e in self.get_field_as_list("external_ids")]
+            )
+            property_strs.append(f"external_ids=[{external_ids}]")
         properties_str = ", ".join(property_strs)
         return f"{self.__class__.__name__}({properties_str})"
 

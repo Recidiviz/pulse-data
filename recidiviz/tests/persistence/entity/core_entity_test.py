@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for CoreEntity functionality."""
-
+import datetime
 import unittest
 
 from recidiviz.common.constants.state.state_person import StateRace
@@ -368,3 +368,66 @@ class TestCoreEntity(unittest.TestCase):
                 "incarceration_type", entities.StateIncarcerationType.STATE_PRISON.value
             )
         )
+
+    def test_limited_pii_repr_has_external_id_entity(self) -> None:
+        entity = entities.StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=123,
+            state_code="US_XX",
+            external_id="is1",
+            incarceration_type=entities.StateIncarcerationType.STATE_PRISON,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+        db_entity = converter.convert_entity_to_schema_object(entity)
+
+        expected_repr = "StateIncarcerationSentence(external_id='is1', incarceration_sentence_id=123)"
+        self.assertEqual(expected_repr, entity.limited_pii_repr())
+        self.assertEqual(expected_repr, db_entity.limited_pii_repr())
+
+    def test_limited_pii_repr_external_id_entity(self) -> None:
+        entity = entities.StateStaffExternalId.new_with_defaults(
+            staff_external_id_id=123,
+            state_code="US_XX",
+            external_id="ABC",
+            id_type="US_XX_ID_TYPE",
+        )
+        db_entity = converter.convert_entity_to_schema_object(entity)
+
+        expected_repr = "StateStaffExternalId(external_id='ABC', id_type='US_XX_ID_TYPE', staff_external_id_id=123)"
+        self.assertEqual(expected_repr, entity.limited_pii_repr())
+        self.assertEqual(expected_repr, db_entity.limited_pii_repr())
+
+    def test_limited_pii_repr_has_multiple_external_ids_entity(self) -> None:
+        entity = entities.StatePerson.new_with_defaults(
+            person_id=123,
+            state_code="US_XX",
+            full_name='{"given_names": "FIRST", "middle_names": "M", "name_suffix": "JR.", "surname": "LAST"}',
+            birthdate=datetime.date(1985, 4, 13),
+            gender=entities.StateGender.MALE,
+            gender_raw_text="MALE",
+            external_ids=[
+                entities.StatePersonExternalId.new_with_defaults(
+                    person_external_id_id=234,
+                    state_code="US_XX",
+                    external_id="ABC",
+                    id_type="US_XX_ID_TYPE",
+                )
+            ],
+        )
+        db_entity = converter.convert_entity_to_schema_object(entity)
+
+        expected_repr = "StatePerson(person_id=123, external_ids=[StatePersonExternalId(external_id='ABC', id_type='US_XX_ID_TYPE', person_external_id_id=234)])"
+        self.assertEqual(expected_repr, entity.limited_pii_repr())
+        self.assertEqual(expected_repr, db_entity.limited_pii_repr())
+
+    def test_limited_pii_repr_enum_entity(self) -> None:
+        entity = entities.StatePersonRace.new_with_defaults(
+            person_race_id=123,
+            state_code="US_XX",
+            race=entities.StateRace.WHITE,
+            race_raw_text="W",
+        )
+        db_entity = converter.convert_entity_to_schema_object(entity)
+
+        expected_repr = "StatePersonRace(person_race_id=123)"
+        self.assertEqual(expected_repr, entity.limited_pii_repr())
+        self.assertEqual(expected_repr, db_entity.limited_pii_repr())

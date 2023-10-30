@@ -385,11 +385,15 @@ class TestRunValidations(StateIngestPipelineTestCase):
             field_index=self.field_index,
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found errors for root entity \(1234, 'state_staff'\):\n"
-            r"  \* More than one state_staff entity found with \(staff_id=1234\).*",
-        ):
+        expected_error_message = (
+            r"Found errors for root entity StateStaff\(staff_id=1234, "
+            r"external_ids=\[StateStaffExternalId\(external_id='12345', "
+            r"id_type='US_ZZ_TYPE', staff_external_id_id=22222\)\]\):\n"
+            r"  \* More than one state_staff entity found with "
+            r"\(staff_id=1234\).*"
+        )
+
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             self.test_pipeline.run()
 
     def test_validate_mixed_root_entities_dup_person_id(self) -> None:
@@ -473,11 +477,14 @@ class TestRunValidations(StateIngestPipelineTestCase):
             field_index=self.field_index,
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found errors for root entity \(3000, 'state_person'\):\n"
-            r"  \* More than one state_person entity found with \(person_id=3000\).*",
-        ):
+        expected_error_message = (
+            r"Found errors for root entity StatePerson\(person_id=3000, "
+            r"external_ids=\[StatePersonExternalId\(external_id='12345', "
+            r"id_type='US_XX_TYPE', person_external_id_id=11111\)\]\):\n"
+            r"  \* More than one state_person entity found with "
+            r"\(person_id=3000\).*"
+        )
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             self.test_pipeline.run()
 
     def test_validate_simple_child_entities(self) -> None:
@@ -714,11 +721,15 @@ class TestRunValidations(StateIngestPipelineTestCase):
             field_index=self.field_index,
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found errors for root entity \(1235, 'state_staff'\):\n"
-            r"  \* More than one state_staff_role_period entity found with \(staff_role_period_id=1111\).*",
-        ):
+        expected_error_message = (
+            r"Found errors for root entity StateStaff\(staff_id=1235, "
+            r"external_ids=\[StateStaffExternalId\(external_id='2000', "
+            r"id_type='US_ZZ_TYPE', staff_external_id_id=2222\),"
+            r"StateStaffExternalId\(external_id='3000', id_type='MOD', staff_external_id_id=2223\)\]\):\n"
+            r"  \* More than one state_staff_role_period entity found with "
+            r"\(staff_role_period_id=1111\).*"
+        )
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             self.test_pipeline.run()
 
     def test_validate_duplicate_id_diff_child_entities(self) -> None:
@@ -836,11 +847,14 @@ class TestRunValidations(StateIngestPipelineTestCase):
             field_index=self.field_index,
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found errors for root entity \(1237, 'state_person'\):\n"
-            r"  \* More than one state_supervision_period entity found with \(supervision_period_id=300\).*",
-        ):
+        expected_error_message = (
+            r"Found errors for root entity StatePerson\(person_id=1237, "
+            r"external_ids=\[StatePersonExternalId\(external_id='12345', "
+            r"id_type='US_XX_TYPE', person_external_id_id=11111\)\]\):\n"
+            r"  \* More than one state_supervision_period entity found with "
+            r"\(supervision_period_id=300\).*"
+        )
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             self.test_pipeline.run()
 
     def test_validate_duplicate_id_multiple_child_entities(self) -> None:
@@ -983,11 +997,16 @@ class TestRunValidations(StateIngestPipelineTestCase):
             field_index=self.field_index,
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found errors for root entity \(3000, 'state_person'\):\n"
-            r"  \* More than one state_supervision_period entity found with \(supervision_period_id=311\).*",
-        ):
+        expected_error_message = (
+            r"Found errors for root entity StatePerson\(person_id=3000, "
+            r"external_ids=\[StatePersonExternalId\(external_id='4000', "
+            r"id_type='US_XX_TYPE', person_external_id_id=11112\),"
+            r"StatePersonExternalId\(external_id='5000', "
+            r"id_type='US_YY_TYPE', person_external_id_id=11113\)\]\):\n"
+            r"  \* More than one state_supervision_period entity found with "
+            r"\(supervision_period_id=311\).*"
+        )
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             self.test_pipeline.run()
 
     def test_unique_constraint_state_person_external_id_simple(self) -> None:
@@ -1032,13 +1051,14 @@ class TestRunValidations(StateIngestPipelineTestCase):
             field_index=self.field_index,
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found errors for root entity \(1234, 'state_person'\):\n"
+        expected_error_message = (
+            r"Found errors for root entity StatePerson\(person_id=1234, "
+            r"external_ids=\[StatePersonExternalId\(external_id='12345', "
+            r"id_type='US_XX_TYPE', person_external_id_id=11111\)\]\):\n"
             r"  \* More than one state_person_external_id entity found with "
-            r"\(state_code=US_XX, id_type=US_XX_TYPE, external_id=12345\). "
-            r"Referencing root entities: \[\(1234, 'state_person'\), \(1235, 'state_person'\)\]",
-        ):
+            r"\(state_code=US_XX, id_type=US_XX_TYPE, external_id=12345\).*"
+        )
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             self.test_pipeline.run()
 
     def test_unique_constraint_state_supervision_contact(self) -> None:
@@ -1176,13 +1196,15 @@ class TestRunValidations(StateIngestPipelineTestCase):
             field_index=self.field_index,
         )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found errors for root entity \(1237, 'state_person'\):\n"
+        expected_error_message = (
+            r"Found errors for root entity StatePerson\(person_id=1237, "
+            r"external_ids=\[StatePersonExternalId\(external_id='12345', "
+            r"id_type='US_XX_TYPE', person_external_id_id=11111\)\]\):\n"
             r"  \* More than one state_supervision_contact entity found with "
-            r"\(state_code=US_XX, external_id=c2\). Referencing root entities: "
-            r"\[\(1237, 'state_person'\), \(3000, 'state_person'\)\]",
-        ):
+            r"\(state_code=US_XX, external_id=c2\).*"
+        )
+
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             self.test_pipeline.run()
 
     def test_entity_tree_unique_constraints_simple_invalid(self) -> None:
@@ -1248,11 +1270,17 @@ class TestRunValidations(StateIngestPipelineTestCase):
             ],
             field_index=self.field_index,
         )
+        expected_error_message = (
+            r"Found errors for root entity StatePerson\(person_id=3111, "
+            r"external_ids=\[StatePersonExternalId\(external_id='4001', "
+            r"id_type='US_XX_TYPE', person_external_id_id=11114\)\]\):\n"
+            r"  \* Found \[2\] state_task_deadline entities with \(state_code=US_XX, "
+            r"task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, "
+            r"task_metadata=\{\"external_id\": \"00000001-111123-371006\", \"sentence_type\": \"INCARCERATION\"\}, "
+            r"update_datetime=2023-02-01 11:19:00\).*"
+        )
 
-        with self.assertRaisesRegex(
-            ValueError,
-            r'.*More than one state_task_deadline entity found for root entity \[person_id 3111\] with state_code=US_XX, task_type=StateTaskType.DISCHARGE_FROM_INCARCERATION, task_subtype=None, task_metadata=\{"external_id": "00000001-111123-371006", "sentence_type": "INCARCERATION"\}, update_datetime=2023-02-01 11:19:00, first entity found: \[task_deadline_id 2\].*',
-        ):
+        with self.assertRaisesRegex(ValueError, expected_error_message):
             self.test_pipeline.run()
 
     def test_validate_non_zero_entities(self) -> None:
