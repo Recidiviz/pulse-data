@@ -40,6 +40,7 @@ Examples:
         --ingest_view_results_only True \
         --skip_build True \
         --ingest_views_to_run "person staff" \
+        --service_account_email something@recidiviz-staging.iam.gserviceaccount.com
 """
 import argparse
 import json
@@ -196,10 +197,6 @@ def get_extra_pipeline_parameter_args(
         sandbox_output_dataset,
         "--sandbox_ingest_view_results_output_dataset",
         sandbox_ingest_view_results_output_dataset,
-        # TODO(#22144): Establish a more permanent testing service account(s) to use
-        #  here.
-        "--service_account_email"
-        "emily-temporary-sa-testing-dat@recidiviz-staging.iam.gserviceaccount.com",
         "--raw_data_upper_bound_dates_json",
         raw_data_upper_bound_dates_json,
     ]
