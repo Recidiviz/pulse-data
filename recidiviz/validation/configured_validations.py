@@ -159,9 +159,6 @@ from recidiviz.validation.views.state.location_metadata.configured_validations i
 from recidiviz.validation.views.state.multiple_supervision_info_for_commitment_admission import (
     MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.normalized_entities_unique_ids import (
-    NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.outliers.configured_validations import (
     get_all_outliers_validations,
 )
@@ -177,6 +174,9 @@ from recidiviz.validation.views.state.population_projection_data_validation.coun
 )
 from recidiviz.validation.views.state.population_projection_data_validation.population_projection_monthly_population_external_comparison import (
     POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.primary_keys_unique_across_all_states import (
+    PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
     RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
@@ -982,16 +982,6 @@ def get_all_validations() -> List[DataValidationCheck]:
             region_configs=region_configs,
         ),
         SamenessDataValidationCheck(
-            view_builder=NORMALIZED_ENTITIES_UNIQUE_IDS_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
-            comparison_columns=[
-                "total_count",
-                "distinct_id_count",
-            ],
-            validation_category=ValidationCategory.INVARIANT,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
             view_builder=CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER,
             comparison_columns=[
                 "last_export_eligibility_count",
@@ -1000,6 +990,16 @@ def get_all_validations() -> List[DataValidationCheck]:
             soft_max_allowed_error=0.10,
             hard_max_allowed_error=0.30,
             validation_category=ValidationCategory.CONSISTENCY,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_VIEW_BUILDER,
+            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
+            comparison_columns=[
+                "total_count",
+                "distinct_id_count",
+            ],
+            validation_category=ValidationCategory.INVARIANT,
             region_configs=region_configs,
         ),
     ]

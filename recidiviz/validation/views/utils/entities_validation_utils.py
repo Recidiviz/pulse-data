@@ -17,11 +17,12 @@
 """Utils for writing validations for the normalization pipelines."""
 from typing import List, Tuple, Type
 
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity import entity_utils
-from recidiviz.persistence.entity.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
-)
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
@@ -29,22 +30,55 @@ from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils 
 )
 from recidiviz.utils.string import StrictStringFormatter
 
-UNIQUE_IDS_TEMPLATE = """
-SELECT
-    state_code as region_code,
-    '{table_id}' as entity_name,
-    COUNT(*) as total_count,
-    COUNT(DISTINCT({id_column})) as distinct_id_count
-FROM
-    `{{project_id}}.{{normalized_state_dataset}}.{table_id}`
-GROUP BY 1
-"""
-
-SELECT_FROM_ENTITY_TABLE_TEMPLATE = (
+SELECT_FROM_NORMALIZED_ENTITY_TABLE_TEMPLATE = (
     "(SELECT state_code AS region_code, {id_column}, {columns} "
     "FROM `{{project_id}}.{{normalized_state_dataset}}.{table_id}` "
     "{invalid_rows_filter_clause})"
 )
+
+PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_QUERY_TEMPLATE = """
+SELECT
+    'ALL' AS region_code,
+    '{normalized_suffix}{table_id}' AS entity_name,
+    COUNT(*) as total_count,
+    COUNT(DISTINCT({id_column})) as distinct_id_count
+FROM `{{project_id}}.{state_dataset}.{table_id}`
+GROUP BY 1, 2
+"""
+
+
+def unique_primary_keys_values_across_all_states_query() -> str:
+    """Builds a query to identify when entities in both the state and normalized_state
+    datasets have unique primary keys."""
+    entity_sub_queries: List[str] = []
+
+    for entity_cls in entity_utils.get_all_entity_classes_in_module(state_entities):
+        table_id = schema_utils.get_state_database_entity_with_name(
+            entity_cls.__name__
+        ).__tablename__
+        id_column = entity_cls.get_class_id_name()
+
+        entity_sub_queries.append(
+            StrictStringFormatter().format(
+                PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_QUERY_TEMPLATE,
+                table_id=table_id,
+                id_column=id_column,
+                state_dataset=STATE_BASE_DATASET,
+                normalized_suffix="",
+            )
+        )
+
+        entity_sub_queries.append(
+            StrictStringFormatter().format(
+                PRIMARY_KEYS_UNIQUE_ACROSS_ALL_STATES_QUERY_TEMPLATE,
+                table_id=table_id,
+                id_column=id_column,
+                state_dataset=NORMALIZED_STATE_DATASET,
+                normalized_suffix="normalized_",
+            )
+        )
+
+    return "\nUNION ALL\n".join(entity_sub_queries)
 
 
 def _table_id_and_id_column_for_normalized_state_entity(
@@ -58,27 +92,6 @@ def _table_id_and_id_column_for_normalized_state_entity(
         entities_module=state_entities, class_name=base_class_name
     )
     return base_schema_class.__tablename__, base_entity_class.get_class_id_name()
-
-
-def unique_entity_id_values_query() -> str:
-    """Builds a query to identify when entity normalization pipelines are producing
-    entities with duplicate ID values."""
-    entity_sub_queries: List[str] = []
-
-    for entity_cls in NORMALIZED_ENTITY_CLASSES:
-        table_id, id_column = _table_id_and_id_column_for_normalized_state_entity(
-            entity_cls
-        )
-
-        entity_sub_queries.append(
-            StrictStringFormatter().format(
-                UNIQUE_IDS_TEMPLATE,
-                table_id=table_id,
-                id_column=id_column,
-            )
-        )
-
-    return "\nUNION ALL\n".join(entity_sub_queries)
 
 
 def _validate_normalized_entity_has_all_fields(
@@ -123,7 +136,7 @@ def validation_query_for_normalized_entity(
     )
 
     query = StrictStringFormatter().format(
-        SELECT_FROM_ENTITY_TABLE_TEMPLATE,
+        SELECT_FROM_NORMALIZED_ENTITY_TABLE_TEMPLATE,
         id_column=id_column,
         columns=", ".join(additional_columns_to_select),
         table_id=table_id,

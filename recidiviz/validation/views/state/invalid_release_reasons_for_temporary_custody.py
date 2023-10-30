@@ -35,7 +35,7 @@ from recidiviz.persistence.entity.state.normalized_entities import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.utils.normalized_entities_validation_utils import (
+from recidiviz.validation.views.utils.entities_validation_utils import (
     validation_query_for_normalized_entity,
 )
 
