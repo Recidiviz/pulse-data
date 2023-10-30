@@ -20,6 +20,16 @@ resource "google_service_account" "service-account" {
   display_name = "A service account for ${var.state_code} Direct Ingest."
 }
 
+resource "google_service_account" "dataflow_service_account" {
+  account_id   = "${local.direct_ingest_formatted_str}-df"
+  display_name = "A service account for ${var.state_code} Direct Ingest in Dataflow."
+}
+
+resource "google_project_iam_member" "bigquery_read_write_admin" {
+  project = var.project_id
+  role    = "roles/bigquery.admin"
+  member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
+}
 
 resource "google_storage_bucket_iam_member" "direct-ingest-buckets-member" {
   bucket = google_storage_bucket.direct-ingest-bucket.name
