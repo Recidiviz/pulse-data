@@ -255,7 +255,7 @@ docker-admin = "docker-compose -f docker-compose.yaml -f docker-compose.admin-pa
 # Specific to Justice Counts team
 # For `docker-build-jc` commands, append the build arg FRONTEND_URL at the end
 # e.g. `docker-build-jc --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz`
-docker-build-jc = "docker build . -f Dockerfile.justice-counts -t us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/justice-counts:latest --platform=linux/amd64"
+docker-build-jc = "docker build . -f Dockerfile.justice-counts -t us-central1-docker.pkg.dev/justice-counts-staging/publisher-and-dashboard-images/main:latest --platform=linux/amd64"
 docker-jc = "docker-compose -f docker-compose.yaml -f docker-compose.justice-counts.yaml up"
 fixtures-jc = "docker exec pulse-data_control_panel_backend_1 pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures"
 migrate-jc = "python -m recidiviz.tools.migrations.autogenerate_migration --database JUSTICE_COUNTS --message "
