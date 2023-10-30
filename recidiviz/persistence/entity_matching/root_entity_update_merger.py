@@ -18,11 +18,14 @@
 into an existing version of that root entity.
 """
 from collections import defaultdict
-from enum import Enum
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type
 
 from more_itertools import one
 
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attr_field_type_for_field_name,
+)
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EntityT,
@@ -191,7 +194,8 @@ class RootEntityUpdateMerger:
 
         for child_field in self._flat_fields_to_merge(new_or_updated_entity):
             old_entity.set_field(
-                child_field, new_or_updated_entity.get_field(child_field)
+                child_field,
+                new_or_updated_entity.get_field(child_field),
             )
 
         return old_entity
@@ -263,7 +267,6 @@ class RootEntityUpdateMerger:
         all_fields = self.field_index.get_all_core_entity_fields(
             type(new_or_updated_entity), EntityFieldType.FLAT_FIELD
         )
-
         if not issubclass(new_or_updated_entity.__class__, RootEntity):
             return all_fields
 
@@ -290,12 +293,16 @@ class RootEntityUpdateMerger:
         # (and vice versa), even if one of the values is null.
         new_fields = set()
         for field_name in all_fields:
-            if isinstance(new_or_updated_entity.get_field(field_name), Enum):
+            if (
+                attr_field_type_for_field_name(
+                    new_or_updated_entity.__class__, field_name
+                )
+                == BuildableAttrFieldType.ENUM
+            ):
                 new_fields.add(f"{field_name}{EnumEntity.RAW_TEXT_FIELD_SUFFIX}")
             if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
                 new_fields.add(field_name[: -len(EnumEntity.RAW_TEXT_FIELD_SUFFIX)])
         fields_to_update.update(new_fields)
-
         return fields_to_update
 
     def _merge_multi_parent_entities(

@@ -17,8 +17,10 @@
 """Tests for the RootEntityUpdateMerger class."""
 import datetime
 import unittest
+from typing import Optional
 
 import attr
+from parameterized import parameterized
 
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -26,7 +28,11 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_person import StateRace
+from recidiviz.common.constants.state.state_person import (
+    StateGender,
+    StateRace,
+    StateResidencyStatus,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
@@ -453,6 +459,43 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             expected_result=expected_result, result=result
         )
 
+    @parameterized.expand(
+        [
+            (None, "X", StateResidencyStatus.PERMANENT, None),
+            (StateResidencyStatus.PERMANENT, None, None, "X"),
+        ]
+    )
+    def test_merge_people_both_enum_and_raw_text(
+        self,
+        old_residency_status: Optional[StateResidencyStatus],
+        old_residency_status_raw_text: Optional[str],
+        new_residency_status: Optional[StateResidencyStatus],
+        new_residency_status_raw_text: Optional[str],
+    ) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=old_residency_status,
+            residency_status_raw_text=old_residency_status_raw_text,
+        )
+        entity_root_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=new_residency_status,
+            residency_status_raw_text=new_residency_status_raw_text,
+        )
+        expected_result = attr.evolve(
+            previous_root_entity,
+            residency_status=new_residency_status,
+            residency_status_raw_text=new_residency_status_raw_text,
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_root_updates,
+        )
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
     def test_merge_staff_exact_match(self) -> None:
         previous_root_entity = make_staff(
             external_ids=[
@@ -676,7 +719,8 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             assessments=[attr.evolve(updated_assessment_1)],
         )
         self.assert_expected_matches_result(
-            expected_result=expected_result, result=result
+            expected_result=expected_result,
+            result=result,
         )
 
     def test_merge_updated_grandchild(self) -> None:
@@ -1037,3 +1081,22 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
                 old_root_entity=previous_root_entity,
                 root_entity_updates=entity_updates,
             )
+
+    def test_optional_enums_with_none_values_are_detected_atomically_in_fields_to_update(
+        self,
+    ) -> None:
+        entity_updates = make_person(
+            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
+            birthdate=datetime.date(1995, 10, 19),
+            gender=StateGender.MALE,
+            gender_raw_text="M",
+            races=[
+                make_person_race(race=StateRace.BLACK, race_raw_text="Black"),
+            ],
+            residency_status=None,
+            residency_status_raw_text=None,
+        )
+        # pylint: disable=protected-access
+        fields_to_update = self.merger._flat_fields_to_merge(entity_updates)
+        self.assertIn("residency_status", fields_to_update)
+        self.assertIn("residency_status_raw_text", fields_to_update)
