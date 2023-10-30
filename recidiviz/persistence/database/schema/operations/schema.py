@@ -350,4 +350,4 @@ class DirectIngestDataflowRawTableUpperBounds(OperationsBase):
     raw_data_file_tag = Column(String(255), nullable=False, index=True)
 
     # The latest update_datetime of the raw data table
-    watermark_datetime = Column(DateTime, nullable=False)
+    watermark_datetime = Column(DateTime(timezone=True), nullable=False)
