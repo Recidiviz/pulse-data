@@ -46,15 +46,22 @@ from recidiviz.calculator.query.state.dataset_config import (
     state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
-    DirectIngestControllerFactory,
-)
+from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataflow_dataset,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
+    IngestViewManifestCollector,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
+    IngestViewResultsParserDelegateImpl,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
@@ -358,6 +365,29 @@ def update_state_specific_ingest_state_schemas(
         )
 
 
+def _get_ingest_view_builders(
+    state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> List[DirectIngestViewQueryBuilder]:
+    region = direct_ingest_regions.get_direct_ingest_region(
+        region_code=state_code.value
+    )
+    ingest_manifest_collector = IngestViewManifestCollector(
+        region=region,
+        delegate=IngestViewResultsParserDelegateImpl(
+            region=region,
+            schema_type=SchemaType.STATE,
+            ingest_instance=ingest_instance,
+            results_update_datetime=datetime.datetime.now(),
+        ),
+    )
+    view_collector = DirectIngestViewQueryBuilderCollector(
+        region,
+        ingest_manifest_collector.launchable_ingest_views(),
+    )
+
+    return view_collector.collect_query_builders()
+
+
 def update_state_specific_ingest_view_result_schema(
     ingest_view_dataset_id: str,
     state_code: StateCode,
@@ -372,13 +402,8 @@ def update_state_specific_ingest_view_result_schema(
         ingest_view_dataset_ref, default_table_expiration_ms
     )
 
-    controller = DirectIngestControllerFactory.build(
-        region_code=state_code.value,
-        ingest_instance=ingest_instance,
-        allow_unlaunched=True,
-    )
+    ingest_view_builders = _get_ingest_view_builders(state_code, ingest_instance)
 
-    ingest_view_builders = controller.view_collector.collect_query_builders()
     ingest_view_name_to_query_job: Dict[str, bigquery.QueryJob] = {}
     for ingest_view_builder in ingest_view_builders:
         ingest_view_name_to_query_job[

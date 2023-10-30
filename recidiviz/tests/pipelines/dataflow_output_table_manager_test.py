@@ -502,25 +502,26 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
             content_type="text/yaml",
         )
 
-        self.direct_ingest_controller_patcher = mock.patch(
-            "recidiviz.pipelines.dataflow_output_table_manager.DirectIngestControllerFactory.build"
-        )
-        self.mock_direct_ingest_controller = (
-            self.direct_ingest_controller_patcher.start().return_value
-        )
-
         self.query_builder_patcher = mock.patch(
             "recidiviz.ingest.direct.views.direct_ingest_view_query_builder.DirectIngestViewQueryBuilder"
         )
         self.mock_query_builder = self.query_builder_patcher.start().return_value
+
+        self.mock_query_builder.build_query.return_value = "SELECT * FROM table"
+        self.mock_query_builder.ingest_view_name.return_value = "us_xx_view"
+
+        self.get_view_builder_patcher = mock.patch(
+            "recidiviz.pipelines.dataflow_output_table_manager._get_ingest_view_builders"
+        )
+        self.mock_get_view_builder = self.get_view_builder_patcher.start()
 
     def tearDown(self) -> None:
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
         self.gcs_factory_patcher.stop()
-        self.direct_ingest_controller_patcher.stop()
         self.query_builder_patcher.stop()
+        self.get_view_builder_patcher.stop()
 
     @mock.patch(
         "recidiviz.pipelines.dataflow_output_table_manager.get_ingest_pipeline_enabled_state_and_instance_pairs",
@@ -540,8 +541,7 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
             return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
 
         self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
-
-        self.mock_direct_ingest_controller.view_collector.return_value = mock.ANY
+        self.mock_get_view_builder.return_value = []
 
         dataflow_output_table_manager.update_state_specific_ingest_view_results_schemas()
 
@@ -593,8 +593,7 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
             return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
 
         self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
-
-        self.mock_direct_ingest_controller.view_collector.return_value = mock.ANY
+        self.mock_get_view_builder.return_value = []
 
         dataflow_output_table_manager.update_state_specific_ingest_view_results_schemas(
             sandbox_dataset_prefix="my_prefix"
@@ -648,11 +647,7 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
 
         self.mock_client.table_exists.return_value = False
-        self.mock_direct_ingest_controller.view_collector.collect_query_builders.return_value = [
-            self.mock_query_builder
-        ]
-        self.mock_query_builder.build_query.return_value = "SELECT * FROM table"
-        self.mock_query_builder.ingest_view_name.return_value = "us_xx_view"
+        self.mock_get_view_builder.return_value = [self.mock_query_builder]
 
         self.mock_client.run_query.return_value = mock.create_autospec(
             bigquery.QueryJob
@@ -682,11 +677,7 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
 
         self.mock_client.table_exists.return_value = True
-        self.mock_direct_ingest_controller.view_collector.collect_query_builders.return_value = [
-            self.mock_query_builder
-        ]
-        self.mock_query_builder.build_query.return_value = "SELECT * FROM table"
-        self.mock_query_builder.ingest_view_name.return_value = "us_xx_view"
+        self.mock_get_view_builder.return_value = [self.mock_query_builder]
 
         self.mock_client.run_query.return_value = mock.create_autospec(
             bigquery.QueryJob
