@@ -58,10 +58,7 @@ class TestIngestPipelineParameters(unittest.TestCase):
 
         self.assertEqual(pipeline_parameters.region, "us-west1")
         self.assertEqual(pipeline_parameters.job_name, "test-job")
-        self.assertEqual(
-            pipeline_parameters.service_account_email,
-            "direct-ingest-state-us-oz-df@recidiviz-456.iam.gserviceaccount.com",
-        )
+        self.assertIsNone(pipeline_parameters.service_account_email)
 
     def test_creation_all_fields_no_output(self) -> None:
         pipeline_parameters = IngestPipelineParameters(
