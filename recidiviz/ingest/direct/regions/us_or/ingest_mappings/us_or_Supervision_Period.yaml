@@ -210,6 +210,7 @@ output:
                   - AUTO # unknown
                   - ADMB # unknown - old code (only 39 instances)
                   - MIAC # unknown - old code
+                  - EDIX # unknown
                   - CLOS # unknown (old code)
                   - BENT # unknown (only 1 instance)
                   - MTCB # unknown (only 2 instances)
