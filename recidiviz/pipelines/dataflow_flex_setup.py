@@ -61,7 +61,7 @@ REQUIRED_PACKAGES = [
     "pyjwt",
     "psycopg2-binary",
     "pytablewriter",
-    "SQLAlchemy==1.4.49",
+    "SQLAlchemy==1.4.50",
     "thefuzz",
     "us",
 ]
