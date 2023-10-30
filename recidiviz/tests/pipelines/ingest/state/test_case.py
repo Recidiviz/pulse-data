@@ -18,21 +18,22 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterable, List, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, Set
 
 from apache_beam.testing.util import BeamAssertException, equal_to
-from dateutil import parser
 from mock import patch
-from more_itertools import one
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
@@ -112,18 +113,19 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             self.direct_ingest_raw_file_config
         )
 
+        self.ingest_instance = DirectIngestInstance.PRIMARY
         self.ingest_view_manifest_collector = IngestViewManifestCollector(
             self.region,
-            IngestViewResultsParserDelegateImpl(
+            delegate=IngestViewManifestCompilerDelegateImpl(
                 self.region,
                 schema_type=SchemaType.STATE,
-                ingest_instance=DirectIngestInstance.PRIMARY,
-                results_update_datetime=datetime.now(),
             ),
         )
         self.view_collector = DirectIngestViewQueryBuilderCollector(
             self.region,
-            self.ingest_view_manifest_collector.launchable_ingest_views(),
+            self.ingest_view_manifest_collector.launchable_ingest_views(
+                ingest_instance=self.ingest_instance
+            ),
         )
         self.field_index = CoreEntityFieldIndex()
 
@@ -152,9 +154,9 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             str,
             Dict[RawFileHistoricalRowsFilterType, DirectIngestViewRawFileDependency],
         ] = defaultdict(dict)
-        for (
-            ingest_view
-        ) in self.ingest_view_manifest_collector.launchable_ingest_views():
+        for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views(
+            ingest_instance=self.ingest_instance
+        ):
             ingest_view_builder = self.view_collector.get_query_builder_by_view_name(
                 ingest_view
             )
@@ -199,7 +201,7 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             ).to_dict("records"),
         )
 
-    def get_expected_ingest_view_results(
+    def get_ingest_view_results_from_fixture(
         self, *, ingest_view_name: str, test_name: str
     ) -> Iterable[Dict[str, Any]]:
         return load_dataframe_from_path(
@@ -222,45 +224,22 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
         self, *, ingest_view_name: str, test_name: str
     ) -> Iterable[Entity]:
         rows = list(
-            self.get_expected_ingest_view_results(
+            self.get_ingest_view_results_from_fixture(
                 ingest_view_name=ingest_view_name, test_name=test_name
             )
         )
         for row in rows:
             for column in ADDITIONAL_SCHEMA_COLUMNS:
                 row.pop(column.name)
-        return self.ingest_view_manifest_collector.manifest_parser.parse(
-            ingest_view_name=ingest_view_name,
+        return self.ingest_view_manifest_collector.ingest_view_to_manifest[
+            ingest_view_name
+        ].parse_contents(
             contents_iterator=iter(rows),
+            context=IngestViewContentsContextImpl(
+                ingest_instance=self.ingest_instance,
+                results_update_datetime=datetime.now(),
+            ),
         )
-
-    def get_expected_root_entities_with_upperbound_dates(
-        self, *, ingest_view_name: str, test_name: str
-    ) -> Iterable[Tuple[float, Entity]]:
-        rows = list(
-            self.get_expected_ingest_view_results(
-                ingest_view_name=ingest_view_name, test_name=test_name
-            )
-        )
-        results: List[Tuple[float, Entity]] = []
-        for row in rows:
-            upper_bound_date = parser.isoparse(
-                row[UPPER_BOUND_DATETIME_COL_NAME]
-            ).timestamp()
-            for column in ADDITIONAL_SCHEMA_COLUMNS:
-                row.pop(column.name)
-            results.append(
-                (
-                    upper_bound_date,
-                    one(
-                        self.ingest_view_manifest_collector.manifest_parser.parse(
-                            ingest_view_name=ingest_view_name,
-                            contents_iterator=iter([row]),
-                        )
-                    ),
-                )
-            )
-        return iter(results)
 
     def get_expected_output_entity_types(
         self, *, ingest_view_name: str, test_name: str

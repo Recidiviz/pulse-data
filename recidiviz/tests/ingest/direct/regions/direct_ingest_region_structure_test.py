@@ -50,11 +50,14 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_name,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
@@ -589,11 +592,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             controller_cls = DirectIngestControllerFactory.get_controller_class(region)
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewResultsParserDelegateImpl(
-                    region=region,
-                    schema_type=SchemaType.STATE,
-                    ingest_instance=ingest_instance,
-                    results_update_datetime=datetime.now(),
+                delegate=IngestViewManifestCompilerDelegateImpl(
+                    region=region, schema_type=SchemaType.STATE
                 ),
             )
             with patch.object(
@@ -614,7 +614,11 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                             ingest_instance=ingest_instance
                         )
                     ),
-                    sorted(ingest_view_manifest_collector.launchable_ingest_views()),
+                    sorted(
+                        ingest_view_manifest_collector.launchable_ingest_views(
+                            ingest_instance=ingest_instance
+                        )
+                    ),
                     "The ingest rank list does not match the ingest view manifests for "
                     f"[{region_code.value}] [{ingest_instance.value}] [{project}]",
                 )
@@ -687,11 +691,9 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             ):
                 ingest_view_manifest_collector = IngestViewManifestCollector(
                     region=region,
-                    delegate=IngestViewResultsParserDelegateImpl(
+                    delegate=IngestViewManifestCompilerDelegateImpl(
                         region=region,
                         schema_type=SchemaType.STATE,
-                        ingest_instance=ingest_instance,
-                        results_update_datetime=datetime.now(),
                     ),
                 )
                 ingest_view_names = list(
@@ -699,6 +701,9 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                 )
                 related_ingest_view_pairs = self._get_related_ingest_view_pairs(
                     ingest_view_names
+                )
+                contents_context = IngestViewContentsContextImpl(
+                    ingest_instance=ingest_instance
                 )
                 for ingest_view, ingest_view_2 in related_ingest_view_pairs:
                     manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
@@ -708,7 +713,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                         ingest_view_2
                     ]
                     self.assertFalse(
-                        manifest.should_launch and manifest_2.should_launch,
+                        manifest.should_launch(contents_context)
+                        and manifest_2.should_launch(contents_context),
                         f"Found related {region_code.value} views, [{ingest_view}] and "
                         f"[{ingest_view_2}], which are both configured to launch in "
                         f"[{project}] and [{ingest_instance}]",
@@ -721,12 +727,9 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewResultsParserDelegateImpl(
+                delegate=IngestViewManifestCompilerDelegateImpl(
                     region=region,
                     schema_type=SchemaType.STATE,
-                    # Pick an arbitrary instance, it doesn't matter
-                    ingest_instance=DirectIngestInstance.SECONDARY,
-                    results_update_datetime=datetime.now(),
                 ),
             )
             fixtures_directory = os.path.join(
@@ -757,12 +760,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewResultsParserDelegateImpl(
-                    region=region,
-                    schema_type=SchemaType.STATE,
-                    # Pick an arbitrary instance, it doesn't matter
-                    ingest_instance=DirectIngestInstance.SECONDARY,
-                    results_update_datetime=datetime.now(),
+                delegate=IngestViewManifestCompilerDelegateImpl(
+                    region=region, schema_type=SchemaType.STATE
                 ),
             )
             region_fixtures_directory = os.path.join(
@@ -809,12 +808,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewResultsParserDelegateImpl(
-                    region=region,
-                    schema_type=SchemaType.STATE,
-                    # Pick an arbitrary instance, it doesn't matter
-                    ingest_instance=DirectIngestInstance.SECONDARY,
-                    results_update_datetime=datetime.now(),
+                delegate=IngestViewManifestCompilerDelegateImpl(
+                    region=region, schema_type=SchemaType.STATE
                 ),
             )
             if region.region_module.__file__ is None:
@@ -850,12 +845,8 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
             )
             ingest_view_manifest_collector = IngestViewManifestCollector(
                 region=region,
-                delegate=IngestViewResultsParserDelegateImpl(
-                    region=region,
-                    schema_type=SchemaType.STATE,
-                    # Pick an arbitrary instance, it doesn't matter
-                    ingest_instance=DirectIngestInstance.SECONDARY,
-                    results_update_datetime=datetime.now(),
+                delegate=IngestViewManifestCompilerDelegateImpl(
+                    region=region, schema_type=SchemaType.STATE
                 ),
             )
             view_collector = DirectIngestViewQueryBuilderCollector(

@@ -21,7 +21,14 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pipeline_test import TestPipeline, assert_that, equal_to
 
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifestCompiler,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
@@ -70,17 +77,26 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
                 ),
             ),
         ]
+        manifest_compiler = IngestViewManifestCompiler(
+            delegate=IngestViewManifestCompilerDelegateImpl(
+                region=self.region, schema_type=SchemaType.STATE
+            )
+        )
+        ingest_view_name = "ingest12"
+        ingest_view_manifest = manifest_compiler.compile_manifest(
+            ingest_view_name=ingest_view_name
+        )
         output = (
             self.test_pipeline
             | beam.Create(
-                self.get_expected_ingest_view_results(
-                    ingest_view_name="ingest12", test_name="ingest12"
+                self.get_ingest_view_results_from_fixture(
+                    ingest_view_name=ingest_view_name, test_name="ingest12"
                 )
             )
             | pipeline.GenerateEntities(
                 state_code=self.region_code,
                 ingest_instance=DirectIngestInstance.PRIMARY,
-                ingest_view_name="ingest12",
+                ingest_view_manifest=ingest_view_manifest,
             )
         )
         assert_that(output, equal_to(expected_output))

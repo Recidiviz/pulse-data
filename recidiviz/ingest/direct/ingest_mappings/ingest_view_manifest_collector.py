@@ -18,48 +18,63 @@
 system."""
 import os
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
-    IngestViewManifest,
-    IngestViewResultsParser,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegate,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifest,
+    IngestViewManifestCompiler,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegate,
     ingest_view_manifest_dir,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class IngestViewManifestCollector:
-    """Class that collects and generates manifests from all ingest mapping YAML files for a given region."""
+    """Class that collects and generates manifests from all ingest mapping YAML files
+    for a given region.
+    """
 
     def __init__(
-        self, region: DirectIngestRegion, delegate: IngestViewResultsParserDelegate
+        self,
+        region: DirectIngestRegion,
+        delegate: IngestViewManifestCompilerDelegate,
     ) -> None:
         self.region = region
-        self.manifest_parser = IngestViewResultsParser(delegate)
-        self._ingest_view_to_manifest: Optional[Dict[str, IngestViewManifest]] = None
+        self._manifest_compiler = IngestViewManifestCompiler(delegate)
+        self._ingest_view_to_manifest: Dict[
+            str, IngestViewManifest
+        ] = self._load_ingest_view_to_manifest()
+
+    def _load_ingest_view_to_manifest(self) -> Dict[str, IngestViewManifest]:
+        ingest_view_to_manifest = {}
+        paths = self._get_manifest_paths(self.region)
+        for manifest_path in paths:
+            ingest_view_name = self._parse_ingest_view_name(manifest_path)
+            manifest = self._manifest_compiler.compile_manifest(
+                ingest_view_name=ingest_view_name
+            )
+            ingest_view_to_manifest[ingest_view_name] = manifest
+        return ingest_view_to_manifest
 
     @property
     def ingest_view_to_manifest(self) -> Dict[str, IngestViewManifest]:
-        if not self._ingest_view_to_manifest:
-            self._ingest_view_to_manifest = {}
-            paths = self._get_manifest_paths(self.region)
-            for manifest_path in paths:
-                ingest_view_name = self._parse_ingest_view_name(manifest_path)
-                manifest = self.manifest_parser.parse_manifest(manifest_path)
-                self._ingest_view_to_manifest[ingest_view_name] = manifest
-
         return self._ingest_view_to_manifest
 
-    def launchable_ingest_views(self) -> List[str]:
+    def launchable_ingest_views(
+        self, ingest_instance: DirectIngestInstance
+    ) -> List[str]:
         """Returns a list of ingest views that are launchable in the current project."""
         return [
             ingest_view_name
             for ingest_view_name, manifest in self.ingest_view_to_manifest.items()
-            if manifest.should_launch
+            if manifest.should_launch(IngestViewContentsContextImpl(ingest_instance))
         ]
 
     def _parse_ingest_view_name(self, manifest_path: str) -> str:

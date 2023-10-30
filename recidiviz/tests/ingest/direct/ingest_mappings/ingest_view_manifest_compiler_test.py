@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for IngestViewFileParser."""
+"""Tests for IngestViewManifestCompiler."""
 import csv
 import datetime
 import os
@@ -28,12 +28,14 @@ from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHand
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
-    IngestViewManifest,
-    IngestViewResultsParser,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegate,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifestCompiler,
+)
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegate,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.base_entity import Entity, EntityT
@@ -130,22 +132,8 @@ class FakeTaskDeadlineFactory(EntityFactory):
 #### End Fake Schema Factories ####
 
 
-class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate):
-    """Fake implementation of IngestViewFileParserDelegate for parser unittests."""
-
-    def __init__(
-        self,
-        ingest_instance: DirectIngestInstance,
-        is_production: bool,
-        is_staging: bool,
-        is_local: bool,
-        results_update_datetime: datetime.datetime,
-    ):
-        self.ingest_instance = ingest_instance
-        self.is_production = is_production
-        self.is_staging = is_staging
-        self.is_local = is_local
-        self.results_update_datetime = results_update_datetime
+class FakeSchemaIngestViewManifestCompilerDelegate(IngestViewManifestCompilerDelegate):
+    """Fake implementation of IngestViewManifestCompilerDelegate for unittests."""
 
     def get_ingest_view_manifest_path(self, ingest_view_name: str) -> str:
         return os.path.join(
@@ -203,6 +191,49 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
     def get_custom_function_registry(self) -> CustomFunctionRegistry:
         return CustomFunctionRegistry(custom_functions_root_module=custom_python)
 
+    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> Optional[str]:
+        if issubclass(entity_cls, FakePersonAlias):
+            return "full_name"
+        return None
+
+    def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
+        # NOTE: The 'name' field is explicitly excluded here - we use that field as a
+        #  normal string field in the fake schema.
+        return field_name == "full_name"
+
+    def get_env_property_type(self, property_name: str) -> Type:
+        if property_name in (
+            "test_is_local",
+            "test_is_staging",
+            "test_is_production",
+            "test_is_secondary_instance",
+            "test_is_primary_instance",
+        ):
+            return bool
+
+        if property_name == "test_results_update_datetime":
+            return str
+
+        raise ValueError(f"Unexpected test env property: {property_name}")
+
+
+class FakeIngestViewContentsContext(IngestViewContentsContext):
+    """Fake implementation of IngestViewContentsContext for unittests."""
+
+    def __init__(
+        self,
+        ingest_instance: DirectIngestInstance,
+        is_production: bool,
+        is_staging: bool,
+        is_local: bool,
+        results_update_datetime: datetime.datetime,
+    ):
+        self.ingest_instance = ingest_instance
+        self.is_production = is_production
+        self.is_staging = is_staging
+        self.is_local = is_local
+        self.results_update_datetime = results_update_datetime
+
     def get_env_property(self, property_name: str) -> Union[bool, str]:
         if property_name == "test_is_local":
             return self.is_local
@@ -220,22 +251,17 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
 
         raise ValueError(f"Unexpected test env property: {property_name}")
 
-    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> Optional[str]:
-        if issubclass(entity_cls, FakePersonAlias):
-            return "full_name"
-        return None
 
-    def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
-        # NOTE: The 'name' field is explicitly excluded here - we use that field as a
-        #  normal string field in the fake schema.
-        return field_name == "full_name"
+class IngestViewManifestCompilerTest(unittest.TestCase):
+    """Tests for IngestViewManifestCompiler."""
 
+    def setUp(self) -> None:
+        self.compiler = IngestViewManifestCompiler(
+            FakeSchemaIngestViewManifestCompilerDelegate()
+        )
 
-class IngestViewFileParserTest(unittest.TestCase):
-    """Tests for IngestViewFileParser."""
-
-    @staticmethod
     def _run_parse_for_ingest_view(
+        self,
         ingest_view_name: str,
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
         is_production: bool = False,
@@ -246,15 +272,6 @@ class IngestViewFileParserTest(unittest.TestCase):
         """Runs a single parsing test for a fixture ingest view with the given name,
         returning the parsed entities.
         """
-        parser = IngestViewResultsParser(
-            FakeSchemaIngestViewResultsParserDelegate(
-                ingest_instance,
-                is_production,
-                is_staging,
-                is_local,
-                results_update_datetime,
-            )
-        )
         contents_handle = LocalFileContentsHandle(
             os.path.join(
                 os.path.dirname(ingest_view_files.__file__),
@@ -265,32 +282,18 @@ class IngestViewFileParserTest(unittest.TestCase):
             cleanup_file=False,
         )
 
-        return parser.parse(
-            ingest_view_name=ingest_view_name,
+        return self.compiler.compile_manifest(
+            ingest_view_name=ingest_view_name
+        ).parse_contents(
             contents_iterator=csv.DictReader(contents_handle.get_contents_iterator()),
+            context=FakeIngestViewContentsContext(
+                ingest_instance=ingest_instance,
+                is_production=is_production,
+                is_staging=is_staging,
+                is_local=is_local,
+                results_update_datetime=results_update_datetime,
+            ),
         )
-
-    def _run_parse_manifest_for_ingest_view(
-        self,
-        ingest_view_name: str,
-        ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
-        is_production: bool = False,
-        is_staging: bool = False,
-        is_local: bool = False,
-        results_update_datetime: datetime.datetime = datetime.datetime.now(),
-    ) -> IngestViewManifest:
-        delegate = FakeSchemaIngestViewResultsParserDelegate(
-            ingest_instance,
-            is_production,
-            is_staging,
-            is_local,
-            results_update_datetime,
-        )
-        parser = IngestViewResultsParser(delegate)
-        manifest = parser.parse_manifest(
-            manifest_path=delegate.get_ingest_view_manifest_path(ingest_view_name),
-        )
-        return manifest
 
     def test_simple_output(self) -> None:
         # Arrange
@@ -1088,8 +1091,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Unexpected manifest node type: \[<enum 'FakeRace'>\]. "
             r"Expected result_type: \[<enum 'FakeGender'>\].",
         ):
-            _ = self._run_parse_manifest_for_ingest_view(
-                "enum_custom_parser_bad_return_type"
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="enum_custom_parser_bad_return_type"
             )
 
     def test_enum_custom_parser_bad_arg_name(self) -> None:
@@ -1099,8 +1102,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found extra, unexpected arguments for function "
             r"\[fake_custom_enum_parsers.enum_parser_bad_arg_name\] in module \[[a-z_\.]+\]: {'bad_arg'}",
         ):
-            _ = self._run_parse_manifest_for_ingest_view(
-                "enum_custom_parser_bad_arg_name"
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="enum_custom_parser_bad_arg_name"
             )
 
     def test_enum_custom_parser_extra_arg(self) -> None:
@@ -1110,7 +1113,9 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found extra, unexpected arguments for function "
             r"\[fake_custom_enum_parsers.enum_parser_extra_arg\] in module \[[a-z_\.]+\]: {'another_arg'}",
         ):
-            _ = self._run_parse_manifest_for_ingest_view("enum_custom_parser_extra_arg")
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="enum_custom_parser_extra_arg"
+            )
 
     def test_enum_custom_parser_missing_arg(self) -> None:
         # Act
@@ -1119,8 +1124,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Missing expected arguments for function \[fake_custom_enum_parsers.enum_parser_missing_arg\] "
             r"in module \[[a-z_\.]+\]: {'raw_text'}",
         ):
-            _ = self._run_parse_manifest_for_ingest_view(
-                "enum_custom_parser_missing_arg"
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="enum_custom_parser_missing_arg"
             )
 
     def test_enum_custom_parser_bad_arg_type(self) -> None:
@@ -1131,8 +1136,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"\[fake_custom_enum_parsers.enum_parser_bad_arg_type\] in module \[[a-z_\.]+\]. Expected "
             r"\[<class 'str'>], found \[<class 'bool'>\].",
         ):
-            _ = self._run_parse_manifest_for_ingest_view(
-                "enum_custom_parser_bad_arg_type"
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="enum_custom_parser_bad_arg_type"
             )
 
     def test_serialize_json(self) -> None:
@@ -1261,7 +1266,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Unexpected manifest node type: \[<class 'recidiviz.common.str_field_utils.NormalizedJSON'>\]\. "
             r"Expected result_type: \[<class 'str'>\]\.",
         ):
-            _ = self._run_parse_manifest_for_ingest_view("nested_json")
+            _ = self.compiler.compile_manifest(ingest_view_name="nested_json")
 
     def test_concatenate_values(self) -> None:
         # Arrange
@@ -2388,8 +2393,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"^Enum \$mappings should only contain mappings for one enum type but found "
             r"multiple: \['FakeGender', 'FakeRace'\]",
         ):
-            _ = self._run_parse_manifest_for_ingest_view(
-                "enums_bad_mapping_mixed_enums"
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="enums_bad_mapping_mixed_enums"
             )
 
     def test_bad_variable_type_throws(self) -> None:
@@ -2409,7 +2414,7 @@ class IngestViewFileParserTest(unittest.TestCase):
 
     def test_no_unused_columns(self) -> None:
         # Shouldn't crash
-        _ = self._run_parse_manifest_for_ingest_view("no_unused_columns")
+        _ = self.compiler.compile_manifest(ingest_view_name="no_unused_columns")
 
     def test_does_not_use_all_columns_in_input_cols(self) -> None:
         with self.assertRaisesRegex(
@@ -2417,7 +2422,7 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found columns listed in |input_columns| that are not referenced in "
             r"|output| or listed in |unused_columns|: {'SSN'}",
         ):
-            _ = self._run_parse_manifest_for_ingest_view("unused_input_column")
+            _ = self.compiler.compile_manifest(ingest_view_name="unused_input_column")
 
     def test_referenced_col_not_listed(self) -> None:
         with self.assertRaisesRegex(
@@ -2425,21 +2430,27 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found columns referenced in |output| that are not listed in "
             r"|input_columns|: {'AGENTNAME'}",
         ):
-            _ = self._run_parse_manifest_for_ingest_view("unlisted_referenced_column")
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="unlisted_referenced_column"
+            )
 
     def test_duplicate_input_col(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
             r"Found item listed multiple times in |input_columns|: \[PERSONNAME\]",
         ):
-            _ = self._run_parse_manifest_for_ingest_view("duplicate_input_column")
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="duplicate_input_column"
+            )
 
     def test_duplicate_unused_col(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
             r"Found item listed multiple times in |unused_columns|: \[DOB\]",
         ):
-            _ = self._run_parse_manifest_for_ingest_view("duplicate_unused_column")
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="duplicate_unused_column"
+            )
 
     def test_csv_does_not_have_input_column(self) -> None:
         with self.assertRaisesRegex(
@@ -2471,8 +2482,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found values listed in |unused_columns| that were not also listed in "
             r"|input_columns|: {'SSN'}",
         ):
-            _ = self._run_parse_manifest_for_ingest_view(
-                "unused_col_not_in_input_columns"
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="unused_col_not_in_input_columns"
             )
 
     def test_input_cols_do_not_start_with_dollar_sign(self) -> None:
@@ -2481,8 +2492,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Found column \[\$DOB\] that starts with protected character '\$'. "
             r"Adjust ingest view output column naming to remove the '\$'.",
         ):
-            _ = self._run_parse_manifest_for_ingest_view(
-                "column_starts_with_dollar_sign"
+            _ = self.compiler.compile_manifest(
+                ingest_view_name="column_starts_with_dollar_sign"
             )
 
     def test_throws_if_primary_key_set(self) -> None:
@@ -2491,13 +2502,17 @@ class IngestViewFileParserTest(unittest.TestCase):
             r"Cannot set autogenerated database primary key field \[fake_agent_id\] in "
             r"the ingest manifest. Did you mean to set the 'external_id' field?",
         ):
-            self._run_parse_manifest_for_ingest_view("set_primary_key_has_external_id")
+            self.compiler.compile_manifest(
+                ingest_view_name="set_primary_key_has_external_id"
+            )
         with self.assertRaisesRegex(
             ValueError,
             r"Cannot set autogenerated database primary key field \[fake_person_id\] "
             r"in the ingest manifest.$",
         ):
-            self._run_parse_manifest_for_ingest_view("set_primary_key_no_external_id")
+            self.compiler.compile_manifest(
+                ingest_view_name="set_primary_key_no_external_id"
+            )
 
     def test_should_launch_environment_matches(self) -> None:
         expected_output = [
@@ -2538,8 +2553,8 @@ class IngestViewFileParserTest(unittest.TestCase):
             )
 
     def test_env_property_names_returned_string_env_property(self) -> None:
-        manifest = self._run_parse_manifest_for_ingest_view(
-            "string_datetime_env_property"
+        manifest = self.compiler.compile_manifest(
+            ingest_view_name="string_datetime_env_property"
         )
         self.assertSetEqual(
             manifest.output.env_properties_referenced(),
@@ -2547,8 +2562,8 @@ class IngestViewFileParserTest(unittest.TestCase):
         )
 
     def test_env_property_names_returned_bool_env_property(self) -> None:
-        manifest = self._run_parse_manifest_for_ingest_view(
-            "boolean_condition_env_property"
+        manifest = self.compiler.compile_manifest(
+            ingest_view_name="boolean_condition_env_property"
         )
         self.assertSetEqual(
             manifest.output.env_properties_referenced(),
@@ -2556,10 +2571,10 @@ class IngestViewFileParserTest(unittest.TestCase):
         )
 
     def test_get_hydrated_entities(self) -> None:
-        manifest = self._run_parse_manifest_for_ingest_view("enum_variable")
+        manifest = self.compiler.compile_manifest(ingest_view_name="enum_variable")
         self.assertEqual(
             {FakePerson, FakePersonExternalId}, manifest.hydrated_entity_classes()
         )
 
-        manifest = self._run_parse_manifest_for_ingest_view("simple_variables")
+        manifest = self.compiler.compile_manifest(ingest_view_name="simple_variables")
         self.assertEqual({FakePerson}, manifest.hydrated_entity_classes())

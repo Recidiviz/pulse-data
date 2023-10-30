@@ -25,14 +25,19 @@ from more_itertools import one
 
 from recidiviz.common.common_utils import bidirectional_set_difference
 from recidiviz.ingest.direct.ingest_mappings import yaml_schema
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContext,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest import (
+    BooleanLiteralManifest,
     EntityTreeManifest,
     EntityTreeManifestFactory,
+    ManifestNode,
     VariableManifestNode,
     build_manifest_from_raw_typed,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegate,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegate,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -44,11 +49,20 @@ MANIFEST_LANGUAGE_VERSION_KEY = "manifest_language"
 
 @attr.define(kw_only=True, frozen=True)
 class IngestViewManifest:
+    """Class containing instruction for how to parse any given result row from the
+    given ingest view.
+    """
+
+    ingest_view_name: str
     manifest_language_version: str
     input_columns: List[str]
     unused_columns: List[str]
-    should_launch: bool
+    should_launch_manifest: ManifestNode[bool]
     output: EntityTreeManifest
+
+    def should_launch(self, context: IngestViewContentsContext) -> bool:
+        should_launch_value = self.should_launch_manifest.build_from_row({}, context)
+        return should_launch_value if should_launch_value is not None else True
 
     def hydrated_entity_classes(self) -> Set[Type[Entity]]:
         return {
@@ -57,42 +71,30 @@ class IngestViewManifest:
             if isinstance(node, EntityTreeManifest)
         }
 
-
-class IngestViewResultsParser:
-    """Class that parses ingest view query results into entities based on the manifest
-    file for this ingest view.
-    """
-
-    def __init__(self, delegate: IngestViewResultsParserDelegate):
-        self.delegate = delegate
-
-    def parse(
+    def parse_contents(
         self,
         *,
-        ingest_view_name: str,
         contents_iterator: Iterator[Dict[str, str]],
+        context: IngestViewContentsContext,
         result_callable: Optional[
             Callable[[int, Dict[str, str], Union[Entity, Exception]], None]
         ] = None,
     ) -> List[Entity]:
-        """Parses ingest view query results into entities based on the manifest file for
-        this ingest view.
+        """Parses query results from this manifest's ingest view into a list of
+        entities.
         """
-
-        manifest_path = self.delegate.get_ingest_view_manifest_path(ingest_view_name)
-        ingest_view_manifest = self.parse_manifest(manifest_path)
         result = []
-        if not ingest_view_manifest.should_launch:
+        if not self.should_launch(context):
             raise ValueError(
-                f"Cannot parse results for ingest view [{ingest_view_name}] because "
-                f"should_launch is false."
+                f"Cannot parse results for ingest view [{self.ingest_view_name}] "
+                f"because should_launch is false."
             )
 
         for i, row in enumerate(contents_iterator):
-            self._validate_row_columns(i, row, set(ingest_view_manifest.input_columns))
+            self._validate_row_columns(i, row, set(self.input_columns))
 
             try:
-                output_tree = ingest_view_manifest.output.build_from_row(row)
+                output_tree = self.output.build_from_row(row, context)
             except Exception as e:
                 if result_callable:
                     result_callable(i, row, e)
@@ -131,11 +133,22 @@ class IngestViewResultsParser:
                 f"results row [{row_number}]: {missing_from_results}"
             )
 
-    def parse_manifest(self, manifest_path: str) -> IngestViewManifest:
-        """Parses the provided manifest, returning a hydrated AST (abstract syntax tree)
-        for the output, as well as the set of expected input columns for any CSVs we use
-        this manifest to parse.
+
+class IngestViewManifestCompiler:
+    """Class that can be used to compile the YAML mappings manifest file for the
+    provided ingest view into a manifest object.
+    """
+
+    def __init__(self, delegate: IngestViewManifestCompilerDelegate):
+        self.delegate = delegate
+
+    def compile_manifest(self, *, ingest_view_name: str) -> IngestViewManifest:
+        """Compiles the YAML mappings manifest file for the provided ingest view into
+        an object that contains the hydrated AST (abstract syntax tree) for the output
+        and other info that will help us parse the result rows from this ingest view
+        into entities.
         """
+        manifest_path = self.delegate.get_ingest_view_manifest_path(ingest_view_name)
         manifest_dict = YAMLDict.from_path(manifest_path)
 
         version = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
@@ -170,17 +183,15 @@ class IngestViewResultsParser:
                 variable_manifests[variable_name] = variable_manifest
 
         raw_launch_env_manifest = manifest_dict.pop_dict_optional("launch_env")
-        should_launch = True
         if raw_launch_env_manifest:
-            should_launch_value = build_manifest_from_raw_typed(
+            should_launch_manifest = build_manifest_from_raw_typed(
                 raw_field_manifest=raw_launch_env_manifest,
                 delegate=self.delegate,
                 variable_manifests=variable_manifests,
                 expected_result_type=bool,
-            ).build_from_row({})
-            should_launch = (
-                should_launch_value if should_launch_value is not None else True
             )
+        else:
+            should_launch_manifest = BooleanLiteralManifest(value=True)
 
         raw_entity_manifest = manifest_dict.pop_dict("output")
         entity_cls_name = one(raw_entity_manifest.keys())
@@ -209,10 +220,11 @@ class IngestViewResultsParser:
         )
 
         return IngestViewManifest(
+            ingest_view_name=ingest_view_name,
             manifest_language_version=version,
             input_columns=input_columns,
             unused_columns=unused_columns,
-            should_launch=should_launch,
+            should_launch_manifest=should_launch_manifest,
             output=output_manifest,
         )
 

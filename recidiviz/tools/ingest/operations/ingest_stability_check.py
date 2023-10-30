@@ -61,8 +61,8 @@ from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
     IngestViewManifestCollector,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
+    IngestViewManifestCompilerDelegateImpl,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
@@ -183,14 +183,13 @@ def verify_ingest_view_determinism(
 
     ingest_manifest_collector = IngestViewManifestCollector(
         region=region,
-        delegate=IngestViewResultsParserDelegateImpl(
-            region=region,
-            schema_type=SchemaType.STATE,
-            ingest_instance=ingest_instance,
-            results_update_datetime=datetime.datetime.now(),
+        delegate=IngestViewManifestCompilerDelegateImpl(
+            region=region, schema_type=SchemaType.STATE
         ),
     )
-    launched_ingest_views = ingest_manifest_collector.launchable_ingest_views()
+    launched_ingest_views = ingest_manifest_collector.launchable_ingest_views(
+        ingest_instance=ingest_instance
+    )
 
     ingest_view_contents = InstanceIngestViewContentsImpl(
         big_query_client=bq_client,

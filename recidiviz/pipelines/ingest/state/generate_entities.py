@@ -24,21 +24,19 @@ from dateutil import parser
 from more_itertools import one
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector import (
-    IngestViewManifestCollector,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
+    IngestViewContentsContextImpl,
 )
-from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
-    IngestViewResultsParserDelegateImpl,
+from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    IngestViewManifest,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     to_string_value_converter,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
-from recidiviz.pipelines.ingest.state.constants import IngestViewName, UpperBoundDate
+from recidiviz.pipelines.ingest.state.constants import UpperBoundDate
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
     UPPER_BOUND_DATETIME_COL_NAME,
@@ -52,22 +50,22 @@ class GenerateEntities(beam.PTransform):
         self,
         state_code: StateCode,
         ingest_instance: DirectIngestInstance,
-        ingest_view_name: IngestViewName,
+        ingest_view_manifest: IngestViewManifest,
     ):
         super().__init__()
 
         self._state_code = state_code
         self._ingest_instance = ingest_instance
-        self._ingest_view_name = ingest_view_name
+        self._ingest_view_manifest = ingest_view_manifest
 
     def expand(
         self, input_or_inputs: beam.PCollection[Dict[str, Any]]
     ) -> beam.PCollection[Tuple[UpperBoundDate, RootEntity]]:
         return (
             input_or_inputs
-            | f"Strip {self._ingest_view_name} rows of date metadata columns, returning in a tuple with the upper bound date."
+            | f"Strip {self._ingest_view_manifest.ingest_view_name} rows of date metadata columns, returning in a tuple with the upper bound date."
             >> beam.Map(self.strip_off_dates)
-            | f"Generate {self._ingest_view_name} entities."
+            | f"Generate {self._ingest_view_manifest.ingest_view_name} entities."
             >> beam.MapTuple(self.generate_entity)
         )
 
@@ -91,21 +89,13 @@ class GenerateEntities(beam.PTransform):
     def generate_entity(
         self, upperbound_date: UpperBoundDate, row: Dict[str, str]
     ) -> Tuple[UpperBoundDate, RootEntity]:
-        region = direct_ingest_regions.get_direct_ingest_region(self._state_code.value)
-        ingest_manifest_collector = IngestViewManifestCollector(
-            region=region,
-            delegate=IngestViewResultsParserDelegateImpl(
-                region=region,
-                schema_type=SchemaType.STATE,
-                ingest_instance=self._ingest_instance,
-                results_update_datetime=datetime.fromtimestamp(upperbound_date),
-            ),
-        )
-
         entity = one(
-            ingest_manifest_collector.manifest_parser.parse(
-                ingest_view_name=self._ingest_view_name,
+            self._ingest_view_manifest.parse_contents(
                 contents_iterator=iter([row]),
+                context=IngestViewContentsContextImpl(
+                    ingest_instance=self._ingest_instance,
+                    results_update_datetime=datetime.fromtimestamp(upperbound_date),
+                ),
             )
         )
 
