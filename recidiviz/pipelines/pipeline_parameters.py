@@ -124,11 +124,7 @@ class PipelineParameters:
         default="template_metadata", validator=attr_validators.is_str
     )
 
-    service_account_email: str = attr.ib()
-
-    @service_account_email.default
-    def _service_account_email_default(self) -> str:
-        return f"direct-ingest-state-{self.state_code.replace('_', '-').lower()}-df@{self.project}.iam.gserviceaccount.com"
+    service_account_email: Optional[str] = attr.ib(default=None)
 
     @service_account_email.validator
     def _service_account_email_validator(
@@ -282,6 +278,7 @@ class PipelineParameters:
                         action=ValidateSandboxDataset,
                     )
                 else:
+
                     parser.add_argument(
                         f"--{name}",
                         dest=name,
