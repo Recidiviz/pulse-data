@@ -20,6 +20,7 @@ import {
   getCurrentIngestInstanceStatus,
   getRawDataSourceInstance,
 } from "../../AdminPanelAPI";
+import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance } from "../IngestOperationsView/constants";
 
 export const fetchCurrentIngestInstanceStatus = async (
@@ -52,4 +53,18 @@ export const fetchCurrentRawDataSourceInstance = async (
     );
     return null;
   }
+};
+
+export const fetchDataflowEnabled = async (
+  stateCode: string
+): Promise<boolean> => {
+  const primaryResponse = await isIngestInDataflowEnabled(
+    stateCode,
+    DirectIngestInstance.PRIMARY
+  );
+  const secondaryResponse = await isIngestInDataflowEnabled(
+    stateCode,
+    DirectIngestInstance.SECONDARY
+  );
+  return Boolean(primaryResponse.text) && Boolean(secondaryResponse.text);
 };
