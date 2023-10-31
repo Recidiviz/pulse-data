@@ -21,7 +21,6 @@ someone in ID has a valid LSIR level for the required number of days:
  for the 90 days of active supervision
 -At or below moderate potential to reoffend can have no increase in risk level 360 days prior
 """
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -36,6 +35,7 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
+from recidiviz.task_eligibility.utils.us_ix_query_fragments import lsir_spans
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -47,80 +47,7 @@ someone in ID has a LSI-R score at or below the low potential level to reoffend 
 """
 
 _QUERY_TEMPLATE = f"""
-WITH LSIR_level_gender AS(
-  /* This CTE creates a view of LSIR-score level by gender according to updated
-  Idaho Supervision Categories (07/21/2020) */
-  SELECT
-      score.person_id,
-      score.state_code,
-      score.assessment_date AS score_start_date,
-      {nonnull_end_date_clause('score.score_end_date_exclusive')} AS score_end_date,
-      ses.start_date AS supervision_start_date,
-      ses.end_date_exclusive AS supervision_end_date,
-      CASE
-          WHEN ((gender != "MALE" OR gender IS NULL) AND assessment_score <=22) THEN "LOW"
-          WHEN ((gender != "MALE" OR gender IS NULL)
-                                AND (assessment_score BETWEEN 23 AND 30)) THEN "MODERATE"
-          WHEN (gender = "MALE" AND assessment_score <=20) THEN "LOW"
-          WHEN (gender = "MALE" AND (assessment_score BETWEEN 21 AND 28)) THEN "MODERATE"
-          ELSE "HIGH"
-          END AS lsir_level
-  FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` score
-  INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized`ses
-    ON score.state_code = ses.state_code
-    AND score.person_id = ses.person_id
-    --only consider scores relevant in the supervision session during which they occur 
-    AND ses.start_date < {nonnull_end_date_clause('score.score_end_date_exclusive')}
-    AND score.assessment_date < {nonnull_end_date_clause('ses.end_date_exclusive')}
-     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` info
-      ON score.state_code = info.state_code
-      AND score.person_id = info.person_id
-  WHERE score.state_code = 'US_IX' 
-      AND assessment_type = 'LSIR'
-),
-grp_starts as (
-   /* This CTE identifies when the LSI-R level changes within a supervision session. 
-   grp_start is 1 at the beginning of each new level span and 0 for consecutive periods with the same LSI-R score.*/
-  SELECT 
-      state_code,
-      person_id,
-      lsir_level, 
-      supervision_start_date,
-      supervision_end_date,
-      score_start_date,
-      score_end_date,
-      IF(lsir_level = LAG(lsir_level) OVER supervision_window, 0, 1) AS grp_start
-  FROM LSIR_level_gender
-  WINDOW supervision_window AS (
-    PARTITION BY person_id, supervision_start_date ORDER BY score_start_date
-  )
-),
-grps as (
-    /* This CTE sums grp_starts to group together adjacent periods where the LSI-R score is the same */
-    SELECT
-        state_code,
-        person_id,
-        lsir_level, 
-        supervision_start_date,
-        supervision_end_date,
-        score_start_date,
-        score_end_date,
-        SUM(grp_start) OVER(ORDER BY person_id, supervision_start_date, score_start_date) AS grp
-    FROM grp_starts
-),
- lsir_spans AS (
-    /* This CTE actually combines adjacent periods where the LSI-R score is the same by 
-    choosing min start and max end date.*/
-    SELECT 
-        state_code, 
-        person_id,
-        lsir_level,
-        MIN(score_start_date) AS score_span_start_date,
-        --end span date on supervision session end date, or score end date, whichever comes first
-        MAX(LEAST(score_end_date,{nonnull_end_date_clause('supervision_end_date')})) AS score_span_end_date
-    FROM grps
-    GROUP BY grp, state_code, person_id, lsir_level
-),
+WITH {lsir_spans()},
 critical_date_spans AS (
     SELECT
         state_code,
