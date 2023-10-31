@@ -125,12 +125,14 @@ def json_serializable_dict(
     serializable_dict: Dict[str, Any] = {}
 
     for key, v in element.items():
-        if isinstance(v, Enum) and v is not None:
+        if isinstance(v, Enum):
             serializable_dict[key] = v.value
-        elif isinstance(v, datetime.date) and v is not None:
-            # By using isoformat, we are guaranteed a string in the form YYYY-MM-DD, padded
-            # with leading zeros if necessary.
-            serializable_dict[key] = v.isoformat().split("T")[0]
+        elif isinstance(v, (datetime.date, datetime.datetime)):
+            # By using isoformat, we are guaranteed a string in the form YYYY-MM-DD,
+            # padded with leading zeros if necessary. For datetime values, the format
+            # will be YYYY-MM-DDTHH:MM:SS, with an optional milliseconds component if
+            # relevant.
+            serializable_dict[key] = v.isoformat()
         elif isinstance(v, list):
             if not list_serializer:
                 raise ValueError(

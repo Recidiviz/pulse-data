@@ -21,7 +21,6 @@ from typing import Dict, Type
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
-from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.pipelines.metrics.incarceration.metrics import (
     IncarcerationAdmissionMetric,
@@ -53,74 +52,6 @@ from recidiviz.pipelines.metrics.supervision.metrics import (
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
-from recidiviz.pipelines.metrics.utils.metric_utils import (
-    json_serializable_list_value_handler,
-)
-from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
-    json_serializable_dict,
-)
-
-
-class TestJsonSerializableMetricKey(unittest.TestCase):
-    """Tests using the json_serializable_dict function with the
-    json_serializable_list_value_handler built for handling lists in metric values."""
-
-    def test_json_serializable_metric_key(self) -> None:
-        metric_key = {
-            "gender": StateGender.MALE,
-            "year": 1999,
-            "month": 3,
-            "state_code": "CA",
-        }
-
-        expected_output = {
-            "gender": "MALE",
-            "year": 1999,
-            "month": 3,
-            "state_code": "CA",
-        }
-
-        updated_metric_key = json_serializable_dict(
-            metric_key, list_serializer=json_serializable_list_value_handler
-        )
-
-        self.assertEqual(expected_output, updated_metric_key)
-
-    def test_json_serializable_metric_key_ViolationTypeFrequencyCounter(self) -> None:
-        metric_key = {
-            "gender": StateGender.MALE,
-            "year": 1999,
-            "month": 3,
-            "state_code": "CA",
-            "violation_type_frequency_counter": [
-                ["TECHNICAL"],
-                ["ASC", "EMP", "TECHNICAL"],
-            ],
-        }
-
-        expected_output = {
-            "gender": "MALE",
-            "year": 1999,
-            "month": 3,
-            "state_code": "CA",
-            "violation_type_frequency_counter": "[ASC, EMP, TECHNICAL],[TECHNICAL]",
-        }
-
-        updated_metric_key = json_serializable_dict(
-            metric_key, list_serializer=json_serializable_list_value_handler
-        )
-
-        self.assertEqual(expected_output, updated_metric_key)
-
-    def test_json_serializable_metric_key_InvalidList(self) -> None:
-        metric_key = {"invalid_list_key": ["list", "values"]}
-
-        with self.assertRaisesRegex(
-            ValueError, "^Unexpected list in metric_key for key: invalid_list_key$"
-        ):
-            json_serializable_dict(
-                metric_key, list_serializer=json_serializable_list_value_handler
-            )
 
 
 class TestBQSchemaForMetricTable(unittest.TestCase):
