@@ -190,7 +190,7 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
       INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON c.OffenderID = pei.external_id
         AND pei.state_code = "US_TN"
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(AssignmentDateTime AS DATETIME) ASC) = 1
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(AssignmentDateTime AS DATETIME) DESC) = 1
     ),
 """
 
