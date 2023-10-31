@@ -16,6 +16,7 @@
 # =============================================================================
 """View logic to prepare US_ME supervision staff data for Workflows"""
 
+# TODO(#25057): Delete US_ME_STAFF_TEMPLATE when Workflows frontend is fully using the separated records.
 US_ME_STAFF_TEMPLATE = """
     WITH 
     caseload_staff_ids AS (
@@ -60,5 +61,37 @@ US_ME_STAFF_TEMPLATE = """
 
     SELECT 
         {columns}
+    FROM caseload_staff
+"""
+
+
+def build_us_me_staff_template(caseload_source_table: str) -> str:
+    """Builds the US_ME incarceration and supervision staff templates."""
+    return f"""
+    WITH 
+    caseload_staff_ids AS (
+        SELECT DISTINCT
+            officer_id AS id,
+            state_code,
+        FROM `{{project_id}}.{{workflows_dataset}}.{caseload_source_table}`
+        WHERE state_code = "US_ME"
+        AND officer_id IS NOT NULL
+    )
+    , caseload_staff AS (
+        SELECT DISTINCT
+            ids.id,
+            ids.state_code,
+            UPPER(state_table.First_Name || " " || state_table.Last_Name) AS name,
+            CAST(NULL AS STRING) AS district,
+            LOWER(state_table.Email_Tx) AS email,
+            UPPER(state_table.First_Name) as given_names,
+            UPPER(state_table.Last_Name) as surname,
+            CAST(NULL AS STRING) AS role_subtype,
+        FROM caseload_staff_ids ids
+        LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_900_EMPLOYEE_latest` state_table
+            ON state_table.Employee_Id = ids.id
+    )
+    SELECT 
+        {{columns}}
     FROM caseload_staff
 """

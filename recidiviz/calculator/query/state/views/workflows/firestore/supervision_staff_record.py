@@ -1,0 +1,127 @@
+#  Recidiviz - a data platform for criminal justice reform
+#  Copyright (C) 2023 Recidiviz, Inc.
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#  =============================================================================
+"""View to prepare supervision staff records for Workflows for export to the frontend."""
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
+from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.workflows.us_ca.supervision_staff_template import (
+    US_CA_SUPERVISION_STAFF_TEMPLATE,
+)
+from recidiviz.calculator.query.state.views.workflows.us_id.supervision_staff_template import (
+    US_ID_SUPERVISION_STAFF_TEMPLATE,
+)
+from recidiviz.calculator.query.state.views.workflows.us_ix.supervision_staff_template import (
+    US_IX_SUPERVISION_STAFF_TEMPLATE,
+)
+from recidiviz.calculator.query.state.views.workflows.us_me.staff_template import (
+    build_us_me_staff_template,
+)
+from recidiviz.calculator.query.state.views.workflows.us_mi.supervision_staff_template import (
+    US_MI_SUPERVISION_STAFF_TEMPLATE,
+)
+from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_staff_template import (
+    US_ND_SUPERVISION_STAFF_TEMPLATE,
+)
+from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_staff_template import (
+    US_TN_SUPERVISION_STAFF_TEMPLATE,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
+from recidiviz.ingest.direct.dataset_config import (
+    raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+SUPERVISION_STAFF_RECORD_VIEW_NAME = "supervision_staff_record"
+
+SUPERVISION_STAFF_RECORD_DESCRIPTION = """
+    Supervision staff records to be exported to Firestore to power Workflows.
+    """
+
+SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE = f"""
+    WITH 
+        tn_staff AS ({US_TN_SUPERVISION_STAFF_TEMPLATE}) 
+        , nd_staff AS ({US_ND_SUPERVISION_STAFF_TEMPLATE})
+        , id_staff AS ({US_ID_SUPERVISION_STAFF_TEMPLATE})
+        , ix_staff AS ({US_IX_SUPERVISION_STAFF_TEMPLATE})
+        , me_staff AS ({build_us_me_staff_template("client_record_materialized")})
+        , mi_staff AS ({US_MI_SUPERVISION_STAFF_TEMPLATE})
+        , ca_staff AS ({US_CA_SUPERVISION_STAFF_TEMPLATE})
+
+    SELECT {{columns}} FROM tn_staff
+    UNION ALL 
+    SELECT {{columns}} FROM nd_staff
+    UNION ALL
+    SELECT {{columns}} FROM id_staff
+    UNION ALL
+    SELECT {{columns}} FROM ix_staff
+    UNION ALL
+    SELECT {{columns}} FROM me_staff
+    UNION ALL
+    SELECT {{columns}} FROM mi_staff
+    UNION ALL
+    SELECT {{columns}} FROM ca_staff
+"""
+
+SUPERVISION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
+    dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
+    view_id=SUPERVISION_STAFF_RECORD_VIEW_NAME,
+    view_query_template=SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE,
+    description=SUPERVISION_STAFF_RECORD_DESCRIPTION,
+    # TODO(#15628): Deprecate name column once given_names and surname are supported
+    columns=[
+        "id",
+        "state_code",
+        "name",
+        "district",
+        "email",
+        "given_names",
+        "surname",
+        "role_subtype",
+    ],
+    static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_mi_raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
+    ),
+    vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
+    workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_ca_raw_data_dataset=raw_tables_dataset_for_region(
+        state_code=StateCode.US_CA, instance=DirectIngestInstance.PRIMARY
+    ),
+    should_materialize=True,
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        SUPERVISION_STAFF_RECORD_VIEW_BUILDER.build_and_print()
