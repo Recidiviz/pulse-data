@@ -60,7 +60,7 @@ US_MI_SUPERVISION_STAFF_TEMPLATE = f"""
         UPPER(employee.first_name || " " || IF(employee.middle_name is null, "", employee.middle_name || " ") || employee.last_name) AS name,
         {get_district_clause("county_reference.description")} AS district,
         LOWER(additional_info.email_address) as email,
-        employee.employee_id IN (SELECT officer_id FROM officers_with_caseload) AS has_caseload,
+        TRUE AS has_caseload,
         FALSE AS has_facility_caseload,
         employee.first_name AS given_names,
         employee.last_name AS surname,
@@ -75,7 +75,8 @@ US_MI_SUPERVISION_STAFF_TEMPLATE = f"""
     LEFT JOIN `{{project_id}}.{{us_mi_raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest`
         location_reference_code ON location_reference_code.reference_code_id = employee.work_site_id
     WHERE
-        employee.termination_date IS NULl
+        employee.employee_id in (SELECT officer_id FROM officers_with_caseload)
+        AND employee.termination_date IS NULL
         AND employee.employee_type_id IN (
             "2104", # Supervisor
             "2105", # Agent
