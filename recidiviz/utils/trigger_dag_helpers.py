@@ -50,3 +50,28 @@ def trigger_calculation_dag_pubsub(
             }
         ),
     )
+
+
+def trigger_ingest_dag_pubsub(
+    ingest_instance: Optional[DirectIngestInstance],
+    state_code_filter: Optional[StateCode],
+) -> None:
+    """Sends a message to the PubSub topic to trigger the post-deploy CloudSQL to BQ
+    refresh, which then will trigger the ingest DAG on completion."""
+
+    logging.info(
+        "Triggering the ingest DAG with instance: [%s], and state code filter: [%s]",
+        ingest_instance.value if ingest_instance else None,
+        state_code_filter.value if state_code_filter else None,
+    )
+    pubsub_helper.publish_message_to_topic(
+        topic="v1.ingest.trigger_ingest_dag",
+        message=json.dumps(
+            {
+                "state_code_filter": state_code_filter.value
+                if state_code_filter
+                else None,
+                "ingest_instance": ingest_instance.value if ingest_instance else None,
+            }
+        ),
+    )

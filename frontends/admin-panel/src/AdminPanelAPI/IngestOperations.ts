@@ -559,3 +559,12 @@ export const runCalculationDAGForState = async (
     stateCode,
   });
 };
+
+// Run Ingest DAG For State
+export const runIngestDAGForState = async (
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody("/api/ingest_operations/trigger_ingest_dag", {
+    stateCode,
+  });
+};

@@ -92,7 +92,10 @@ from recidiviz.ingest.flash_database_tools import (
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
-from recidiviz.utils.trigger_dag_helpers import trigger_calculation_dag_pubsub
+from recidiviz.utils.trigger_dag_helpers import (
+    trigger_calculation_dag_pubsub,
+    trigger_ingest_dag_pubsub,
+)
 from recidiviz.utils.types import assert_type
 
 GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
@@ -880,12 +883,17 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
+        ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
+            state_code, ingest_instance
+        )
+
+        if ingest_in_dataflow_enabled:
+            return (jsonify({"instance": ingest_instance.value}), HTTPStatus.OK)
+
         status_manager = PostgresDirectIngestInstanceStatusManager(
             state_code.value,
             ingest_instance,
-            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
-                state_code, ingest_instance
-            ),
+            is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
         )
         try:
             raw_data_source_instance: Optional[
@@ -1303,6 +1311,29 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             trigger_calculation_dag_pubsub(DirectIngestInstance.PRIMARY, state_code)
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/trigger_ingest_dag",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _trigger_ingest_dag() -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            trigger_ingest_dag_pubsub(DirectIngestInstance.PRIMARY, state_code)
             return (
                 "",
                 HTTPStatus.OK,
