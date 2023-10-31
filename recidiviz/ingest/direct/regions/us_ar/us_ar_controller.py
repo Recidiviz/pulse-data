@@ -43,4 +43,4 @@ class UsArController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        return ["person", "staff", "supervision_period"]
+        return ["person", "staff", "supervision_period", "supervision_violation"]
