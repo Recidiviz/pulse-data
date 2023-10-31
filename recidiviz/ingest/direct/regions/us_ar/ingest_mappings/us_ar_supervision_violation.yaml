@@ -1,0 +1,203 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_staff` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OFFENDERID
+  - INTERVENTIONDATE
+  - INTERVENTIONTIME
+  - OFFENSESEQ
+  - OFFENSEDATE
+  - OFFENSECODE
+  - sanction_list
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OFFENDERID
+          id_type: $literal("US_AR_OFFENDERID")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - OFFENDERID
+                - INTERVENTIONDATE
+                - INTERVENTIONTIME
+                - OFFENSESEQ
+          violation_date: OFFENSEDATE
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: OFFENSECODE
+                    $mappings:
+                      StateSupervisionViolationType.ABSCONDED:
+                        - "002" # Absconding >= 180 Days
+                        - "006" # Evading up to 179 Days
+                        - "007" # Evading >= 90 Days(Offender with 1029 or Sex Rel Misdemean)
+                        - "008" # Evading <= 89 Days(Offender with 1029 or Sex Rel Misdemean)
+                        - "009" # Evading Supervision (Offender Not Present)
+                        - "010" # Evading Up to 6 Days (Sex Offender)
+                        - "040" # Evading up to 179 Days - Extradited from Out of State
+                        - "041" # Evading 7 Days or More (Sex Offender)
+                        - "X03" # Evading Supervision - up to 89 days
+                        - "X04" # Evading Supervision - 90 days or more
+                        - "X05" # Evading Supervision  > 6 months
+                      StateSupervisionViolationType.FELONY:
+                        - "001" # New Felony Arrest
+                        - "034" # New Felony Arrest - Violent or Sexual or Act 1029 Offense
+                      StateSupervisionViolationType.MISDEMEANOR:
+                        - "031" # New Misdemeanor
+                        - "033" # New Misdemeanor Arrest - Violent or Sexual
+                        - "X09" # Misdemeanor Arrest - Resisting Arrest
+                      StateSupervisionViolationType.LAW:
+                        - "032" # DWI
+                        - "042" # DWI (While on Supv for Felony DWI
+                      StateSupervisionViolationType.TECHNICAL:
+                        - "003" # Association with Others Engaged in Criminal Activity
+                        - "004" # Change Residence without Permission
+                        - "005" # Change Residence without Permission (Sex Offender)
+                        - "011" # Failure to Abide by Special Conditions
+                        - "012" # Failure to Cooperate with Officer
+                        - "013" # Failure to Maintain Employment or Education
+                        - "014" # Failure to Participate in Community Service
+                        - "015" # Failure to Participate in Treatment
+                        - "016" # Failure to Participate in Treatment - Dropped/Terminated
+                        - "017" # Failure to Participate in Treatment (Offender Not Present)
+                        - "018" # Failure to Pay Court Fines/Costs - 60 Days Delinquent
+                        - "019" # Failure to Pay Court Fines/Costs -90 Days or More Delinquent
+                        - "020" # Failure to Pay Restitution - 60 Days
+                        - "021" # Failure to Pay Resititution - 90 Days
+                        - "022" # Failure to Pay Resititution - 120 Days
+                        - "023" # Failure to Pay Resititution - 180 Days
+                        - "024" # Failure to Pay Supervision Fees - 60 Days Delinquent
+                        - "025" # Failure to Pay Supervision Fees - 90 Days or More Delinquent
+                        - "026" # Failure to Report
+                        - "027" # Failure to Report (Offender Not Present)
+                        - "028" # Failure to Report for Assessment
+                        - "029" # GPS Violation - Offender Removed Device
+                        - "030" # OVG Sanction GPS Violation
+                        - "035" # Positive Drug or Alcohol UA
+                        - "037" # Travel Violation - In State
+                        - "038" # Travel Violation - Out of State
+                        - "039" # Possession of a Prohibited Weapon (No Charges Filed)
+                        - "043" # Special Condition or Court Ordered GPS Violation
+                        - "045" # Failure to Report for Assessment (Offender Not Present)
+                        - "046" # Possession of Urine and/or Urine Delivery Device
+                        - "050" # Failure to Complete MAT Reentry Program
+                        - "051" # Trespassing on Correctional Institution Property
+                        - "X01" # Travel violations in/out of State
+                        - "X06" # Travel Violation Out State - Offender Extradited
+                        - "X07" # GPS Violation - Post TVC
+                        - "X08" # GPS Violation - Pending Revocation Hearing
+                      StateSupervisionViolationType.INTERNAL_UNKNOWN:
+                        - "036" # TL Discharge <60 Days Since ADC/CCC/SSP Release
+                        - "044" # ISC Mandatory Retake
+                        - "047" # Refusal to Attend /Unsuccessful Compln Residential Treatment
+                        - "048" # Transitional Living Discharge
+                        - "049" # Violation Disclosed and Deception Indicated-Sex Offender
+                        - "052" # Transitional Living Discharge (Requires AD Review)
+                      StateSupervisionViolationType.EXTERNAL_UNKNOWN:
+                        - "X02" # Offense - any violation (or any comb violation)
+          supervision_violation_responses:
+            - $foreach:
+                $iterable:
+                  $split_json: sanction_list
+                $result:
+                  StateSupervisionViolationResponse:
+                    external_id:
+                      $concat:
+                        $values:
+                          - OFFENDERID
+                          - INTERVENTIONDATE
+                          - INTERVENTIONTIME
+                          - OFFENSESEQ
+                          - $json_extract:
+                              $key: SANCTIONSEQ
+                              $json: $iter_item
+                    response_date: INTERVENTIONDATE
+                    response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                    deciding_body_type: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                    deciding_staff_external_id:
+                      $json_extract:
+                        $key: PPOFFICERID
+                        $json: $iter_item
+                    deciding_staff_external_id_type:
+                      $conditional:
+                        - $if:
+                            $not_null:
+                              $json_extract:
+                                $key: PPOFFICERID
+                                $json: $iter_item
+                          $then: $literal("US_AR_PARTYID")
+                    supervision_violation_response_decisions:
+                      - StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: SANCTIONTYPE
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE:
+                                  - C0 # Community Service
+                                  - C1 # 10 - 20 Hours Community Service
+                                  - C2 # 10 - 40 Hours Community Service
+                                  - CW # County Work Project
+                                  - X2 # 20 hours a Week of Community Service
+                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                  - HW # Hold using White Warrant until PB has reviewed VR
+                                StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                  - CF # Curfew
+                                  - MG # More Restrictive GPS
+                                  - T1 # Travel Restrictions for 30 Days (excluding for employment)
+                                  - T2 # Travel Restriction for 30-90 Days (excluding for employment)
+                                  - X1 # Daily Reporting 80 hours
+                                  - I2 # Increased Reporting - No GPS Unit Available
+                                  - ID # Increased Drug Testing
+                                  - IR # Increased Reporting
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - F1 # Amended Petition to Revoke Probation
+                                  - F2 # 2nd Amended Petition to Revoke Probation
+                                  - F3 # 3rd Amended Petition to Revoke Probation
+                                  - F4 # 4th Amended Petition to Revoke Probation
+                                  - F5 # 5th Amended Petition to Revoke Probation
+                                  - FI # Revoke First Infraction (Probation)
+                                  - PR # Petition to Revoke Probation
+                                  - PS # Petition to Revoke Probation (@40 points or >)
+                                  - X0 # TVC  (Petition to Revoke  Probation)
+                                  - AR # Absconder Request Parole Revo Hearing
+                                  - V1 # Violation Report to APB for Revocation Hearing
+                                StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION:
+                                  - 1V # One Day ADC Visit (for probation)
+                                  - AJ # Act 570 Jail Days (1-7 days)
+                                  - X3 # Jail - Days
+                                  - X5 # TVC/ADC Recommendation
+                                  - X8 # Jail
+                                StateSupervisionViolationResponseDecision.WARNING:
+                                  - VW # Verbal Warning
+                                  - WW # Written Warning
+                                StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  - G1 # GPS - Days
+                                  - GP # GPS
+                                  - HA # House Arrest
+                                  - IS # ISC Sanction Hearing
+                                  - O2 # Offender Not Available for Sanction - VR/Petition Allowed
+                                  - OU # Offender Unavailable for Sanction
+                                  - SH # Sanction Hearing
+                                  - T7 # SSP 90 (@40 points)
+                                  - T8 # SSP 180 (@40 points)
+                                  - T9 # SSP 90 Days (probation)
+                                  - TD # SSP 180 Days (probation)
+                                  - TE # SSP 60 (@40 points)
+                                  - TF # SSP 120 (@40 points)
+                                  - TG # SSP 60 Days (parole)
+                                  - TH # SSP 120 Days (parole)
+                                  - V2 # ISC VR (@40 points)
+                                  - V3 # ISC VR
+                                  - VR # Violation Report (VR) to Parole Board (APB)
+                                  - VS # Violation Report (VR) to APB (@40 points or >)
+                                  - X6 # Recommend Community Correction Center (RCF)
+                                  - X7 # Electronic Monitoring - Days
