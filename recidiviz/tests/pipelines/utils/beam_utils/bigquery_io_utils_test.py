@@ -15,14 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for utils/bigquery_io_utils.py."""
-
+import datetime
 import unittest
 
 import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 
+from recidiviz.common.constants.state.state_person import StateGender
+from recidiviz.pipelines.metrics.utils.metric_utils import (
+    json_serializable_list_value_handler,
+)
 from recidiviz.pipelines.utils.beam_utils import bigquery_io_utils
+from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
+    json_serializable_dict,
+)
 
 
 class TestBeamUtils(unittest.TestCase):
@@ -71,3 +78,90 @@ class TestBeamUtils(unittest.TestCase):
             )
 
             test_pipeline.run()
+
+
+class TestJsonSerializableDict(unittest.TestCase):
+    """Tests using the json_serializable_dict function with the
+    json_serializable_list_value_handler built for handling lists in metric values."""
+
+    def test_json_serializable_dict(self) -> None:
+        metric_key = {
+            "gender": StateGender.MALE,
+            "year": 1999,
+            "month": 3,
+            "state_code": "CA",
+        }
+
+        expected_output = {
+            "gender": "MALE",
+            "year": 1999,
+            "month": 3,
+            "state_code": "CA",
+        }
+
+        updated_metric_key = json_serializable_dict(
+            metric_key, list_serializer=json_serializable_list_value_handler
+        )
+
+        self.assertEqual(expected_output, updated_metric_key)
+
+    def test_json_serializable_dict_date_handling(self) -> None:
+        metric_key = {
+            "date_field": datetime.date(2000, 1, 2),
+            "datetime_field": datetime.datetime(2000, 1, 2, 3, 4, 5),
+            "datetime_field_midnight": datetime.datetime(2000, 1, 2, 0, 0, 0, 0),
+            "datetime_field_with_millis": datetime.datetime(2000, 1, 2, 3, 4, 5, 6),
+            "null_date_field": None,
+            "null_datetime_field": None,
+        }
+
+        expected_output = {
+            "date_field": "2000-01-02",
+            "datetime_field": "2000-01-02T03:04:05",
+            "datetime_field_midnight": "2000-01-02T00:00:00",
+            "datetime_field_with_millis": "2000-01-02T03:04:05.000006",
+            "null_date_field": None,
+            "null_datetime_field": None,
+        }
+
+        updated_metric_key = json_serializable_dict(
+            metric_key, list_serializer=json_serializable_list_value_handler
+        )
+
+        self.assertEqual(expected_output, updated_metric_key)
+
+    def test_json_serializable_dict_ViolationTypeFrequencyCounter(self) -> None:
+        metric_key = {
+            "gender": StateGender.MALE,
+            "year": 1999,
+            "month": 3,
+            "state_code": "CA",
+            "violation_type_frequency_counter": [
+                ["TECHNICAL"],
+                ["ASC", "EMP", "TECHNICAL"],
+            ],
+        }
+
+        expected_output = {
+            "gender": "MALE",
+            "year": 1999,
+            "month": 3,
+            "state_code": "CA",
+            "violation_type_frequency_counter": "[ASC, EMP, TECHNICAL],[TECHNICAL]",
+        }
+
+        updated_metric_key = json_serializable_dict(
+            metric_key, list_serializer=json_serializable_list_value_handler
+        )
+
+        self.assertEqual(expected_output, updated_metric_key)
+
+    def test_json_serializable_dict_InvalidList(self) -> None:
+        metric_key = {"invalid_list_key": ["list", "values"]}
+
+        with self.assertRaisesRegex(
+            ValueError, "^Unexpected list in metric_key for key: invalid_list_key$"
+        ):
+            json_serializable_dict(
+                metric_key, list_serializer=json_serializable_list_value_handler
+            )
