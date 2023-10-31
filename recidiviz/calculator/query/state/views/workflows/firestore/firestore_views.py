@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.client_record im
 from recidiviz.calculator.query.state.views.workflows.firestore.compliant_reporting_referral_record import (
     COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.incarceration_staff_record import (
+    INCARCERATION_STAFF_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.location_record import (
     LOCATION_RECORD_VIEW_BUILDER,
 )
@@ -32,6 +35,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.resident_record 
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.staff_record import (
     STAFF_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.supervision_staff_record import (
+    SUPERVISION_STAFF_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_ca_supervision_level_downgrade_form_record import (
     US_CA_SUPERVISION_LEVEL_DOWNGRADE_VIEW_BUILDER,
@@ -124,6 +130,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_tn_transfer_t
 FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENT_RECORD_VIEW_BUILDER,
     RESIDENT_RECORD_VIEW_BUILDER,
+    INCARCERATION_STAFF_RECORD_VIEW_BUILDER,
+    SUPERVISION_STAFF_RECORD_VIEW_BUILDER,
+    # TODO(#25057): Remove staff record view builder once we are using incarceration_staff and supervision_staff on FE prod
     STAFF_RECORD_VIEW_BUILDER,
     LOCATION_RECORD_VIEW_BUILDER,
     COMPLIANT_REPORTING_REFERRAL_RECORD_VIEW_BUILDER,
