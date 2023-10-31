@@ -16,7 +16,7 @@
 # =============================================================================
 """The ingest pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details
 on how to launch a local run."""
-from typing import Any, Dict, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
@@ -86,11 +86,27 @@ from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.pipelines.ingest.state.serialize_entities import SerializeEntities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import WriteToBigQuery
 
+# Views that we know we must materialize via the ORIGINAL method even though they do
+# not reference the results_update_datetime env property in the mappings.
+_ALWAYS_ORIGINAL_VIEWS_BY_STATE: Dict[StateCode, List[str]] = {
+    # TODO(#25102): Remove this exemption once the view query uses @ALL to generate all
+    #  expected task deadlines.
+    StateCode.US_ND: ["docstars_offenders_early_term"]
+}
+
 
 def materialization_method_for_ingest_view(
+    state_code: StateCode,
     ingest_view_manifest: IngestViewManifest,
     default_materialization_method: MaterializationMethod,
 ) -> MaterializationMethod:
+    always_original_views = _ALWAYS_ORIGINAL_VIEWS_BY_STATE.get(state_code)
+    if (
+        always_original_views
+        and ingest_view_manifest.ingest_view_name in always_original_views
+    ):
+        return MaterializationMethod.ORIGINAL
+
     return (
         MaterializationMethod.ORIGINAL
         if INGEST_VIEW_RESULTS_UPDATE_DATETIME
@@ -192,6 +208,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 )
 
             materialization_method = materialization_method_for_ingest_view(
+                state_code,
                 ingest_manifest_collector.ingest_view_to_manifest[ingest_view],
                 default_materialization_method=default_materialization_method,
             )
