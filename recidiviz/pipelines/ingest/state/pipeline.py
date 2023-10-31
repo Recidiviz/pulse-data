@@ -16,7 +16,7 @@
 # =============================================================================
 """The ingest pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details
 on how to launch a local run."""
-from typing import Any, Dict, Optional, Tuple, Type
+from typing import Any, Dict, Optional, Set, Tuple, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
@@ -37,8 +37,13 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import get_state_entity_names
+from recidiviz.persistence.database.schema_utils import (
+    get_database_entities_by_association_table,
+    get_state_table_classes,
+    is_association_table,
+)
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.pipelines.base_pipeline import BasePipeline
@@ -92,6 +97,25 @@ def materialization_method_for_ingest_view(
         in ingest_view_manifest.output.env_properties_referenced()
         else default_materialization_method
     )
+
+
+def get_pipeline_output_tables(expected_output_entities: Set[str]) -> Set[str]:
+    """Returns the set of tables that the pipeline will output to."""
+    expected_output_tables: Set[str] = set()
+    for table in get_state_table_classes():
+        if is_association_table(table.name):
+            parent_member, child_member = get_database_entities_by_association_table(
+                state_schema, table.name
+            )
+            if (
+                parent_member.get_entity_name() in expected_output_entities
+                and child_member.get_entity_name() in expected_output_entities
+            ):
+                expected_output_tables.add(table.name)
+        elif table.name in expected_output_entities:
+            expected_output_tables.add(table.name)
+
+    return expected_output_tables
 
 
 class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
@@ -246,7 +270,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             )
         )
 
-        all_state_tables = list(get_state_entity_names())
+        output_state_tables = get_pipeline_output_tables(expected_output_entities)
         final_entities: beam.PCollection[Dict[str, Any]] = (
             {
                 PRIMARY_KEYS: root_entity_external_ids_to_primary_keys,
@@ -260,13 +284,12 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
                 expected_output_entities=expected_output_entities,
                 field_index=field_index,
             )
-            # TODO(#24394) Update the write steps to only look at expected_output_entities
             | beam.ParDo(
                 SerializeEntities(state_code=state_code, field_index=field_index)
-            ).with_outputs(*all_state_tables)
+            ).with_outputs(*output_state_tables)
         )
 
-        for table_name in all_state_tables:
+        for table_name in output_state_tables:
             _ = getattr(
                 final_entities, table_name
             ) | f"Write {table_name} to BigQuery" >> WriteToBigQuery(
