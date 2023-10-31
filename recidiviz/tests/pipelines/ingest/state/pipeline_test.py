@@ -140,3 +140,16 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             list(expected_entity_types),
             ingest_views_to_run=" ".join(subset_of_ingest_views),
         )
+
+    def test_expected_pipeline_output(self) -> None:
+        expected_output_entities = {
+            "state_person",
+            "state_person_external_id",
+            "state_incarceration_sentence",
+            "state_charge",
+        }
+        self.assertEqual(
+            pipeline.get_pipeline_output_tables(expected_output_entities),
+            expected_output_entities
+            | {"state_charge_incarceration_sentence_association"},
+        )
