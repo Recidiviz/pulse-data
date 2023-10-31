@@ -155,6 +155,7 @@ def pull_agencies_with_published_capacity_and_cost_data(
         new_sheet_title=new_sheet_title,
         spreadsheet_id=SPREADSHEET_ID,
         logger=logger,
+        index=1,
     )
 
 

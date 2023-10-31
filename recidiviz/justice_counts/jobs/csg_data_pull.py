@@ -439,6 +439,7 @@ def generate_agency_summary_csv(
             updated=today_str,
             google_credentials=google_credentials,
         )
+        # Index is 2 since we have Key and Scoreboard sheets
         write_data_to_spreadsheet(
             google_credentials=google_credentials,
             df=df,
@@ -446,6 +447,7 @@ def generate_agency_summary_csv(
             spreadsheet_id=DATA_PULL_SPREADSHEET_ID,
             new_sheet_title=today_str,
             logger=logger,
+            index=2,
         )
 
 
@@ -454,14 +456,42 @@ def generate_and_write_scoreboard(
     updated: str,
     google_credentials: Credentials,
 ) -> None:
+    """Generate some summary statistics related to Publisher usage and write these
+    statistics (appended as a new row) to the Scoreboard sheet in the Justice Counts
+    Data Pull. Columns generated include the following:
+        - date_last_updated
+        - num_total_agencies
+        - num_agencies_logged_in_last_week
+        - num_super_agencies
+        - num_agencies_shared_data_at_least_one_metric
+        - num_agencies_at_least_one_metric_configured
+        - num_agencies_data_shared_this_week
+    """
     num_total_agencies = str(len(df))
     num_agencies_logged_in_last_week = str(len(df[df["login_this_week"]]))
+    num_super_agencies = str(len(df[df["is_superagency"]]))
+    num_agencies_shared_data_at_least_one_metric = str(
+        len(df[df["num_metrics_with_data"] > 0])
+    )
+    num_agencies_at_least_one_metric_configured = str(
+        len(df[df["num_metrics_configured"] > 0])
+    )
+    num_agencies_data_shared_this_week = str(len(df[df["data_shared_this_week"]]))
 
     # data_to_write is a list containing lists that represent new rows to append to the
-    # existing Justice Counts Scoreboard spreadsheet. The order of these rows matters,
-    # and should coincide with the following columns:
-    # date_last_updated, num_total_agencies, num_agencies_logged_in_last_week
-    data_to_write = [[updated, num_total_agencies, num_agencies_logged_in_last_week]]
+    # existing Justice Counts Scoreboard spreadsheet
+    # The order of these rows matters and should coincide with the columns listed above!
+    data_to_write = [
+        [
+            updated,
+            num_total_agencies,
+            num_agencies_logged_in_last_week,
+            num_super_agencies,
+            num_agencies_shared_data_at_least_one_metric,
+            num_agencies_at_least_one_metric_configured,
+            num_agencies_data_shared_this_week,
+        ]
+    ]
     append_row_to_spreadsheet(
         google_credentials=google_credentials,
         data_to_write=data_to_write,

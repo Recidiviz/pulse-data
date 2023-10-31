@@ -126,6 +126,7 @@ def write_data_to_spreadsheet(
     spreadsheet_id: str,
     logger: logging.Logger,
     new_sheet_title: str,
+    index: int,
     data_to_write: Optional[List[List[str]]] = None,
     df: Optional[pd.DataFrame] = None,
     columns: Optional[List[str]] = None,
@@ -139,8 +140,7 @@ def write_data_to_spreadsheet(
     spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
 
     # Create a new worksheet in the spreadsheet
-    # Index is 2 since we have Key and Scoreboard sheets
-    request = {"addSheet": {"properties": {"title": new_sheet_title, "index": 2}}}
+    request = {"addSheet": {"properties": {"title": new_sheet_title, "index": index}}}
 
     # Delete existing sheet if we want to overwrite with new
     if overwrite_sheets is True:
