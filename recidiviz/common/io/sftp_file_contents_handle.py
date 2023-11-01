@@ -15,15 +15,58 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a class that can be used to access contents of a file on an SFTP server."""
+import logging
+import math
+import time
 from contextlib import contextmanager
-from typing import Iterator
+from datetime import timedelta
+from tempfile import TemporaryFile
+from typing import IO, Callable, Iterator, Optional
 
-from paramiko import SFTPClient, SFTPFile
+from paramiko import SFTPClient
 
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
 
 
-class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
+def human_readable_size(size: float, decimal_places: Optional[int] = None) -> str:
+    for unit in ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]:
+        if size < 1024.0 or unit == "PiB":
+            break
+        size /= 1024.0
+    return f"{size:.{decimal_places}f} {unit if unit is not None else 2}"
+
+
+def create_progress_callback(
+    reporting_interval: Optional[int] = None,
+) -> Callable[[int, int], None]:
+    """Creates a function which prints out download progress"""
+    reporting_interval = 5 if reporting_interval is None else reporting_interval
+    start_time = time.time()
+    last_report = start_time
+    last_processed_bytes = 0
+
+    def progress_callback(processed_bytes: int, total_bytes: int) -> None:
+        nonlocal last_report
+        nonlocal last_processed_bytes
+        current_time = time.time()
+        elapsed = current_time - last_report
+        remaining_bytes = total_bytes - processed_bytes
+        if elapsed > reporting_interval:
+            throughput = (processed_bytes - last_processed_bytes) / elapsed
+            logging.info(
+                "%s / %s %s/s ETA: %s",
+                human_readable_size(processed_bytes),
+                human_readable_size(total_bytes),
+                human_readable_size(throughput),
+                timedelta(seconds=math.floor(remaining_bytes / throughput)),
+            )
+            last_report = current_time
+            last_processed_bytes = processed_bytes
+
+    return progress_callback
+
+
+class SftpFileContentsHandle(FileContentsHandle[bytes, IO]):
     """A class that can be used to access contents of a file on an SFTP server."""
 
     def __init__(
@@ -40,6 +83,18 @@ class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
                 yield line
 
     @contextmanager
-    def open(self, mode: str = "r") -> Iterator[SFTPFile]:  # type: ignore
-        with self.sftp_client.open(filename=self.sftp_file_path, mode=mode) as f:
+    def open(self, mode: str = "r") -> Iterator[IO]:  # type: ignore
+        with TemporaryFile(mode=mode) as f:
+            if "r" in mode:
+                # Perform a threaded download of the SFTP object to a temp file
+                self.sftp_client.getfo(
+                    self.sftp_file_path,
+                    fl=f,
+                    callback=create_progress_callback(),
+                    prefetch=True,
+                )
+
+                # Rewind stream for reading
+                f.seek(0)
+
             yield f
