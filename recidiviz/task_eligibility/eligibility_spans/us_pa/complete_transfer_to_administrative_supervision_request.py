@@ -40,7 +40,7 @@ someone in PA is eligible for transfer to administrative supervision.
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
-    task_name="COMPLETE_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION",
+    task_name="COMPLETE_TRANSFER_TO_ADMINISTRATIVE_SUPERVISION_REQUEST",
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
