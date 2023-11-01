@@ -16,6 +16,7 @@
 # =============================================================================
 """A custom SFTPHook that supports two-factor authenticated SFTP servers."""
 import io
+import logging
 from typing import Any, Dict, Optional
 
 import paramiko
@@ -29,6 +30,17 @@ class RecidivizSFTPHook(SFTPHook):
     def __init__(self, ssh_conn_id: str, *args: Any, **kwargs: Dict[str, Any]) -> None:
         super().__init__(ssh_conn_id=ssh_conn_id, ssh_hook=None, *args, **kwargs)
         self.conn: Optional[paramiko.SFTPClient] = None
+
+        # Enable debug logging when creating SFTP connections
+        logging.basicConfig(level=logging.DEBUG)
+        paramiko_loggers = [
+            logging.getLogger("paramiko"),
+            logging.getLogger("paramiko.sftp"),
+            logging.getLogger("paramiko.transport"),
+        ]
+
+        for logger in paramiko_loggers:
+            logger.setLevel(logging.DEBUG)
 
     def get_conn(self) -> paramiko.SFTPClient:
         """Retrieves the SFTP connection. This is overridden from the base class in order
@@ -53,6 +65,7 @@ class RecidivizSFTPHook(SFTPHook):
                 # contain by our state partners.
                 disabled_algorithms={"pubkeys": ["rsa-sha2-512", "rsa-sha2-256"]},
             )
+
             transport.connect()
             if private_key:
                 try:
