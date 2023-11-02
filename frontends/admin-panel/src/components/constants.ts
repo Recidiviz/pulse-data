@@ -31,6 +31,10 @@ export const VITALS_PERMISSIONS_LABELS = {
   operations: "Vitals",
 };
 
+export const OUTLIERS_PERMISSIONS_LABELS = {
+  insights: "Outliers",
+};
+
 export const PATHWAYS_PERMISSIONS_LABELS = {
   system_libertyToPrison: "Liberty to Prison",
   system_prison: "Prison",
@@ -43,5 +47,6 @@ export const PATHWAYS_PERMISSIONS_LABELS = {
 export const ROUTES_PERMISSIONS_LABELS = {
   ...WORKFLOWS_PERMISSIONS_LABELS,
   ...VITALS_PERMISSIONS_LABELS,
+  ...OUTLIERS_PERMISSIONS_LABELS,
   ...PATHWAYS_PERMISSIONS_LABELS,
 };

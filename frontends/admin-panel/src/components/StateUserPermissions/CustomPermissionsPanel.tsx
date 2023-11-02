@@ -20,6 +20,7 @@ import {
   PATHWAYS_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
   WORKFLOWS_PERMISSIONS_LABELS,
+  OUTLIERS_PERMISSIONS_LABELS,
 } from "../constants";
 import FeatureVariantFormItem from "./FeatureVariantFormItem";
 import PermissionSelect from "./PermissionSelect";
@@ -67,6 +68,25 @@ export const CustomPermissionsPanel = ({
     {(
       Object.entries(WORKFLOWS_PERMISSIONS_LABELS) as [
         keyof typeof WORKFLOWS_PERMISSIONS_LABELS,
+        string
+      ][]
+    ).map(([name, label]) => {
+      return (
+        <PermissionSelect
+          permission={{ name, label }}
+          key={name}
+          disabled={hidePermissions}
+          placeholder={
+            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
+          }
+        />
+      );
+    })}
+
+    <h4>Outliers:</h4>
+    {(
+      Object.entries(OUTLIERS_PERMISSIONS_LABELS) as [
+        keyof typeof OUTLIERS_PERMISSIONS_LABELS,
         string
       ][]
     ).map(([name, label]) => {
