@@ -26,11 +26,6 @@ from recidiviz.pipelines.ingest.state.constants import (
     ExternalIdKey,
 )
 
-# Fanout is a way to prevent hot keys from slowing down the pipeline. By adding a fanout,
-# constant, we designate that for a given hot key, when detected by Dataflow, that there
-# will be a number of intermediate keys created in order to shard the work needed.
-FANOUT = 20
-
 
 class ClusterRootExternalIds(beam.PTransform):
     """A PTransform that clusters root entity IDs together.
@@ -105,7 +100,7 @@ class ClusterRootExternalIds(beam.PTransform):
                 )
             )
             | "Combine external ID clusters across all elements."
-            >> beam.CombineGlobally(CombineExternalIdClusters()).with_fanout(FANOUT)
+            >> beam.CombineGlobally(CombineExternalIdClusters())
             | "Generate a PCollection of external id clusters from the accumulator"
             >> beam.ParDo(self.split_dictionary_into_elements)
         )
