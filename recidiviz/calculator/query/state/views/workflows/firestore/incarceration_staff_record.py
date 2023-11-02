@@ -51,11 +51,9 @@ INCARCERATION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=INCARCERATION_STAFF_RECORD_VIEW_NAME,
     view_query_template=INCARCERATION_STAFF_RECORD_QUERY_TEMPLATE,
     description=INCARCERATION_STAFF_RECORD_DESCRIPTION,
-    # TODO(#15628): Deprecate name column once given_names and surname are supported
     columns=[
         "id",
         "state_code",
-        "name",
         "district",
         "email",
         "given_names",
