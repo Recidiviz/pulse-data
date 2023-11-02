@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2022 Recidiviz, Inc.
+#  Copyright (C) 2023 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
-"""Tests the ability for StaffRecordEtlDelegate to parse json rows."""
+"""Tests the ability for SupervisionStaffRecordEtlDelegate to parse json rows."""
 import os
 from datetime import datetime, timezone
 from unittest import TestCase
@@ -27,39 +27,40 @@ from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import 
     FakeFileStream,
 )
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
-    WorkflowsStaffETLDelegate,
+from recidiviz.workflows.etl.workflows_supervision_staff_etl_delegate import (
+    WorkflowsSupervisionStaffETLDelegate,
 )
 
 
-# TODO(#25057): Remove WorkflowsStaffETLDelegateTest once we are fully using incarceration and supervision staff collections
-class WorkflowsStaffETLDelegateTest(TestCase):
+class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
     """
-    Test class for the WorkflowsStaffETLDelegate
+    Test class for the WorkflowsSupervisionStaffETLDelegate
     """
 
     def test_supports_filename(self) -> None:
-        """Test that the staff file is supported for any state"""
-        delegate = WorkflowsStaffETLDelegate(StateCode.US_ND)
-        self.assertTrue(delegate.supports_file("staff_record.json"))
+        """Test that the supervision_staff_record file is supported for any state"""
+        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_ND)
+        self.assertTrue(delegate.supports_file("supervision_staff_record.json"))
 
-        delegate = WorkflowsStaffETLDelegate(StateCode.US_TN)
-        self.assertTrue(delegate.supports_file("staff_record.json"))
+        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_TN)
+        self.assertTrue(delegate.supports_file("supervision_staff_record.json"))
 
-        delegate = WorkflowsStaffETLDelegate(StateCode.US_WW)
-        self.assertTrue(delegate.supports_file("staff_record.json"))
+        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_WW)
+        self.assertTrue(delegate.supports_file("supervision_staff_record.json"))
 
-        delegate = WorkflowsStaffETLDelegate(StateCode.US_ND)
-        self.assertFalse(delegate.supports_file("not_staff_record.json"))
+        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_ND)
+        self.assertFalse(delegate.supports_file("not_supervision_staff_record.json"))
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        delegate = WorkflowsStaffETLDelegate(StateCode.US_XX)
+        delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_XX)
 
         path_to_fixture = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "fixtures", "staff_record.json"
+            os.path.dirname(os.path.realpath(__file__)),
+            "fixtures",
+            "supervision_staff_record.json",
         )
         with open(path_to_fixture, "r", encoding="utf-8") as fp:
             fixture = fp.readline()
@@ -73,8 +74,6 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "stateCode": "US_XX",
                     "name": "Joey Joe-Joe Jr. III",
                     "email": "jjjj3@xx.gov",
-                    "hasCaseload": True,
-                    "hasFacilityCaseload": False,
                     "district": "District 1",
                     "givenNames": "Joey",
                     "surname": "Joe-Joe Jr. III",
@@ -93,8 +92,6 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "stateCode": "US_XX",
                     "name": "Sally S. Slithers",
                     "email": "sal.sli@xx.gov",
-                    "hasCaseload": False,
-                    "hasFacilityCaseload": False,
                     "district": "District 2",
                     "givenNames": "Sally S.",
                     "surname": "Slithers",
@@ -113,8 +110,6 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "stateCode": "US_XX",
                     "name": "Foghorn Leghorn",
                     "email": None,
-                    "hasCaseload": True,
-                    "hasFacilityCaseload": False,
                     "district": "District 3",
                     "givenNames": "Foghorn",
                     "surname": "Leghorn",
@@ -133,8 +128,6 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     "stateCode": "US_XX",
                     "name": "The Brain",
                     "email": None,
-                    "hasCaseload": True,
-                    "hasFacilityCaseload": False,
                     "district": "District 4",
                     "givenNames": "",
                     "surname": "",
@@ -174,11 +167,11 @@ class WorkflowsStaffETLDelegateTest(TestCase):
         with local_project_id_override("test-project"):
             with freeze_time(mock_now):
                 with patch.object(
-                    WorkflowsStaffETLDelegate, "transform_row"
+                    WorkflowsSupervisionStaffETLDelegate, "transform_row"
                 ) as mock_transform:
                     mock_transform.return_value = (123, {"personExternalId": 123})
-                    delegate = WorkflowsStaffETLDelegate(StateCode.US_TN)
-                    delegate.run_etl("staff_record.json")
+                    delegate = WorkflowsSupervisionStaffETLDelegate(StateCode.US_TN)
+                    delegate.run_etl("supervision_staff_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,
