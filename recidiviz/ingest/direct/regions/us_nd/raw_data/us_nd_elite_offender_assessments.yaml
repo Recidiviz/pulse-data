@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: elite_offender_assessments
 file_description: |-
-  Todo insert
+  Includes one row per assessment taken by an individual. Assessments include classifications,
+  institutional history, work performance reviews, mental health screens, and many more.
 data_classification: source
 primary_key_cols:
   - OFFENDER_BOOK_ID

@@ -138,6 +138,8 @@ columns:
       Why the movement occurred, i.e. an admission or release reason depending on the movement direction.
   - name: MOVEMENT_DATE
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S%p', {col_name})"
     description: |-
       When the movement occurred.
   - name: TO_AGY_LOC_ID
@@ -239,9 +241,13 @@ columns:
         description: "TODO(#11833): Update with facility name."
   - name: CREATE_DATETIME
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S%p', {col_name})"
     description: |-
       When this record was first created in the source system.
   - name: MODIFY_DATETIME
     field_type: datetime
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S%p', {col_name})"
     description: |-
       When this record was most recently modified in the source system.
