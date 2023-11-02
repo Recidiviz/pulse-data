@@ -38,6 +38,9 @@ from recidiviz.workflows.etl.workflows_client_etl_delegate import (
     WorkflowsClientETLDelegate,
 )
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsETLDelegate
+from recidiviz.workflows.etl.workflows_incarceration_staff_etl_delegate import (
+    WorkflowsIncarcerationStaffETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_location_etl_delegate import (
     WorkflowsLocationETLDelegate,
 )
@@ -50,6 +53,9 @@ from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
 from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
     WorkflowsStaffETLDelegate,
 )
+from recidiviz.workflows.etl.workflows_supervision_staff_etl_delegate import (
+    WorkflowsSupervisionStaffETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
     WorkflowsTasksETLDelegate,
 )
@@ -61,7 +67,10 @@ def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]
     return [
         CompliantReportingReferralRecordETLDelegate(state_code),
         WorkflowsOpportunityETLDelegate(state_code),
+        # TODO(#25057): Remove WorkflowsStaffETLDelegate once we are fully using incarceration and supervision staff collections
         WorkflowsStaffETLDelegate(state_code),
+        WorkflowsSupervisionStaffETLDelegate(state_code),
+        WorkflowsIncarcerationStaffETLDelegate(state_code),
         WorkflowsClientETLDelegate(state_code),
         WorkflowsResidentETLDelegate(state_code),
         WorkflowsTasksETLDelegate(state_code),

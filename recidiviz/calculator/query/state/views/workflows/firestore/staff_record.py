@@ -58,7 +58,6 @@ STAFF_RECORD_VIEW_NAME = "staff_record"
 STAFF_RECORD_DESCRIPTION = """
     Staff records to be exported to Firestore to power Workflows.
     """
-
 STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
         tn_staff AS ({US_TN_SUPERVISION_STAFF_TEMPLATE})
@@ -87,6 +86,7 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
     SELECT {{columns}} FROM ca_staff
 """
 
+# TODO(#25057): Remove staff_record once we are fully using incarceration and supervision staff collections
 STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,
     view_id=STAFF_RECORD_VIEW_NAME,
