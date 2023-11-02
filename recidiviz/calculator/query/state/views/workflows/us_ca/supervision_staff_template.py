@@ -45,7 +45,6 @@ US_CA_SUPERVISION_STAFF_TEMPLATE = f"""
         external_id AS id,
         JSON_VALUE(full_name, "$.given_names") AS given_names,
         JSON_VALUE(full_name, "$.surname") AS surname,
-        UPPER(JSON_VALUE(full_name, "$.given_names") || " " || JSON_VALUE(full_name, "$.middle_names") || JSON_VALUE(full_name, "$.surname")) AS name,
         LOWER(agents.EMAILADDRESS) AS email,
         TRUE AS has_caseload,
         FALSE AS has_facility_caseload,
