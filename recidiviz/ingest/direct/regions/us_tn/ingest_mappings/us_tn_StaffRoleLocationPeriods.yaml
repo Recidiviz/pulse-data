@@ -17,32 +17,40 @@ output:
           external_id: StaffID
           id_type: $literal("US_TN_STAFF_TOMIS")
     role_periods:
-      - StateStaffRolePeriod:
-          external_id:
-            $concat:
-              $values:
-                - StaffID
-                - StatusChangeOrder
-          start_date: Start_Date
-          end_date: End_Date
-          role_type:
-            $enum_mapping:
-              $raw_text: StaffTitle
-              $custom_parser: us_tn_custom_enum_parsers.staff_role_type_from_staff_title
-          role_subtype:
-            $enum_mapping:
-              $raw_text: StaffTitle
-              $custom_parser: us_tn_custom_enum_parsers.staff_role_subtype_from_staff_title
+      - $conditional:
+          - $if:
+              $not_null: Start_Date
+            $then:
+              StateStaffRolePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - StaffID
+                      - StatusChangeOrder
+                start_date: Start_Date
+                end_date: End_Date
+                role_type:
+                  $enum_mapping:
+                    $raw_text: StaffTitle
+                    $custom_parser: us_tn_custom_enum_parsers.staff_role_type_from_staff_title
+                role_subtype:
+                  $enum_mapping:
+                    $raw_text: StaffTitle
+                    $custom_parser: us_tn_custom_enum_parsers.staff_role_subtype_from_staff_title
     location_periods:
-      - StateStaffLocationPeriod:
-          external_id:
-            $concat:
-              $values:
-                - StaffID
-                - StatusChangeOrder
-          start_date: Start_Date
-          end_date: End_Date
-          location_external_id:
-            $concat:
-              $values:
-                - SiteID
+      - $conditional:
+          - $if:
+              $not_null: Start_Date
+            $then:
+              StateStaffLocationPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - StaffID
+                      - StatusChangeOrder
+                start_date: Start_Date
+                end_date: End_Date
+                location_external_id:
+                  $concat:
+                    $values:
+                      - SiteID
