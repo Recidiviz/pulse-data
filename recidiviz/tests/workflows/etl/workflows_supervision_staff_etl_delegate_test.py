@@ -72,7 +72,6 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                 {
                     "id": "100",
                     "stateCode": "US_XX",
-                    "name": "Joey Joe-Joe Jr. III",
                     "email": "jjjj3@xx.gov",
                     "district": "District 1",
                     "givenNames": "Joey",
@@ -90,7 +89,6 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                 {
                     "id": "101",
                     "stateCode": "US_XX",
-                    "name": "Sally S. Slithers",
                     "email": "sal.sli@xx.gov",
                     "district": "District 2",
                     "givenNames": "Sally S.",
@@ -108,7 +106,6 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                 {
                     "id": "102",
                     "stateCode": "US_XX",
-                    "name": "Foghorn Leghorn",
                     "email": None,
                     "district": "District 3",
                     "givenNames": "Foghorn",
@@ -126,7 +123,6 @@ class WorkflowsSupervisionStaffETLDelegateTest(TestCase):
                 {
                     "id": "103",
                     "stateCode": "US_XX",
-                    "name": "The Brain",
                     "email": None,
                     "district": "District 4",
                     "givenNames": "",
