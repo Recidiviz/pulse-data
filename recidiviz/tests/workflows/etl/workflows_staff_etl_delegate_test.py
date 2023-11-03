@@ -71,7 +71,6 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                 {
                     "id": "100",
                     "stateCode": "US_XX",
-                    "name": "Joey Joe-Joe Jr. III",
                     "email": "jjjj3@xx.gov",
                     "hasCaseload": True,
                     "hasFacilityCaseload": False,
@@ -91,7 +90,6 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                 {
                     "id": "101",
                     "stateCode": "US_XX",
-                    "name": "Sally S. Slithers",
                     "email": "sal.sli@xx.gov",
                     "hasCaseload": False,
                     "hasFacilityCaseload": False,
@@ -111,7 +109,6 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                 {
                     "id": "102",
                     "stateCode": "US_XX",
-                    "name": "Foghorn Leghorn",
                     "email": None,
                     "hasCaseload": True,
                     "hasFacilityCaseload": False,
@@ -131,7 +128,6 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                 {
                     "id": "103",
                     "stateCode": "US_XX",
-                    "name": "The Brain",
                     "email": None,
                     "hasCaseload": True,
                     "hasFacilityCaseload": False,

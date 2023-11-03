@@ -92,11 +92,9 @@ STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=STAFF_RECORD_VIEW_NAME,
     view_query_template=STAFF_RECORD_QUERY_TEMPLATE,
     description=STAFF_RECORD_DESCRIPTION,
-    # TODO(#15628): Deprecate name column once given_names and surname are supported
     columns=[
         "id",
         "state_code",
-        "name",
         "district",
         "email",
         "has_caseload",

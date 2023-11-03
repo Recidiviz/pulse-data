@@ -31,7 +31,6 @@ US_IX_SUPERVISION_STAFF_TEMPLATE = """
         SELECT
             UPPER(ids.id) AS id,
             ids.state_code,
-            COALESCE(full_name, first_name || " " || last_name) AS name,
             COALESCE(districts.district_name, r.district) AS district,
             email_address AS email,
             true AS has_caseload,
