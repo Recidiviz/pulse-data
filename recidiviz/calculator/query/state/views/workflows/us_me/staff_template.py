@@ -55,7 +55,7 @@ US_ME_STAFF_TEMPLATE = """
         FROM caseload_staff_ids ids
         LEFT JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` state_table
             ON state_table.Employee_Id = ids.id
-        GROUP BY 1,2,3,4,5,8,9
+        GROUP BY 1,2,3,4,7,8
     )
 
     SELECT 
