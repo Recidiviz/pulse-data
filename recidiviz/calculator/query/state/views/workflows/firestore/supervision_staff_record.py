@@ -86,9 +86,11 @@ SUPERVISION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_id=SUPERVISION_STAFF_RECORD_VIEW_NAME,
     view_query_template=SUPERVISION_STAFF_RECORD_QUERY_TEMPLATE,
     description=SUPERVISION_STAFF_RECORD_DESCRIPTION,
+    # TODO(#15628): Deprecate name column once given_names and surname are supported
     columns=[
         "id",
         "state_code",
+        "name",
         "district",
         "email",
         "given_names",

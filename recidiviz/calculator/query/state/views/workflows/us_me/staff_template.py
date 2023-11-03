@@ -45,6 +45,7 @@ US_ME_STAFF_TEMPLATE = """
         SELECT DISTINCT
             ids.id,
             ids.state_code,
+            UPPER(state_table.First_Name || " " || state_table.Last_Name) AS name,
             CAST(NULL AS STRING) AS district,
             LOWER(state_table.Email_Tx) AS email,
             LOGICAL_OR(has_caseload) AS has_caseload,
@@ -80,6 +81,7 @@ def build_us_me_staff_template(caseload_source_table: str) -> str:
         SELECT DISTINCT
             ids.id,
             ids.state_code,
+            UPPER(state_table.First_Name || " " || state_table.Last_Name) AS name,
             CAST(NULL AS STRING) AS district,
             LOWER(state_table.Email_Tx) AS email,
             UPPER(state_table.First_Name) as given_names,

@@ -24,6 +24,7 @@ US_MO_INCARCERATION_STAFF_TEMPLATE = """
         SELECT DISTINCT
             rr.facility_id AS id,
             rr.state_code,
+            IFNULL(locations.level_1_incarceration_location_name, rr.facility_id) AS name,
             -- TODO(#19062) Make it more clear where facility IDs go
             rr.facility_id AS district,
             CAST(NULL AS STRING) AS email,

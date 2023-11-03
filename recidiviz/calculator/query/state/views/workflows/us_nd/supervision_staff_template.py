@@ -36,6 +36,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
         SELECT
             external_id AS id,
             r.state_code,
+            UPPER(first_name || " " || last_name) AS name,
             districts.district_name AS district,
             email_address AS email,
             TRUE AS has_caseload,
@@ -55,6 +56,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
         SELECT
             ids.id,
             ids.state_code,
+            full_name AS name,
             districts.district_name AS district,
             ids.email_address AS email,
             true AS has_caseload,
