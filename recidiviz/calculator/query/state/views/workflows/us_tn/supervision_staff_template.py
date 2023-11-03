@@ -77,7 +77,6 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
     SELECT
         leadership.id,
         leadership.state_code,
-        leadership.name,
         leadership.district,
         leadership.email,
         TRUE AS has_caseload,
