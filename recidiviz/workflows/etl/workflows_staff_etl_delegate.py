@@ -40,6 +40,8 @@ class WorkflowsStaffETLDelegate(WorkflowsFirestoreETLDelegate):
         new_document = {
             "id": data["id"],
             "stateCode": data["state_code"],
+            # TODO(#15628): Deprecate name column once given_names and surname are supported
+            "name": person_name_case(data["name"]),
             "email": email,
             "hasCaseload": data["has_caseload"],
             "hasFacilityCaseload": data["has_facility_caseload"],

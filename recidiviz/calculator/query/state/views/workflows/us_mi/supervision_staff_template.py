@@ -57,6 +57,7 @@ US_MI_SUPERVISION_STAFF_TEMPLATE = f"""
     SELECT
         "US_MI" AS state_code,
         employee.employee_id AS id,
+        UPPER(employee.first_name || " " || IF(employee.middle_name is null, "", employee.middle_name || " ") || employee.last_name) AS name,
         {get_district_clause("county_reference.description")} AS district,
         LOWER(additional_info.email_address) as email,
         TRUE AS has_caseload,

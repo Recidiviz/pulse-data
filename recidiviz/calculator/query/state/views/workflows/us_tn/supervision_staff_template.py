@@ -33,6 +33,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         SELECT
             COALESCE(ids.external_id_mapped, staff.StaffID, external_id, email_address) AS id,
             "US_TN" AS state_code,
+            first_name || " " || last_name AS name,
             CAST(null AS STRING) AS district,
             LOWER(email_address) AS email,
             first_name as given_names,
@@ -50,6 +51,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         SELECT
             StaffID as id,
             "US_TN" AS state_code,
+            FirstName || " " || LastName AS name,
             facilities.district AS district,
             LOWER(r.email_address) AS email,
             TRUE AS has_caseload,
