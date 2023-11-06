@@ -57,6 +57,19 @@ class UsMiIncarcerationNormalizationDelegate(
 ):
     """US_MI implementation of the StateSpecificIncarcerationNormalizationDelegate."""
 
+    _REASON_RAW_TEXT_TO_INCARCERATION_ADMISSION_VIOLATION_TYPE_MAP = {
+        # Movement reasons that indicate technical revocation
+        # 15 - New Commitment - Probation Technical Violator (Rec Ctr Only)
+        "15": StateSupervisionViolationType.TECHNICAL,
+        # 17 - Returned as Parole Technical Rule Violator
+        "17": StateSupervisionViolationType.TECHNICAL,
+        # Movement reasons that indicate new sentence revocation
+        # 12 - New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
+        "12": StateSupervisionViolationType.LAW,
+        # 14 - New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
+        "14": StateSupervisionViolationType.LAW,
+    }
+
     def normalization_relies_on_supervision_periods(self) -> bool:
         """IP normalization for US_MI relies on StateSupervisionPeriod entities."""
         return True
@@ -187,6 +200,14 @@ class UsMiIncarcerationNormalizationDelegate(
                         StateIncarcerationPeriodAdmissionReason.REVOCATION,
                         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                     ):
+                        # Set the admission reason raw text for the inferred period so violation type can be added later if needed
+                        admission_reason_raw_text = (
+                            incarceration_period.admission_reason_raw_text
+                            if incarceration_period.admission_reason_raw_text
+                            in self._REASON_RAW_TEXT_TO_INCARCERATION_ADMISSION_VIOLATION_TYPE_MAP
+                            else None
+                        )
+
                         # create a new incarceration period that starts when that supervision period ended and ends when the revocation IP starts
                         # ~NOTE~ This means there might be overlapping incarceration periods if there was a preceding IP that wasn't due to revocation/sanction admission
                         new_incarceration_period = StateIncarcerationPeriod(
@@ -195,6 +216,7 @@ class UsMiIncarcerationNormalizationDelegate(
                             admission_date=most_recent_supervision_period.termination_date,
                             release_date=incarceration_period.admission_date,
                             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                            admission_reason_raw_text=admission_reason_raw_text,
                             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
                             custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
                             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
@@ -226,6 +248,14 @@ class UsMiIncarcerationNormalizationDelegate(
                             <= most_recent_supervision_period.termination_date
                         )
                     ):
+                        # Set the admission reason raw text for the inferred period so violation type can be added later if needed
+                        admission_reason_raw_text = (
+                            most_recent_supervision_period.termination_reason_raw_text
+                            if most_recent_supervision_period.termination_reason_raw_text
+                            in self._REASON_RAW_TEXT_TO_INCARCERATION_ADMISSION_VIOLATION_TYPE_MAP
+                            else None
+                        )
+
                         # create a new incarceration period that starts when that supervision period ended and ends when the next IP starts
                         new_incarceration_period = StateIncarcerationPeriod(
                             state_code=StateCode.US_MI.value,
@@ -233,6 +263,7 @@ class UsMiIncarcerationNormalizationDelegate(
                             admission_date=most_recent_supervision_period.termination_date,
                             release_date=incarceration_period.admission_date,
                             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                            admission_reason_raw_text=admission_reason_raw_text,
                             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
                             custodial_authority=StateCustodialAuthority.INTERNAL_UNKNOWN,
                             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
@@ -262,16 +293,13 @@ class UsMiIncarcerationNormalizationDelegate(
         this is a revocation admission, we return None
         """
 
-        # Movement reasons that indicate technical revocation
-        # 15 - New Commitment - Probation Technical Violator (Rec Ctr Only)
-        # 17 - Returned as Parole Technical Rule Violator
-        if incarceration_period.admission_reason_raw_text in ("15", "17"):
-            return StateSupervisionViolationType.TECHNICAL
+        admission_reason_raw_text = incarceration_period.admission_reason_raw_text
 
-        # Movement reasons that indicate new sentence revocation
-        # 12 - New Commitment - Parole Viol. w/ New Sentence (Rec Ctr Only)
-        # 14 - New Commitment - Probationer w/ New Sentence (Rec Ctr. Only)
-        if incarceration_period.admission_reason_raw_text in ("12", "14"):
-            return StateSupervisionViolationType.LAW
+        if admission_reason_raw_text:
+            return (
+                self._REASON_RAW_TEXT_TO_INCARCERATION_ADMISSION_VIOLATION_TYPE_MAP.get(
+                    admission_reason_raw_text
+                )
+            )
 
         return None
