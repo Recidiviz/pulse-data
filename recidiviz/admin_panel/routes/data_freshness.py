@@ -23,7 +23,6 @@ from flask import Blueprint, Response, jsonify
 
 from recidiviz.admin_panel.admin_stores import get_ingest_data_freshness_store
 from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.auth.gae import requires_gae_auth
 
 
 def add_data_freshness_routes(admin_panel_blueprint: Blueprint) -> None:
@@ -32,7 +31,6 @@ def add_data_freshness_routes(admin_panel_blueprint: Blueprint) -> None:
     @admin_panel_blueprint.route(
         "/api/ingest_metadata/data_freshness", methods=["POST"]
     )
-    @requires_gae_auth
     def fetch_ingest_data_freshness() -> Tuple[Response, HTTPStatus]:
         return (
             jsonify(get_ingest_data_freshness_store().data_freshness_results),
@@ -42,7 +40,6 @@ def add_data_freshness_routes(admin_panel_blueprint: Blueprint) -> None:
     @admin_panel_blueprint.route(
         "/api/ingest_metadata/get_all_bq_refresh_timestamps/<state_code_str>"
     )
-    @requires_gae_auth
     def _get_refresh_timestamps(
         state_code_str: str,
     ) -> Tuple[Union[str, Response], HTTPStatus]:

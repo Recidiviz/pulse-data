@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for server setup."""
-from typing import List
+import logging
+from typing import Iterable, List
+
+from flask import Flask
 
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
@@ -31,11 +34,16 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
+from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
     StateSegmentedDatabaseManager,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
+from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 
 
 def database_keys_for_schema_type(
@@ -70,3 +78,47 @@ def database_keys_for_schema_type(
         ]
 
     raise ValueError(f"Unexpected schema_type: [{schema_type}]")
+
+
+def initialize_scoped_sessions(app: Flask) -> None:
+    # We can connect to the development versions of our databases database using the
+    # default `init_engine` configurations, which uses secrets in `recidiviz/local`. If
+    # you are missing these secrets, run this script:
+    # ./recidiviz/tools/admin_panel/initialize_development_environment.sh
+
+    try:
+        # Note: this only sets up scoped sessions for the Case Triage schema. If endpoints using other
+        # schemas end up deciding to use scoped sessions, setup_scoped_sessions can be modified to
+        # accept+bind more schemas: https://github.com/dtheodor/flask-sqlalchemy-session/issues/4
+        setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
+    except BaseException as e:
+        logging.error(e)
+        logging.warning(
+            "Could not initialize engine for %s - have you run `initialize_development_environment.sh`?",
+            SchemaType.CASE_TRIAGE,
+        )
+
+
+def initialize_engines(schema_types: Iterable[SchemaType]) -> None:
+    # This attempts to connect a list of our databases. Any connections that fail will
+    # be logged and not raise an error, so that a single database outage doesn't take
+    # down the entire application. Any attempt to use those databases later will
+    # attempt to connect again in case the database was just unhealthy.
+    for schema_type in schema_types:
+        # TODO(#23253): Remove when Publisher is migrated to JC GCP project.
+        secret_prefix_override = (
+            JUSTICE_COUNTS_DB_SECRET_PREFIX
+            if schema_type == SchemaType.JUSTICE_COUNTS
+            else None
+        )
+        try:
+            SQLAlchemyEngineManager.init_engine(
+                database_key=SQLAlchemyDatabaseKey.for_schema(schema_type),
+                secret_prefix_override=secret_prefix_override,
+            )
+        except BaseException as e:
+            logging.error(e)
+            logging.warning(
+                "Could not initialize engine for %s - have you run `initialize_development_environment.sh`?",
+                schema_type,
+            )

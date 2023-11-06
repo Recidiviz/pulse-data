@@ -14,26 +14,86 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""PoC server for admin panel"""
+"""Flask server for the Admin Panel"""
+import datetime
+import logging
 from http import HTTPStatus
 from typing import Tuple
 
-from flask import Flask
+from flask import Flask, redirect
+from flask_smorest import Api
+from werkzeug import Response
 
-from recidiviz.utils import structured_logging
+from recidiviz.admin_panel.admin_stores import initialize_admin_stores
+from recidiviz.admin_panel.all_routes import admin_panel_blueprint
+from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
+from recidiviz.auth.auth_users_endpoint import users_blueprint
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
+from recidiviz.utils import environment, metadata, structured_logging
 from recidiviz.utils.auth.gce import build_compute_engine_auth_decorator
 
 structured_logging.setup()
 
-app = Flask(__name__)
+logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
+app = Flask(__name__)
 
 requires_authorization = build_compute_engine_auth_decorator(
     backend_service_id_secret_name="iap_admin_panel_load_balancer_service_id"  # nosec
 )
 
 
+@app.before_request
 @requires_authorization
+def auth_middleware() -> None:
+    pass
+
+
+api = Api(
+    app,
+    # These are needed for flask-smorests OpenAPI generation. We don't use this right now, so these
+    # values can be set to ~anything
+    spec_kwargs={
+        "title": "default",
+        "version": "1.0.0",
+        "openapi_version": "3.1.0",
+    },
+)
+
+
+app.register_blueprint(admin_panel_blueprint, url_prefix="/admin")
+app.register_blueprint(auth_endpoint_blueprint, url_prefix="/auth")
+app.register_blueprint(users_blueprint, url_prefix="/auth/users")
+
+if environment.in_development():
+    # We set the project to recidiviz-staging
+    metadata.set_development_project_id_override(environment.GCP_PROJECT_STAGING)
+
+    initialize_scoped_sessions(app)
+    initialize_engines(
+        schema_types=[
+            SchemaType.JUSTICE_COUNTS,
+            SchemaType.OPERATIONS,
+        ]
+    )
+elif environment.in_gcp():
+    initialize_scoped_sessions(app)
+    initialize_engines(schema_types=set(SchemaType))
+
+
+if environment.in_development() or environment.in_gcp():
+    # Initialize datastores for the admin panel and trigger a data refresh. This call
+    # will crash unless the project_id is set globally, which is not the case when
+    # running in CI.
+    initialize_admin_stores()
+
+
+@app.route("/")
+def index() -> Response:
+    return redirect("/admin", HTTPStatus.MOVED_PERMANENTLY)
+
+
 @app.route("/health")
 def health() -> Tuple[str, HTTPStatus]:
     """This just returns 200, and is used by Docker and GCP uptime checks to verify that the flask workers are

@@ -19,12 +19,10 @@
 from flask import Blueprint, Response, jsonify, request
 
 from recidiviz.admin_panel.on_call.on_call_logs_search import LogsView, OnCallLogsSearch
-from recidiviz.utils.auth.gae import requires_gae_auth
 
 
 def add_on_call_routes(blueprint: Blueprint) -> None:
     @blueprint.route("/on_call/logs", methods=["POST"])
-    @requires_gae_auth
     def logs() -> Response:
         """
         Request Body:

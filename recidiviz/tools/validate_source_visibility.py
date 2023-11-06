@@ -468,7 +468,33 @@ def main() -> int:
 
     success &= check_dependencies_for_entrypoint(
         "recidiviz/admin_panel/server.py",
-        valid_module_prefixes=make_module_matcher({"recidiviz.utils"}),
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.admin_panel",
+                "recidiviz.aggregated_metrics",
+                "recidiviz.auth",
+                "recidiviz.big_query",
+                "recidiviz.calculator",
+                "recidiviz.pipelines",
+                "recidiviz.case_triage",
+                "recidiviz.cloud_sql",
+                "recidiviz.cloud_storage",
+                "recidiviz.common",
+                "recidiviz.datasets",
+                "recidiviz.firestore",
+                "recidiviz.ingest",
+                "recidiviz.justice_counts",
+                "recidiviz.metrics",
+                "recidiviz.outliers",
+                "recidiviz.persistence",
+                "recidiviz.reporting",
+                "recidiviz.server_config",
+                "recidiviz.task_eligibility",
+                "recidiviz.utils",
+                "recidiviz.validation",
+                "recidiviz.view_registry",
+            }
+        ),
     )
 
     return 0 if success else 1

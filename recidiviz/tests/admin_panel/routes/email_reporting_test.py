@@ -60,11 +60,6 @@ class OutliersSupervisionOfficerSupervisorReportingEndpointTests(TestCase):
         self.gcs_file_system_patcher = patch(
             "recidiviz.cloud_storage.gcsfs_factory.GcsfsFactory.build"
         )
-        self.requires_gae_auth_patcher = patch(
-            "recidiviz.admin_panel.routes.line_staff_tools.requires_gae_auth",
-            side_effect=lambda route: route,
-        )
-        self.requires_gae_auth_patcher.start()
         self.gcs_file_system = FakeGCSFileSystem()
         self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
         self.mock_gcs_file_system.return_value = self.gcs_file_system
@@ -100,7 +95,6 @@ class OutliersSupervisionOfficerSupervisorReportingEndpointTests(TestCase):
             )
 
     def tearDown(self) -> None:
-        self.requires_gae_auth_patcher.stop()
         self.gcs_file_system_patcher.stop()
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
         local_persistence_helpers.teardown_on_disk_postgresql_database(

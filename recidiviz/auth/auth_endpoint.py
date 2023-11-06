@@ -68,7 +68,6 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.utils import metadata
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from_json
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
@@ -151,7 +150,6 @@ def _upsert_roster_rows(
 
 
 @auth_endpoint_blueprint.route("/states", methods=["GET"])
-@requires_gae_auth
 def states() -> Response:
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     with SessionFactory.using_database(database_key, autocommit=False) as session:
@@ -174,7 +172,6 @@ def states() -> Response:
 
 
 @auth_endpoint_blueprint.route("/state/<state_code>", methods=["GET"])
-@requires_gae_auth
 def state_info(state_code: str) -> Response:
     """Returns the unique districts, roles, and default user permissions for a given state."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
@@ -211,7 +208,6 @@ def state_info(state_code: str) -> Response:
 
 
 @auth_endpoint_blueprint.route("/states/<state_code>/roles/<role>", methods=["POST"])
-@requires_gae_auth
 def add_state_role(
     state_code: str, role: str
 ) -> Union[tuple[Response, int], tuple[str, int]]:
@@ -274,7 +270,6 @@ def add_state_role(
 
 
 @auth_endpoint_blueprint.route("/states/<state_code>/roles/<role>", methods=["PATCH"])
-@requires_gae_auth
 def update_state_role(
     state_code: str, role: str
 ) -> Union[tuple[Response, int], tuple[str, int]]:
@@ -375,7 +370,6 @@ def update_state_role(
 
 
 @auth_endpoint_blueprint.route("/states/<state_code>/roles/<role>", methods=["DELETE"])
-@requires_gae_auth
 def delete_state_role(
     state_code: str, role: str
 ) -> Union[tuple[Response, int], tuple[str, int]]:
@@ -486,7 +480,6 @@ def _create_user_override(session: Session, user_dict: Dict[str, Any]) -> UserOv
 
 # "path" type annotation allows parameters containing slashes, which the user hash might
 @auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["PATCH"])
-@requires_gae_auth
 def update_user(user_hash: str) -> Union[tuple[Response, int], tuple[str, int]]:
     """Edits an existing user's info by adding or updating an entry for that user in UserOverride."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
@@ -527,7 +520,6 @@ def update_user(user_hash: str) -> Union[tuple[Response, int], tuple[str, int]]:
 
 # "path" type annotation allows parameters containing slashes, which the user hash might
 @auth_endpoint_blueprint.route("/users/<path:user_hash>/permissions", methods=["PUT"])
-@requires_gae_auth
 def update_user_permissions(
     user_hash: str,
 ) -> Union[tuple[Response, int], tuple[str, int]]:
@@ -605,7 +597,6 @@ def update_user_permissions(
 @auth_endpoint_blueprint.route(
     "/users/<path:user_hash>/permissions", methods=["DELETE"]
 )
-@requires_gae_auth
 def delete_user_permissions(user_hash: str) -> tuple[str, int]:
     """Removes state user custom permissions by deleting an entry for that user in Permissions Override."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
@@ -645,7 +636,6 @@ def delete_user_permissions(user_hash: str) -> tuple[str, int]:
 
 # "path" type annotation allows parameters containing slashes, which the user hash might
 @auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["DELETE"])
-@requires_gae_auth
 def delete_user(user_hash: str) -> tuple[str, int]:
     """Blocks a user by setting blocked=true in the corresponding Roster object."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
@@ -694,7 +684,6 @@ def delete_user(user_hash: str) -> tuple[str, int]:
 
 
 @auth_endpoint_blueprint.route("/import_ingested_users_async", methods=["POST"])
-@requires_gae_auth
 def import_ingested_users_async() -> Tuple[str, HTTPStatus]:
     """Called from a Cloud Storage Notification when a new file is created in the product user import
     bucket. It enqueues a task to import the file into Cloud SQL."""
@@ -755,7 +744,6 @@ class ImportIngestedUsersGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):
 
 
 @auth_endpoint_blueprint.route("/import_ingested_users", methods=["POST"])
-@requires_gae_auth
 def import_ingested_users() -> Tuple[str, HTTPStatus]:
     """This endpoint triggers the import of the ingested product users file to Cloud SQL. It is
     requested by a Cloud Task that is triggered by the import_ingested_users_async

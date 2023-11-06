@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines routes for the Validation API the admin panel."""
 from http import HTTPStatus
-from typing import Optional, Tuple
+from typing import Tuple
 
 from flask import Blueprint, Response, jsonify, request
 
@@ -24,7 +24,6 @@ from recidiviz.admin_panel.admin_stores import (
     fetch_state_codes,
     get_validation_status_store,
 )
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.types import assert_type
 from recidiviz.validation.configured_validations import get_all_validations
 
@@ -33,14 +32,12 @@ def add_validation_routes(admin_panel: Blueprint) -> None:
     """Adds the relevant Validation API routes to an input Blueprint."""
     # Validation status
     @admin_panel.route("/api/validation_metadata/state_codes", methods=["POST"])
-    @requires_gae_auth
     def fetch_validation_state_codes() -> Tuple[Response, HTTPStatus]:
         all_state_codes = get_validation_status_store().state_codes
         state_code_info = fetch_state_codes(all_state_codes)
         return jsonify(state_code_info), HTTPStatus.OK
 
     @admin_panel.route("/api/validation_metadata/status", methods=["POST"])
-    @requires_gae_auth
     def fetch_validation_metadata_status() -> Tuple[bytes, HTTPStatus]:
         records = get_validation_status_store().get_most_recent_validation_results()
         return (
@@ -52,7 +49,6 @@ def add_validation_routes(admin_panel: Blueprint) -> None:
         "/api/validation_metadata/status/<validation_name>/<state_code>",
         methods=["POST"],
     )
-    @requires_gae_auth
     def fetch_validation_metadata_status_for_validation(
         validation_name: str, state_code: str
     ) -> Tuple[bytes, HTTPStatus]:
@@ -70,20 +66,21 @@ def add_validation_routes(admin_panel: Blueprint) -> None:
         "/api/validation_metadata/error_table/<validation_name>/<state_code>",
         methods=["POST"],
     )
-    @requires_gae_auth
     def fetch_validation_metadata_error_table_for_validation(
         validation_name: str, state_code: str
-    ) -> Tuple[Optional[str], HTTPStatus]:
+    ) -> Tuple[str, HTTPStatus]:
         records = get_validation_status_store().get_error_table_for_validation(
             validation_name, state_code
         )
 
-        return (records, HTTPStatus.OK if records else HTTPStatus.BAD_REQUEST)
+        if records is not None:
+            return records, HTTPStatus.OK
+
+        return "", HTTPStatus.BAD_REQUEST
 
     @admin_panel.route(
         "/api/validation_metadata/description/<validation_name>", methods=["POST"]
     )
-    @requires_gae_auth
     def fetch_validation_description(validation_name: str) -> Tuple[str, HTTPStatus]:
         validations = get_all_validations()
         for validation in validations:

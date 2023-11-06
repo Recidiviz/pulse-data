@@ -28,7 +28,6 @@ from recidiviz.admin_panel.dataset_metadata_store import (
     DatasetMetadataCountsStore,
     DatasetMetadataResult,
 )
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.types import assert_type
 
 
@@ -58,7 +57,6 @@ def add_dataset_metadata_routes(admin_panel_blueprint: Blueprint) -> None:
     @admin_panel_blueprint.route(
         "/api/<metadata_dataset>/fetch_column_object_counts_by_value", methods=["POST"]
     )
-    @requires_gae_auth
     def fetch_column_object_counts_by_value(
         metadata_dataset: str,
     ) -> Tuple[Response, HTTPStatus]:
@@ -74,7 +72,6 @@ def add_dataset_metadata_routes(admin_panel_blueprint: Blueprint) -> None:
     @admin_panel_blueprint.route(
         "/api/<metadata_dataset>/fetch_table_nonnull_counts_by_column", methods=["POST"]
     )
-    @requires_gae_auth
     def fetch_table_nonnull_counts_by_column(
         metadata_dataset: str,
     ) -> Tuple[Response, HTTPStatus]:
@@ -89,7 +86,6 @@ def add_dataset_metadata_routes(admin_panel_blueprint: Blueprint) -> None:
     @admin_panel_blueprint.route(
         "/api/<metadata_dataset>/fetch_object_counts_by_table", methods=["POST"]
     )
-    @requires_gae_auth
     def fetch_object_counts_by_table(metadata_dataset: str) -> Tuple[Response, int]:
         metadata_store = _get_metadata_store(metadata_dataset)
         return jsonify_dataset_metadata_result(

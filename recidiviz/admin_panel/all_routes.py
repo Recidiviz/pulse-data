@@ -31,7 +31,6 @@ from recidiviz.admin_panel.routes.justice_counts_tools import (
 from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
 from recidiviz.admin_panel.routes.on_call import add_on_call_routes
 from recidiviz.admin_panel.routes.validation import add_validation_routes
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     in_development,
     in_gcp_production,
@@ -59,7 +58,6 @@ add_on_call_routes(admin_panel_blueprint)
 
 # Frontend configuration
 @admin_panel_blueprint.route("/runtime_env_vars.js")
-@requires_gae_auth
 def runtime_env_vars() -> Tuple[str, HTTPStatus]:
     if in_development():
         env_string = "development"
