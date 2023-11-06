@@ -21,14 +21,15 @@ import time
 from contextlib import contextmanager
 from datetime import timedelta
 from tempfile import TemporaryFile
-from typing import IO, Callable, Iterator, Optional
+from typing import IO, Callable, Iterator, Optional, Union
 
-from paramiko import SFTPClient
+from paramiko import SFTPClient, SFTPFile
 
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
 
 
 def human_readable_size(size: float, decimal_places: Optional[int] = None) -> str:
+    decimal_places = 2 if decimal_places is None else decimal_places
     for unit in ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]:
         if size < 1024.0 or unit == "PiB":
             break
@@ -66,7 +67,7 @@ def create_progress_callback(
     return progress_callback
 
 
-class SftpFileContentsHandle(FileContentsHandle[bytes, IO]):
+class SftpFileContentsHandle(FileContentsHandle[bytes, Union[SFTPFile, IO]]):
     """A class that can be used to access contents of a file on an SFTP server."""
 
     def __init__(
@@ -83,9 +84,9 @@ class SftpFileContentsHandle(FileContentsHandle[bytes, IO]):
                 yield line
 
     @contextmanager
-    def open(self, mode: str = "r") -> Iterator[IO]:  # type: ignore
-        with TemporaryFile(mode=mode) as f:
-            if "r" in mode:
+    def open(self, mode: str = "r") -> Iterator[Union[SFTPFile, IO]]:  # type: ignore
+        if "r" in mode:
+            with TemporaryFile(mode="w+b") as f:
                 # Perform a threaded download of the SFTP object to a temp file
                 self.sftp_client.getfo(
                     self.sftp_file_path,
@@ -97,4 +98,7 @@ class SftpFileContentsHandle(FileContentsHandle[bytes, IO]):
                 # Rewind stream for reading
                 f.seek(0)
 
-            yield f
+                yield f
+        else:
+            with self.sftp_client.open(filename=self.sftp_file_path, mode=mode) as f:
+                yield f
