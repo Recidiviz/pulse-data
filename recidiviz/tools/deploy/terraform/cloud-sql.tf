@@ -134,6 +134,8 @@ locals {
       # v2 modules
       module.operations_database_v2.connection_name,
       module.state_database_v2.connection_name,
+      # TODO(Recidiviz/justice-counts#1019): Remove this when the admin panel no longer needs to access the JC database
+      var.project_id == "recidiviz-123" ? "justice-counts-production:us-central1:prod-justice-counts-data" : "justice-counts-staging:us-central1:dev-justice-counts-data"
     ]
   )
 

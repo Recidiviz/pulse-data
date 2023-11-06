@@ -114,10 +114,12 @@ resource "google_project_iam_member" "asset_generation_iam" {
 }
 
 resource "google_project_iam_member" "admin_panel_iam" {
-  for_each = toset(local.cloud_run_common_roles)
-  project  = var.project_id
-  role     = each.key
-  member   = "serviceAccount:${google_service_account.admin_panel_cloud_run.email}"
+  for_each = toset(concat(local.cloud_run_common_roles, [
+    "roles/cloudtasks.enqueuer"
+  ]))
+  project = var.project_id
+  role    = each.key
+  member  = "serviceAccount:${google_service_account.admin_panel_cloud_run.email}"
 }
 
 resource "google_service_account_iam_member" "application_data_import_iam" {

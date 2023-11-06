@@ -34,7 +34,6 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import in_gcp_staging
 from recidiviz.utils.types import assert_type, non_optional
 
@@ -60,7 +59,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
 
     # Agency
     @bp.route("/api/justice_counts_tools/agencies", methods=["POST"])
-    @requires_gae_auth
     def create_agency() -> Tuple[Response, HTTPStatus]:
         """Creates an Agency and returns the created Agency.
         Returns an error message if the Agency already exists with that name.
@@ -108,7 +106,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             raise e
 
     @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["GET"])
-    @requires_gae_auth
     def get_agency(agency_id: int) -> Tuple[Response, HTTPStatus]:
         """Returns Agency information."""
         with SessionFactory.using_database(
@@ -129,7 +126,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
 
     @bp.route("/api/justice_counts_tools/agencies", methods=["GET"])
-    @requires_gae_auth
     def get_all_agencies() -> Tuple[Response, HTTPStatus]:
         """Returns all Agency records."""
         with SessionFactory.using_database(
@@ -152,7 +148,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
 
     @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["PUT"])
-    @requires_gae_auth
     def update_agency(agency_id: int) -> Tuple[Response, HTTPStatus]:
         """
         Updates Agency name and systems in our DB.
@@ -241,7 +236,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
 
     @bp.route("/api/justice_counts_tools/agency/<agency_id>/dashboard", methods=["PUT"])
-    @requires_gae_auth
     def update_is_dashboard_enabled(agency_id: int) -> Response:
         with SessionFactory.using_database(
             database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS),
@@ -263,7 +257,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     # UserAccount
 
     @bp.route("/api/justice_counts_tools/users", methods=["POST"])
-    @requires_gae_auth
     def create_user() -> Tuple[Response, HTTPStatus]:
         """
         Looks for an existing user in Auth0 and creates the User in the database.
@@ -314,7 +307,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
 
     @bp.route("/api/justice_counts_tools/users", methods=["GET"])
-    @requires_gae_auth
     def get_all_users() -> Tuple[Response, HTTPStatus]:
         """Returns all UserAccount records."""
         with SessionFactory.using_database(
@@ -356,7 +348,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
 
     @bp.route("/api/justice_counts_tools/users", methods=["PUT"])
-    @requires_gae_auth
     def update_user() -> Tuple[Response, HTTPStatus]:
         """
         Updates a User's name in the DB.
@@ -386,7 +377,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     # AgencyUserAccountAssociation
 
     @bp.route("/api/justice_counts_tools/users", methods=["PATCH"])
-    @requires_gae_auth
     def add_user_account_associations() -> Tuple[Response, HTTPStatus]:
         """
         Adds or Updates AgencyUserAccountAssociations for a user.
@@ -436,7 +426,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
 
     @bp.route("/api/justice_counts_tools/users", methods=["DELETE"])
-    @requires_gae_auth
     def delete_user_account_associations() -> Tuple[Response, HTTPStatus]:
         """
         Deletes AgencyUserAccountAssociations for a user.
@@ -480,7 +469,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
 
     @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["PATCH"])
-    @requires_gae_auth
     def add_or_update_agency_associations(
         agency_id: int,
     ) -> Tuple[Response, HTTPStatus]:
@@ -544,7 +532,6 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
 
     @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["DELETE"])
-    @requires_gae_auth
     def delete_agency_associations(agency_id: int) -> Tuple[Response, HTTPStatus]:
         """
         Deletes AgencyUserAccountAssociations for an agency.

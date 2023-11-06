@@ -33,25 +33,24 @@ from opencensus.trace import base_exporter, config_integration, file_exporter, s
 from opencensus.trace.propagation import google_cloud_format
 
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
-from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
+from recidiviz.admin_panel.all_routes import admin_panel_blueprint
+from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
-)
-from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.server_blueprint_registry import (
     default_blueprints_with_url_prefixes,
     flask_smorest_api_blueprints_with_url_prefixes,
 )
-from recidiviz.server_config import database_keys_for_schema_type
+from recidiviz.server_config import initialize_engines, initialize_scoped_sessions
 from recidiviz.utils import environment, metadata, monitoring, structured_logging, trace
+from recidiviz.utils.auth.gae import requires_gae_auth
 
 structured_logging.setup()
 
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
+
+# TODO(#24741): Remove once admin panel migration is completed
 api = Api(
     app,
     # These are needed for flask-smorests OpenAPI generation. We don't use this right now, so these
@@ -73,6 +72,14 @@ else:
     raise ValueError(f"Unsupported service type: {service_type}")
 
 
+# TODO(#24741): Remove once admin panel migration is completed
+@admin_panel_blueprint.before_request
+@auth_endpoint_blueprint.before_request
+@requires_gae_auth
+def authorization_middleware() -> None:
+    pass
+
+
 # Export traces and metrics to stackdriver if running in GCP
 if environment.in_gcp():
     monitoring.register_stackdriver_exporter()
@@ -82,8 +89,6 @@ if environment.in_gcp():
     trace_sampler: samplers.Sampler = trace.CompositeSampler(
         {
             "/direct/extract_and_merge": samplers.AlwaysOnSampler(),
-            # We only have a few of these requests a day
-            "/view_update/": samplers.AlwaysOnSampler(),
         },
         # For other requests, trace 1 in 20.
         default_sampler=samplers.ProbabilitySampler(rate=0.05),
@@ -106,79 +111,24 @@ config_integration.trace_integrations(
         "sqlalchemy",
     ]
 )
+
+# TODO(#24741): Remove in_development initializers once admin panel migration is completed
 if environment.in_development():
-    # We can connect to the development versions of our databases database using the
-    # default `init_engine` configurations, which uses secrets in `recidiviz/local`. If
-    # you are missing these secrets, run this script:
-    # ./recidiviz/tools/admin_panel/initialize_development_environment.sh
-
-    try:
-        # Note: this only sets up scoped sessions for the Case Triage schema. If endpoints using other
-        # schemas end up deciding to use scoped sessions, setup_scoped_sessions can be modified to
-        # accept+bind more schemas: https://github.com/dtheodor/flask-sqlalchemy-session/issues/4
-        setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
-    except BaseException as e:
-        logging.warning(
-            "Could not initialize engine for %s - have you run `initialize_development_environment.sh`?",
-            SchemaType.CASE_TRIAGE,
-        )
-
-    # If we fail to connect a message will be logged but we won't raise an error.
-    enabled_development_schema_types = [
-        SchemaType.JUSTICE_COUNTS,
-        SchemaType.OPERATIONS,
-    ]
-
-    for schema_type in enabled_development_schema_types:
-        # TODO(#23253): Remove when Publisher is migrated to JC GCP project.
-        secret_prefix_override = (
-            JUSTICE_COUNTS_DB_SECRET_PREFIX
-            if schema_type == SchemaType.JUSTICE_COUNTS
-            else None
-        )
-        try:
-            SQLAlchemyEngineManager.init_engine(
-                database_key=SQLAlchemyDatabaseKey.for_schema(schema_type),
-                secret_prefix_override=secret_prefix_override,
-            )
-        except BaseException as e:
-            logging.warning(
-                "Could not initialize engine for %s - have you run `initialize_development_environment.sh`?",
-                schema_type,
-            )
-
-    # We also set the project to recidiviz-staging
+    # We set the project to recidiviz-staging
     metadata.set_development_project_id_override(environment.GCP_PROJECT_STAGING)
+
+    initialize_scoped_sessions(app)
+    initialize_engines(
+        schema_types=[
+            SchemaType.JUSTICE_COUNTS,
+            SchemaType.OPERATIONS,
+        ]
+    )
 elif environment.in_gcp():
-    try:
-        # Note: this only sets up scoped sessions for the Case Triage schema. If endpoints using other
-        # schemas end up deciding to use scoped sessions, setup_scoped_sessions can be modified to
-        # accept+bind more schemas: https://github.com/dtheodor/flask-sqlalchemy-session/issues/4
-        setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
-    except BaseException:
-        # See comment below about a single database outage not taking down the entire application.
-        pass
+    initialize_scoped_sessions(app)
+    initialize_engines(schema_types=set(SchemaType))
 
-    # This attempts to connect to all of our databases. Any connections that fail will
-    # be logged and not raise an error, so that a single database outage doesn't take
-    # down the entire application. Any attempt to use those databases later will
-    # attempt to connect again in case the database was just unhealthy.
-    if service_type is environment.ServiceType.DEFAULT:
-        schemas = set(SchemaType)
-    else:
-        raise ValueError(f"Unsupported service type: {service_type}")
 
-    for schema_type in schemas:
-        # TODO(#23253): Remove when Publisher is migrated to JC GCP project.
-        secret_prefix_override = (
-            JUSTICE_COUNTS_DB_SECRET_PREFIX
-            if schema_type == SchemaType.JUSTICE_COUNTS
-            else None
-        )
-        SQLAlchemyEngineManager.attempt_init_engines_for_databases(
-            database_keys=database_keys_for_schema_type(schema_type),
-            secret_prefix_override=secret_prefix_override,
-        )
 if environment.in_development() or environment.in_gcp():
     # Initialize datastores for the admin panel and trigger a data refresh. This call
     # will crash unless the project_id is set globally, which is not the case when

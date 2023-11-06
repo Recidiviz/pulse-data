@@ -41,10 +41,6 @@ out_of_order_columns_fixture_path = os.path.join(
 
 
 @patch("recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789"))
-@patch(
-    "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
-    MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
-)
 class FileUploadEndpointTests(TestCase):
     """TestCase for file upload line staff tools route"""
 
@@ -53,14 +49,9 @@ class FileUploadEndpointTests(TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
 
-        self.requires_gae_auth_patcher = patch(
-            "recidiviz.admin_panel.routes.line_staff_tools.requires_gae_auth",
-            side_effect=lambda route: route,
-        )
         self.bq_client_patcher = patch(
             "recidiviz.admin_panel.routes.line_staff_tools.BigQueryClientImpl"
         )
-        self.requires_gae_auth_patcher.start()
         self.mock_dataset = bigquery.dataset.DatasetReference(
             self.project_id, "test_dataset"
         )
@@ -78,7 +69,6 @@ class FileUploadEndpointTests(TestCase):
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
-        self.requires_gae_auth_patcher.stop()
         self.bq_client_patcher.stop()
 
     def test_upload_raw_files_invalid_state(self) -> None:

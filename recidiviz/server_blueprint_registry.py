@@ -31,6 +31,7 @@ from recidiviz.pipelines.calculation_data_storage_manager import (
 from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
 
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
+    # TODO(#24741): Remove once admin panel migration is completed
     (admin_panel_blueprint, "/admin"),
     (auth_endpoint_blueprint, "/auth"),
     (backup_manager_blueprint, "/backup_manager"),
@@ -39,12 +40,15 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (get_workflows_etl_blueprint(), "/practices-etl"),
 ]
 
+# TODO(#24741): Remove once admin panel migration is completed
 flask_smorest_api_blueprints_with_url_prefixes: List[
     Tuple[FlaskSmorestBlueprint, str]
 ] = [(users_blueprint, "/auth/users")]
 
 
 def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
+    # TODO(#24741): Add back admin panel / auth blueprints once removed from blueprint registry
+
     return default_blueprints_with_url_prefixes + [
         (cast(Blueprint, blueprint), url_prefix)
         for blueprint, url_prefix in flask_smorest_api_blueprints_with_url_prefixes

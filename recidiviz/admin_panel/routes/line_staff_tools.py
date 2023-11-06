@@ -55,7 +55,6 @@ from recidiviz.reporting.email_reporting_utils import (
     validate_email_address,
 )
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.types import assert_type
 
@@ -71,13 +70,11 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Case Triage API routes to an input Blueprint."""
 
     @bp.route("/api/line_staff_tools/fetch_email_state_codes", methods=["POST"])
-    @requires_gae_auth
     def _fetch_email_state_codes() -> Tuple[Response, HTTPStatus]:
         state_code_info = fetch_state_codes(EMAIL_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
     @bp.route("/api/line_staff_tools/fetch_raw_files_state_codes", methods=["POST"])
-    @requires_gae_auth
     def _fetch_raw_files_state_codes() -> Tuple[Response, HTTPStatus]:
         state_code_info = fetch_state_codes(RAW_FILES_CONFIG.keys())
         return jsonify(state_code_info), HTTPStatus.OK
@@ -90,7 +87,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/line_staff_tools/<state_code_str>/generate_emails", methods=["POST"]
     )
-    @requires_gae_auth
     def _generate_emails(
         state_code_str: str,
     ) -> Tuple[Union[str, Response], HTTPStatus]:
@@ -184,7 +180,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
 
     # Send monthly report emails
     @bp.route("/api/line_staff_tools/<state_code_str>/send_emails", methods=["POST"])
-    @requires_gae_auth
     def _send_emails(state_code_str: str) -> Tuple[str, HTTPStatus]:
         try:
             data = assert_type(request.json, dict)
@@ -279,7 +274,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         return (f"{success_text}"), HTTPStatus.OK
 
     @bp.route("/api/line_staff_tools/list_batch_info", methods=["POST"])
-    @requires_gae_auth
     def _list_batch_info() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             data = assert_type(request.json, dict)
@@ -301,7 +295,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/line_staff_tools/<state_code_str>/upload_raw_files", methods=["POST"]
     )
-    @requires_gae_auth
     def _upload_raw_files(state_code_str: str) -> Tuple[str, HTTPStatus]:
         """Handles uploading raw files, which are then loaded into BigQuery."""
 
@@ -397,7 +390,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                 return error.message, HTTPStatus.INTERNAL_SERVER_ERROR
         return "", HTTPStatus.OK
 
-    @requires_gae_auth
     @bp.route(
         "/api/line_staff_tools/demo_client_updates_v2",
         defaults={"state_code_str": None},
@@ -407,7 +399,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
         "/api/line_staff_tools/demo_client_updates_v2/<state_code_str>",
         methods=["DELETE"],
     )
-    @requires_gae_auth
     def handle_delete_demo_client_updates_v2(
         state_code_str: Optional[str],
     ) -> Tuple[str, HTTPStatus]:

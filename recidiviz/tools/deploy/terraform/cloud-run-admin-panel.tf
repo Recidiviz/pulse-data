@@ -51,15 +51,19 @@ resource "google_cloud_run_service" "admin_panel" {
   }
   template {
     spec {
-
       containers {
         image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
-        args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.admin_panel.server:app"]
+        args    = ["run", "gunicorn", "-c", "gunicorn.gthread.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.admin_panel.server:app"]
 
         env {
           name  = "RECIDIVIZ_ENV"
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+
+        env {
+          name  = "ASSET_GENERATION_URL"
+          value = google_cloud_run_service.asset-generation.status[0].url
         }
 
         resources {
@@ -74,8 +78,11 @@ resource "google_cloud_run_service" "admin_panel" {
 
     metadata {
       annotations = {
+        "run.googleapis.com/cloudsql-instances" : local.joined_connection_string
         "run.googleapis.com/vpc-access-connector" : google_vpc_access_connector.us_central_redis_vpc_connector.name
-        "autoscaling.knative.dev/maxScale" : 3
+        # This services serves endpoints that are used during the Auth0 login flow, so we want to minimize cold starts
+        "autoscaling.knative.dev/minScale" : 1
+        "autoscaling.knative.dev/maxScale" : 4
       }
     }
 

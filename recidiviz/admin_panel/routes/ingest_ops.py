@@ -90,7 +90,6 @@ from recidiviz.ingest.flash_database_tools import (
     move_ingest_view_results_to_backup,
 )
 from recidiviz.utils import metadata
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
 from recidiviz.utils.trigger_dag_helpers import (
     trigger_calculation_dag_pubsub,
@@ -124,7 +123,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     project_id = GCP_PROJECT_STAGING if not in_gcp() else metadata.project_id()
 
     @bp.route("/api/ingest_operations/fetch_ingest_state_codes", methods=["POST"])
-    @requires_gae_auth
     def _fetch_ingest_state_codes() -> Tuple[Response, HTTPStatus]:
         all_state_codes = get_ingest_operations_store().state_codes_launched_in_env
         state_code_info = fetch_state_codes(all_state_codes)
@@ -135,7 +133,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/<state_code_str>/trigger_task_scheduler",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _trigger_task_scheduler(state_code_str: str) -> Tuple[str, HTTPStatus]:
         request_json = assert_type(request.json, dict)
         state_code = _get_state_code_from_str(state_code_str)
@@ -154,7 +151,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/<state_code_str>/start_ingest_rerun",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _start_ingest_rerun(state_code_str: str) -> Tuple[str, HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
         try:
@@ -181,7 +177,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/<state_code_str>/start_raw_data_reimport",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _start_raw_data_reimport(state_code_str: str) -> Tuple[str, HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
         try:
@@ -197,7 +192,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/<state_code_str>/update_ingest_queues_state",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _update_ingest_queues_state(state_code_str: str) -> Tuple[str, HTTPStatus]:
         request_json = assert_type(request.json, dict)
         state_code = _get_state_code_from_str(state_code_str)
@@ -209,7 +203,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
     # Get all ingest queues and their state for given state code
     @bp.route("/api/ingest_operations/<state_code_str>/get_ingest_queue_states")
-    @requires_gae_auth
     def _get_ingest_queue_states(state_code_str: str) -> Tuple[Response, HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
         ingest_queue_states = get_ingest_operations_store().get_ingest_queue_states(
@@ -221,7 +214,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/<state_code_str>/get_ingest_instance_resources/<ingest_instance_str>"
     )
-    @requires_gae_auth
     def _get_ingest_instance_resources(
         state_code_str: str, ingest_instance_str: str
     ) -> Tuple[Union[str, Response], HTTPStatus]:
@@ -241,7 +233,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/<state_code_str>/get_ingest_view_summaries/<ingest_instance_str>"
     )
-    @requires_gae_auth
     def _get_ingest_view_summaries(
         state_code_str: str, ingest_instance_str: str
     ) -> Tuple[Union[str, Response], HTTPStatus]:
@@ -259,7 +250,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/<state_code_str>/get_ingest_raw_file_processing_status/<ingest_instance_str>"
     )
-    @requires_gae_auth
     def _get_ingest_raw_file_processing_status(
         state_code_str: str, ingest_instance_str: str
     ) -> Tuple[Union[str, Response], HTTPStatus]:
@@ -276,7 +266,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return jsonify(ingest_file_processing_status), HTTPStatus.OK
 
     @bp.route("/api/ingest_operations/export_database_to_gcs", methods=["POST"])
-    @requires_gae_auth
     def _export_database_to_gcs() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -328,7 +317,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return operation_id, HTTPStatus.OK
 
     @bp.route("/api/ingest_operations/import_database_from_gcs", methods=["POST"])
-    @requires_gae_auth
     def _import_database_from_gcs() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -385,7 +373,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/delete_database_import_gcs_files", methods=["POST"]
     )
-    @requires_gae_auth
     def _delete_database_import_gcs_files() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -408,7 +395,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return "", HTTPStatus.OK
 
     @bp.route("/api/ingest_operations/acquire_ingest_lock", methods=["POST"])
-    @requires_gae_auth
     def _acquire_ingest_lock() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -438,7 +424,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return "", HTTPStatus.OK
 
     @bp.route("/api/ingest_operations/release_ingest_lock", methods=["POST"])
-    @requires_gae_auth
     def _release_ingest_lock() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -458,7 +443,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return "", HTTPStatus.OK
 
     @bp.route("/api/ingest_operations/direct/sandbox_raw_data_import", methods=["POST"])
-    @requires_gae_auth
     def _sandbox_raw_data_import() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             data = assert_type(request.json, dict)
@@ -495,7 +479,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
 
     @bp.route("/api/ingest_operations/direct/list_sandbox_buckets", methods=["POST"])
-    @requires_gae_auth
     def _list_sandbox_buckets() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             storage_client = storage.Client()
@@ -523,7 +506,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
 
     @bp.route("/api/ingest_operations/direct/list_raw_files", methods=["POST"])
-    @requires_gae_auth
     def _list_raw_files_in_sandbox_bucket() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             data = assert_type(request.json, dict)
@@ -568,7 +550,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/move_ingest_view_results_to_backup",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _move_ingest_view_results_to_backup() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -597,7 +578,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/move_ingest_view_results_between_instances",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _move_ingest_view_results_between_instances() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -632,7 +612,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/delete_contents_in_secondary_ingest_view_dataset",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _delete_contents_in_secondary_ingest_view_dataset() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -664,7 +643,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/mark_instance_ingest_view_data_invalidated",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _mark_instance_ingest_view_data_invalidated() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -696,7 +674,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/transfer_ingest_view_metadata_to_new_instance",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _transfer_ingest_view_metadata_to_new_instance() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -735,7 +712,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
 
     @bp.route("/api/ingest_operations/all_ingest_instance_statuses")
-    @requires_gae_auth
     def _all_ingest_instance_statuses() -> Tuple[Response, HTTPStatus]:
         all_instance_statuses = (
             get_ingest_operations_store().get_all_current_ingest_instance_statuses()
@@ -755,7 +731,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
 
     @bp.route("/api/ingest_operations/all_ingest_instance_dataflow_enabled_status")
-    @requires_gae_auth
     def _all_ingest_instance_dataflow_enabled_status() -> Tuple[Response, HTTPStatus]:
         all_instance_statuses = (
             get_ingest_operations_store().get_all_ingest_instance_dataflow_enabled_status()
@@ -775,7 +750,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
 
     @bp.route("/api/ingest_operations/get_all_latest_ingest_dataflow_jobs")
-    @requires_gae_auth
     def _all_dataflow_jobs() -> Tuple[Response, HTTPStatus]:
         all_instance_statuses = get_all_latest_ingest_jobs()
 
@@ -797,7 +771,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/get_latest_ingest_dataflow_job_by_instance/<state_code_str>/<instance_str>"
     )
-    @requires_gae_auth
     def _get_latest_ingest_dataflow_job_by_instance(
         state_code_str: str,
         instance_str: str,
@@ -818,7 +791,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/get_dataflow_job_additional_metadata_by_instance/<state_code_str>/<instance_str>"
     )
-    @requires_gae_auth
     def _get_dataflow_job_additional_metadata_by_instance(
         state_code_str: str,
         instance_str: str,
@@ -847,7 +819,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/get_current_ingest_instance_status", methods=["POST"]
     )
-    @requires_gae_auth
     def _get_current_ingest_instance_status() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -872,7 +843,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         )
 
     @bp.route("/api/ingest_operations/get_raw_data_source_instance", methods=["POST"])
-    @requires_gae_auth
     def _get_raw_data_source_instance() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -916,7 +886,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/get_current_ingest_instance_status_information",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _get_current_ingest_instance_status_information() -> (
         Tuple[Union[str, Response], HTTPStatus]
     ):
@@ -946,7 +915,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/change_ingest_instance_status",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _change_ingest_instance_status() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -980,7 +948,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/get_recent_ingest_instance_status_history/<state_code_str>"
     )
-    @requires_gae_auth
     def _get_recent_ingest_instance_status_history(
         state_code_str: str,
     ) -> Tuple[Union[str, Response], HTTPStatus]:
@@ -1008,7 +975,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/copy_raw_data_to_backup",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _copy_raw_data_to_backup() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1035,7 +1001,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/copy_raw_data_between_instances",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _copy_raw_data_between_instances() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1070,7 +1035,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/delete_contents_of_raw_data_tables",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _delete_contents_of_raw_data_tables() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1100,7 +1064,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/mark_instance_raw_data_invalidated",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _mark_instance_raw_data_invalidated() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1131,7 +1094,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/flash_primary_db/transfer_raw_data_metadata_to_new_instance",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _transfer_raw_data_metadata_to_new_instance() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1174,7 +1136,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/purge_ingest_queues",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _purge_ingest_queues() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1190,7 +1151,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/is_ingest_in_dataflow_enabled",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _is_ingest_in_dataflow_enabled() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1207,7 +1167,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/get_latest_ingest_dataflow_raw_data_watermarks/<state_code_str>/<instance_str>"
     )
-    @requires_gae_auth
     def _get_latest_ingest_dataflow_raw_data_watermarks(
         state_code_str: str,
         instance_str: str,
@@ -1233,7 +1192,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/get_latest_run_ingest_view_results/<state_code_str>/<instance_str>"
     )
-    @requires_gae_auth
     def _get_latest_run_ingest_view_results(
         state_code_str: str,
         instance_str: str,
@@ -1251,7 +1209,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
     @bp.route(
         "/api/ingest_operations/get_latest_run_state_results/<state_code_str>/<instance_str>"
     )
-    @requires_gae_auth
     def _get_latest_run_state_results(
         state_code_str: str,
         instance_str: str,
@@ -1270,7 +1227,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/delete_tables_in_pruning_datasets",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _delete_tables_in_pruning_datasets() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1296,7 +1252,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/trigger_calculation_dag",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _trigger_calculation_dag() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
@@ -1319,7 +1274,6 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         "/api/ingest_operations/trigger_ingest_dag",
         methods=["POST"],
     )
-    @requires_gae_auth
     def _trigger_ingest_dag() -> Tuple[Union[str, Response], HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)

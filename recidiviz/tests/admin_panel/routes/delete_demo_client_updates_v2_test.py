@@ -28,12 +28,6 @@ class AdminPanelDeleteDemoClientUpdatesV2EndpointTests(TestCase):
     """Integration tests of our flask endpoints"""
 
     def setUp(self) -> None:
-        self.requires_gae_auth_patcher = patch(
-            "recidiviz.admin_panel.routes.line_staff_tools.requires_gae_auth",
-            side_effect=lambda route: route,
-        )
-        self.requires_gae_auth_patcher.start()
-
         self.app = Flask(__name__)
 
         blueprint = Blueprint("delete_demo_client_updates_v2_test", __name__)
@@ -42,9 +36,6 @@ class AdminPanelDeleteDemoClientUpdatesV2EndpointTests(TestCase):
 
         add_line_staff_tools_routes(blueprint)
         self.app.register_blueprint(blueprint)
-
-    def tearDown(self) -> None:
-        self.requires_gae_auth_patcher.stop()
 
     @patch("recidiviz.admin_panel.routes.line_staff_tools.FirestoreClientImpl")
     def test_delete_demo_client_updates_v2_collection(
