@@ -74,7 +74,7 @@ WITH revocations AS (
         t.state_code, 
         t.person_id,
         Cis_100_Client_Id,
-        COALESCE(admission_date, {revert_nonnull_start_date_clause('start_date')}) AS start_date,
+        {revert_nonnull_start_date_clause('start_date')} AS start_date,
         {revert_nonnull_end_date_clause('end_date')} AS end_date,
         {revert_nonnull_end_date_clause('end_date_max')} AS end_date_max,
         t.Cis_1200_Term_Status_Cd AS status,
@@ -95,28 +95,80 @@ WITH revocations AS (
                 AND id_type = 'US_ME_DOC'
             WHERE intake_date IS NOT NULL OR Curr_Cust_Rel_Date IS NOT NULL
          ) t
-    -- If a person was returned to incarceration after a revocation, we use the
-    --   the return date as the new admission_date
-    LEFT JOIN revocations r
-        ON r.admission_date BETWEEN t.start_date AND DATE_SUB(t.end_date, INTERVAL 1 DAY)
-        AND r.person_id = t.person_id
-    WHERE start_date < end_date -- Drop if end_datetime is before start_datetime
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY Term_Id ORDER BY admission_date DESC) = 1
+    WHERE start_date < end_date -- Drop if end_date is before start_datetime
+    ),
+
+    term_cte_with_revocation AS (
+        -- If a person was returned to incarceration after a revocation, we use the
+        --   the return date as the new admission_date
+        SELECT 
+            state_code, 
+            person_id,
+            Cis_100_Client_Id,
+            start_date,
+            end_date,
+            end_date_max,
+            status,
+            term_id,
+        FROM term_cte
+
+        UNION ALL
+
+        SELECT 
+            t.state_code, 
+            t.person_id,
+            t.Cis_100_Client_Id,
+            COALESCE(r.admission_date, t.start_date) AS start_date,
+            t.end_date,
+            t.end_date_max,
+            t.status,
+            t.term_id,
+        FROM term_cte t
+        INNER JOIN revocations r
+            ON r.admission_date BETWEEN t.start_date AND DATE_SUB(t.end_date, INTERVAL 1 DAY)
+            AND r.person_id = t.person_id
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY Term_Id ORDER BY admission_date DESC) = 1
+    ),
+
+    liberty_sessions AS (
+        SELECT 
+            person_id,
+            end_date_exclusive AS liberty_start_date,
+        FROM `{{project_id}}.sessions.compartment_sessions_materialized`
+        WHERE state_code = 'US_ME' 
+            AND outflow_to_level_1 = 'LIBERTY'
+            AND end_reason != 'TEMPORARY_RELEASE'
+    ),
+
+    term_cte_with_revocation_and_filled_nulls AS (
+        -- If a person was released to liberty, but there's no current_release_date,
+        --    we impute his/her release date
+        SELECT 
+            t.* EXCEPT(end_date, end_date_max),
+            COALESCE(liberty_start_date, end_date) AS end_date,
+            COALESCE(liberty_start_date, end_date_max) AS end_date_max
+        FROM term_cte_with_revocation t
+        LEFT JOIN liberty_sessions l
+        ON t.person_id = l.person_id
+            AND l.liberty_start_date > t.start_date
+            AND t.end_date IS NULL
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY t.person_id, t.term_id, t.start_date ORDER BY l.liberty_start_date) = 1
     )
 
 -- finally, if someone spent time in county, we adjust their start date to reflect that
 SELECT 
   t.state_code,
   t.person_id,
-  DATE_SUB(t.start_date, INTERVAL IFNULL(county.days_spent_in_county, 0) DAY) AS start_date_from_county_jail,
+  DATE_SUB(t.start_date,
+           INTERVAL IFNULL(county.days_spent_in_county, 0) DAY) AS start_date_from_county_jail,
   t.start_date,
   t.end_date,
   t.end_date_max, 
   t.status,
   t.term_id,
-FROM term_cte t
+FROM term_cte_with_revocation_and_filled_nulls t
 LEFT JOIN (
-    -- days in county jail
+    -- Join with days in county jail
     SELECT 
       Cis_400_Cis_100_Client_Id,
       Cis_319_Term_Id,
