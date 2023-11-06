@@ -1023,6 +1023,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
             StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            StateSupervisionPeriodTerminationReason.WEEKEND_CONFINEMENT,
         ):
             return False, None
 

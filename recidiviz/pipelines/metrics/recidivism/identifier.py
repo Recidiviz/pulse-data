@@ -278,6 +278,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 AdmissionReason.STATUS_CHANGE,
                 AdmissionReason.ESCAPE,
                 AdmissionReason.TEMPORARY_RELEASE,
+                AdmissionReason.WEEKEND_CONFINEMENT,
             ):
                 continue
             if ip.admission_reason in (
@@ -454,6 +455,10 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         ):
             # If the person was released from this incarceration period due to a period
             # of escape or temporary release, do not include them in the release cohort.
+            return False
+        if release_reason == ReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT:
+            # If the person was released from this incarceration period due to a release
+            # from weekend confinement, do not include them in the release cohort.
             return False
         if release_reason in (
             ReleaseReason.EXTERNAL_UNKNOWN,

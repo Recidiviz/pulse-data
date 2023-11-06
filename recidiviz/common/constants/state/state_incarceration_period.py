@@ -68,6 +68,9 @@ class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     TRANSFER_FROM_OTHER_JURISDICTION = (
         state_enum_strings.state_incarceration_period_admission_reason_transfer_from_other_jurisdiction
     )
+    WEEKEND_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_admission_reason_weekend_confinement
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -142,6 +145,9 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_VALUE_DESCRIPTIONS: Dict[
     StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: "Used "
     "when a person is transferred from a different jurisdiction. Used when a person "
     "is transferred from another state, or from federal custody.",
+    StateIncarcerationPeriodAdmissionReason.WEEKEND_CONFINEMENT: "Start of a weekend "
+    "confinement period for individuals who are out of prison during the week for work "
+    "and return on weekends.",
 }
 
 
@@ -201,6 +207,9 @@ class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
         state_enum_strings.state_incarceration_period_release_reason_transfer_to_other_jurisdiction
     )
     VACATED = state_enum_strings.state_incarceration_period_release_reason_vacated
+    RELEASE_FROM_WEEKEND_CONFINEMENT = (
+        state_enum_strings.state_incarceration_period_release_reason_release_from_weekend_confinement
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -262,6 +271,9 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_VALUE_DESCRIPTIONS: Dict[
     "where a person is released onto probation, for example (i.e. they are serving a "
     "stacked probation sentence after an incarceration sentence). This is also used if "
     "we cannot determine what type of release to supervision a release is.",
+    StateIncarcerationPeriodReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT: "End of a "
+    "weekend confinement period for individuals who are out of prison during the week "
+    "for work and return on weekends.",
     StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE: "Describes a person having "
     "been returned to the facility from having previously escaped, thus ending a period "
     "of incarceration in which they were deemed escaped from the facility.",
@@ -527,6 +539,7 @@ def is_commitment_from_supervision(
     commitment_admissions = [
         StateIncarcerationPeriodAdmissionReason.REVOCATION,
         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        StateIncarcerationPeriodAdmissionReason.WEEKEND_CONFINEMENT,
     ]
     non_commitment_admissions = [
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
@@ -603,6 +616,7 @@ def is_official_admission(
         StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
         StateIncarcerationPeriodAdmissionReason.ESCAPE,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
+        StateIncarcerationPeriodAdmissionReason.WEEKEND_CONFINEMENT,
     ]
 
     if admission_reason in official_admission_types:
@@ -666,6 +680,7 @@ def is_official_release(
         StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
         StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE,
         StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
+        StateIncarcerationPeriodReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT,
     ]
 
     if release_reason in official_release_types:
@@ -720,6 +735,7 @@ def release_reason_overrides_released_from_temporary_custody(
         StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
         StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE,
         StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
+        StateIncarcerationPeriodReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT,
     ]
 
     if release_reason in prioritized_release_types:

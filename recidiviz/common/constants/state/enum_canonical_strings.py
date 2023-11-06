@@ -165,6 +165,7 @@ state_incarceration_period_admission_reason_transfer = "TRANSFER"
 state_incarceration_period_admission_reason_transfer_from_other_jurisdiction = (
     "TRANSFER_FROM_OTHER_JURISDICTION"
 )
+state_incarceration_period_admission_reason_weekend_confinement = "WEEKEND_CONFINEMENT"
 
 state_incarceration_period_custody_level_intake = "INTAKE"
 state_incarceration_period_custody_level_minimum = "MINIMUM"
@@ -220,6 +221,9 @@ state_incarceration_period_release_reason_released_from_temporary_custody = (
 state_incarceration_period_release_reason_released_in_error = "RELEASED_IN_ERROR"
 state_incarceration_period_release_reason_released_to_supervision = (
     "RELEASED_TO_SUPERVISION"
+)
+state_incarceration_period_release_reason_release_from_weekend_confinement = (
+    "RELEASE_FROM_WEEKEND_CONFINEMENT"
 )
 state_incarceration_period_release_reason_return_from_escape = "RETURN_FROM_ESCAPE"
 state_incarceration_period_release_reason_return_from_temporary_release = (
@@ -321,7 +325,9 @@ state_supervision_period_admission_reason_return_from_absconsion = (
 state_supervision_period_admission_reason_return_from_suspension = (
     "RETURN_FROM_SUSPENSION"
 )
-
+state_supervision_period_admission_reason_return_from_weekend_confinement = (
+    "RETURN_FROM_WEEKEND_CONFINEMENT"
+)
 state_supervision_period_status_terminated = "TERMINATED"
 state_supervision_period_status_under_supervision = "UNDER_SUPERVISION"
 
@@ -366,6 +372,7 @@ state_supervision_period_termination_reason_return_from_absconsion = (
 state_supervision_period_termination_reason_revocation = "REVOCATION"
 state_supervision_period_termination_reason_suspension = "SUSPENSION"
 state_supervision_period_termination_reason_vacated = "VACATED"
+state_supervision_period_termination_reason_weekend_confinement = "WEEKEND_CONFINEMENT"
 
 # state_supervision_case_type_entry.py
 state_supervision_case_type_domestic_violence = "DOMESTIC_VIOLENCE"

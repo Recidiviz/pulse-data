@@ -139,6 +139,9 @@ class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     RETURN_FROM_SUSPENSION = (
         state_enum_strings.state_supervision_period_admission_reason_return_from_suspension
     )
+    RETURN_FROM_WEEKEND_CONFINEMENT = (
+        state_enum_strings.state_supervision_period_admission_reason_return_from_weekend_confinement
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -184,6 +187,9 @@ _STATE_SUPERVISION_ADMISSION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     "person has transferred to a new supervising officer, or when an attribute of the "
     "supervision period has changed (e.g. when the person is downgraded to a lower "
     "`StateSupervisionLevel`).",
+    StateSupervisionPeriodAdmissionReason.RETURN_FROM_WEEKEND_CONFINEMENT: "Used in "
+    "cases where a person is released to supervision for the work week after weekend "
+    "confinement.",
 }
 
 
@@ -387,6 +393,9 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
         state_enum_strings.state_supervision_period_termination_reason_suspension
     )
     VACATED = state_enum_strings.state_supervision_period_termination_reason_vacated
+    WEEKEND_CONFINEMENT = (
+        state_enum_strings.state_supervision_period_termination_reason_weekend_confinement
+    )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
@@ -459,6 +468,9 @@ _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     "incarceration or supervision related to the vacated conviction. This is distinct "
     "from `PARDONED`, because the sentence was cleared as a result of it being deemed "
     "legally void.",
+    StateSupervisionPeriodTerminationReason.WEEKEND_CONFINEMENT: "End of supervision "
+    "period to return to confinement for the weekend, used for individuals who are out "
+    "of prison during the week for work and return on weekends.",
 }
 
 
@@ -523,6 +535,7 @@ def is_official_supervision_admission(
         StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
+        StateSupervisionPeriodAdmissionReason.RETURN_FROM_WEEKEND_CONFINEMENT,
     ]
 
     if admission_reason in official_admissions:
