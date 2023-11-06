@@ -1003,7 +1003,7 @@ INCARCERATIONS_INFERRED = EventCountMetric(
     description="Number of inferred incarceration events that do not align with an "
     "observed incarceration session start",
     event_types=[EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON],
-    event_attribute_filters={"outflow_to_incarceration": ["false"]},
+    event_attribute_filters={},
 )
 
 INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
@@ -1015,10 +1015,7 @@ INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         "observed incarceration session start, for which the most severe violation "
         f"type was {category.replace('_', ' ').lower()}",
         event_types=[EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON],
-        event_attribute_filters={
-            "outflow_to_incarceration": ["false"],
-            "most_severe_violation_type": types,
-        },
+        event_attribute_filters={"most_severe_violation_type": types},
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
