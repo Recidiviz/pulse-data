@@ -395,8 +395,7 @@ def get_pseudonymized_id_query_str(hash_value_query_str: str) -> str:
     """
     Returns a string fragment for the pseudonymized_id in the product.
     """
-    return f"""
-        SUBSTRING(
+    return f"""SUBSTRING(
         # hashing external ID to base64url
             REPLACE(
                 REPLACE(
@@ -409,5 +408,4 @@ def get_pseudonymized_id_query_str(hash_value_query_str: str) -> str:
             ), 
             1, 
             16
-        )
-"""
+        )"""
