@@ -26,7 +26,7 @@
     python -m recidiviz.tools.airflow.environment_control open
 
     # to copy source files over to your environment's storage bucket:
-    python -m recidiviz.tools.airflow.environment_control update_files
+    python -m recidiviz.tools.airflow.environment_control update_files [--files recidiviz/server.py ...]
 
     # to update the version of the appengine image that KubernetesPodOperators run:
     python -m recidiviz.tools.airflow.environment_control update_image
@@ -34,6 +34,7 @@
 import argparse
 import logging
 import webbrowser
+from typing import Optional
 
 import google.cloud.orchestration.airflow.service_v1beta1 as service
 from google.cloud.orchestration.airflow.service_v1beta1 import types
@@ -143,8 +144,6 @@ def action_create() -> None:
         retry_states=[types.Environment.State.CREATING],
     )
 
-    action_update_files()
-
     # Must be done after the environment is created
     logging.info("Updating pypi environment packages...")
 
@@ -221,12 +220,11 @@ def action_update_image() -> None:
     )
 
 
-def action_update_files() -> None:
+def action_update_files(files: Optional[list[str]] = None) -> None:
     """Copies source files to the experiment gcs bucket"""
     environment = get_user_experiment_environment()
     copy_source_files_to_experiment(
-        gcs_uri=environment.config.dag_gcs_prefix,
-        dry_run=False,
+        gcs_uri=environment.config.dag_gcs_prefix, dry_run=False, file_filter=files
     )
 
 
@@ -242,6 +240,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
+    subparsers = parser.add_subparsers(help="sub-command help", dest="command")
 
     actions = {
         "create": action_create,
@@ -251,10 +250,12 @@ if __name__ == "__main__":
         "open": action_open,
     }
 
-    parser.add_argument(
-        "action",
-        choices=list(actions.keys()),
-    )
+    subparsers_by_name = {action: subparsers.add_parser(action) for action in actions}
+
+    update_files_parser = subparsers_by_name["update_files"]
+    update_files_parser.add_argument("--files", nargs="+")
 
     parsed_args = parser.parse_args()
-    actions[parsed_args.action]()
+    kwargs = vars(parsed_args).copy()
+    kwargs.pop("command")
+    actions[parsed_args.command](**kwargs)  # type: ignore
