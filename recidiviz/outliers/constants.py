@@ -51,6 +51,14 @@ INCARCERATION_STARTS_AND_INFERRED = OutliersMetric(
     aggregated_metric=metric_config.INCARCERATION_STARTS_AND_INFERRED,
     outcome_type=MetricOutcome.ADVERSE,
 )
+INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION = OutliersMetric(
+    aggregated_metric=next(
+        metric
+        for metric in metric_config.INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS
+        if metric.name == "incarceration_starts_and_inferred_technical_violation"
+    ),
+    outcome_type=MetricOutcome.ADVERSE,
+)
 
 # Favorable metrics
 EARLY_DISCHARGE_REQUESTS = OutliersMetric(

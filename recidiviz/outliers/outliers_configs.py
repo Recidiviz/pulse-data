@@ -24,6 +24,7 @@ from recidiviz.outliers.constants import (
     EARLY_DISCHARGE_REQUESTS,
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_AND_INFERRED,
+    INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
@@ -80,7 +81,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 event_name="incarcerations",
             ),
             OutliersMetricConfig.build_from_metric(
-                metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+                metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
                 title_display_name="Technical Incarceration Rate (TPVs)",
                 body_display_name="technical incarceration rate",
                 event_name="technical incarcerations",
@@ -103,7 +104,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
     StateCode.US_MI: OutliersConfig(
         metrics=[
             OutliersMetricConfig.build_from_metric(
-                metric=INCARCERATION_STARTS,
+                metric=INCARCERATION_STARTS_AND_INFERRED,
                 title_display_name="Incarceration Rate",
                 body_display_name="incarceration rate",
                 event_name="incarcerations",
@@ -115,7 +116,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 event_name="absconsions",
             ),
             OutliersMetricConfig.build_from_metric(
-                metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
+                metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
                 title_display_name="Technical Incarceration Rate (TPVs)",
                 body_display_name="technical incarceration rate",
                 event_name="technical incarcerations",
