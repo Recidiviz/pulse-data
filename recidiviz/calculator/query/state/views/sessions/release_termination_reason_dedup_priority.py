@@ -60,6 +60,7 @@ INCARCERATION_RELEASE_REASON_ORDERED_PRIORITY = [
     StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
     StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE,
     StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
+    StateIncarcerationPeriodReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT,
     StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
     StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
 ]
@@ -79,6 +80,7 @@ SUPERVISION_TERMINATION_REASON_ORDERED_PRIORITY = [
     StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
     StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
     StateSupervisionPeriodTerminationReason.INVESTIGATION,
+    StateSupervisionPeriodTerminationReason.WEEKEND_CONFINEMENT,
     StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
     StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
 ]
