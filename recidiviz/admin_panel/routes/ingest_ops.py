@@ -883,17 +883,12 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
-        ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
-            state_code, ingest_instance
-        )
-
-        if ingest_in_dataflow_enabled:
-            return (jsonify({"instance": ingest_instance.value}), HTTPStatus.OK)
-
         status_manager = PostgresDirectIngestInstanceStatusManager(
             state_code.value,
             ingest_instance,
-            is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
+            is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
+                state_code, ingest_instance
+            ),
         )
         try:
             raw_data_source_instance: Optional[

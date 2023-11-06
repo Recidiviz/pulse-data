@@ -41,17 +41,16 @@ import {
   updateIngestQueuesState,
 } from "../AdminPanelAPI";
 import {
+  deleteContentsOfRawDataTables,
+  deleteContentsInSecondaryIngestViewDataset,
+  markInstanceRawDataInvalidated,
   copyRawDataBetweenInstances,
   copyRawDataToBackup,
-  deleteContentsInSecondaryIngestViewDataset,
-  deleteContentsOfRawDataTables,
-  deleteTablesInPruningDatasets,
-  getIngestRawFileProcessingStatus,
-  markInstanceRawDataInvalidated,
-  purgeIngestQueues,
-  runCalculationDAGForState,
-  runIngestDAGForState,
   transferRawDataMetadataToNewInstance,
+  getIngestRawFileProcessingStatus,
+  purgeIngestQueues,
+  deleteTablesInPruningDatasets,
+  runCalculationDAGForState,
 } from "../AdminPanelAPI/IngestOperations";
 import {
   DirectIngestInstance,
@@ -63,7 +62,6 @@ import NewTabLink from "./NewTabLink";
 import {
   fetchCurrentIngestInstanceStatus,
   fetchCurrentRawDataSourceInstance,
-  fetchDataflowEnabled,
 } from "./Utilities/IngestInstanceUtilities";
 import StateSelector from "./Utilities/StateSelector";
 
@@ -111,15 +109,12 @@ const FlashChecklistStepSection = {
   START_FLASH: 1,
   /* Only present when rerun raw data source instance is SECONDARY */
   PRIMARY_RAW_DATA_DEPRECATION: 2,
-  // TODO(#24731): remove after dataflow fully enabled
   PRIMARY_INGEST_VIEW_DEPRECATION: 3,
   /* Only present when rerun raw data source instance is SECONDARY */
   FLASH_RAW_DATA_TO_PRIMARY: 4,
-  // TODO(#24731): remove after dataflow fully enabled
   FLASH_INGEST_VIEW_TO_PRIMARY: 5,
   /* Only present when rerun raw data source instance is SECONDARY */
   SECONDARY_RAW_DATA_CLEANUP: 6,
-  // TODO(#24731): remove after dataflow fully enabled
   SECONDARY_INGEST_VIEW_CLEANUP: 7,
   FINALIZE_FLASH: 8,
   RESUME_OPERATIONS: 9,
@@ -134,7 +129,6 @@ const CancelRerunChecklistStepSection = {
   you MUST add it in the relative order to other sections. */
   PAUSE_OPERATIONS: 0,
   START_CANCELLATION: 1,
-  // TODO(#24731): remove after dataflow fully enabled
   /* Only present when rerun raw data source instance is SECONDARY */
   SECONDARY_RAW_DATA_CLEANUP: 2,
   SECONDARY_INGEST_VIEW_CLEANUP: 3,
@@ -214,9 +208,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     currentSecondaryIngestInstanceStatus,
     setSecondaryIngestInstanceStatus,
   ] = React.useState<string | null>(null);
-  // TODO(#24731): remove dataflowEnabled and references after dataflow fully enabled
-  const [dataflowEnabled, setDataflowEnabled] =
-    React.useState<boolean | null>(null);
   const [proceedWithFlash, setProceedWithFlash] =
     React.useState<boolean | null>(null);
   const [
@@ -242,40 +233,16 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   const isFlashInProgress =
     currentPrimaryIngestInstanceStatus === "FLASH_IN_PROGRESS" &&
     currentSecondaryIngestInstanceStatus === "FLASH_IN_PROGRESS";
-
-  // TODO(#24731): consolidate back to single variable after dataflow fully enabled
-  const isRerunCancellationInProgressLegacy =
+  const isRerunCancellationInProgress =
     currentSecondaryIngestInstanceStatus === "RERUN_CANCELLATION_IN_PROGRESS";
-  const isReimportCancellationInProgress =
-    currentSecondaryIngestInstanceStatus ===
-    "RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS";
-  const isRerunCancellationInProgress = dataflowEnabled
-    ? isReimportCancellationInProgress
-    : isRerunCancellationInProgressLegacy;
-
-  // TODO(#24731): consolidate back to single variable after dataflow fully enabled
-  const isRerunCanceledLegacy =
+  const isRerunCanceled =
     currentSecondaryIngestInstanceStatus === "RERUN_CANCELED";
-  const isReimportCanceled =
-    currentSecondaryIngestInstanceStatus === "RAW_DATA_REIMPORT_CANCELED";
-  const isRerunCanceled = dataflowEnabled
-    ? isReimportCanceled
-    : isRerunCanceledLegacy;
-
   const isReadyToFlash =
     currentSecondaryIngestInstanceStatus === "READY_TO_FLASH";
   const isFlashCompleted =
     currentSecondaryIngestInstanceStatus === "FLASH_COMPLETED";
-
-  // TODO(#24731): consolidate back to single variable after dataflow fully enabled
-  const isNoRerunInProgressLegacy =
+  const isNoRerunInProgress =
     currentSecondaryIngestInstanceStatus === "NO_RERUN_IN_PROGRESS";
-  const isNoReimportInProgress =
-    currentSecondaryIngestInstanceStatus === "NO_RAW_DATA_REIMPORT_IN_PROGRESS";
-  const isNoRerunInProgress = dataflowEnabled
-    ? isNoReimportInProgress
-    : isNoRerunInProgressLegacy;
-
   const isSecondaryRawDataImport =
     currentSecondaryRawDataSourceInstance === DirectIngestInstance.SECONDARY;
 
@@ -303,11 +270,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             stateInfo.code,
             DirectIngestInstance.SECONDARY
           ),
-          fetchDataflowEnabled(stateInfo.code),
         ]);
         setPrimaryIngestInstanceStatus(getValueIfResolved(statusResults[0]));
         setSecondaryIngestInstanceStatus(getValueIfResolved(statusResults[1]));
-        setDataflowEnabled(getValueIfResolved(statusResults[2]));
       } catch (err) {
         message.error(`An error occured: ${err}`);
       }
@@ -513,20 +478,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     );
   };
 
-  function determineStartCancellationNextStep() {
-    if (isSecondaryRawDataImport) {
-      return CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP;
-    }
-
-    if (dataflowEnabled) {
-      throw new Error(
-        "isSecondaryRawDataImport should always be set for dataflowEnabled states"
-      );
-    }
-
-    return CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP;
-  }
-
   const StateCancelRerunChecklist = ({
     stateCode,
   }: StateFlashingChecklistProps): JSX.Element => {
@@ -562,24 +513,22 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               updateIngestQueuesState(stateCode, QueueState.PAUSED)
             }
           />
-          {dataflowEnabled ? null : (
-            <StyledStep
-              title="Acquire SECONDARY Ingest Lock"
-              description={
-                <p>
-                  Acquire the ingest lock for {stateCode}&#39;s secondary ingest
-                  instance. This prevents other operations from updating ingest
-                  databases until the lock is released.
-                </p>
-              }
-              actionButtonEnabled={proceedWithFlash === false}
-              actionButtonTitle="Acquire Lock"
-              onActionButtonClick={async () =>
-                acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
-              }
-              nextSection={CancelRerunChecklistStepSection.START_CANCELLATION}
-            />
-          )}
+          <StyledStep
+            title="Acquire SECONDARY Ingest Lock"
+            description={
+              <p>
+                Acquire the ingest lock for {stateCode}&#39;s secondary ingest
+                instance. This prevents other operations from updating ingest
+                databases until the lock is released.
+              </p>
+            }
+            actionButtonEnabled={proceedWithFlash === false}
+            actionButtonTitle="Acquire Lock"
+            onActionButtonClick={async () =>
+              acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
+            }
+            nextSection={CancelRerunChecklistStepSection.START_CANCELLATION}
+          />
         </ChecklistSection>
         <ChecklistSection
           currentStep={currentStep}
@@ -605,7 +554,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 "RERUN_CANCELLATION_IN_PROGRESS"
               )
             }
-            nextSection={determineStartCancellationNextStep()}
+            nextSection={
+              isSecondaryRawDataImport
+                ? CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                : CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+            }
           />
         </ChecklistSection>
         {isSecondaryRawDataImport ? (
@@ -732,91 +685,85 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 )
               }
               nextSection={
-                dataflowEnabled
-                  ? CancelRerunChecklistStepSection.FINALIZE_CANCELLATION
-                  : CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+                CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
               }
             />
           </ChecklistSection>
         ) : null}
-        {dataflowEnabled ? null : (
-          <ChecklistSection
-            currentStep={currentStep}
-            currentStepSection={currentStepSection}
-            stepSection={
-              CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={
+            CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+          }
+          headerContents={
+            <p>
+              Clean Up Ingest View Data and Associated Metadata in{" "}
+              <code>SECONDARY</code>
+            </p>
+          }
+        >
+          <StyledStep
+            title="Clear secondary database"
+            actionButtonEnabled={isRerunCancellationInProgress}
+            description={
+              <>
+                <p>
+                  Drop all data from the{" "}
+                  <code>{stateCode.toLowerCase()}_secondary</code> database. To
+                  do so, run this script locally inside a pipenv shell:
+                </p>
+                <p>
+                  <CodeBlock
+                    enabled={
+                      currentStepSection ===
+                      CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+                    }
+                  >
+                    python -m recidiviz.tools.migrations.purge_state_db \
+                    <br />
+                    {"    "}--state-code {stateCode} \<br />
+                    {"    "}--ingest-instance SECONDARY \<br />
+                    {"    "}--project-id {projectId}
+                  </CodeBlock>
+                </p>
+              </>
             }
-            headerContents={
+          />
+          <StyledStep
+            title="Deprecate secondary instance operation database rows"
+            description={
               <p>
-                Clean Up Ingest View Data and Associated Metadata in{" "}
-                <code>SECONDARY</code>
+                Mark all <code>SECONDARY</code> instance rows in the{" "}
+                <code>direct_ingest_view_materialization_metadata</code>{" "}
+                operations database table as invalidated.
               </p>
             }
-          >
-            <StyledStep
-              title="Clear secondary database"
-              actionButtonEnabled={isRerunCancellationInProgress}
-              description={
-                <>
-                  <p>
-                    Drop all data from the{" "}
-                    <code>{stateCode.toLowerCase()}_secondary</code> database.
-                    To do so, run this script locally inside a pipenv shell:
-                  </p>
-                  <p>
-                    <CodeBlock
-                      enabled={
-                        currentStepSection ===
-                        CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
-                      }
-                    >
-                      python -m recidiviz.tools.migrations.purge_state_db \
-                      <br />
-                      {"    "}--state-code {stateCode} \<br />
-                      {"    "}--ingest-instance SECONDARY \<br />
-                      {"    "}--project-id {projectId}
-                    </CodeBlock>
-                  </p>
-                </>
-              }
-            />
-            <StyledStep
-              title="Deprecate secondary instance operation database rows"
-              description={
-                <p>
-                  Mark all <code>SECONDARY</code> instance rows in the{" "}
-                  <code>direct_ingest_view_materialization_metadata</code>{" "}
-                  operations database table as invalidated.
-                </p>
-              }
-              actionButtonEnabled={isRerunCancellationInProgress}
-              actionButtonTitle="Invalidate secondary rows"
-              onActionButtonClick={async () =>
-                markInstanceIngestViewDataInvalidated(
-                  stateCode,
-                  DirectIngestInstance.SECONDARY
-                )
-              }
-            />
-            <StyledStep
-              title="Clean up SECONDARY ingest view results"
-              description={
-                <p>
-                  Delete the contents of the{" "}
-                  <code>{secondaryIngestViewResultsDataset}</code> dataset.
-                </p>
-              }
-              actionButtonEnabled={isRerunCancellationInProgress}
-              actionButtonTitle="Clean up SECONDARY ingest view results"
-              onActionButtonClick={async () =>
-                deleteContentsInSecondaryIngestViewDataset(stateCode)
-              }
-              nextSection={
-                CancelRerunChecklistStepSection.FINALIZE_CANCELLATION
-              }
-            />
-          </ChecklistSection>
-        )}
+            actionButtonEnabled={isRerunCancellationInProgress}
+            actionButtonTitle="Invalidate secondary rows"
+            onActionButtonClick={async () =>
+              markInstanceIngestViewDataInvalidated(
+                stateCode,
+                DirectIngestInstance.SECONDARY
+              )
+            }
+          />
+          <StyledStep
+            title="Clean up SECONDARY ingest view results"
+            description={
+              <p>
+                Delete the contents of the{" "}
+                <code>{secondaryIngestViewResultsDataset}</code> dataset.
+              </p>
+            }
+            actionButtonEnabled={isRerunCancellationInProgress}
+            actionButtonTitle="Clean up SECONDARY ingest view results"
+            onActionButtonClick={async () =>
+              deleteContentsInSecondaryIngestViewDataset(stateCode)
+            }
+            nextSection={CancelRerunChecklistStepSection.FINALIZE_CANCELLATION}
+          />
+        </ChecklistSection>
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
@@ -867,23 +814,20 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           stepSection={CancelRerunChecklistStepSection.RESUME_OPERATIONS}
           headerContents={<p>Resume Operations</p>}
         >
-          {dataflowEnabled ? null : (
-            <StyledStep
-              title="Release SECONDARY Ingest Lock"
-              description={
-                <p>
-                  Release the ingest lock for {stateCode}&#39;s secondary
-                  instance.
-                </p>
-              }
-              actionButtonEnabled={isNoRerunInProgress}
-              actionButtonTitle="Release Lock"
-              onActionButtonClick={async () =>
-                releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
-              }
-            />
-          )}
-
+          <StyledStep
+            title="Release SECONDARY Ingest Lock"
+            description={
+              <p>
+                Release the ingest lock for {stateCode}&#39;s secondary
+                instance.
+              </p>
+            }
+            actionButtonEnabled={isNoRerunInProgress}
+            actionButtonTitle="Release Lock"
+            onActionButtonClick={async () =>
+              releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
+            }
+          />
           <StyledStep
             title="Unpause queues"
             description={
@@ -912,38 +856,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       </div>
     );
   };
-
-  function determineStartFlashNextStep() {
-    if (isSecondaryRawDataImport) {
-      return FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION;
-    }
-
-    if (dataflowEnabled) {
-      throw new Error(
-        "isSecondaryRawDataImport should always be set for dataflowEnabled states"
-      );
-    }
-
-    return FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION;
-  }
-
-  function determinePrimaryRawDataDeprecationNextStep() {
-    return dataflowEnabled
-      ? FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
-      : FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION;
-  }
-
-  function determineFlashRawDataToPrimaryNextStep() {
-    return dataflowEnabled
-      ? FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
-      : FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY;
-  }
-
-  function determineSecondaryRawDataCleanUpNextStep() {
-    return dataflowEnabled
-      ? FlashChecklistStepSection.FINALIZE_FLASH
-      : FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP;
-  }
 
   const StateProceedWithFlashChecklist = ({
     stateCode,
@@ -1002,48 +914,38 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             actionButtonTitle="Clear Queue"
             actionButtonEnabled={isReadyToFlash}
             onActionButtonClick={async () => purgeIngestQueues(stateCode)}
-            nextSection={
-              dataflowEnabled
-                ? FlashChecklistStepSection.START_FLASH
-                : undefined
+          />
+          <StyledStep
+            title="Acquire PRIMARY Ingest Lock"
+            description={
+              <p>
+                Acquire the ingest lock for {stateCode}&#39;s primary ingest
+                instance. This prevents other operations from updating ingest
+                databases until the lock is released.
+              </p>
+            }
+            actionButtonEnabled={isReadyToFlash}
+            actionButtonTitle="Acquire Lock"
+            onActionButtonClick={async () =>
+              acquireBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
             }
           />
-          {dataflowEnabled ? null : (
-            <StyledStep
-              title="Acquire PRIMARY Ingest Lock"
-              description={
-                <p>
-                  Acquire the ingest lock for {stateCode}&#39;s primary ingest
-                  instance. This prevents other operations from updating ingest
-                  databases until the lock is released.
-                </p>
-              }
-              actionButtonEnabled={isReadyToFlash}
-              actionButtonTitle="Acquire Lock"
-              onActionButtonClick={async () =>
-                acquireBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
-              }
-            />
-          )}
-
-          {dataflowEnabled ? null : (
-            <StyledStep
-              title="Acquire SECONDARY Ingest Lock"
-              description={
-                <p>
-                  Acquire the ingest lock for {stateCode}&#39;s secondary ingest
-                  instance. This prevents other operations from updating ingest
-                  databases until the lock is released.
-                </p>
-              }
-              actionButtonEnabled={isReadyToFlash}
-              actionButtonTitle="Acquire Lock"
-              onActionButtonClick={async () =>
-                acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
-              }
-              nextSection={FlashChecklistStepSection.START_FLASH}
-            />
-          )}
+          <StyledStep
+            title="Acquire SECONDARY Ingest Lock"
+            description={
+              <p>
+                Acquire the ingest lock for {stateCode}&#39;s secondary ingest
+                instance. This prevents other operations from updating ingest
+                databases until the lock is released.
+              </p>
+            }
+            actionButtonEnabled={isReadyToFlash}
+            actionButtonTitle="Acquire Lock"
+            onActionButtonClick={async () =>
+              acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
+            }
+            nextSection={FlashChecklistStepSection.START_FLASH}
+          />
         </ChecklistSection>
         <ChecklistSection
           currentStep={currentStep}
@@ -1065,7 +967,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
             }
-            nextSection={determineStartFlashNextStep()}
+            nextSection={
+              isSecondaryRawDataImport
+                ? FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION
+                : FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
+            }
           />
         </ChecklistSection>
         {isSecondaryRawDataImport ? (
@@ -1135,95 +1041,95 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   DirectIngestInstance.PRIMARY
                 )
               }
-              nextSection={determinePrimaryRawDataDeprecationNextStep()}
+              nextSection={
+                FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
+              }
             />
           </ChecklistSection>
         ) : null}
-        {dataflowEnabled ? null : (
-          <ChecklistSection
-            currentStep={currentStep}
-            currentStepSection={currentStepSection}
-            stepSection={
-              FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={
+            FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
+          }
+          headerContents={
+            <p>
+              Deprecate Ingest Views and Associated Metadata in{" "}
+              <code>PRIMARY</code>
+            </p>
+          }
+        >
+          <StyledStep
+            title="Drop data from primary database"
+            description={
+              <>
+                <p>
+                  Drop all data from the{" "}
+                  <code>{stateCode.toLowerCase()}_primary</code> database. To do
+                  so, run this script locally run inside a pipenv shell:
+                </p>
+                <p>
+                  <CodeBlock
+                    enabled={
+                      currentStepSection ===
+                      FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
+                    }
+                  >
+                    python -m recidiviz.tools.migrations.purge_state_db \
+                    <br />
+                    {"    "}--state-code {stateCode} \<br />
+                    {"    "}--ingest-instance PRIMARY \<br />
+                    {"    "}--project-id {projectId} \<br />
+                    {"    "}--purge-schema
+                  </CodeBlock>
+                </p>
+              </>
             }
-            headerContents={
+          />
+          <StyledStep
+            title="Backup primary ingest view results"
+            description={
+              <>
+                <p>
+                  Move all primary instance ingest view results to a backup
+                  dataset in BQ.
+                </p>
+              </>
+            }
+            actionButtonEnabled={isFlashInProgress}
+            actionButtonTitle="Move to Backup"
+            onActionButtonClick={async () =>
+              moveIngestViewResultsToBackup(
+                stateCode,
+                DirectIngestInstance.PRIMARY
+              )
+            }
+          />
+          <StyledStep
+            title="Deprecate primary instance operation database rows"
+            description={
               <p>
-                Deprecate Ingest Views and Associated Metadata in{" "}
-                <code>PRIMARY</code>
+                Mark all <code>PRIMARY</code> instance rows in the{" "}
+                <code>direct_ingest_view_materialization_metadata</code>{" "}
+                operations database table as invalidated.
               </p>
             }
-          >
-            <StyledStep
-              title="Drop data from primary database"
-              description={
-                <>
-                  <p>
-                    Drop all data from the{" "}
-                    <code>{stateCode.toLowerCase()}_primary</code> database. To
-                    do so, run this script locally run inside a pipenv shell:
-                  </p>
-                  <p>
-                    <CodeBlock
-                      enabled={
-                        currentStepSection ===
-                        FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
-                      }
-                    >
-                      python -m recidiviz.tools.migrations.purge_state_db \
-                      <br />
-                      {"    "}--state-code {stateCode} \<br />
-                      {"    "}--ingest-instance PRIMARY \<br />
-                      {"    "}--project-id {projectId} \<br />
-                      {"    "}--purge-schema
-                    </CodeBlock>
-                  </p>
-                </>
-              }
-            />
-            <StyledStep
-              title="Backup primary ingest view results"
-              description={
-                <>
-                  <p>
-                    Move all primary instance ingest view results to a backup
-                    dataset in BQ.
-                  </p>
-                </>
-              }
-              actionButtonEnabled={isFlashInProgress}
-              actionButtonTitle="Move to Backup"
-              onActionButtonClick={async () =>
-                moveIngestViewResultsToBackup(
-                  stateCode,
-                  DirectIngestInstance.PRIMARY
-                )
-              }
-            />
-            <StyledStep
-              title="Deprecate primary instance operation database rows"
-              description={
-                <p>
-                  Mark all <code>PRIMARY</code> instance rows in the{" "}
-                  <code>direct_ingest_view_materialization_metadata</code>{" "}
-                  operations database table as invalidated.
-                </p>
-              }
-              actionButtonEnabled={isFlashInProgress}
-              actionButtonTitle="Invalidate primary rows"
-              onActionButtonClick={async () =>
-                markInstanceIngestViewDataInvalidated(
-                  stateCode,
-                  DirectIngestInstance.PRIMARY
-                )
-              }
-              nextSection={
-                isSecondaryRawDataImport
-                  ? FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
-                  : FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY
-              }
-            />
-          </ChecklistSection>
-        )}
+            actionButtonEnabled={isFlashInProgress}
+            actionButtonTitle="Invalidate primary rows"
+            onActionButtonClick={async () =>
+              markInstanceIngestViewDataInvalidated(
+                stateCode,
+                DirectIngestInstance.PRIMARY
+              )
+            }
+            nextSection={
+              isSecondaryRawDataImport
+                ? FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
+                : FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY
+            }
+          />
+        </ChecklistSection>
         {isSecondaryRawDataImport ? (
           <ChecklistSection
             currentStep={currentStep}
@@ -1294,131 +1200,130 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   </CodeBlock>
                 </p>
               }
-              nextSection={determineFlashRawDataToPrimaryNextStep()}
+              nextSection={
+                FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY
+              }
             />
           </ChecklistSection>
         ) : null}
-        {dataflowEnabled ? null : (
-          <ChecklistSection
-            currentStep={currentStep}
-            currentStepSection={currentStepSection}
-            stepSection={FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY}
-            headerContents={
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY}
+          headerContents={
+            <p>
+              Flash Ingest View Results to <code>PRIMARY</code>
+            </p>
+          }
+        >
+          <StyledStep
+            title="Export secondary instance data to GCS"
+            description={
               <p>
-                Flash Ingest View Results to <code>PRIMARY</code>
+                Export a SQL dump of all data in the {stateCode.toLowerCase()}
+                _secondary database to cloud storage bucket{" "}
+                <code>{projectId}-cloud-sql-exports</code>. <br />
+                You can check your progress in the{" "}
+                <NewTabLink href={operationsPageURL}>
+                  Operations section
+                </NewTabLink>{" "}
+                of the STATE SQL instance page. If this request times out, but
+                the operation succeeds, just select &#39;Mark Done&#39;.
               </p>
             }
-          >
-            <StyledStep
-              title="Export secondary instance data to GCS"
-              description={
-                <p>
-                  Export a SQL dump of all data in the {stateCode.toLowerCase()}
-                  _secondary database to cloud storage bucket{" "}
-                  <code>{projectId}-cloud-sql-exports</code>. <br />
-                  You can check your progress in the{" "}
-                  <NewTabLink href={operationsPageURL}>
-                    Operations section
-                  </NewTabLink>{" "}
-                  of the STATE SQL instance page. If this request times out, but
-                  the operation succeeds, just select &#39;Mark Done&#39;.
-                </p>
-              }
-              actionButtonEnabled={isFlashInProgress}
-              actionButtonTitle="Export Data"
-              onActionButtonClick={async () =>
-                exportDatabaseToGCS(stateCode, DirectIngestInstance.SECONDARY)
-              }
-            />
-            <StyledStep
-              title="Import data from secondary"
-              description={
-                <p>
-                  Import the SQL dump from the{" "}
-                  <code>{stateCode.toLowerCase()}_secondary</code> Postgres
-                  database into the{" "}
-                  <code>{stateCode.toLowerCase()}_primary</code> Postgres
-                  database. You can check your progress in the{" "}
-                  <NewTabLink href={operationsPageURL}>
-                    Operations section
-                  </NewTabLink>{" "}
-                  of the STATE SQL instance page. If this request times out, but
-                  the operation succeeds, just select &#39;Mark Done&#39;.
-                </p>
-              }
-              actionButtonEnabled={isFlashInProgress}
-              actionButtonTitle="Import Data"
-              onActionButtonClick={async () =>
-                importDatabaseFromGCS(
-                  stateCode,
-                  DirectIngestInstance.PRIMARY,
-                  DirectIngestInstance.SECONDARY
-                )
-              }
-            />
-            <StyledStep
-              title="Clean up imported SQL files"
-              description={
-                <p>
-                  Delete files containing the SQL that was imported into the{" "}
-                  <code>{stateCode.toLowerCase()}_primary</code> database.
-                </p>
-              }
-              actionButtonEnabled={isFlashInProgress}
-              actionButtonTitle="Delete"
-              onActionButtonClick={async () =>
-                deleteDatabaseImportGCSFiles(
-                  stateCode,
-                  DirectIngestInstance.SECONDARY
-                )
-              }
-            />
-            <StyledStep
-              title="Move ingest view metadata from SECONDARY instance to PRIMARY"
-              description={
-                <p>
-                  Update all rows in the{" "}
-                  <code>direct_ingest_view_materialization_metadata</code>{" "}
-                  operations database that had instance <code>SECONDARY</code>{" "}
-                  with updated instance <code>PRIMARY</code>.
-                </p>
-              }
-              actionButtonEnabled={isFlashInProgress}
-              actionButtonTitle="Move Secondary Ingest View Metadata"
-              onActionButtonClick={async () =>
-                transferIngestViewMetadataToNewInstance(
-                  stateCode,
-                  DirectIngestInstance.SECONDARY,
-                  DirectIngestInstance.PRIMARY
-                )
-              }
-            />
-            <StyledStep
-              title="Move secondary ingest view data to primary"
-              description={
-                <p>
-                  Move all ingest view results from BQ dataset{" "}
-                  <code>{secondaryIngestViewResultsDataset}</code> to BQ dataset{" "}
-                  <code>{primaryIngestViewResultsDataset}</code>
-                </p>
-              }
-              actionButtonEnabled={isFlashInProgress}
-              actionButtonTitle="Move Secondary Data"
-              onActionButtonClick={async () =>
-                moveIngestViewResultsBetweenInstances(
-                  stateCode,
-                  DirectIngestInstance.SECONDARY,
-                  DirectIngestInstance.PRIMARY
-                )
-              }
-              nextSection={
-                isSecondaryRawDataImport
-                  ? FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
-                  : FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
-              }
-            />
-          </ChecklistSection>
-        )}
+            actionButtonEnabled={isFlashInProgress}
+            actionButtonTitle="Export Data"
+            onActionButtonClick={async () =>
+              exportDatabaseToGCS(stateCode, DirectIngestInstance.SECONDARY)
+            }
+          />
+          <StyledStep
+            title="Import data from secondary"
+            description={
+              <p>
+                Import the SQL dump from the{" "}
+                <code>{stateCode.toLowerCase()}_secondary</code> Postgres
+                database into the <code>{stateCode.toLowerCase()}_primary</code>{" "}
+                Postgres database. You can check your progress in the{" "}
+                <NewTabLink href={operationsPageURL}>
+                  Operations section
+                </NewTabLink>{" "}
+                of the STATE SQL instance page. If this request times out, but
+                the operation succeeds, just select &#39;Mark Done&#39;.
+              </p>
+            }
+            actionButtonEnabled={isFlashInProgress}
+            actionButtonTitle="Import Data"
+            onActionButtonClick={async () =>
+              importDatabaseFromGCS(
+                stateCode,
+                DirectIngestInstance.PRIMARY,
+                DirectIngestInstance.SECONDARY
+              )
+            }
+          />
+          <StyledStep
+            title="Clean up imported SQL files"
+            description={
+              <p>
+                Delete files containing the SQL that was imported into the{" "}
+                <code>{stateCode.toLowerCase()}_primary</code> database.
+              </p>
+            }
+            actionButtonEnabled={isFlashInProgress}
+            actionButtonTitle="Delete"
+            onActionButtonClick={async () =>
+              deleteDatabaseImportGCSFiles(
+                stateCode,
+                DirectIngestInstance.SECONDARY
+              )
+            }
+          />
+          <StyledStep
+            title="Move ingest view metadata from SECONDARY instance to PRIMARY"
+            description={
+              <p>
+                Update all rows in the{" "}
+                <code>direct_ingest_view_materialization_metadata</code>{" "}
+                operations database that had instance <code>SECONDARY</code>{" "}
+                with updated instance <code>PRIMARY</code>.
+              </p>
+            }
+            actionButtonEnabled={isFlashInProgress}
+            actionButtonTitle="Move Secondary Ingest View Metadata"
+            onActionButtonClick={async () =>
+              transferIngestViewMetadataToNewInstance(
+                stateCode,
+                DirectIngestInstance.SECONDARY,
+                DirectIngestInstance.PRIMARY
+              )
+            }
+          />
+          <StyledStep
+            title="Move secondary ingest view data to primary"
+            description={
+              <p>
+                Move all ingest view results from BQ dataset{" "}
+                <code>{secondaryIngestViewResultsDataset}</code> to BQ dataset{" "}
+                <code>{primaryIngestViewResultsDataset}</code>
+              </p>
+            }
+            actionButtonEnabled={isFlashInProgress}
+            actionButtonTitle="Move Secondary Data"
+            onActionButtonClick={async () =>
+              moveIngestViewResultsBetweenInstances(
+                stateCode,
+                DirectIngestInstance.SECONDARY,
+                DirectIngestInstance.PRIMARY
+              )
+            }
+            nextSection={
+              isSecondaryRawDataImport
+                ? FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                : FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+            }
+          />
+        </ChecklistSection>
         {isSecondaryRawDataImport ? (
           <ChecklistSection
             currentStep={currentStep}
@@ -1447,53 +1352,51 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   DirectIngestInstance.SECONDARY
                 )
               }
-              nextSection={determineSecondaryRawDataCleanUpNextStep()}
+              nextSection={
+                FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+              }
             />
           </ChecklistSection>
         ) : null}
-        {dataflowEnabled ? null : (
-          <ChecklistSection
-            currentStep={currentStep}
-            currentStepSection={currentStepSection}
-            stepSection={
-              FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+        <ChecklistSection
+          currentStep={currentStep}
+          currentStepSection={currentStepSection}
+          stepSection={FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP}
+          headerContents={
+            <p>
+              Clean up Ingest View Data and Associated Metadata in{" "}
+              <code>SECONDARY</code>
+            </p>
+          }
+        >
+          <StyledStep
+            title="Clear secondary database"
+            description={
+              <>
+                <p>
+                  Drop all data from the{" "}
+                  <code>{stateCode.toLowerCase()}_secondary</code> database. To
+                  do so, run this script locally inside a pipenv shell:
+                </p>
+                <p>
+                  <CodeBlock
+                    enabled={
+                      currentStepSection ===
+                      FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+                    }
+                  >
+                    python -m recidiviz.tools.migrations.purge_state_db \
+                    <br />
+                    {"    "}--state-code {stateCode} \<br />
+                    {"    "}--ingest-instance SECONDARY \<br />
+                    {"    "}--project-id {projectId}
+                  </CodeBlock>
+                </p>
+              </>
             }
-            headerContents={
-              <p>
-                Clean up Ingest View Data and Associated Metadata in{" "}
-                <code>SECONDARY</code>
-              </p>
-            }
-          >
-            <StyledStep
-              title="Clear secondary database"
-              description={
-                <>
-                  <p>
-                    Drop all data from the{" "}
-                    <code>{stateCode.toLowerCase()}_secondary</code> database.
-                    To do so, run this script locally inside a pipenv shell:
-                  </p>
-                  <p>
-                    <CodeBlock
-                      enabled={
-                        currentStepSection ===
-                        FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
-                      }
-                    >
-                      python -m recidiviz.tools.migrations.purge_state_db \
-                      <br />
-                      {"    "}--state-code {stateCode} \<br />
-                      {"    "}--ingest-instance SECONDARY \<br />
-                      {"    "}--project-id {projectId}
-                    </CodeBlock>
-                  </p>
-                </>
-              }
-              nextSection={FlashChecklistStepSection.FINALIZE_FLASH}
-            />
-          </ChecklistSection>
-        )}
+            nextSection={FlashChecklistStepSection.FINALIZE_FLASH}
+          />
+        </ChecklistSection>
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
@@ -1541,38 +1444,33 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           stepSection={FlashChecklistStepSection.RESUME_OPERATIONS}
           headerContents={<p>Resume Operations</p>}
         >
-          {dataflowEnabled ? null : (
-            <StyledStep
-              title="Release PRIMARY Ingest Lock"
-              description={
-                <p>
-                  Release the ingest lock for {stateCode}&#39;s primary
-                  instance.
-                </p>
-              }
-              actionButtonEnabled={isNoRerunInProgress}
-              actionButtonTitle="Release Lock"
-              onActionButtonClick={async () =>
-                releaseBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
-              }
-            />
-          )}
-          {dataflowEnabled ? null : (
-            <StyledStep
-              title="Release SECONDARY Ingest Lock"
-              description={
-                <p>
-                  Release the ingest lock for {stateCode}&#39;s secondary
-                  instance.
-                </p>
-              }
-              actionButtonEnabled={isNoRerunInProgress}
-              actionButtonTitle="Release Lock"
-              onActionButtonClick={async () =>
-                releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
-              }
-            />
-          )}
+          <StyledStep
+            title="Release PRIMARY Ingest Lock"
+            description={
+              <p>
+                Release the ingest lock for {stateCode}&#39;s primary instance.
+              </p>
+            }
+            actionButtonEnabled={isNoRerunInProgress}
+            actionButtonTitle="Release Lock"
+            onActionButtonClick={async () =>
+              releaseBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
+            }
+          />
+          <StyledStep
+            title="Release SECONDARY Ingest Lock"
+            description={
+              <p>
+                Release the ingest lock for {stateCode}&#39;s secondary
+                instance.
+              </p>
+            }
+            actionButtonEnabled={isNoRerunInProgress}
+            actionButtonTitle="Release Lock"
+            onActionButtonClick={async () =>
+              releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
+            }
+          />
           <StyledStep
             title="Unpause queues"
             description={
@@ -1597,32 +1495,17 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           <StyledStep
             title="Full Historical Refresh"
             description={
-              dataflowEnabled ? (
-                <>
-                  <p>
-                    Trigger a BigQuery refresh and run the Calculation DAG for{" "}
-                    {stateCode} in <code>PRIMARY</code>.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    Trigger a BigQuery refresh and run the Ingest DAG for{" "}
-                    {stateCode} in <code>PRIMARY</code>.
-                  </p>
-                </>
-              )
+              <>
+                <p>
+                  Trigger a BigQuery refresh and run the Calculation DAG for{" "}
+                  {stateCode} in <code>PRIMARY</code>.
+                </p>
+              </>
             }
-            actionButtonTitle={
-              dataflowEnabled
-                ? "Start Ingest DAG Run"
-                : "Start Calculation DAG Run"
-            }
+            actionButtonTitle="Start Calculation DAG Run"
             actionButtonEnabled
             onActionButtonClick={async () =>
-              dataflowEnabled
-                ? runIngestDAGForState(stateCode)
-                : runCalculationDAGForState(stateCode)
+              runCalculationDAGForState(stateCode)
             }
             nextSection={FlashChecklistStepSection.DONE}
           />
