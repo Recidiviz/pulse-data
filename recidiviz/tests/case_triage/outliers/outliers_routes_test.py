@@ -31,7 +31,6 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
 )
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
-from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import INCARCERATION_STARTS_AND_INFERRED
 from recidiviz.outliers.types import (
     OutliersConfig,
@@ -124,13 +123,13 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         super().setUp()
 
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            state_code="recidiviz", allowed_states=["US_IX", "US_XX"]
+            state_code="recidiviz", allowed_states=["US_IX", "US_PA"]
         )
 
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
 
-        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx")
+        self.database_key = SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_pa")
         local_persistence_helpers.use_on_disk_postgresql_database(self.database_key)
 
         with SessionFactory.using_database(self.database_key) as session:
@@ -211,7 +210,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_supervisors(
         self, mock_enabled_states: MagicMock, mock_get_supervisors: MagicMock
     ) -> None:
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_get_supervisors.return_value = [
             SupervisionOfficerSupervisorEntity(
@@ -230,7 +229,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         ]
 
         response = self.test_client.get(
-            "/outliers/US_XX/supervisors",
+            "/outliers/US_PA/supervisors",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -269,8 +268,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_outliers: MagicMock,
         mock_get_supervisor: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         with SessionFactory.using_database(self.database_key) as session:
             mock_get_supervisor.return_value = (
@@ -321,7 +320,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             ]
 
             response = self.test_client.get(
-                "/outliers/US_XX/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
+                "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
                 headers={"Origin": "http://localhost:3000"},
             )
 
@@ -387,13 +386,13 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
         mock_get_supervisor: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_get_supervisor.return_value = None
 
         response = self.test_client.get(
-            "/outliers/US_XX/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
+            "/outliers/US_PA/supervisor/hash1/officers?num_lookback_periods=1&period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -414,8 +413,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
         mock_get_outliers: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_get_outliers.return_value = [
             {
@@ -434,7 +433,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         ]
 
         response = self.test_client.get(
-            "/outliers/US_XX/benchmarks?num_periods=5&period_end_date=2023-05-01",
+            "/outliers/US_PA/benchmarks?num_periods=5&period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -465,11 +464,11 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self,
         mock_enabled_states: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         response = self.test_client.get(
-            "/outliers/US_XX/officer/officerhash3/events?metric_id=absconsions_bench_warrants&period_end_date=23-05-01",
+            "/outliers/US_PA/officer/officerhash3/events?metric_id=absconsions_bench_warrants&period_end_date=23-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -490,8 +489,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -500,14 +499,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
         response = self.test_client.get(
-            "/outliers/US_XX/officer/officerhash3/events?metric_id=fake_metric&period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/officerhash3/events?metric_id=fake_metric&period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
             response.json,
-            "Must provide valid metric_ids for US_XX in the request",
+            "Must provide valid metric_ids for US_PA in the request",
         )
 
     @patch(
@@ -521,8 +520,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_config: MagicMock,
         mock_enabled_states: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -531,14 +530,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         )
 
         response = self.test_client.get(
-            "/outliers/US_XX/officer/officerhash3/events?metric_id=absconsions_bench_warrants&metric_id=fake_metric&period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/officerhash3/events?metric_id=absconsions_bench_warrants&metric_id=fake_metric&period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
             response.json,
-            "Must provide valid metric_ids for US_XX in the request",
+            "Must provide valid metric_ids for US_PA in the request",
         )
 
     @patch(
@@ -556,8 +555,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -568,7 +567,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_officer_entity.return_value = None
 
         response = self.test_client.get(
-            "/outliers/US_XX/officer/invalidhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/invalidhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -598,9 +597,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_xx", "101"
+            "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -638,7 +637,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             )
 
             response = self.test_client.get(
-                "/outliers/US_XX/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+                "/outliers/US_PA/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
                 headers={"Origin": "http://localhost:3000"},
             )
 
@@ -668,9 +667,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_xx", "101"
+            "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -690,7 +689,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor.return_value = None
 
         response = self.test_client.get(
-            "/outliers/US_XX/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -719,8 +718,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_officer_entity: MagicMock,
         mock_get_supervisor: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -757,7 +756,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             )
 
             response = self.test_client.get(
-                "/outliers/US_XX/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+                "/outliers/US_PA/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
                 headers={"Origin": "http://localhost:3000"},
             )
 
@@ -791,9 +790,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_events: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_xx", "101"
+            "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
@@ -835,12 +834,11 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor.return_value = None
         mock_get_events.return_value = []
         response = self.test_client.get(
-            "/outliers/US_XX/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/hashhash/events?metric_id=absconsions_bench_warrants&period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
         mock_get_events.assert_called_with(
-            StateCode.US_XX,
             "hashhash",
             [TEST_METRIC_3.name],
             datetime.strptime("2023-05-01", "%Y-%m-%d"),
@@ -871,9 +869,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_events: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_xx", "101"
+            "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3, TEST_METRIC_1],
@@ -914,12 +912,11 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             )
 
             response = self.test_client.get(
-                "/outliers/US_XX/officer/hashhash/events?period_end_date=2023-05-01",
+                "/outliers/US_PA/officer/hashhash/events?period_end_date=2023-05-01",
                 headers={"Origin": "http://localhost:3000"},
             )
 
             mock_get_events.assert_called_with(
-                StateCode.US_XX,
                 "hashhash",
                 ["absconsions_bench_warrants"],
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
@@ -938,13 +935,12 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         "eventDate": "2023-04-01",
                         "metricId": "absconsions_bench_warrants",
                         "officerId": "03",
-                        "stateCode": "US_XX",
+                        "stateCode": "US_PA",
                     }
                 ]
             }
 
             mock_get_events.assert_called_with(
-                StateCode.US_XX,
                 "hashhash",
                 [TEST_METRIC_3.name],
                 datetime.strptime("2023-05-01", "%Y-%m-%d"),
@@ -966,8 +962,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
         mock_get_officer_entity: MagicMock,
     ) -> None:
-        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_xx")
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -978,7 +974,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_officer_entity.return_value = None
 
         response = self.test_client.get(
-            "/outliers/US_XX/officer/invalidhash?period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/invalidhash?period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -1008,9 +1004,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_xx", "101"
+            "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -1048,7 +1044,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             )
 
             response = self.test_client.get(
-                "/outliers/US_XX/officer/hashhash?period_end_date=2023-05-01",
+                "/outliers/US_PA/officer/hashhash?period_end_date=2023-05-01",
                 headers={"Origin": "http://localhost:3000"},
             )
 
@@ -1078,9 +1074,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_xx", "101"
+            "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -1118,7 +1114,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         }
 
         response = self.test_client.get(
-            "/outliers/US_XX/officer/hashhash?period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/hashhash?period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -1148,9 +1144,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor: MagicMock,
     ) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
-            "us_xx", "101"
+            "us_pa", "101"
         )
-        mock_enabled_states.return_value = ["US_XX", "US_IX"]
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_3],
@@ -1182,7 +1178,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_get_supervisor.return_value = None
 
         response = self.test_client.get(
-            "/outliers/US_XX/officer/hashhash?period_end_date=2023-05-01",
+            "/outliers/US_PA/officer/hashhash?period_end_date=2023-05-01",
             headers={"Origin": "http://localhost:3000"},
         )
 

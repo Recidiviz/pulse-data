@@ -101,7 +101,6 @@ class SQLAlchemyEngineManager:
     ) -> Engine:
         """Initializes a sqlalchemy Engine object for the given database / schema and
         caches it for future use."""
-
         if database_key in cls._engine_for_database:
             raise ValueError(f"Already initialized database [{database_key}]")
 
