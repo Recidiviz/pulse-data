@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,13 @@ from typing import List
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseType,
+)
 from recidiviz.common.date import DateRange
+from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionViolationResponse,
+)
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
@@ -41,14 +47,29 @@ class UsTnViolationDelegate(StateSpecificViolationDelegate):
         default_violation_history_window_months: int,
     ) -> DateRange:
         """For US_TN we look for violation responses with a response_date within 10 days after
-        a critical date. We set the lower bound to 12 months like the default.
+        the incarceration period admission date (critical date). We set the lower bound to 24 months so we
+        only attach violations that have happened within 24 months since the incarceration period admission date.
         """
 
         violation_window_lower_bound_inclusive = critical_date - relativedelta(
-            months=12
+            months=24
         )
         violation_window_upper_bound_exclusive = critical_date + relativedelta(days=10)
         return DateRange(
             lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
             upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
+        )
+
+    def should_include_response_in_violation_history(
+        self,
+        response: StateSupervisionViolationResponse,
+        include_follow_up_responses: bool = False,
+    ) -> bool:
+        """For US_TN, we include all responses of type CITATION, VIOLATION_REPORT and PERMANENT_DECISION responses to
+        be included in the violation history.
+        """
+        return response.response_type in (
+            StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            StateSupervisionViolationResponseType.CITATION,
+            StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
