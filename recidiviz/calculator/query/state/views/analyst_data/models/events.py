@@ -363,31 +363,26 @@ ON
     a.inflow_from_level_1,
     a.inflow_from_level_2,
     a.start_reason,
-    -- Get the first non-null start_sub_reason among incarceration starts occurring during the super session
-    COALESCE(b.start_sub_reason, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
+    -- Get the first non-null violation type among incarceration starts occurring during the super session
+    COALESCE(d.most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
     viol.violation_date AS most_severe_violation_date,
     COALESCE(JSON_EXTRACT_SCALAR(viol.violation_metadata, '$.ViolationType'), '') = 'INFERRED' as violation_is_inferred,
     COUNT(DISTINCT c.referral_date)
         OVER (PARTITION BY a.person_id, a.start_date) AS prior_treatment_referrals_1y,
 FROM
     `{project_id}.sessions.compartment_level_1_super_sessions_materialized` a
-LEFT JOIN
-    `{project_id}.sessions.compartment_sessions_materialized` b
-ON
-    a.person_id = b.person_id
-    AND b.session_id BETWEEN a.session_id_start AND a.session_id_end
-    AND b.start_sub_reason IS NOT NULL
 -- Get treatment referrals within 1 year of incarceration
 LEFT JOIN
     `{project_id}.normalized_state.state_program_assignment` c
 ON
     a.person_id = c.person_id
     AND DATE_SUB(a.start_date, INTERVAL 365 DAY) <= c.referral_date
+-- Get all incarceration commitments during the super session
 LEFT JOIN
     `{project_id}.dataflow_metrics_materialized.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` d
 ON
     a.person_id = d.person_id
-    AND b.start_date = d.admission_date
+    AND d.admission_date BETWEEN a.start_date AND COALESCE(a.end_date, "9999-01-01")
 LEFT JOIN
     `{project_id}.normalized_state.state_supervision_violation` viol
 ON
@@ -397,7 +392,10 @@ WHERE
     a.compartment_level_1 = "INCARCERATION"
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY a.person_id, a.start_date
-    ORDER BY b.start_date
+    -- Prioritize the first known violation type 
+    ORDER BY
+        IF(COALESCE(d.most_severe_violation_type, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN", 0, 1),
+        d.admission_date
 ) = 1""",
         attribute_cols=[
             "inflow_from_level_1",
@@ -712,8 +710,8 @@ WHERE compartment_level_1 = "SUPERVISION"
     ),
     EventQueryBuilder(
         event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
-        description="Supervision terminations with an end reason indicating subsequent incarceration. "
-        "May contain terminations that do not have an immediate compartment outflow to incarceration",
+        description="Supervision terminations with an end reason indicating subsequent incarceration, but"
+        "without an observed compartment outflow to incarceration",
         unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=f"""SELECT
     a.state_code,
@@ -721,7 +719,6 @@ WHERE compartment_level_1 = "SUPERVISION"
     a.end_date_exclusive,
     a.compartment_level_1,
     a.compartment_level_2,
-    a.outflow_to_level_1 = "INCARCERATION" AS outflow_to_incarceration,
     a.end_reason,
     -- Get the first non-null violation type among supervision terminations occurring during the super session
     COALESCE(c.most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
@@ -759,15 +756,18 @@ ON
 WHERE
     a.compartment_level_1 = "SUPERVISION"
     AND a.end_reason IN ("ADMITTED_TO_INCARCERATION", "REVOCATION")
+    AND a.outflow_to_level_1 != "INCARCERATION"
 QUALIFY ROW_NUMBER() OVER (
     PARTITION BY a.person_id, a.end_date_exclusive
-    ORDER BY IF(c.most_severe_violation_type IS NOT NULL, 0, 1), c.termination_date
+    -- Prioritize the first known violation type 
+    ORDER BY 
+        IF(COALESCE(c.most_severe_violation_type, "INTERNAL_UNKNOWN") != "INTERNAL_UNKNOWN", 0, 1), 
+        c.termination_date
 ) = 1
 """,
         attribute_cols=[
             "compartment_level_1",
             "compartment_level_2",
-            "outflow_to_incarceration",
             "end_reason",
             "violation_is_inferred",
             "most_severe_violation_date",
