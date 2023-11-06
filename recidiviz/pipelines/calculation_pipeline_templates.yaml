@@ -38,7 +38,6 @@ normalization_pipelines:
     job_name: us-or-normalization
     state_code: US_OR
     region: us-west3
-    staging_only: True
   - pipeline: comprehensive_normalization
     job_name: us-oz-normalization
     state_code: US_OZ
@@ -274,19 +273,16 @@ metric_pipelines:
     state_code: US_OR
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west3
-    staging_only: True #TODO(#22632): Turn on for prod
   - pipeline: incarceration_metrics
     job_name: full-us-or-incarceration-metrics
     state_code: US_OR
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
     region: us-west3
-    staging_only: True #TODO(#22632): Turn on for prod
   - pipeline: supervision_metrics
     job_name: full-us-or-supervision-metrics
     state_code: US_OR
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west3
-    staging_only: True #TODO(#22632): Turn on for prod
 
   # Full US_OZ calculations with no time limit
   - pipeline: population_span_metrics
