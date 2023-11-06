@@ -18,14 +18,19 @@
 import logging
 from copy import copy
 from datetime import date
+from functools import cached_property
 from typing import Dict, List, Optional, Tuple
 
+import attr
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, case, func
 from sqlalchemy.dialects.postgresql import aggregate_order_by
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import Session, aliased, sessionmaker
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.outliers.constants import DEFAULT_NUM_LOOKBACK_PERIODS
 from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
@@ -43,6 +48,9 @@ from recidiviz.outliers.types import (
     TargetStatus,
     TargetStatusStrategy,
 )
+from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
+    StateSegmentedDatabaseManager,
+)
 from recidiviz.persistence.database.schema.outliers.schema import (
     MetricBenchmark,
     SupervisionClientEvent,
@@ -52,15 +60,25 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficerSupervisor,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
+@attr.s(auto_attribs=True)
 class OutliersQuerier:
     """Implements Querier abstractions for Outliers data sources"""
 
+    state_code: StateCode = attr.ib()
+    database_manager: StateSegmentedDatabaseManager = attr.ib(
+        factory=lambda: StateSegmentedDatabaseManager(
+            get_outliers_enabled_states(), SchemaType.OUTLIERS
+        )
+    )
+
+    @cached_property
+    def database_session(self) -> sessionmaker:
+        return self.database_manager.get_session(self.state_code)
+
     def get_officer_level_report_data_for_all_officer_supervisors(
-        self, state_code: StateCode, end_date: date
+        self, end_date: date
     ) -> Dict[str, OfficerSupervisorReportData]:
         """
         Returns officer-level data by officer supervisor for all officer supervisors in a state in the following format:
@@ -85,13 +103,10 @@ class OutliersQuerier:
             ...
         }
         """
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
         end_date = end_date.replace(day=1)
         prev_end_date = end_date - relativedelta(months=1)
 
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
+        with self.database_session() as session:
             officer_supervisor_records = (
                 session.query(SupervisionOfficerSupervisor)
                 .select_from(SupervisionOfficerSupervisor)
@@ -122,7 +137,7 @@ class OutliersQuerier:
                 .all()
             )
 
-            state_config = self.get_outliers_config(state_code)
+            state_config = self.get_outliers_config()
 
             metric_name_to_metric_context = {
                 metric: self._get_metric_context_from_db(
@@ -348,22 +363,15 @@ class OutliersQuerier:
 
         return metric_benchmark.target, target_status_strategy
 
-    @staticmethod
-    def get_outliers_config(state_code: StateCode) -> OutliersConfig:
-        return OUTLIERS_CONFIGS_BY_STATE[state_code]
+    def get_outliers_config(self) -> OutliersConfig:
+        return OUTLIERS_CONFIGS_BY_STATE[self.state_code]
 
-    def get_supervisors(
-        self, state_code: StateCode
-    ) -> List[SupervisionOfficerSupervisorEntity]:
+    def get_supervisors(self) -> List[SupervisionOfficerSupervisorEntity]:
         """
         Return a list of SupervisionOfficerSupervisorEntity objects that indicate whether supervisors are supervising
         officers that are outliers compared to statewide benchmarks in the latest period.
         """
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
-
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
+        with self.database_session() as session:
             end_date = self._get_latest_period_end_date(session)
 
             records = (
@@ -443,7 +451,6 @@ class OutliersQuerier:
 
     def get_officers_for_supervisor(
         self,
-        state_code: StateCode,
         supervisor_external_id: str,
         num_lookback_periods: Optional[int],
         period_end_date: Optional[date] = None,
@@ -452,32 +459,25 @@ class OutliersQuerier:
         Returns a list of SupervisionOfficerEntity objects that represent the supervisor's officers and
         includes information on the state's metrics that the officer is an outlier for.
 
-        :param state_code: The user's state code
         :param supervisor_external_id: The external id of the supervisor to get outlier information for
         :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get Outliers for. If not provided, use the latest end date available.
         :rtype: List[SupervisionOfficerEntity]
         """
         id_to_entities = self.get_id_to_supervision_officer_entities(
-            state_code=state_code,
             num_lookback_periods=num_lookback_periods,
             period_end_date=period_end_date,
             supervisor_external_id=supervisor_external_id,
         )
         return list(id_to_entities.values())
 
-    @staticmethod
     def get_supervisor_from_pseudonymized_id(
-        state_code: StateCode, supervisor_pseudonymized_id: str
+        self, supervisor_pseudonymized_id: str
     ) -> Optional[SupervisionOfficerSupervisor]:
         """
         Returns the SupervisionOfficerSupervisor given the supervisor_pseudonymized_id.
         """
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
-
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
+        with self.database_session() as session:
             supervisor = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(
@@ -491,7 +491,6 @@ class OutliersQuerier:
 
     def get_benchmarks(
         self,
-        state_code: StateCode,
         num_lookback_periods: Optional[int] = 5,
         period_end_date: Optional[date] = None,
     ) -> List[dict]:
@@ -515,18 +514,13 @@ class OutliersQuerier:
               }
             }
 
-        :param state_code: The user's state code
         :param num_lookback_periods: The number of previous periods to get benchmark data for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get  for. If not provided, use the latest end date available.
         :rtype: List of dictionary
         """
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
-
         num_lookback_periods = num_lookback_periods or DEFAULT_NUM_LOOKBACK_PERIODS
 
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
+        with self.database_session() as session:
             end_date = (
                 self._get_latest_period_end_date(session)
                 if period_end_date is None
@@ -666,7 +660,6 @@ class OutliersQuerier:
 
     def get_events_by_officer(
         self,
-        state_code: StateCode,
         pseudonymized_officer_id: str,
         metric_ids: List[str],
         period_end_date: Optional[date] = None,
@@ -674,17 +667,13 @@ class OutliersQuerier:
         """
         Get the list of events for the given officer and metric(s) in the 12-month period ending with the period_end_date.
 
-        :param state_code: The user's state code
         :param pseudonymized_officer_id: The pseudonymized id of the officer to get events for.
         :param metric_ids: The list of metrics to get events for.
         :param period_end_date: The end date of the period to get for. If not provided, use the latest end date available.
         :rtype: List of dictionary
         """
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
 
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
+        with self.database_session() as session:
             end_date = (
                 self._get_latest_period_end_date(session)
                 if period_end_date is None
@@ -711,7 +700,6 @@ class OutliersQuerier:
 
     def get_supervision_officer_entity(
         self,
-        state_code: StateCode,
         pseudonymized_officer_id: str,
         num_lookback_periods: Optional[int],
         period_end_date: Optional[date] = None,
@@ -720,17 +708,12 @@ class OutliersQuerier:
         Get the SupervisionOfficerEntity object for the requested officer, an entity that includes information on the state's metrics that the officer is an outlier for.
         If the officer doesn't have metrics for the period, return None.
 
-        :param state_code: The user's state code
         :param pseudonymized_officer_id: The pseudonymized id of the officer to get information for.
         :param num_lookback_periods: The number of previous periods to get benchmark data for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get for. If not provided, use the latest end date available.
         :rtype: Optional[SupervisionOfficerEntity]
         """
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
-
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
+        with self.database_session() as session:
             officer_external_id = (
                 session.query(SupervisionOfficer.external_id)
                 .filter(SupervisionOfficer.pseudonymized_id == pseudonymized_officer_id)
@@ -745,7 +728,6 @@ class OutliersQuerier:
                 return None
 
             id_to_entities = self.get_id_to_supervision_officer_entities(
-                state_code=state_code,
                 num_lookback_periods=num_lookback_periods,
                 period_end_date=period_end_date,
                 officer_external_id=officer_external_id,
@@ -766,18 +748,13 @@ class OutliersQuerier:
 
             return id_to_entities[officer_external_id]
 
-    @staticmethod
     def get_supervisor_from_external_id(
-        state_code: StateCode, external_id: str
+        self, external_id: str
     ) -> Optional[SupervisionOfficerSupervisor]:
         """
         Returns the SupervisionOfficerSupervisor given the external_id.
         """
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
-
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
+        with self.database_session() as session:
             supervisor = (
                 session.query(SupervisionOfficerSupervisor)
                 .filter(SupervisionOfficerSupervisor.external_id == external_id)
@@ -788,7 +765,6 @@ class OutliersQuerier:
 
     def get_id_to_supervision_officer_entities(
         self,
-        state_code: StateCode,
         num_lookback_periods: Optional[int],
         period_end_date: Optional[date] = None,
         officer_external_id: Optional[str] = None,
@@ -798,17 +774,12 @@ class OutliersQuerier:
         Returns a dictionary of officer external id to SupervisionOfficerEntity objects that includes information
         on the state's metrics that the officer is an outlier for.
 
-        :param state_code: The user's state code
         :param num_lookback_periods: The number of previous periods to get statuses for, prior to the period with end_date == period_end_date.
         :param period_end_date: The end date of the period to get Outliers for. If not provided, use the latest end date available.
         :param officer_external_id: The external id of an officer to filter by.
         :param supervisor_external_id: The external id of the supervisor to get officer entities for
         :rtype: Dict[str, SupervisionOfficerEntity]
         """
-        db_key = SQLAlchemyDatabaseKey(
-            SchemaType.OUTLIERS, db_name=state_code.value.lower()
-        )
-
         num_lookback_periods = (
             DEFAULT_NUM_LOOKBACK_PERIODS
             if num_lookback_periods is None
@@ -820,7 +791,7 @@ class OutliersQuerier:
                 "Should provide either an external id for the officer or supervisor to filter on."
             )
 
-        with SessionFactory.using_database(db_key, autocommit=False) as session:
+        with self.database_session() as session:
             end_date = (
                 self._get_latest_period_end_date(session)
                 if period_end_date is None

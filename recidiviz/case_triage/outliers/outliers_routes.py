@@ -92,7 +92,7 @@ def create_outliers_api_blueprint() -> Blueprint:
     @api.get("/<state>/configuration")
     def state_configuration(state: str) -> Response:
         state_code = StateCode(state.upper())
-        config = OutliersQuerier().get_outliers_config(state_code)
+        config = OutliersQuerier(state_code).get_outliers_config()
 
         config_json = convert_nested_dictionary_keys(
             config.to_json(),
@@ -103,7 +103,7 @@ def create_outliers_api_blueprint() -> Blueprint:
     @api.get("/<state>/supervisors")
     def supervisors(state: str) -> Response:
         state_code = StateCode(state.upper())
-        supervisor_entities = OutliersQuerier().get_supervisors(state_code)
+        supervisor_entities = OutliersQuerier(state_code).get_supervisors()
 
         return jsonify(
             {
@@ -141,9 +141,9 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.BAD_REQUEST,
             )
 
-        querier = OutliersQuerier()
+        querier = OutliersQuerier(state_code)
         supervisor = querier.get_supervisor_from_pseudonymized_id(
-            state_code, supervisor_pseudonymized_id
+            supervisor_pseudonymized_id
         )
 
         if supervisor is None:
@@ -155,7 +155,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             )
 
         officer_entities = querier.get_officers_for_supervisor(
-            state_code, supervisor.external_id, num_lookback_periods, period_end_date
+            supervisor.external_id, num_lookback_periods, period_end_date
         )
 
         officers = [
@@ -191,8 +191,8 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.BAD_REQUEST,
             )
 
-        benchmarks = OutliersQuerier().get_benchmarks(
-            state_code, num_lookback_periods, period_end_date
+        benchmarks = OutliersQuerier(state_code).get_benchmarks(
+            num_lookback_periods, period_end_date
         )
 
         result = [
@@ -223,9 +223,9 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.BAD_REQUEST,
             )
 
-        querier = OutliersQuerier()
+        querier = OutliersQuerier(state_code)
 
-        state_config = querier.get_outliers_config(state_code)
+        state_config = querier.get_outliers_config()
         state_metrics = [metric.name for metric in state_config.metrics]
 
         # Check that the requested metrics are configured for the state
@@ -254,7 +254,6 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         # Check that the requested officer exists and has metrics for the period.
         officer_entity = querier.get_supervision_officer_entity(
-            state_code=state_code,
             pseudonymized_officer_id=pseudonymized_officer_id,
             num_lookback_periods=0,
             period_end_date=period_end_date,
@@ -269,7 +268,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         user_context: UserContext = g.user_context
         supervisor = querier.get_supervisor_from_external_id(
-            state_code, user_context.user_external_id
+            user_context.user_external_id
         )
 
         # If the current user is identified as a supervisor, ensure that they supervise the requested officer.
@@ -316,10 +315,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             )
 
         events = querier.get_events_by_officer(
-            state_code,
-            officer_entity.pseudonymized_id,
-            outlier_metric_ids,
-            period_end_date,
+            officer_entity.pseudonymized_id, outlier_metric_ids, period_end_date
         )
 
         results = [
@@ -363,11 +359,11 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.BAD_REQUEST,
             )
 
-        querier = OutliersQuerier()
+        querier = OutliersQuerier(state_code)
 
         # Check that the requested officer exists
         officer_entity = querier.get_supervision_officer_entity(
-            state_code, pseudonymized_officer_id, num_lookback_periods, period_end_date
+            pseudonymized_officer_id, num_lookback_periods, period_end_date
         )
         if officer_entity is None:
             return make_response(
@@ -379,7 +375,7 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         user_context: UserContext = g.user_context
         supervisor = querier.get_supervisor_from_external_id(
-            state_code, user_context.user_external_id
+            user_context.user_external_id
         )
 
         # If the current user is identified as a supervisor, ensure that they supervise the requested officer.
