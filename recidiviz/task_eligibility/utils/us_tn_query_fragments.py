@@ -362,6 +362,7 @@ def us_tn_classification_forms(
             TO_JSON(
                 ARRAY_AGG(
                     STRUCT(event_date, note_body)
+                    ORDER BY event_date DESC
                 )
             
             ) AS form_information_q7_notes
