@@ -33,6 +33,7 @@ from recidiviz.admin_panel.ingest_dataflow_operations import (
     get_latest_run_ingest_view_results,
     get_latest_run_raw_data_watermarks,
     get_latest_run_state_results,
+    get_raw_data_tags_not_meeting_watermark,
 )
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     check_is_valid_sandbox_bucket,
@@ -1186,6 +1187,26 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                     for file_tag, watermark in raw_data_watermarks.items()
                 }
             ),
+            HTTPStatus.OK,
+        )
+
+    @bp.route(
+        "/api/ingest_operations/get_latest_raw_data_tags_not_meeting_watermark/<state_code_str>/<instance_str>"
+    )
+    def _get_latest_raw_data_tags_not_meeting_watermark(
+        state_code_str: str,
+        instance_str: str,
+    ) -> Tuple[Response, HTTPStatus]:
+        try:
+            state_code = StateCode(state_code_str)
+            instance = DirectIngestInstance(instance_str)
+        except ValueError:
+            return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
+
+        raw_data_tags = get_raw_data_tags_not_meeting_watermark(state_code, instance)
+
+        return (
+            jsonify(raw_data_tags),
             HTTPStatus.OK,
         )
 

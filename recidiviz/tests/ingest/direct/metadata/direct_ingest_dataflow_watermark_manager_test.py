@@ -24,7 +24,7 @@ import pytest
 import pytz
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_mananger import (
+from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -81,25 +81,6 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
                 )
             )
 
-    def add_raw_data_watermark(
-        self,
-        job_id: str,
-        state_code: StateCode,
-        raw_data_file_tag: str,
-        watermark_datetime: datetime.datetime,
-    ) -> None:
-        with SessionFactory.using_database(
-            self.watermark_manager.database_key
-        ) as session:
-            session.add(
-                schema.DirectIngestDataflowRawTableUpperBounds(
-                    job_id=job_id,
-                    region_code=state_code.value,
-                    raw_data_file_tag=raw_data_file_tag,
-                    watermark_datetime=watermark_datetime,
-                )
-            )
-
     def test_get_raw_data_watermarks_for_latest_run(self) -> None:
         # most recent job
         most_recent_job_id = "2020-10-01_00_00_00"
@@ -109,7 +90,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             ingest_instance=DirectIngestInstance.PRIMARY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="normal",
@@ -117,7 +98,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
                 2020, 7, 1, 12, 0, 30, tzinfo=pytz.UTC
             ),
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
@@ -131,7 +112,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             ingest_instance=DirectIngestInstance.PRIMARY,
             completion_time=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=earlier_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
@@ -146,7 +127,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             completion_time=datetime.datetime(2020, 9, 1, 0, 0, 0, tzinfo=pytz.UTC),
             is_invalidated=True,
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=invalidated_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
@@ -160,7 +141,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             ingest_instance=DirectIngestInstance.SECONDARY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=other_instance_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="other_instance",
@@ -176,7 +157,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             ingest_instance=DirectIngestInstance.PRIMARY,
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=other_region_job_id,
             state_code=StateCode.US_YY,
             raw_data_file_tag="other_region",
@@ -208,7 +189,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             ingest_instance=DirectIngestInstance.PRIMARY,
             completion_time=datetime.datetime(2020, 10, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=initial_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="normal",
@@ -216,7 +197,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
                 2020, 7, 1, 12, 0, 30, tzinfo=pytz.UTC
             ),
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=initial_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
@@ -231,13 +212,13 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             completion_time=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
             is_invalidated=True,
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=invalidated_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="multiple",
             watermark_datetime=datetime.datetime(2020, 12, 1, 0, 0, 0, tzinfo=pytz.UTC),
         )
-        self.add_raw_data_watermark(
+        self.watermark_manager.add_raw_data_watermark(
             job_id=invalidated_job_id,
             state_code=StateCode.US_XX,
             raw_data_file_tag="invalidated",

@@ -20,7 +20,7 @@ import datetime
 import os
 from collections import defaultdict
 from concurrent import futures
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import attr
 from google.cloud import dataflow_v1beta3
@@ -33,8 +33,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataflow_dataset,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_mananger import (
+from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -171,6 +174,36 @@ def get_latest_run_raw_data_watermarks(
             state_code, ingest_instance
         )
     )
+
+
+def get_raw_data_tags_not_meeting_watermark(
+    state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> List[str]:
+    """Returns the raw data file tags with data that is older than the data used in the last non-invalidated ingest dataflow pipeline run."""
+    watermarks_by_file_tag: Dict[
+        str, datetime.datetime
+    ] = DirectIngestDataflowWatermarkManager().get_raw_data_watermarks_for_latest_run(
+        state_code, ingest_instance
+    )
+
+    latest_upper_bound_by_file_tag: Dict[str, datetime.datetime] = {
+        info.file_tag: info.latest_update_datetime
+        for info in PostgresDirectIngestRawFileMetadataManager(
+            str(state_code.value), ingest_instance
+        ).get_metadata_for_all_raw_files_in_region()
+        if info.latest_update_datetime is not None
+    }
+
+    stale_file_tags = [
+        file_tag
+        for file_tag, watermark in watermarks_by_file_tag.items()
+        if (
+            file_tag not in latest_upper_bound_by_file_tag
+            or watermarks_by_file_tag[file_tag]
+            > latest_upper_bound_by_file_tag[file_tag]
+        )
+    ]
+    return stale_file_tags
 
 
 def get_latest_run_ingest_view_results(
