@@ -26,6 +26,9 @@ from recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh import (
     BigQueryRefreshEntrypoint,
 )
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.entrypoints.ingest.check_raw_data_flashing_not_in_progress import (
+    IngestCheckRawDataFlashingEntrypoint,
+)
 from recidiviz.entrypoints.ingest.ingest_lock_management import (
     IngestAcquireLockEntrypoint,
     IngestReleaseLockEntrypoint,
@@ -54,6 +57,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     UpdateAllManagedViewsEntrypoint,
     IngestAcquireLockEntrypoint,
     IngestReleaseLockEntrypoint,
+    IngestCheckRawDataFlashingEntrypoint,
 }
 
 
