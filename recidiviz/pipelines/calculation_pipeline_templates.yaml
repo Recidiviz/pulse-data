@@ -11,6 +11,11 @@
 normalization_pipelines:
   # Comprehensive normalization pipelines
   - pipeline: comprehensive_normalization
+    job_name: us-ar-normalization
+    state_code: US_AR
+    region: us-east1
+    staging_only: True
+  - pipeline: comprehensive_normalization
     job_name: us-ca-normalization
     state_code: US_CA
     region: us-east1

@@ -17,6 +17,7 @@
 """Contains US_AR implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 from typing import Optional
 
+from recidiviz.common.constants.state.external_id_types import US_AR_OFFENDERID
 from recidiviz.pipelines.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
 )
@@ -28,7 +29,7 @@ class UsArIncarcerationMetricsProducerDelegate(
     """US_AR implementation of the StateSpecificIncarcerationMetricsProducerDelegate."""
 
     def primary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_AR_DOC"
+        return US_AR_OFFENDERID
 
     def secondary_person_external_id_to_include(self) -> Optional[str]:
-        return "US_AR_SID"
+        return US_AR_OFFENDERID
