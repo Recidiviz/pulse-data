@@ -20,7 +20,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from google.cloud import exceptions
 from google.cloud.secretmanager_v1 import SecretManagerServiceClient
@@ -44,7 +44,7 @@ def clear_sm() -> None:
     __sm = None
 
 
-CACHED_SECRETS: Dict[str, str] = {}
+CACHED_SECRETS: Dict[Tuple[str, str], str] = {}
 
 
 def get_secret(secret_id: str) -> Optional[str]:
@@ -62,7 +62,8 @@ def get_secret(secret_id: str) -> Optional[str]:
             logging.error("Couldn't locate local secret %s", secret_id)
             return None
 
-    secret_value = CACHED_SECRETS.get(secret_id)
+    secret_value = CACHED_SECRETS.get((secret_id, metadata.project_id()))
+
     if secret_value:
         return secret_value
 
@@ -90,7 +91,7 @@ def get_secret(secret_id: str) -> Optional[str]:
     if secret_value is None:
         logging.error("Couldn't decode secret: [%s].", secret_id)
         return None
-    CACHED_SECRETS[secret_id] = secret_value
+    CACHED_SECRETS[(secret_id, metadata.project_id())] = secret_value
     return secret_value
 
 
