@@ -25,3 +25,10 @@ def is_ingest_in_dataflow_enabled(
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
     return False
+
+
+def ingest_pipeline_can_run_in_dag(
+    state_code: StateCode,  # pylint: disable=unused-argument
+    instance: DirectIngestInstance,  # pylint: disable=unused-argument
+) -> bool:
+    return False

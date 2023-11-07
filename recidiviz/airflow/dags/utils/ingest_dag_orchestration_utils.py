@@ -21,7 +21,7 @@ from typing import List, Tuple
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
+from recidiviz.ingest.direct.gating import ingest_pipeline_can_run_in_dag
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -44,7 +44,7 @@ def should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
     """
     Returns whether the secondary ingest pipeline should be run for the given state.
     """
-    if not is_ingest_in_dataflow_enabled(state_code, DirectIngestInstance.SECONDARY):
+    if not ingest_pipeline_can_run_in_dag(state_code, DirectIngestInstance.SECONDARY):
         return False
 
     region = direct_ingest_regions.get_direct_ingest_region(
@@ -104,7 +104,7 @@ def _should_enable_state_and_instance(
         direct_ingest_regions.get_direct_ingest_region(
             state_code.value.lower()
         ).is_ingest_launched_in_env()
-        and is_ingest_in_dataflow_enabled(state_code, ingest_instance)
+        and ingest_pipeline_can_run_in_dag(state_code, ingest_instance)
         and has_launchable_ingest_views(state_code, ingest_instance)
         and (
             ingest_instance is DirectIngestInstance.PRIMARY
