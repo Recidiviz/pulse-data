@@ -25,7 +25,7 @@ from google.cloud import exceptions
 from google.cloud.secretmanager_v1 import AccessSecretVersionResponse, SecretPayload
 from mock import Mock
 
-from recidiviz.utils import secrets
+from recidiviz.utils import metadata, secrets
 
 
 class TestSecrets:
@@ -42,7 +42,9 @@ class TestSecrets:
         secrets.CACHED_SECRETS.clear()
         self.in_test_patcher.stop()
 
-    def test_get_in_cache(self) -> None:
+    @patch("recidiviz.utils.metadata.project_id")
+    def test_get_in_cache(self, mock_project_id: MagicMock) -> None:
+        mock_project_id.return_value = "test-project"
         write_to_local("top_track", "An Eagle In Your Mind")
 
         actual = secrets.get_secret("top_track")
@@ -115,4 +117,4 @@ class TestSecrets:
 
 
 def write_to_local(name: str, value: str) -> None:
-    secrets.CACHED_SECRETS[name] = value
+    secrets.CACHED_SECRETS[(name, "test-project")] = value
