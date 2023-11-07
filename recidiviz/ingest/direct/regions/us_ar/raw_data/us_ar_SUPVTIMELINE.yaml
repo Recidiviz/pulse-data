@@ -13,6 +13,8 @@ columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: SUPVPERIODBEGINDATE
     description: |-
@@ -115,5 +117,9 @@ columns:
   - name: SENTENCETYPE
     description: |-
       Sentence type
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - SUPVTIMELINE.OFFENDERID = OFFENDERPROFILE.OFFENDERID
 encoding: cp1252
 separator: "‡"

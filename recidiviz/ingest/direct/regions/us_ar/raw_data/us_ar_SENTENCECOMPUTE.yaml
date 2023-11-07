@@ -11,6 +11,8 @@ columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: COMMITMENTPREFIX
     description: |-
@@ -294,5 +296,9 @@ columns:
     description: |-
       Minimum supervision end date
     field_type: datetime
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - SENTENCECOMPUTE.OFFENDERID = OFFENDERPROFILE.OFFENDERID
 encoding: cp1252
 separator: "‡"

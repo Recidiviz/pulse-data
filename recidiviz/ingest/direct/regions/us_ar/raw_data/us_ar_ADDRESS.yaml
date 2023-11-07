@@ -7,7 +7,6 @@ encoding: WINDOWS-1252
 separator: ‡
 primary_key_cols:
   - ADDRESSID
-# TODO(#23025): Encode join relationships
 columns:
   - name: ADDRESSID
     description: |-

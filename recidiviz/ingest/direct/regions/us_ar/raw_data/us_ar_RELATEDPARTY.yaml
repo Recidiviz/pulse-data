@@ -10,7 +10,6 @@ primary_key_cols:
   - PARTYRELTYPE
   - RELATEDPARTYID
   - PARTYRELSTART
-# TODO(#23025): Encode join relationships
 columns:
   - name: PARTYID
     description: |-

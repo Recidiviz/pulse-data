@@ -11,6 +11,8 @@ columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: RISKCLASSDATE
     description: |-
@@ -67,6 +69,8 @@ columns:
   - name: STAFFIDPERFASSESS
     description: |-
       Staff performing assessment
+    field_type: staff_external_id
+    external_id_type: US_AR_PARTYID
     is_pii: True
   - name: RISKCOMMENTS
     description: |-
@@ -255,5 +259,12 @@ columns:
   - name: RISKASMTSTATUSTIME
     description: |-
       Risk assessment status time
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - RISKNEEDCLASS.OFFENDERID = OFFENDERPROFILE.OFFENDERID
+  - foreign_table: PERSONPROFILE
+    join_logic:
+      - RISKNEEDCLASS.STAFFIDPERFASSESS = PERSONPROFILE.PARTYID
 encoding: cp1252
 separator: "‡"

@@ -11,6 +11,8 @@ columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: CONTACTDATE
     description: |-
@@ -377,6 +379,8 @@ columns:
   - name: CONTACTSTAFF
     description: |-
       Contact staff
+    field_type: staff_external_id
+    external_id_type: US_AR_PARTYID
     is_pii: True
   - name: NUMCOLLATERAL
     description: |-
@@ -475,5 +479,12 @@ columns:
         description: External Movement Screen
       - value: Z
         description: Supervision Office Kiosk
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - SUPERVISIONCONTACT.OFFENDERID = OFFENDERPROFILE.OFFENDERID
+  - foreign_table: PERSONPROFILE
+    join_logic:
+      - SUPERVISIONCONTACT.CONTACTSTAFF = PERSONPROFILE.PARTYID
 encoding: cp1252
 separator: "‡"

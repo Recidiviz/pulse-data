@@ -7,11 +7,12 @@ encoding: WINDOWS-1252
 separator: ‡
 no_valid_primary_keys: True
 primary_key_cols: []
-# TODO(#23025): Encode join relationships
 columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: ADDREFFECTIVEDATE
     description: |-
@@ -92,4 +93,8 @@ columns:
         description: "No"
       - value: "Y"
         description: "Yes"
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - OFNRELATEDADDRESS.OFFENDERID = OFFENDERPROFILE.OFFENDERID
 always_historical_export: True

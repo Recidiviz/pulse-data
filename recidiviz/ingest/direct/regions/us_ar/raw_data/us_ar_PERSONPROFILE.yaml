@@ -7,11 +7,13 @@ encoding: WINDOWS-1252
 separator: ‡
 primary_key_cols:
   - PARTYID
-# TODO(#23025): Encode join relationships
 columns:
   - name: PARTYID
     description: |-
       Party ID
+    field_type: staff_external_id
+    external_id_type: US_AR_PARTYID
+    is_primary_for_external_id_type: True
     is_pii: True
   - name: PERSONLASTNAME
     description: |-
