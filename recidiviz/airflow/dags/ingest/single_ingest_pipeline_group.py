@@ -95,6 +95,20 @@ def _should_run_based_on_watermarks(
     return True
 
 
+def _verify_raw_data_flashing_not_in_progress(
+    state_code: StateCode, instance: DirectIngestInstance
+) -> KubernetesPodOperator:
+    return build_kubernetes_pod_task(
+        task_id="verify_raw_data_flashing_not_in_progress",
+        container_name="verify_raw_data_flashing_not_in_progress",
+        arguments=[
+            "--entrypoint=IngestCheckRawDataFlashingEntrypoint",
+            f"--state_code={state_code.value}",
+            f"--ingest_instance={instance.value}",
+        ],
+    )
+
+
 def _initialize_dataflow_pipeline(
     state_code: StateCode,
     instance: DirectIngestInstance,
@@ -130,7 +144,11 @@ def _initialize_dataflow_pipeline(
             max_update_datetimes=get_max_update_datetimes.output,  # type: ignore[arg-type]
         )
 
-        [get_max_update_datetimes, get_watermarks] >> should_run_based_on_watermarks
+        (
+            [get_max_update_datetimes, get_watermarks]
+            >> should_run_based_on_watermarks
+            >> _verify_raw_data_flashing_not_in_progress(state_code, instance)
+        )
 
     return initialize_dataflow_pipeline, get_max_update_datetimes
 

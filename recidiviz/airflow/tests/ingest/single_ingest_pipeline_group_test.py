@@ -289,6 +289,7 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 test_dag,
                 session,
                 expected_skipped_ids=[
+                    r".*verify_raw_data_flashing_not_in_progress",
                     r".*acquire_lock",
                     r".*_dataflow\.dataflow_pipeline.*",
                     r".*release_lock",
@@ -298,6 +299,37 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
                 ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    @patch(
+        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._verify_raw_data_flashing_not_in_progress"
+    )
+    def test_failed_verify_raw_data_flashing_not_in_progress(
+        self, mock_verify_raw_data_flashing_not_in_progress: MagicMock
+    ) -> None:
+        mock_verify_raw_data_flashing_not_in_progress.side_effect = (
+            lambda _state_code, _instance: fake_failure_task(
+                task_id="verify_raw_data_flashing_not_in_progress"
+            )
+        )
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                expected_failure_ids=[
+                    r".*verify_raw_data_flashing_not_in_progress",
+                    r".*acquire_lock",
+                    r".*_dataflow\.dataflow_pipeline.*",
+                    r".*write_ingest_job_completion",
+                    r".*write_upper_bounds",
+                    _DOWNSTREAM_TASK_ID,
+                ],
+            )
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
 
     @patch(
         "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._should_run_based_on_watermarks"
