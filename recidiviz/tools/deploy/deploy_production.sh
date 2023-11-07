@@ -116,8 +116,6 @@ echo "Starting deploy of main app - default"
 }
 
 
-run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --project_id "${PROJECT}"
-
 # TODO(#3928): Migrate deploy of app engine services to terraform.
 GAE_VERSION=$(echo "${GIT_VERSION_TAG}" | tr '.' '-') || exit_on_fail
 run_cmd gcloud -q app deploy prod.yaml --project="${PROJECT}" --version="${GAE_VERSION}" --image-url="${APP_ENGINE_PROD_IMAGE_URL}"
