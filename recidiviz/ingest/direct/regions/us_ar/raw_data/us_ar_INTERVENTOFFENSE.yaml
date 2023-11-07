@@ -8,11 +8,12 @@ primary_key_cols:
   - INTERVENTIONDATE
   - INTERVENTIONTIME
   - OFFENSESEQ
-# TODO(#23025): Encode join relationships
 columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: INTERVENTIONDATE
     description: |-
@@ -51,5 +52,9 @@ columns:
   - name: OVGADJUSTMENTRSN
     description: |-
       Reason for OVG adjustment
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - INTERVENTOFFENSE.OFFENDERID = OFFENDERPROFILE.OFFENDERID
 encoding: cp1252
 separator: "‡"

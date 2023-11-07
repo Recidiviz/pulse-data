@@ -13,6 +13,8 @@ columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: COMMITMENTPREFIX
     description: |-
@@ -40,6 +42,8 @@ columns:
   - name: PLACEDBYSTAFF
     description: |-
       Placed by staff ID
+    field_type: staff_external_id
+    external_id_type: US_AR_PARTYID
     is_pii: True
   - name: COMMSERVICEAGNCY
     description: |-
@@ -87,5 +91,12 @@ columns:
     description: |-
       Staff last updated
     is_pii: True
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - SPECIALCONDITION.OFFENDERID = OFFENDERPROFILE.OFFENDERID
+  - foreign_table: PERSONPROFILE
+    join_logic:
+      - SPECIALCONDITION.PLACEDBYSTAFF = PERSONPROFILE.PARTYID
 encoding: cp1252
 separator: "‡"

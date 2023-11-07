@@ -7,11 +7,12 @@ encoding: WINDOWS-1252
 separator: ‡
 primary_key_cols:
   - OFFENDERID
-# TODO(#23025): Encode join relationships
 columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: CLIENTLASTNAME
     description: |-
@@ -54,6 +55,8 @@ columns:
   - name: PPOFFICERID
     description: |-
       Supervising officer ID
+    field_type: staff_external_id
+    external_id_type: US_AR_PARTYID
     is_pii: True
   - name: LASTSUPVCATEGORY
     description: |-
@@ -221,3 +224,10 @@ columns:
     description: |-
       Calculate date for OVG points
     field_type: datetime
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - CLIENTPROFILE.OFFENDERID = OFFENDERPROFILE.OFFENDERID
+  - foreign_table: PERSONPROFILE
+    join_logic:
+      - CLIENTPROFILE.PPOFFICERID = PERSONPROFILE.PARTYID

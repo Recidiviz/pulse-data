@@ -7,11 +7,12 @@ primary_key_cols:
   - OFFENDERID
   - INTERVENTIONDATE
   - INTERVENTIONTIME
-# TODO(#23025): Encode join relationships
 columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: INTERVENTIONDATE
     description: |-
@@ -29,6 +30,8 @@ columns:
   - name: PPOFFICERID
     description: |-
       PP Officer ID
+    field_type: staff_external_id
+    external_id_type: US_AR_PARTYID
     is_pii: True
   - name: INTERVENTIONCOMMENTS
     description: |-
@@ -52,5 +55,12 @@ columns:
     description: |-
       Intervention status date
     field_type: datetime
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - SUPVINTERVENTION.OFFENDERID = OFFENDERPROFILE.OFFENDERID
+  - foreign_table: PERSONPROFILE
+    join_logic:
+      - SUPVINTERVENTION.PPOFFICERID = PERSONPROFILE.PARTYID
 encoding: cp1252
 separator: "‡"

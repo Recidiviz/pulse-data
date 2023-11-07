@@ -9,11 +9,12 @@ primary_key_cols:
   - OFFENDERID
   - COMMITMENTPREFIX
   - SENTENCECOMPONENT
-# TODO(#23025): Encode join relationships
 columns:
   - name: OFFENDERID
     description: |-
       ID for the sentenced individual
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: COMMITMENTPREFIX
     description: |-
@@ -273,3 +274,7 @@ columns:
   - name: SUSPIMPSENTENCETERMD
     description: |-
       SIS term (days)
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - SENTENCECOMPONENT.OFFENDERID = OFFENDERPROFILE.OFFENDERID

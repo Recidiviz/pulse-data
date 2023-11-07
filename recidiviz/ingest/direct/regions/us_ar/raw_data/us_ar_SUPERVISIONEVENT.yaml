@@ -9,11 +9,12 @@ primary_key_cols:
   - OFFENDERID
   - SUPVEVNTDATE
   - SUPVEVNTTIME
-# TODO(#23025): Encode join relationships
 columns:
   - name: OFFENDERID
     description: |-
       Offender ID
+    field_type: person_external_id
+    external_id_type: US_AR_OFFENDERID
     is_pii: True
   - name: SUPVEVNTDATE
     description: |-
@@ -658,3 +659,7 @@ columns:
   - name: LOCATIONREPORTMOVEMENT
     description: |-
       Unknown
+table_relationships:
+  - foreign_table: OFFENDERPROFILE
+    join_logic:
+      - SUPERVISIONEVENT.OFFENDERID = OFFENDERPROFILE.OFFENDERID
