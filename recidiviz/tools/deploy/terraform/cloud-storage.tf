@@ -14,6 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+locals {
+  po_report_static_path  = abspath(format("%s/reporting/context/static/", local.recidiviz_root))
+  po_report_static_files = fileset(local.po_report_static_path, "./**/*")
+}
+
 module "justice-counts-data-bucket" {
   source = "./modules/cloud-storage-bucket"
 
@@ -453,4 +458,11 @@ resource "google_storage_bucket_iam_member" "asset-generation-generated-assets-b
   bucket   = module.generated-assets.name
   role     = each.key
   member   = "serviceAccount:${google_service_account.asset_generation_cloud_run.email}"
+}
+
+resource "google_storage_bucket_object" "po_report_static_files" {
+  for_each = local.po_report_static_files
+  bucket   = module.report-images.name
+  name     = format("po_monthly_report/static/%s", replace(each.key, local.po_report_static_path, ""))
+  source   = each.key
 }
