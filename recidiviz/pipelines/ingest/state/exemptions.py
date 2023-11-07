@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Listing out exemptions for the state ingest pipeline."""
+from typing import Dict, Set
+
 from recidiviz.common.constants.states import StateCode
 
 INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS = {
@@ -23,3 +25,11 @@ INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS = {
     # TODO(#24658) Remove this exemption once conflicts no longer appear.
     StateCode.US_CA: {"staff"},
 }
+
+# The names of each global uniqueness constraint with known failures by state.
+# TODO(#20930) Remove this once all states are shipped to ingest in Dataflow.
+GLOBAL_UNIQUE_CONSTRAINT_ERROR_EXEMPTIONS: Dict[StateCode, Set[str]] = {}
+
+# The names of each entity uniqueness constraint with known failures by state.
+# TODO(#20930) Remove this once all states are shipped to ingest in Dataflow.
+ENTITY_UNIQUE_CONSTRAINT_ERROR_EXEMPTIONS: Dict[StateCode, Set[str]] = {}

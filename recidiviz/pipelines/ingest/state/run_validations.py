@@ -21,6 +21,7 @@ import apache_beam as beam
 import attr
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     RootEntity,
@@ -37,6 +38,9 @@ from recidiviz.persistence.entity.root_entity_utils import (
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.pipelines.ingest.state.constants import EntityClassName, EntityKey
+from recidiviz.pipelines.ingest.state.exemptions import (
+    GLOBAL_UNIQUE_CONSTRAINT_ERROR_EXEMPTIONS,
+)
 from recidiviz.pipelines.ingest.state.validator import (
     get_entity_key,
     validate_root_entity,
@@ -222,18 +226,22 @@ class RunValidations(beam.PTransform):
     """
 
     def __init__(
-        self, expected_output_entities: Iterable[str], field_index: CoreEntityFieldIndex
+        self,
+        expected_output_entities: Iterable[str],
+        field_index: CoreEntityFieldIndex,
+        state_code: StateCode,
     ) -> None:
         super().__init__()
         self.expected_output_entities = list(expected_output_entities)
         self.constraints_by_entity_type = self._get_constraints_by_entity_type(
-            self.expected_output_entities
+            self.expected_output_entities, state_code
         )
         self.field_index = field_index
+        self.state_code = state_code
 
     @staticmethod
     def _get_constraints_by_entity_type(
-        expected_output_entities: List[str],
+        expected_output_entities: List[str], state_code: StateCode
     ) -> Dict[EntityClassName, List[UniqueConstraint]]:
         """Returns a dictionary mapping entity name (e.g. 'state_assessment') to the
         list of unique constraints that should be checked for that entity. For all
@@ -245,9 +253,15 @@ class RunValidations(beam.PTransform):
             if entity_cls.get_entity_name() not in expected_output_entities:
                 continue
 
+            global_unique_constraints = [
+                global_unique_constraint
+                for global_unique_constraint in entity_cls.global_unique_constraints()
+                if global_unique_constraint.name
+                not in GLOBAL_UNIQUE_CONSTRAINT_ERROR_EXEMPTIONS.get(state_code, {})
+            ]
             constraints_by_entity_type[
                 entity_cls.get_entity_name()
-            ] = entity_cls.global_unique_constraints() + [
+            ] = global_unique_constraints + [
                 UniqueConstraint(
                     name=f"{entity_cls.get_entity_name()}_primary_keys_unique",
                     fields=[entity_cls.get_primary_key_column_name()],
@@ -374,7 +388,7 @@ class RunValidations(beam.PTransform):
         root_entity = grouped_elements[ROOT_ENTITY][0]
 
         entity_level_errors: List[str] = list(
-            validate_root_entity(root_entity, self.field_index)
+            validate_root_entity(root_entity, self.field_index, self.state_code)
         )
         entity_level_errors += list(
             {

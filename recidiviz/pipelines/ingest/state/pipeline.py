@@ -300,6 +300,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             | RunValidations(
                 expected_output_entities=expected_output_entities,
                 field_index=field_index,
+                state_code=state_code,
             )
             | beam.ParDo(
                 SerializeEntities(state_code=state_code, field_index=field_index)
