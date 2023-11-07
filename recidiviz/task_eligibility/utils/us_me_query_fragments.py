@@ -418,3 +418,21 @@ def cis_300_relevant_property_case_notes(
     WHERE E_PP_ITEM_TYPE_DESC IN ("Legal Documents", "ID's", "Personal ID's", "Legal Materials")
         AND LOGICAL_DELETE_IND != 'Y'
         AND ADULT_IND = 'Y'"""
+
+
+def cis_900_employee_to_supervisor_match() -> str:
+    """
+    Returns:
+        str: Query that surfaces the mapping between employees and supervisors for ME.
+    """
+
+    return """    -- Mapping every staff with his/her supervisor
+    #TODO(#24426): use ingested entity data instead of CIS_900_EMPLOYEE_latest
+    SELECT DISTINCT
+        cis900.Employee_Id AS officer_id,
+        "US_ME" AS state_code,
+        INITCAP(cis900.First_Name) || " " || INITCAP(cis900.Last_Name) AS officer_name,
+        LOWER(cis900.Email_Tx) AS officer_email,
+        cis900.Cis_900_Employee_Supervisor_Id AS supervisor_id,
+    FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` cis900
+    GROUP BY 1,2,3,4,5"""
