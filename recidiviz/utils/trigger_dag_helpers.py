@@ -38,6 +38,19 @@ def trigger_calculation_dag_pubsub(
         state_code_filter.value if state_code_filter else None,
         sandbox_prefix,
     )
+
+    # TODO(#25274): Remove this check once we properly implement the state_code_filter for PRIMARY
+    if (
+        ingest_instance == DirectIngestInstance.PRIMARY
+        and state_code_filter
+        and not sandbox_prefix
+    ):
+        logging.warning(
+            "State code filter is not supported for PRIMARY ingest instance without a sandbox prefix."
+            " Will trigger to run for all states."
+        )
+        state_code_filter = None
+
     pubsub_helper.publish_message_to_topic(
         topic="v1.calculator.trigger_calculation_pipelines",
         message=json.dumps(

@@ -688,6 +688,36 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                 self.dag,
                 session=session,
                 run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_ids=[
+                    r"verify_parameters",
+                ],
+                expected_skipped_ids=[
+                    r"wait_to_continue_or_cancel",
+                    r"handle_queueing_result",
+                    r"bq_refresh",
+                    r"update_managed_views",
+                    r"normalization",
+                    r"update_normalized_state",
+                    r"post_normalization_pipelines",
+                    r"validations",
+                    r"metric_exports",
+                ],
+            )
+            self.assertIn(
+                "normalization.US_XX_start",
+                self.dag.task_ids,
+            )
+
+    def test_calculation_dag_with_state_and_sandbox(self) -> None:
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                self.dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                    "state_code_filter": "US_XX",
+                    "sandbox_prefix": "test_prefix",
+                },
                 expected_skipped_ids=[
                     r"US[_-]YY",
                 ],

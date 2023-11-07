@@ -141,14 +141,39 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
-    def test_successfully_initializes_dag_primary_with_state_code(self) -> None:
+    def test_successfully_initializes_dag_primary_with_state_code_and_sandbox(
+        self,
+    ) -> None:
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                {
+                    "ingest_instance": "PRIMARY",
+                    "state_code_filter": "US_XX",
+                    "sandbox_prefix": "my_prefix",
+                },
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def test_initializes_dag_primary_with_state_code(self) -> None:
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
                 test_dag,
                 session,
                 {"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
+                expected_skipped_ids=[
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
+                    _WAIT_SECONDS_TASK_ID,
+                ],
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+            self.assertEqual(
+                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
+                "[sandbox_prefix] must be set in dag_run configuration for PRIMARY ingest_instance when [state_code_filter] is set",
+            )
 
     def test_successfully_initializes_dag_secondary(self) -> None:
         with Session(bind=self.engine) as session:
