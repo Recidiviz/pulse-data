@@ -114,8 +114,8 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
         )
 
     sandbox_prefix: Optional[str] = get_sandbox_prefix(dag_run)
+    state_code_filter = get_state_code_filter(dag_run)
     if ingest_instance == "SECONDARY":
-        state_code_filter = get_state_code_filter(dag_run)
         if not state_code_filter:
             raise ValueError(
                 "[state_code_filter] must be set in dag_run configuration for SECONDARY "
@@ -126,6 +126,14 @@ def verify_parameters(dag_run: Optional[DagRun] = None) -> bool:
                 "[sandbox_prefix] must be set in dag_run configuration for SECONDARY "
                 "ingest_instance"
             )
+
+    # TODO(#25274): Remove this check once we properly implement the state_code_filter for PRIMARY
+    if ingest_instance == "PRIMARY" and state_code_filter and not sandbox_prefix:
+        raise ValueError(
+            "[sandbox_prefix] must be set in dag_run configuration for PRIMARY "
+            "ingest_instance when [state_code_filter] is set"
+        )
+
     return True
 
 
