@@ -25,6 +25,7 @@ from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils import environment
 
 
 class DirectIngestDataflowWatermarkManager:
@@ -65,3 +66,41 @@ class DirectIngestDataflowWatermarkManager:
                 result.raw_data_file_tag: result.watermark_datetime
                 for result in results
             }
+
+    @environment.test_only
+    def add_raw_data_watermark(
+        self,
+        job_id: str,
+        state_code: StateCode,
+        raw_data_file_tag: str,
+        watermark_datetime: datetime.datetime,
+    ) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.DirectIngestDataflowRawTableUpperBounds(
+                    job_id=job_id,
+                    region_code=state_code.value,
+                    raw_data_file_tag=raw_data_file_tag,
+                    watermark_datetime=watermark_datetime,
+                )
+            )
+
+    @environment.test_only
+    def add_job(
+        self,
+        job_id: str,
+        state_code: StateCode,
+        ingest_instance: DirectIngestInstance,
+        completion_time: datetime.datetime = datetime.datetime.now(),
+        is_invalidated: bool = False,
+    ) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(
+                schema.DirectIngestDataflowJob(
+                    job_id=job_id,
+                    region_code=state_code.value,
+                    ingest_instance=ingest_instance.value,
+                    completion_time=completion_time,
+                    is_invalidated=is_invalidated,
+                )
+            )

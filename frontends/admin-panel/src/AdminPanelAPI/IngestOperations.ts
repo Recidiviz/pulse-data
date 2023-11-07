@@ -354,6 +354,16 @@ export const getLatestDataflowRawDataWatermarks = async (
   );
 };
 
+// Get latest raw data tags not meeting watermarks for the latest ingest dataflow pipeline run
+export const getLatestRawDataTagsNotMeetingWatermark = async (
+  stateCode: string,
+  instance: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_operations/get_latest_raw_data_tags_not_meeting_watermark/${stateCode}/${instance}`
+  );
+};
+
 // Get latest run ingest view results for the state and instance
 export const getLatestRunIngestViewResults = async (
   stateCode: string,

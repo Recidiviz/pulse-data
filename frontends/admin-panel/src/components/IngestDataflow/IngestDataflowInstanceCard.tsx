@@ -24,6 +24,7 @@ import {
   getDataflowJobAdditionalMetadataByInstance,
   getLatestDataflowJobByInstance,
   getLatestDataflowRawDataWatermarks,
+  getLatestRawDataTagsNotMeetingWatermark,
   getLatestRunIngestViewResults,
   getLatestRunStateDatasetRowCounts,
 } from "../../AdminPanelAPI/IngestOperations";
@@ -104,6 +105,14 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
 
   const { loading: loadingWatermarks, data: latestRawDataWatermarks } =
     useFetchedDataJSON<DataflowIngestRawDataWatermarks>(fetchRawDataWatermarks);
+
+  const fetchRawDataTagsNotMeetingWatermark = useCallback(async () => {
+    return getLatestRawDataTagsNotMeetingWatermark(stateCode, instance);
+  }, [stateCode, instance]);
+
+  const { data: rawFileTagsNotMeetingWatermark } = useFetchedDataJSON<string[]>(
+    fetchRawDataTagsNotMeetingWatermark
+  );
 
   const fetchIngestViewResults = useCallback(async () => {
     return getLatestRunIngestViewResults(stateCode, instance);
@@ -324,6 +333,17 @@ const IngestDataflowInstanceCard: React.FC<IngestDataflowInstanceCardProps> = ({
           <>
             <Alert
               message="Failed to load latest watermark data."
+              type="error"
+            />
+          </>
+        ) : null}
+        {rawFileTagsNotMeetingWatermark !== undefined &&
+        rawFileTagsNotMeetingWatermark?.length > 0 ? (
+          <>
+            <Alert
+              message={`Some files are stale: ${rawFileTagsNotMeetingWatermark}. This means that the last pipeline that ran used data with fresher update_datetime values than currently exist for these files in ${instance}. If you are sure you want to run ingest pipelines with this older data, you can invalidate the Dataflow job_id associated with these watermarks.
+
+              `}
               type="error"
             />
           </>
