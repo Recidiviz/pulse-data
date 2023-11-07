@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 locals {
-  po_report_static_path  = abspath(format("%s/reporting/context/static/", local.recidiviz_root))
+  po_report_static_path  = format("%s/reporting/context/static", local.recidiviz_root)
   po_report_static_files = fileset(local.po_report_static_path, "./**/*")
 }
 
@@ -464,5 +464,5 @@ resource "google_storage_bucket_object" "po_report_static_files" {
   for_each = local.po_report_static_files
   bucket   = module.report-images.name
   name     = format("po_monthly_report/static/%s", replace(each.key, local.po_report_static_path, ""))
-  source   = each.key
+  source   = format("%s/%s", local.po_report_static_path, each.key)
 }
