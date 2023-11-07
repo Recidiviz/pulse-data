@@ -24,8 +24,14 @@ from recidiviz.calculator.query.state.views.analyst_data.agent_supervisor_prepro
 from recidiviz.calculator.query.state.views.analyst_data.consecutive_payments_preprocessed import (
     CONSECUTIVE_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.early_discharge_reports_per_officer import (
+    EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions import (
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions_with_officer_and_supervisor import (
+    EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.fines_fees_sessions import (
     FINES_FEES_SESSIONS_VIEW_BUILDER,
@@ -294,6 +300,8 @@ from recidiviz.calculator.query.state.views.analyst_data.workflows_officer_event
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
+    EARLY_DISCHARGE_SESSIONS_WITH_OFFICER_AND_SUPERVISOR_VIEW_BUILDER,
+    EARLY_DISCHARGE_REPORTS_PER_OFFICER_VIEW_BUILDER,
     WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER,
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
