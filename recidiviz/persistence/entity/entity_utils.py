@@ -313,7 +313,14 @@ class CoreEntityFieldIndex:
     """
 
     def __init__(
-        self, direction_checker: Optional[SchemaEdgeDirectionChecker] = None
+        self,
+        direction_checker: Optional[SchemaEdgeDirectionChecker] = None,
+        database_entity_fields_by_field_type: Optional[
+            Dict[str, Dict[EntityFieldType, Set[str]]]
+        ] = None,
+        entity_fields_by_field_type: Optional[
+            Dict[str, Dict[EntityFieldType, Set[str]]]
+        ] = None,
     ) -> None:
         self.direction_checker = (
             direction_checker or SchemaEdgeDirectionChecker.state_direction_checker()
@@ -324,12 +331,12 @@ class CoreEntityFieldIndex:
         # Cache of fields by field type for DatabaseEntity classes
         self.database_entity_fields_by_field_type: Dict[
             str, Dict[EntityFieldType, Set[str]]
-        ] = defaultdict(lambda: defaultdict(set))
+        ] = (database_entity_fields_by_field_type or {})
 
         # Cache of fields by field type for Entity classes
-        self.entity_fields_by_field_type: Dict[
-            str, Dict[EntityFieldType, Set[str]]
-        ] = defaultdict(lambda: defaultdict(set))
+        self.entity_fields_by_field_type: Dict[str, Dict[EntityFieldType, Set[str]]] = (
+            entity_fields_by_field_type or {}
+        )
 
     def get_fields_with_non_empty_values(
         self, entity: CoreEntity, entity_field_type: EntityFieldType
@@ -366,9 +373,12 @@ class CoreEntityFieldIndex:
         entity_name = entity_cls.get_entity_name()
 
         if issubclass(entity_cls, DatabaseEntity):
-            if not self.database_entity_fields_by_field_type[entity_name][
+            if entity_name not in self.database_entity_fields_by_field_type:
+                self.database_entity_fields_by_field_type[entity_name] = {}
+            if (
                 entity_field_type
-            ]:
+                not in self.database_entity_fields_by_field_type[entity_name]
+            ):
                 self.database_entity_fields_by_field_type[entity_name][
                     entity_field_type
                 ] = self._get_all_database_entity_fields_slow(
@@ -379,7 +389,10 @@ class CoreEntityFieldIndex:
             ]
 
         if issubclass(entity_cls, Entity):
-            if not self.entity_fields_by_field_type[entity_name][entity_field_type]:
+            if entity_name not in self.entity_fields_by_field_type:
+                self.entity_fields_by_field_type[entity_name] = {}
+
+            if entity_field_type not in self.entity_fields_by_field_type[entity_name]:
                 self.entity_fields_by_field_type[entity_name][
                     entity_field_type
                 ] = self._get_entity_fields_with_type_slow(

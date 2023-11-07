@@ -16,8 +16,9 @@
 # =============================================================================
 """Tests for entity_utils.py"""
 import datetime
-from typing import Dict, List, Type
+from typing import Dict, List, Set, Type
 from unittest import TestCase
+from unittest.mock import call, patch
 
 import attr
 import pytz
@@ -204,6 +205,158 @@ class TestCoreEntityFieldIndex(TestCase):
                 entity, EntityFieldType.ALL
             ),
         )
+
+    def test_caching_behavior_entity(self) -> None:
+        def mock_get_fields_fn(
+            entity_cls: Type[Entity], entity_field_type: EntityFieldType
+        ) -> Set[str]:
+            if (entity_cls, entity_field_type) == (
+                StatePerson,
+                EntityFieldType.BACK_EDGE,
+            ):
+                return set()
+            if (entity_cls, entity_field_type) == (
+                StatePerson,
+                EntityFieldType.FLAT_FIELD,
+            ):
+                return {"full_name", "birthdate"}
+            raise ValueError(f"Unexpected {entity_cls=} and {entity_field_type=}")
+
+        with patch.object(
+            CoreEntityFieldIndex, "_get_entity_fields_with_type_slow"
+        ) as mock_get_fields:
+
+            mock_get_fields.side_effect = mock_get_fields_fn
+            fields = self.field_index.get_all_core_entity_fields(
+                StatePerson, EntityFieldType.BACK_EDGE
+            )
+            self.assertEqual(set(), fields)
+            mock_get_fields.assert_called_once_with(
+                StatePerson, EntityFieldType.BACK_EDGE
+            )
+            self.field_index.get_all_core_entity_fields(
+                StatePerson, EntityFieldType.BACK_EDGE
+            )
+            # The slow function still should only have been called once
+            mock_get_fields.assert_called_once_with(
+                StatePerson, EntityFieldType.BACK_EDGE
+            )
+            fields = self.field_index.get_all_core_entity_fields(
+                StatePerson, EntityFieldType.FLAT_FIELD
+            )
+            self.assertEqual({"full_name", "birthdate"}, fields)
+            mock_get_fields.assert_has_calls(
+                [
+                    call(StatePerson, EntityFieldType.BACK_EDGE),
+                    call(StatePerson, EntityFieldType.FLAT_FIELD),
+                ]
+            )
+
+    def test_caching_behavior_database_entity(self) -> None:
+        def mock_get_fields_fn(
+            entity_cls: Type[Entity], entity_field_type: EntityFieldType
+        ) -> Set[str]:
+            if (entity_cls, entity_field_type) == (
+                schema.StatePerson,
+                EntityFieldType.BACK_EDGE,
+            ):
+                return set()
+            if (entity_cls, entity_field_type) == (
+                schema.StatePerson,
+                EntityFieldType.FLAT_FIELD,
+            ):
+                return {"full_name", "birthdate"}
+            raise ValueError(f"Unexpected {entity_cls=} and {entity_field_type=}")
+
+        with patch.object(
+            CoreEntityFieldIndex, "_get_all_database_entity_fields_slow"
+        ) as mock_get_fields:
+
+            mock_get_fields.side_effect = mock_get_fields_fn
+            fields = self.field_index.get_all_core_entity_fields(
+                schema.StatePerson, EntityFieldType.BACK_EDGE
+            )
+            self.assertEqual(set(), fields)
+            mock_get_fields.assert_called_once_with(
+                schema.StatePerson, EntityFieldType.BACK_EDGE
+            )
+            self.field_index.get_all_core_entity_fields(
+                schema.StatePerson, EntityFieldType.BACK_EDGE
+            )
+            # The slow function still should only have been called once
+            mock_get_fields.assert_called_once_with(
+                schema.StatePerson, EntityFieldType.BACK_EDGE
+            )
+            fields = self.field_index.get_all_core_entity_fields(
+                schema.StatePerson, EntityFieldType.FLAT_FIELD
+            )
+            self.assertEqual({"full_name", "birthdate"}, fields)
+            mock_get_fields.assert_has_calls(
+                [
+                    call(schema.StatePerson, EntityFieldType.BACK_EDGE),
+                    call(schema.StatePerson, EntityFieldType.FLAT_FIELD),
+                ]
+            )
+
+    def test_caching_behavior_pre_hydrated_entity_cache(self) -> None:
+        field_index = CoreEntityFieldIndex(
+            entity_fields_by_field_type={
+                "state_person": {
+                    EntityFieldType.BACK_EDGE: set(),
+                    EntityFieldType.FLAT_FIELD: {"full_name", "birthdate"},
+                }
+            }
+        )
+        with patch.object(
+            CoreEntityFieldIndex, "_get_entity_fields_with_type_slow"
+        ) as mock_get_fields:
+            fields = field_index.get_all_core_entity_fields(
+                StatePerson, EntityFieldType.BACK_EDGE
+            )
+            self.assertEqual(set(), fields)
+            mock_get_fields.assert_not_called()
+            fields = field_index.get_all_core_entity_fields(
+                StatePerson, EntityFieldType.FLAT_FIELD
+            )
+            self.assertEqual({"full_name", "birthdate"}, fields)
+            mock_get_fields.assert_not_called()
+            _ = field_index.get_all_core_entity_fields(
+                StatePerson, EntityFieldType.FORWARD_EDGE
+            )
+            # This value wasn't cached so we had to call the slow function
+            mock_get_fields.assert_called_once_with(
+                StatePerson, EntityFieldType.FORWARD_EDGE
+            )
+
+    def test_caching_behavior_pre_hydrated_database_entity_cache(self) -> None:
+        field_index = CoreEntityFieldIndex(
+            database_entity_fields_by_field_type={
+                "state_person": {
+                    EntityFieldType.BACK_EDGE: set(),
+                    EntityFieldType.FLAT_FIELD: {"full_name", "birthdate"},
+                }
+            }
+        )
+        with patch.object(
+            CoreEntityFieldIndex, "_get_all_database_entity_fields_slow"
+        ) as mock_get_fields:
+            fields = field_index.get_all_core_entity_fields(
+                schema.StatePerson, EntityFieldType.BACK_EDGE
+            )
+            self.assertEqual(set(), fields)
+            mock_get_fields.assert_not_called()
+            fields = field_index.get_all_core_entity_fields(
+                schema.StatePerson, EntityFieldType.FLAT_FIELD
+            )
+            self.assertEqual({"full_name", "birthdate"}, fields)
+            mock_get_fields.assert_not_called()
+            _ = field_index.get_all_core_entity_fields(
+                schema.StatePerson, EntityFieldType.FORWARD_EDGE
+            )
+            # This value wasn't cached so we had to call the slow function
+            mock_get_fields.assert_called_once_with(
+                schema.StatePerson, EntityFieldType.FORWARD_EDGE
+            )
 
 
 PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
