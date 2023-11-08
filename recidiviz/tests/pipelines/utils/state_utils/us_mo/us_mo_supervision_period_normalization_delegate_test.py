@@ -27,6 +27,7 @@ import mock
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
@@ -1678,4 +1679,422 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
                 datetime.date(2019, 1, 31),
             ),
             None,
+        )
+
+    def test_absconsion_overrides_basic(self) -> None:
+        # Periods between an absconsion and a return from absconsion should have their
+        # supervision type/level set to ABSCONSION.
+        delegate = UsMoSupervisionNormalizationDelegate([])
+
+        sp_ending_in_absconsion = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-1",
+            start_date=datetime.date(2015, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_date=datetime.date(2016, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_mid_absconsion_no_type_or_level = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-2",
+            start_date=datetime.date(2016, 1, 1),
+            termination_date=datetime.date(2017, 1, 1),
+        )
+        sp_mid_absconsion_has_type_and_level = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-3",
+            start_date=datetime.date(2017, 1, 1),
+            termination_date=datetime.date(2018, 1, 1),
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_starting_in_return = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-4",
+            start_date=datetime.date(2018, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+            termination_date=datetime.date(2019, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sps = [
+            sp_ending_in_absconsion,
+            sp_mid_absconsion_no_type_or_level,
+            sp_mid_absconsion_has_type_and_level,
+            sp_starting_in_return,
+        ]
+
+        # Verify that the level/type overrides trigger for these periods, whether this means
+        # setting a previously absent StateSupervisionLevel/StateSupervisionPeriodSupervisionType,
+        # or overriding an existing value. Because the logic for overriding type and level are
+        # essentially the same, the tests that follow will only test supervision_type_override
+        # under the assumption that supervision_level_override works the same way.
+        override_missing_level = delegate.supervision_level_override(
+            supervision_period_list_index=1,
+            sorted_supervision_periods=sps,
+        )
+        override_existing_level = delegate.supervision_level_override(
+            supervision_period_list_index=2,
+            sorted_supervision_periods=sps,
+        )
+        override_missing_type = delegate.supervision_type_override(
+            supervision_period_list_index=1,
+            sorted_supervision_periods=sps,
+        )
+        override_existing_type = delegate.supervision_type_override(
+            supervision_period_list_index=2,
+            sorted_supervision_periods=sps,
+        )
+
+        self.assertEqual(override_missing_level, StateSupervisionLevel.ABSCONSION)
+        self.assertEqual(override_existing_level, StateSupervisionLevel.ABSCONSION)
+        self.assertEqual(
+            override_missing_type, StateSupervisionPeriodSupervisionType.ABSCONSION
+        )
+        self.assertEqual(
+            override_existing_type, StateSupervisionPeriodSupervisionType.ABSCONSION
+        )
+
+    def test_do_not_override(self) -> None:
+
+        delegate = UsMoSupervisionNormalizationDelegate([])
+
+        sp_ending_in_absconsion = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-1",
+            start_date=datetime.date(2015, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_date=datetime.date(2016, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_return_in_next_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-2",
+            start_date=datetime.date(2017, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+            termination_date=datetime.date(2018, 1, 1),
+        )
+        sp_after_absconsion = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-3",
+            start_date=datetime.date(2018, 1, 1),
+            termination_date=datetime.date(2019, 1, 1),
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        # Here, there is an absconsion start and end with a gap between the bounding periods.
+        # This gap will be filled with an inferred absconsion period in normalization, but the
+        # bounding periods should still be left alone.
+        no_override_absconsion_start = delegate.supervision_type_override(
+            supervision_period_list_index=0,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion,
+                sp_return_in_next_period,
+            ],
+        )
+        no_override_absconsion_end = delegate.supervision_type_override(
+            supervision_period_list_index=1,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion,
+                sp_return_in_next_period,
+            ],
+        )
+
+        # If there is an absconsion followed by a return and no other absconsions, subsequent
+        # periods should be left alone.
+        no_override_past_absconsion = delegate.supervision_type_override(
+            supervision_period_list_index=2,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion,
+                sp_return_in_next_period,
+                sp_after_absconsion,
+            ],
+        )
+
+        # We only want to infer supervision type/level for periods between absconsions
+        # and returns; this means that no overrides occur for periods that follow absconsions
+        # but aren't eventually followed by returns.
+        no_override_open_absconsion_span = delegate.supervision_type_override(
+            supervision_period_list_index=1,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion,
+                sp_after_absconsion,
+            ],
+        )
+        self.assertEqual(
+            no_override_absconsion_start,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertIsNone(no_override_absconsion_end)
+        self.assertEqual(
+            no_override_past_absconsion, StateSupervisionPeriodSupervisionType.PROBATION
+        )
+        self.assertEqual(
+            no_override_open_absconsion_span,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+    def test_multiple_absconsion_events(self) -> None:
+
+        delegate = UsMoSupervisionNormalizationDelegate([])
+
+        sp_ending_in_absconsion_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-1",
+            start_date=datetime.date(2014, 1, 1),
+            termination_date=datetime.date(2015, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_mid_first_absconsion = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-2",
+            start_date=datetime.date(2015, 1, 1),
+            termination_date=datetime.date(2015, 6, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_return_between_absconsions = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-3",
+            start_date=datetime.date(2015, 6, 1),
+            termination_date=datetime.date(2016, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+        )
+        sp_ending_in_absconsion_2a = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-4",
+            start_date=datetime.date(2016, 1, 1),
+            termination_date=datetime.date(2017, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_ending_in_absconsion_2b = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-5",
+            start_date=datetime.date(2016, 1, 1),
+            termination_date=datetime.date(2017, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_after_absconsions = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-6",
+            start_date=datetime.date(2022, 1, 1),
+            termination_date=datetime.date(2023, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_starting_in_return = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-7",
+            start_date=datetime.date(2023, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+        )
+
+        # Check that there aren't indexing errors when only one period exists.
+        only_period_ends_in_absconsion = delegate.supervision_type_override(
+            supervision_period_list_index=0,
+            sorted_supervision_periods=[sp_ending_in_absconsion_1],
+        )
+
+        sps_two_absconsions_before_return = [
+            sp_ending_in_absconsion_1,
+            sp_mid_first_absconsion,
+            sp_ending_in_absconsion_2a,
+            sp_after_absconsions,
+            sp_starting_in_return,
+        ]
+
+        # Check that overrides do not occur for a period that follows an absconsion and
+        # precedes a return BUT with another absconsion prior to the return.
+        after_absconsion_before_absconsion_and_return = (
+            delegate.supervision_type_override(
+                supervision_period_list_index=1,
+                sorted_supervision_periods=sps_two_absconsions_before_return,
+            )
+        )
+        # Same set of periods as above, but where the period being normalized IS the period ending in
+        # the second absconsion, which should still not receive an override.
+        absconsion_after_absconsion_before_return = delegate.supervision_type_override(
+            supervision_period_list_index=2,
+            sorted_supervision_periods=sps_two_absconsions_before_return,
+        )
+
+        # Same set of periods as above, but where the period being normalized is the period
+        # between the second absconsion and the return, which should receive an override (since
+        # there are no absconsions between the period and the return that follows).
+        multiple_absconsions_before_period = delegate.supervision_type_override(
+            supervision_period_list_index=3,
+            sorted_supervision_periods=sps_two_absconsions_before_return,
+        )
+
+        # Check that a period between an absconsion and return still receives the override
+        # even with absconsions in the future, as long as the return precedes future absconsions.
+        absconsion_return_absconsion_return = delegate.supervision_type_override(
+            supervision_period_list_index=1,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion_1,
+                sp_mid_first_absconsion,
+                sp_return_between_absconsions,
+                sp_ending_in_absconsion_2a,
+                sp_after_absconsions,
+                sp_starting_in_return,
+            ],
+        )
+
+        # Further test the sorting and picking logic for past absconsion periods to include
+        # perfectly overlapping periods ending in absconsion.
+        simultaneous_absconsions_before_period = delegate.supervision_type_override(
+            supervision_period_list_index=3,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion_1,
+                sp_ending_in_absconsion_2a,
+                sp_ending_in_absconsion_2b,
+                sp_after_absconsions,
+                sp_starting_in_return,
+            ],
+        )
+        self.assertEqual(
+            only_period_ends_in_absconsion,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertEqual(
+            after_absconsion_before_absconsion_and_return,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertEqual(
+            absconsion_after_absconsion_before_return,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertEqual(
+            multiple_absconsions_before_period,
+            StateSupervisionPeriodSupervisionType.ABSCONSION,
+        )
+        self.assertEqual(
+            absconsion_return_absconsion_return,
+            StateSupervisionPeriodSupervisionType.ABSCONSION,
+        )
+        self.assertEqual(
+            simultaneous_absconsions_before_period,
+            StateSupervisionPeriodSupervisionType.ABSCONSION,
+        )
+
+        sp_return_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-8",
+            start_date=datetime.date(2017, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+            termination_date=datetime.date(2018, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_return_2a = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-9",
+            start_date=datetime.date(2018, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+            termination_date=datetime.date(2019, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_return_2b = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-10",
+            start_date=datetime.date(2018, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+            termination_date=datetime.date(2019, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        sp_return_and_re_abscond = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_MO",
+            external_id="123-456-1-11",
+            start_date=datetime.date(2019, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+            termination_date=datetime.date(2020, 1, 1),
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        # The next three tests check the same things as the prior tests, but for absconsion
+        # returns rather than absconsions themselves.
+        only_period_is_return = delegate.supervision_type_override(
+            supervision_period_list_index=0,
+            sorted_supervision_periods=[sp_return_1],
+        )
+
+        multiple_returns_before_period = delegate.supervision_type_override(
+            supervision_period_list_index=3,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion_1,
+                sp_return_1,
+                sp_return_2a,
+                sp_after_absconsions,
+            ],
+        )
+        simultaneous_returns_before_period = delegate.supervision_type_override(
+            supervision_period_list_index=4,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion_1,
+                sp_return_1,
+                sp_return_2a,
+                sp_return_2b,
+                sp_after_absconsions,
+            ],
+        )
+
+        # Check that periods starting with absconsion returns and ending with new absconsions
+        # can be handled without error, and do not receive overrides.
+        absconsion_on_both_ends = delegate.supervision_type_override(
+            supervision_period_list_index=0,
+            sorted_supervision_periods=[sp_return_and_re_abscond],
+        )
+
+        # Check that when a period starts with an absconsion return and ends with an absconsion,
+        # it's treated as a normal absconsion for overriding future supervision types/levels.
+        override_period_after_re_abscond = delegate.supervision_type_override(
+            supervision_period_list_index=2,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion_1,
+                sp_return_and_re_abscond,
+                sp_after_absconsions,
+                sp_starting_in_return,
+            ],
+        )
+        no_override_re_abscond_period = delegate.supervision_type_override(
+            supervision_period_list_index=1,
+            sorted_supervision_periods=[
+                sp_ending_in_absconsion_1,
+                sp_return_and_re_abscond,
+                sp_after_absconsions,
+                sp_starting_in_return,
+            ],
+        )
+
+        self.assertEqual(
+            only_period_is_return,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertEqual(
+            multiple_returns_before_period,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertEqual(
+            simultaneous_returns_before_period,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertEqual(
+            absconsion_on_both_ends,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+        self.assertEqual(
+            override_period_after_re_abscond,
+            StateSupervisionPeriodSupervisionType.ABSCONSION,
+        )
+        self.assertEqual(
+            no_override_re_abscond_period,
+            StateSupervisionPeriodSupervisionType.PROBATION,
         )

@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -84,6 +85,17 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         return sorted_supervision_periods[
             supervision_period_list_index
         ].supervision_level
+
+    def supervision_type_override(
+        self,
+        supervision_period_list_index: int,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        """States may have specific logic that determines the supervision type for a supervision period.
+        By default, uses the one on the supervision period as ingested."""
+        return sorted_supervision_periods[
+            supervision_period_list_index
+        ].supervision_type
 
     def supervision_admission_reason_override(
         self,
@@ -426,7 +438,11 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 supervision_period_list_index=index,
                 sorted_supervision_periods=supervision_periods,
             )
-
+            # For supervision type changes inferred using adjacent periods or other information
+            sp.supervision_type = self.delegate.supervision_type_override(
+                supervision_period_list_index=index,
+                sorted_supervision_periods=supervision_periods,
+            )
             sp.admission_reason = self.delegate.supervision_admission_reason_override(
                 sp, supervision_periods
             )
