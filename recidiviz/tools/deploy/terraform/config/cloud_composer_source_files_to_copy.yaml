@@ -3,7 +3,7 @@
 # dependency must be added here. Python dependencies (including DAG files) will be added
 # automatically.
 - [recidiviz/airflow/dags/operators, "*.yaml"]
-- [recidiviz/ingest/direct/regions, "*/manifest.yaml"]
+- [recidiviz/ingest/direct/regions, "*/*.yaml"]
 - [recidiviz/metrics/export/products, products.yaml]
 - [recidiviz/pipelines, calculation_pipeline_templates.yaml]
 - [recidiviz/pipelines, "*/template_metadata.json"]
