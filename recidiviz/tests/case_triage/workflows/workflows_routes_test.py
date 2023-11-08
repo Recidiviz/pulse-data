@@ -28,6 +28,7 @@ from flask.testing import FlaskClient
 from freezegun import freeze_time
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
+from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
     on_successful_authorization_recidiviz_only,
@@ -1369,6 +1370,451 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             },
         )
         mock_segment_client.return_value.track_milestones_message_status.assert_not_called()
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_update_docstars_early_termination_date_success(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        request_body = {
+            "personExternalId": "1234",
+            "userEmail": "foo@nd.gov",
+            "earlyTerminationDate": "2024-01-01",
+            "justificationReasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/update_docstars_early_termination_date",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_task_body = {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+        mock_task_manager.return_value.create_task.assert_called_once()
+        self.assertEqual(
+            mock_task_manager.return_value.create_task.call_args.kwargs["body"],
+            expected_task_body,
+        )
+        mock_interface.return_value.update_early_termination_date.assert_not_called()
+        mock_interface.return_value.set_firestore_early_termination_status.assert_called_with(
+            ExternalSystemRequestStatus.IN_PROGRESS
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_update_docstars_early_termination_date_no_queue_success(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        request_body = {
+            "personExternalId": "1234",
+            "userEmail": "foo@nd.gov",
+            "earlyTerminationDate": "2024-01-01",
+            "justificationReasons": [{"code": "FOO", "description": "Code foo."}],
+            "shouldQueueTask": False,
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/update_docstars_early_termination_date",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_body = {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.return_value.update_early_termination_date.assert_called_once_with(
+            **expected_body,
+        )
+        mock_interface.return_value.set_firestore_early_termination_status.assert_called_with(
+            ExternalSystemRequestStatus.SUCCESS
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_update_docstars_early_termination_date_no_queue_api_failure(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        mock_interface.return_value.update_early_termination_date.side_effect = (
+            Exception("It broke!")
+        )
+
+        request_body = {
+            "personExternalId": "1234",
+            "userEmail": "foo@nd.gov",
+            "earlyTerminationDate": "2024-01-01",
+            "justificationReasons": [{"code": "FOO", "description": "Code foo."}],
+            "shouldQueueTask": False,
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/update_docstars_early_termination_date",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_body = {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.return_value.update_early_termination_date.assert_called_once_with(
+            **expected_body,
+        )
+        mock_interface.return_value.set_firestore_early_termination_status.assert_called_with(
+            ExternalSystemRequestStatus.FAILURE
+        )
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_update_docstars_early_termination_queue_failure(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        mock_task_manager.return_value.create_task.side_effect = Exception("It broke!")
+
+        request_body = {
+            "personExternalId": "1234",
+            "userEmail": "foo@nd.gov",
+            "earlyTerminationDate": "2024-01-01",
+            "justificationReasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/update_docstars_early_termination_date",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        expected_task_body = {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+        mock_task_manager.return_value.create_task.assert_called_once()
+        self.assertEqual(
+            mock_task_manager.return_value.create_task.call_args.kwargs["body"],
+            expected_task_body,
+        )
+        mock_interface.return_value.update_early_termination_date.assert_not_called()
+        mock_interface.return_value.set_firestore_early_termination_status.assert_called_with(
+            ExternalSystemRequestStatus.FAILURE
+        )
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_update_docstars_early_termination_date_bad_state(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_tn", "foo@tn.gov"
+        )
+
+        request_body = {
+            "personExternalId": "1234",
+            "userEmail": "foo@tn.gov",
+            "earlyTerminationDate": "2024-01-01",
+            "justificationReasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/update_docstars_early_termination_date",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.return_value.update_early_termination_date.assert_not_called()
+        mock_interface.return_value.set_firestore_early_termination_status.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_update_docstars_early_termination_date_mismatched_email(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        request_body = {
+            "personExternalId": "1234",
+            "userEmail": "bar@tn.gov",
+            "earlyTerminationDate": "2024-01-01",
+            "justificationReasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/update_docstars_early_termination_date",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.return_value.update_early_termination_date.assert_not_called()
+        mock_interface.return_value.set_firestore_early_termination_status.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    def test_update_docstars_early_termination_date_missing_field(
+        self,
+        mock_task_manager: MagicMock,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        request_body = {
+            "personExternalId": "1234",
+            "userEmail": "foo@nd.gov",
+            # missing earlyTerminationDate
+            "justificationReasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/update_docstars_early_termination_date",
+                headers={"Origin": "http://localhost:3000"},
+                json=request_body,
+            )
+
+        mock_task_manager.return_value.create_task.assert_not_called()
+        mock_interface.return_value.update_early_termination_date.assert_not_called()
+        mock_interface.return_value.set_firestore_early_termination_status.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    def test_handle_update_docstars_early_termination_date_success(
+        self,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        request_body = {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/handle_update_docstars_early_termination_date",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
+                json=request_body,
+            )
+
+        expected_body = {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        mock_interface.return_value.update_early_termination_date.assert_called_once_with(
+            **expected_body
+        )
+        mock_interface.return_value.set_firestore_early_termination_status.assert_called_once_with(
+            ExternalSystemRequestStatus.SUCCESS
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    def test_handle_update_docstars_early_termination_date_api_failure(
+        self,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        mock_interface.return_value.update_early_termination_date.side_effect = (
+            Exception("It broke!")
+        )
+
+        request_body = {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/handle_update_docstars_early_termination_date",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
+                json=request_body,
+            )
+
+        expected_body = {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        mock_interface.return_value.update_early_termination_date.assert_called_once_with(
+            **expected_body
+        )
+        mock_interface.return_value.set_firestore_early_termination_status.assert_called_once_with(
+            ExternalSystemRequestStatus.FAILURE
+        )
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    def test_handle_update_docstars_early_termination_date_missing_pei(
+        self,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        request_body = {
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/handle_update_docstars_early_termination_date",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
+                json=request_body,
+            )
+
+        mock_interface.return_value.update_early_termination_date.assert_not_called()
+        mock_interface.return_value.set_firestore_early_termination_status.assert_not_called()
+        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+    )
+    def test_handle_update_docstars_early_termination_date_missing_field(
+        self,
+        mock_interface: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_nd", "foo@nd.gov"
+        )
+
+        request_body = {
+            "person_external_id": 1234,
+            # missing user_email
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_ND/handle_update_docstars_early_termination_date",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
+                json=request_body,
+            )
+
+        mock_interface.return_value.update_early_termination_date.assert_not_called()
+        mock_interface.return_value.set_firestore_early_termination_status.assert_called_once_with(
+            ExternalSystemRequestStatus.FAILURE
+        )
+        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 def make_cors_test(

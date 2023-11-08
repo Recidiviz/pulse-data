@@ -35,6 +35,7 @@ from recidiviz.case_triage.workflows.api_schemas import (
     ProxySchema,
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
+    WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.case_triage.workflows.constants import (
@@ -42,6 +43,7 @@ from recidiviz.case_triage.workflows.constants import (
     ExternalSystemRequestStatus,
 )
 from recidiviz.case_triage.workflows.interface import (
+    WorkflowsUsNdExternalRequestInterface,
     WorkflowsUsTnExternalRequestInterface,
 )
 from recidiviz.case_triage.workflows.twilio_validation import WorkflowsTwilioValidator
@@ -58,6 +60,7 @@ from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
     on_successful_authorization_recidiviz_only,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     SingleCloudTaskQueueManager,
@@ -198,6 +201,11 @@ def create_workflows_api_blueprint() -> Blueprint:
         )
         return make_response(response.text, response.status_code)
 
+    @workflows_api.get("/ip")
+    def ip() -> Response:
+        ip_response = requests.get("http://curlmyip.org", timeout=10)
+        return jsonify({"ip": ip_response.text})
+
     @workflows_api.post("/external_request/<state>/insert_tepe_contact_note")
     @requires_api_schema(WorkflowsUsTnInsertTEPEContactNoteSchema)
     def insert_tepe_contact_note(
@@ -225,7 +233,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 data = WorkflowsUsTnInsertTEPEContactNoteSchema().dump(g.api_data)
                 interface.insert_tepe_contact_note(**data)
             except Exception:
-                make_response(
+                return make_response(
                     jsonify("Error in inserting contact note without queueing task"),
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                 )
@@ -651,9 +659,128 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         return make_response(jsonify(), HTTPStatus.NO_CONTENT)
 
-    @workflows_api.get("/ip")
-    def ip() -> Response:
-        ip_response = requests.get("http://curlmyip.org", timeout=10)
-        return jsonify({"ip": ip_response.text})
+    @workflows_api.post(
+        "/external_request/<state>/update_docstars_early_termination_date"
+    )
+    @requires_api_schema(WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema)
+    def update_docstars_early_termination_date(state: str) -> Response:
+        if state.upper() != StateCode.US_ND.value:
+            return jsonify_response(
+                f"Unsupported state: {state}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        if g.api_data["user_email"] != g.authenticated_user_email:
+            return jsonify_response(
+                "user_email does not match authenticated user",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        person_external_id = g.api_data["person_external_id"]
+        interface = WorkflowsUsNdExternalRequestInterface(person_external_id)
+
+        if not g.api_data["should_queue_task"]:
+            try:
+                interface.set_firestore_early_termination_status(
+                    ExternalSystemRequestStatus.IN_PROGRESS,
+                )
+                data = WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema().dump(
+                    g.api_data
+                )
+                interface.update_early_termination_date(**data)
+            except Exception:
+                interface.set_firestore_early_termination_status(
+                    ExternalSystemRequestStatus.FAILURE,
+                )
+                return jsonify_response(
+                    "Error in updating early termination date without queueing task",
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+            interface.set_firestore_early_termination_status(
+                ExternalSystemRequestStatus.SUCCESS,
+            )
+            return jsonify_response(
+                "Early termination date updated without queueing task",
+                HTTPStatus.OK,
+            )
+
+        try:
+            cloud_task_manager = SingleCloudTaskQueueManager(
+                queue_info_cls=CloudTaskQueueInfo,
+                queue_name=WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE,
+            )
+
+            headers_copy = dict(request.headers)
+            headers_copy["Referer"] = cloud_run_metadata.url
+
+            cloud_task_manager.create_task(
+                absolute_uri=f"{cloud_run_metadata.url}"
+                f"/workflows/external_request/US_ND/handle_update_docstars_early_termination_date",
+                body=WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema().dump(g.api_data),  # type: ignore
+                headers=headers_copy,
+            )
+        except Exception as e:
+            logging.error(e)
+            interface.set_firestore_early_termination_status(
+                ExternalSystemRequestStatus.FAILURE,
+            )
+            return jsonify_response(
+                f"An unknown error occurred while queueing the handle_update_docstars_early_termination_date task: {e}",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        logging.info("Enqueued handle_update_docstars_early_termination_date task")
+
+        interface.set_firestore_early_termination_status(
+            ExternalSystemRequestStatus.IN_PROGRESS,
+        )
+
+        return make_response(jsonify(), HTTPStatus.OK)
+
+    @workflows_api.post(
+        "/external_request/<state>/handle_update_docstars_early_termination_date"
+    )
+    def handle_update_docstars_early_termination_date(
+        state: str,  # pylint: disable=unused-argument
+    ) -> Response:
+        cloud_task_body = get_cloud_task_json_body()
+        person_external_id = cloud_task_body.get("person_external_id", None)
+
+        if person_external_id is None:
+            logging.error("No person_external_id provided")
+            return jsonify_response(
+                "Person_external_id missing. Requests must have a person_external_id "
+                "in order to make the DOCSTARS request and update firestore.",
+                HTTPStatus.BAD_REQUEST,
+            )
+
+        interface = WorkflowsUsNdExternalRequestInterface(person_external_id)
+
+        try:
+            # Validate schema
+            data = load_api_schema(
+                WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema, cloud_task_body
+            )
+            # Dump to remove load_only fields from body
+            data = WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema().dump(data)
+            interface.update_early_termination_date(**data)
+        except Exception as e:
+            logging.error("Write to DOCSTARS failed due to error: %s", e)
+            interface.set_firestore_early_termination_status(
+                ExternalSystemRequestStatus.FAILURE,
+            )
+
+            return jsonify_response(
+                f"Early termination date was not updated in DOCSTARS. Error: {e}",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        interface.set_firestore_early_termination_status(
+            ExternalSystemRequestStatus.SUCCESS,
+        )
+        return jsonify_response(
+            "Early termination date successfully updated in DOCSTARS.",
+            HTTPStatus.OK,
+        )
 
     return workflows_api

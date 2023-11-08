@@ -135,3 +135,20 @@ class WorkflowsSendSmsRequestSchema(CamelOrSnakeCaseSchema):
     recipient_external_id = fields.Str(required=True)
     recipient = fields.Str(required=True, validate=validate_e164_phone_number)
     client_firestore_id = fields.Str(required=True)
+
+
+class WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema(CamelOrSnakeCaseSchema):
+    """
+    The schema expected by the /workflows/external_request/US_ND/update_docstars_early_termination_date.
+    Camel-cased keys are expected since the request is coming from the dashboards app
+    """
+
+    class JustificationReasonSchema(Schema):
+        code = fields.Str(required=True)
+        description = fields.Str(required=True)
+
+    person_external_id = fields.Integer(required=True)
+    user_email = fields.Str(required=True)
+    early_termination_date = fields.Date(required=True)
+    justification_reasons = fields.List(fields.Nested(JustificationReasonSchema))
+    should_queue_task = fields.Boolean(load_default=True, load_only=True)

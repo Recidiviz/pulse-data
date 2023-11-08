@@ -267,3 +267,85 @@ class WorkflowsUsTnExternalRequestInterface:
             f"clientUpdatesV2/{record_id}/clientOpportunityUpdates/usTnExpiration"
         )
         return doc_path
+
+
+class WorkflowsUsNdExternalRequestInterface:
+    """Implements interface for Workflows-related external requests for North Dakota."""
+
+    def __init__(self, person_external_id: int):
+        self.person_external_id = person_external_id
+        self.firestore_client = FirestoreClientImpl()
+
+    def update_early_termination_date(
+        self,
+        user_email: str,
+        early_termination_date: str,
+        justification_reasons: List[Dict[str, str]],
+    ) -> None:
+        "Sends a request to DOCSTARS to update a client's early termination date"
+
+        docstars_url = get_secret("workflows_us_nd_early_termination_url")
+        docstars_key = get_secret("workflows_us_nd_early_termination_key")
+
+        if in_gcp_production() and user_email.endswith("@recidiviz.org"):
+            docstars_url = get_secret("workflows_us_nd_early_termination_test_url")
+
+        if docstars_url is None or docstars_key is None:
+            logging.error("Unable to get secrets for DOCSTARS")
+            raise EnvironmentError("Unable to get secrets for DOCSTARS")
+
+        headers = {
+            "Recidiviz-Credential-Token": docstars_key,
+            "Content-Type": "application/json",
+        }
+
+        request_body = json.dumps(
+            {
+                "sid": self.person_external_id,
+                "userEmail": user_email,
+                "earlyTerminationDate": early_termination_date,
+                "justificationReasons": justification_reasons,
+            }
+        )
+
+        try:
+            docstars_response = requests.put(
+                docstars_url,
+                headers=headers,
+                data=request_body,
+                timeout=360,
+            )
+            if docstars_response.status_code != requests.codes.ok:
+                docstars_response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            logging.error(
+                "Request to DOCSTARS failed with code %s: %s",
+                docstars_response.status_code,
+                docstars_response.text,
+            )
+            raise
+        except Exception as e:
+            logging.error("Request to DOCSTARS failed with error: %s", e)
+            raise
+
+        logging.info(
+            "Request to DOCSTARS completed with status code %s",
+            docstars_response.status_code,
+        )
+
+    @property
+    def doc_path(self) -> str:
+        record_id = f"{StateCode.US_ND.value.lower()}_{self.person_external_id}"
+        return f"clientUpdatesV2/{record_id}/clientOpportunityUpdates/earlyTermination/omsSnooze"
+
+    def set_firestore_early_termination_status(
+        self,
+        status: ExternalSystemRequestStatus,
+    ) -> None:
+        self.firestore_client.update_document(
+            self.doc_path,
+            {
+                "status": status.value,
+                self.firestore_client.timestamp_key: datetime.now(timezone.utc),
+            },
+        )
