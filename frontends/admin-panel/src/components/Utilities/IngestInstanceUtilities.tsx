@@ -16,10 +16,12 @@
 // =============================================================================
 
 import { message } from "antd";
+import assert from "assert";
 import {
   getCurrentIngestInstanceStatus,
   getRawDataSourceInstance,
 } from "../../AdminPanelAPI";
+import { isIngestInDataflowEnabled } from "../../AdminPanelAPI/IngestOperations";
 import { DirectIngestInstance } from "../IngestOperationsView/constants";
 
 export const fetchCurrentIngestInstanceStatus = async (
@@ -52,4 +54,23 @@ export const fetchCurrentRawDataSourceInstance = async (
     );
     return null;
   }
+};
+
+export const fetchDataflowEnabled = async (
+  stateCode: string
+): Promise<boolean> => {
+  const primaryResponse = await isIngestInDataflowEnabled(
+    stateCode,
+    DirectIngestInstance.PRIMARY
+  );
+  const isEnabledPrimary = await primaryResponse.json();
+  const secondaryResponse = await isIngestInDataflowEnabled(
+    stateCode,
+    DirectIngestInstance.SECONDARY
+  );
+  const isEnabledSecondary = await secondaryResponse.json();
+
+  assert(isEnabledPrimary === true || isEnabledPrimary === false);
+  assert(isEnabledSecondary === true || isEnabledSecondary === false);
+  return isEnabledPrimary && isEnabledSecondary;
 };
