@@ -21,8 +21,10 @@ from datetime import date
 from typing import Any, Dict, List, Optional, Set
 
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
@@ -341,6 +343,95 @@ class UsMoSupervisionNormalizationDelegate(
             new_supervision_periods.append(new_supervision_period)
 
         return new_supervision_periods
+
+    def supervision_level_override(
+        self,
+        supervision_period_list_index: int,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionLevel]:
+
+        if self._infer_absconsion_for_existing_period(
+            supervision_period_list_index, sorted_supervision_periods
+        ):
+            return StateSupervisionLevel.ABSCONSION
+        return sorted_supervision_periods[
+            supervision_period_list_index
+        ].supervision_level
+
+    def supervision_type_override(
+        self,
+        supervision_period_list_index: int,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+
+        if self._infer_absconsion_for_existing_period(
+            supervision_period_list_index, sorted_supervision_periods
+        ):
+            return StateSupervisionPeriodSupervisionType.ABSCONSION
+        return sorted_supervision_periods[
+            supervision_period_list_index
+        ].supervision_type
+
+    def _infer_absconsion_for_existing_period(
+        self,
+        supervision_period_list_index: int,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
+    ) -> bool:
+        """Identifies if the supervision type and level for a given periodcan be inferred
+        as ABSCONSION, based on whether or not it falls between a ABSCONSION termination
+        reason and a RETURN_FROM_ABSCONSION admission reason, with no ABSCONSION terminations
+        between the period itself and the future RETURN_FROM_ABSCONSION admission."""
+
+        if (
+            sorted_supervision_periods[supervision_period_list_index].admission_reason
+            == StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
+            or sorted_supervision_periods[
+                supervision_period_list_index
+            ].termination_reason
+            == StateSupervisionPeriodTerminationReason.ABSCONSION
+        ):
+            # We never want to apply the override to periods ending in absconsion, since
+            # if the period doesn't follow an earlier absconsion then only future periods
+            # should receive the override, and if it does follow an earlier absconsion then
+            # it's an ambiguous case where the prior absconsion can't be matched to a return.
+            return False
+
+        for period in sorted_supervision_periods[supervision_period_list_index + 1 :]:
+            # Iterate through future periods to see if a RETURN_FROM_ABSCONSION occurs
+            # before an ABSCONSION.
+            if (
+                period.admission_reason
+                == StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
+            ):
+                break
+            if (
+                period.termination_reason
+                == StateSupervisionPeriodTerminationReason.ABSCONSION
+            ):
+                return False
+        else:
+            # Did not find a RETURN_FROM_ABSCONSION
+            return False
+
+        for i in reversed(range(supervision_period_list_index)):
+            # Upon finding a future RETURN_FROM_ABSCONSION (if no ABSCONSION
+            # periods are reached first), iterate backwards through past periods
+            # to see if there is an ABSCONSION that is more recent than a
+            # RETURN_FROM_ABSCONSION.
+            if (
+                sorted_supervision_periods[i].termination_reason
+                == StateSupervisionPeriodTerminationReason.ABSCONSION
+            ):
+                return True
+            if (
+                sorted_supervision_periods[i].admission_reason
+                == StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
+            ):
+                return False
+
+        # If we reach this point, there is a future RETURN_FROM_ABSCONSION (which occurs
+        # before a future ABSCONSION), but no ABSCONSION in the past.
+        return False
 
     def _get_new_period_time_spans(
         self,
