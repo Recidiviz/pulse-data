@@ -50,7 +50,7 @@ SELECT
              (PARTITION BY ce.person_id, sss.start_date ORDER BY completion_event_date), sss.end_date_exclusive) AS end_datetime,
     DATE_ADD(completion_event_date, INTERVAL 6 MONTH) AS critical_date
 FROM `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
-INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` sss
+INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` sss
     ON sss.state_code = ce.state_code
     AND sss.person_id = ce.person_id 
     AND ce.completion_event_date BETWEEN sss.start_date AND {nonnull_end_date_exclusive_clause('sss.end_date_exclusive')}
