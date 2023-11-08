@@ -17,6 +17,7 @@
 """Used for gating various ingest-related features."""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.utils import environment
 
 
 # TODO(#20997): delete once ingest is enabled in dataflow in all states
@@ -31,4 +32,11 @@ def ingest_pipeline_can_run_in_dag(
     state_code: StateCode,  # pylint: disable=unused-argument
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
-    return False
+    if environment.in_gcp_production():
+        return False
+    staging_enabled_states = [
+        StateCode.US_CA,
+        StateCode.US_NC,
+        StateCode.US_OR,
+    ]
+    return state_code in staging_enabled_states
