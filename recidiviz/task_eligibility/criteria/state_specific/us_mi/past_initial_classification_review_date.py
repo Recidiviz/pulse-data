@@ -60,9 +60,9 @@ WITH supervision_starts_with_assessments AS (
     sss.end_date_exclusive AS end_date,
     sss.session_id_start,
     sss.session_id_end,
-    sss.supervision_super_session_id,
+    sss.compartment_level_1_super_session_id AS super_session_id,
     assessment_level,
-  FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` sss
+  FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized` sss
   LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
     ON sss.state_code = sap.state_code
     AND sss.person_id = sap.person_id 
@@ -102,7 +102,7 @@ Only sentence spans that overlap with the beginning of the supervision super ses
     ss.end_date,
     ss.session_id_start,
     ss.session_id_end,
-    ss.supervision_super_session_id,
+    ss.super_session_id,
     CASE 
         WHEN (assessment_level IN ('MEDIUM_HIGH', 'MAXIMUM')
                 AND is_sex_offense) THEN 'a_priority'
@@ -121,7 +121,7 @@ Only sentence spans that overlap with the beginning of the supervision super ses
     AND {nonnull_end_date_clause('q.end_date')} > ss.start_date
 ),
 active_supervision_population_cumulative_day_spans AS 
-/* This CTE analyses supervision_super_sessions to create a cumulative_inactive_days variable that counts days spent
+/* This CTE analyses compartment_level_1_super_sessions to create a cumulative_inactive_days variable that counts days spent
 in inactive supervision, currently defined as compartment_level_2 = `BENCH_WARRANT`. This variable is used to NULL out
 critical dates during inactive sub sessions as well as push out the critical date by the number of cumulative_inactive_days
 once an active supervision sub session resumes. */ 
@@ -132,7 +132,7 @@ once an active supervision sub session resumes. */
     sub.sub_session_id,
     sub.session_id,
     sub.state_code,
-    super.supervision_super_session_id AS super_session_id,
+    super.super_session_id AS super_session_id,
     sub.start_date,
     sub.end_date_exclusive AS end_date,
     sub.compartment_level_1,
@@ -140,7 +140,7 @@ once an active supervision sub session resumes. */
     sub.session_length_days,
     
     sub.inactive_session_days,
-    SUM(sub.inactive_session_days) OVER(PARTITION BY sub.person_id, sub.state_code, super.supervision_super_session_id ORDER BY sub.start_date) AS cumulative_inactive_days,
+    SUM(sub.inactive_session_days) OVER(PARTITION BY sub.person_id, sub.state_code, super.super_session_id ORDER BY sub.start_date) AS cumulative_inactive_days,
     super.start_date AS super_session_start_date,
     super.end_date AS super_session_end_date,
     super.priority_level,
