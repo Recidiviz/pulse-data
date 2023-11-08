@@ -83,9 +83,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         )
         assert_that(
             output,
-            self.validate_ingest_pipeline_results(
-                expected_ingest_view_output, "ingest12"
-            ),
+            self.validate_ingest_view_results(expected_ingest_view_output, "ingest12"),
         )
         self.test_pipeline.run()
 
@@ -112,7 +110,7 @@ class TestGenerateIngestViewResults(StateIngestPipelineTestCase):
         )
         assert_that(
             output,
-            self.validate_ingest_pipeline_results(
+            self.validate_ingest_view_results(
                 expected_latest_ingest_view_output, "ingest12"
             ),
         )
