@@ -335,7 +335,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 row,
             )
 
-            # US_TN row with regular and _new fields should resolve to the regular ones
+            # US_TN row with regular and _new fields should include both
             delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
@@ -387,6 +387,9 @@ class WorkflowsClientETLDelegateTest(TestCase):
                         },
                     ],
                     "emailAddress": "seventh@realname.net",
+                    "personExternalIdNew": "206",
+                    "officerIdNew": "101",
+                    "supervisionStartDateNew": "2021-03-05",
                 },
                 row,
             )

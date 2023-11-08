@@ -44,11 +44,9 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
         is_new_tn_client = "person_external_id" not in data
 
         for key, value in data.items():
-            if key.endswith("_new"):
-                if not is_new_tn_client:
-                    # we're completely ignoring the _new fields for everyone except TN clients that
-                    # weren't previously appearing because they weren't in the standards sheet
-                    continue
+            if key.endswith("_new") and is_new_tn_client:
+                # remove the "new" suffix for TN clients that weren't previously appearing because
+                # they weren't in the standards sheet, this way everyone has the expected fields.
                 key = key.removesuffix("_new")
 
             new_document[key] = (
