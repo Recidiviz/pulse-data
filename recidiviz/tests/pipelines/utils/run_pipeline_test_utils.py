@@ -22,6 +22,12 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
+from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import (
+    ingest_view_materialization_results_dataflow_dataset,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import (
@@ -44,12 +50,14 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteToBigQuery,
 )
 
+# TODO(#25244) Remove once dataset configs can be used in various pipeline tests
+FAKE_PIPELINE_TESTS_INPUT_DATASET = "dataset"
+
 
 def run_test_pipeline(
     pipeline_cls: Type[BasePipeline],
     state_code: str,
     project_id: str,
-    dataset_id: str,
     read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
     write_to_bq_constructor: Callable[
         [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
@@ -82,7 +90,6 @@ def run_test_pipeline(
         pipeline=pipeline_cls,
         state_code=state_code,
         project_id=project_id,
-        dataset_id=dataset_id,
         unifying_id_field_filter_set=unifying_id_field_filter_set,
         **additional_pipeline_args,
     )
@@ -200,7 +207,6 @@ def default_arg_list_for_pipeline(
     pipeline: Type[BasePipeline],
     state_code: str,
     project_id: str,
-    dataset_id: str,
     unifying_id_field_filter_set: Optional[Set[int]] = None,
     **additional_pipeline_args: Any,
 ) -> List[str]:
@@ -209,12 +215,11 @@ def default_arg_list_for_pipeline(
     pipeline_args: List[str] = [
         "--project",
         project_id,
+        # TODO(#25244) Update this to use the original dataset_configs rather than overridden values
         "--state_data_input",
-        dataset_id,
+        FAKE_PIPELINE_TESTS_INPUT_DATASET,
         "--reference_view_input",
-        dataset_id,
-        "--output",
-        dataset_id,
+        FAKE_PIPELINE_TESTS_INPUT_DATASET,
         "--state_code",
         state_code,
         "--job_name",
@@ -238,7 +243,6 @@ def default_arg_list_for_pipeline(
     if issubclass(pipeline, MetricPipeline):
         pipeline_args.extend(
             _additional_default_args_for_metrics_pipeline(
-                dataset_id=dataset_id,
                 include_calculation_limit_args=additional_pipeline_args.get(
                     "include_calculation_limit_args", True
                 ),
@@ -250,7 +254,19 @@ def default_arg_list_for_pipeline(
     elif issubclass(pipeline, SupplementalDatasetPipeline):
         pass
     elif issubclass(pipeline, StateIngestPipeline):
-        pipeline_args.extend(["--ingest_view_results_output", dataset_id])
+        # TODO(#25244) Update this to be able to automatically use the sandbox update rather than hardcoding
+        pipeline_args.extend(
+            [
+                "--output",
+                state_dataset_for_state_code(
+                    StateCode(state_code), DirectIngestInstance.PRIMARY, "sandbox"
+                ),
+                "--ingest_view_results_output",
+                ingest_view_materialization_results_dataflow_dataset(
+                    StateCode(state_code), DirectIngestInstance.PRIMARY, "sandbox"
+                ),
+            ]
+        )
         pipeline_args.extend(
             [
                 "--raw_data_upper_bound_dates_json",
@@ -275,7 +291,6 @@ def default_arg_list_for_pipeline(
 
 
 def _additional_default_args_for_metrics_pipeline(
-    dataset_id: str,
     include_calculation_limit_args: bool = True,
     metric_types_filter: Optional[Set[str]] = None,
 ) -> List[str]:
@@ -283,11 +298,9 @@ def _additional_default_args_for_metrics_pipeline(
     metrics pipeline."""
     additional_args: List[str] = []
 
+    # TODO(#25244) Update this to use the original dataset_configs rather than overridden values
     additional_args.extend(
-        [
-            "--static_reference_input",
-            dataset_id,
-        ]
+        ["--static_reference_input", FAKE_PIPELINE_TESTS_INPUT_DATASET]
     )
 
     if include_calculation_limit_args:

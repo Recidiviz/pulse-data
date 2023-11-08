@@ -39,17 +39,16 @@ from apache_beam.pvalue import PBegin, PCollection
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
-from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     get_database_entities_by_association_table,
     get_database_entity_by_table_name,
     get_state_table_classes,
-    get_table_class_by_name,
     is_association_table,
 )
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -192,30 +191,6 @@ class FakeBigQueryAssertMatchers:
                     )
 
         return _validate_normalized_association_entity_output
-
-    @staticmethod
-    def validate_entity_output(
-        entity_name: str,
-    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
-        """Asserts that the pipeline produces dictionaries with the expected keys
-        corresponding to the column names in the table into which the output will be
-        written."""
-
-        def _validate_entity_output(output: Iterable[Dict[str, Any]]) -> None:
-            # TODO(#24080) Transition to using entities.py to get the expected column names
-            schema_for_entity = schema_for_sqlalchemy_table(
-                get_table_class_by_name(entity_name, list(get_state_table_classes()))
-            )
-            expected_column_names = {field.name for field in schema_for_entity}
-            for output_dict in output:
-                if set(output_dict.keys()) != expected_column_names:
-                    raise BeamAssertException(
-                        "Output dictionary does not have "
-                        f"the expected keys. Expected: [{expected_column_names}], "
-                        f"found: [{list(output_dict.keys())}]."
-                    )
-
-        return _validate_entity_output
 
 
 class FakeReadFromBigQuery(apache_beam.PTransform):
@@ -607,11 +582,9 @@ class FakeWriteToBigQuery(apache_beam.PTransform):
     def __init__(
         self,
         output_table: str,
-        expected_output_tags: Collection[str],
     ):
         super().__init__()
         self._output_table = output_table
-        self._expected_output_tags = expected_output_tags
 
     @abc.abstractmethod
     def expand(self, input_or_inputs: PCollection) -> Any:
@@ -627,7 +600,7 @@ class FakeWriteMetricsToBigQuery(FakeWriteToBigQuery):
         output_table: str,
         expected_output_tags: Collection[str],
     ):
-        super().__init__(output_table, expected_output_tags)
+        super().__init__(output_table)
         metric_types_for_table = {
             metric_class(job_id="xxx", state_code="xxx").metric_type  # type: ignore[call-arg]
             for metric_class, table_id in DATAFLOW_METRICS_TO_TABLES.items()
@@ -660,7 +633,8 @@ class FakeWriteNormalizedEntitiesToBigQuery(FakeWriteToBigQuery):
         output_table: str,
         expected_output_tags: Collection[str],
     ):
-        super().__init__(output_table, expected_output_tags)
+        super().__init__(output_table)
+        self._expected_output_tags = expected_output_tags
 
     def expand(self, input_or_inputs: PCollection) -> Any:
         if is_association_table(self._output_table):
@@ -702,14 +676,17 @@ class FakeWriteExactOutputToBigQuery(FakeWriteToBigQuery):
     def __init__(
         self,
         output_table: str,
-        expected_output_tags: Collection[str],
         expected_output: List[Dict[str, Any]],
     ) -> None:
-        super().__init__(output_table, expected_output_tags)
+        super().__init__(output_table)
         self._expected_output = expected_output
 
     def expand(self, input_or_inputs: PCollection) -> Any:
         assert_that(input_or_inputs, equal_to(self._expected_output))
+
+
+ExpectedOutput = Iterable[Dict[str, Any]]
+ActualOutput = List[Dict[str, Any]]
 
 
 class FakeWriteOutputToBigQueryWithValidator(FakeWriteToBigQuery):
@@ -717,14 +694,13 @@ class FakeWriteOutputToBigQueryWithValidator(FakeWriteToBigQuery):
 
     def __init__(
         self,
-        output_table: str,
-        expected_output_tags: Collection[str],
-        expected_output: Dict[str, List[Dict[str, Any]]],
+        output_address: BigQueryAddress,
+        expected_output: ExpectedOutput,
         validator_fn_generator: Callable[
-            [List[Dict[str, Any]], str], Callable[[List[Dict[str, Any]]], None]
+            [ExpectedOutput, str], Callable[[ActualOutput], None]
         ],
     ) -> None:
-        super().__init__(output_table, expected_output_tags)
+        super().__init__(output_table=output_address.table_id)
         self._expected_output = expected_output
         # This function takes in a list of expected results and returns a function that will verify
         # that the pipeline output matches the expected results.
@@ -733,9 +709,7 @@ class FakeWriteOutputToBigQueryWithValidator(FakeWriteToBigQuery):
     def expand(self, input_or_inputs: PCollection) -> Any:
         assert_that(
             input_or_inputs,
-            self._validator_fn_generator(
-                self._expected_output.get(self._output_table, []), self._output_table
-            ),
+            self._validator_fn_generator(self._expected_output, self._output_table),
         )
 
 
@@ -752,7 +726,6 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
     def create_fake_bq_sink_constructor(
         self,
         expected_dataset: str,
-        expected_output_tags: Collection[str],
         **kwargs: Any,
     ) -> Callable[
         [
@@ -791,7 +764,7 @@ class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
                 raise ValueError(f"Unexpected write_disposition: {write_disposition}.")
 
             return self._fake_write_to_big_query_cls(  # type: ignore[call-arg]
-                output_table, expected_output_tags, **kwargs
+                output_table, **kwargs
             )
 
         return write_constructor

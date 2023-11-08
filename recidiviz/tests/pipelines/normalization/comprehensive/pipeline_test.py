@@ -52,6 +52,7 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
+    FAKE_PIPELINE_TESTS_INPUT_DATASET,
     default_data_dict_for_root_schema_classes,
     run_test_pipeline,
 )
@@ -94,15 +95,14 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
     ) -> None:
         """Runs a test version of the normalization pipeline."""
         project = "recidiviz-staging"
-        dataset = "dataset"
 
-        read_from_bq_constructor = (
-            self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
-            )
+        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(
+            # TODO(#25244) Replace with actual input once supported.
+            FAKE_PIPELINE_TESTS_INPUT_DATASET,
+            data_dict,
         )
         write_to_bq_constructor = self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
-            dataset,
+            f"{state_code.lower()}_normalized_state",
             expected_output_tags=[
                 entity.__name__
                 for _, managers in self.pipeline_class.required_entity_normalization_managers().items()
@@ -121,7 +121,6 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             pipeline_cls=self.pipeline_class,
             state_code=state_code,
             project_id=project,
-            dataset_id=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             unifying_id_field_filter_set=unifying_id_field_filter_set,

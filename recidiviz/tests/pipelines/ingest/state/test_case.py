@@ -18,14 +18,21 @@
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterable, Set
+from typing import Any, Callable, Dict, Iterable, List, Set
 
-from apache_beam.testing.util import BeamAssertException, equal_to
+import apache_beam
+from apache_beam.testing.util import BeamAssertException
+from google.cloud import bigquery
 from mock import patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
+from recidiviz.calculator.query.state.dataset_config import state_dataset_for_state_code
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    ingest_view_materialization_results_dataflow_dataset,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -49,9 +56,14 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
+    get_database_entities_by_association_table,
+    get_state_database_association_with_names,
     get_state_entity_names,
+    get_state_table_classes,
+    get_table_class_by_name,
     is_association_table,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -75,9 +87,9 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     load_dataframe_from_path,
 )
 from recidiviz.tests.pipelines.fake_bigquery import (
-    FakeBigQueryAssertMatchers,
     FakeReadAllFromBigQueryWithEmulator,
     FakeReadFromBigQueryWithEmulator,
+    FakeWriteOutputToBigQueryWithValidator,
 )
 from recidiviz.tests.utils.fake_region import fake_region
 
@@ -128,6 +140,15 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             ),
         )
         self.field_index = CoreEntityFieldIndex()
+
+        self.expected_ingest_view_dataset = (
+            ingest_view_materialization_results_dataflow_dataset(
+                self.region_code, self.ingest_instance, "sandbox"
+            )
+        )
+        self.expected_state_dataset = state_dataset_for_state_code(
+            self.region_code, self.ingest_instance, "sandbox"
+        )
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -263,9 +284,65 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
     ) -> FakeReadAllFromBigQueryWithEmulator:
         return FakeReadAllFromBigQueryWithEmulator()
 
+    def create_fake_bq_write_sink_constructor(
+        self, expected_output: Dict[BigQueryAddress, Iterable[Dict[str, Any]]]
+    ) -> Callable[
+        [
+            str,
+            str,
+            apache_beam.io.BigQueryDisposition,
+        ],
+        FakeWriteOutputToBigQueryWithValidator,
+    ]:
+        """Creates a fake BQ write sink constructor that validates the output of both
+        ingest view output and state entity output."""
+
+        def _write_constructor(
+            output_table: str,
+            output_dataset: str,
+            write_disposition: apache_beam.io.BigQueryDisposition,
+        ) -> FakeWriteOutputToBigQueryWithValidator:
+            if write_disposition != apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE:
+                raise ValueError(
+                    f"Write disposition [{write_disposition}] does not match expected disposition "
+                    f"[{apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE}] writing to table [{output_table}]"
+                )
+
+            output_address = BigQueryAddress(
+                dataset_id=output_dataset, table_id=output_table
+            )
+            if output_address not in expected_output:
+                raise ValueError(
+                    f"Output table [{output_address.to_str()}] not in expected output "
+                    f"[{list(expected_output.keys())}]"
+                )
+
+            if output_dataset not in (
+                self.expected_ingest_view_dataset,
+                self.expected_state_dataset,
+            ):
+                raise ValueError(
+                    f"Output dataset {output_dataset} does not match expected datasets: {self.expected_ingest_view_dataset}, {self.expected_state_dataset}"
+                )
+
+            validator_fn_generator = (
+                self.validate_entity_results
+                if output_dataset == self.expected_state_dataset
+                else self.validate_ingest_view_results
+            )
+
+            return FakeWriteOutputToBigQueryWithValidator(
+                output_address=output_address,
+                expected_output=expected_output[output_address],
+                validator_fn_generator=validator_fn_generator,
+            )
+
+        return _write_constructor
+
     @staticmethod
-    def validate_ingest_pipeline_results(
-        expected_output: Iterable[Dict[str, Any]], output_table: str
+    def validate_ingest_view_results(
+        expected_output: Iterable[Dict[str, Any]],
+        _output_table: str,
     ) -> Callable[[Iterable[Dict[str, Any]]], None]:
         """Allows for validating the output of ingest view results without worrying about
         the output of the materialization time."""
@@ -293,9 +370,46 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
                     f"Output does not match expected output: output is {copy_of_output}, expected is {copy_of_expected_output}"
                 )
 
-        if is_association_table(table_name=output_table):
-            return equal_to([])
-        if output_table in get_state_entity_names():
-            return FakeBigQueryAssertMatchers.validate_entity_output(output_table)
-
         return _validate_ingest_view_results_output
+
+    @staticmethod
+    def validate_entity_results(
+        _expected_output: Iterable[Dict[str, Any]],
+        output_table: str,
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
+        """Asserts that the pipeline produces dictionaries with the expected keys
+        corresponding to the column names in the table into which the output will be
+        written."""
+
+        def _validate_entity_output(output: Iterable[Dict[str, Any]]) -> None:
+            # TODO(#24080) Transition to using entities.py to get the expected column names
+            schema: List[bigquery.SchemaField] = []
+            if output_table in get_state_entity_names():
+                schema = schema_for_sqlalchemy_table(
+                    get_table_class_by_name(
+                        output_table, list(get_state_table_classes())
+                    )
+                )
+
+            elif is_association_table(output_table):
+                child_cls, parent_cls = get_database_entities_by_association_table(
+                    state_schema, output_table
+                )
+                schema = schema_for_sqlalchemy_table(
+                    get_state_database_association_with_names(
+                        child_cls.__name__, parent_cls.__name__
+                    )
+                )
+
+            expected_column_names = {field.name for field in schema}
+            for output_dict in output:
+                if set(output_dict.keys()) != expected_column_names:
+                    raise BeamAssertException(
+                        "Output dictionary does not have "
+                        f"the expected keys. Expected: [{expected_column_names}], "
+                        f"found: [{list(output_dict.keys())}]."
+                    )
+
+            # TODO(#24202) Add ability to check exact state output.
+
+        return _validate_entity_output

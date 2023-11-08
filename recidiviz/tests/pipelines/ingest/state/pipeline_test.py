@@ -17,6 +17,7 @@
 """Tests the state ingest pipeline."""
 from typing import Any, Dict, Iterable, Optional
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.pipelines.ingest.state import pipeline
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BQ_EMULATOR_PROJECT_ID,
@@ -49,25 +50,29 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
     ) -> None:
         """Runs a test version of the state ingest pipeline."""
         project = BQ_EMULATOR_PROJECT_ID
-        dataset = "test_dataset"
 
         read_from_bq_constructor = self.create_fake_bq_read_source_constructor
         read_all_from_bq_constructor = self.create_fake_bq_read_all_source_constructor
-        # TODO(#24067) Rather than combine the constructors, we should have separate ones.
-        write_to_bq_constructor = (
-            self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
-                expected_dataset=dataset,
-                expected_output_tags=list(expected_entity_types),
-                expected_output=ingest_view_results,
-                validator_fn_generator=self.validate_ingest_pipeline_results,
-            )
+        expected_output: Dict[BigQueryAddress, Iterable[Dict[str, Any]]] = {}
+        for ingest_view, results in ingest_view_results.items():
+            expected_output[
+                BigQueryAddress(
+                    dataset_id=self.expected_ingest_view_dataset, table_id=ingest_view
+                )
+            ] = results
+        for entity in expected_entity_types:
+            # TODO(#24202) Hydrate exact state output for comparison.
+            expected_output[
+                BigQueryAddress(dataset_id=self.expected_state_dataset, table_id=entity)
+            ] = []
+        write_to_bq_constructor = self.create_fake_bq_write_sink_constructor(
+            expected_output=expected_output,
         )
 
         run_test_pipeline(
             pipeline_cls=self.pipeline_class,
             state_code=self.region_code.value,
             project_id=project,
-            dataset_id=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             read_all_from_bq_constructor=read_all_from_bq_constructor,

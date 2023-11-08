@@ -22,6 +22,7 @@ from typing import Any, Dict, Iterable, Optional, Set
 from recidiviz.calculator.query.state.views.reference.us_id_case_update_info import (
     US_ID_CASE_UPDATE_INFO_VIEW_NAME,
 )
+from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.pipelines.supplemental.us_id_case_note_extracted_entities import pipeline
 from recidiviz.pipelines.supplemental.us_id_case_note_extracted_entities.us_id_text_analysis_configuration import (
     UsIdTextEntity,
@@ -31,7 +32,10 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteExactOutputToBigQuery,
     FakeWriteToBigQueryFactory,
 )
-from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import run_test_pipeline
+from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
+    FAKE_PIPELINE_TESTS_INPUT_DATASET,
+    run_test_pipeline,
+)
 
 
 # TODO(#16661) Delete this once products are no longer reading from legacy US_ID infrastructure
@@ -111,17 +115,17 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
     ) -> None:
         """Runs a test version of the pipeline."""
         project = "recidiviz-staging"
-        dataset = "dataset"
 
-        read_from_bq_constructor = (
-            self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict
-            )
+        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(
+            # TODO(#25244) Replace with actual input once supported.
+            FAKE_PIPELINE_TESTS_INPUT_DATASET,
+            data_dict,
         )
 
         write_to_bq_constructor = (
             self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
-                dataset, expected_output_tags=[], expected_output=self.final_data
+                SUPPLEMENTAL_DATA_DATASET,
+                expected_output=self.final_data,
             )
         )
 
@@ -129,7 +133,6 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
             pipeline_cls=pipeline.UsIdCaseNoteExtractedEntitiesPipeline,
             state_code="US_ID",
             project_id=project,
-            dataset_id=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             unifying_id_field_filter_set=unifying_id_field_filter_set,

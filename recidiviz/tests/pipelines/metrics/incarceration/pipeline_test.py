@@ -25,6 +25,7 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -102,6 +103,7 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
+    FAKE_PIPELINE_TESTS_INPUT_DATASET,
     default_data_dict_for_pipeline_class,
     run_test_pipeline,
 )
@@ -418,17 +420,17 @@ class TestIncarcerationPipeline(unittest.TestCase):
     ) -> None:
         """Runs a test version of the supervision pipeline."""
         project = "recidiviz-staging"
-        dataset = "dataset"
         normalized_dataset = f"{state_code.lower()}_normalized_state"
 
-        read_from_bq_constructor = (
-            self.fake_bq_source_factory.create_fake_bq_source_constructor(
-                dataset, data_dict, expected_normalized_dataset=normalized_dataset
-            )
+        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(
+            # TODO(#25244) Replace with actual input once supported.
+            FAKE_PIPELINE_TESTS_INPUT_DATASET,
+            data_dict,
+            expected_normalized_dataset=normalized_dataset,
         )
         write_to_bq_constructor = (
             self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
-                dataset,
+                DATAFLOW_METRICS_DATASET,
                 expected_output_tags=[
                     metric_type.value for metric_type in expected_metric_types
                 ],
@@ -439,7 +441,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             pipeline_cls=self.pipeline_class,
             state_code=state_code,
             project_id=project,
-            dataset_id=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
             unifying_id_field_filter_set=unifying_id_field_filter_set,
