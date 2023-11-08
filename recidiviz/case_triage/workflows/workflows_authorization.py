@@ -62,4 +62,4 @@ def get_workflows_external_request_enabled_states() -> List[str]:
     """
     List of states in which we will make external system requests for Workflows
     """
-    return [StateCode.US_TN.value, StateCode.US_CA.value]
+    return [StateCode.US_TN.value, StateCode.US_CA.value, StateCode.US_ND.value]

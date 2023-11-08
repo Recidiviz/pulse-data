@@ -22,12 +22,15 @@ from unittest import TestCase
 
 import freezegun
 import pytest
+import requests
 import responses
 from flask import Flask
 from mock import MagicMock, patch
+from responses import matchers
 
 from recidiviz.case_triage.workflows.constants import WorkflowsUsTnVotersRightsCode
 from recidiviz.case_triage.workflows.interface import (
+    WorkflowsUsNdExternalRequestInterface,
     WorkflowsUsTnExternalRequestInterface,
     WorkflowsUsTnWriteTEPENoteToTomisRequest,
 )
@@ -35,6 +38,14 @@ from recidiviz.case_triage.workflows.interface import (
 PERSON_EXTERNAL_ID = "123"
 STAFF_ID = "456"
 CONTACT_NOTE_DATE_TIME = datetime.datetime.now().isoformat()
+
+EARLY_TERMINATION_PEI = 123
+USER_EMAIL = "foo@nd.gov"
+EARLY_TERMINATION_DATE = "2024-10-10"
+JUSTIFICATION_REASONS = [
+    {"code": "FOO", "description": "Code FOO"},
+    {"code": "BAR", "description": "Code BAR"},
+]
 
 
 @pytest.fixture(autouse=True)
@@ -221,3 +232,118 @@ class TestWorkflowsInterface(TestCase):
         }
 
         self.assertEqual(actual, expected)
+
+    @patch("recidiviz.case_triage.workflows.interface.get_secret")
+    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
+    def test_update_early_termination_date_success(
+        self, mock_client: MagicMock, mock_get_secret: MagicMock
+    ) -> None:
+        response_json = {"status": "OK"}
+        mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(
+                responses.PUT,
+                self.fake_url,
+                json=response_json,
+                match=[
+                    matchers.json_params_matcher(
+                        {
+                            "sid": EARLY_TERMINATION_PEI,
+                            "userEmail": USER_EMAIL,
+                            "earlyTerminationDate": EARLY_TERMINATION_DATE,
+                            "justificationReasons": JUSTIFICATION_REASONS,
+                        }
+                    )
+                ],
+            )
+            WorkflowsUsNdExternalRequestInterface(
+                EARLY_TERMINATION_PEI
+            ).update_early_termination_date(
+                USER_EMAIL,
+                EARLY_TERMINATION_DATE,
+                JUSTIFICATION_REASONS,
+            )
+
+    @patch("requests.put")
+    @patch("recidiviz.case_triage.workflows.interface.get_secret")
+    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
+    def test_update_early_termination_date_no_secret(
+        self, mock_client: MagicMock, mock_get_secret: MagicMock, mock_put: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = None
+        mock_client = mock_client.return_value
+        with self.assertRaises(Exception):
+            WorkflowsUsNdExternalRequestInterface(
+                EARLY_TERMINATION_PEI
+            ).update_early_termination_date(
+                USER_EMAIL,
+                EARLY_TERMINATION_DATE,
+                JUSTIFICATION_REASONS,
+            )
+
+        mock_put.assert_not_called()
+
+    @patch("recidiviz.case_triage.workflows.interface.get_secret")
+    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
+    @patch("recidiviz.case_triage.workflows.interface.in_gcp_production")
+    def test_update_early_termination_date_prod_and_recidiviz(
+        self,
+        mock_in_prod: MagicMock,
+        mock_client: MagicMock,
+        mock_get_secret: MagicMock,
+    ) -> None:
+        response_json = {"status": "OK"}
+        mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
+        mock_in_prod.return_value = True
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.PUT, self.fake_url, json=response_json)
+            WorkflowsUsNdExternalRequestInterface(
+                EARLY_TERMINATION_PEI
+            ).update_early_termination_date(
+                "internal@recidiviz.org",
+                EARLY_TERMINATION_DATE,
+                JUSTIFICATION_REASONS,
+            )
+
+            # Check third call to get_secret gets test url
+            mock_get_secret.mock_calls[2].assert_called_with(
+                "workflows_us_nd_early_termination_test_url"
+            )
+
+    @patch("recidiviz.case_triage.workflows.interface.get_secret")
+    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
+    def test_update_early_termination_date_network_error(
+        self, mock_client: MagicMock, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.PUT, self.fake_url, body=ConnectionRefusedError())
+            with self.assertRaises(ConnectionRefusedError):
+                WorkflowsUsNdExternalRequestInterface(
+                    EARLY_TERMINATION_PEI
+                ).update_early_termination_date(
+                    "internal@recidiviz.org",
+                    EARLY_TERMINATION_DATE,
+                    JUSTIFICATION_REASONS,
+                )
+
+    @patch("recidiviz.case_triage.workflows.interface.get_secret")
+    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
+    def test_update_early_termination_date_http_error(
+        self, mock_client: MagicMock, mock_get_secret: MagicMock
+    ) -> None:
+        mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(responses.PUT, self.fake_url, status=500)
+            with self.assertRaises(requests.exceptions.HTTPError):
+                WorkflowsUsNdExternalRequestInterface(
+                    EARLY_TERMINATION_PEI
+                ).update_early_termination_date(
+                    "internal@recidiviz.org",
+                    EARLY_TERMINATION_DATE,
+                    JUSTIFICATION_REASONS,
+                )

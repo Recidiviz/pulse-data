@@ -18,6 +18,7 @@
 from recidiviz.case_triage.workflows.api_schemas import (
     WorkflowsEnqueueSmsRequestSchema,
     WorkflowsSendSmsRequestSchema,
+    WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.tests.case_triage.api_schemas_test_utils import (
@@ -329,5 +330,48 @@ class WorkflowsEnqueueSmsRequestSchemaTest(SchemaTestCase):
             "message": "Only I will remain",
             "sender_id": "rev.mum.mohiam",
             "recipient_external_id": "paul.atreides",
+        }
+    )
+
+
+class WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchemaTest(SchemaTestCase):
+    """Tests for WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema"""
+
+    camel_case = True
+    schema = WorkflowsUsNdUpdateDocstarsEarlyTerminationDateSchema
+
+    test_valid_data = valid_schema_test(
+        {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+    )
+
+    test_invalid_date = invalid_schema_test(
+        {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "1/1/2024",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+    )
+
+    test_string_pei = invalid_schema_test(
+        {
+            "person_external_id": "A1234",
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
+        }
+    )
+
+    test_malformed_justification = invalid_schema_test(
+        {
+            "person_external_id": 1234,
+            "user_email": "foo@nd.gov",
+            "early_termination_date": "2024-01-01",
+            "justification_reasons": [{"code": "FOO"}],
         }
     )
