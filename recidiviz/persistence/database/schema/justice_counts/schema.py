@@ -412,6 +412,7 @@ class Agency(Source):
             "is_superagency": self.is_superagency,
             "super_agency_id": self.super_agency_id,
             "is_dashboard_enabled": self.is_dashboard_enabled,
+            "created_at": self.created_at,
         }
 
     def to_public_json(self) -> Dict[str, Any]:

@@ -332,7 +332,7 @@ class ReportInterface:
         return schema.Report(
             source_id=agency_id,
             type=report_type,
-            instance=ReportInterface._get_report_instance(
+            instance=ReportInterface.get_report_instance(
                 report_type=report_type, date_range_start=date_range_start
             ),
             created_at=datetime.date.today(),
@@ -382,6 +382,7 @@ class ReportInterface:
             "editors": editor_json,
             "status": report.status.value,
             "is_recurring": report.is_recurring,
+            "publish_date": report.publish_date,
         }
 
     ### Get Path ###
@@ -649,7 +650,7 @@ class ReportInterface:
         return (date_range_start, date_range_end)
 
     @staticmethod
-    def _get_report_instance(
+    def get_report_instance(
         report_type: str,
         date_range_start: datetime.date,
     ) -> str:
