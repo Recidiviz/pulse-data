@@ -166,6 +166,8 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
     housing_unit AS (
       SELECT
         person_id,
+        -- TODO(#25107): Once source of facility ID in TN is reconciled, this can be removed
+        CAST(NULL AS STRING) AS facility_id,
         housing_unit AS unit_id
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
       WHERE
@@ -177,6 +179,8 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
 
       SELECT
         person_id,
+        -- TODO(#25107): Once source of facility ID in TN is reconciled, this can be removed
+        CAST(NULL AS STRING) AS facility_id,
         IF(complex_number=building_number, complex_number, complex_number || " " || building_number) AS unit_id
       FROM current_bed_stay
       
@@ -184,12 +188,18 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
       
       --TODO(#24959): Deprecate usage when re-run is over
       SELECT
-        person_id, 
+        person_id,
+        -- TODO(#25107): Once source of facility ID in TN is reconciled, this can be removed
+        COALESCE(RequestedSiteID, ActualSiteID, AssignedSiteID) AS facility_id,
         COALESCE(RequestedUnitID, ActualUnitID, AssignedUnitID) AS unit_id,
       FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CellBedAssignment_latest` c
       INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON c.OffenderID = pei.external_id
         AND pei.state_code = "US_TN"
+      -- The latest assignment is not always the one with an open assignment. This can occur when someone is assigned to a facility 
+      -- but temporarily sent to another facility (e.g. Special needs facility). Most people only have 1 open assignment, unless
+      -- they are currently temporarily sent elsewhere (~11 people out of 18k) so we further deduplicate by choosing the latest assignment
+      WHERE EndDate IS NULL
       QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY CAST(AssignmentDateTime AS DATETIME) DESC) = 1
     ),
 """
@@ -247,7 +257,8 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
             ic.person_id,
             ic.person_external_id,
             officer_id,
-            facility_id,
+            -- TODO(#25107): Once source of facility ID in TN is reconciled, this can be removed
+            CASE WHEN ic.state_code = 'US_TN' THEN hu.facility_id ELSE ic.facility_id END AS facility_id,
             unit_id,
             custody_level.custody_level,
             ic.admission_date,
@@ -256,7 +267,7 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
             incarceration_cases_wdates ic
         LEFT JOIN custody_level
             USING(person_id)
-        LEFT JOIN housing_unit
+        LEFT JOIN housing_unit hu
           USING(person_id)
         LEFT JOIN officer_assignments
           USING(state_code, person_external_id)
