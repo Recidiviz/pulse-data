@@ -23,9 +23,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 # The compute region (e.g. "us-east1") ingest pipelines for a given state should be
 #  run in.
 DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
-    StateCode.US_CA: "us-east1",
-    StateCode.US_NC: "us-east1",
-    StateCode.US_OR: "us-west3",
+    # Fill this out as we launch pipelines, e.g.:
+    # StateCode.US_AR: "us-west1"
 }
 
 
