@@ -93,18 +93,44 @@ def add_csg_users_to_agencies(
             logging.info("%s total CSG users", len(csg_users))
             for csg_user in csg_users:
                 if dry_run is False:
-                    role = (
-                        "AGENCY_ADMIN"
+                    agency_admin_agencies = (
+                        all_agencies
                         if project_id == GCP_PROJECT_JUSTICE_COUNTS_STAGING
-                        else "READ_ONLY"
+                        else [
+                            agency
+                            for agency in all_agencies
+                            if "DEMO" in agency.name
+                            or "TEST" in agency.name
+                            or agency.name == "Department of Corrections"
+                        ]
                     )
+
+                    read_only_agencies = (
+                        []
+                        if project_id == GCP_PROJECT_JUSTICE_COUNTS_STAGING
+                        else [
+                            agency
+                            for agency in all_agencies
+                            if agency not in set(agency_admin_agencies)
+                        ]
+                    )
+                    # Add users to agencies as Agency Admins
                     UserAccountInterface.add_or_update_user_agency_association(
                         session=session,
                         user=csg_user,
-                        agencies=all_agencies,
-                        role=UserAccountRole[role],
+                        agencies=agency_admin_agencies,
+                        role=UserAccountRole.AGENCY_ADMIN,
                         preserve_role=preserve_role,
                     )
+                    # Add users to agencies as Agency as READ_ONLY
+                    if len(read_only_agencies) > 0:
+                        UserAccountInterface.add_or_update_user_agency_association(
+                            session=session,
+                            user=csg_user,
+                            agencies=read_only_agencies,
+                            role=UserAccountRole.READ_ONLY,
+                            preserve_role=preserve_role,
+                        )
                     logging.info("Added %s to agencies", csg_user.name)
                 else:
                     associations_agency_ids_by_role = {

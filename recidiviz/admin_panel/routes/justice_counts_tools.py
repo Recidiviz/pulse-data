@@ -83,10 +83,15 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     fips_county_code=fips_county_code,
                 )
 
-                # Add all CSG accounts (READ_ONLY in production, AGENCY_ADMIN in staging)
+                # Add all CSG accounts (READ_ONLY in production for non-demo agencies,
+                # AGENCY_ADMIN for demo agencies and AGENCY_ADMIN in staging)
                 csg_users = UserAccountInterface.get_csg_users(session=session)
                 for csg_user in csg_users:
-                    role = "AGENCY_ADMIN" if in_gcp_staging() else "READ_ONLY"
+                    role = (
+                        "AGENCY_ADMIN"
+                        if in_gcp_staging() or "[DEMO]" in name
+                        else "READ_ONLY"
+                    )
                     AgencyUserAccountAssociationInterface.update_user_role(
                         role=role,
                         user=csg_user,
