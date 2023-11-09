@@ -308,5 +308,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     with local_project_id_override(GCP_PROJECT_STAGING):
         copy_source_files_to_experiment(
-            args.environment, args.dry_run, file_filter=args.files
+            args.gcs_uri, args.dry_run, file_filter=args.files
         )
