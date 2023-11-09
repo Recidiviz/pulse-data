@@ -159,11 +159,15 @@ def _convert_modules_to_paths(
 
 
 # TODO(#23809): Update function to be usable by `validate_source_visibility.py` to determine source visibility
-def get_file_module_dependencies(path: str, dependencies: Set[str]) -> Set[str]:
+def add_file_module_dependencies_to_set(path: str, dependencies: Set[str]) -> Set[str]:
     """
     Returns a set of all files that the given file depends on. It does this by
     parsing the file and looking for recidiviz package import statements. It then
-    repeats the process on each of the dependencies it finds.
+    repeats the process on each of the dependencies it finds. It modifies the given
+    dependencies set by adding all the dependencies it finds to it.
+
+    Dependencies passed in will be considered already visited and will not be
+    explored again.
     """
     dependencies_not_visited: Deque[str] = deque([path])
 
@@ -205,29 +209,39 @@ def upload_file(local_path: str, gcs_url: str, message: str) -> None:
 
 def _get_paths_list_from_file_pattern(file_pattern: Tuple[str, str]) -> List[str]:
     path, pattern = file_pattern
-    return glob(f"{path.replace('recidiviz', ROOT)}/{pattern}")
+    return glob(f"{path.replace('recidiviz', ROOT)}/{pattern}", recursive=True)
 
 
 def get_airflow_source_file_paths() -> List[str]:
     dag_files: List[str] = _get_paths_list_from_file_pattern(
         ("recidiviz/airflow/dags", "*dag*.py")
     )
-    non_python_source_files: List[str] = []
+    explicitly_listed_dependency_files: List[str] = []
 
     with open(SOURCE_FILE_YAML_PATH, encoding="utf-8") as f:
         file_patterns = yaml.safe_load(f)
         for file_pattern in file_patterns:
-            non_python_source_files.extend(
+            explicitly_listed_dependency_files.extend(
                 _get_paths_list_from_file_pattern(file_pattern)
             )
 
     explored_python_dependencies: Set[str] = set()
     for dag_file in dag_files:
-        explored_python_dependencies = get_file_module_dependencies(
+        explored_python_dependencies = add_file_module_dependencies_to_set(
             dag_file, explored_python_dependencies
         )
 
-    return dag_files + non_python_source_files + list(explored_python_dependencies)
+    for explicitly_listed_dependency_file in explicitly_listed_dependency_files:
+        if explicitly_listed_dependency_file.endswith(".py"):
+            explored_python_dependencies = add_file_module_dependencies_to_set(
+                explicitly_listed_dependency_file, explored_python_dependencies
+            )
+
+    return (
+        dag_files
+        + explicitly_listed_dependency_files
+        + list(explored_python_dependencies)
+    )
 
 
 def copy_source_files_to_experiment(

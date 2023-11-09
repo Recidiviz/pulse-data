@@ -20,7 +20,7 @@ import unittest
 from typing import Set
 
 from recidiviz.tools.airflow.copy_source_files_to_experiment_composer import (
-    get_file_module_dependencies,
+    add_file_module_dependencies_to_set,
 )
 
 TEST_IMPORTING_FILE_PATH = os.path.join(
@@ -31,7 +31,9 @@ TEST_IMPORTING_FILE_PATH = os.path.join(
 class DependencyPathsTest(unittest.TestCase):
     def test_get_correct_source_files(self) -> None:
         module_dependencies: Set[str] = set()
-        get_file_module_dependencies(TEST_IMPORTING_FILE_PATH, module_dependencies)
+        add_file_module_dependencies_to_set(
+            TEST_IMPORTING_FILE_PATH, module_dependencies
+        )
         source_files = [
             f"recidiviz/{file_split[1]}"
             for file_split in [file.split("recidiviz/") for file in module_dependencies]
