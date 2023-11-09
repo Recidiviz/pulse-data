@@ -15,6 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+resource "google_pubsub_topic" "airflow_monitoring_topic" {
+  name = "v1.airflow_monitoring.trigger_hourly_monitoring_dag"
+}
+
 resource "google_pubsub_topic" "sftp_pubsub_topic" {
   name = "v1.sftp.trigger_sftp_dag"
 }

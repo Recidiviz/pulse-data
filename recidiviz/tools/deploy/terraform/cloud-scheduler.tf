@@ -28,6 +28,17 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
     data = base64encode("{\"ingest_instance\": \"PRIMARY\"}")
   }
 }
+resource "google_cloud_scheduler_job" "schedule_airflow_hourly_monitoring_dag_run_topic" {
+  name        = "schedule_airflow_hourly_monitoring_dag_run_cloud_function"
+  schedule    = "0 * * * *" # Every hour at the 0 minute
+  description = "Schedules the running of the hourly monitoring DAG pipeline topic"
+  time_zone   = "America/Los_Angeles"
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.airflow_monitoring_topic.id
+    data       = base64encode("DATA") # Added to fulfill requirements that data has to be passed
+  }
+}
 
 resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
   name        = "schedule_sftp_dag_run_cloud_function"
@@ -40,6 +51,7 @@ resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
     data       = base64encode("DATA") # Added to fulfill requirements that data has to be passed
   }
 }
+
 
 resource "google_cloud_scheduler_job" "schedule_ingest_dag_run_topic" {
   name        = "schedule_ingest_dag_run_cloud_function"

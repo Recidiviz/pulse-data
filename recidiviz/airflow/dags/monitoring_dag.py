@@ -62,7 +62,7 @@ except (AirflowNotFoundException, KeyError) as e:
         "email": email,
         "email_on_failure": can_send_mail(),
     },  # type: ignore
-    schedule="@hourly",
+    schedule=None,
     catchup=False,
     max_active_runs=1,
     render_template_as_native_obj=True,
