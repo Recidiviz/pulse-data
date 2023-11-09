@@ -19,7 +19,6 @@ from recidiviz.outliers.outliers_configs import OUTLIERS_CONFIGS_BY_STATE
 
 
 def format_state_specific_officer_aggregated_metric_filters() -> str:
-
     state_specific_ctes = []
 
     for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
@@ -42,7 +41,6 @@ def format_state_specific_officer_aggregated_metric_filters() -> str:
 
 
 def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
-
     state_specific_ctes = []
 
     for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
@@ -50,13 +48,16 @@ def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
             state_specific_ctes.append(
                 f"""
     SELECT 
-        e.*,
-        "{metric.name}" AS metric_id
-    FROM `{{project_id}}.analyst_data.person_events_materialized` e
+        state_code,
+        "{metric.name}" AS metric_id,
+        event_date,
+        person_id,
+        CAST(NULL AS STRING) AS attributes
+    FROM `{{project_id}}.analyst_data.person_events_materialized`
     WHERE 
-        e.state_code = '{state_code.value}' 
+        state_code = '{state_code.value}' 
         -- Limit the events lookback to minimize the size of the subqueries
-        AND e.event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {str(years_lookback)} YEAR)
+        AND event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {str(years_lookback)} YEAR)
         {f"AND {metric.metric_event_conditions_string}" if metric.metric_event_conditions_string else ""}
 """
             )

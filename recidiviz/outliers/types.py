@@ -98,6 +98,20 @@ class OutliersMetric:
         return self.aggregated_metric.get_metric_conditions_string_no_newline()
 
 
+@attr.s
+class OutliersClientEvent:
+    # The aggregated metric, which is an object from aggregated_metric_configurations.py
+    aggregated_metric: EventCountMetric = attr.ib()
+
+    @property
+    def name(self) -> str:
+        """
+        The metric name/id, which should reference the name from an object in aggregated_metric_configurations.py
+        This also corresponds to a column name in an aggregated_metric view
+        """
+        return self.aggregated_metric.name
+
+
 @attr.s(eq=False)
 class OutliersMetricConfig:
     name: str = attr.ib()
@@ -135,6 +149,19 @@ class OutliersMetricConfig:
 
 
 @attr.s
+class OutliersClientEventConfig:
+    name: str = attr.ib()
+
+    display_name: str = attr.ib()
+
+    @classmethod
+    def build(
+        cls, event: OutliersClientEvent, display_name: str
+    ) -> "OutliersClientEventConfig":
+        return cls(event.name, display_name)
+
+
+@attr.s
 class OutliersConfig:
     """Information for a state's Outliers configuration represented as structured data."""
 
@@ -147,6 +174,9 @@ class OutliersConfig:
 
     # URL that methodology/FAQ links can be pointed to
     learn_more_url: str = attr.ib()
+
+    # Mapping of client event types that are relevant for this state to a config with relevant info
+    client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
 
     # String containing exclusions that should be applied to the supervision staff product views.
     supervision_staff_exclusions: str = attr.ib(default=None)

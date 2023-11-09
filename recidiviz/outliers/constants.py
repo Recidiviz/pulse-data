@@ -17,7 +17,7 @@
 """Outliers-related constants"""
 
 import recidiviz.aggregated_metrics.models.aggregated_metric_configurations as metric_config
-from recidiviz.outliers.types import MetricOutcome, OutliersMetric
+from recidiviz.outliers.types import MetricOutcome, OutliersClientEvent, OutliersMetric
 
 DEFAULT_NUM_LOOKBACK_PERIODS = 5
 
@@ -83,3 +83,7 @@ TASK_COMPLETIONS_FULL_TERM_DISCHARGE = OutliersMetric(
     ),
     outcome_type=MetricOutcome.FAVORABLE,
 )
+
+# Lantern Events
+VIOLATIONS = OutliersClientEvent(aggregated_metric=metric_config.VIOLATIONS)
+VIOLATION_RESPONSES = OutliersClientEvent(metric_config.VIOLATION_RESPONSES)

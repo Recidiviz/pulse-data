@@ -31,8 +31,12 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
 )
 from recidiviz.case_triage.outliers.outliers_routes import create_outliers_api_blueprint
-from recidiviz.outliers.constants import INCARCERATION_STARTS_AND_INFERRED
+from recidiviz.outliers.constants import (
+    INCARCERATION_STARTS_AND_INFERRED,
+    VIOLATION_RESPONSES,
+)
 from recidiviz.outliers.types import (
+    OutliersClientEventConfig,
     OutliersConfig,
     OutliersMetricConfig,
     PersonName,
@@ -54,6 +58,10 @@ TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
     title_display_name="Incarceration Rate (CPVs & TPVs)",
     body_display_name="incarceration rate",
     event_name="incarcerations",
+)
+
+TEST_CLIENT_EVENT = OutliersClientEventConfig.build(
+    event=VIOLATION_RESPONSES, display_name="Sanctions"
 )
 
 
@@ -173,6 +181,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
     def test_get_state_configuration_success(self, mock_config: MagicMock) -> None:
         mock_config.return_value = OutliersConfig(
             metrics=[TEST_METRIC_1],
+            client_events=[TEST_CLIENT_EVENT],
             supervision_officer_label="officer",
             learn_more_url="https://recidiviz.org",
         )
@@ -193,6 +202,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         "outcomeType": "ADVERSE",
                         "titleDisplayName": "Incarceration Rate (CPVs & TPVs)",
                     }
+                ],
+                "clientEvents": [
+                    {"name": "violation_responses", "displayName": "Sanctions"}
                 ],
                 "supervisionOfficerLabel": "officer",
             }

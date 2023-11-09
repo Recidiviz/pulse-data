@@ -26,6 +26,7 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.calculator.query.state.views.outliers.utils import (
     format_state_specific_person_events_filters,
 )
+from recidiviz.outliers.constants import VIOLATION_RESPONSES, VIOLATIONS
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -33,6 +34,12 @@ _VIEW_NAME = "supervision_client_events"
 
 _DESCRIPTION = """Information about individual-level events for supervision clients."""
 
+# NOTE: When adding new queries to this, if the event can be queried from person_events or similar,
+# the list of event types corresponding to the event in question can be found in
+# event.aggregated_metric.event_types where event is an OutliersClientEvent
+#
+# In order to be queried from the frontend, the relevant OutliersClientEvent must also be listed
+# in the OutliersConfig for the given state.
 
 _QUERY_TEMPLATE = f"""
 WITH
@@ -49,6 +56,73 @@ latest_year_time_period AS (
 events_with_metric_id AS (
   {format_state_specific_person_events_filters()}
 ),
+violations AS (
+    -- TODO(#24491): Add real query
+    SELECT
+        "US_MI" AS state_code,
+        "{VIOLATIONS.name}" AS metric_id,
+        DATE(9999, 12, 31) AS event_date,
+        0 AS person_id,
+        TO_JSON_STRING(
+            STRUCT(
+                "TEST" AS code,
+                "TEST" AS description
+            )
+        ) AS attributes
+    
+    UNION ALL
+
+    -- TODO(#24489): Add real query
+    SELECT
+        "US_TN" AS state_code,
+        "{VIOLATIONS.name}" AS metric_id,
+        DATE(9999, 12, 31) AS event_date,
+        0 AS person_id,
+        TO_JSON_STRING(
+            STRUCT(
+                "TEST" AS code,
+                "TEST" AS description
+            )
+        ) AS attributes
+    
+),
+sanctions AS (
+    -- TODO(#24492): Add real query
+    SELECT
+        "US_MI" AS state_code,
+        "{VIOLATION_RESPONSES.name}" AS metric_id,
+        DATE(9999, 12, 31) AS event_date,
+        0 AS person_id,
+        TO_JSON_STRING(
+            STRUCT(
+                "TEST" AS code,
+                "TEST" AS description
+            )
+        ) AS attributes
+    
+    UNION ALL
+
+    -- TODO(#24490): Add real query
+    SELECT
+        "US_TN" AS state_code,
+        "{VIOLATION_RESPONSES.name}" AS metric_id,
+        DATE(9999, 12, 31) AS event_date,
+        0 AS person_id,
+        TO_JSON_STRING(
+            STRUCT(
+                "TEST" AS code,
+                "TEST" AS description
+            )
+        ) AS attributes
+    
+),
+all_events AS (
+    SELECT * FROM events_with_metric_id
+        UNION ALL
+    SELECT * FROM violations
+        UNION ALL
+    SELECT * FROM sanctions
+),
 supervision_client_events AS (
     SELECT 
         e.state_code, 
@@ -57,7 +131,7 @@ supervision_client_events AS (
         pid.external_id AS client_id,
         p.full_name AS client_name,
         a.officer_id,
-        NULL AS attributes,
+        e.attributes,
         {get_pseudonymized_id_query_str("e.state_code || pid.external_id")} AS pseudonymized_client_id,
         {get_pseudonymized_id_query_str("e.state_code || a.officer_id")} AS pseudonymized_officer_id,
     FROM 
@@ -66,7 +140,7 @@ supervision_client_events AS (
         latest_year_time_period period
     INNER JOIN `{{project_id}}.normalized_state.state_person` p 
         USING (state_code, person_id)
-    INNER JOIN events_with_metric_id e
+    INNER JOIN all_events e
         USING (state_code, person_id)
     INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pid
         USING (state_code, person_id)

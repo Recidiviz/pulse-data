@@ -28,8 +28,15 @@ from recidiviz.outliers.constants import (
     INCARCERATION_STARTS_TECHNICAL_VIOLATION,
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+    VIOLATION_RESPONSES,
+    VIOLATIONS,
 )
-from recidiviz.outliers.types import MetricOutcome, OutliersConfig, OutliersMetricConfig
+from recidiviz.outliers.types import (
+    MetricOutcome,
+    OutliersClientEventConfig,
+    OutliersConfig,
+    OutliersMetricConfig,
+)
 
 OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
     StateCode.US_IX: OutliersConfig(
@@ -122,6 +129,14 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 event_name="technical incarcerations",
             ),
         ],
+        client_events=[
+            OutliersClientEventConfig.build(
+                event=VIOLATIONS, display_name="Violations"
+            ),
+            OutliersClientEventConfig.build(
+                event=VIOLATION_RESPONSES, display_name="Sanctions"
+            ),
+        ],
         supervision_officer_label="agent",
         supervision_officer_metric_exclusions="""
         AND avg_daily_population BETWEEN 10 AND 150
@@ -147,6 +162,14 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 title_display_name="Technical Incarceration Rate (TPVs)",
                 body_display_name="technical incarceration rate",
                 event_name="technical incarcerations",
+            ),
+        ],
+        client_events=[
+            OutliersClientEventConfig.build(
+                event=VIOLATIONS, display_name="Violations"
+            ),
+            OutliersClientEventConfig.build(
+                event=VIOLATION_RESPONSES, display_name="Sanctions"
             ),
         ],
         supervision_officer_label="officer",
