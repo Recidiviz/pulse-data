@@ -181,3 +181,6 @@ columns:
   - name: RestitutionGeneralLedgerGroupId
     description: |-
       TODO(#15329): Fill in column description
+  - name: TimeZoneIANAId
+    description: |-
+      TODO(#15329): Fill in column description
