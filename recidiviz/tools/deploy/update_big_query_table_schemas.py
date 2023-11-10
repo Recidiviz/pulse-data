@@ -25,6 +25,7 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
@@ -53,7 +54,6 @@ def _update_cloud_sql_bq_refresh_output_schema(
     export_config: CloudSqlToBQConfig,
     dataset_override_prefix: Optional[str],
 ) -> None:
-
     interactive_prompt_retry_on_exception(
         fn=lambda: update_bq_dataset_to_match_sqlalchemy_schema(
             schema_type=export_config.schema_type,
@@ -146,6 +146,19 @@ def update_cloud_sql_bq_refresh_output_schemas(
             export_config=config,
             dataset_override_prefix=dataset_override_prefix,
         )
+
+    interactive_prompt_retry_on_exception(
+        fn=lambda: update_bq_dataset_to_match_sqlalchemy_schema(
+            schema_type=SchemaType.STATE,
+            dataset_id=STATE_BASE_DATASET,
+            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+            if dataset_override_prefix
+            else None,
+        ),
+        input_text="failed while updating big query table schemas - retry?",
+        accepted_response_override="yes",
+        exit_on_cancel=False,
+    )
 
 
 if __name__ == "__main__":

@@ -33,6 +33,7 @@ _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
 BQ_TABLE_DESCRIPTION_MAX_LENGTH = 2**14
 
 
+# TODO(#25330): Remove this inheritance.
 class BigQueryView(bigquery.TableReference):
     """An implementation of bigquery.TableReference with extra functionality related to views."""
 
@@ -238,6 +239,11 @@ class BigQueryView(bigquery.TableReference):
             f"view={self.project}.{self.dataset_id}.{self.view_id}, "
             f"view_query='{self.view_query}')"
         )
+
+    def __lt__(self, other: Any) -> bool:
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        return self.address < other.address
 
     @property
     def clustering_fields(self) -> Optional[List[str]]:

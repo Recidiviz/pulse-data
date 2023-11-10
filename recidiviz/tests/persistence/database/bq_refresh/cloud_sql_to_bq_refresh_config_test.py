@@ -115,7 +115,11 @@ region_codes_to_exclude:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             dataset = config.unioned_multi_region_dataset(dataset_override_prefix=None)
             self.assertFalse(dataset.endswith("regional"))
-            self.assertTrue(dataset in VIEW_SOURCE_TABLE_DATASETS)
+            # The state_legacy dataset needs to first be unioned with dataflow output
+            # before it can be relied on by views, so it does not exist in the source
+            # table datasets.
+            if schema_type != SchemaType.STATE:
+                self.assertTrue(dataset in VIEW_SOURCE_TABLE_DATASETS)
 
             dataset_with_prefix = config.unioned_multi_region_dataset(
                 dataset_override_prefix="prefix"

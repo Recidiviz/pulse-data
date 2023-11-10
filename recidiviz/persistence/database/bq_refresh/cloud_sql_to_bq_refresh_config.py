@@ -42,7 +42,7 @@ from recidiviz.calculator.query.operations.dataset_config import (
     OPERATIONS_BASE_REGIONAL_DATASET,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
+    STATE_BASE_LEGACY_DATASET,
     STATE_BASE_REGIONAL_DATASET,
 )
 from recidiviz.case_triage.views.dataset_config import (
@@ -147,8 +147,9 @@ class CloudSqlToBQConfig:
         Note: By "unioned", we mean a union of all state segments for the given dataset,
         if relevant.
         """
+        # TODO(#20930): Remove this branch so it will error for `STATE`.
         if self.schema_type == SchemaType.STATE:
-            dest_dataset = STATE_BASE_DATASET
+            dest_dataset = STATE_BASE_LEGACY_DATASET
         elif self.schema_type == SchemaType.OPERATIONS:
             dest_dataset = OPERATIONS_BASE_DATASET
         elif self.schema_type == SchemaType.JUSTICE_COUNTS:
