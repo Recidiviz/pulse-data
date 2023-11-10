@@ -104,20 +104,29 @@ def create_outliers_api_blueprint() -> Blueprint:
     @api.get("/<state>/supervisors")
     def supervisors(state: str) -> Response:
         state_code = StateCode(state.upper())
-        supervisor_entities = OutliersQuerier(
-            state_code
-        ).get_supervision_officer_supervisor_entities()
+        user_context: UserContext = g.user_context
+        user_role = user_context.role
 
-        return jsonify(
-            {
-                "supervisors": [
-                    convert_nested_dictionary_keys(
-                        entity.to_json(),
-                        snake_to_camel,
-                    )
-                    for entity in supervisor_entities
-                ]
-            }
+        if user_role in ["leadership_role", "supervision_leadership"]:
+            supervisor_entities = OutliersQuerier(
+                state_code
+            ).get_supervision_officer_supervisor_entities()
+
+            return jsonify(
+                {
+                    "supervisors": [
+                        convert_nested_dictionary_keys(
+                            entity.to_json(),
+                            snake_to_camel,
+                        )
+                        for entity in supervisor_entities
+                    ]
+                }
+            )
+
+        return jsonify_response(
+            f"Non-leadership user {user_context.user_external_id} is not authorized to access the /supervisors endpoint",
+            HTTPStatus.UNAUTHORIZED,
         )
 
     @api.get("/<state>/supervisor/<supervisor_pseudonymized_id>/officers")

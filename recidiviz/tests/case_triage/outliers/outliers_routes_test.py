@@ -233,6 +233,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         mock_enabled_states: MagicMock,
         mock_get_supervision_officer_entities: MagicMock,
     ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="1", role="leadership_role"
+        )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
         mock_get_supervision_officer_entities.return_value = [
@@ -275,6 +278,32 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         }
 
         self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_get_supervisors_unauthorized(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="1", role="supervision_staff"
+        )
+
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        response = self.test_client.get(
+            "/outliers/US_PA/supervisors",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Non-leadership user 1 is not authorized to access the /supervisors endpoint"
+            },
+        )
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
