@@ -62,6 +62,14 @@ normalization_pipelines:
     region: us-central1
 
 metric_pipelines:
+  # Full US_AR calculations with no time limit
+  - pipeline: supervision_metrics
+    job_name: full-us-ar-supervision-metrics
+    state_code: US_AR
+    metric_types: SUPERVISION_START SUPERVISION_TERMINATION
+    region: us-east1
+    staging_only: True
+
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
     job_name: full-us-nd-recidivism-metrics
@@ -255,6 +263,15 @@ metric_pipelines:
     state_code: US_CA
     metric_types: SUPERVISION_START
     region: us-east1
+
+  # Daily US_AR calculations
+  - pipeline: supervision_metrics
+    job_name: us-ar-supervision-metrics-36
+    state_code: US_AR
+    calculation_month_count: 36
+    metric_types: SUPERVISION_POPULATION
+    region: us-east1
+    staging_only: True
 
   # Daily US_MO calculations
   - pipeline: supervision_metrics
