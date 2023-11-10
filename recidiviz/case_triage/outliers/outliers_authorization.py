@@ -56,8 +56,16 @@ def on_successful_authorization(
         if user_state_code == "RECIDIVIZ"
         else app_metadata["externalId"]
     )
+    user_role = (
+        "leadership_role" if user_state_code == "RECIDIVIZ" else app_metadata["role"]
+    )
+    user_pseudonymized_id = app_metadata.get("pseudonymizedId", None)
+
     g.user_context = UserContext(
-        state_code_str=user_state_code, user_external_id=user_external_id
+        state_code_str=user_state_code,
+        user_external_id=user_external_id,
+        role=user_role,
+        pseudonymized_id=user_pseudonymized_id,
     )
 
     # If the user is a recidiviz user, skip endpoint checks

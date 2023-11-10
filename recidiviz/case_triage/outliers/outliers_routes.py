@@ -30,6 +30,7 @@ from recidiviz.case_triage.outliers.outliers_authorization import (
     on_successful_authorization,
 )
 from recidiviz.case_triage.outliers.user_context import UserContext
+from recidiviz.case_triage.workflows.utils import jsonify_response
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
@@ -103,7 +104,9 @@ def create_outliers_api_blueprint() -> Blueprint:
     @api.get("/<state>/supervisors")
     def supervisors(state: str) -> Response:
         state_code = StateCode(state.upper())
-        supervisor_entities = OutliersQuerier(state_code).get_supervisors()
+        supervisor_entities = OutliersQuerier(
+            state_code
+        ).get_supervision_officer_supervisor_entities()
 
         return jsonify(
             {
@@ -136,21 +139,18 @@ def create_outliers_api_blueprint() -> Blueprint:
                 else None
             )
         except ValueError as e:
-            return make_response(
-                jsonify(f"Invalid parameters provided. Error: {str(e)}"),
-                HTTPStatus.BAD_REQUEST,
+            return jsonify_response(
+                f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
         querier = OutliersQuerier(state_code)
-        supervisor = querier.get_supervisor_from_pseudonymized_id(
+        supervisor = querier.get_supervisor_entity_from_pseudonymized_id(
             supervisor_pseudonymized_id
         )
 
         if supervisor is None:
-            return make_response(
-                jsonify(
-                    f"Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: {supervisor_pseudonymized_id}"
-                ),
+            return jsonify_response(
+                f"Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: {supervisor_pseudonymized_id}",
                 HTTPStatus.NOT_FOUND,
             )
 
@@ -186,9 +186,8 @@ def create_outliers_api_blueprint() -> Blueprint:
                 else None
             )
         except ValueError as e:
-            return make_response(
-                jsonify(f"Invalid parameters provided. Error: {str(e)}"),
-                HTTPStatus.BAD_REQUEST,
+            return jsonify_response(
+                f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
         benchmarks = OutliersQuerier(state_code).get_benchmarks(
@@ -218,9 +217,8 @@ def create_outliers_api_blueprint() -> Blueprint:
                 else None
             )
         except ValueError as e:
-            return make_response(
-                jsonify(f"Invalid parameters provided. Error: {str(e)}"),
-                HTTPStatus.BAD_REQUEST,
+            return jsonify_response(
+                f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
         querier = OutliersQuerier(state_code)
@@ -242,12 +240,11 @@ def create_outliers_api_blueprint() -> Blueprint:
 
             # Return an error if there are invalid requested metrics
             if len(disallowed_metric_ids) > 0:
-                return make_response(
-                    jsonify(
-                        f"Must provide valid metric_ids for {state_code.value} in the request"
-                    ),
+                return jsonify_response(
+                    f"Must provide valid metric_ids for {state_code.value} in the request",
                     HTTPStatus.BAD_REQUEST,
                 )
+
         # If no metric ids are provided, use the configured metrics for the state.
         else:
             allowed_metric_ids = state_metrics
@@ -259,10 +256,8 @@ def create_outliers_api_blueprint() -> Blueprint:
             period_end_date=period_end_date,
         )
         if officer_entity is None:
-            return make_response(
-                jsonify(
-                    f"Officer with psuedonymized id not found: {pseudonymized_officer_id}"
-                ),
+            return jsonify_response(
+                f"Officer with psuedonymized id not found: {pseudonymized_officer_id}",
                 HTTPStatus.NOT_FOUND,
             )
 
@@ -277,10 +272,8 @@ def create_outliers_api_blueprint() -> Blueprint:
             supervisor
             and officer_entity.supervisor_external_id != supervisor.external_id
         ):
-            return make_response(
-                jsonify(
-                    "User is a supervisor, but does not supervise the requested officer."
-                ),
+            return jsonify_response(
+                "User is a supervisor, but does not supervise the requested officer.",
                 HTTPStatus.UNAUTHORIZED,
             )
 
@@ -296,8 +289,8 @@ def create_outliers_api_blueprint() -> Blueprint:
 
         # If the officer is not an Outlier on any of the requested metrics, do not return the events.
         if len(outlier_metric_ids) == 0:
-            return make_response(
-                jsonify("Officer is not an outlier on any of the requested metrics."),
+            return jsonify_response(
+                "Officer is not an outlier on any of the requested metrics.",
                 HTTPStatus.UNAUTHORIZED,
             )
 
@@ -355,9 +348,8 @@ def create_outliers_api_blueprint() -> Blueprint:
                 else None
             )
         except ValueError as e:
-            return make_response(
-                jsonify(f"Invalid parameters provided. Error: {str(e)}"),
-                HTTPStatus.BAD_REQUEST,
+            return jsonify_response(
+                f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
             )
 
         querier = OutliersQuerier(state_code)
@@ -367,10 +359,8 @@ def create_outliers_api_blueprint() -> Blueprint:
             pseudonymized_officer_id, num_lookback_periods, period_end_date
         )
         if officer_entity is None:
-            return make_response(
-                jsonify(
-                    f"Officer with psuedonymized id not found: {pseudonymized_officer_id}"
-                ),
+            return jsonify_response(
+                f"Officer with psuedonymized id not found: {pseudonymized_officer_id}",
                 HTTPStatus.NOT_FOUND,
             )
 
@@ -385,10 +375,8 @@ def create_outliers_api_blueprint() -> Blueprint:
             supervisor
             and officer_entity.supervisor_external_id != supervisor.external_id
         ):
-            return make_response(
-                jsonify(
-                    "User is supervisor, but does not supervise the requested officer."
-                ),
+            return jsonify_response(
+                "User is supervisor, but does not supervise the requested officer.",
                 HTTPStatus.UNAUTHORIZED,
             )
 
@@ -398,6 +386,49 @@ def create_outliers_api_blueprint() -> Blueprint:
                     officer_entity.to_json(),
                     snake_to_camel,
                 )
+            }
+        )
+
+    @api.get("/<state>/user-info/<pseudonymized_id>")
+    def user_info(state: str, pseudonymized_id: str) -> Response:
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        user_external_id = user_context.user_external_id
+        user_pseudonymized_id = user_context.pseudonymized_id
+
+        entity_json, role = None, None
+
+        if (
+            pseudonymized_id != user_pseudonymized_id
+            and user_external_id != "RECIDIVIZ"
+        ):
+            # Return an unauthorized error if the requesting user is requesting information about someone else
+            # and the requesting user is not a Recidiviz user
+            return jsonify_response(
+                f"Non-recidiviz user {user_external_id} with pseudonymized_id {user_pseudonymized_id} is requesting user-info about a user that isn't themselves: {pseudonymized_id}",
+                HTTPStatus.UNAUTHORIZED,
+            )
+
+        supervisor_entity = querier.get_supervisor_entity_from_pseudonymized_id(
+            pseudonymized_id
+        )
+        if supervisor_entity:
+            # If the requested pseudonymized id is a supervisor that exists and the requesting user is that supervisor,
+            # or the requesting user is a recidiviz user, return the entity
+            entity_json = supervisor_entity.to_json()
+            role = "supervision_officer_supervisor"
+
+        return jsonify(
+            {
+                "entity": convert_nested_dictionary_keys(
+                    entity_json,
+                    snake_to_camel,
+                )
+                if entity_json
+                else None,
+                "role": role,
             }
         )
 

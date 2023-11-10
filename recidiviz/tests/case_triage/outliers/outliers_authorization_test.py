@@ -61,6 +61,7 @@ class OutliersAuthorizationClaimsTestCase(TestCase):
         user_state_code: str,
         allowed_states: Optional[list[str]] = None,
         outliers_route_enabled: Optional[bool] = True,
+        role: Optional[str] = "leadership_role",
     ) -> None:
         if allowed_states is None:
             allowed_states = []
@@ -74,6 +75,7 @@ class OutliersAuthorizationClaimsTestCase(TestCase):
                     "routes": {
                         "outliers": outliers_route_enabled,
                     },
+                    "role": role,
                 }
             },
             offline_mode=False,
