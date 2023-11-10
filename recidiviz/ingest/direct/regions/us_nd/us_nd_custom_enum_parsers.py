@@ -171,7 +171,7 @@ def _datetime_str_is_before_2017_custodial_authority_cutoff(
 def custodial_authority_from_facility_and_dates(
     raw_text: str,
 ) -> StateCustodialAuthority:
-    facility, datetime_str_for_comparison = raw_text.split("-")
+    facility, datetime_str_for_comparison = raw_text.split("-", maxsplit=1)
 
     if facility == OTHER_STATE_FACILITY:
         return StateCustodialAuthority.OTHER_STATE
@@ -195,7 +195,7 @@ def custodial_authority_from_facility_and_dates(
 def pfi_from_facility_and_dates(
     raw_text: str,
 ) -> StateSpecializedPurposeForIncarceration:
-    facility, datetime_str_for_comparison = raw_text.split("-")
+    facility, datetime_str_for_comparison = raw_text.split("-", maxsplit=1)
 
     if facility == OTHER_STATE_FACILITY:
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
