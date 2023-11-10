@@ -31,6 +31,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     not_on_lifetime_electronic_monitoring,
     six_months_past_last_classification_review_date,
     supervision_level_is_not_minimum_low,
+    supervision_level_is_not_modified,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -54,6 +55,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_on_electronic_monitoring.VIEW_BUILDER,
         supervision_level_is_not_limited.VIEW_BUILDER,
         supervision_level_is_not_minimum_low.VIEW_BUILDER,
+        supervision_level_is_not_modified.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_classification_review.VIEW_BUILDER,
 )
