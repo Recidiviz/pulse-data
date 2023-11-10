@@ -55,6 +55,7 @@ class UsTnController(BaseDirectIngestController):
             "SentencesChargesAndCourtCases_v3",
             "ViolationsAndSanctions",
             "InferredViolations",
+            "OffenderMovementIncarcerationPeriod_v3",
         ]
 
         # TODO(#11679): Remove gating once we are READY to ingest ContactNote file sizes
@@ -62,9 +63,4 @@ class UsTnController(BaseDirectIngestController):
         if not environment.in_gcp():
             tags.extend(["SupervisionContacts"])
 
-        return tags + (  # TODO(#24852): Ungate after rerun and validations
-            ["OffenderMovementIncarcerationPeriod_v3"]
-            if not environment.in_gcp_production()
-            or ingest_instance == DirectIngestInstance.SECONDARY
-            else ["OffenderMovementIncarcerationPeriod_v2"]
-        )
+        return tags
