@@ -142,6 +142,8 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         AND avg_daily_population BETWEEN 10 AND 150
         AND prop_period_with_critical_caseload >= 0.75""",
         learn_more_url="https://drive.google.com/file/d/1bbjsV6jBr4bkOwTJa8LIfK7oYYxAqa2t/view",
+        supervision_district_manager_label="region manager",
+        supervision_district_label="region",
     ),
     StateCode.US_TN: OutliersConfig(
         metrics=[

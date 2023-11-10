@@ -169,11 +169,26 @@ class OutliersConfig:
     # where each element corresponds to a column name in an aggregated_metrics views
     metrics: List[OutliersMetricConfig] = attr.ib()
 
-    # The string that represents what a state calls its supervision staff member, e.g. "officer" or "agent"
-    supervision_officer_label: str = attr.ib()
-
     # URL that methodology/FAQ links can be pointed to
     learn_more_url: str = attr.ib()
+
+    # The string that represents what a state calls its supervision staff member, e.g. "officer" or "agent"
+    supervision_officer_label: str = attr.ib(default="officer")
+
+    # The string that represents what a state calls a location-based group of offices, e.g. "district" or "region"
+    supervision_district_label: str = attr.ib(default="district")
+
+    # The string that represents what a state calls a group of supervision officers, e.g. "unit"
+    supervision_unit_label: str = attr.ib(default="unit")
+
+    # The string that represents what a state calls a supervisor, e.g. "supervisor"
+    supervision_supervisor_label: str = attr.ib(default="supervisor")
+
+    # The string that represents what a state calls someone who manages supervision supervisors, e.g. "district director"
+    supervision_district_manager_label: str = attr.ib(default="district director")
+
+    # The string that represents what a state calls a justice-impacted individual on supervision, e.g. "client"
+    supervision_jii_label: str = attr.ib(default="client")
 
     # Mapping of client event types that are relevant for this state to a config with relevant info
     client_events: List[OutliersClientEventConfig] = attr.ib(default=[])
