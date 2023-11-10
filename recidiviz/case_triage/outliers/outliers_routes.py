@@ -330,6 +330,7 @@ def create_outliers_api_blueprint() -> Blueprint:
                     "surname": PersonName(**event.client_name).surname,
                 },
                 "officerId": event.officer_id,
+                "pseudonymizedClientId": event.pseudonymized_client_id,
                 "attributes": event.attributes,
             }
             for event in events

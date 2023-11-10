@@ -953,6 +953,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         "metricId": "absconsions_bench_warrants",
                         "officerId": "03",
                         "stateCode": "US_PA",
+                        "pseudonymizedClientId": "clienthash2",
                     }
                 ]
             }
