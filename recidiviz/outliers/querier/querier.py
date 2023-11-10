@@ -366,15 +366,20 @@ class OutliersQuerier:
     def get_outliers_config(self) -> OutliersConfig:
         return OUTLIERS_CONFIGS_BY_STATE[self.state_code]
 
-    def get_supervisors(self) -> List[SupervisionOfficerSupervisorEntity]:
+    def get_supervision_officer_supervisor_entities(
+        self, pseudonymized_id: Optional[str] = None
+    ) -> List[SupervisionOfficerSupervisorEntity]:
         """
-        Return a list of SupervisionOfficerSupervisorEntity objects that indicate whether supervisors are supervising
+        Returns a list of SupervisionOfficerSupervisorEntity objects that indicate whether supervisors are supervising
         officers that are outliers compared to statewide benchmarks in the latest period.
+
+        :param pseudonymized_id: The pseudonymized id to filter supervisors by. If not provided, get all supervisor entities.
+        :rtype: List of SupervisionOfficerSupervisorEntity
         """
         with self.database_session() as session:
             end_date = self._get_latest_period_end_date(session)
 
-            records = (
+            supervisors_query = (
                 session.query(SupervisionOfficerSupervisor)
                 .join(
                     SupervisionOfficer,
@@ -422,8 +427,14 @@ class OutliersQuerier:
                         > 0
                     ).label("has_outliers"),
                 )
-                .all()
             )
+
+            if pseudonymized_id:
+                supervisors_query = supervisors_query.filter(
+                    SupervisionOfficerSupervisor.pseudonymized_id == pseudonymized_id
+                )
+
+            records = supervisors_query.all()
 
             return [
                 SupervisionOfficerSupervisorEntity(
@@ -471,23 +482,16 @@ class OutliersQuerier:
         )
         return list(id_to_entities.values())
 
-    def get_supervisor_from_pseudonymized_id(
+    def get_supervisor_entity_from_pseudonymized_id(
         self, supervisor_pseudonymized_id: str
-    ) -> Optional[SupervisionOfficerSupervisor]:
+    ) -> Optional[SupervisionOfficerSupervisorEntity]:
         """
-        Returns the SupervisionOfficerSupervisor given the supervisor_pseudonymized_id.
+        Returns the SupervisionOfficerSupervisorEntity given the supervisor_pseudonymized_id.
         """
-        with self.database_session() as session:
-            supervisor = (
-                session.query(SupervisionOfficerSupervisor)
-                .filter(
-                    SupervisionOfficerSupervisor.pseudonymized_id
-                    == supervisor_pseudonymized_id
-                )
-                .scalar()
-            )
-
-            return supervisor
+        supervisor = self.get_supervision_officer_supervisor_entities(
+            supervisor_pseudonymized_id
+        )
+        return supervisor[0] if len(supervisor) > 0 else None
 
     def get_benchmarks(
         self,

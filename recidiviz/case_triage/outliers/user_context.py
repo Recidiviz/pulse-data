@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class to store information about the authorized user requesting Outliers information."""
+from typing import Optional
 
 import attr
 
@@ -26,3 +27,5 @@ class UserContext:
     # Use string to allow storing "CSG" as a value
     state_code_str: str
     user_external_id: str
+    role: str
+    pseudonymized_id: Optional[str]

@@ -406,7 +406,7 @@ class TestOutliersQuerier(TestCase):
         }
         self.assertEqual(expected_json, actual_json)
 
-    def test_get_supervisors(
+    def test_get_supervision_officer_entities(
         self,
     ) -> None:
 
@@ -452,7 +452,9 @@ class TestOutliersQuerier(TestCase):
             ),
         ]
 
-        actual = OutliersQuerier(StateCode.US_PA).get_supervisors()
+        actual = OutliersQuerier(
+            StateCode.US_PA
+        ).get_supervision_officer_supervisor_entities()
 
         self.assertEqual(expected, actual)
 
@@ -562,7 +564,9 @@ class TestOutliersQuerier(TestCase):
 
     def test_get_supervisor_from_pseudonymized_id_no_match(self) -> None:
         # If matching supervisor doesn't exist, return None
-        actual = OutliersQuerier(StateCode.US_PA).get_supervisor_from_pseudonymized_id(
+        actual = OutliersQuerier(
+            StateCode.US_PA
+        ).get_supervisor_entity_from_pseudonymized_id(
             supervisor_pseudonymized_id="invalidhash"
         )
         self.assertIsNone(actual)
@@ -578,7 +582,9 @@ class TestOutliersQuerier(TestCase):
 
             actual = OutliersQuerier(
                 StateCode.US_PA
-            ).get_supervisor_from_pseudonymized_id(supervisor_pseudonymized_id="hash1")
+            ).get_supervisor_entity_from_pseudonymized_id(
+                supervisor_pseudonymized_id="hash1"
+            )
 
             self.assertEqual(expected.external_id, actual.external_id)  # type: ignore[union-attr]
 

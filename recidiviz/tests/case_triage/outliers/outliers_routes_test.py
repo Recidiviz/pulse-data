@@ -98,6 +98,8 @@ class OutliersBlueprintTestCase(TestCase):
         external_id: str = "A1B2",
         allowed_states: Optional[list[str]] = None,
         outliers_routes_enabled: Optional[bool] = True,
+        role: Optional[str] = "supervision_staff",
+        pseudonymized_id: Optional[str] = "hash",
     ) -> Callable:
         if allowed_states is None:
             allowed_states = []
@@ -111,6 +113,8 @@ class OutliersBlueprintTestCase(TestCase):
                     "routes": {
                         "outliers": outliers_routes_enabled,
                     },
+                    "role": role,
+                    "pseudonymizedId": pseudonymized_id,
                 },
             }
         )
@@ -219,17 +223,19 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(expected_json, response.json)
 
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisors",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_supervisor_entities",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
     )
     def test_get_supervisors(
-        self, mock_enabled_states: MagicMock, mock_get_supervisors: MagicMock
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_supervision_officer_entities: MagicMock,
     ) -> None:
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 
-        mock_get_supervisors.return_value = [
+        mock_get_supervision_officer_entities.return_value = [
             SupervisionOfficerSupervisorEntity(
                 full_name=PersonName(
                     given_names="Supervisor",
@@ -271,7 +277,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.json, expected_json)
 
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_pseudonymized_id",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_officers_for_supervisor",
@@ -393,7 +399,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             self.assertEqual(response.json, expected_json)
 
     @patch(
-        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_pseudonymized_id",
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
     )
     @patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
@@ -416,7 +422,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
-            "Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: hash1",
+            {
+                "message": "Supervisor with pseudonymized_id doesn't exist in DB. Pseudonymized id: hash1"
+            },
         )
 
     @patch(
@@ -492,7 +500,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
             response.json,
-            "Invalid parameters provided. Error: time data '23-05-01' does not match format '%Y-%m-%d'",
+            {
+                "message": "Invalid parameters provided. Error: time data '23-05-01' does not match format '%Y-%m-%d'"
+            },
         )
 
     @patch(
@@ -523,7 +533,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
             response.json,
-            "Must provide valid metric_ids for US_PA in the request",
+            {"message": "Must provide valid metric_ids for US_PA in the request"},
         )
 
     @patch(
@@ -554,7 +564,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
             response.json,
-            "Must provide valid metric_ids for US_PA in the request",
+            {"message": "Must provide valid metric_ids for US_PA in the request"},
         )
 
     @patch(
@@ -591,7 +601,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
-            "Officer with psuedonymized id not found: invalidhash",
+            {"message": "Officer with psuedonymized id not found: invalidhash"},
         )
 
     @patch(
@@ -661,7 +671,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
             self.assertEqual(
                 response.json,
-                "User is a supervisor, but does not supervise the requested officer.",
+                {
+                    "message": "User is a supervisor, but does not supervise the requested officer."
+                },
             )
 
     @patch(
@@ -713,7 +725,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
         self.assertEqual(
             response.json,
-            "Officer is not an outlier on any of the requested metrics.",
+            {"message": "Officer is not an outlier on any of the requested metrics."},
         )
 
     @patch(
@@ -780,7 +792,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
             self.assertEqual(
                 response.json,
-                "Officer is not an outlier on any of the requested metrics.",
+                {
+                    "message": "Officer is not an outlier on any of the requested metrics."
+                },
             )
 
     @patch(
@@ -999,7 +1013,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(
             response.json,
-            "Officer with psuedonymized id not found: invalidhash",
+            {"message": "Officer with psuedonymized id not found: invalidhash"},
         )
 
     @patch(
@@ -1069,7 +1083,9 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
             self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
             self.assertEqual(
                 response.json,
-                "User is supervisor, but does not supervise the requested officer.",
+                {
+                    "message": "User is supervisor, but does not supervise the requested officer."
+                },
             )
 
     @patch(
@@ -1226,6 +1242,142 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     }
                 ],
             }
+        }
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_user_info_for_supervisor_match(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor_entity: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="102", pseudonymized_id="hashhash"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
+            full_name=PersonName(
+                given_names="Supervisor",
+                surname="2",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="102",
+            pseudonymized_id="hashhash",
+            supervision_district="2",
+            email="supervisor2@recidiviz.org",
+            has_outliers=True,
+        )
+
+        response = self.test_client.get(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        expected_json = {
+            "entity": {
+                "fullName": {
+                    "givenNames": "Supervisor",
+                    "middleNames": None,
+                    "nameSuffix": None,
+                    "surname": "2",
+                },
+                "externalId": "102",
+                "pseudonymizedId": "hashhash",
+                "supervisionDistrict": "2",
+                "email": "supervisor2@recidiviz.org",
+                "hasOutliers": True,
+            },
+            "role": "supervision_officer_supervisor",
+        }
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_user_info_mismatch(
+        self,
+        mock_enabled_states: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="101", pseudonymized_id="hash"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        response = self.test_client.get(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Non-recidiviz user 101 with pseudonymized_id hash is requesting user-info about a user that isn't themselves: hashhash"
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    def test_user_info_for_recidiviz_user(
+        self,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor_entity: MagicMock,
+    ) -> None:
+        # Recidiviz user is requesting information
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="RECIDIVIZ", external_id="RECIDIVIZ", allowed_states=["US_PA"]
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
+            full_name=PersonName(
+                given_names="Supervisor",
+                surname="2",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="102",
+            pseudonymized_id="hashhash",
+            supervision_district="2",
+            email="supervisor2@recidiviz.org",
+            has_outliers=True,
+        )
+
+        response = self.test_client.get(
+            "/outliers/US_PA/user-info/hashhash",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        expected_json = {
+            "entity": {
+                "fullName": {
+                    "givenNames": "Supervisor",
+                    "middleNames": None,
+                    "nameSuffix": None,
+                    "surname": "2",
+                },
+                "externalId": "102",
+                "pseudonymizedId": "hashhash",
+                "supervisionDistrict": "2",
+                "email": "supervisor2@recidiviz.org",
+                "hasOutliers": True,
+            },
+            "role": "supervision_officer_supervisor",
         }
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
