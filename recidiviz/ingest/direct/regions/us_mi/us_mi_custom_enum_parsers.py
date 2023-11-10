@@ -315,71 +315,77 @@ def parse_supervision_level(
 ) -> Optional[StateSupervisionLevel]:
     """Parse supervision level based on assigned supervision level"""
 
-    # If the supervision level raw text has "IN JAIL", let's map to IN_CUSTODY regardless of
-    # what else the raw text says:
-    if "IN JAIL" in raw_text:
+    supervision_level_value = (raw_text.split("##")[0]).upper()
+
+    # If the raw text isn't a concatenated string, then the raw text is coming from OMNI
+    # and map it like so
+    if re.search(r"_", raw_text) is None:
+
+        if supervision_level_value in limited_levels:
+            return StateSupervisionLevel.LIMITED
+
+        if supervision_level_value in minimum_levels:
+            return StateSupervisionLevel.MINIMUM
+
+        if supervision_level_value in medium_levels:
+            return StateSupervisionLevel.MEDIUM
+
+        if supervision_level_value in maximum_levels:
+            return StateSupervisionLevel.MAXIMUM
+
+        if supervision_level_value in high_levels:
+            return StateSupervisionLevel.HIGH
+
+        if supervision_level_value in unsupervised_levels:
+            return StateSupervisionLevel.UNSUPERVISED
+
+        if supervision_level_value in warrant_levels:
+            return StateSupervisionLevel.WARRANT
+
+        if supervision_level_value in absconcion_levels:
+            return StateSupervisionLevel.ABSCONSION
+
+        if supervision_level_value in in_custody_levels:
+            return StateSupervisionLevel.IN_CUSTODY
+
+    # Otherwise, the raw text is coming from COMS, and is of the format {Supervision Level}_{Supervision Specialty}
+    # If the {Supervision_level} and the {Supervision Specialty} conflict, we'll prioritize the higher severity one.
+    # The ranking of severity (from most severe to least) is as follows:
+    # IN CUSTODY
+    # ABSCONSION
+    # WARRANT
+    # HIGH
+    # MAXIMUM
+    # MEDIUM
+    # MINIMUM
+    # LIMITED
+    # UNSUPERVISED
+    # Note: The specific ordering between IN CUSTODY, ABSCONSION, and WARRANT is currently arbitrary but should
+    #       be reordered as necessary as determined.
+
+    if re.search(r"IN JAIL|MINIMUM ADMINISTRATIVE", supervision_level_value):
         return StateSupervisionLevel.IN_CUSTODY
 
-    # By default, use the first part of raw text for mapping
-    #   For supervision levels coming from OMNI, this will be the whole raw text string
-    #   For supervision levels coming from COMS, this will be the value coming from COMS_Supervision_Levels
-    supervision_level_value = (raw_text.split("##")[0]).split("_")[0]
+    if re.search(r"ABSCONDER", supervision_level_value):
+        return StateSupervisionLevel.ABSCONSION
 
-    # If the first part of the raw text is NONE, that means this is a supervision level that
-    # came from COMS and the first part is NULL while the second part is non-NULL, so we should
-    # use the second part (which comes from COMS_Supervision_Schedules)
-    if supervision_level_value == "NONE":
-        supervision_level_value = (raw_text.split("##")[0]).split("_")[1]
+    if re.search(r"WARRANT", supervision_level_value):
+        return StateSupervisionLevel.WARRANT
 
-    # For OMNI
-    if supervision_level_value in limited_levels:
+    if re.search(r"INTENSIVE", supervision_level_value):
+        return StateSupervisionLevel.HIGH
+
+    if re.search(r"MAXIMUM", supervision_level_value):
+        return StateSupervisionLevel.MAXIMUM
+
+    if re.search(r"MEDIUM", supervision_level_value):
+        return StateSupervisionLevel.MEDIUM
+
+    if re.search(r"MINIMUM IN-PERSON|MINIMUM LOW", supervision_level_value):
+        return StateSupervisionLevel.MINIMUM
+
+    if re.search(r"MINIMUM TRS", supervision_level_value):
         return StateSupervisionLevel.LIMITED
-
-    if supervision_level_value in minimum_levels:
-        return StateSupervisionLevel.MINIMUM
-
-    if supervision_level_value in medium_levels:
-        return StateSupervisionLevel.MEDIUM
-
-    if supervision_level_value in maximum_levels:
-        return StateSupervisionLevel.MAXIMUM
-
-    if supervision_level_value in high_levels:
-        return StateSupervisionLevel.HIGH
-
-    if supervision_level_value in unsupervised_levels:
-        return StateSupervisionLevel.UNSUPERVISED
-
-    if supervision_level_value in warrant_levels:
-        return StateSupervisionLevel.WARRANT
-
-    if supervision_level_value in absconcion_levels:
-        return StateSupervisionLevel.ABSCONSION
-
-    if supervision_level_value in in_custody_levels:
-        return StateSupervisionLevel.IN_CUSTODY
-
-    # For COMS
-    if "Minimum Administrative" in supervision_level_value:
-        return StateSupervisionLevel.IN_CUSTODY
-
-    if "Minimum" in supervision_level_value:
-        return StateSupervisionLevel.MINIMUM
-
-    if "Medium" in supervision_level_value:
-        return StateSupervisionLevel.MEDIUM
-
-    if "Maximum" in supervision_level_value:
-        return StateSupervisionLevel.MAXIMUM
-
-    if "Intensive" in supervision_level_value:
-        return StateSupervisionLevel.HIGH
-
-    if "Absconder" in supervision_level_value:
-        return StateSupervisionLevel.ABSCONSION
-
-    if "Warrant" in supervision_level_value:
-        return StateSupervisionLevel.WARRANT
 
     # If values fall into none of these categories
     if supervision_level_value:
