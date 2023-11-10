@@ -225,7 +225,10 @@ output:
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
                   - BOFA-BONDR # Bond to Facility - Bond return
                   - BOFA-INTRS # Bond to Facility - in transit
-
+                StateIncarcerationPeriodAdmissionReason.WEEKEND_CONFINEMENT:
+                  # Weekend confinement admissions
+                  - PRFA-WKEND # Probation to facility - serving weekend
+                  - CCFA-WKEND # Serving weekend
                 StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
                   - CUSTCHANGEFH-CUST CHANGE # Recidiviz made code to track Custody Changes
 
@@ -254,10 +257,6 @@ output:
                   - CCFA-NEWCH # New charges
                   - CCFA-VIOLT # Technical warrant violation
                   - CCFA-VIOLW # Warrant violation (new charge)
-                  # Weekend confinement admissions
-                  - PRFA-WKEND # Probation to facility - serving weekend
-                  - CCFA-WKEND # Serving weekend
-
                 StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE:
                   - FUFA-RTFUR # Furlough pass to Facility - Return from furlough
                   - WRFA-RETWK # Work release to Facility - Return from work release
@@ -539,6 +538,10 @@ output:
                       StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                         - CUSTCHANGEFH-CUST CHANGE # Recidiviz made code to track Custody Changes
 
+                      StateIncarcerationPeriodReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT:
+                        - CCFA-WKEND
+                        - PRFA-WKEND
+
                       StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
                         # Statuses that terminate in 'FA', 'CT', or 'FH' are admissions into a facility that
                         # sometimes get classified as the release edge of the period when we're missing
@@ -560,14 +563,12 @@ output:
                         - PRFA-NEWCH
                         - CCFA-VIOLW
                         - CCFA-NEWCV
-                        - CCFA-WKEND
                         - PRFA-VIOLT
                         - PAFA-NEWCH
                         - PAFA-DETAN
                         - CCFA-NEWCH
                         - CCFA-SPLIT
                         - PRFA-NEWCV
-                        - PRFA-WKEND
                         - OJFA-ISC
                         - OJFA-RTDET
                         - OJFA-RTOUT
