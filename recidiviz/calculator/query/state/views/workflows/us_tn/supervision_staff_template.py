@@ -44,7 +44,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
             AND staff.Status = 'A'
         LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
             ON staff.StaffID = ids.external_id_to_map AND "US_TN" = ids.state_code 
-        WHERE r.role = 'leadership_role'
+        WHERE r.role IN ('leadership_role', 'supervision_leadership')
             AND r.state_code = 'US_TN'
     ), staff_users AS (
         SELECT

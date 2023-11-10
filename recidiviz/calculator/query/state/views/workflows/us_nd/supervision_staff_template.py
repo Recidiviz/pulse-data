@@ -48,7 +48,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             ON r.state_code = districts.state_code 
             AND r.external_id = districts.supervising_officer_external_id
         WHERE r.state_code = 'US_ND'
-        AND r.role = 'leadership_role'
+        AND r.role IN ('leadership_role', 'supervision_leadership')
         AND external_id IN (SELECT id FROM caseload_staff_ids)
     )
     , caseload_staff AS (
