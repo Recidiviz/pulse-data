@@ -334,7 +334,7 @@ class FederatedSchemaTableRegionFilteredQueryBuilder(
             )
         return StateCode(self.region_code).get_state_fips_mask()
 
-    def _translate_key_colunm_clause(
+    def _translate_key_column_clause(
         self, column_name: str, qualified_column_name: str
     ) -> str:
         """Returns a string column select clause that applies the key translation
@@ -357,7 +357,7 @@ class FederatedSchemaTableRegionFilteredQueryBuilder(
             qualified_name = qualified_names_map[column.name]
             if column.name in key_columns_to_translate:
                 select_columns.append(
-                    self._translate_key_colunm_clause(column.name, qualified_name)
+                    self._translate_key_column_clause(column.name, qualified_name)
                 )
             elif isinstance(column.type, sqlalchemy.Enum):
                 select_columns.append(f"CAST({qualified_name} as VARCHAR)")

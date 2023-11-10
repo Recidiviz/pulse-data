@@ -68,7 +68,7 @@ def federated_bq_schema_refresh(
     schema_type: SchemaType,
     direct_ingest_instance: Optional[DirectIngestInstance] = None,
     dataset_override_prefix: Optional[str] = None,
-) -> None:
+) -> List[Table]:
     """Performs a full refresh of BigQuery data for a given schema, pulling data from
     the appropriate CloudSQL Postgres instance.
     """
@@ -91,6 +91,8 @@ def federated_bq_schema_refresh(
     _copy_regional_dataset_to_multi_region(config, dataset_override_prefix)
 
     _save_status_in_bq(config, refreshed_states, dataset_override_prefix)
+
+    return config.get_tables_to_export()
 
 
 def _save_status_in_bq(
@@ -284,7 +286,7 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.config = config
         self.table = table
         self.state_codes = state_codes
-        # Dataset prefixing will ge handled automatically by view building logic
+        # Dataset prefixing will be handled automatically by view building logic
         self.dataset_id = config.unioned_regional_dataset(dataset_override_prefix=None)
         self.view_id = f"{table.name}_view"
         self.projects_to_deploy = None

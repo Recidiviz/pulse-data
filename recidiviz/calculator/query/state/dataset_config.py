@@ -49,8 +49,19 @@ REFERENCE_VIEWS_DATASET: str = "reference_views"
 # copies it to a dataset in the 'US' multi-region.
 STATE_BASE_REGIONAL_DATASET: str = "state_regional"
 
-# Where the base tables for the state schema live. These are a mirror of the data in our
-# state CloudSQL instance, refreshed daily via the CloudSQL -> BQ federated export.
+# Where the base tables for the state schema live, containing just data from CloudSQL
+# (legacy) ingest. These are a mirror of the data in our state CloudSQL instance,
+# refreshed daily via the CloudSQL -> BQ federated export.
+# TODO(#20930): Remove this constant and update docstring for STATE_BASE_DATASET
+# and STATE_BASE_VIEWS_DATASET below.
+STATE_BASE_LEGACY_DATASET: str = "state_legacy"
+
+# The views that union output from both CloudSQL (legacy) ingest and Dataflow based
+# ingest, and are materialized to STATE_BASE_DATASET.
+STATE_BASE_VIEWS_DATASET: str = "state_views"
+
+# The tables for the state schema, including output from both CloudSQL (legacy) ingest
+# and Dataflow based ingest.
 STATE_BASE_DATASET: str = "state"
 
 # Where the normalized state tables live, with data from all states. For each entity

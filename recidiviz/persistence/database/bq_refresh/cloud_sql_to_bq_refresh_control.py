@@ -34,6 +34,9 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh import (
     federated_bq_schema_refresh,
 )
+from recidiviz.persistence.database.bq_refresh.union_dataflow_ingest import (
+    combine_ingest_sources_into_single_state_dataset,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 from recidiviz.utils.environment import gcp_only
@@ -116,13 +119,23 @@ def execute_cloud_sql_to_bq_refresh(
                 lock_wait_timeout=LOCK_WAIT_SLEEP_MAXIMUM_TIMEOUT,
             )
         start = datetime.datetime.now()
-        federated_bq_schema_refresh(
+
+        exported_tables = federated_bq_schema_refresh(
             schema_type=schema_type,
             direct_ingest_instance=ingest_instance
             if schema_type == SchemaType.STATE
             else None,
             dataset_override_prefix=sandbox_prefix,
         )
+        if schema_type == SchemaType.STATE:
+            # TODO(#20930): Separate this out into its own endpoint that runs in
+            # parallel to bq refresh once we only ever use dataflow ingest output.
+            combine_ingest_sources_into_single_state_dataset(
+                ingest_instance=ingest_instance,
+                tables=exported_tables,
+                output_sandbox_prefix=sandbox_prefix,
+            )
+
         end = datetime.datetime.now()
         runtime_sec = int((end - start).total_seconds())
         success_persister = RefreshBQDatasetSuccessPersister(
