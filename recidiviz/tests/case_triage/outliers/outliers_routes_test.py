@@ -206,7 +206,12 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 "clientEvents": [
                     {"name": "violation_responses", "displayName": "Sanctions"}
                 ],
+                "supervisionDistrictLabel": "district",
+                "supervisionJiiLabel": "client",
+                "supervisionDistrictManagerLabel": "district director",
                 "supervisionOfficerLabel": "officer",
+                "supervisionSupervisorLabel": "supervisor",
+                "supervisionUnitLabel": "unit",
             }
         }
 
