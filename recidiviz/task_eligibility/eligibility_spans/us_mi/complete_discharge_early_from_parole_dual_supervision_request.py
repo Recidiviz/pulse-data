@@ -37,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     not_serving_ineligible_offenses_for_early_discharge_from_parole_dual_supervision,
     parole_dual_supervision_past_early_discharge_date,
     supervision_is_not_ic_in,
+    supervision_level_is_not_modified,
     supervision_or_supervision_out_of_state_level_is_not_sai,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -68,6 +69,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_or_supervision_out_of_state_level_is_not_sai.VIEW_BUILDER,
         supervision_or_supervision_out_of_state_level_is_not_high.VIEW_BUILDER,
         custodial_authority_is_supervision_authority_or_other_state.VIEW_BUILDER,
+        supervision_level_is_not_modified.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )

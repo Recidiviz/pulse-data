@@ -37,6 +37,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     not_required_to_register_under_sora,
     not_serving_ineligible_offenses_for_downgrade_from_supervision_level,
     supervision_level_higher_than_assessment_level,
+    supervision_level_is_not_modified,
     supervision_or_supervision_out_of_state_level_is_not_sai,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -66,6 +67,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_not_unassigned.VIEW_BUILDER,
         supervision_level_is_not_diversion.VIEW_BUILDER,
         supervision_or_supervision_out_of_state_level_is_not_high.VIEW_BUILDER,
+        supervision_level_is_not_modified.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
 )
