@@ -21,6 +21,8 @@ in state and project id from primary storage bucket to secondary ingest bucket.
         python -m recidiviz.tools.ingest.one_offs.copy_least_and_most_recent_files_from_primary_storage_to_secondary_ingest_bucket --dry-run True --project-id=recidiviz-staging --state-code=US_TN
 """
 import argparse
+import datetime
+from collections import defaultdict
 from typing import Dict, List
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
@@ -32,6 +34,7 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
     gcsfs_direct_ingest_storage_directory_path_for_state,
 )
+from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp, gsutil_ls, gsutil_mv
@@ -41,6 +44,15 @@ from recidiviz.tools.ingest.one_offs.clear_redundant_raw_data_on_bq import (
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
+
+
+def print_paths_list(label: str, file_list: List[GcsfsFilePath]) -> None:
+    if len(file_list) == 1:
+        print(f"\t* {label}: '{file_list[0].uri()}'")
+    else:
+        print(f"\t* {label}:")
+        for path in file_list:
+            print(f"\t\t* '{path.uri()}'")
 
 
 def identify_files_to_copy_over(
@@ -57,30 +69,49 @@ def identify_files_to_copy_over(
         ingest_instance=DirectIngestInstance.PRIMARY,
         project_id=project_id,
     )
+    raw_data_path = GcsfsDirectoryPath.from_dir_and_subdir(primary_storage_dir, "raw")
+    raw_file_search_uri = GcsfsDirectoryPath.from_dir_and_subdir(
+        raw_data_path, "**/*.*"
+    ).uri()
+    print("Collecting all storage file paths...")
+    all_file_paths = [
+        GcsfsFilePath.from_absolute_path(uri) for uri in gsutil_ls(raw_file_search_uri)
+    ]
+
+    all_paths_by_tag_by_date: Dict[
+        str, Dict[datetime.date, List[GcsfsFilePath]]
+    ] = defaultdict(lambda: defaultdict(list))
+    for path in all_file_paths:
+        parts = filename_parts_from_path(path)
+        all_paths_by_tag_by_date[parts.file_tag][
+            parts.utc_upload_datetime.date()
+        ].append(path)
+
     for file_tag in raw_file_configs.keys():
-        print(
-            f"Searching for all files in primary storage that match file_tag={file_tag}..."
-        )
-        raw_file_search_uri = GcsfsDirectoryPath.from_dir_and_subdir(
-            primary_storage_dir, f"raw/**raw_{file_tag}.csv"
-        ).uri()
-        all_files = sorted(gsutil_ls(raw_file_search_uri))
-        if len(all_files) == 0:
+        paths_by_date = all_paths_by_tag_by_date.get(file_tag)
+        if not paths_by_date:
             print(f"Found no files on GCS that matched file_tag={file_tag}. Skipping.")
-        if len(all_files) == 1:
-            print(f"Found one file on GCS that matched file_tag={file_tag}. Adding it.")
-            paths_to_copy_over.append(GcsfsFilePath.from_absolute_path(all_files[0]))
+            continue
+        dates_with_data = sorted(paths_by_date.keys())
+        if len(dates_with_data) == 1:
+            print(
+                f"Found one date with files on GCS that matched file_tag={file_tag}. Adding:"
+            )
+            paths = paths_by_date[dates_with_data[0]]
+            paths_to_copy_over.extend(paths)
+            print_paths_list("Added", paths)
         else:
             print(
-                f"Found multiple files on GCS that matched file_tag={file_tag}. Identifying most and least recent."
+                f"Found multiple dates with files on GCS that matched file_tag={file_tag}. Identifying most and least recent."
             )
-            most_recent = GcsfsFilePath.from_absolute_path(all_files[-1])
-            least_recent = GcsfsFilePath.from_absolute_path(all_files[0])
-            paths_to_copy_over.append(most_recent)
-            paths_to_copy_over.append(least_recent)
+            most_recent = paths_by_date[dates_with_data[-1]]
+            least_recent = paths_by_date[dates_with_data[0]]
 
-            print(f"\t* Most recent: '{most_recent.uri()}'")
-            print(f"\t* Least recent: '{least_recent.uri()}'")
+            paths_to_copy_over.extend(most_recent)
+            paths_to_copy_over.extend(least_recent)
+
+            print_paths_list("Most recent", most_recent)
+            print_paths_list("Least recent", least_recent)
 
     return paths_to_copy_over
 
