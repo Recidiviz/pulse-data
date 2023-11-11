@@ -1286,7 +1286,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            trigger_calculation_dag_pubsub(DirectIngestInstance.PRIMARY, state_code)
+            trigger_calculation_dag_pubsub(
+                DirectIngestInstance.PRIMARY,
+                state_code,
+                trigger_ingest_dag_post_bq_refresh=False,
+            )
             return (
                 "",
                 HTTPStatus.OK,

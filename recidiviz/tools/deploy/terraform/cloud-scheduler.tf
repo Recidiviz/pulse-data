@@ -25,7 +25,7 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
     # topic's full resource name.
     topic_name = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
     # Run nightly DAG with no state_code filter.
-    data = base64encode("{\"ingest_instance\": \"PRIMARY\"}")
+    data = base64encode("{\"ingest_instance\": \"PRIMARY\", \"trigger_ingest_dag_post_bq_refresh\": false}")
   }
 }
 resource "google_cloud_scheduler_job" "schedule_airflow_hourly_monitoring_dag_run_topic" {

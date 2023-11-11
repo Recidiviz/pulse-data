@@ -27,16 +27,18 @@ from recidiviz.utils import pubsub_helper
 def trigger_calculation_dag_pubsub(
     ingest_instance: DirectIngestInstance,
     state_code_filter: Optional[StateCode],
+    trigger_ingest_dag_post_bq_refresh: bool,
     sandbox_prefix: Optional[str] = None,
 ) -> None:
     """Sends a message to the PubSub topic to trigger the post-deploy CloudSQL to BQ
     refresh, which then will trigger the calculation DAG on completion."""
 
     logging.info(
-        "Triggering the calc DAG with instance: [%s], state code filter: [%s], and sandbox_prefix: [%s].",
+        "Triggering the calc DAG with instance: [%s], state code filter: [%s], and sandbox_prefix: [%s]. Trigger ingest DAG post BQ refresh: [%s]",
         ingest_instance.value,
         state_code_filter.value if state_code_filter else None,
         sandbox_prefix,
+        trigger_ingest_dag_post_bq_refresh,
     )
 
     # TODO(#25274): Remove this check once we properly implement the state_code_filter for PRIMARY
@@ -60,6 +62,7 @@ def trigger_calculation_dag_pubsub(
                 else None,
                 "ingest_instance": ingest_instance.value,
                 "sandbox_prefix": sandbox_prefix,
+                "trigger_ingest_dag_post_bq_refresh": trigger_ingest_dag_post_bq_refresh,
             }
         ),
     )
