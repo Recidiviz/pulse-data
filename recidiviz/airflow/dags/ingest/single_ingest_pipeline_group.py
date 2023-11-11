@@ -73,6 +73,31 @@ from recidiviz.utils.yaml_dict import YAMLDict
 # pylint: disable=W0106 expression-not-assigned
 
 
+def _ingest_pipeline_should_run_in_dag(
+    state_code: StateCode, instance: DirectIngestInstance
+) -> KubernetesPodOperator:
+    return build_kubernetes_pod_task(
+        task_id="ingest_pipeline_should_run_in_dag",
+        container_name="ingest_pipeline_should_run_in_dag",
+        arguments=[
+            "--entrypoint=IngestPipelineShouldRunInDagEntrypoint",
+            f"--state_code={state_code.value}",
+            f"--ingest_instance={instance.value}",
+        ],
+    )
+
+
+@task.short_circuit
+def handle_ingest_pipeline_should_run_in_dag_check(
+    should_run_ingest_pipeline: bool,
+) -> bool:
+    """Returns True if the DAG should continue, otherwise short circuits."""
+    if not should_run_ingest_pipeline:
+        logging.info("should_run_ingest_pipeline did not return true, do not continue.")
+        return False
+    return True
+
+
 @task.short_circuit(task_id="should_run_based_on_watermarks")
 def _should_run_based_on_watermarks(
     watermarks: Dict[str, str], max_update_datetimes: Dict[str, str]
@@ -120,6 +145,11 @@ def _initialize_dataflow_pipeline(
     """
 
     with TaskGroup("initialize_dataflow_pipeline") as initialize_dataflow_pipeline:
+        check_ingest_pipeline_should_run_in_dag = (
+            handle_ingest_pipeline_should_run_in_dag_check(
+                _ingest_pipeline_should_run_in_dag(state_code, instance).output
+            )
+        )
 
         get_max_update_datetimes = CloudSqlQueryOperator(
             task_id="get_max_update_datetimes",
@@ -145,7 +175,8 @@ def _initialize_dataflow_pipeline(
         )
 
         (
-            [get_max_update_datetimes, get_watermarks]
+            check_ingest_pipeline_should_run_in_dag
+            >> [get_max_update_datetimes, get_watermarks]
             >> should_run_based_on_watermarks
             >> _verify_raw_data_flashing_not_in_progress(state_code, instance)
         )

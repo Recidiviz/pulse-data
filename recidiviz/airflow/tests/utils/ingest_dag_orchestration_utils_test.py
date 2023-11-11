@@ -16,15 +16,13 @@
 # =============================================================================
 """Unit tests for ingest dag orchestration utils"""
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils import (
     get_ingest_pipeline_enabled_state_and_instance_pairs,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 
 
 class TestIngestDagOrchestrationUtils(unittest.TestCase):
@@ -46,17 +44,6 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
         )
         self.get_existing_states_patcher.start()
 
-        self.direct_ingest_regions_patcher = patch(
-            "recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils.direct_ingest_regions",
-            autospec=True,
-        )
-        self.mock_direct_ingest_regions = self.direct_ingest_regions_patcher.start()
-        self.mock_direct_ingest_regions.get_direct_ingest_region.side_effect = (
-            lambda region_code: get_direct_ingest_region(
-                region_code, region_module_override=fake_regions_module
-            )
-        )
-
         self.ingest_pipeline_can_run_in_dag_patcher = patch(
             "recidiviz.airflow.dags.utils.ingest_dag_orchestration_utils.ingest_pipeline_can_run_in_dag",
             return_value=True,
@@ -67,7 +54,6 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.get_existing_states_patcher.stop()
-        self.direct_ingest_regions_patcher.stop()
         self.ingest_pipeline_can_run_in_dag_patcher.stop()
 
     def test_get_ingest_pipeline_enabled_state_and_instance_pairs(self) -> None:
@@ -77,28 +63,13 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             set(result),
             {
                 (StateCode.US_DD, DirectIngestInstance.PRIMARY),
+                (StateCode.US_DD, DirectIngestInstance.SECONDARY),
                 (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+                (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+                (StateCode.US_YY, DirectIngestInstance.PRIMARY),
                 (StateCode.US_YY, DirectIngestInstance.SECONDARY),
-            },
-        )
-
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_regions.environment.get_gcp_environment",
-        return_value="production",
-    )
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_regions.environment.in_gcp_production",
-        return_value=True,
-    )
-    def test_get_ingest_pipeline_enabled_state_and_instance_pairs_only_us_xx_launched_in_env(
-        self, _mock_in_gcp_production: MagicMock, _mock_get_gcp_environment: MagicMock
-    ) -> None:
-        result = get_ingest_pipeline_enabled_state_and_instance_pairs()
-
-        self.assertSetEqual(
-            set(result),
-            {
-                (StateCode.US_DD, DirectIngestInstance.PRIMARY),
+                (StateCode.US_WW, DirectIngestInstance.PRIMARY),
+                (StateCode.US_WW, DirectIngestInstance.SECONDARY),
             },
         )
 
@@ -115,6 +86,10 @@ class TestIngestDagOrchestrationUtils(unittest.TestCase):
             set(result),
             {
                 (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+                (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+                (StateCode.US_YY, DirectIngestInstance.PRIMARY),
                 (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+                (StateCode.US_WW, DirectIngestInstance.PRIMARY),
+                (StateCode.US_WW, DirectIngestInstance.SECONDARY),
             },
         )

@@ -18,6 +18,7 @@
 Unit tests to test the ingest DAG.
 """
 import os
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from airflow.models import BaseOperator
@@ -42,6 +43,13 @@ _PROJECT_ID = "recidiviz-testing"
 _VERIFY_PARAMETERS_TASK_ID = "initialize_ingest_dag.verify_parameters"
 _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID = "initialize_ingest_dag.wait_to_continue_or_cancel"
 _HANDLE_QUEUEING_RESULT_TASK_ID = "initialize_ingest_dag.handle_queueing_result"
+
+
+def _fake_pod_operator(*args: Any, **kwargs: Any) -> BaseOperator:
+    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
+        return fake_operator_with_return_value(True)(*args, **kwargs)
+
+    return fake_operator_constructor(*args, **kwargs)
 
 
 @patch.dict(
@@ -88,7 +96,7 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
 
         self.kubernetes_pod_operator_patcher = patch(
             "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.build_kubernetes_pod_task",
-            side_effect=fake_operator_constructor,
+            side_effect=_fake_pod_operator,
         )
         self.kubernetes_pod_operator_patcher.start()
 

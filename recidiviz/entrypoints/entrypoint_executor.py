@@ -33,6 +33,9 @@ from recidiviz.entrypoints.ingest.ingest_lock_management import (
     IngestAcquireLockEntrypoint,
     IngestReleaseLockEntrypoint,
 )
+from recidiviz.entrypoints.ingest.ingest_pipeline_should_run_in_dag import (
+    IngestPipelineShouldRunInDagEntrypoint,
+)
 from recidiviz.entrypoints.metric_export.metric_view_export import (
     MetricViewExportEntrypoint,
 )
@@ -58,6 +61,7 @@ ENTRYPOINTS: Set[Type[EntrypointInterface]] = {
     IngestAcquireLockEntrypoint,
     IngestReleaseLockEntrypoint,
     IngestCheckRawDataFlashingEntrypoint,
+    IngestPipelineShouldRunInDagEntrypoint,
 }
 
 

@@ -23,6 +23,7 @@ from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
 import yaml
+from airflow.models import BaseOperator
 from airflow.models.dag import DAG, dag
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
@@ -216,6 +217,22 @@ def _fake_failure_execute(*args: Any, **kwargs: Any) -> None:
     raise ValueError("Fake failure")
 
 
+def _fake_pod_operator(*args: Any, **kwargs: Any) -> BaseOperator:
+    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
+        return fake_operator_with_return_value(True)(*args, **kwargs)
+
+    return fake_operator_constructor(*args, **kwargs)
+
+
+def _fake_pod_operator_ingest_pipeline_should_run_in_dag_false(
+    *args: Any, **kwargs: Any
+) -> BaseOperator:
+    if "--entrypoint=IngestPipelineShouldRunInDagEntrypoint" in kwargs["arguments"]:
+        return fake_operator_with_return_value(False)(*args, **kwargs)
+
+    return fake_operator_constructor(*args, **kwargs)
+
+
 @patch.dict(
     DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
     values={StateCode.US_XX: "us-east1-test"},
@@ -235,9 +252,9 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
 
         self.kubernetes_pod_operator_patcher = patch(
             "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.build_kubernetes_pod_task",
-            side_effect=fake_operator_constructor,
+            side_effect=_fake_pod_operator,
         )
-        self.kubernetes_pod_operator_patcher.start()
+        self.mock_kubernetes_pod_operator = self.kubernetes_pod_operator_patcher.start()
 
         self.cloud_sql_query_operator_patcher = patch(
             "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group.CloudSqlQueryOperator",
@@ -264,6 +281,33 @@ class TestSingleIngestPipelineGroupIntegration(AirflowIntegrationTest):
         )
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(test_dag, session)
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    def test_ingest_pipeline_should_run_in_dag_false(self) -> None:
+        self.mock_kubernetes_pod_operator.side_effect = (
+            _fake_pod_operator_ingest_pipeline_should_run_in_dag_false
+        )
+
+        test_dag = _create_test_single_ingest_pipeline_group_dag(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                expected_skipped_ids=[
+                    r".*get_max_update_datetimes",
+                    r".*get_watermarks",
+                    r".*should_run_based_on_watermarks",
+                    r".*verify_raw_data_flashing_not_in_progress",
+                    r".*acquire_lock",
+                    r".*_dataflow\.dataflow_pipeline.*",
+                    r".*release_lock",
+                    r".*write_ingest_job_completion",
+                    r".*write_upper_bounds",
+                    _DOWNSTREAM_TASK_ID,
+                ],
+            )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
     @patch(
