@@ -89,7 +89,12 @@ def trigger_state_specific_calculation_dag(
         update_cloud_sql_bq_refresh_output_schemas(sandbox_prefix)
         update_dataflow_output_schemas(sandbox_prefix)
 
-    trigger_calculation_dag_pubsub(ingest_instance, state_code, sandbox_prefix)
+    trigger_calculation_dag_pubsub(
+        ingest_instance,
+        state_code,
+        trigger_ingest_dag_post_bq_refresh=False,
+        sandbox_prefix=sandbox_prefix,
+    )
 
 
 if __name__ == "__main__":

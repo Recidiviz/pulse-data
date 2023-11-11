@@ -382,6 +382,8 @@ def create_calculation_dag() -> None:
         >> bq_refresh
     )
 
+    # TODO(#24198): Trigger ingest dag for enabled states
+
     trigger_update_all_views = update_managed_views_operator(ManagedViewUpdateType.ALL)
 
     (

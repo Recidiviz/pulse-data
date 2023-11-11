@@ -85,7 +85,10 @@ def trigger_calculation_dag(
         {
             "state_code_filter": json_body.get("state_code_filter"),
             "sandbox_prefix": json_body.get("sandbox_prefix"),
-            "ingest_instance": json_body.get("ingest_instance"),
+            "ingest_instance": json_body["ingest_instance"],
+            "trigger_ingest_dag_post_bq_refresh": json_body[
+                "trigger_ingest_dag_post_bq_refresh"
+            ],
         },
     )
     cloud_functions_log(

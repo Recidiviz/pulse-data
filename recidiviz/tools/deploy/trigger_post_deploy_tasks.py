@@ -54,5 +54,7 @@ if __name__ == "__main__":
 
     with local_project_id_override(known_args.project_id):
         trigger_calculation_dag_pubsub(
-            DirectIngestInstance.PRIMARY, known_args.state_code_filter
+            DirectIngestInstance.PRIMARY,
+            known_args.state_code_filter,
+            trigger_ingest_dag_post_bq_refresh=True,
         )
