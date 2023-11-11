@@ -14,23 +14,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains the interface for entrypoints"""
-import abc
-import argparse
-from typing import Any
-
-
-class EntrypointInterface(abc.ABC):
-    """Interface for our entrypoints"""
-
-    @staticmethod
-    @abc.abstractmethod
-    def get_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser()
-
-        return parser
-
-    @staticmethod
-    @abc.abstractmethod
-    def run_entrypoint(args: argparse.Namespace) -> Any:
-        ...
+"""Tests for ingest entrypoints"""
