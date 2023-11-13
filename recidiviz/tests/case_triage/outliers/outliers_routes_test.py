@@ -111,7 +111,7 @@ class OutliersBlueprintTestCase(TestCase):
                     "allowedStates": allowed_states,
                     "externalId": external_id,
                     "routes": {
-                        "outliers": outliers_routes_enabled,
+                        "insights": outliers_routes_enabled,
                     },
                     "role": role,
                     "pseudonymizedId": pseudonymized_id,

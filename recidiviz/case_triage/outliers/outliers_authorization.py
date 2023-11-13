@@ -72,5 +72,5 @@ def on_successful_authorization(
     if user_state_code == "RECIDIVIZ":
         return
 
-    if not app_metadata.get("routes", {}).get("outliers", False):
+    if not app_metadata.get("routes", {}).get("insights", False):
         raise AuthorizationError(code="not_authorized", description="Access denied")
