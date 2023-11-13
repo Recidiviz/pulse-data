@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: COMS_Intervention_Referrals
 file_description: |-
-  This table includes data from the COMS system about intervention referrals
+  This table includes data from the COMS system about intervention referrals. This table is active starting 
+  8/14/2023 and should only hold information that was relevant from 8/14/2023 onwards.
 data_classification: source
 separator: †
 custom_line_terminator: ‡
@@ -22,11 +23,11 @@ columns:
   - name: Referring_Staff_Employee_Id
     description: Employee id of referring employee
     is_pii: True
-  - name: Provider
-    description: Provider of intervention service or program
   - name: Referral_Date
     description: Referral Date
     field_type: datetime
+  - name: Provider
+    description: Provider of intervention service or program
   - name: Start_Date
     description: Intervention Start Date
     field_type: datetime

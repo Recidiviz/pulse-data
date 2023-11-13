@@ -3,6 +3,8 @@ file_tag: COMS_Modifiers
 file_description: |-
   This table includes data from the COMS system about supervision sentence modifiers.
   Excludes entries associated with prison supervision status and inactive entries.
+  This table is active starting 8/14/2023 and should only hold information that was 
+  relevant from 8/14/2023 onwards.
 data_classification: source
 separator: †
 custom_line_terminator: ‡
