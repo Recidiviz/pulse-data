@@ -81,8 +81,8 @@ def delete_agency(agency_id: int, dry_run: bool) -> None:
                 session=session, agency_id=agency_id
             )
 
-            logging.info("DRY RUN: %s", dry_run)
-            logging.info("Will delete %s", agency.name)
+            logger.info("DRY RUN: %s", dry_run)
+            logger.info("Will delete %s", agency.name)
 
             objects_to_delete = []
             associations = (
@@ -91,37 +91,47 @@ def delete_agency(agency_id: int, dry_run: bool) -> None:
                 .all()
             )
             objects_to_delete.extend(associations)
-            logging.info("Will delete %d UserAccountAssociations", len(associations))
+            logger.info("Will delete %d UserAccountAssociations", len(associations))
 
             reports = session.query(schema.Report).filter_by(source_id=agency_id).all()
             objects_to_delete.extend(reports)
-            logging.info("Will delete %d reports", len(reports))
+            logger.info("Will delete %d reports", len(reports))
 
             datapoints = (
                 session.query(schema.Datapoint).filter_by(source_id=agency_id).all()
             )
             objects_to_delete.extend(datapoints)
-            logging.info("Will delete %d datapoints", len(datapoints))
+            logger.info("Will delete %d datapoints", len(datapoints))
 
-            settings = session.query(schema.AgencySetting).filter_by(id=agency_id).all()
+            settings = (
+                session.query(schema.AgencySetting).filter_by(source_id=agency_id).all()
+            )
             objects_to_delete.extend(settings)
-            logging.info("Will delete %d agency settings", len(settings))
+            logger.info("Will delete %d agency settings", len(settings))
 
             jurisdictions = (
-                session.query(schema.AgencyJurisdiction).filter_by(id=agency_id).all()
+                session.query(schema.AgencyJurisdiction)
+                .filter_by(source_id=agency_id)
+                .all()
             )
             objects_to_delete.extend(jurisdictions)
-            logging.info("Will delete %d jurisdictions", len(jurisdictions))
+            logger.info("Will delete %d jurisdictions", len(jurisdictions))
+
+            spreadsheets = (
+                session.query(schema.Spreadsheet).filter_by(agency_id=agency_id).all()
+            )
+            objects_to_delete.extend(spreadsheets)
+            logger.info("Will delete %d spreadsheets", len(spreadsheets))
 
             agencies = session.query(schema.Agency).filter_by(id=agency_id).all()
             objects_to_delete.extend(agencies)
-            logging.info("Will delete %d agencies", len(agencies))
+            logger.info("Will delete %d agencies", len(agencies))
 
             if dry_run is False:
                 for obj in objects_to_delete:
                     session.delete(obj)
                 session.commit()
-                logging.info("%s deleted", agency.name)
+                logger.info("%s deleted", agency.name)
 
 
 if __name__ == "__main__":
