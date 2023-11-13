@@ -26,7 +26,7 @@ To run the app locally, you need to spin up both the backend and frontend simult
 
 ### Other
 
-- Auth0 [[staging](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts-staging/)], [[prod](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts/)]
+- Auth0 [[staging](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts-staging/)], [[prod](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts/)], [[configuration doc](https://paper.dropbox.com/doc/Justice-Counts-Auth0-Configuration--CDvUbVT17QfK99NI4HZCs3xBAg-qr7WeNZU8ISE8Ffta8oQi)]
 - [Sentry](https://recidiviz-inc.sentry.io/issues/?project=4504532096516096&referrer=sidebar)
 - [Oncall doc](go/jc-oncall)
 
