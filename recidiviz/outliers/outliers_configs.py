@@ -106,7 +106,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         AND prop_period_with_critical_caseload >= 0.75
         AND (avg_population_community_confinement / avg_daily_population) <= 0.05""",
         learn_more_url="https://drive.google.com/file/d/1NvTuKhN-N1-ba1KMI562_z9ka932JqXQ/view",
-        supervision_staff_exclusions="COALESCE(supervision_district, supervision_district_inferred, '') NOT IN ('FAST', 'CO')",
+        supervision_staff_exclusions="COALESCE(supervision_district_id, supervision_district_id_inferred, '') NOT IN ('FAST', 'CO')",
     ),
     StateCode.US_MI: OutliersConfig(
         metrics=[

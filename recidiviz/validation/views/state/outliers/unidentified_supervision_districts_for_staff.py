@@ -76,7 +76,7 @@ SELECT
   COUNT(DISTINCT officers_and_supervisors.external_id) AS num_staff_with_unidentified_district
 FROM officers_and_supervisors
 LEFT JOIN `{project_id}.{outliers_dataset}.supervision_districts_materialized` d 
-  ON officers_and_supervisors.state_code = d.state_code AND officers_and_supervisors.supervision_district = d.external_id
+  ON officers_and_supervisors.state_code = d.state_code AND UPPER(officers_and_supervisors.supervision_district) = UPPER(d.name)
 WHERE 
   officers_and_supervisors.supervision_district IS NOT NULL 
   AND d.external_id IS NULL
