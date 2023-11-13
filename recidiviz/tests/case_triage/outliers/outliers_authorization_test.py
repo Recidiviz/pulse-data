@@ -73,7 +73,7 @@ class OutliersAuthorizationClaimsTestCase(TestCase):
                     "allowedStates": allowed_states,
                     "externalId": "A1B2",
                     "routes": {
-                        "outliers": outliers_route_enabled,
+                        "insights": outliers_route_enabled,
                     },
                     "role": role,
                 }
