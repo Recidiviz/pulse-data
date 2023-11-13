@@ -55,7 +55,7 @@ overlapping_spans AS (
         table_2_name="officer_attributes", 
         index_columns=["state_code", "officer_id"],
         table_1_columns=["person_id"],
-        table_2_columns=["supervision_district", "supervision_unit", "supervision_unit_name"]
+        table_2_columns=["supervision_district_id", "supervision_unit", "supervision_unit_name"]
     )}
 )
 ,
@@ -66,7 +66,7 @@ sub_sessions_dedup_cte AS (
         person_id,
         start_date,
         end_date_exclusive,
-        supervision_district,
+        supervision_district_id,
         supervision_unit,
         supervision_unit_name,
     FROM
@@ -77,7 +77,7 @@ sub_sessions_dedup_cte AS (
         person_id,
         state_code,
         supervision_unit_session_id,
-        supervision_district,
+        supervision_district_id,
         supervision_unit,
         supervision_unit_name,
         MIN(start_date) AS start_date,
@@ -86,7 +86,7 @@ sub_sessions_dedup_cte AS (
         SELECT
             * EXCEPT(date_gap),
             SUM(IF(date_gap, 1, 0)) OVER (
-                PARTITION BY person_id, supervision_district, supervision_unit, supervision_unit_name 
+                PARTITION BY person_id, supervision_district_id, supervision_unit, supervision_unit_name 
                 ORDER BY start_date, {nonnull_end_date_clause("end_date_exclusive")}
             ) AS supervision_unit_session_id,
         FROM (
@@ -94,7 +94,7 @@ sub_sessions_dedup_cte AS (
                 *,
                 IFNULL(
                     LAG(end_date_exclusive) OVER(
-                        PARTITION BY person_id, supervision_district, supervision_unit, supervision_unit_name
+                        PARTITION BY person_id, supervision_district_id, supervision_unit, supervision_unit_name
                         ORDER BY start_date, {nonnull_end_date_clause("end_date_exclusive")}
                     ) != start_date, TRUE
                 ) AS date_gap,

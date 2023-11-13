@@ -140,7 +140,7 @@ def _query_template_and_format_args(
     FROM (
         SELECT 
             a.*, 
-            IFNULL(b.supervision_district, b.supervision_district_inferred) AS district, 
+            IFNULL(b.supervision_district_id, b.supervision_district_id_inferred) AS district, 
             IFNULL(b.supervision_office, b.supervision_office_inferred) AS office,
             b.supervisor_staff_id AS unit_supervisor,
         FROM

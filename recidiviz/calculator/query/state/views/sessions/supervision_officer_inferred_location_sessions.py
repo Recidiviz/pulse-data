@@ -42,6 +42,7 @@ WITH dataflow_sessions AS (
         person_id,
         attr.supervising_officer_external_id,
         attr.supervision_district,
+        attr.supervision_district_name,
         attr.supervision_office,
         start_date,
         end_date_exclusive,
@@ -60,6 +61,7 @@ WITH dataflow_sessions AS (
         supervising_officer_external_id,
         supervision_office,
         supervision_district,
+        supervision_district_name,
         start_date AS change_date,
         1 AS change_value,
     FROM
@@ -73,6 +75,7 @@ WITH dataflow_sessions AS (
         supervising_officer_external_id,
         supervision_office,
         supervision_district,
+        supervision_district_name,
         end_date_exclusive AS change_date,
         -1 AS change_value,
     FROM
@@ -87,11 +90,12 @@ WITH dataflow_sessions AS (
         supervising_officer_external_id,
         supervision_office,
         supervision_district,
+        supervision_district_name,
         change_date,
         SUM(change_value) AS change_value,
     FROM 
         population_change_dates
-    GROUP BY 1, 2, 3, 4, 5
+    GROUP BY 1, 2, 3, 4, 5, 6
 )
 
 , officer_office_caseload_counts AS (
@@ -100,6 +104,7 @@ WITH dataflow_sessions AS (
         supervising_officer_external_id,
         supervision_office,
         supervision_district,
+        supervision_district_name,
         change_date AS start_date,
         LEAD(change_date) OVER w AS end_date_exclusive,
         SUM(change_value) OVER w AS caseload_count,
@@ -124,6 +129,7 @@ choose the office with the greatest caseload count.
         change_date,
         supervision_office,
         supervision_district,
+        supervision_district_name,
         caseload_count > 0 AS nonzero_caseload,
     FROM (
         -- each change date is a potential place for a new primary office span
@@ -148,8 +154,9 @@ choose the office with the greatest caseload count.
             PARTITION BY a.state_code, a.supervising_officer_external_id, change_date
             ORDER BY
                 IF(supervision_district IS NULL, 1, 0) ASC, -- give priority to non-null districts
+                IF(supervision_district_name IS NULL, 1, 0) ASC, -- give priority to non-null district names
                 IF(supervision_office IS NULL, 1, 0) ASC, -- give priority to non-null offices
-                caseload_count DESC, supervision_district ASC, supervision_office ASC
+                caseload_count DESC, supervision_district ASC, supervision_district_name ASC, supervision_office ASC
         ) = 1
 )
 
@@ -164,6 +171,7 @@ choose the office with the greatest caseload count.
         ) AS end_date_exclusive,
         supervision_office AS primary_office,
         supervision_district AS primary_district,
+        supervision_district_name AS primary_district_name,
         nonzero_caseload,
     FROM
         primary_offices
@@ -185,7 +193,7 @@ choose the office with the greatest caseload count.
 {aggregate_adjacent_spans(
     table_name="zeros_removed",
     index_columns=["state_code", "supervising_officer_external_id"],
-    attribute=["primary_office", "primary_district"],
+    attribute=["primary_office", "primary_district", "primary_district_name"],
     session_id_output_name="session_id",
     end_date_field_name="end_date_exclusive",
 )})
@@ -198,6 +206,7 @@ SELECT
     end_date_exclusive,
     primary_office,
     primary_district,
+    primary_district_name,
 FROM
     sessionized_cte
 """
