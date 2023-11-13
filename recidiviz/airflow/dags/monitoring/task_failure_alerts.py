@@ -51,6 +51,7 @@ KNOWN_CONFIGURATION_PARAMETERS: Dict[str, Set[str]] = {
         "ingest_instance",
         "state_code_filter",
         "sandbox_prefix",
+        "trigger_ingest_dag_post_bq_refresh",
     },
     f"{_project_id}_hourly_monitoring_dag": set(),
     f"{_project_id}_sftp_dag": set(),
