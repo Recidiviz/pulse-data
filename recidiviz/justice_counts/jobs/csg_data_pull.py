@@ -72,6 +72,7 @@ IS_CHILD_AGENCY = "is_child_agency"
 NEW_STATE_THIS_WEEK = "new_state_this_week"
 NEW_AGENCY_THIS_WEEK = "new_agency_this_week"
 DATA_SHARED_THIS_WEEK = "data_shared_this_week"
+USED_BULK_UPLOAD = "used_bulk_upload"
 
 # To add:
 # NUM_METRICS_UNCONFIGURED = "num_metrics_unconfigured"
@@ -193,7 +194,9 @@ def summarize(
 
 def get_all_data(
     session: Session,
-) -> Tuple[Dict[str, schema.UserAccount], List[Any], List[Any], List[Any], List[Any]]:
+) -> Tuple[
+    Dict[str, schema.UserAccount], List[Any], List[Any], List[Any], List[Any], List[Any]
+]:
     """Retrieve agency, user, agency_user_account_association, and datapoint data from both
     Auth0 as well as our database.
     """
@@ -213,6 +216,7 @@ def get_all_data(
     ).all()
     users = session.execute("select * from user_account").all()
     datapoints = session.execute("select * from datapoint").all()
+    spreadsheets = session.execute("select * from spreadsheet").all()
 
     agencies_to_exclude = AGENCIES_TO_EXCLUDE.keys()
     agencies = [
@@ -224,6 +228,7 @@ def get_all_data(
         agency_user_account_associations,
         users,
         datapoints,
+        spreadsheets,
     )
 
 
@@ -231,6 +236,7 @@ def create_new_agency_columns(
     agencies: List[schema.Agency],
     agency_id_to_users: Dict[str, List[schema.UserAccount]],
     today: datetime.datetime,
+    spreadsheets: List[schema.Spreadsheet],
 ) -> Tuple[List[schema.Agency], Dict[str, int]]:
     """Given a list of agencies and their users, create and populate the following columns:
     - last_login
@@ -238,7 +244,12 @@ def create_new_agency_columns(
     - is_superagency
     - is_child_agency
     - new_agency_this_week
+    - used_bulk_upload
     """
+    # A dictionary that maps agency_ids to a list of uploaded spreadsheets
+    agency_id_to_spreadsheets: Dict[str, List[schema.Spreadsheet]] = defaultdict(list)
+    for spreadsheet in spreadsheets:
+        agency_id_to_spreadsheets[spreadsheet["agency_id"]] += spreadsheet
 
     # A dictionary that maps state codes to their count of new agencies: {"us_state": 2}
     state_code_by_new_agency_count: Dict[str, int] = defaultdict(int)
@@ -282,6 +293,10 @@ def create_new_agency_columns(
                 agency_state_code = agency["state_code"]
                 state_code_by_new_agency_count[agency_state_code] += 1
 
+        used_bulk_upload = False
+        if len(agency_id_to_spreadsheets.get(agency["id"], [])) > 0:
+            used_bulk_upload = True
+
         agency[LAST_LOGIN] = last_login or ""
         agency[LOGIN_THIS_WEEK] = (
             last_login > (today + datetime.timedelta(days=-7)).date()
@@ -298,6 +313,7 @@ def create_new_agency_columns(
         agency[IS_SUPERAGENCY] = bool(agency["is_superagency"])
         agency[IS_CHILD_AGENCY] = bool(agency["super_agency_id"])
         agency[NEW_AGENCY_THIS_WEEK] = new_agency_this_week
+        agency[USED_BULK_UPLOAD] = used_bulk_upload
 
     return agencies, state_code_by_new_agency_count
 
@@ -344,6 +360,7 @@ def generate_agency_summary_csv(
         agency_user_account_associations,
         users,
         datapoints,
+        spreadsheets,
     ) = get_all_data(session=session)
     logger.info("Number of agencies: %s", len(agencies))
 
@@ -377,7 +394,10 @@ def generate_agency_summary_csv(
     today = datetime.datetime.now(tz=datetime.timezone.utc)
     # Create new agency columns and populate state_code_by_new_agency_count
     agencies, state_code_by_new_agency_count = create_new_agency_columns(
-        agencies=agencies, agency_id_to_users=agency_id_to_users, today=today
+        agencies=agencies,
+        agency_id_to_users=agency_id_to_users,
+        today=today,
+        spreadsheets=spreadsheets,
     )
 
     # Now that state_code_by_new_agency_count is populated, we can determine if
@@ -422,6 +442,7 @@ def generate_agency_summary_csv(
         IS_CHILD_AGENCY,
         NEW_AGENCY_THIS_WEEK,
         NEW_STATE_THIS_WEEK,
+        USED_BULK_UPLOAD,
     ] + system_columns
     df = (
         pd.DataFrame.from_records(agencies)
@@ -466,6 +487,7 @@ def generate_and_write_scoreboard(
         - num_agencies_shared_data_at_least_one_metric
         - num_agencies_at_least_one_metric_configured
         - num_agencies_data_shared_this_week
+        - num_agencies_used_bulk_upload
     """
     num_total_agencies = str(len(df))
     num_agencies_logged_in_last_week = str(len(df[df["login_this_week"]]))
@@ -477,6 +499,7 @@ def generate_and_write_scoreboard(
         len(df[df["num_metrics_configured"] > 0])
     )
     num_agencies_data_shared_this_week = str(len(df[df["data_shared_this_week"]]))
+    num_agencies_used_bulk_upload = str(len(df[df["used_bulk_upload"]]))
 
     # data_to_write is a list containing lists that represent new rows to append to the
     # existing Justice Counts Scoreboard spreadsheet
@@ -490,6 +513,7 @@ def generate_and_write_scoreboard(
             num_agencies_shared_data_at_least_one_metric,
             num_agencies_at_least_one_metric_configured,
             num_agencies_data_shared_this_week,
+            num_agencies_used_bulk_upload,
         ]
     ]
     append_row_to_spreadsheet(
