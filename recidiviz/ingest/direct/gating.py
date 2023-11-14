@@ -35,6 +35,11 @@ def ingest_pipeline_can_run_in_dag(
     if environment.in_gcp_production():
         return False
     staging_enabled_states = [
+        StateCode.US_AR,
+        StateCode.US_CA,
+        StateCode.US_CO,
+        StateCode.US_NC,
         StateCode.US_OZ,
+        StateCode.US_OR,
     ]
     return state_code in staging_enabled_states
