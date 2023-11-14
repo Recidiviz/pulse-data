@@ -22,9 +22,15 @@ from typing import Dict, List
 import yaml
 
 import recidiviz
+from recidiviz.airflow.dags import operators as operators_module
 from recidiviz.entrypoints.entrypoint_executor import (
     ENTRYPOINTS_BY_NAME,
     parse_arguments,
+)
+
+_RESOURCES_YAML_PATH = os.path.join(
+    os.path.dirname(operators_module.__file__),
+    "recidiviz_kubernetes_resources.yaml",
 )
 
 
@@ -52,3 +58,11 @@ class EntrypointsTest(unittest.TestCase):
             entrypoint = ENTRYPOINTS_BY_NAME[args.entrypoint]
             entrypoint_args = entrypoint.get_parser().parse_args(entrypoint_argv)
             self.assertIsNotNone(entrypoint_args)
+
+    def test_recidiviz_kubernetes_resources_matches_entrypoints(self) -> None:
+        with open(_RESOURCES_YAML_PATH, "r", encoding="utf-8") as f:
+            resources_config = yaml.safe_load(f)
+            resources_config_entrypoints = set(resources_config.keys())
+            entrypoints = set(ENTRYPOINTS_BY_NAME.keys())
+
+            self.assertSetEqual(resources_config_entrypoints, entrypoints)
