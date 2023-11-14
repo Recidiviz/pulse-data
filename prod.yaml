@@ -12,6 +12,7 @@ resources:
   disk_size_gb: 100
 automatic_scaling:
   min_num_instances: 4
+  max_num_instances: 10
 
 liveness_check:
   check_interval_sec: 5
