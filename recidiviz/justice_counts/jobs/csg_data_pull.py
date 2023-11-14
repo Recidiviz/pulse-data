@@ -69,6 +69,8 @@ NUM_TOTAL_POSSIBLE_METRICS = "num_total_possible_metrics"
 NUM_METRICS_WITH_DATA = "num_metrics_with_data"
 NUM_METRICS_CONFIGURED = "num_metrics_configured"
 METRIC_CONFIG_THIS_WEEK = "metric_configured_this_week"
+NUM_METRICS_AVAILABLE = "num_metrics_available"
+NUM_METRICS_UNAVAILABLE = "num_metrics_unavailable"
 IS_SUPERAGENCY = "is_superagency"
 IS_CHILD_AGENCY = "is_child_agency"
 NEW_STATE_THIS_WEEK = "new_state_this_week"
@@ -113,6 +115,8 @@ def summarize(
     report_id_to_datapoints = defaultdict(list)
     metric_key_to_datapoints = defaultdict(list)
     metrics_configured = set()
+    metrics_available = set()
+    metrics_unavailable = set()
 
     # last_update is the most recent date in which an agency or report datapoint
     # has been changed. For report datapoints, we do not consider null values
@@ -181,6 +185,10 @@ def summarize(
         ):
             # We consider a metric configured if it is either turned on or off
             metrics_configured.add(datapoint["metric_definition_key"])
+            if datapoint["enabled"] is True:
+                metrics_available.add(datapoint["metric_definition_key"])
+            elif datapoint["enabled"] is False:
+                metrics_unavailable.add(datapoint["metric_definition_key"])
 
     return {
         LAST_UPDATE: last_update.date()
@@ -190,6 +198,8 @@ def summarize(
         NUM_METRICS_WITH_DATA: len(metric_key_to_datapoints),
         NUM_METRICS_CONFIGURED: len(metrics_configured),
         METRIC_CONFIG_THIS_WEEK: metric_configured_this_week,
+        NUM_METRICS_AVAILABLE: len(metrics_available),
+        NUM_METRICS_UNAVAILABLE: len(metrics_unavailable),
         DATA_SHARED_THIS_WEEK: data_shared_this_week,
     }
 
@@ -332,6 +342,8 @@ def create_new_agency_columns(
         agency[NUM_METRICS_WITH_DATA] = 0
         agency[DATA_SHARED_THIS_WEEK] = False
         agency[NUM_METRICS_CONFIGURED] = 0
+        agency[NUM_METRICS_AVAILABLE] = 0
+        agency[NUM_METRICS_UNAVAILABLE] = 0
         agency[METRIC_CONFIG_THIS_WEEK] = False
         agency[IS_SUPERAGENCY] = bool(agency["is_superagency"])
         agency[IS_CHILD_AGENCY] = bool(agency["super_agency_id"])
@@ -462,6 +474,8 @@ def generate_agency_summary_csv(
         DATA_SHARED_THIS_WEEK,
         NUM_METRICS_CONFIGURED,
         METRIC_CONFIG_THIS_WEEK,
+        NUM_METRICS_AVAILABLE,
+        NUM_METRICS_UNAVAILABLE,
         IS_SUPERAGENCY,
         IS_CHILD_AGENCY,
         NEW_AGENCY_THIS_WEEK,
