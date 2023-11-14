@@ -137,7 +137,12 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
     def test_successfully_initializes_dag(self) -> None:
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
-                test_dag, session, {"ingest_instance": "PRIMARY"}
+                test_dag,
+                session,
+                {
+                    "ingest_instance": "PRIMARY",
+                    "trigger_ingest_dag_post_bq_refresh": False,
+                },
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
 
@@ -152,6 +157,7 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "my_prefix",
+                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -161,7 +167,11 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
             result = self.run_dag_test(
                 test_dag,
                 session,
-                {"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                {
+                    "ingest_instance": "PRIMARY",
+                    "state_code_filter": "US_XX",
+                    "trigger_ingest_dag_post_bq_refresh": True,
+                },
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
                     _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
@@ -175,6 +185,27 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 "[sandbox_prefix] must be set in dag_run configuration for PRIMARY ingest_instance when [state_code_filter] is set",
             )
 
+    def test_initializes_dag_missing_trigger_ingest_dag_post_bq_refresh(self) -> None:
+        with Session(bind=self.engine) as session:
+            result = self.run_dag_test(
+                test_dag,
+                session,
+                {
+                    "ingest_instance": "PRIMARY",
+                },
+                expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
+                expected_skipped_ids=[
+                    _WAIT_TO_CONTINUE_OR_CANCEL_TASK_ID,
+                    _HANDLE_QUEUEING_RESULT_TASK_ID,
+                    _WAIT_SECONDS_TASK_ID,
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+            self.assertEqual(
+                result.failure_messages[_VERIFY_PARAMETERS_TASK_ID],
+                "[trigger_ingest_dag_post_bq_refresh] must be set in dag_run configuration as boolean",
+            )
+
     def test_successfully_initializes_dag_secondary(self) -> None:
         with Session(bind=self.engine) as session:
             result = self.run_dag_test(
@@ -184,6 +215,7 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                     "ingest_instance": "SECONDARY",
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "my_prefix",
+                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
             )
             self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
@@ -198,6 +230,7 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "SECONDARY",
                     "sandbox_prefix": "my_prefix",
+                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[
@@ -221,6 +254,7 @@ class TestInitializeCalculationDagGroupIntegration(AirflowIntegrationTest):
                 run_conf={
                     "ingest_instance": "SECONDARY",
                     "state_code_filter": "US_XX",
+                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
                 expected_failure_ids=[_VERIFY_PARAMETERS_TASK_ID],
                 expected_skipped_ids=[

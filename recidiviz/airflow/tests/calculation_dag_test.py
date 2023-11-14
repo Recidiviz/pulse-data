@@ -658,6 +658,12 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         )
         self.recidiviz_dataflow_operator_patcher.start()
 
+        self.pubsub_publish_message_operator_patcher = patch(
+            "recidiviz.airflow.dags.calculation_dag.PubSubPublishMessageOperator",
+            side_effect=fake_operator_constructor,
+        )
+        self.pubsub_publish_message_operator_patcher.start()
+
         self.dag = create_calculation_dag()
 
         self.known_configuration_parameters_patcher = patch.dict(
@@ -675,11 +681,31 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
         self.kubernetes_pod_operator_patcher.stop()
         self.recidiviz_dataflow_operator_patcher.stop()
         self.known_configuration_parameters_patcher.stop()
+        self.pubsub_publish_message_operator_patcher.stop()
 
     def test_calculation_dag(self) -> None:
         with Session(bind=self.engine) as session:
             self.run_dag_test(
-                self.dag, session=session, run_conf={"ingest_instance": "PRIMARY"}
+                self.dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                    "trigger_ingest_dag_post_bq_refresh": True,
+                },
+            )
+
+    def test_calculation_dag_trigger_ingest_dag_false(self) -> None:
+        with Session(bind=self.engine) as session:
+            self.run_dag_test(
+                self.dag,
+                session=session,
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                    "trigger_ingest_dag_post_bq_refresh": False,
+                },
+                expected_skipped_ids=[
+                    r"\.trigger_ingest_dag",
+                ],
             )
 
     def test_calculation_dag_with_state(self) -> None:
@@ -687,7 +713,11 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
             self.run_dag_test(
                 self.dag,
                 session=session,
-                run_conf={"ingest_instance": "PRIMARY", "state_code_filter": "US_XX"},
+                run_conf={
+                    "ingest_instance": "PRIMARY",
+                    "state_code_filter": "US_XX",
+                    "trigger_ingest_dag_post_bq_refresh": True,
+                },
                 expected_failure_ids=[
                     r"verify_parameters",
                 ],
@@ -695,6 +725,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     r"wait_to_continue_or_cancel",
                     r"handle_queueing_result",
                     r"bq_refresh",
+                    r"manage_trigger_ingest_dag",
                     r"update_managed_views",
                     r"normalization",
                     r"update_normalized_state",
@@ -717,6 +748,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "PRIMARY",
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "test_prefix",
+                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
                 expected_skipped_ids=[
                     r"US[_-]YY",
@@ -736,6 +768,7 @@ class TestCalculationDagIntegration(AirflowIntegrationTest):
                     "ingest_instance": "SECONDARY",
                     "state_code_filter": "US_XX",
                     "sandbox_prefix": "test_prefix",
+                    "trigger_ingest_dag_post_bq_refresh": True,
                 },
                 expected_skipped_ids=[
                     r"US[_-]YY",

@@ -21,8 +21,9 @@ This file is uploaded to GCS on deploy.
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional, Type, Union
 
-from airflow.decorators import dag, task
+from airflow.decorators import dag, task, task_group
 from airflow.models import DagRun
+from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -48,6 +49,7 @@ from recidiviz.airflow.dags.utils.config_utils import (
     get_ingest_instance,
     get_sandbox_prefix,
     get_state_code_filter,
+    get_trigger_ingest_dag_post_bq_refresh,
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.environment import get_project_id
@@ -120,6 +122,28 @@ def refresh_bq_dataset_operator(schema_type: str) -> RecidivizKubernetesPodOpera
             SANDBOX_PREFIX_JINJA_ARG,
         ],
     )
+
+
+@task_group
+def manage_trigger_ingest_dag() -> None:
+    """Manage the triggering of the ingest DAG."""
+
+    trigger_ingest_dag = PubSubPublishMessageOperator(
+        task_id="trigger_ingest_dag",
+        project_id=get_project_id(),
+        topic="v1.ingest.trigger_ingest_dag",
+        messages=[{}],
+    )
+
+    @task.short_circuit()
+    def should_trigger_ingest_dag(dag_run: Optional[DagRun] = None) -> bool:
+        """Checks whether the ingest DAG should be triggered."""
+        if not dag_run:
+            raise ValueError("Dag run not passed to task")
+
+        return get_trigger_ingest_dag_post_bq_refresh(dag_run)
+
+    should_trigger_ingest_dag() >> trigger_ingest_dag
 
 
 def execute_update_normalized_state() -> RecidivizKubernetesPodOperator:
@@ -381,9 +405,8 @@ def create_calculation_dag() -> None:
             ManagedViewUpdateType.REFERENCE_VIEWS_ONLY
         )  # TODO(#22528): Remove this once pipelines implicitly get the latest views.
         >> bq_refresh
+        >> manage_trigger_ingest_dag()
     )
-
-    # TODO(#24198): Trigger ingest dag for enabled states
 
     trigger_update_all_views = update_managed_views_operator(ManagedViewUpdateType.ALL)
 
