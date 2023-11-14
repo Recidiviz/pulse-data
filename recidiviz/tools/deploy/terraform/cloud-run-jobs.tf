@@ -27,7 +27,7 @@ resource "google_cloud_run_v2_job" "admin_panel_recalculate_stores" {
         args    = ["run", "python", "-m", "recidiviz.admin_panel.entrypoints.hydrate_cache"]
       }
       vpc_access {
-        connector = google_vpc_access_connector.us_central_redis_vpc_connector.name
+        connector = google_vpc_access_connector.us_central_redis_vpc_connector.id
         egress    = "PRIVATE_RANGES_ONLY"
       }
     }
