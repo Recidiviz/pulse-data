@@ -396,9 +396,10 @@ def create_calculation_dag() -> None:
     )
 
     with TaskGroup(group_id="normalization") as normalization_task_group:
-        create_branching_by_key(
-            normalization_pipeline_branches_by_state_code(), get_state_code_filter
+        normalization_pipelines_by_state = (
+            normalization_pipeline_branches_by_state_code()
         )
+        create_branching_by_key(normalization_pipelines_by_state, get_state_code_filter)
 
     update_normalized_state = execute_update_normalized_state()
 
@@ -426,8 +427,10 @@ def create_calculation_dag() -> None:
 
     with TaskGroup(group_id="validations") as validations:
         create_branching_by_key(
+            # We turn on validations (may still be in dev mode) as soon as there is
+            # any ingest output that may feed into our BQ views.
             validation_branches_by_state_code(
-                post_normalization_pipelines_by_state.keys()
+                states_to_validate=normalization_pipelines_by_state.keys()
             ),
             get_state_code_filter,
         )
