@@ -39,6 +39,7 @@ from recidiviz.justice_counts.control_panel.utils import (
     append_row_to_spreadsheet,
     write_data_to_spreadsheet,
 )
+from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.utils.constants import AGENCIES_TO_EXCLUDE
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -64,6 +65,7 @@ LAST_LOGIN = "last_login"
 LOGIN_THIS_WEEK = "login_this_week"
 LAST_UPDATE = "last_update"
 NUM_RECORDS_WITH_DATA = "num_records_with_data"
+NUM_TOTAL_POSSIBLE_METRICS = "num_total_possible_metrics"
 NUM_METRICS_WITH_DATA = "num_metrics_with_data"
 NUM_METRICS_CONFIGURED = "num_metrics_configured"
 METRIC_CONFIG_THIS_WEEK = "metric_configured_this_week"
@@ -232,6 +234,19 @@ def get_all_data(
     )
 
 
+def build_system_to_num_metrics_dict() -> Dict[str, int]:
+    """Helper function that builds a dictionary that maps a system to the number of
+    possible metrics an agency with that system could have. The values for each of these
+    systems were calculated based on the number of MetricFiles (that do not have
+    disaggregations) for the given system.
+    """
+    system_to_num_metrics_dict: Dict[str, int] = defaultdict(int)
+
+    for system, metrics in METRICS_BY_SYSTEM.items():
+        system_to_num_metrics_dict[system] = len(metrics)
+    return system_to_num_metrics_dict
+
+
 def create_new_agency_columns(
     agencies: List[schema.Agency],
     agency_id_to_users: Dict[str, List[schema.UserAccount]],
@@ -244,12 +259,15 @@ def create_new_agency_columns(
     - is_superagency
     - is_child_agency
     - new_agency_this_week
+    - num_total_possible_metrics
     - used_bulk_upload
     """
     # A dictionary that maps agency_ids to a list of uploaded spreadsheets
     agency_id_to_spreadsheets: Dict[str, List[schema.Spreadsheet]] = defaultdict(list)
     for spreadsheet in spreadsheets:
         agency_id_to_spreadsheets[spreadsheet["agency_id"]] += spreadsheet
+
+    system_to_num_metrics_dict = build_system_to_num_metrics_dict()
 
     # A dictionary that maps state codes to their count of new agencies: {"us_state": 2}
     state_code_by_new_agency_count: Dict[str, int] = defaultdict(int)
@@ -293,6 +311,10 @@ def create_new_agency_columns(
                 agency_state_code = agency["state_code"]
                 state_code_by_new_agency_count[agency_state_code] += 1
 
+        num_total_possible_metrics = 0
+        for system in agency["systems"]:
+            num_total_possible_metrics += system_to_num_metrics_dict[system]
+
         used_bulk_upload = False
         if len(agency_id_to_spreadsheets.get(agency["id"], [])) > 0:
             used_bulk_upload = True
@@ -306,6 +328,7 @@ def create_new_agency_columns(
         agency[CREATED_AT] = agency_created_at_str or first_user_created_at or ""
         agency[LAST_UPDATE] = ""
         agency[NUM_RECORDS_WITH_DATA] = 0
+        agency[NUM_TOTAL_POSSIBLE_METRICS] = num_total_possible_metrics
         agency[NUM_METRICS_WITH_DATA] = 0
         agency[DATA_SHARED_THIS_WEEK] = False
         agency[NUM_METRICS_CONFIGURED] = 0
@@ -434,6 +457,7 @@ def generate_agency_summary_csv(
         LOGIN_THIS_WEEK,
         LAST_UPDATE,
         NUM_RECORDS_WITH_DATA,
+        NUM_TOTAL_POSSIBLE_METRICS,
         NUM_METRICS_WITH_DATA,
         DATA_SHARED_THIS_WEEK,
         NUM_METRICS_CONFIGURED,
