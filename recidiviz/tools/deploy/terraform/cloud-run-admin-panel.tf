@@ -69,7 +69,7 @@ resource "google_cloud_run_service" "admin_panel" {
         resources {
           limits = {
             cpu    = "1000m"
-            memory = "1024Mi"
+            memory = "2Gi"
           }
         }
       }

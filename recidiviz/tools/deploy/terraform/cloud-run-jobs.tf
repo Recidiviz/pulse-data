@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-resource "google_cloud_run_v2_job" "admin_panel_recalculate_stores" {
-  name     = "admin-panel-recalculate-stores"
+resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
+  name     = "admin-panel-hydrate-cache"
   location = var.region
   provider = "google-beta"
 
@@ -25,6 +25,10 @@ resource "google_cloud_run_v2_job" "admin_panel_recalculate_stores" {
         image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
         args    = ["run", "python", "-m", "recidiviz.admin_panel.entrypoints.hydrate_cache"]
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
       }
       vpc_access {
         connector = google_vpc_access_connector.us_central_redis_vpc_connector.id
