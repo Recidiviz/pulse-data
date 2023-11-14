@@ -49,14 +49,15 @@ resource "google_composer_environment" "default_v2" {
         "api-composer_auth_user_registration_role" = "Op"
         # The default maximum is 1024, but there may be instances where we may have stopped
         # SFTP and will need to catch up after a few days, so we will increase the limit.
-        "core-max_map_length"       = 2000
-        "celery-worker_concurrency" = 16
-        "email-email_backend"       = "airflow.providers.sendgrid.utils.emailer.send_email"
-        "email-email_conn_id"       = "sendgrid_default"
-        "webserver-rbac"            = true
-        "webserver-web_server_name" = "orchestration-v2"
-        "secrets-backend"           = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
-        "secrets-backend_kwargs"    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
+        "core-max_map_length"                       = 2000
+        "celery-worker_concurrency"                 = 16
+        "email-email_backend"                       = "airflow.providers.sendgrid.utils.emailer.send_email"
+        "email-email_conn_id"                       = "sendgrid_default"
+        "webserver-rbac"                            = true
+        "webserver-web_server_name"                 = "orchestration-v2"
+        "scheduler-scheduler_zombie_task_threshold" = 1200
+        "secrets-backend"                           = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
+        "secrets-backend_kwargs"                    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
       }
       env_variables = {
         "RECIDIVIZ_APP_ENGINE_IMAGE" = "us.gcr.io/${var.project_id}/appengine/default:${var.docker_image_tag}"
