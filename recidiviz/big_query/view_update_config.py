@@ -29,11 +29,23 @@ _MAX_SINGLE_VIEW_MATERIALIZATION_TIME_SECONDS = 60 * 6  # 6 min
 # PULL REQUEST.
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 _ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
-    # This is a foundational view that is know to be expensive - we're ok with this
+    # This is a foundational view that is known to be expensive - we're ok with this
     # taking a bit longer to materialize.
     BigQueryAddress(
         dataset_id="sessions",
         table_id="dataflow_sessions",
+    ): (60 * 10),
+    # This is a foundational view that is known to be expensive - we're ok with this
+    # taking a bit longer to materialize.
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_officer_aggregated_metrics",
+    ): (60 * 10),
+    # This is a foundational view that is known to be expensive - we're ok with this
+    # taking a bit longer to materialize.
+    BigQueryAddress(
+        dataset_id="aggregated_metrics",
+        table_id="supervision_office_aggregated_metrics",
     ): (60 * 10),
 }
 
