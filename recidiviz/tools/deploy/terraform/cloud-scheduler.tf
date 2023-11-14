@@ -201,16 +201,15 @@ resource "google_cloud_scheduler_job" "hydrate_admin_panel_cache" {
   # when this cron job runs, create and run a Batch job
   http_target {
     http_method = "POST"
-    uri         = "https://${var.app_engine_region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.admin_panel_recalculate_stores.name}/jobs:run"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.admin_panel_hydrate_cache.name}:run"
 
     headers = {
       "Content-Type" = "application/json"
       "User-Agent"   = "Google-Cloud-Scheduler"
     }
 
-    oidc_token {
+    oauth_token {
       service_account_email = google_service_account.admin_panel_cloud_run.email
-      audience              = local.cloud_run_iap_client
     }
   }
 }
