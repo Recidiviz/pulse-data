@@ -168,6 +168,7 @@ def trigger_metric_view_data_operator(
             SANDBOX_PREFIX_JINJA_ARG,
             *additional_args,
         ],
+        retries=1,
     )
 
 
