@@ -132,7 +132,7 @@ def manage_trigger_ingest_dag() -> None:
         task_id="trigger_ingest_dag",
         project_id=get_project_id(),
         topic="v1.ingest.trigger_ingest_dag",
-        messages=[{}],
+        messages=[{"data": b"{}"}],
     )
 
     @task.short_circuit()
