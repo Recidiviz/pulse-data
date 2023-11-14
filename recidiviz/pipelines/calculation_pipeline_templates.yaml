@@ -69,6 +69,12 @@ metric_pipelines:
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-east1
     staging_only: True
+  - pipeline: population_span_metrics
+    job_name: full-us-ar-population-span-metrics
+    state_code: US_AR
+    metric_types: SUPERVISION_POPULATION_SPAN
+    region: us-east1
+    staging_only: True
 
   # Full US_ND calculations with no time limit
   - pipeline: recidivism_metrics
