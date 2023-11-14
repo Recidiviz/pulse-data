@@ -94,7 +94,7 @@ class IngestOperationsStore(AdminPanelStore):
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
         self.bq_client = BigQueryClientImpl()
 
-    def recalculate_store(self) -> None:
+    def hydrate_cache(self) -> None:
         # This store currently does not store any internal state that can be refreshed.
         # Data must be fetched manually from other public methods.
         pass

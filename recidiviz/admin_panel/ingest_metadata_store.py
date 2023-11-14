@@ -105,8 +105,8 @@ class IngestDataFreshnessStore(AdminPanelStore):
         self.gcs_fs = GcsfsFactory.build()
         self.bq_client: BigQueryClient = BigQueryClientImpl()
 
-    def recalculate_store(self) -> None:
-        # Data freshness is too expensive to recalculate every 15 min.
+    def hydrate_cache(self) -> None:
+        # not implemented
         pass
 
     @property

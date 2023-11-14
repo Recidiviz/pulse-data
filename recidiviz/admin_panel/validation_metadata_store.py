@@ -395,19 +395,20 @@ class ValidationStatusStore(AdminPanelStore):
 
     def __init__(self) -> None:
         self.bq_client: BigQueryClient = BigQueryClientImpl()
-
-        self.records: Optional[ValidationStatusRecords_pb2] = None
+        self.cache_key = f"{self.__class__}"
 
     @property
     def state_codes(self) -> List[StateCode]:
-        if self.records is None:
+        records = self.fetch_data()
+        if records is None:
             raise ServiceUnavailable("Validation results not yet loaded")
+
         return [
             StateCode(state_code)
-            for state_code in set(record.state_code for record in self.records.records)
+            for state_code in set(record.state_code for record in records.records)
         ]
 
-    def recalculate_store(self) -> None:
+    def hydrate_cache(self) -> None:
         """Recalculates validation data by querying the validation data store"""
         query_job = self.bq_client.run_query_async(
             query_str=results_query(
@@ -427,16 +428,28 @@ class ValidationStatusStore(AdminPanelStore):
 
         if not records:
             # No validation results exist.
-            self.records = None
             return
 
         # Swap results
-        self.records = ValidationStatusRecords_pb2(records=records)
+        self.redis.set(
+            self.cache_key,
+            ValidationStatusRecords_pb2(records=records).SerializeToString(),
+        )
+
+    def fetch_data(self) -> Optional[ValidationStatusRecords_pb2]:
+        contents = self.redis.get(self.cache_key)
+        if not contents:
+            return None
+
+        records = ValidationStatusRecords_pb2()
+        records.ParseFromString(contents)
+        return records
 
     def get_most_recent_validation_results(self) -> ValidationStatusRecords_pb2:
-        if self.records is None:
+        records = self.fetch_data()
+        if records is None:
             raise ServiceUnavailable("Validation results not yet loaded")
-        return self.records
+        return records
 
     def get_results_for_validation(
         self, validation_name: str, state_code: str, days_to_include: int

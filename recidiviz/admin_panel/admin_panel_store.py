@@ -17,10 +17,29 @@
 """An interface for data stores used to hold some sort of state for the Admin Panel."""
 from abc import abstractmethod
 
+from redis import Redis
+
+from recidiviz.case_triage.util import get_redis_connection_options
+from recidiviz.utils.secrets import get_secret
+
+
+def get_admin_panel_redis() -> Redis:
+    host = get_secret("admin_panel_redis_host")
+    port = get_secret("admin_panel_redis_port")
+
+    if host is None or port is None:
+        raise ValueError(
+            f"Unable to create admin panel cache with host: {host} port: {port}"
+        )
+
+    return Redis(host=host, port=int(port), **get_redis_connection_options())
+
 
 class AdminPanelStore:
+    @property
+    def redis(self) -> Redis:
+        return get_admin_panel_redis()
+
     @abstractmethod
-    def recalculate_store(self) -> None:
-        """Recalculates the state of the internal store. This is called every 15 min
-        to check for updated data.
-        """
+    def hydrate_cache(self) -> None:
+        """Recalculates the state of the internal store. This is called every 15 minutes inside a Cloud Run Job"""

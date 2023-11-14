@@ -33,6 +33,8 @@ As needed:
    to load fixture data into the local case triage DB.
 8. Follow the instructions in `recidiviz/tools/justice_counts/control_panel/load_fixtures.py`
    to load fixture data into the local justice counts DB.
+9. Run the command at `recidiviz/admin_panel/entrypoints/hydrate_cache.py` to refresh the
+   cached admin store data
 
 If your local development environment is failing to build properly on main, try
 running `docker build . -t us.gcr.io/recidiviz-staging/appengine/default:latest`
