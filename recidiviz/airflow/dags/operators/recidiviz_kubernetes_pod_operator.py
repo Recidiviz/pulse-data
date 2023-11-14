@@ -149,6 +149,7 @@ def build_kubernetes_pod_task(
     arguments: List[str],
     container_name: str,
     trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
+    retries: int = 0,
 ) -> RecidivizKubernetesPodOperator:
     """
     Builds an operator that launches a container using the appengine image in the user workloads Kubernetes namespace
@@ -178,4 +179,5 @@ def build_kubernetes_pod_task(
             k8s.V1EnvVar(name="CONTAINER_NAME", value=container_name),
         ],
         trigger_rule=trigger_rule,
+        retries=retries,
     )
