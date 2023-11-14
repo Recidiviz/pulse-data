@@ -131,8 +131,9 @@ def write_data_to_spreadsheet(
     df: Optional[pd.DataFrame] = None,
     columns: Optional[List[str]] = None,
     overwrite_sheets: Optional[bool] = False,
-) -> None:
-    """Writes data to the spreadsheet specified by the spreadsheet_id.
+) -> int:
+    """Writes data to the spreadsheet specified by the spreadsheet_id and
+    returns sheet_id where the data was written.
 
     If overwrite_sheets is True and the sheet already exists, we delete the old
     spreadsheet before creating a new one.
@@ -185,6 +186,17 @@ def write_data_to_spreadsheet(
     ).execute()
 
     logger.info("Sheet '%s' added and data written.", new_sheet_title)
+    sheets = (
+        spreadsheet_service.spreadsheets()
+        .get(spreadsheetId=spreadsheet_id)
+        .execute()["sheets"]
+    )
+    sheet = list(
+        filter(lambda sheet: sheet["properties"]["title"] == new_sheet_title, sheets)
+    ).pop()
+
+    sheet_id = sheet["properties"]["sheetId"]
+    return sheet_id
 
 
 def append_row_to_spreadsheet(
@@ -202,7 +214,7 @@ def append_row_to_spreadsheet(
     """
     spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
 
-    # Append row to end of spreasheet
+    # Append row to end of spreadsheet
     spreadsheet_service.spreadsheets().values().append(
         body={"values": data_to_write},
         spreadsheetId=spreadsheet_id,
@@ -233,3 +245,24 @@ def append_row_to_spreadsheet(
         logger.info(
             "'%s' sheet has been sorted by the %s column.", sheet_title, sort_by
         )
+
+
+def format_spreadsheet_rows(
+    google_credentials: Credentials,
+    spreadsheet_id: str,
+    logger: logging.Logger,
+    sheet_title: str,
+    format_requests: List[Dict[str, Any]],
+) -> None:
+    """
+    Sends format requests to the specified spreadsheet id. Format requests can increase
+    cell size, bold / italicize text, etc.
+    """
+    spreadsheet_service = build("sheets", "v4", credentials=google_credentials)
+    spreadsheet_service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id,
+        body={
+            "requests": format_requests,
+        },
+    ).execute()
+    logger.info("Rows have been formatted in the sheet '%s'.", sheet_title)

@@ -18,6 +18,7 @@
 
 from typing import List, Optional, Set
 
+from sqlalchemy import and_, not_, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -181,5 +182,31 @@ class UserAccountInterface:
         return (
             session.query(UserAccount)
             .filter(UserAccount.email.contains("@csg.org"))
+            .all()
+        )
+
+    @staticmethod
+    def get_csg_and_recidiviz_users(session: Session) -> List[UserAccount]:
+        return (
+            session.query(UserAccount)
+            .filter(
+                or_(
+                    UserAccount.email.contains("@csg.org"),
+                    UserAccount.email.contains("@recidiviz.org"),
+                )
+            )
+            .all()
+        )
+
+    @staticmethod
+    def get_non_csg_and_recidiviz_users(session: Session) -> List[UserAccount]:
+        return (
+            session.query(UserAccount)
+            .filter(
+                and_(
+                    not_(UserAccount.email.contains("@csg.org")),
+                    not_(UserAccount.email.contains("@recidiviz.org")),
+                )
+            )
             .all()
         )

@@ -32,6 +32,7 @@ from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
 from recidiviz.justice_counts.jobs.super_agency_data_pull import (
     generate_superagency_summary,
 )
+from recidiviz.justice_counts.jobs.user_permissions_check import check_user_permissions
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
@@ -111,3 +112,13 @@ if __name__ == "__main__":
         )
     except Exception as e:
         logger.info("Superagency Data Pull Script Failed: %s", str(e))
+    try:
+        logger.info("Closing DB Connection Before Running User Permissions Check")
+        logger.info("Running User Permissions Checks")
+        check_user_permissions(
+            google_credentials=credentials,
+            project_id=args.project_id,
+            session=global_session,
+        )
+    except Exception as e:
+        logger.info("User Permissions Check: %s", str(e))
