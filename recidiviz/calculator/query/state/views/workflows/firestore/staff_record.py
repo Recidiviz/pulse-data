@@ -40,6 +40,9 @@ from recidiviz.calculator.query.state.views.workflows.us_mo.incarceration_staff_
 from recidiviz.calculator.query.state.views.workflows.us_nd.supervision_staff_template import (
     US_ND_SUPERVISION_STAFF_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.workflows.us_tn.incarceration_staff_template import (
+    US_TN_INCARCERATION_STAFF_TEMPLATE,
+)
 from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_staff_template import (
     US_TN_SUPERVISION_STAFF_TEMPLATE,
 )
@@ -68,6 +71,7 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
         , mi_staff AS ({US_MI_SUPERVISION_STAFF_TEMPLATE})
         , mo_staff AS ({US_MO_INCARCERATION_STAFF_TEMPLATE})
         , ca_staff AS ({US_CA_SUPERVISION_STAFF_TEMPLATE})
+        , tn_facility_staff AS ({US_TN_INCARCERATION_STAFF_TEMPLATE})
     
     SELECT {{columns}} FROM tn_staff
     UNION ALL 
@@ -84,6 +88,8 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
     SELECT {{columns}} FROM mo_staff
     UNION ALL
     SELECT {{columns}} FROM ca_staff
+    UNION ALL
+    SELECT {{columns}} FROM tn_facility_staff
 """
 
 # TODO(#25057): Remove staff_record once we are fully using incarceration and supervision staff collections

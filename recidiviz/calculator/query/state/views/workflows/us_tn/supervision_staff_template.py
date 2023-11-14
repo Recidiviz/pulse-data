@@ -59,7 +59,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
             CAST(NULL AS STRING) AS role_subtype,
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Staff_latest` staff
         LEFT JOIN staff_from_report
-        ON logic_staff = StaffID
+            ON logic_staff = StaffID
         LEFT JOIN `{project_id}.{reference_views_dataset}.product_roster_materialized` r
             ON r.external_id = staff.StaffId
             AND r.state_code = 'US_TN'

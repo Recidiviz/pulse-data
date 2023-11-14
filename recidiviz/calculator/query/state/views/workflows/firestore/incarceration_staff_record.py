@@ -25,6 +25,9 @@ from recidiviz.calculator.query.state.views.workflows.us_me.staff_template impor
 from recidiviz.calculator.query.state.views.workflows.us_mo.incarceration_staff_template import (
     US_MO_INCARCERATION_STAFF_TEMPLATE,
 )
+from recidiviz.calculator.query.state.views.workflows.us_tn.incarceration_staff_template import (
+    US_TN_INCARCERATION_STAFF_TEMPLATE,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -41,9 +44,12 @@ INCARCERATION_STAFF_RECORD_QUERY_TEMPLATE = f"""
     WITH 
           me_staff AS ({build_us_me_staff_template("resident_record_materialized")})
         , mo_staff AS ({US_MO_INCARCERATION_STAFF_TEMPLATE})
+        , tn_staff AS ({US_TN_INCARCERATION_STAFF_TEMPLATE})
     SELECT {{columns}} FROM me_staff    
     UNION ALL
     SELECT {{columns}} FROM mo_staff
+    UNION ALL
+    SELECT {{columns}} FROM tn_staff
 """
 
 INCARCERATION_STAFF_RECORD_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
