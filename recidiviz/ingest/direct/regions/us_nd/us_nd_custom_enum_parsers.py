@@ -29,6 +29,7 @@ from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodCustodyLevel,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
@@ -41,7 +42,7 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 )
 from recidiviz.common.str_field_utils import parse_datetime
 
-OTHER_STATE_FACILITY = "OOS"
+OTHER_STATE_FACILITY = ("OOS", "OS", "MINN", "SD")
 
 POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
     StateCustodialAuthority, List[str]
@@ -54,6 +55,12 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
         "NW",
         "SC",
         "SW",
+        "SE",
+        "EAST",
+        "NE",
+        "NEC",
+        "NC",
+        "FD",  # Federal court
     ],
     StateCustodialAuthority.EXTERNAL_UNKNOWN: [
         # Could be a county jail or another state's facility
@@ -88,6 +95,8 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
         "TRCC",
         "TRN",
         "YCC",
+        "JRMU",
+        "DWCRC1",
     ],
 }
 
@@ -103,6 +112,12 @@ POST_JULY_2017_PFI_ENUM_MAP: Dict[
         "NW",
         "SC",
         "SW",
+        "SE",
+        "EAST",
+        "NE",
+        "NEC",
+        "NC",
+        "FD",  # Federal court
     ],
     StateSpecializedPurposeForIncarceration.GENERAL: [
         "BTC",
@@ -133,6 +148,8 @@ POST_JULY_2017_PFI_ENUM_MAP: Dict[
         "TRCC",
         "TRN",
         "YCC",
+        "JRMU",
+        "DWCRC1",
     ],
 }
 
@@ -173,10 +190,10 @@ def custodial_authority_from_facility_and_dates(
 ) -> StateCustodialAuthority:
     facility, datetime_str_for_comparison = raw_text.split("-", maxsplit=1)
 
-    if facility == OTHER_STATE_FACILITY:
+    if facility in OTHER_STATE_FACILITY:
         return StateCustodialAuthority.OTHER_STATE
 
-    # Everything except OOS (checked above) was overseen by DOCR before July 1, 2017.
+    # Everything except OOS and OS (checked above) was overseen by DOCR before July 1, 2017.
     if _datetime_str_is_before_2017_custodial_authority_cutoff(
         datetime_str_for_comparison, StateCustodialAuthority
     ):
@@ -197,7 +214,7 @@ def pfi_from_facility_and_dates(
 ) -> StateSpecializedPurposeForIncarceration:
     facility, datetime_str_for_comparison = raw_text.split("-", maxsplit=1)
 
-    if facility == OTHER_STATE_FACILITY:
+    if facility in OTHER_STATE_FACILITY:
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
 
     # There were no periods of temporary custody before July 1, 2017.
@@ -292,3 +309,29 @@ def supervision_contact_method_mapper(raw_text: str) -> StateSupervisionContactM
     if "OC" in codes:  # Offender Communication
         return StateSupervisionContactMethod.VIRTUAL
     return StateSupervisionContactMethod.INTERNAL_UNKNOWN
+
+
+def parse_custody_level(raw_text: str) -> StateIncarcerationPeriodCustodyLevel:
+    """
+    Comments on the supervision level are included in the raw text for this field
+    so that we can determine if a person has a warrant or detainer downstream.
+
+    This parser pulls only the supervision level from the raw text and assigns a custody
+    level accordingly.
+    """
+    level = raw_text.split("|")[0]
+    if level in ("MIN", "MHI", "MH", "MLOW"):
+        return StateIncarcerationPeriodCustodyLevel.MINIMUM
+    if level in ("X", "ESCAPE", "COM"):
+        return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN
+    if level in ("N/A", "UNCLASS", "INFERRED-UNCLASS"):
+        return StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN
+    if level == "INFERRED-INTAKE":
+        return StateIncarcerationPeriodCustodyLevel.INTAKE
+    if level in ("MEDR", "MED"):
+        return StateIncarcerationPeriodCustodyLevel.MEDIUM
+    if level in ("MAX", "MAXF"):
+        return StateIncarcerationPeriodCustodyLevel.MAXIMUM
+    if level == "CLO":
+        return StateIncarcerationPeriodCustodyLevel.CLOSE
+    return StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN

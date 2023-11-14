@@ -7,10 +7,12 @@ input_columns:
   - period_sequence
   - offender_book_id
   - admission_reason_code
-  - admission_date
+  - start_date
   - facility
+  - custody_level
   - release_reason_code
-  - release_date
+  - end_date
+  - override_reason
 unused_columns: []
 output:
   StatePerson:
@@ -25,8 +27,8 @@ output:
               $values:
                 - offender_book_id
                 - period_sequence
-          admission_date: admission_date
-          release_date: release_date
+          admission_date: start_date
+          release_date: end_date
           facility: facility
           incarceration_type:
             $enum_mapping:
@@ -40,6 +42,12 @@ output:
                   - NW
                   - SC
                   - SW
+                  - SE
+                  - EAST
+                  - NE
+                  - NEC
+                  - NC
+                  - FD # Federal court
                 StateIncarcerationType.EXTERNAL_UNKNOWN:
                   # Could be a county jail or another state's facility
                   - NTAD
@@ -48,6 +56,7 @@ output:
                   - CONT
                   - CPP
                   - DWCRC
+                  - DWCRC1
                   - FTPFAR
                   - FTPMND
                   - GFC
@@ -62,7 +71,6 @@ output:
                   - MTPMND
                   - NCCRC
                   - NDSP
-                  - OOS
                   - OUT
                   - PREA
                   - PROB
@@ -73,6 +81,12 @@ output:
                   - TRCC
                   - TRN
                   - YCC
+                  - JRMU
+                  - OS
+                  - OOS
+                  # Each of these only appears once, likely MN and SD
+                  - MINN
+                  - SD
           custodial_authority:
             $enum_mapping:
               $raw_text:
@@ -81,9 +95,9 @@ output:
                     - facility
                     - $conditional:
                         - $if:
-                            $not_null: admission_date
-                          $then: admission_date
-                        - $else: release_date
+                            $not_null: start_date
+                          $then: start_date
+                        - $else: end_date
               $custom_parser: us_nd_custom_enum_parsers.custodial_authority_from_facility_and_dates
           specialized_purpose_for_incarceration:
             $enum_mapping:
@@ -93,9 +107,9 @@ output:
                     - facility
                     - $conditional:
                         - $if:
-                            $not_null: admission_date
-                          $then: admission_date
-                        - $else: release_date
+                            $not_null: start_date
+                          $then: start_date
+                        - $else: end_date
               $custom_parser: us_nd_custom_enum_parsers.pfi_from_facility_and_dates
           admission_reason:
             $enum_mapping:
@@ -145,6 +159,9 @@ output:
                   - SUPL
                 StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION:
                   - OOS
+                  - TRN
+                StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE:
+                  - STATUS_CHANGE
           release_reason:
             $enum_mapping:
               $raw_text: release_reason_code
@@ -154,6 +171,8 @@ output:
                 - CONV
                 - REC
                 - "4139"
+                - READMN
+                - ADM ERROR # This appears exactly once because of a data entry error
               $mappings:
                 StateIncarcerationPeriodReleaseReason.ESCAPE:
                   - ESC
@@ -194,3 +213,14 @@ output:
                   - SUPL
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - TRN
+                StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                  - STATUS_CHANGE
+          custody_level:
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - custody_level
+                    - override_reason
+                  $separator: "|"
+              $custom_parser: us_nd_custom_enum_parsers.parse_custody_level
