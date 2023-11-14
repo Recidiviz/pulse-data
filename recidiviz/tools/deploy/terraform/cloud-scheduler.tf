@@ -184,3 +184,38 @@ resource "google_cloud_scheduler_job" "check_region_outstanding_work" {
     }
   }
 }
+
+
+resource "google_cloud_scheduler_job" "hydrate_admin_panel_cache" {
+  name             = "hydrate-admin-panel-cache"
+  schedule         = "*/15 * * * *" # Every 15 minutes
+  description      = "[Admin Panel] Hydrate cache"
+  time_zone        = "America/Los_Angeles"
+  attempt_deadline = "600s" # 10 minutes
+
+  retry_config {
+    min_backoff_duration = "30s"
+    max_doublings        = 5
+  }
+
+  # when this cron job runs, create and run a Batch job
+  http_target {
+    http_method = "POST"
+    uri         = "https://${var.app_engine_region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.admin_panel_recalculate_stores.name}/jobs:run"
+
+    headers = {
+      "Content-Type" = "application/json"
+      "User-Agent"   = "Google-Cloud-Scheduler"
+    }
+
+    oidc_token {
+      service_account_email = google_service_account.admin_panel_cloud_run.email
+      audience              = local.cloud_run_iap_client
+    }
+  }
+}
+
+locals {
+  # Found at https://console.cloud.google.com/apis/credentials (IAP-admin-panel-load-balancer-backend-default)
+  cloud_run_iap_client = local.is_production ? "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com" : "984160736970-4vg3gpqmskvpkhqim39b8kp8e4ommu94.apps.googleusercontent.com"
+}

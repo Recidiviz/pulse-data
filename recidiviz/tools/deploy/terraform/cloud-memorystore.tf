@@ -39,6 +39,14 @@ resource "google_redis_instance" "pathways_metric_cache" {
   redis_version  = "REDIS_5_0"
 }
 
+resource "google_redis_instance" "admin_panel_cache" {
+  name           = "admin-panel-cache"
+  region         = var.region
+  memory_size_gb = 1
+  tier           = "BASIC"
+  redis_version  = "REDIS_5_0"
+}
+
 
 # Store host in a secret
 
@@ -73,6 +81,17 @@ resource "google_secret_manager_secret_version" "pathways_metric_redis_host" {
   secret_data = google_redis_instance.pathways_metric_cache.host
 }
 
+
+resource "google_secret_manager_secret" "admin_panel_redis_host" {
+  secret_id = "admin_panel_redis_host"
+  replication { automatic = true }
+}
+
+resource "google_secret_manager_secret_version" "admin_panel_redis_host" {
+  secret      = google_secret_manager_secret.admin_panel_redis_host.name
+  secret_data = google_redis_instance.admin_panel_cache.host
+}
+
 # Store port in a secret
 
 resource "google_secret_manager_secret" "case_triage_rate_limiter_redis_port" {
@@ -104,4 +123,15 @@ resource "google_secret_manager_secret" "pathways_metric_redis_port" {
 resource "google_secret_manager_secret_version" "pathways_metric_redis_port" {
   secret      = google_secret_manager_secret.pathways_metric_redis_port.name
   secret_data = google_redis_instance.pathways_metric_cache.port
+}
+
+
+resource "google_secret_manager_secret" "admin_panel_redis_port" {
+  secret_id = "admin_panel_redis_port"
+  replication { automatic = true }
+}
+
+resource "google_secret_manager_secret_version" "admin_panel_redis_port" {
+  secret      = google_secret_manager_secret.admin_panel_redis_port.name
+  secret_data = google_redis_instance.admin_panel_cache.port
 }

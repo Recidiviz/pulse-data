@@ -23,8 +23,6 @@ from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
 from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
 from recidiviz.common.constants.states import StateCode
-from recidiviz.utils.environment import in_development, in_gcp
-from recidiviz.utils.timer import RepeatedTimer
 
 _INGEST_METADATA_NICKNAME = "ingest"
 _INGEST_METADATA_PREFIX = "ingest_state_metadata"
@@ -65,22 +63,14 @@ class _AdminStores:
 
         return admin_panel_stores
 
-    def start_timers(self) -> None:
-        """Starts store refresh timers for all stores."""
-        if in_gcp() or in_development():
-            for store in self.all_stores:
-                RepeatedTimer(
-                    15 * 60, store.recalculate_store, run_immediately=True
-                ).start()
-
 
 _admin_stores: Optional[_AdminStores] = None
 
 
-def initialize_admin_stores() -> None:
+def initialize_admin_stores() -> _AdminStores:
     global _admin_stores
     _admin_stores = _AdminStores()
-    _admin_stores.start_timers()  # Start store refresh timers
+    return _admin_stores
 
 
 def get_ingest_operations_store() -> IngestOperationsStore:

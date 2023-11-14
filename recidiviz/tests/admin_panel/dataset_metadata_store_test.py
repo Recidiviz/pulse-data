@@ -21,6 +21,7 @@ from typing import Dict, List
 from unittest import TestCase, mock
 from unittest.mock import patch
 
+from fakeredis import FakeRedis
 from parameterized import parameterized
 
 from recidiviz.admin_panel.dataset_metadata_store import (
@@ -39,6 +40,12 @@ class TestDatasetMetadataStore(TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.project_id_patcher.start()
         self.mock_project_id_fn.return_value = "recidiviz-456"
+
+        self.redis_patcher = patch(
+            "recidiviz.admin_panel.admin_panel_store.get_admin_panel_redis"
+        )
+        self.mock_redis_patcher = self.redis_patcher.start()
+        self.mock_redis_patcher.return_value = FakeRedis()
 
         self.gcs_factory_patcher = mock.patch(
             "recidiviz.admin_panel.dataset_metadata_store.GcsfsFactory.build"
@@ -74,11 +81,12 @@ region_codes_to_exclude:
             dataset_nickname="ingest",
             metadata_file_prefix="ingest_state_metadata",
         )
-        self.store.recalculate_store()
+        self.store.hydrate_cache()
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
         self.gcs_factory_patcher.stop()
+        self.mock_redis_patcher.stop()
 
     def test_object_counts_match(self) -> None:
         self.assertIngestMetadataResultsEqual(
@@ -134,11 +142,6 @@ region_codes_to_exclude:
         # check that dataset-wide aggregation finds no results for table
         self.assertEqual(0, len(self.store.fetch_object_counts_by_table()[empty_table]))
 
-        # check that table-specific lookup returns no values
-        self.assertEqual(
-            0, len(self.store.fetch_table_nonnull_counts_by_column(empty_table))
-        )
-
         # check that each column reports no values
         for col in self.table_column_map[empty_table]:
             self.assertEqual(
@@ -154,11 +157,6 @@ region_codes_to_exclude:
         # check that dataset-wide aggregation finds no results for table
         self.assertTrue(
             nonexistent_table not in self.store.fetch_object_counts_by_table()
-        )
-
-        # check that table-specific lookup returns no values
-        self.assertEqual(
-            0, len(self.store.fetch_table_nonnull_counts_by_column(nonexistent_table))
         )
 
     def test_count_primary_keys(self) -> None:
@@ -180,7 +178,7 @@ region_codes_to_exclude:
     )
     def test_state_consistency(self, table: str, states: List[str]) -> None:
         """Tests that the same states should be present across all results for the table."""
-
+        store_data = self.store.fetch_data()
         object_counts = self.store.fetch_object_counts_by_table()[table]
         self.assertEqual(
             len(states),
@@ -194,7 +192,9 @@ region_codes_to_exclude:
                 msg=f"State {state} not found in `fetch_object_counts_by_table` results.",
             )
 
-        nonnull_counts = self.store.fetch_table_nonnull_counts_by_column(table)
+        nonnull_counts = self.store.fetch_table_nonnull_counts_by_column(
+            store_data[table]
+        )
         for col, results in nonnull_counts.items():
             # We check >= since there may be columns that are always NULL for some states.
             self.assertGreaterEqual(

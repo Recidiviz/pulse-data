@@ -19,6 +19,7 @@
 import datetime
 import unittest
 
+from fakeredis import FakeRedis
 from google.protobuf.timestamp_pb2 import Timestamp  # pylint: disable=no-name-in-module
 from mock import MagicMock, patch
 from werkzeug.exceptions import ServiceUnavailable
@@ -37,6 +38,16 @@ _TEST_PROJECT = "test-project"
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value=_TEST_PROJECT))
 class ValidationStatusStoreTest(unittest.TestCase):
     """Tests for ValidationStatusStore"""
+
+    def setUp(self) -> None:
+        self.redis_patcher = patch(
+            "recidiviz.admin_panel.admin_panel_store.get_admin_panel_redis"
+        )
+        self.mock_redis_patcher = self.redis_patcher.start()
+        self.mock_redis_patcher.return_value = FakeRedis()
+
+    def tearDown(self) -> None:
+        self.mock_redis_patcher.stop()
 
     def _check_queries_use_correct_project_id(
         self, mock_bigquery_client: MagicMock
@@ -113,7 +124,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         ]
 
         store = ValidationStatusStore()
-        store.recalculate_store()
+        store.hydrate_cache()
         results = store.get_most_recent_validation_results()
         self._check_queries_use_correct_project_id(mock_bigquery_client)
 
@@ -230,7 +241,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         ]
 
         store = ValidationStatusStore()
-        store.recalculate_store()
+        store.hydrate_cache()
         results = store.get_most_recent_validation_results()
         self._check_queries_use_correct_project_id(mock_bigquery_client)
 

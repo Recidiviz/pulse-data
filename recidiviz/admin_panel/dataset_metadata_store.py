@@ -76,13 +76,14 @@ class DatasetMetadataCountsStore(AdminPanelStore):
         self.dataset_nickname = dataset_nickname
         self.metadata_file_prefix = metadata_file_prefix
 
-        # This class takes heavy advantage of the fact that python dicts are thread-safe.
-        self.store: InternalMetadataBackingStore = defaultdict(
-            lambda: defaultdict(dict)
-        )
+    @property
+    def store_cache_key(self) -> str:
+        return f"{self.__class__}-{self.dataset_nickname}"
 
-    def recalculate_store(self) -> None:
+    def hydrate_cache(self) -> None:
         """Recalculates the internal store of dataset metadata counts."""
+        store: InternalMetadataBackingStore = defaultdict(lambda: defaultdict(dict))
+
         file_paths = [
             f
             for f in self.gcs_fs.ls_with_blob_prefix(
@@ -99,6 +100,11 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                     path.file_name,
                 )
                 continue
+
+            if path.relative_dir.startswith("sandbox"):
+                logging.warning("Skipping sandboxed file %s", path.file_name)
+                continue
+
             try:
                 file_prefix, table_name, col_name = name.split("__")
             except ValueError:
@@ -125,33 +131,57 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                 result = self.gcs_fs.download_as_string(path)
             except GCSBlobDoesNotExistError:
                 continue
+
             lines = result.split("\n")
             for l in lines:
                 l = l.strip()
                 if not l:
                     continue
                 struct = json.loads(l)
-                col_store[struct[col_name]][
-                    struct["state_code"].upper()
-                ] = DatasetMetadataCounts.from_json(struct)
-            self.store[table_name][col_name] = col_store
+                col_store[struct[col_name]][struct["state_code"].upper()] = struct
+            store[table_name][col_name] = col_store
+
+        self.redis.set(self.store_cache_key, json.dumps(store))
 
         logging.debug("DONE PROCESSING FOR %s METADATA", self.dataset_nickname)
+
+    def fetch_data(self) -> InternalMetadataBackingStore:
+        contents = self.redis.get(self.store_cache_key)
+
+        if not contents:
+            return defaultdict(lambda: defaultdict(dict))
+
+        return {
+            table_name: {
+                column_name: {
+                    value_kind: {
+                        state_code: DatasetMetadataCounts.from_json(json_dict)
+                        for state_code, json_dict in state_code_dict.items()
+                    }
+                    for value_kind, state_code_dict in values_dict.items()
+                }
+                for column_name, values_dict in column_dict.items()
+            }
+            for table_name, column_dict in json.loads(contents).items()
+        }
 
     def fetch_object_counts_by_table(self) -> DatasetMetadataResult:
         """
         This method calculates the total number of observed entities (both placeholder and not) per table
         by picking the counts from the column with the greatest number of entities.
         """
+        store = self.fetch_data()
         results: DatasetMetadataResult = defaultdict(dict)
-        for table in self.store:
+        for table in store:
             results[table] = {}
             max_state_placeholder: Dict[str, int] = defaultdict(lambda: -1)
             max_state_total: Dict[str, int] = defaultdict(lambda: -1)
 
             # Since the primary key is always nonnull, the max for each table will also represent
             # the number of total objects in that table.
-            breakdown_by_column = self.fetch_table_nonnull_counts_by_column(table)
+            breakdown_by_column = self.fetch_table_nonnull_counts_by_column(
+                store[table]
+            )
             for state_map in breakdown_by_column.values():
                 for state_code, result in state_map.items():
                     if result.total_count > max_state_total[state_code]:
@@ -171,17 +201,19 @@ class DatasetMetadataCountsStore(AdminPanelStore):
                 )
         return results
 
-    def fetch_table_nonnull_counts_by_column(self, table: str) -> DatasetMetadataResult:
+    def fetch_table_nonnull_counts_by_column(
+        self, table: dict[str, DatasetMetadataResult]
+    ) -> DatasetMetadataResult:
         """
         This code does the equivalent of:
         `SELECT state_code, col, SUM(total_count) AS total_count, SUM(placeholder_count) AS placeholder_count
         FROM column_metadata WHERE table_name=$1 AND value IS NOT NULL GROUP BY state_code, col`
         """
-        if table not in self.store:
+        if not table:
             return {}
 
         results: DatasetMetadataResult = defaultdict(dict)
-        for col, val_map in self.store[table].items():
+        for col, val_map in table.items():
             has_placeholders = False
             placeholder_count: Dict[str, int] = defaultdict(int)
             total_count: Dict[str, int] = defaultdict(int)
@@ -210,6 +242,9 @@ class DatasetMetadataCountsStore(AdminPanelStore):
         This code does the equivalent of:
         SELECT state_code, val, total_count, placeholder_count FROM column_metadata WHERE table_name=$1 AND col=$2
         """
-        if table not in self.store or column not in self.store[table]:
+        store = self.fetch_data()
+
+        if table not in store or column not in store[table]:
             return {}
-        return self.store[table][column]
+
+        return store[table][column]

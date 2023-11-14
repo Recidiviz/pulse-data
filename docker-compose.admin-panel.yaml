@@ -32,6 +32,25 @@ services:
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
       - ASSET_GENERATION_URL=http://asset-generation-service:5174
+
+  admin_panel_cache_hydration:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+      - "~/.config:/root/.config"
+    depends_on:
+      - case_triage_db
+      - justice_counts_db
+      - operations_db
+      - outliers_db
+      - redis
+      # Allow backend to boot prior to cache hydration which takes some time
+      - admin_panel_backend
+    command: pipenv run python -m recidiviz.admin_panel.entrypoints.hydrate_cache
+    environment:
+      - IS_DEV=true
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
+
   asset_generation:
     container_name: asset-generation-service
     image: us-docker.pkg.dev/recidiviz-staging/asset-generation/default:latest
