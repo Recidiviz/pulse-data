@@ -23,77 +23,143 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH in_edges AS (
-    SELECT 
-        REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
-        DIRECTION_CODE,
-        FROM_AGY_LOC_ID,
-        MOVEMENT_SEQ,
-        MOVEMENT_REASON_CODE,
-        MOVEMENT_DATE,
-        TO_AGY_LOC_ID
-    FROM {elite_externalmovements}
-    WHERE DIRECTION_CODE = 'IN'
-), out_edges AS (
-    SELECT 
-        REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
-        DIRECTION_CODE,
-        FROM_AGY_LOC_ID,
-        MOVEMENT_SEQ,
-        MOVEMENT_REASON_CODE,
-        MOVEMENT_DATE,
-        TO_AGY_LOC_ID
-    FROM {elite_externalmovements}
-    WHERE DIRECTION_CODE = 'OUT'
-), full_periods AS (
-    SELECT
-        ROW_NUMBER() OVER (PARTITION BY COALESCE(in_edges.OFFENDER_BOOK_ID, out_edges.OFFENDER_BOOK_ID)
-                       ORDER BY CAST(COALESCE(in_edges.MOVEMENT_SEQ, out_edges.MOVEMENT_SEQ) AS INT64)
-                       ) as period_sequence,
-        IFNULL(in_edges.OFFENDER_BOOK_ID, out_edges.OFFENDER_BOOK_ID) AS offender_book_id,
-        in_edges.MOVEMENT_REASON_CODE AS admission_reason_code,
-        in_edges.MOVEMENT_DATE AS admission_date,
-        IFNULL(in_edges.TO_AGY_LOC_ID, out_edges.FROM_AGY_LOC_ID) as facility,
-        out_edges.MOVEMENT_DATE AS release_date,
-        out_edges.MOVEMENT_REASON_CODE AS release_reason_code
-    FROM
-        in_edges
-    FULL OUTER JOIN 
-        out_edges
-    -- Only join movements that are related to the same booking ID
-    ON in_edges.OFFENDER_BOOK_ID = out_edges.OFFENDER_BOOK_ID
-    -- Only join consecutive movement sequences
-    AND CAST(in_edges.MOVEMENT_SEQ AS INT) = (CAST(out_edges.MOVEMENT_SEQ AS INT) - 1)
-    -- Only join movements if the facilities match
-    AND in_edges.TO_AGY_LOC_ID = out_edges.FROM_AGY_LOC_ID
-), missing_releases_handled AS (
-    SELECT
-        period_sequence,
-        offender_book_id,
-        admission_reason_code,
-        admission_date,
-        facility,
-        release_reason_code,
-        -- If there's no release but we know that the movement is not the person's most
-        -- recent movement then use the next admission as the release
-        CASE
-            WHEN release_date IS NULL
-                THEN LEAD(admission_date) OVER (PARTITION BY offender_book_id ORDER BY period_sequence)
-            ELSE release_date 
-        END AS release_date
-    FROM full_periods
-)
+ WITH critical_dates AS (
+  SELECT DISTINCT
+    REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
+    CAST(MOVEMENT_DATE AS DATETIME) AS MOVEMENT_DATE,
+    REPLACE(REPLACE(MOVEMENT_SEQ,',',''), '.00', '') AS MOVEMENT_SEQ,
+    MOVEMENT_REASON_CODE,
+    DIRECTION_CODE,
+    CASE 
+        WHEN TO_AGY_LOC_ID IS NOT NULL THEN TO_AGY_LOC_ID
+        WHEN TO_AGY_LOC_ID IS NULL AND FROM_AGY_LOC_ID IS NOT NULL THEN FROM_AGY_LOC_ID
+    END AS facility,
+    CAST(NULL AS STRING) AS custody_level,
+    CAST(NULL AS STRING) AS override_reason
+  FROM {elite_externalmovements}
 
-SELECT
-    *
-FROM missing_releases_handled
+  UNION ALL 
+
+  SELECT DISTINCT
+    REPLACE(REPLACE(OFFENDER_BOOK_ID,',',''), '.00', '') AS OFFENDER_BOOK_ID,
+    CAST(ASSESSMENT_DATE AS DATETIME) AS ASSESSMENT_DATE,
+    REPLACE(REPLACE(ASSESSMENT_SEQ,',',''), '.00', '') AS ASSESSMENT_SEQ,
+    'STATUS_CHANGE' AS MOVEMENT_REASON_CODE,
+    'STATUS_CHANGE' AS DIRECTION_CODE,
+    CAST(NULL AS STRING) AS facility,
+    IF(REVIEW_SUP_LEVEL_TYPE='',CALC_SUP_LEVEL_TYPE, REVIEW_SUP_LEVEL_TYPE) AS custody_level,
+    COALESCE(ASSESS_COMMENT_TEXT, OVERRIDE_REASON) AS override_reason
+  FROM {elite_offender_assessments}
+  WHERE ASSESSMENT_TYPE_ID IN (
+    '1,008.00', -- INITIAL ASSESSMENT	
+    '1,009.00,', -- RECLASSIFICATION
+    '1,495.00', -- RECLASSIFICATION	
+    '1,308.00', -- SCORE SHEET ONLY	
+    '1,664.00', -- SCORE SHEET ONLY	
+    '1,328.00', -- NEW ARRIVAL	
+    '1,371.00', -- INITIAL CLASSIFICATION	
+    '2,528.00', -- Initial Classification	
+    '2,828.00', -- Reclassification	
+    '3,070.00', -- Score Sheet Only	
+    '4,102.00', -- Reclassification - 36 mos or less to serve	
+    '4,306.00', -- Initial Classification - 36 mos or less	
+    '108,309.00','113,564.00', -- INITAL CLASSIFICATION - MALE	
+    '108,515.00','114,361.00', -- INITAL CLASSIFICATION - FEMALE	
+    '108,737.00','114,005.00', -- RECLASSIFICATION - MALE	
+    '108,956.00','114,804.00', -- RECLASSIFICATION - FEMALE	
+    '109,142.00', -- INITAL CLASSIFICATION - FEMALE - 42 MOS OR LESS	
+    '109,346.00','113,792.00', -- INITAL CLASSIFICATION - MALE - 42 MOS OR LESS	
+    '109,547.00', -- RECLASSIFICATION - FEMALE - 42 MOS OR LESS	
+    '109,587.00', -- RECLASSIFICATION - MALE - 42 MOS OR LESS	
+    '110,100.00', -- ESCAPEE RETURNED	
+    '114,138.00', -- RECLASSIFICATION - MALE - 42 MOS OF LESS	
+    '114,566.00', -- INITAL CLASSIFICATION - FEMALE - 60 MOS OR LESS	
+    '114,938.00' -- RECLASSIFICATION - FEMALE - 60 MOS OR LESS	
+  )
+)
+, dates_with_all_attributes AS (
+  SELECT 
+    OFFENDER_BOOK_ID,
+    MOVEMENT_DATE,
+    MOVEMENT_SEQ,
+    MOVEMENT_REASON_CODE,
+    DIRECTION_CODE,
+    LAST_VALUE(facility ignore nulls) OVER (person_window range between UNBOUNDED preceding and current row) AS facility,
+    LAST_VALUE(custody_level ignore nulls) OVER (person_window range between UNBOUNDED preceding and current row) AS custody_level,
+    LAST_VALUE(override_reason ignore nulls) OVER (person_window range between UNBOUNDED preceding and current row) AS override_reason,
+  FROM critical_dates
+  -- MOVEMENT_REASON_CODE is a part of the ordering here to deterministically sort movements and assessments that
+  -- happened on the same day. It sorts admissions and transfers before status changes; status changes that follow OUT
+  -- movements are excluded later anyway.
+  WINDOW person_window AS (
+    PARTITION BY OFFENDER_BOOK_ID 
+    ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT), MOVEMENT_REASON_CODE)
+), full_periods AS (
+  SELECT 
+    ROW_NUMBER() OVER person_window AS period_sequence, 
+    * 
+FROM (
+    SELECT
+        OFFENDER_BOOK_ID,
+        MOVEMENT_REASON_CODE AS admission_reason_code,
+        MOVEMENT_DATE AS start_date,
+        MOVEMENT_SEQ,
+        facility,
+        DIRECTION_CODE,
+        LEAD(DIRECTION_CODE) OVER person_window AS next_direction_code,
+        LEAD(MOVEMENT_DATE) OVER person_window AS end_date,
+        LEAD(MOVEMENT_REASON_CODE) OVER person_window AS release_reason_code,
+        custody_level,
+        override_reason,
+    FROM dates_with_all_attributes
+    WINDOW person_window AS (
+      PARTITION BY OFFENDER_BOOK_ID 
+      ORDER BY MOVEMENT_DATE, CAST(MOVEMENT_SEQ AS INT), MOVEMENT_REASON_CODE)
+    ) sub
+    WHERE facility != 'OUT'
+     -- Exclude rows that begin with a release or escape
+    AND NOT (DIRECTION_CODE = 'OUT' AND NEXT_DIRECTION_CODE = 'STATUS_CHANGE')
+    AND admission_reason_code != 'ESCP'
+    -- Exclude rows with a probation violation as the release reason. This is a result 
+    -- of the way movements are tracked in this scenario: a person is admitted to either
+    -- DEFP or NTAD, then transferred to a different facility on the same day they start a 
+    -- period of incarceration at the new facility with admission reason NPRB (so all of
+    -- these periods are redundant)
+    AND (release_reason_code NOT IN ('NPRB','NTAD') OR release_reason_code IS NULL)
+    -- Exclude rows that start with a person being released in error and end with them 
+    -- being readmitted
+    AND NOT (admission_reason_code = 'ERR' AND release_reason_code = 'READMN')
+    WINDOW person_window AS (
+      PARTITION BY OFFENDER_BOOK_ID 
+      ORDER BY start_date, CAST(MOVEMENT_SEQ AS INT), admission_reason_code)
+), 
+infer_missing_custody_levels AS (
+  SELECT 
+    period_sequence,
+    OFFENDER_BOOK_ID as offender_book_id,
+    admission_reason_code,
+    start_date,
+    facility,
+    end_date,
+    release_reason_code,
+    CASE
+      WHEN custody_level IS NULL AND period_sequence = 1 THEN 'INFERRED-INTAKE'
+      WHEN custody_level IS NULL AND period_sequence !=1 THEN 'INFERRED-UNCLASS'
+      ELSE custody_level
+    END AS custody_level,
+    override_reason
+  FROM full_periods
+)
+SELECT 
+  *
+FROM infer_missing_custody_levels
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="elite_externalmovements_incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="offender_book_id",
+    order_by_cols="offender_book_id, period_sequence",
 )
 
 if __name__ == "__main__":
