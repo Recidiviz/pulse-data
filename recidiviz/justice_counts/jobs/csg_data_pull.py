@@ -305,7 +305,8 @@ def create_new_agency_columns(
                     first_user_created_at = user_created_at
             # The agency's last_login is the most recent login date of
             # any of its users.
-            if "last_login" not in user:
+            # Skip last_login for child agencies
+            if agency["super_agency_id"] is not None or "last_login" not in user:
                 continue
             user_last_login = datetime.datetime.strptime(
                 user["last_login"].split("T")[0], "%Y-%m-%d"
