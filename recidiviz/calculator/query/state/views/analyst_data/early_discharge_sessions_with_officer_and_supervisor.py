@@ -107,7 +107,7 @@ INNER JOIN
 ON 
     eds.person_id = sos.person_id
     AND eds.state_code = sos.state_code
-    AND eds.discharge_date BETWEEN sos.start_date AND {nonnull_end_date_clause('end_date')}
+    AND eds.discharge_date BETWEEN sos.start_date AND {nonnull_end_date_clause('end_date_exclusive')}
     AND sos.supervising_officer_external_id IS NOT NULL
 -- Map each officer to his/her supervisor
 LEFT JOIN 
