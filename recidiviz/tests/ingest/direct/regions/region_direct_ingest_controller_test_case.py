@@ -17,14 +17,17 @@
 """Class with basic functionality for tests of all region-specific
 BaseDirectIngestControllers.
 """
-
 import abc
 import datetime
 import os
-import unittest
-from typing import List, Optional, Type, Union, cast
+from copy import deepcopy
+from types import ModuleType
+from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union, cast
 
+import apache_beam as beam
 import pytest
+from apache_beam.pvalue import PBegin
+from apache_beam.testing.util import assert_that
 from mock import patch
 
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -36,6 +39,11 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    DirectIngestRegion,
+    get_direct_ingest_region,
+)
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
@@ -54,7 +62,11 @@ from recidiviz.persistence.entity.base_entity import (
     HasMultipleExternalIdsEntity,
     RootEntity,
 )
-from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
+from recidiviz.persistence.entity.core_entity import CoreEntity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    get_all_entities_from_tree,
+)
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.persistence import (
     DATABASE_INVARIANT_THRESHOLD,
@@ -62,6 +74,14 @@ from recidiviz.persistence.persistence import (
     ENUM_THRESHOLD,
     OVERALL_THRESHOLD,
 )
+from recidiviz.pipelines.ingest.pipeline_parameters import MaterializationMethod
+from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
+    LOWER_BOUND_DATETIME_COL_NAME,
+    MATERIALIZATION_TIME_COL_NAME,
+    UPPER_BOUND_DATETIME_COL_NAME,
+    GenerateIngestViewResults,
+)
+from recidiviz.pipelines.ingest.state.run_validations import RunValidations
 from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
     run_task_queues_to_empty,
 )
@@ -72,12 +92,25 @@ from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
 from recidiviz.tests.ingest.direct.fakes.fake_instance_ingest_view_contents import (
     FakeInstanceIngestViewContents,
 )
+from recidiviz.tests.ingest.direct.fixture_util import (
+    DirectIngestFixtureDataFileType,
+    direct_ingest_fixture_path,
+    load_dataframe_from_path,
+)
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     DEFAULT_UPDATE_DATETIME,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
     clear_db_ids,
+)
+from recidiviz.tests.pipelines.ingest.state.test_case import (
+    DEFAULT_TIME,
+    BaseStateIngestPipelineTestCase,
+)
+from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
+    default_arg_list_for_pipeline,
+    pipeline_constructor,
 )
 from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
@@ -86,9 +119,87 @@ from recidiviz.utils.types import assert_type
 
 FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
+PROJECT_ID = "test-project"
+
+
+class FakeGenerateIngestViewResults(GenerateIngestViewResults):
+    def __init__(
+        self,
+        project_id: str,
+        state_code: StateCode,
+        ingest_view_name: str,
+        raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
+        ingest_instance: DirectIngestInstance,
+        materialization_method: MaterializationMethod,
+        fake_ingest_view_results: Iterable[Dict[str, Any]],
+    ) -> None:
+        super().__init__(
+            project_id,
+            state_code,
+            ingest_view_name,
+            raw_data_tables_to_upperbound_dates,
+            ingest_instance,
+            materialization_method,
+        )
+        self.fake_ingest_view_results = fake_ingest_view_results
+
+    def expand(self, input_or_inputs: PBegin) -> beam.PCollection[Dict[str, Any]]:
+        return input_or_inputs | beam.Create(self.fake_ingest_view_results)
+
+
+class RunValidationsWithOutputChecking(RunValidations):
+    """An override of RunValidations that runs the original code but provides a way
+    to also check the output of the root entity trees we expect."""
+
+    def __init__(
+        self,
+        expected_output_entities: Iterable[str],
+        field_index: CoreEntityFieldIndex,
+        state_code: StateCode,
+        expected_root_entity_output: Iterable[RootEntity],
+        debug: bool = False,
+    ) -> None:
+        super().__init__(expected_output_entities, field_index, state_code)
+        self.expected_root_entity_output = expected_root_entity_output
+        self.debug = debug
+
+    def expand(
+        self, input_or_inputs: beam.PCollection[RootEntity]
+    ) -> beam.PCollection[RootEntity]:
+        root_entities = super().expand(input_or_inputs)
+        assert_that(
+            root_entities,
+            self.equal_to(
+                self.expected_root_entity_output, self.state_code, self.debug
+            ),
+        )
+        return root_entities
+
+    @staticmethod
+    def equal_to(
+        expected_root_entity_output: Iterable[RootEntity],
+        state_code: StateCode,
+        debug: bool = False,
+    ) -> Callable[[Iterable[RootEntity]], bool]:
+        def _equal_to(actual: Iterable[RootEntity]) -> bool:
+            copy_of_actual = deepcopy(actual)
+            clear_db_ids([cast(CoreEntity, entity) for entity in copy_of_actual])
+            if copy_of_actual != expected_root_entity_output:
+                if debug:
+                    launch_entity_tree_html_diff_comparison(
+                        found_root_entities=copy_of_actual,  # type: ignore
+                        expected_root_entities=expected_root_entity_output,  # type: ignore
+                        field_index=CoreEntityFieldIndex(),
+                        region_code=state_code.value.lower(),
+                    )
+                return False
+            return True
+
+        return _equal_to
+
 
 @pytest.mark.uses_db
-class RegionDirectIngestControllerTestCase(unittest.TestCase):
+class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
     """Class with basic functionality for tests of all region-specific
     BaseDirectIngestControllers.
     """
@@ -97,6 +208,21 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
     @abc.abstractmethod
     def state_code(cls) -> StateCode:
         pass
+
+    @classmethod
+    def region_code(cls) -> StateCode:
+        return cls.state_code()
+
+    @classmethod
+    def region_module_override(cls) -> Optional[ModuleType]:
+        return regions
+
+    @classmethod
+    def region(cls) -> DirectIngestRegion:
+        return get_direct_ingest_region(
+            region_code=cls.region_code().value.lower(),
+            region_module_override=cls.region_module_override() or regions,
+        )
 
     @classmethod
     def state_code_str_upper(cls) -> str:
@@ -135,6 +261,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         return SQLAlchemyDatabaseKey.for_schema(cls.schema_type())
 
     def setUp(self) -> None:
+        super().setUp()
         self.maxDiff = None
 
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -156,13 +283,16 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
             self.operations_database_key
         )
 
-        self.controller = build_fake_direct_ingest_controller(
-            self.controller_cls(),
-            ingest_instance=self._main_ingest_instance(),
-            initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
-            run_async=False,
-            regions_module=regions,
-        )
+        if not is_ingest_in_dataflow_enabled(
+            self.region_code(), self.ingest_instance()
+        ):
+            self.controller = build_fake_direct_ingest_controller(
+                self.controller_cls(),
+                ingest_instance=self._main_ingest_instance(),
+                initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
+                run_async=False,
+                regions_module=regions,
+            )
 
         # Set entity matching error threshold to a diminishingly small number
         # for tests. We cannot set it to 0 because we throw when errors *equal*
@@ -193,7 +323,10 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         self.environment_patcher.stop()
         self.entity_matching_error_threshold_patcher.stop()
 
-        self._validate_integration_test()
+        if not is_ingest_in_dataflow_enabled(
+            self.region_code(), self.ingest_instance()
+        ):
+            self._validate_integration_test()
 
     def _validate_integration_test(self) -> None:
         """If this test is the main integration test, validates that all expected files
@@ -424,6 +557,155 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         self.assertCountEqual(found_root_entities, expected_root_entities)
 
         assert_no_unexpected_entities_in_db(found_schema_root_entities, session)
+
+    def get_ingest_view_results_from_fixture(
+        self, *, ingest_view_name: str, test_name: str
+    ) -> List[Dict[str, Any]]:
+        """Returns the ingest view results for a given ingest view from the fixture file."""
+        fixture_columns = (
+            self.ingest_view_manifest_collector()
+            .ingest_view_to_manifest[ingest_view_name]
+            .input_columns
+        )
+        records = load_dataframe_from_path(
+            raw_fixture_path=direct_ingest_fixture_path(
+                region_code=self.region_code().value,
+                fixture_file_type=DirectIngestFixtureDataFileType.EXTRACT_AND_MERGE_INPUT,
+                file_name=f"{test_name}.csv",
+            ),
+            fixture_columns=fixture_columns,
+        ).to_dict("records")
+
+        for record in records:
+            record[MATERIALIZATION_TIME_COL_NAME] = datetime.datetime.now().isoformat()
+            record[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_TIME.isoformat()
+            record[LOWER_BOUND_DATETIME_COL_NAME] = None
+
+        return records
+
+    def generate_ingest_view_results_for_one_date(
+        self,
+        project_id: str,
+        state_code: StateCode,
+        ingest_view_name: str,
+        raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
+        ingest_instance: DirectIngestInstance,
+        materialization_method: MaterializationMethod,
+    ) -> FakeGenerateIngestViewResults:
+        """Returns a constructor that generates ingest view results for a given ingest view assuming a single date."""
+        return FakeGenerateIngestViewResults(
+            project_id,
+            state_code,
+            ingest_view_name,
+            raw_data_tables_to_upperbound_dates,
+            ingest_instance,
+            materialization_method,
+            self.get_ingest_view_results_from_fixture(
+                ingest_view_name=ingest_view_name,
+                test_name=ingest_view_name,
+            ),
+        )
+
+    def run_validations_with_output(
+        self,
+        expected_root_entities: List[RootEntity],
+        debug: bool = False,
+    ) -> Callable[
+        [
+            Iterable[str],
+            CoreEntityFieldIndex,
+            StateCode,
+        ],
+        RunValidationsWithOutputChecking,
+    ]:
+        def _inner_constructor(
+            expected_output_entities: Iterable[str],
+            field_index: CoreEntityFieldIndex,
+            state_code: StateCode,
+        ) -> RunValidationsWithOutputChecking:
+            return RunValidationsWithOutputChecking(
+                expected_output_entities,
+                field_index,
+                state_code,
+                expected_root_entities,
+                debug,
+            )
+
+        return _inner_constructor
+
+    # TODO(#22059): Remove this method and replace with the default implementation once
+    # all states can start an ingest integration test using raw data fixtures.
+    def run_test_state_pipeline(
+        self,
+        ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
+        expected_root_entities: List[RootEntity],
+        ingest_view_results_only: bool = False,
+        ingest_views_to_run: Optional[str] = None,
+        field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
+        debug: bool = False,
+    ) -> None:
+        """This runs a test for an ingest pipeline where the ingest view results are
+        passed in directly."""
+        if not ingest_view_results:
+            ingest_view_results = {
+                ingest_view: []
+                for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
+                    ingest_instance=self.ingest_instance()
+                )
+            }
+        expected_entities = [
+            entity
+            for root_entity in expected_root_entities
+            for entity in get_all_entities_from_tree(
+                cast(Entity, root_entity), field_index
+            )
+        ]
+
+        expected_entity_types_to_expected_entities = {
+            entity_type: [
+                entity
+                for entity in expected_entities
+                if entity.get_entity_name() == entity_type
+            ]
+            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
+                ingest_instance=self.ingest_instance()
+            )
+            for entity_type in self.get_expected_output_entity_types(
+                ingest_view_name=ingest_view,
+            )
+        }
+
+        pipeline_args = default_arg_list_for_pipeline(
+            pipeline=self.pipeline_class(),
+            state_code=self.region_code().value,
+            project_id=PROJECT_ID,
+            unifying_id_field_filter_set=None,
+            ingest_view_results_only=ingest_view_results_only,
+            ingest_views_to_run=ingest_views_to_run,
+        )
+
+        with patch(
+            "recidiviz.pipelines.ingest.state.pipeline.GenerateIngestViewResults",
+            self.generate_ingest_view_results_for_one_date,
+        ):
+            with patch(
+                "recidiviz.pipelines.ingest.state.pipeline.RunValidations",
+                self.run_validations_with_output(expected_root_entities, debug),
+            ):
+                with patch(
+                    "recidiviz.pipelines.ingest.state.pipeline.WriteToBigQuery",
+                    self.create_fake_bq_write_sink_constructor(
+                        self.get_expected_output(
+                            ingest_view_results,
+                            expected_entity_types_to_expected_entities,
+                        )
+                    ),
+                ):
+                    with patch(
+                        "recidiviz.pipelines.base_pipeline.Pipeline",
+                        pipeline_constructor(PROJECT_ID),
+                    ):
+                        self.pipeline_class().build_from_args(pipeline_args).run()
 
 
 def matches_external_id(

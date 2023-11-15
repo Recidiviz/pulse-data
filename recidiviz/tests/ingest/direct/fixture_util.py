@@ -18,7 +18,7 @@
 import datetime
 import os
 from enum import Enum
-from typing import Iterable, Iterator, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 import pandas as pd
 
@@ -76,7 +76,6 @@ def add_direct_ingest_path(
     has_fixture: bool = True,
     fail_handle_file_call: bool = False,
 ) -> GcsfsFilePath:
-
     path = _direct_ingest_raw_file_path(
         bucket_path=bucket_path,
         filename=filename,
@@ -171,18 +170,21 @@ class DirectIngestFixtureDataFileType(Enum):
 
 
 def replace_empty_with_null(
-    values: Iterable[Tuple[str, ...]]
-) -> Iterator[Tuple[Optional[str], ...]]:
+    values: Union[Iterable[Dict[str, str]], Iterable[Tuple[str, ...]]]
+) -> Union[Iterator[Tuple[Optional[str], ...]], Iterator[Dict[str, Optional[str]]]]:
     """Replaces empty string values in tuple with null."""
     for row in values:
-        yield tuple(value or None for value in row)
+        if isinstance(row, tuple):
+            yield tuple(value or None for value in row)
+        else:
+            yield {key: value or None for key, value in row.items()}
 
 
 def load_dataframe_from_path(
     raw_fixture_path: str, fixture_columns: List[str]
 ) -> pd.DataFrame:
     """Given a raw fixture path and a list of fixture columns, load the raw data into a dataframe."""
-    mock_data = csv.get_rows_as_tuples(raw_fixture_path)
+    mock_data = csv.get_rows_as_key_value_pairs(raw_fixture_path)
     values = replace_empty_with_null(mock_data)
     return pd.DataFrame(values, columns=fixture_columns)
 

@@ -226,6 +226,7 @@ class RegionFilesGenerator:
                     line,
                 )
                 line = re.sub(r"(, )?region_module_override=templates", "", line)
+                line = re.sub(r"return templates", "return None", line)
 
                 # Replace all instances of template state code with real state code
                 line = re.sub("US_XX", self.region_code.upper(), line)

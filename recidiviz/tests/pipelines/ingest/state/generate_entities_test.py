@@ -79,7 +79,7 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
         ]
         manifest_compiler = IngestViewManifestCompiler(
             delegate=IngestViewManifestCompilerDelegateImpl(
-                region=self.region, schema_type=SchemaType.STATE
+                region=self.region(), schema_type=SchemaType.STATE
             )
         )
         ingest_view_name = "ingest12"
@@ -94,7 +94,7 @@ class TestGenerateEntities(StateIngestPipelineTestCase):
                 )
             )
             | pipeline.GenerateEntities(
-                state_code=self.region_code,
+                state_code=self.region_code(),
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 ingest_view_manifest=ingest_view_manifest,
             )

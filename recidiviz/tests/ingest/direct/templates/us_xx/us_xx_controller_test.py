@@ -15,12 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit and integration tests for US_XX direct ingest."""
-from typing import List, Type
+from types import ModuleType
+from typing import List, Optional, Type
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.templates.us_xx.us_xx_controller import UsXxController
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.state import entities
@@ -39,6 +42,10 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
     @classmethod
     def controller_cls(cls) -> Type[BaseDirectIngestController]:
         return UsXxController
+
+    @classmethod
+    def region_module_override(cls) -> Optional[ModuleType]:
+        return templates
 
     @classmethod
     def schema_type(cls) -> SchemaType:
@@ -63,15 +70,26 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
         # < Add to / update expected_root_entities here>
 
         # Act
-        # self._run_ingest_job_for_filename("<ingest view name here>") <Uncomment this>
+        # if not is_ingest_in_dataflow_enabled(self.region_code(), self.ingest_instance()):
+        #     self._run_ingest_job_for_filename("<ingest view name here>") <Uncomment this>
 
         # Assert
-        self.assert_expected_db_root_entities(expected_root_entities)
+        if not is_ingest_in_dataflow_enabled(
+            self.region_code(), self.ingest_instance()
+        ):
+            self.assert_expected_db_root_entities(expected_root_entities)
 
         ######################################
         # FULL RERUN FOR IDEMPOTENCE
         ######################################
+        if not is_ingest_in_dataflow_enabled(
+            self.region_code(), self.ingest_instance()
+        ):
+            self._do_ingest_job_rerun_for_tags(
+                self.controller.get_ingest_view_rank_list()
+            )
 
-        self._do_ingest_job_rerun_for_tags(self.controller.get_ingest_view_rank_list())
+            self.assert_expected_db_root_entities(expected_root_entities)
 
-        self.assert_expected_db_root_entities(expected_root_entities)
+        if is_ingest_in_dataflow_enabled(self.region_code(), self.ingest_instance()):
+            self.run_test_state_pipeline({}, expected_root_entities)
