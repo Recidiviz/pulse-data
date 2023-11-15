@@ -241,14 +241,20 @@ class MetricDefinition:
         additional_context: List[Context] = []
 
         if self.includes_excludes is not None:
-            additional_context.append(
-                Context(
-                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                    value_type=ValueType.TEXT,
-                    label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                    required=False,
-                )
+            additional_context_label = "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition."
+        else:
+            additional_context_label = (
+                "Please describe your agency’s definition of this metric."
             )
+
+        additional_context.append(
+            Context(
+                key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                value_type=ValueType.TEXT,
+                label=additional_context_label,
+                required=False,
+            )
+        )
 
         return (
             self.specified_contexts + additional_context
