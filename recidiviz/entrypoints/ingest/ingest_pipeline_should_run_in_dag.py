@@ -16,6 +16,7 @@
 # =============================================================================
 """ Entrypoint for the ingest pipeline should run in dag check. """
 import argparse
+import logging
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
@@ -34,6 +35,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.utils import environment
 
 
 def _should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
@@ -96,17 +98,53 @@ def _has_launchable_ingest_views(
 def ingest_pipeline_should_run_in_dag(
     state_code: StateCode, ingest_instance: DirectIngestInstance
 ) -> bool:
-    return (
-        direct_ingest_regions.get_direct_ingest_region(
-            state_code.value.lower()
-        ).is_ingest_launched_in_env()
-        and ingest_pipeline_can_run_in_dag(state_code, ingest_instance)
-        and _has_launchable_ingest_views(state_code, ingest_instance)
-        and (
-            ingest_instance is DirectIngestInstance.PRIMARY
-            or _should_run_secondary_ingest_pipeline(state_code)
+    """Returns True if we should run the ingest pipeline for this (state, instance),
+    False otherwise.
+    """
+    if not direct_ingest_regions.get_direct_ingest_region(
+        state_code.value.lower()
+    ).is_ingest_launched_in_env():
+        logging.info(
+            "Ingest for [%s, %s] is not launched in environment [%s] - returning False",
+            state_code.value,
+            ingest_instance.value,
+            environment.get_gcp_environment(),
         )
+        return False
+
+    if not ingest_pipeline_can_run_in_dag(state_code, ingest_instance):
+        logging.info(
+            "Ingest [%s, %s] is not ungated to run in DAG - returning False",
+            state_code.value,
+            ingest_instance.value,
+        )
+        return False
+
+    if not _has_launchable_ingest_views(state_code, ingest_instance):
+        logging.info(
+            "No launchable views found for [%s, %s] - returning False",
+            state_code.value,
+            ingest_instance.value,
+        )
+        return False
+
+    if (
+        ingest_instance is DirectIngestInstance.SECONDARY
+        and not _should_run_secondary_ingest_pipeline(state_code)
+    ):
+        logging.info(
+            "No special gating/raw data reimport state indicates that we should run "
+            "the SECONDARY [%s] pipeline - returning False",
+            state_code.value,
+        )
+        return False
+
+    logging.info(
+        "Ingest pipeline for [%s, %s] is eligible to run - returning True",
+        state_code.value,
+        ingest_instance.value,
     )
+    return True
 
 
 class IngestPipelineShouldRunInDagEntrypoint(EntrypointInterface):
