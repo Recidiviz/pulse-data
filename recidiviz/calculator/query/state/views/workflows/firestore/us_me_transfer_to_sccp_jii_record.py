@@ -45,7 +45,10 @@ WITH current_incarcerated_population AS (
     tes_task_query_view = 'transfer_to_sccp_form_materialized',
     id_type = "'US_ME_DOC'")}
     ),
-{json_to_array_cte(from_table = 'current_incarcerated_population')}
+
+json_to_array_cte AS (
+    {json_to_array_cte('current_incarcerated_population')}
+)
 
 SELECT 
     external_id,

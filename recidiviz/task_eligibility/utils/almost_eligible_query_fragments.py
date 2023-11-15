@@ -23,22 +23,19 @@ from typing import Optional
 def json_to_array_cte(
     from_table: str,
 ) -> str:
-    """Helper method that returns a CTE where the
+    """Helper method that returns a statement where the
     reasons JSON is transformed to an array for
-    easier later manipulation. Returned CTE also called
-    'json_to_array_cte'.
+    easier later manipulation.
 
     Args:
         from_table (str): Table to query from
     """
 
-    return f""" json_to_array_cte AS (
-    -- Transform the reason json column into an array for easier manipulation
+    return f"""-- Transform the reason json column into an array for easier manipulation
     SELECT 
         *,
         JSON_QUERY_ARRAY(reasons) AS array_reasons
     FROM {from_table}
-    )
     """
 
 
@@ -46,7 +43,7 @@ def one_criteria_away_from_eligibility(
     criteria_name: str,
     criteria_condition: Optional[str] = None,
     field_name_in_reasons_blob: Optional[str] = None,
-    cte_table: str = "json_to_array_cte",
+    from_cte_table_name: str = "json_to_array_cte",
     nested: bool = False,
     criteria_name_nested: Optional[str] = None,
 ) -> str:
@@ -54,9 +51,9 @@ def one_criteria_away_from_eligibility(
     with only one ineligible criteria (criteria_name) are
     returned.
 
-    This method requires json_to_array_cte CTE to be defined previously in
-    the query (see function with the same name above). It requires the columns
-    ineligible_criteria, array_reasons, and is_eligible.
+    This method requires that {from_cte_table_name} contains the following columns:
+    ineligible_criteria, array_reasons (see the json_to_array_cte function
+    above to get this column), and is_eligible.
 
     Args:
         criteria_name (str): Name of criteria; has_usually the following form
@@ -66,6 +63,7 @@ def one_criteria_away_from_eligibility(
             than 100 will be surfaced as almost eligible.
         field_name_in_reasons_blob (str): Field name where the value is stored in the
             reasons column of the eligibility spans.
+        from_cte_table_name (str): Name of the CTE that contains the eligibility spans
         nested (bool): If true, it means the criteria being referenced has a nested "sub-criteria"
             that needs to be access
         criteria_name_nested (str): If nested is True, the name of the nested sub-criteria needs to be provided
@@ -119,7 +117,7 @@ def one_criteria_away_from_eligibility(
         FROM (SELECT
                 * EXCEPT(array_reasons),
                 {criteria_value_query_fragment}
-            FROM {cte_table}
+            FROM {from_cte_table_name}
             WHERE 
                 -- keep if only ineligible criteria is criteria_name
                 '{criteria_name}' IN UNNEST(ineligible_criteria) 
@@ -134,14 +132,14 @@ def x_time_away_from_eligibility(
     time_interval: int,
     date_part: str,
     eligible_date: str = "eligible_date",
-    cte_table: str = "json_to_array_cte",
+    from_cte_table_name: str = "json_to_array_cte",
 ) -> str:
     """Helper method that returns a query where individuals who are a time_interval
     (e.g. 4 months) away from eligibility are surfaced
 
-    This method requires json_to_array_cte CTE to be defined previously in
-    the query (see function with the same name above). It also requires the
-    columns ineligible_criteria, array_reasons, and is_eligible
+    This method requires that {from_cte_table_name} contains the following columns:
+    ineligible_criteria, array_reasons (see the json_to_array_cte function
+    above to get this column), and is_eligible.
 
     Args:
         criteria_name (str): Name of criteria; has_usually the following form
@@ -151,6 +149,7 @@ def x_time_away_from_eligibility(
         date_part (str): BigQuery date_part values. E.g. DAY, MONTH, YEAR, etc.
         eligible_date (str, optional): Name of column that represents the eligibility
             date. Defaults to "eligible_date".
+        from_cte_table_name (str): Name of the CTE that contains the eligibility spans
     """
 
     return f"""SELECT * EXCEPT({eligible_date})
@@ -164,7 +163,7 @@ def x_time_away_from_eligibility(
                         WHERE STRING(x.criteria_name) = '{criteria_name}'
                     )[OFFSET(0)]
                 AS DATE)  AS {eligible_date},
-                FROM {cte_table}
+                FROM {from_cte_table_name}
             WHERE 
             -- keep if only ineligible criteria is time remaining on sentence
             '{criteria_name}' IN UNNEST(ineligible_criteria) 

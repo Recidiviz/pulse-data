@@ -57,8 +57,9 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
         id_type = "'US_TN_DOC'"
     )}
     ),
-    -- TODO(#22949): more explicitly name table 
-    {json_to_array_cte('eligible_with_discretion')},
+    json_to_array_cte AS (
+        {json_to_array_cte('eligible_with_discretion')}
+    ),
     eligible_discretion_and_almost AS (
         -- Eligible with discretion
         SELECT
@@ -98,7 +99,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             time_interval= 4,
             date_part= 'MONTH',
             criteria_name= 'US_TN_ON_ELIGIBLE_LEVEL_FOR_SUFFICIENT_TIME',
-            cte_table = "json_to_array_cte",
+            from_cte_table_name = "json_to_array_cte",
         )}
         
         UNION ALL
@@ -106,7 +107,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
         -- Almost eligible - recent CR rejections (not permanent)
         {one_criteria_away_from_eligibility(
             criteria_name = 'US_TN_NO_RECENT_COMPLIANT_REPORTING_REJECTIONS',
-            cte_table = "json_to_array_cte",
+            from_cte_table_name = "json_to_array_cte",
         )}
         
         UNION ALL
@@ -118,7 +119,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             field_name_in_reasons_blob = 'amount_owed',
             nested=True,
             criteria_name_nested='HAS_FINES_FEES_BALANCE_BELOW_500',
-            cte_table = "json_to_array_cte",
+            from_cte_table_name = "json_to_array_cte",
         )}
         
         UNION ALL
@@ -134,7 +135,7 @@ US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_QUERY_TEMPLATE = f"""
             date_part= 'MONTH',
             criteria_name= 'US_TN_NO_HIGH_SANCTIONS_IN_PAST_YEAR',
             eligible_date='latest_high_sanction_date',
-            cte_table = "json_to_array_cte",
+            from_cte_table_name = "json_to_array_cte",
         )}
     ),
     /*
