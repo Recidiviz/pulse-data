@@ -68,6 +68,7 @@ POST_JULY_2017_CUSTODIAL_AUTHORITY_ENUM_MAP: Dict[
     ],
     StateCustodialAuthority.STATE_PRISON: [
         "BTC",
+        "BTCWTR",
         "CONT",
         "CPP",
         "DWCRC",
@@ -121,6 +122,7 @@ POST_JULY_2017_PFI_ENUM_MAP: Dict[
     ],
     StateSpecializedPurposeForIncarceration.GENERAL: [
         "BTC",
+        "BTCWTR",
         "CONT",
         "CPP",
         "DWCRC",

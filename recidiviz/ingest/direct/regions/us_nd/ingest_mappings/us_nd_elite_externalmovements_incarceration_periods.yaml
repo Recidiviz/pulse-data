@@ -53,6 +53,7 @@ output:
                   - NTAD
                 StateIncarcerationType.STATE_PRISON:
                   - BTC
+                  - BTCWTR
                   - CONT
                   - CPP
                   - DWCRC
@@ -122,6 +123,8 @@ output:
               $mappings:
                 StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR:
                   - ADM ERROR
+                StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                  - ERR
                 StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN:
                   - OTHER
                   - PREA
@@ -180,6 +183,17 @@ output:
                   - ABSC
                 StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
                   - ERR
+                StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
+                  # These codes appear as a result of the way ingest is run historically, and
+                  # are typically overwritten by newer data later on. They must be mapped for
+                  # ingest to progress to the point where the entity will have a meaningful
+                  # release reason (once these codes are overwritten in raw data).
+                  #
+                  # These codes are present in the historical raw data for 21 people, 7 of
+                  # whom are currently incarcerated.
+                  - NPROB
+                  - DEF
+                  - PREA
                 StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN:
                   - OTHER
                 StateIncarcerationPeriodReleaseReason.COMMUTED:
@@ -213,6 +227,7 @@ output:
                   - SUPL
                 StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
                   - TRN
+                  - OOS
                 StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                   - STATUS_CHANGE
           custody_level:
