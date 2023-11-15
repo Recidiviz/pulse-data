@@ -92,6 +92,12 @@ def handle_ingest_pipeline_should_run_in_dag_check(
     should_run_ingest_pipeline: bool,
 ) -> bool:
     """Returns True if the DAG should continue, otherwise short circuits."""
+    if not isinstance(should_run_ingest_pipeline, bool):
+        raise ValueError(
+            f"Expected should_run_ingest_pipeline value to be of type bool, found type "
+            f"[{type(should_run_ingest_pipeline)}]: {should_run_ingest_pipeline}"
+        )
+
     if not should_run_ingest_pipeline:
         logging.info("should_run_ingest_pipeline did not return true, do not continue.")
         return False
