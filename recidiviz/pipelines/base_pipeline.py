@@ -18,7 +18,6 @@
 import abc
 from typing import Generic, List, Type, TypeVar
 
-import apache_beam as beam
 from apache_beam import Pipeline
 
 from recidiviz.pipelines.pipeline_parameters import PipelineParametersT
@@ -59,7 +58,7 @@ class BasePipeline(abc.ABC, Generic[PipelineParametersT]):
 
     def run(self) -> None:
         """Runs the designated pipeline."""
-        with beam.Pipeline(
+        with Pipeline(
             options=self.pipeline_parameters.apache_beam_pipeline_options
         ) as p:
             self.run_pipeline(p)

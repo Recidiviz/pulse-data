@@ -15,10 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A class that represents a test case to be used for testing the ingest pipeline."""
+import unittest
 from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Callable, Dict, Iterable, List, Set
+from types import ModuleType
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, cast
 
 import apache_beam
 from apache_beam.testing.util import BeamAssertException
@@ -33,6 +35,7 @@ from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataflow_dataset,
     raw_tables_dataset_for_region,
 )
+from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -66,18 +69,24 @@ from recidiviz.persistence.database.schema_utils import (
     get_table_class_by_name,
     is_association_table,
 )
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
 )
+from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     ADDITIONAL_SCHEMA_COLUMNS,
     LOWER_BOUND_DATETIME_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
 )
+from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
+from recidiviz.pipelines.ingest.state.serialize_entities import (
+    serialize_entity_into_json,
+)
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
+    BQ_EMULATOR_PROJECT_ID,
     BigQueryEmulatorTestCase,
 )
 from recidiviz.tests.ingest.direct import fake_regions
@@ -91,31 +100,337 @@ from recidiviz.tests.pipelines.fake_bigquery import (
     FakeReadFromBigQueryWithEmulator,
     FakeWriteOutputToBigQueryWithValidator,
 )
+from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import run_test_pipeline
 from recidiviz.tests.utils.fake_region import fake_region
 
+DEFAULT_TIME = datetime(2023, 7, 5)
+INGEST_INTEGRATION = "ingest_integration"
 
-class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
-    """A test case class to test the ingest pipeline."""
+
+class BaseStateIngestPipelineTestCase(unittest.TestCase):
+    """Base test case for testing ingest pipelines that does not use the BQ emulator."""
+
+    @classmethod
+    def region_code(cls) -> StateCode:
+        return StateCode.US_DD
+
+    @classmethod
+    def region_module_override(cls) -> Optional[ModuleType]:
+        return fake_regions
+
+    @classmethod
+    def region(cls) -> DirectIngestRegion:
+        return fake_region(
+            region_code=cls.region_code().value.lower(),
+            environment="staging",
+            region_module=cls.region_module_override(),
+        )
+
+    @classmethod
+    def ingest_instance(cls) -> DirectIngestInstance:
+        return DirectIngestInstance.SECONDARY
+
+    @classmethod
+    def ingest_view_manifest_collector(cls) -> IngestViewManifestCollector:
+        return IngestViewManifestCollector(
+            cls.region(),
+            delegate=IngestViewManifestCompilerDelegateImpl(
+                cls.region(),
+                schema_type=SchemaType.STATE,
+            ),
+        )
+
+    @classmethod
+    def ingest_view_collector(cls) -> DirectIngestViewQueryBuilderCollector:
+        return DirectIngestViewQueryBuilderCollector(
+            cls.region(),
+            cls.ingest_view_manifest_collector().launchable_ingest_views(
+                ingest_instance=cls.ingest_instance()
+            ),
+        )
+
+    @classmethod
+    def pipeline_class(cls) -> Type[BasePipeline]:
+        return StateIngestPipeline
+
+    @classmethod
+    def expected_ingest_view_dataset(cls) -> str:
+        return ingest_view_materialization_results_dataflow_dataset(
+            cls.region_code(), cls.ingest_instance(), "sandbox"
+        )
+
+    @classmethod
+    def expected_state_dataset(cls) -> str:
+        return state_dataset_for_state_code(
+            cls.region_code(), cls.ingest_instance(), "sandbox"
+        )
 
     def setUp(self) -> None:
         super().setUp()
-        self.region_code = StateCode.US_DD
-        self.raw_data_tables_dataset = raw_tables_dataset_for_region(
-            StateCode.US_DD, DirectIngestInstance.PRIMARY
-        )
-        self.region = fake_region(
-            region_code=self.region_code.value.lower(),
-            environment="staging",
-            region_module=fake_regions,
-        )
-        self.direct_ingest_raw_file_config = DirectIngestRegionRawFileConfig(
-            region_code=StateCode.US_DD.value, region_module=fake_regions
-        )
-
         self.region_patcher = patch(
             "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region"
         )
-        self.region_patcher.start().return_value = self.region
+        self.region_patcher.start().return_value = self.region()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self.region_patcher.stop()
+
+    def get_ingest_view_results_from_fixture(
+        self,
+        *,
+        ingest_view_name: str,
+        test_name: str,
+    ) -> Iterable[Dict[str, Any]]:
+        """Reads in fixtures for ingest view results - if there is no metadata associated
+        with the ingest view results, generates a default metadata for the results."""
+        return load_dataframe_from_path(
+            raw_fixture_path=ingest_view_results_fixture_path(
+                region_code=self.region().region_code,
+                ingest_view_name=ingest_view_name,
+                file_name=f"{test_name}.csv",
+            ),
+            fixture_columns=[
+                *self.ingest_view_manifest_collector()
+                .ingest_view_to_manifest[ingest_view_name]
+                .input_columns,
+                MATERIALIZATION_TIME_COL_NAME,
+                UPPER_BOUND_DATETIME_COL_NAME,
+                LOWER_BOUND_DATETIME_COL_NAME,
+            ],
+        ).to_dict("records")
+
+    def get_expected_root_entities_from_fixture(
+        self,
+        *,
+        ingest_view_name: str,
+        test_name: str,
+    ) -> Iterable[Entity]:
+        rows = list(
+            self.get_ingest_view_results_from_fixture(
+                ingest_view_name=ingest_view_name,
+                test_name=test_name,
+            )
+        )
+        for row in rows:
+            for column in ADDITIONAL_SCHEMA_COLUMNS:
+                if column.name in row:
+                    row.pop(column.name)
+        return (
+            self.ingest_view_manifest_collector()
+            .ingest_view_to_manifest[ingest_view_name]
+            .parse_contents(
+                contents_iterator=iter(rows),
+                context=IngestViewContentsContextImpl(
+                    ingest_instance=self.ingest_instance(),
+                    results_update_datetime=datetime.now(),
+                ),
+            )
+        )
+
+    def get_expected_output_entity_types(
+        self,
+        *,
+        ingest_view_name: str,
+    ) -> Set[str]:
+        return {
+            entity_cls.get_entity_name()
+            for entity_cls in self.ingest_view_manifest_collector()
+            .ingest_view_to_manifest[ingest_view_name]
+            .hydrated_entity_classes()
+        }
+
+    def get_expected_output(
+        self,
+        ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
+        expected_entity_type_to_entities: Dict[str, List[Entity]],
+        field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
+    ) -> Dict[BigQueryAddress, Iterable[Dict[str, Any]]]:
+        expected_output: Dict[BigQueryAddress, Iterable[Dict[str, Any]]] = {}
+        for ingest_view, results in ingest_view_results.items():
+            expected_output[
+                BigQueryAddress(
+                    dataset_id=self.expected_ingest_view_dataset(), table_id=ingest_view
+                )
+            ] = results
+        for entity_type, entities in expected_entity_type_to_entities.items():
+            expected_output[
+                BigQueryAddress(
+                    dataset_id=self.expected_state_dataset(), table_id=entity_type
+                )
+            ] = [serialize_entity_into_json(entity, field_index) for entity in entities]
+        return expected_output
+
+    def create_fake_bq_write_sink_constructor(
+        self, expected_output: Dict[BigQueryAddress, Iterable[Dict[str, Any]]]
+    ) -> Callable[
+        [
+            str,
+            str,
+            apache_beam.io.BigQueryDisposition,
+        ],
+        FakeWriteOutputToBigQueryWithValidator,
+    ]:
+        """Creates a fake BQ write sink constructor that validates the output of both
+        ingest view output and state entity output."""
+
+        def _write_constructor(
+            output_table: str,
+            output_dataset: str,
+            write_disposition: apache_beam.io.BigQueryDisposition,
+        ) -> FakeWriteOutputToBigQueryWithValidator:
+            if write_disposition != apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE:
+                raise ValueError(
+                    f"Write disposition [{write_disposition}] does not match expected disposition "
+                    f"[{apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE}] writing to table [{output_table}]"
+                )
+
+            output_address = BigQueryAddress(
+                dataset_id=output_dataset, table_id=output_table
+            )
+            # TODO(#25476): Update to properly look at association table output.
+            if output_address not in expected_output and not is_association_table(
+                output_table
+            ):
+                raise ValueError(
+                    f"Output table [{output_address.to_str()}] not in expected output "
+                    f"[{list(expected_output.keys())}]"
+                )
+
+            if output_dataset not in (
+                self.expected_ingest_view_dataset(),
+                self.expected_state_dataset(),
+            ):
+                raise ValueError(
+                    f"Output dataset {output_dataset} does not match expected datasets: {self.expected_ingest_view_dataset()}, {self.expected_state_dataset()}"
+                )
+
+            validator_fn_generator = (
+                self.validate_entity_results
+                if output_dataset == self.expected_state_dataset()
+                else self.validate_ingest_view_results
+            )
+
+            return FakeWriteOutputToBigQueryWithValidator(
+                output_address=output_address,
+                expected_output=expected_output.get(output_address, []),
+                validator_fn_generator=validator_fn_generator,
+            )
+
+        return _write_constructor
+
+    @staticmethod
+    def validate_ingest_view_results(
+        expected_output: Iterable[Dict[str, Any]],
+        _output_table: str,
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
+        """Allows for validating the output of ingest view results without worrying about
+        the output of the materialization time."""
+
+        def _validate_ingest_view_results_output(
+            output: Iterable[Dict[str, Any]]
+        ) -> None:
+            # TODO(#22059): Remove this once all states can start an ingest integration
+            # test using raw data fixtures.
+            if not expected_output:
+                return
+            copy_of_expected_output = deepcopy(expected_output)
+            for record in copy_of_expected_output:
+                record.pop(MATERIALIZATION_TIME_COL_NAME)
+            copy_of_output = deepcopy(output)
+            for record in copy_of_output:
+                if not MATERIALIZATION_TIME_COL_NAME in record:
+                    raise BeamAssertException("Missing materialization time column")
+                record.pop(MATERIALIZATION_TIME_COL_NAME)
+                if record[LOWER_BOUND_DATETIME_COL_NAME]:
+                    record[LOWER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
+                        record[LOWER_BOUND_DATETIME_COL_NAME]
+                    ).isoformat()
+                record[UPPER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
+                    record[UPPER_BOUND_DATETIME_COL_NAME]
+                ).isoformat()
+            if copy_of_output != copy_of_expected_output:
+                raise BeamAssertException(
+                    f"Output does not match expected output: output is {copy_of_output}, expected is {copy_of_expected_output}"
+                )
+
+        return _validate_ingest_view_results_output
+
+    @staticmethod
+    def validate_entity_results(
+        expected_output: Iterable[Dict[str, Any]],
+        output_table: str,
+    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
+        """Asserts that the pipeline produces dictionaries with the expected keys
+        corresponding to the column names in the table into which the output will be
+        written."""
+
+        def _validate_entity_output(output: Iterable[Dict[str, Any]]) -> None:
+            # TODO(#24080) Transition to using entities.py to get the expected column names
+            schema: List[bigquery.SchemaField] = []
+
+            if is_association_table(output_table):
+                child_cls, parent_cls = get_database_entities_by_association_table(
+                    state_schema, output_table
+                )
+                schema = schema_for_sqlalchemy_table(
+                    get_state_database_association_with_names(
+                        child_cls.__name__, parent_cls.__name__
+                    ),
+                    add_state_code_field=True,
+                )
+            elif output_table in get_state_entity_names():
+                schema = schema_for_sqlalchemy_table(
+                    get_table_class_by_name(
+                        output_table, list(get_state_table_classes())
+                    )
+                )
+
+            expected_column_names = {field.name for field in schema}
+            for output_dict in output:
+                if set(output_dict.keys()) != expected_column_names:
+                    raise BeamAssertException(
+                        "Output dictionary does not have "
+                        f"the expected keys. Expected: [{expected_column_names}], "
+                        f"found: [{list(output_dict.keys())}]."
+                    )
+
+            # TODO(#25476): Update to properly look at association table output.
+            if not is_association_table(output_table):
+                id_columns = {
+                    column_name
+                    for column_name in expected_column_names
+                    if not column_name.endswith("external_id")
+                    and column_name.endswith("_id")
+                }
+                copy_of_expected_output = deepcopy(expected_output)
+                copy_of_output = deepcopy(output)
+                for record in copy_of_output:
+                    for column in id_columns:
+                        if column in record:
+                            record[column] = None
+                    if record not in copy_of_expected_output:
+                        raise BeamAssertException(
+                            f"Unexpected output: {record} not in {copy_of_expected_output}"
+                        )
+
+        return _validate_entity_output
+
+
+class StateIngestPipelineTestCase(
+    BaseStateIngestPipelineTestCase, BigQueryEmulatorTestCase
+):
+    """A test case class to test the ingest pipeline, from raw data all the way to entity
+    generation and merging. This does use the BQ emulator."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.raw_data_tables_dataset = raw_tables_dataset_for_region(
+            self.region_code(), self.ingest_instance()
+        )
+        self.direct_ingest_raw_file_config = DirectIngestRegionRawFileConfig(
+            region_code=self.region_code().value, region_module=fake_regions
+        )
 
         self.raw_file_config_patcher = patch(
             "recidiviz.ingest.direct.views.direct_ingest_view_query_builder"
@@ -125,41 +440,17 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             self.direct_ingest_raw_file_config
         )
 
-        self.ingest_instance = DirectIngestInstance.PRIMARY
-        self.ingest_view_manifest_collector = IngestViewManifestCollector(
-            self.region,
-            delegate=IngestViewManifestCompilerDelegateImpl(
-                self.region,
-                schema_type=SchemaType.STATE,
-            ),
-        )
-        self.view_collector = DirectIngestViewQueryBuilderCollector(
-            self.region,
-            self.ingest_view_manifest_collector.launchable_ingest_views(
-                ingest_instance=self.ingest_instance
-            ),
-        )
-        self.field_index = CoreEntityFieldIndex()
-
-        self.expected_ingest_view_dataset = (
-            ingest_view_materialization_results_dataflow_dataset(
-                self.region_code, self.ingest_instance, "sandbox"
-            )
-        )
-        self.expected_state_dataset = state_dataset_for_state_code(
-            self.region_code, self.ingest_instance, "sandbox"
-        )
-
     def tearDown(self) -> None:
         super().tearDown()
-        self.region_patcher.stop()
         self.raw_file_config_patcher.stop()
 
     def setup_single_ingest_view_raw_data_bq_tables(
         self, ingest_view_name: str, test_name: str
     ) -> None:
-        ingest_view_builder = self.view_collector.get_query_builder_by_view_name(
-            ingest_view_name
+        ingest_view_builder = (
+            self.ingest_view_collector().get_query_builder_by_view_name(
+                ingest_view_name
+            )
         )
         for (
             raw_table_dependency_config
@@ -175,11 +466,13 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             str,
             Dict[RawFileHistoricalRowsFilterType, DirectIngestViewRawFileDependency],
         ] = defaultdict(dict)
-        for ingest_view in self.ingest_view_manifest_collector.launchable_ingest_views(
-            ingest_instance=self.ingest_instance
+        for (
+            ingest_view
+        ) in self.ingest_view_manifest_collector().launchable_ingest_views(
+            ingest_instance=self.ingest_instance()
         ):
-            ingest_view_builder = self.view_collector.get_query_builder_by_view_name(
-                ingest_view
+            ingest_view_builder = (
+                self.ingest_view_collector().get_query_builder_by_view_name(ingest_view)
             )
             for (
                 raw_table_dependency_config
@@ -214,64 +507,13 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
             table_address,
             data=load_dataframe_from_path(
                 raw_fixture_path=ingest_view_raw_table_dependency_fixture_path(
-                    self.region.region_code,
+                    self.region().region_code,
                     raw_file_dependency_config=raw_table_dependency_config,
                     file_name=f"{test_name}.csv",
                 ),
                 fixture_columns=[c.name for c in schema],
             ).to_dict("records"),
         )
-
-    def get_ingest_view_results_from_fixture(
-        self, *, ingest_view_name: str, test_name: str
-    ) -> Iterable[Dict[str, Any]]:
-        return load_dataframe_from_path(
-            raw_fixture_path=ingest_view_results_fixture_path(
-                region_code=self.region.region_code,
-                ingest_view_name=ingest_view_name,
-                file_name=f"{test_name}.csv",
-            ),
-            fixture_columns=[
-                *self.ingest_view_manifest_collector.ingest_view_to_manifest[
-                    ingest_view_name
-                ].input_columns,
-                MATERIALIZATION_TIME_COL_NAME,
-                UPPER_BOUND_DATETIME_COL_NAME,
-                LOWER_BOUND_DATETIME_COL_NAME,
-            ],
-        ).to_dict("records")
-
-    def get_expected_root_entities(
-        self, *, ingest_view_name: str, test_name: str
-    ) -> Iterable[Entity]:
-        rows = list(
-            self.get_ingest_view_results_from_fixture(
-                ingest_view_name=ingest_view_name, test_name=test_name
-            )
-        )
-        for row in rows:
-            for column in ADDITIONAL_SCHEMA_COLUMNS:
-                row.pop(column.name)
-        return self.ingest_view_manifest_collector.ingest_view_to_manifest[
-            ingest_view_name
-        ].parse_contents(
-            contents_iterator=iter(rows),
-            context=IngestViewContentsContextImpl(
-                ingest_instance=self.ingest_instance,
-                results_update_datetime=datetime.now(),
-            ),
-        )
-
-    def get_expected_output_entity_types(
-        self, *, ingest_view_name: str, test_name: str
-    ) -> Set[str]:
-        return {
-            entity.get_entity_name()
-            for root_entity in self.get_expected_root_entities(
-                ingest_view_name=ingest_view_name, test_name=test_name
-            )
-            for entity in get_all_entities_from_tree(root_entity, self.field_index)
-        }
 
     def create_fake_bq_read_source_constructor(
         self,
@@ -284,132 +526,49 @@ class StateIngestPipelineTestCase(BigQueryEmulatorTestCase):
     ) -> FakeReadAllFromBigQueryWithEmulator:
         return FakeReadAllFromBigQueryWithEmulator()
 
-    def create_fake_bq_write_sink_constructor(
-        self, expected_output: Dict[BigQueryAddress, Iterable[Dict[str, Any]]]
-    ) -> Callable[
-        [
-            str,
-            str,
-            apache_beam.io.BigQueryDisposition,
-        ],
-        FakeWriteOutputToBigQueryWithValidator,
-    ]:
-        """Creates a fake BQ write sink constructor that validates the output of both
-        ingest view output and state entity output."""
-
-        def _write_constructor(
-            output_table: str,
-            output_dataset: str,
-            write_disposition: apache_beam.io.BigQueryDisposition,
-        ) -> FakeWriteOutputToBigQueryWithValidator:
-            if write_disposition != apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE:
-                raise ValueError(
-                    f"Write disposition [{write_disposition}] does not match expected disposition "
-                    f"[{apache_beam.io.BigQueryDisposition.WRITE_TRUNCATE}] writing to table [{output_table}]"
-                )
-
-            output_address = BigQueryAddress(
-                dataset_id=output_dataset, table_id=output_table
+    def run_test_state_pipeline(
+        self,
+        ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
+        expected_root_entities: List[RootEntity],
+        ingest_view_results_only: bool = False,
+        ingest_views_to_run: Optional[str] = None,
+        field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
+        debug: bool = False,  # pylint: disable=unused-argument
+    ) -> None:
+        """Runs the state ingest pipeline and validates the output."""
+        expected_entities = [
+            entity
+            for root_entity in expected_root_entities
+            for entity in get_all_entities_from_tree(
+                cast(Entity, root_entity), field_index
             )
-            if output_address not in expected_output:
-                raise ValueError(
-                    f"Output table [{output_address.to_str()}] not in expected output "
-                    f"[{list(expected_output.keys())}]"
-                )
+        ]
 
-            if output_dataset not in (
-                self.expected_ingest_view_dataset,
-                self.expected_state_dataset,
-            ):
-                raise ValueError(
-                    f"Output dataset {output_dataset} does not match expected datasets: {self.expected_ingest_view_dataset}, {self.expected_state_dataset}"
-                )
-
-            validator_fn_generator = (
-                self.validate_entity_results
-                if output_dataset == self.expected_state_dataset
-                else self.validate_ingest_view_results
+        expected_entity_types_to_expected_entities = {
+            entity_type: [
+                entity
+                for entity in expected_entities
+                if entity.get_entity_name() == entity_type
+            ]
+            for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
+                ingest_instance=self.ingest_instance()
             )
-
-            return FakeWriteOutputToBigQueryWithValidator(
-                output_address=output_address,
-                expected_output=expected_output[output_address],
-                validator_fn_generator=validator_fn_generator,
+            for entity_type in self.get_expected_output_entity_types(
+                ingest_view_name=ingest_view,
             )
+        }
 
-        return _write_constructor
-
-    @staticmethod
-    def validate_ingest_view_results(
-        expected_output: Iterable[Dict[str, Any]],
-        _output_table: str,
-    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
-        """Allows for validating the output of ingest view results without worrying about
-        the output of the materialization time."""
-
-        def _validate_ingest_view_results_output(
-            output: Iterable[Dict[str, Any]]
-        ) -> None:
-            copy_of_expected_output = deepcopy(expected_output)
-            for record in copy_of_expected_output:
-                record.pop(MATERIALIZATION_TIME_COL_NAME)
-            copy_of_output = deepcopy(output)
-            for record in copy_of_output:
-                if not MATERIALIZATION_TIME_COL_NAME in record:
-                    raise BeamAssertException("Missing materialization time column")
-                record.pop(MATERIALIZATION_TIME_COL_NAME)
-                if record[LOWER_BOUND_DATETIME_COL_NAME]:
-                    record[LOWER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
-                        record[LOWER_BOUND_DATETIME_COL_NAME]
-                    ).isoformat()
-                record[UPPER_BOUND_DATETIME_COL_NAME] = datetime.fromisoformat(
-                    record[UPPER_BOUND_DATETIME_COL_NAME]
-                ).isoformat()
-            if copy_of_output != copy_of_expected_output:
-                raise BeamAssertException(
-                    f"Output does not match expected output: output is {copy_of_output}, expected is {copy_of_expected_output}"
+        run_test_pipeline(
+            pipeline_cls=self.pipeline_class(),
+            state_code=self.region_code().value,
+            project_id=BQ_EMULATOR_PROJECT_ID,
+            read_from_bq_constructor=self.create_fake_bq_read_source_constructor,
+            write_to_bq_constructor=self.create_fake_bq_write_sink_constructor(
+                expected_output=self.get_expected_output(
+                    ingest_view_results, expected_entity_types_to_expected_entities
                 )
-
-        return _validate_ingest_view_results_output
-
-    @staticmethod
-    def validate_entity_results(
-        _expected_output: Iterable[Dict[str, Any]],
-        output_table: str,
-    ) -> Callable[[Iterable[Dict[str, Any]]], None]:
-        """Asserts that the pipeline produces dictionaries with the expected keys
-        corresponding to the column names in the table into which the output will be
-        written."""
-
-        def _validate_entity_output(output: Iterable[Dict[str, Any]]) -> None:
-            # TODO(#24080) Transition to using entities.py to get the expected column names
-            schema: List[bigquery.SchemaField] = []
-            if output_table in get_state_entity_names():
-                schema = schema_for_sqlalchemy_table(
-                    get_table_class_by_name(
-                        output_table, list(get_state_table_classes())
-                    )
-                )
-
-            elif is_association_table(output_table):
-                child_cls, parent_cls = get_database_entities_by_association_table(
-                    state_schema, output_table
-                )
-                schema = schema_for_sqlalchemy_table(
-                    get_state_database_association_with_names(
-                        child_cls.__name__, parent_cls.__name__
-                    )
-                )
-
-            expected_column_names = {field.name for field in schema}
-            for output_dict in output:
-                if set(output_dict.keys()) != expected_column_names:
-                    raise BeamAssertException(
-                        "Output dictionary does not have "
-                        f"the expected keys. Expected: [{expected_column_names}], "
-                        f"found: [{list(output_dict.keys())}]."
-                    )
-
-            # TODO(#24202) Add ability to check exact state output.
-
-        return _validate_entity_output
+            ),
+            read_all_from_bq_constructor=self.create_fake_bq_read_all_source_constructor,
+            ingest_view_results_only=ingest_view_results_only,
+            ingest_views_to_run=ingest_views_to_run,
+        )

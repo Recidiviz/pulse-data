@@ -24,6 +24,7 @@ from google.cloud import bigquery
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
     IngestViewMaterializerImpl,
 )
@@ -70,7 +71,7 @@ FROM (
 );"""
 
 INDIVIDUAL_TABLE_QUERY_TEMPLATE = """SELECT DISTINCT update_datetime, CAST(update_datetime AS DATE) AS update_date
-        FROM `{project_id}.{state_code}_raw_data.{file_tag}`"""
+        FROM `{project_id}.{raw_data_dataset}.{file_tag}`"""
 INDIVIDUAL_TABLE_QUERY_WHERE_CLAUSE = " WHERE update_datetime <= '{upper_bound_date}'"
 INDIVIDUAL_TABLE_LIMIT_ZERO_CLAUSE = " LIMIT 0"
 INDIVIDUAL_TABLE_QUERY_WITH_WHERE_CLAUSE_TEMPLATE = (
@@ -128,6 +129,7 @@ class GenerateIngestViewResults(beam.PTransform):
                 query=self.generate_date_bound_tuples_query(
                     project_id=self.project_id,
                     state_code=self.state_code,
+                    ingest_instance=self.ingest_instance,
                     raw_data_tables_to_upperbound_dates=self.raw_data_tables_to_upperbound_dates,
                     materialization_method=self.materialization_method,
                 )
@@ -147,16 +149,20 @@ class GenerateIngestViewResults(beam.PTransform):
     def generate_date_bound_tuples_query(
         project_id: str,
         state_code: StateCode,
+        ingest_instance: DirectIngestInstance,
         raw_data_tables_to_upperbound_dates: Dict[str, Optional[str]],
         materialization_method: MaterializationMethod = MaterializationMethod.ORIGINAL,
     ) -> str:
         """Returns a SQL query that will return a list of upper and lower bound date tuples
         which can each be used to generate an individual ingest view query."""
+        raw_data_dataset = raw_tables_dataset_for_region(
+            state_code=state_code, instance=ingest_instance
+        )
         raw_data_table_sql_statements = [
             StrictStringFormatter().format(
                 INDIVIDUAL_TABLE_QUERY_WITH_WHERE_CLAUSE_TEMPLATE,
                 project_id=project_id,
-                state_code=state_code.value.lower(),
+                raw_data_dataset=raw_data_dataset,
                 file_tag=table,
                 upper_bound_date=upper_bound_date_str_opt,
             )
@@ -164,7 +170,7 @@ class GenerateIngestViewResults(beam.PTransform):
             else StrictStringFormatter().format(
                 INDIVIDUAL_TABLE_QUERY_LIMIT_ZERO_TEMPLATE,
                 project_id=project_id,
-                state_code=state_code.value.lower(),
+                raw_data_dataset=raw_data_dataset,
                 file_tag=table,
             )
             for table, upper_bound_date_str_opt in sorted(

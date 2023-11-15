@@ -19,6 +19,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type
 
 import apache_beam
 from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.pipeline import Pipeline
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
@@ -54,21 +55,8 @@ from recidiviz.tests.pipelines.fake_bigquery import (
 FAKE_PIPELINE_TESTS_INPUT_DATASET = "dataset"
 
 
-def run_test_pipeline(
-    pipeline_cls: Type[BasePipeline],
-    state_code: str,
-    project_id: str,
-    read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
-    write_to_bq_constructor: Callable[
-        [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
-    ],
-    unifying_id_field_filter_set: Optional[Set[int]] = None,
-    read_all_from_bq_constructor: Optional[Callable[[], FakeReadFromBigQuery]] = None,
-    **additional_pipeline_args: Any,
-) -> None:
-    """Runs a test version of the pipeline in the provided module with BQ I/O mocked out."""
-
-    def pipeline_constructor(options: PipelineOptions) -> TestPipeline:
+def pipeline_constructor(project_id: str) -> Callable[[PipelineOptions], Pipeline]:
+    def _inner_pipeline_constructor(options: PipelineOptions) -> Pipeline:
         non_default_options = options.get_all_options(drop_default=True)
         expected_non_default_options = {
             "project": project_id,
@@ -83,8 +71,26 @@ def run_test_pipeline(
                 )
         return TestPipeline()
 
-    def get_job_id(project_id: str, region: str, job_name: str) -> str:
-        return f"{project_id}-{region}-{job_name}"
+    return _inner_pipeline_constructor
+
+
+def get_job_id(project_id: str, region: str, job_name: str) -> str:
+    return f"{project_id}-{region}-{job_name}"
+
+
+def run_test_pipeline(
+    pipeline_cls: Type[BasePipeline],
+    state_code: str,
+    project_id: str,
+    read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
+    write_to_bq_constructor: Callable[
+        [str, str, apache_beam.io.BigQueryDisposition], FakeWriteToBigQuery
+    ],
+    unifying_id_field_filter_set: Optional[Set[int]] = None,
+    read_all_from_bq_constructor: Optional[Callable[[], FakeReadFromBigQuery]] = None,
+    **additional_pipeline_args: Any,
+) -> None:
+    """Runs a test version of the pipeline in the provided module with BQ I/O mocked out."""
 
     pipeline_args = default_arg_list_for_pipeline(
         pipeline=pipeline_cls,
@@ -131,8 +137,8 @@ def run_test_pipeline(
         ):
             with patch(write_to_bq_class, write_to_bq_constructor):
                 with patch(
-                    "recidiviz.pipelines.base_pipeline.beam.Pipeline",
-                    pipeline_constructor,
+                    "recidiviz.pipelines.base_pipeline.Pipeline",
+                    pipeline_constructor(project_id),
                 ):
                     with patch(
                         "recidiviz.pipelines.metrics.base_metric_pipeline.job_id",
@@ -222,6 +228,8 @@ def default_arg_list_for_pipeline(
         FAKE_PIPELINE_TESTS_INPUT_DATASET,
         "--state_code",
         state_code,
+        "--ingest_instance",
+        "SECONDARY",
         "--job_name",
         "test-job",
         "--pipeline",
@@ -259,11 +267,11 @@ def default_arg_list_for_pipeline(
             [
                 "--output",
                 state_dataset_for_state_code(
-                    StateCode(state_code), DirectIngestInstance.PRIMARY, "sandbox"
+                    StateCode(state_code), DirectIngestInstance.SECONDARY, "sandbox"
                 ),
                 "--ingest_view_results_output",
                 ingest_view_materialization_results_dataflow_dataset(
-                    StateCode(state_code), DirectIngestInstance.PRIMARY, "sandbox"
+                    StateCode(state_code), DirectIngestInstance.SECONDARY, "sandbox"
                 ),
             ]
         )

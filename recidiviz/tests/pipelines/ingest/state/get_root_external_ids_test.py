@@ -40,7 +40,7 @@ class TestGetRootExternalIdClusterEdges(StateIngestPipelineTestCase):
         output = (
             self.test_pipeline
             | beam.Create(
-                self.get_expected_root_entities(
+                self.get_expected_root_entities_from_fixture(
                     ingest_view_name="ingest12", test_name="ingest12"
                 )
             )
@@ -65,7 +65,7 @@ class TestGetRootExternalIdClusterEdges(StateIngestPipelineTestCase):
         output = (
             self.test_pipeline
             | beam.Create(
-                self.get_expected_root_entities(
+                self.get_expected_root_entities_from_fixture(
                     ingest_view_name="ingestMultipleRootExternalIds",
                     test_name="ingestMultipleRootExternalIds",
                 )
