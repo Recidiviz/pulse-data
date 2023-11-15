@@ -56,4 +56,5 @@ class UsOzController(BaseDirectIngestController):
             "eg_movements",
             "ageid_staff",
             "ageid_staff_supervisor",
+            "lotr_fellowship_view",
         ]

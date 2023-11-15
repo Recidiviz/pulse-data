@@ -145,7 +145,6 @@ def build_state_person_entity(
             ethnicity=ethnicity,
             state_code=state_code,
         )
-
     return state_person
 
 
@@ -196,6 +195,24 @@ def add_external_id_to_person(
         )
     )
     person.external_ids.append(external_id_to_add)
+
+
+def add_alias_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    full_name: str,
+    alias_type: entities.StatePersonAliasType,
+) -> None:
+    """Append alias to the person (updates the person entity in place)."""
+    alias_to_add: entities.StatePersonAlias = (
+        entities.StatePersonAlias.new_with_defaults(
+            state_code=state_code,
+            person=person,
+            full_name=full_name,
+            alias_type=alias_type,
+        )
+    )
+    person.aliases.append(alias_to_add)
 
 
 def add_incarceration_period_to_person(
