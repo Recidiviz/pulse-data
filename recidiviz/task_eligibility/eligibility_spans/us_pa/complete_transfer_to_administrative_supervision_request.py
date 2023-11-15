@@ -26,6 +26,7 @@ from recidiviz.task_eligibility.completion_events.general import (
 )
 from recidiviz.task_eligibility.criteria.general import (
     on_parole_at_least_one_year,
+    supervision_level_is_not_limited,
 )
 
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -45,6 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         on_parole_at_least_one_year.VIEW_BUILDER,
+        supervision_level_is_not_limited.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
