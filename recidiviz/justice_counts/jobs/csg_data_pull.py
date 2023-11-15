@@ -58,7 +58,8 @@ from recidiviz.utils.params import str_to_bool
 # Spreadsheet Name: Justice Counts Data Pull
 # https://docs.google.com/spreadsheets/d/1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0/edit#gid=870547342
 DATA_PULL_SPREADSHEET_ID = "1Vcz110SWJoTE345w3buPd8oYnwqu-Q_mIJ4C-9z_CC0"
-SCOREBOARD_SHEET_ID = 659567415
+SCOREBOARD_ALL_SHEET_ID = 659567415
+SCOREBOARD_NON_CHILD_SHEET_ID = 855433685
 
 CREATED_AT = "created_at"
 LAST_LOGIN = "last_login"
@@ -507,7 +508,7 @@ def generate_agency_summary_csv(
             spreadsheet_id=DATA_PULL_SPREADSHEET_ID,
             new_sheet_title=today_str,
             logger=logger,
-            index=2,
+            index=3,
         )
 
 
@@ -517,8 +518,10 @@ def generate_and_write_scoreboard(
     google_credentials: Credentials,
 ) -> None:
     """Generate some summary statistics related to Publisher usage and write these
-    statistics (appended as a new row) to the Scoreboard sheet in the Justice Counts
-    Data Pull. Columns generated include the following:
+    statistics (appended as a new row) to the following sheets in the Justice Counts
+    Data Pull: Scoreboard (ALL) and Scoreboard (NON-CHILD).
+
+    Columns generated include the following:
         - date_last_updated
         - num_total_agencies
         - num_agencies_logged_in_last_week
@@ -528,42 +531,56 @@ def generate_and_write_scoreboard(
         - num_agencies_data_shared_this_week
         - num_agencies_used_bulk_upload
     """
-    num_total_agencies = str(len(df))
-    num_agencies_logged_in_last_week = str(len(df[df["login_this_week"]]))
-    num_super_agencies = str(len(df[df["is_superagency"]]))
-    num_agencies_shared_data_at_least_one_metric = str(
-        len(df[df["num_metrics_with_data"] > 0])
-    )
-    num_agencies_at_least_one_metric_configured = str(
-        len(df[df["num_metrics_configured"] > 0])
-    )
-    num_agencies_data_shared_this_week = str(len(df[df["data_shared_this_week"]]))
-    num_agencies_used_bulk_upload = str(len(df[df["used_bulk_upload"]]))
+    scoreboard_sheets = ["Scoreboard (ALL)", "Scoreboard (NON-CHILD)"]
 
-    # data_to_write is a list containing lists that represent new rows to append to the
-    # existing Justice Counts Scoreboard spreadsheet
-    # The order of these rows matters and should coincide with the columns listed above!
-    data_to_write = [
-        [
-            updated,
-            num_total_agencies,
-            num_agencies_logged_in_last_week,
-            num_super_agencies,
-            num_agencies_shared_data_at_least_one_metric,
-            num_agencies_at_least_one_metric_configured,
-            num_agencies_data_shared_this_week,
-            num_agencies_used_bulk_upload,
+    for sheet_title in scoreboard_sheets:
+        if sheet_title == "Scoreboard (ALL)":
+            sheet_id = SCOREBOARD_ALL_SHEET_ID
+            sheet_df = df
+        else:
+            sheet_id = SCOREBOARD_NON_CHILD_SHEET_ID
+            sheet_df = df[~df["is_child_agency"]]
+
+        num_total_agencies = str(len(sheet_df))
+        num_agencies_logged_in_last_week = str(
+            len(sheet_df[sheet_df["login_this_week"]])
+        )
+        num_super_agencies = str(len(sheet_df[sheet_df["is_superagency"]]))
+        num_agencies_shared_data_at_least_one_metric = str(
+            len(sheet_df[sheet_df["num_metrics_with_data"] > 0])
+        )
+        num_agencies_at_least_one_metric_configured = str(
+            len(sheet_df[sheet_df["num_metrics_configured"] > 0])
+        )
+        num_agencies_data_shared_this_week = str(
+            len(sheet_df[sheet_df["data_shared_this_week"]])
+        )
+        num_agencies_used_bulk_upload = str(len(sheet_df[sheet_df["used_bulk_upload"]]))
+
+        # data_to_write is a list containing lists that represent new rows to append to the
+        # existing Justice Counts Scoreboard spreadsheet
+        # The order of these rows matters and should coincide with the columns listed above!
+        data_to_write = [
+            [
+                updated,
+                num_total_agencies,
+                num_agencies_logged_in_last_week,
+                num_super_agencies,
+                num_agencies_shared_data_at_least_one_metric,
+                num_agencies_at_least_one_metric_configured,
+                num_agencies_data_shared_this_week,
+                num_agencies_used_bulk_upload,
+            ]
         ]
-    ]
-    append_row_to_spreadsheet(
-        google_credentials=google_credentials,
-        data_to_write=data_to_write,
-        spreadsheet_id=DATA_PULL_SPREADSHEET_ID,
-        sheet_title="Scoreboard",
-        logger=logger,
-        sort_by="date_last_updated",
-        sheet_id=SCOREBOARD_SHEET_ID,
-    )
+        append_row_to_spreadsheet(
+            google_credentials=google_credentials,
+            data_to_write=data_to_write,
+            spreadsheet_id=DATA_PULL_SPREADSHEET_ID,
+            sheet_title=sheet_title,
+            logger=logger,
+            sort_by="date_last_updated",
+            sheet_id=sheet_id,
+        )
 
 
 def process_systems(
