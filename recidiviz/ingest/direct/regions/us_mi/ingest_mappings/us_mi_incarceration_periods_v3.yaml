@@ -129,6 +129,7 @@ output:
                         - "98" # Escape Limited Furlough
                         - "24" # Sentence Reduced to Misdemeanor
                         - "128" # Held Under Custody - Probation Violation Processing
+                        - "141" # Disch. Prison MAX - Transfer for Probation
                       StateIncarcerationPeriodAdmissionReason.TRANSFER:
                         - "117" # Transfer In ... Institutional or Caseload
                         - "6" # Visitor In
