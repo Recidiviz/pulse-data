@@ -75,7 +75,9 @@ WITH current_crc_population AS (
         tes_task_query_view = 'transfer_to_xcrc_request_materialized',
         id_type = "'US_IX_DOC'")}),
 
-    {json_to_array_cte('current_crc_population')}, 
+    json_to_array_cte AS (
+        {json_to_array_cte('current_crc_population')}
+    ),
 
     eligible_and_almost_eligible AS (
         -- ELIGIBLE
@@ -84,7 +86,8 @@ WITH current_crc_population AS (
         UNION ALL
 
         -- ALMOST ELIGIBLE (is in CRC but hasn't been there for 60 days)
-    {one_criteria_away_from_eligibility('US_IX_IN_CRC_FACILITY_FOR_60_DAYS')}
+    {one_criteria_away_from_eligibility('US_IX_IN_CRC_FACILITY_FOR_60_DAYS',
+                                        from_cte_table_name = "json_to_array_cte")}
     ),
 
     case_notes_cte AS (

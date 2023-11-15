@@ -147,7 +147,9 @@ case_notes_cte AS (
     {cis_300_relevant_property_case_notes()}
 ), 
 
-{json_to_array_cte('current_incarceration_pop_cte')}, 
+json_to_array_cte AS (
+    {json_to_array_cte('current_incarceration_pop_cte')}
+),
 
 eligible_and_almost_eligible AS (
     -- ELIGIBLE
@@ -157,7 +159,8 @@ eligible_and_almost_eligible AS (
 
     -- ALMOST ELIGIBLE (haven't served 1/2 of sentence): folks without this condition
     --          may request a furlough, but not for family purposes
-    {one_criteria_away_from_eligibility('US_ME_SERVED_HALF_OF_SENTENCE')}
+    {one_criteria_away_from_eligibility('US_ME_SERVED_HALF_OF_SENTENCE',
+                                        from_cte_table_name = "json_to_array_cte")}
 ),
 
 array_case_notes_cte AS (

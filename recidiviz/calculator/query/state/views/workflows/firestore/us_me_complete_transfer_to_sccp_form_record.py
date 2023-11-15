@@ -128,8 +128,9 @@ case_notes_cte AS (
     -- Relevant property
     {cis_300_relevant_property_case_notes()}
 ), 
-
-{json_to_array_cte('current_incarceration_pop_cte')}, 
+json_to_array_cte AS (
+    {json_to_array_cte('current_incarceration_pop_cte')}
+),
 
 eligible_and_almost_eligible AS (
 
@@ -140,18 +141,21 @@ eligible_and_almost_eligible AS (
 
     -- ALMOST ELIGIBLE (<6mo remaining before 30/24mo)
     {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'US_ME_X_MONTHS_REMAINING_ON_SENTENCE')}
+        criteria_name= 'US_ME_X_MONTHS_REMAINING_ON_SENTENCE',
+        from_cte_table_name = "json_to_array_cte")}
 
     UNION ALL
 
     -- ALMOST ELIGIBLE (<6mo remaining before 1/2 or 2/3 of sentence served)
     {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'US_ME_SERVED_X_PORTION_OF_SENTENCE')}
+        criteria_name= 'US_ME_SERVED_X_PORTION_OF_SENTENCE',
+        from_cte_table_name = "json_to_array_cte")}
 
     UNION ALL
 
     -- ALMOST ELIGIBLE (one discipline away)
-    {one_criteria_away_from_eligibility('US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS')}
+    {one_criteria_away_from_eligibility('US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS',
+                                        from_cte_table_name = "json_to_array_cte")}
 ),
 
 array_case_notes_cte AS (

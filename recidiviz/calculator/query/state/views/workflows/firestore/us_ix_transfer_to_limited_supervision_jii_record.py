@@ -51,7 +51,9 @@ WITH current_task_eligibility_spans_with_peid AS (
     tes_task_query_view = 'complete_transfer_to_limited_supervision_form_materialized',
     id_type = "'US_IX_DOC'")}
 ),
-{json_to_array_cte(from_table = 'current_task_eligibility_spans_with_peid')},
+json_to_array_cte AS (
+    {json_to_array_cte('current_task_eligibility_spans_with_peid')}
+),
 
 {lsir_spans()},
 

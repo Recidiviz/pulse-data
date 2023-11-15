@@ -239,9 +239,11 @@ case_notes_cte AS (
         criteria="'Completed Programs'",
         note_title = "pr.NAME_TX",
         note_body = 'pr.DESCRIPTION_TX',)}
-), 
+),
 
-{json_to_array_cte('current_supervision_pop_cte')}, 
+json_to_array_cte AS (
+    {json_to_array_cte('current_supervision_pop_cte')}
+),
 
 eligible_and_almost_eligible AS (
 
@@ -254,13 +256,15 @@ eligible_and_almost_eligible AS (
     {one_criteria_away_from_eligibility(
         criteria_name = 'US_ME_PAID_ALL_OWED_RESTITUTION',
         criteria_condition = '< 1000',
-        field_name_in_reasons_blob = 'amount_owed')}
+        field_name_in_reasons_blob = 'amount_owed',
+        from_cte_table_name = "json_to_array_cte")}
 
     UNION ALL
 
     -- ALMOST ELIGIBLE (At least one pending violation away from eligibility)
     {one_criteria_away_from_eligibility(
-        criteria_name = 'US_ME_NO_PENDING_VIOLATIONS_WHILE_SUPERVISED')}
+        criteria_name = 'US_ME_NO_PENDING_VIOLATIONS_WHILE_SUPERVISED',
+        from_cte_table_name = "json_to_array_cte")}
 ),
 
 array_case_notes_cte AS (

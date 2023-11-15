@@ -33,7 +33,6 @@ from recidiviz.task_eligibility.dataset_config import (
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     clients_eligible,
-    json_to_array_cte,
 )
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     PROGRAM_ENROLLMENT_NOTE_TX_REGEX,
@@ -99,9 +98,7 @@ case_notes_cte AS (
 
     -- Relevant property notes
     {cis_300_relevant_property_case_notes()}
-), 
-
-{json_to_array_cte('current_incarceration_pop_cte')}, 
+),
 
 eligible_and_almost_eligible AS (
     -- ELIGIBLE

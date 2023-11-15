@@ -401,7 +401,10 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
         AND tes.state_code = 'US_IX'
      ),
+
+json_to_array_cte AS (
     {json_to_array_cte('form')}
+)
 
     -- ELIGIBLE
     {clients_eligible(from_cte = 'form')}
@@ -409,12 +412,14 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
      UNION ALL
      
     -- ALMOST ELIGIBLE (only missing income verification)
-    {one_criteria_away_from_eligibility('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS')}
+    {one_criteria_away_from_eligibility('US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS',
+                                        from_cte_table_name = "json_to_array_cte")}
     
     UNION ALL
 
     -- ALMOST ELIGIBLE (only missing a year in supervision criteria)
-    {one_criteria_away_from_eligibility('ON_SUPERVISION_AT_LEAST_ONE_YEAR')}
+    {one_criteria_away_from_eligibility('ON_SUPERVISION_AT_LEAST_ONE_YEAR',
+                                        from_cte_table_name = "json_to_array_cte")}
 """
 
 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
