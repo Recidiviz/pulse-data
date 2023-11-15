@@ -24,7 +24,6 @@ from typing import Dict, List, Optional, Union
 
 import attr
 from google.cloud import dataflow_v1beta3
-from google.cloud.dataflow_v1beta3 import JobState, ListJobsRequest
 
 import recidiviz
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -32,6 +31,9 @@ from recidiviz.calculator.query.state.dataset_config import state_dataset_for_st
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import (
     ingest_view_materialization_results_dataflow_dataset,
+)
+from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
+    DirectIngestDataflowJobManager,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
@@ -45,7 +47,6 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.ingest.pipeline_utils import (
     DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE,
-    ingest_pipeline_name,
 )
 from recidiviz.utils import metadata
 
@@ -90,46 +91,34 @@ PIPELINE_CONFIG_YAML_PATH = os.path.join(
 def get_latest_job_for_state_instance(
     state_code: StateCode, instance: DirectIngestInstance
 ) -> Optional[DataflowPipelineMetadataResponse]:
-    return get_all_latest_ingest_jobs()[state_code][instance]
-
-
-def get_latest_jobs_from_location_by_name(
-    location: str,
-) -> Dict[str, DataflowPipelineMetadataResponse]:
-    """Fetch most recent job for each job name in the specified location (us-west1, us-central3, etc)."""
+    """Get the latest job metadata for a state and instance from the Dataflow API."""
+    location = DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
     client = dataflow_v1beta3.JobsV1Beta3Client()
 
-    request = dataflow_v1beta3.ListJobsRequest(
-        filter=ListJobsRequest.Filter.TERMINATED,
-        project_id=metadata.project_id(),
-        location=location,
+    job_id = DirectIngestDataflowJobManager().get_job_id_by_state_and_instance(
+        state_code, instance
     )
 
-    # Returns a list of all jobs, ordered by termination time, descending
-    page_result = client.list_jobs(request=request)
+    if job_id:
+        request = dataflow_v1beta3.GetJobRequest(
+            project_id=metadata.project_id(),
+            job_id=job_id,
+            location=location,
+        )
+        response = client.get_job(request=request)
 
-    jobs_by_name = {}
-    for response in page_result:
-        if response.name in jobs_by_name:
-            # We have already found a more recent job
-            continue
-        if response.current_state in (
-            JobState.JOB_STATE_DONE,
-            JobState.JOB_STATE_FAILED,
-        ):
-            job = DataflowPipelineMetadataResponse(
-                id=response.id,
-                project_id=response.project_id,
-                name=response.name,
-                create_time=response.create_time.timestamp(),  # type: ignore[attr-defined]
-                start_time=response.start_time.timestamp(),  # type: ignore[attr-defined]
-                termination_time=response.current_state_time.timestamp(),  # type: ignore[attr-defined]
-                termination_state=response.current_state.name,
-                location=response.location,
-            )
-            jobs_by_name[response.name] = job
+        return DataflowPipelineMetadataResponse(
+            id=response.id,
+            project_id=response.project_id,
+            name=response.name,
+            create_time=response.create_time.timestamp(),  # type: ignore[attr-defined]
+            start_time=response.start_time.timestamp(),  # type: ignore[attr-defined]
+            termination_time=response.current_state_time.timestamp(),  # type: ignore[attr-defined]
+            termination_state=response.current_state.name,
+            location=response.location,
+        )
 
-    return jobs_by_name
+    return None
 
 
 # TODO(#24515): Refactor to use new database table
@@ -140,30 +129,26 @@ def get_all_latest_ingest_jobs() -> (
     ]
 ):
     """Get the latest job for each ingest pipeline."""
-    all_locations = set(DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE.values())
-
-    # TODO(#24241) cache results inside the ingest operations store
     with futures.ThreadPoolExecutor(max_workers=20) as executor:
-        latest_job_by_name = {}
-        locations_futures = [
-            executor.submit(get_latest_jobs_from_location_by_name, location)
-            for location in all_locations
-        ]
-        for future in concurrent.futures.as_completed(locations_futures):
-            data = future.result()
-            for job_name, job in data.items():
-                latest_job_by_name[job_name] = job
+        jobs_by_state_instance: Dict[
+            StateCode,
+            Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
+        ] = defaultdict(dict)
 
-    jobs_by_state_instance: Dict[
-        StateCode,
-        Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
-    ] = defaultdict(lambda: defaultdict(None))
-    for state_code in get_direct_ingest_states_launched_in_env():
-        for instance in DirectIngestInstance:
-            pipeline_name = ingest_pipeline_name(state_code, instance)
-            latest_job = latest_job_by_name.get(pipeline_name)
-            jobs_by_state_instance[state_code][instance] = latest_job
-    return jobs_by_state_instance
+        locations_futures = {
+            executor.submit(get_latest_job_for_state_instance, state_code, instance): (
+                state_code,
+                instance,
+            )
+            for state_code in get_direct_ingest_states_launched_in_env()
+            for instance in DirectIngestInstance
+        }
+        for future in concurrent.futures.as_completed(locations_futures):
+            state_code, instance = locations_futures[future]
+            job = future.result()
+            jobs_by_state_instance[state_code][instance] = job
+
+        return jobs_by_state_instance
 
 
 def get_latest_run_raw_data_watermarks(
