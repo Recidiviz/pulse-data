@@ -194,7 +194,6 @@ class StateIngestViewParserTestBase:
             print_entity_trees(expected_output)
             print("============== ACTUAL ==============")
             print_entity_trees(parsed_output)
-
             launch_entity_tree_html_diff_comparison(
                 found_root_entities=parsed_output,
                 expected_root_entities=expected_output,

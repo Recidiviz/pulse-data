@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_vfds_person` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ID
+  - FirstName
+  - LastName
+  - StartDate
+  - Race
+  - Alias
+  - Role
+unused_columns:
+  - StartDate
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ID
+          id_type: $literal("US_OZ_LOTR_ID")
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $surname: LastName
+    aliases:
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: FirstName
+              $surname: LastName
+          alias_type: $literal_enum(StatePersonAliasType.GIVEN_NAME)
+      - StatePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: Alias
+              $surname: Role
+          alias_type: $literal_enum(StatePersonAliasType.ALIAS)
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                StateRace.OTHER: Man
+                StateRace.EXTERNAL_UNKNOWN:
+                  - Elf
+                  - Dúnedain
+                  - Hobbit
+                  - Dwarf
+                  - Maiar
