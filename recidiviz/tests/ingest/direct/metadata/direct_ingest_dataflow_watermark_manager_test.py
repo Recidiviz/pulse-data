@@ -24,12 +24,13 @@ import pytest
 import pytz
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
+    DirectIngestDataflowJobManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema.operations import schema
-from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
 
 
@@ -45,6 +46,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.watermark_manager = DirectIngestDataflowWatermarkManager()
+        self.job_manager = DirectIngestDataflowJobManager()
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.watermark_manager.database_key
         )
@@ -60,31 +62,10 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
             cls.temp_db_dir
         )
 
-    def add_job(
-        self,
-        job_id: str,
-        state_code: StateCode,
-        ingest_instance: DirectIngestInstance,
-        completion_time: datetime.datetime = datetime.datetime.now(),
-        is_invalidated: bool = False,
-    ) -> None:
-        with SessionFactory.using_database(
-            self.watermark_manager.database_key
-        ) as session:
-            session.add(
-                schema.DirectIngestDataflowJob(
-                    job_id=job_id,
-                    region_code=state_code.value,
-                    ingest_instance=ingest_instance.value,
-                    completion_time=completion_time,
-                    is_invalidated=is_invalidated,
-                )
-            )
-
     def test_get_raw_data_watermarks_for_latest_run(self) -> None:
         # most recent job
         most_recent_job_id = "2020-10-01_00_00_00"
-        self.add_job(
+        self.job_manager.add_job(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -106,7 +87,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
         )
         # earlier
         earlier_job_id = "2020-09-01_00_00_00"
-        self.add_job(
+        self.job_manager.add_job(
             job_id=earlier_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -120,7 +101,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
         )
         # earlier and invalidated
         invalidated_job_id = "2020-09-01_00_00_00-invalidated"
-        self.add_job(
+        self.job_manager.add_job(
             job_id=invalidated_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -135,7 +116,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
         )
         # other instance
         other_instance_job_id = "2020-12-01_01_01-other_instance"
-        self.add_job(
+        self.job_manager.add_job(
             job_id=other_instance_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.SECONDARY,
@@ -151,7 +132,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
         )
         # other region
         other_region_job_id = "2020-12-01_01_01-other_region"
-        self.add_job(
+        self.job_manager.add_job(
             job_id=other_region_job_id,
             state_code=StateCode.US_YY,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -183,7 +164,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
     def test_get_raw_data_watermarks_for_latest_run_includes_invalidated(self) -> None:
         # initial job
         initial_job_id = "2020-10-01_00_00_00"
-        self.add_job(
+        self.job_manager.add_job(
             job_id=initial_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -205,7 +186,7 @@ class DirectIngestDataflowWatermarkManagerTest(unittest.TestCase):
         )
         # invalidated
         invalidated_job_id = "2020-12-01_00_00_00-invalidated"
-        self.add_job(
+        self.job_manager.add_job(
             job_id=invalidated_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,

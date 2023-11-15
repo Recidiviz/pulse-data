@@ -32,6 +32,9 @@ from recidiviz.admin_panel.ingest_dataflow_operations import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
+    DirectIngestDataflowJobManager,
+)
 from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_watermark_manager import (
     DirectIngestDataflowWatermarkManager,
 )
@@ -72,10 +75,10 @@ class IngestDataflowOperations(TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        self.latest_jobs_from_location_patcher = mock.patch(
-            "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_jobs_from_location_by_name"
+        self.latest_jobs_patcher = mock.patch(
+            "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_job_for_state_instance"
         )
-        self.latest_jobs_from_location_patcher.start()
+        self.latest_jobs_patcher.start()
 
         self.state_code_list_patcher = mock.patch(
             "recidiviz.admin_panel.ingest_dataflow_operations.get_direct_ingest_states_launched_in_env",
@@ -93,6 +96,7 @@ class IngestDataflowOperations(TestCase):
         self.pipeline_config_yaml_path_patcher.start()
 
         self.watermark_manager = DirectIngestDataflowWatermarkManager()
+        self.job_manager = DirectIngestDataflowJobManager()
         local_persistence_helpers.use_on_disk_postgresql_database(
             self.watermark_manager.database_key
         )
@@ -169,14 +173,15 @@ class IngestDataflowOperations(TestCase):
                 DirectIngestInstance.SECONDARY: pipeline4,
             },
         }
+
+        def return_pipeline_by_state_instance(
+            state_code: StateCode, instance: DirectIngestInstance
+        ) -> DataflowPipelineMetadataResponse:
+            return expected[state_code][instance]
+
         with mock.patch(
-            "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_jobs_from_location_by_name",
-            return_value={
-                "us-xx-ingest": pipeline,
-                "us-xx-ingest-secondary": pipeline2,
-                "us-yy-ingest": pipeline3,
-                "us-yy-ingest-secondary": pipeline4,
-            },
+            "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_job_for_state_instance",
+            side_effect=return_pipeline_by_state_instance,
         ):
             self.assertEqual(expected, get_all_latest_ingest_jobs())
 
@@ -213,12 +218,15 @@ class IngestDataflowOperations(TestCase):
                 DirectIngestInstance.SECONDARY: None,
             },
         }
+
+        def return_pipeline_by_state_instance(
+            state_code: StateCode, instance: DirectIngestInstance
+        ) -> Optional[DataflowPipelineMetadataResponse]:
+            return expected[state_code][instance]
+
         with mock.patch(
-            "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_jobs_from_location_by_name",
-            return_value={
-                "us-xx-ingest": pipeline,
-                "us-yy-ingest": pipeline2,
-            },
+            "recidiviz.admin_panel.ingest_dataflow_operations.get_latest_job_for_state_instance",
+            side_effect=return_pipeline_by_state_instance,
         ):
             self.assertEqual(expected, get_all_latest_ingest_jobs())
 
@@ -226,7 +234,7 @@ class IngestDataflowOperations(TestCase):
 
         # most recent job
         most_recent_job_id = "2020-10-01_00_00_00"
-        self.watermark_manager.add_job(
+        self.job_manager.add_job(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -271,7 +279,7 @@ class IngestDataflowOperations(TestCase):
     def test_get_stale_raw_data_watermarks_for_latest_run_one_expired(self) -> None:
         # most recent job
         most_recent_job_id = "2020-10-01_00_00_00"
-        self.watermark_manager.add_job(
+        self.job_manager.add_job(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
@@ -316,7 +324,7 @@ class IngestDataflowOperations(TestCase):
 
     def test_get_stale_raw_data_watermarks_for_latest_run_multiple(self) -> None:
         most_recent_job_id = "2020-10-01_00_00_00"
-        self.watermark_manager.add_job(
+        self.job_manager.add_job(
             job_id=most_recent_job_id,
             state_code=StateCode.US_XX,
             ingest_instance=DirectIngestInstance.PRIMARY,
