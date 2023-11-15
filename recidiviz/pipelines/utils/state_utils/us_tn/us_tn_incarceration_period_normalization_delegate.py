@@ -15,14 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_TN implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+from datetime import timedelta
 from typing import List, Optional
 
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
+)
+from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_period_index import (
+    NormalizedSupervisionPeriodIndex,
 )
 
 
@@ -30,6 +38,24 @@ class UsTnIncarcerationNormalizationDelegate(
     StateSpecificIncarcerationNormalizationDelegate
 ):
     """US_TN implementation of the StateSpecificIncarcerationNormalizationDelegate."""
+
+    def normalize_period_if_commitment_from_supervision(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+    ) -> StateIncarcerationPeriod:
+        return _us_tn_normalize_period_if_commitment_from_supervision(
+            incarceration_period_list_index=incarceration_period_list_index,
+            sorted_incarceration_periods=sorted_incarceration_periods,
+            supervision_period_index=supervision_period_index,
+        )
+
+    def normalization_relies_on_supervision_periods(self) -> bool:
+        """The normalize_period_if_commitment_from_supervision function for US_TN
+        relies on supervision period entities."""
+        return True
 
     def period_is_parole_board_hold(
         self,
@@ -69,3 +95,55 @@ class UsTnIncarcerationNormalizationDelegate(
             return StateSupervisionViolationType.LAW
 
         return None
+
+
+def _us_tn_normalize_period_if_commitment_from_supervision(
+    incarceration_period_list_index: int,
+    sorted_incarceration_periods: List[StateIncarcerationPeriod],
+    supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+) -> StateIncarcerationPeriod:
+    """Returns an updated version of the specified incarceration period if it is a
+    commitment from supervision admission.
+
+    For US_TN, commitments from supervision occur in the following circumstances:
+
+    If the period represents an admission from XXX supervision, changes the NEW_ADMISSION admission_reason
+    to be TEMPORARY CUSTODY.
+    """
+    if supervision_period_index is None:
+        raise ValueError(
+            "IP normalization relies on supervision periods for US_TN. "
+            "Expected non-null supervision_period_index."
+        )
+
+    incarceration_period = sorted_incarceration_periods[incarceration_period_list_index]
+
+    if (
+        incarceration_period.admission_reason
+        == StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+    ):
+        if not incarceration_period.admission_date:
+            raise ValueError(
+                "Unexpected missing admission_date on incarceration period: "
+                f"[{incarceration_period}]"
+            )
+
+        # Find most relevant pre- (or overlapping) commitment supervision period
+        pre_commitment_supervision_period = (
+            supervision_period_index.get_supervision_period_overlapping_with_date_range(
+                date_range=DateRange(
+                    incarceration_period.admission_date - timedelta(days=1),
+                    incarceration_period.admission_date,
+                )
+            )
+        )
+
+        # Confirm that there is an overlapping or abutting supervision period
+        if pre_commitment_supervision_period:
+            # There is a supervision period that abuts or overlaps with this NEW_ADMISSION incarceration period
+            # so this is actually a TEMPORARY CUSTODY period, not a NEW ADMISSION.
+            incarceration_period.admission_reason = (
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+            )
+
+    return incarceration_period

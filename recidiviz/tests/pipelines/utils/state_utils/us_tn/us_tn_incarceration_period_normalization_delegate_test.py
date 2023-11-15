@@ -18,13 +18,28 @@
 import unittest
 from datetime import date
 
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.pipelines.utils.state_utils.us_tn.us_tn_incarceration_period_normalization_delegate import (
     UsTnIncarcerationNormalizationDelegate,
+)
+from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_sp_index_for_tests,
 )
 
 _STATE_CODE = StateCode.US_TN.value
@@ -80,3 +95,203 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
         )
 
         self.assertEqual(result, None)
+
+    # Test normalizing IPs with NEW ADMISSION that have overlapping or abutting supervision period override to TEMPORARY CUSTODY
+    def test_normalized_incarceration_periods_new_admission_with_abutting_period_override_to_temporary_custody(
+        self,
+    ) -> None:
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_TN",
+            start_date=date(2017, 3, 5),
+            termination_date=date(2017, 5, 9),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2018, 5, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2018, 5, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        validated_incarceration_periods = (
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=[incarceration_period],
+                original_sorted_incarceration_periods=[incarceration_period],
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[supervision_period]
+                ),
+            )
+        )
+
+        self.assertEqual(updated_period, validated_incarceration_periods)
+
+    # Test normalizing IPs with NEW ADMISSION that does not have overlapping or abutting supervision period so no override should occur
+    def test_normalized_incarceration_periods_new_admission_do_not_override_to_temporary_custody(
+        self,
+    ) -> None:
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_TN",
+            start_date=date(2017, 3, 5),
+            termination_date=date(2017, 5, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2018, 5, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2018, 5, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        validated_incarceration_periods = (
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=[incarceration_period],
+                original_sorted_incarceration_periods=[incarceration_period],
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[supervision_period]
+                ),
+            )
+        )
+
+        self.assertEqual(updated_period, validated_incarceration_periods)
+
+    # Test normalizing IPs with NEW ADMISSION that have overlapping open supervision period override to TEMPORARY CUSTODY
+    def test_normalized_incarceration_periods_new_admission_with_overlapping_open_sp_override_to_temporary_custody(
+        self,
+    ) -> None:
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_TN",
+            start_date=date(2017, 3, 5),
+            termination_date=None,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2018, 5, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2018, 5, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        validated_incarceration_periods = (
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=[incarceration_period],
+                original_sorted_incarceration_periods=[incarceration_period],
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[supervision_period]
+                ),
+            )
+        )
+
+        self.assertEqual(updated_period, validated_incarceration_periods)
+
+    # Test normalizing IPs with NEW ADMISSION that have overlapping closed supervision period override to TEMPORARY CUSTODY
+    def test_normalized_incarceration_periods_new_admission_with_overlapping_closed_sp_override_to_temporary_custody(
+        self,
+    ) -> None:
+        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_TN",
+            start_date=date(2017, 3, 5),
+            termination_date=date(2017, 6, 10),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2018, 5, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_TN",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            admission_date=date(2017, 5, 9),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2018, 5, 9),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        validated_incarceration_periods = (
+            self.delegate.normalize_period_if_commitment_from_supervision(
+                incarceration_period_list_index=0,
+                sorted_incarceration_periods=[incarceration_period],
+                original_sorted_incarceration_periods=[incarceration_period],
+                supervision_period_index=default_normalized_sp_index_for_tests(
+                    supervision_periods=[supervision_period]
+                ),
+            )
+        )
+
+        self.assertEqual(updated_period, validated_incarceration_periods)
