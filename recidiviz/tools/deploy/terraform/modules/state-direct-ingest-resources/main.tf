@@ -39,3 +39,38 @@ resource "google_storage_bucket_iam_member" "prod-only-testing-direct-ingest-buc
   role   = var.state_admin_role
   member = "serviceAccount:${google_service_account.service-account.email}"
 }
+
+resource "google_service_account" "dataflow_service_account" {
+  account_id   = "${local.direct_ingest_formatted_str}-df"
+  display_name = "A service account for ${var.state_code} Direct Ingest in Dataflow."
+}
+
+resource "google_project_iam_member" "bigquery_read_write_admin" {
+  project = var.project_id
+  role    = "roles/bigquery.admin"
+  member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
+}
+
+resource "google_project_iam_member" "dataflow_service_agent" {
+  project = var.project_id
+  role    = "roles/dataflow.serviceAgent"
+  member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
+}
+
+resource "google_project_iam_member" "dataflow_worker" {
+  project = var.project_id
+  role    = "roles/dataflow.worker"
+  member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
+}
+
+resource "google_project_iam_member" "storage_object_admin" {
+  project = var.project_id
+  role    = "roles/storage.objectAdmin"
+  member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
+}
+
+resource "google_project_iam_member" "viewer" {
+  project = var.project_id
+  role    = "roles/viewer"
+  member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
+}
