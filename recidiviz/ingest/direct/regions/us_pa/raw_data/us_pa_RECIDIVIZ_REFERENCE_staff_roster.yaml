@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_staff_roster
+file_description: |-
+  A table containing information about each agent and supervisor at PBPP. This is emailed
+  to us from PA in a google sheet as two separate tabs: "Agents" and "Supervisors", and 
+  requires preprocessing. Each tab is manually corrected to guarantee the following things: 
+    - All individuals listed as an agent's supervisor are included in the "Supervisors" tab,
+      with the same spelling and formatting of their name.
+    - The SupervisorInfo field in the "Agents" tab is split into components so that supervisors 
+      can be matched to their ID numbers using their first and last name.
+    - All individuals have an Employee ID.
+    - The column names match the column names in this configuration.
+
+  The "Supervisor" and "Agents" tabs are concatenated to form one table, which is called
+  "All Staff". Then the following query is run on that table to join supervisor IDs to 
+  supervisor names.
+
+  ```
+  SELECT * FROM (
+        SELECT DISTINCT
+            all_staff.*,
+            supervisors.EmployeeID AS Supervisor_EmpNum, 
+        FROM <ALL STAFF TABLE> all 
+        LEFT JOIN <SUPERVISORS TAB> supervisors
+        -- join on supervisor name to get supervisor ID
+        ON (CONCAT(TRIM(UPPER(all.SupervisorFirstName)), TRIM(UPPER(all.SupervisorLastName))) 
+            = CONCAT(TRIM(UPPER(supervisors.EmployeeFirstName)), TRIM(UPPER(supervisors.EmployeeLastName))))
+    )
+    ORDER BY EmployeeID;
+    ```
+data_classification: source
+primary_key_cols:
+  - EmployeeID
+  - AMU_Pos_No
+columns:
+  - name: EmployeeID
+    is_pii: True
+    description: Employee ID number.
+  - name: EmployeeLastName
+    is_pii: True
+    description: Employee's surname.
+  - name: EmployeeFirstName
+    is_pii: True
+    description: Employee's given name.
+  - name: Email
+    is_pii: True
+    description: Employee's email address.
+  - name: DO_Orgcode
+    description: |-
+      The location code for the supervision district in which a given supervision office 
+      is located.
+  - name: AMU_Pos_No
+    description: |-
+      The number assigned to the position this person holds. This number stays with the 
+      position, not the employee who holds it.
+  - name: SupervisorInfo
+    is_pii: True
+    description: |-
+      The name, unit code, and position number (not ID number) of the agent's supervisor.
+      This field will be blank for supervisors themselves.
+  - name: SupervisorLastName
+    is_pii: True
+    description: The surname of the supervisor assigned to a given agent.
+  - name: SupervisorFirstName
+    is_pii: True
+    description: The given name of the supervisor assigned to a given agent.
+  - name: Org_Name
+    description: |-
+      The name of the supervision office in which an individual works, written
+      in English (not a numeric code).
+  - name: Role
+    description: Job title
+    known_values:
+      - value: Parole Agt 2
+      - value: Parole Spvr
+  - name: Supervisor_EmpNum
+    is_pii: True
+    description: |-
+      Supervisor's employee ID. Will be blank if the employee does not have a
+      supervisor or is a supervisor themselves.
