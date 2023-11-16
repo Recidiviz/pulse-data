@@ -27,6 +27,9 @@ my_flat_field:
 
 from typing import Optional
 
+from recidiviz.common.date import calendar_unit_date_diff
+from recidiviz.common.str_field_utils import safe_parse_days_from_duration_pieces
+
 
 def parse_address_pieces(
     stnum: str,
@@ -62,3 +65,19 @@ def parse_address_pieces(
         constructed_address += " " + zipcode
 
     return constructed_address.upper()
+
+
+def max_length_days_from_ymd(years: str, months: str, days: str) -> Optional[str]:
+    result = safe_parse_days_from_duration_pieces(
+        years_str=years, months_str=months, days_str=days
+    )
+    if result is None:
+        return None
+    return str(result)
+
+
+def date_diff_in_days(start: str, end: str) -> Optional[str]:
+    result = calendar_unit_date_diff(start_date=start, end_date=end, time_unit="days")
+    if result is None:
+        return None
+    return str(result)
