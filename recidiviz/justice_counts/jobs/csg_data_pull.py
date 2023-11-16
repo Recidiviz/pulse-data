@@ -524,6 +524,7 @@ def generate_and_write_scoreboard(
     Columns generated include the following:
         - date_last_updated
         - num_total_agencies
+        - num_agencies_created_in_last_week
         - num_agencies_logged_in_last_week
         - num_super_agencies
         - num_agencies_shared_data_at_least_one_metric
@@ -542,6 +543,9 @@ def generate_and_write_scoreboard(
             sheet_df = df[~df["is_child_agency"]]
 
         num_total_agencies = str(len(sheet_df))
+        num_agencies_created_in_last_week = str(
+            len(sheet_df[sheet_df["new_agency_this_week"]])
+        )
         num_agencies_logged_in_last_week = str(
             len(sheet_df[sheet_df["login_this_week"]])
         )
@@ -564,6 +568,7 @@ def generate_and_write_scoreboard(
             [
                 updated,
                 num_total_agencies,
+                num_agencies_created_in_last_week,
                 num_agencies_logged_in_last_week,
                 num_super_agencies,
                 num_agencies_shared_data_at_least_one_metric,
