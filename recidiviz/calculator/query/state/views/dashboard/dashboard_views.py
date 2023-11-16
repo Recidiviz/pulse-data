@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views im
     PATHWAYS_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.population_projections.population_projections_views import (
-    POPULATION_PROJECTION_VIEW_BUILDERS,
+    DASHBOARD_POPULATION_PROJECTION_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis import (
     revocation_analysis_views,
@@ -41,7 +41,7 @@ DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(
         (
             LANTERN_DASHBOARD_VIEW_BUILDERS,
-            POPULATION_PROJECTION_VIEW_BUILDERS,
+            DASHBOARD_POPULATION_PROJECTION_VIEW_BUILDERS,
             VITALS_VIEW_BUILDERS,
             PATHWAYS_VIEW_BUILDERS,
         )

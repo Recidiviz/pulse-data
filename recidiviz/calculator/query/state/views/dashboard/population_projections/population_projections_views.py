@@ -25,7 +25,7 @@ from recidiviz.calculator.query.state.views.dashboard.population_projections.sup
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
-POPULATION_PROJECTION_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
+DASHBOARD_POPULATION_PROJECTION_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
     PRISON_POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER,
     SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER,
 ]
