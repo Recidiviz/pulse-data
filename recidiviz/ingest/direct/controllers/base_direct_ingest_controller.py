@@ -385,9 +385,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             )
         return self._get_ingest_view_rank_list(self.ingest_instance)
 
-    # TODO(#10128): Once we are fully on v2, we should turn the state specific
-    # controllers into delegates that just implement this and region code, instead of
-    # letting them inherit from the base controller.
     # TODO(#20930): Delete this function once ingest in Dataflow is enabled for all
     #  states.
     @classmethod
