@@ -135,13 +135,13 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
         ]
 
     # The execute method is called after templated arguments have been rendered
-    def execute(self, context: Context) -> None:
+    def execute(self, context: Context) -> Any:
         # Assign resources based on the entrypoint that we are running
         self.container_resources = (
             KubernetesEntrypointResourceAllocator().get_resources(self.arguments)
         )
 
-        super().execute(context)
+        return super().execute(context)
 
 
 def build_kubernetes_pod_task(
@@ -150,6 +150,7 @@ def build_kubernetes_pod_task(
     container_name: str,
     trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
     retries: int = 0,
+    do_xcom_push: bool = False,
 ) -> RecidivizKubernetesPodOperator:
     """
     Builds an operator that launches a container using the appengine image in the user workloads Kubernetes namespace
@@ -180,4 +181,5 @@ def build_kubernetes_pod_task(
         ],
         trigger_rule=trigger_rule,
         retries=retries,
+        do_xcom_push=do_xcom_push,
     )

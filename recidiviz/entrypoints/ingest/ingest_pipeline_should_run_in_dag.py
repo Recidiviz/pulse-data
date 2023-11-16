@@ -20,6 +20,7 @@ import logging
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
+from recidiviz.entrypoints.entrypoint_utils import save_to_xcom
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.gating import ingest_pipeline_can_run_in_dag
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
@@ -174,9 +175,9 @@ class IngestPipelineShouldRunInDagEntrypoint(EntrypointInterface):
         return parser
 
     @staticmethod
-    def run_entrypoint(args: argparse.Namespace) -> bool:
+    def run_entrypoint(args: argparse.Namespace) -> None:
         """Runs the raw data flashing check."""
         state_code = args.state_code
         ingest_instance = args.ingest_instance
 
-        return ingest_pipeline_should_run_in_dag(state_code, ingest_instance)
+        save_to_xcom(ingest_pipeline_should_run_in_dag(state_code, ingest_instance))

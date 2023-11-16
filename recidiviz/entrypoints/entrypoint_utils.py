@@ -14,22 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains the interface for entrypoints"""
-import abc
-import argparse
+"""Contains the utils for entrypoints"""
+import json
+import os
+from typing import Any, Dict, List, Union
+
+XCOM_RETURN_FILE = "/airflow/xcom/return.json"
 
 
-class EntrypointInterface(abc.ABC):
-    """Interface for our entrypoints"""
+def save_to_xcom(json_data: Union[Dict, List[Any], str, int, bool]) -> None:
+    """Saves the given json data to xcom return file in directory. To be used by kubernetes pod entrypoints."""
 
-    @staticmethod
-    @abc.abstractmethod
-    def get_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser()
-
-        return parser
-
-    @staticmethod
-    @abc.abstractmethod
-    def run_entrypoint(args: argparse.Namespace) -> None:
-        ...
+    os.makedirs(os.path.dirname(XCOM_RETURN_FILE), exist_ok=True)
+    with open(XCOM_RETURN_FILE, "w", encoding="utf-8") as f:
+        json.dump(json_data, f)
