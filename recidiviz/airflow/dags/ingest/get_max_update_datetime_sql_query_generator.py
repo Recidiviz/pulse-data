@@ -47,7 +47,7 @@ class GetMaxUpdateDateTimeSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str
         """Returns the max update datetime from direct_ingest_raw_file_metadata."""
 
         max_update_datetimes: Dict[str, str] = {
-            row[FILE_TAG]: row[MAX_UPDATE_DATETIME]
+            row[FILE_TAG]: row[MAX_UPDATE_DATETIME].isoformat()
             for _, row in postgres_hook.get_pandas_df(self.sql_query()).iterrows()
         }
 
