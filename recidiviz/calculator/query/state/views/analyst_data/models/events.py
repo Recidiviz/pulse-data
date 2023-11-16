@@ -363,6 +363,11 @@ ON
     a.inflow_from_level_1,
     a.inflow_from_level_2,
     a.start_reason,
+    -- Returning to incarceration for the weekend is not at an officer's discretion, but usually pre-determined by a
+    -- judge, parole board, etc
+    CASE WHEN a.start_reason IN ('WEEKEND_CONFINEMENT') THEN FALSE 
+         ELSE TRUE 
+         END AS is_discretionary,
     -- Get the first non-null violation type among incarceration starts occurring during the super session
     COALESCE(d.most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
     viol.violation_date AS most_severe_violation_date,
@@ -405,6 +410,7 @@ QUALIFY ROW_NUMBER() OVER (
             "most_severe_violation_type",
             "violation_is_inferred",
             "prior_treatment_referrals_1y",
+            "is_discretionary",
         ],
         event_date_col="start_date",
     ),
@@ -720,6 +726,7 @@ WHERE compartment_level_1 = "SUPERVISION"
     a.compartment_level_1,
     a.compartment_level_2,
     a.end_reason,
+    TRUE AS is_discretionary,
     -- Get the first non-null violation type among supervision terminations occurring during the super session
     COALESCE(c.most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
     COALESCE(JSON_EXTRACT_SCALAR(viol.violation_metadata, '$.ViolationType'), '') = 'INFERRED' as violation_is_inferred,
@@ -774,6 +781,7 @@ QUALIFY ROW_NUMBER() OVER (
             "most_severe_violation_type",
             "most_severe_violation_type_termination_date",
             "prior_treatment_referrals_1y",
+            "is_discretionary",
         ],
         event_date_col="end_date_exclusive",
     ),
