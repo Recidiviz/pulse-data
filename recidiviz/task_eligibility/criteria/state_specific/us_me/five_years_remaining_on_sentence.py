@@ -17,8 +17,9 @@
 
 """
 Defines a criteria view that shows spans of time for
-which clients are 3 years away from expected release date.
+which clients are 5 years away from expected release date.
 """
+
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
     x_years_remaining_on_sentence,
 )
@@ -27,17 +28,18 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
+
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ME_THREE_YEARS_REMAINING_ON_SENTENCE"
+_CRITERIA_NAME = "US_ME_FIVE_YEARS_REMAINING_ON_SENTENCE"
 
 _DESCRIPTION = """
 Defines a criteria view that shows spans of time for
-which clients are 3 years away from expected release date.
+which clients are 5 years away from expected release date.
 """
 
-_QUERY_TEMPLATE = x_years_remaining_on_sentence(3)
+_QUERY_TEMPLATE = x_years_remaining_on_sentence(5)
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
