@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_staff_role_location_period` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - PARTYID
+  - PARTYRELSTART
+  - PARTYRELEND
+  - WORKASSIGNMENT
+  - PRIMARYSITEIND
+  - ORGREGIONCODE
+  - loc_seq
+  - role_seq
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: PARTYID
+          id_type: $literal("US_AR_PARTYID")
+    role_periods:
+      - $conditional:
+          - $if:
+              $and:
+                - $equal:
+                    - loc_seq
+                    - $literal("1")
+                - $not_null: WORKASSIGNMENT
+            $then:
+              StateStaffRolePeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - PARTYID
+                      - role_seq
+                start_date: PARTYRELSTART
+                end_date: PARTYRELEND
+                role_type:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - WORKASSIGNMENT
+                          - $literal("C22")
+                      $then: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
+                    - $else: $literal_enum(StateStaffRoleType.INTERNAL_UNKNOWN)
+                role_subtype:
+                  $enum_mapping:
+                    $raw_text: WORKASSIGNMENT
+                    $custom_parser: us_ar_custom_enum_parsers.parse_role_subtype
+    location_periods:
+      - $conditional:
+          - $if:
+              $and:
+                - $equal:
+                    - PRIMARYSITEIND
+                    - $literal("Y")
+                - $not_null: ORGREGIONCODE
+            $then:
+              StateStaffLocationPeriod:
+                external_id:
+                  $concat:
+                    $values:
+                      - PARTYID
+                      - role_seq
+                      - loc_seq
+                start_date: PARTYRELSTART
+                end_date: PARTYRELEND
+                location_external_id: ORGREGIONCODE
