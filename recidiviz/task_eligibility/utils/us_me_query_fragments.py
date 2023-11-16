@@ -22,6 +22,14 @@ from typing import Optional
 from recidiviz.calculator.query.bq_utils import (
     date_diff_in_full_months,
     nonnull_end_date_clause,
+    revert_nonnull_end_date_clause,
+)
+
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -364,7 +372,7 @@ def me_time_left_in_sentence_in_categories() -> str:
             -- Grab the day difference between today and the expected release date
             SELECT 
                 *,
-                {date_diff_in_full_months(date_column= 'expected_release_date', time_zone = 'US/Eastern')} AS month_diff,
+                {date_diff_in_full_months(date_column='expected_release_date', time_zone='US/Eastern')} AS month_diff,
                 DATE_DIFF(expected_release_date, CURRENT_DATE('US/Eastern'), DAY) day_diff
             FROM (
                 -- Grab the expected release date
@@ -436,3 +444,177 @@ def cis_900_employee_to_supervisor_match() -> str:
         cis900.Cis_900_Employee_Supervisor_Id AS supervisor_id,
     FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` cis900
     GROUP BY 1,2,3,4,5"""
+
+
+def x_years_remaining_on_sentence(x: int) -> str:
+    """
+    Returns:
+        str: Query that surfaces spans of time for which clients are x years away from expected release date.
+    """
+    return f"""
+    WITH term_with_critical_date AS (
+    -- Combine case load with term data
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            DATE_SUB(end_date, INTERVAL {x} YEAR) AS critical_date,
+            status,
+            term_id,
+        FROM `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` tc
+    ),
+    
+    -- Create sub-sessions w/attributes
+    {create_sub_sessions_with_attributes('term_with_critical_date')},
+    
+    critical_date_spans AS (
+        -- Drop additional repeated subsessions: if concurrent keep the longest one, drop
+        --   completed sessions over active ones
+        {cis_319_after_csswa()}
+    ),
+    
+    -- Critical date has passed
+    {critical_date_has_passed_spans_cte()}
+    SELECT
+        cd.state_code,
+        cd.person_id,
+        CASE
+            WHEN (start_date IS NULL) AND (critical_date_has_passed) THEN cd.critical_date
+                                    -- When there was no intake date in us_me_sentence_term,
+                                    -- start_date of our subsession is NULL for the
+                                    -- period for which the criteria is met. But
+                                    -- we know the end date and we can calculate the
+                                    -- start_date (eligible_date)
+            ELSE start_date
+        END start_date,
+            -- if the most recent subsession is True, then end_date should be NULL
+        IF((ROW_NUMBER() OVER (PARTITION BY cd.person_id, cd.state_code
+                               ORDER BY start_date DESC) =  1)
+                AND (critical_date_has_passed),
+            NULL,
+            end_date) AS end_date,
+        critical_date_has_passed AS meets_criteria,
+        TO_JSON(STRUCT(critical_date AS eligible_date)) AS reason,
+    FROM critical_date_has_passed_spans cd
+    """
+
+
+def no_violations_for_x_time(
+    x: int, date_part: str = "DAY", violation_classes: tuple[str, ...] = tuple()
+) -> str:
+    """
+    Input:
+        x: How many days to look for violations during
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "DAY".
+        violation_classes (optional): specific violations to filter for (i.e. class A, class B, etc)
+    Returns:
+        str: Query that surfaces spans of time for which clients are x years away from expected release date.
+    """
+    assert isinstance(x, int), "x must be of type int"
+    assert isinstance(date_part, str), "date_part must be of type string"
+    assert date_part in ["DAY", "WEEK", "MONTH", "QUARTER", "YEAR"], (
+        "date_part must be one of the following: "
+        '"DAY", "WEEK","MONTH","QUARTER","YEAR"'
+    )
+    assert isinstance(
+        violation_classes, tuple
+    ), "Violation_classes object must be of type tuple"
+    assert all(
+        (isinstance(i, str) for i in violation_classes)
+    ), "Each violation class must be of type string"
+
+    return f"""
+    WITH disciplinary_cases_cte AS (
+      SELECT 
+          "US_ME" AS state_code,
+          ei.person_id,
+          IF(vd.Cis_1813_Disposition_Outcome_Type_Cd IS NULL,
+             CONCAT('Pending since ', SAFE_CAST(LEFT(dc.CREATED_ON_DATE, 10) AS STRING)),
+             vdt.E_Violation_Disposition_Type_Desc) 
+                AS disp_type,
+          vdc.E_Violation_Disposition_Class_Desc AS disp_class,
+          vd.Cis_1813_Disposition_Outcome_Type_Cd AS disp_outcome,
+          SAFE_CAST(LEFT(dc.HEARING_ACTUALLY_HELD_DATE, 10) AS DATE) AS start_date,
+          SAFE_CAST(LEFT(dc.CREATED_ON_DATE, 10) AS DATE) AS pending_violation_start_date,
+          dc.CIS_462_CLIENTS_INVOLVED_ID,
+          ci.Cis_100_Client_Id,
+      FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_181_VIOLATION_DISPOSITION_latest`  vd
+      LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_180_DISCIPLINARY_CASE_latest` dc
+        ON vd.Cis_180_Disciplinary_Case_Id = dc.DISCIPLINARY_CASE_ID
+      LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_1811_VIOLATION_DISPOSITION_TYPE_latest` vdt
+        ON vd.Cis_1811_Violation_Type_Cd = vdt.Violation_Disposition_Type_Cd
+      LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_1810_VIOLATION_DISPOSITION_CLASS_latest` vdc
+        ON vd.Cis_1810_Violation_Class_Cd = vdc.Violation_Disposition_Class_Cd
+      LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_462_CLIENTS_INVOLVED_latest` ci
+        ON ci.Clients_Involved_Id = dc.CIS_462_CLIENTS_INVOLVED_ID
+      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` ei
+          ON ci.Cis_100_Client_Id = external_id
+          AND id_type = 'US_ME_DOC'
+      WHERE
+          {'vdc.E_Violation_Disposition_Class_Desc in ' + str(violation_classes) + ' AND' if violation_classes else ''}
+          # Drop if logical delete = yes
+          COALESCE(dc.LOGICAL_DELETE_IND, 'N') != 'Y'
+          AND COALESCE(vd.Logical_Delete_Ind , 'N') != 'Y'
+          # Whenever a disciplinary sanction has informal sanctions taken, it does not affect SCCP eligibility.
+          # TODO(#25437): Does it affect Medium Trustee eligibility?
+          AND COALESCE(dc.DISCIPLINARY_ACTION_FORMAL_IND, 'Y') != 'N'
+          
+    ),
+    cases_wstart_end_cte AS (
+      -- Resolved disciplines
+      SELECT
+            * EXCEPT (start_date, pending_violation_start_date),
+            start_date,
+            DATE_ADD(start_date, INTERVAL {x} {date_part}) AS end_date,
+            -- Keep another date so it doesn't get lost in a sub-session later
+            DATE_ADD(start_date, INTERVAL {x} {date_part}) AS eligible_date,
+      FROM disciplinary_cases_cte
+      WHERE disp_outcome IS NOT NULL
+    
+      UNION ALL
+    
+      -- Pending disciplines
+      SELECT
+      -- Create an open span on the pending start date if the violation disposition outcome is not set
+            * EXCEPT (start_date, pending_violation_start_date),
+            pending_violation_start_date AS start_date,
+            NULL AS end_date,
+            -- Keep another date so it doesn't get lost in a sub-session later
+            NULL AS eligible_date,
+      FROM disciplinary_cases_cte
+      WHERE disp_outcome IS NULL
+    ),
+    {create_sub_sessions_with_attributes(table_name='cases_wstart_end_cte')},
+    no_dup_subsessions_cte AS (
+      -- Drop duplicate sub-sessions by keeping the class with the highest priority
+      -- but keep the highest end_date as an eligible_date
+      SELECT * EXCEPT(disp_type, eligible_date),
+          -- If more than 1 violation at the time, state that there are 'More than 1'
+          IF(SUM(1) OVER(PARTITION BY person_id, state_code, start_date, end_date) > 1,
+            'More than 1',
+            disp_type) AS disp_type_wmorethan1,
+          -- When 2 duplicates subsessions are present, we keep the highest eligible date
+          MAX({nonnull_end_date_clause('eligible_date')}) OVER(PARTITION BY person_id, state_code, start_date, end_date)
+            AS eligible_date,
+      FROM sub_sessions_with_attributes
+      -- Drop cases where resident was 'Found Not Guilty' or 'Dismissed (Technical)'
+      WHERE disp_outcome NOT IN ('5', '10', '3', '8') 
+            OR disp_outcome IS NULL
+      -- Keep the violaiton with the highest priority
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, start_date, end_date
+                                ORDER BY disp_class) = 1
+    )
+    
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        False AS meets_criteria,
+        TO_JSON(STRUCT(disp_class AS highest_class_viol,
+                       disp_type_wmorethan1 AS viol_type,
+                       {revert_nonnull_end_date_clause('eligible_date')} AS eligible_date)) AS reason
+    FROM no_dup_subsessions_cte
+    """

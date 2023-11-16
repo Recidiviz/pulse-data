@@ -15,29 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""
-Defines a criteria view that shows spans of time for
-which clients are 3 years away from expected release date.
+"""Defines a criteria view that shows spans of time for
+which residents are within 5 years of having received a violation.
 """
 from recidiviz.task_eligibility.utils.us_me_query_fragments import (
-    x_years_remaining_on_sentence,
+    no_violations_for_x_time,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ME_THREE_YEARS_REMAINING_ON_SENTENCE"
+_CRITERIA_NAME = "US_ME_NO_VIOLATION_FOR_5_YEARS"
 
-_DESCRIPTION = """
-Defines a criteria view that shows spans of time for
-which clients are 3 years away from expected release date.
+_DESCRIPTION = """Defines a criteria view that shows spans of time for
+which residents are within 5 years of having received a violation.
 """
 
-_QUERY_TEMPLATE = x_years_remaining_on_sentence(3)
+_QUERY_TEMPLATE = no_violations_for_x_time(x=5, date_part="YEAR")
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
     StateSpecificTaskCriteriaBigQueryViewBuilder(
@@ -45,7 +45,11 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         state_code=StateCode.US_ME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        analyst_dataset=ANALYST_VIEWS_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=True,
     )
 )
 
