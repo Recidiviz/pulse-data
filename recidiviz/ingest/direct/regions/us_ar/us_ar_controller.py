@@ -49,4 +49,5 @@ class UsArController(BaseDirectIngestController):
             "supervision_period",
             "supervision_violation",
             "supervision_sentence",
+            "staff_role_location_period",
         ]

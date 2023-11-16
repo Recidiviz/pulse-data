@@ -26,10 +26,38 @@ my_enum_field:
 from typing import Optional
 
 from recidiviz.common.constants.state.state_person import StateEthnicity
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
+
+
+def parse_role_subtype(
+    raw_text: str,
+) -> Optional[StateStaffRoleSubtype]:
+    # TODO(#25552): Update SUPERVISION_OFFICER_SUPERVISOR mapping (along with others,
+    # if necessary) to use a more actively used code value.
+    if raw_text == "C22":  # Probation/Parole Officer
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER
+    if raw_text == "C21":  # Probation/Parole Officer
+        return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
+    if raw_text in [
+        "C11",  # Area Manager (ACC)
+        "C12",  # Assistant Area Manager (ACC)
+    ]:
+        return StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER
+    if raw_text == "C10":  # Region Supervisor (ACC)
+        return StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER
+    if raw_text in [
+        "C01",  # Director (ACC)
+        "C02",  # Division Director (ACC)
+        "C0P",  # Deputy Dir Parole/Prob (ACC)
+    ]:
+        return StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP
+    return StateStaffRoleSubtype.INTERNAL_UNKNOWN if raw_text else None
 
 
 def parse_ethnic_group(
