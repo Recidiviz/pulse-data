@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
-file_tag: crs_OfdCourseEnrollmentStatus
+file_tag: crs_OfdEnrollmentStatus
 file_description: Atlas table on course enrollment status
 data_classification: source
 primary_key_cols:
