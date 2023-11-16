@@ -77,63 +77,77 @@ output:
                               $key: Id
                               $json: $iter_item
                     response_type:
-                      $enum_mapping:
-                        $raw_text:
-                          $json_extract:
-                            $key: ProposedSanction
-                            $json: $iter_item
-                        $mappings:
-                          StateSupervisionViolationResponseType.CITATION:
-                            - WSI2 # WRITTEN WARNING / SUPERVISOR INTERVENTION
-                            - VBW1 # VERBAL WARNING
-                            - AVI3 # ATTEND AND COMPLETE VICTIM IMPACT
-                            - RFM1 # RF MONITORING 30 DAYS
-                            - RFM2 # RF MONITORING 60 DAYS
-                            - AJC2 # ATTEND JOB READINESS CLASS W/IN 20 DAYS
-                            - AVI2 # ATTEND AND COMPLETE VICTIM IMPACT
-                            - GPM1 # GPS MONITORING - 30 DAYS
-                            - RFM3 # RF MONITORING 90 DAYS
-                            - AVI1 # ATTEND AND COMPLETE VICTIM IMPACT
-                            - DRC3 # REFER TO DAY REPORTING CENTER
-                            - CRC1 # REFER COMMUNITY RESOURCE CENTER - LEVEL 1
-                            - WSA3 # SUBMIT WEEKLY SCHEDULE - 90 DAYS
-                            - PSL3 # ATTEND PRO-SOCIAL LIFE SKILLS - LEVEL 3
-                            - GPM2 # GPS MONITORING - 60 DAYS
-                            - PSL1 # ATTEND PRO-SOCIAL LIFE SKILLS - LEVEL 1
-                            - WSA1 # SUBMIT WEEKLY SCHEDULE - 30 DAYS
-                            - CRC2 # REFER COMMUNITY RESOURCE CENTER - LEVEL 2
-                            - AJC1 # ATTEND JOB READINESS CLASS W/IN 30 DAYS
-                            - PSL2 # ATTEND PRO-SOCIAL LIFE SKILLS - LEVEL 2
-                            - WSA2 # SUBMIT WEEKLY SCHEDULE - 60 DAYS
-                            - CSW2 # COMMUNITY SERVICE WORK  (16 HOURS W/IN 30 DAYS)
-                            - CUR1 # CURFEW - 30 DAYS
-                            - CSW3 # COMMUNITY SERVICE WORK  (24 HOURS W/IN 45 DAYS)
-                            - CSW1 # COMMUNITY SERVICE WORK (8 HOURS W/IN 14 DAYS)
-                            - GPM3 # GPS MONITORING - 90 DAYS
-                            - CUR2 # CURFEW - 60 DAYS
-                            - PPE3 # PAYMENT PLAN ESTABLISHED - LEVEL 3
-                            - PPE2 # PAYMENT PLAN ESTABLISHED - LEVEL 2
-                            - RTP1 # RESTRICTED TRAVEL - 30 DAYS
-                            - RTP2 # RESTRICTED TRAVEL - 60 DAYS
-                            - CUR3 # CURFEW - 90 DAYS
-                            - RTP3 # RESTRICTED TRAVEL - 90 DAYS
-                            - PPE1 # PAYMENT PLAN ESTABLISHED - LEVEL 1
-                            - SFS2 # SUBMIT TO FSW ASSESSMENT COMPLETE RECOMMENDATIONS
-                            - ADS2 # 2 ADDITIONAL DRUG SCREENS W/IN 60 DAYS
-                            - ADS3 # 3 ADDITIONAL DRUG SCREENS W/IN 90 DAYS
-                            - SFS3 # SUBMIT TO FSW ASSESSMENT COMPLETE RECOMMENDATIONS
-                            - ISL3 # INCREASE REPORTING - 90 DAYS
-                            - ISL1 # INCREASE REPORTING - 30 DAYS
-                            - ISL2 # INCREASE REPORTING - 60 DAYS
-                            - ADS1 # 1 ADDITIONAL DRUG SCREEN W/IN 30 DAYS
-                            - SFS1 # SUBMIT TO FSW ASSESSMENT COMPLETE RECOMMENDATIONS
-                          StateSupervisionViolationResponseType.INTERNAL_UNKNOWN:
-                            - NABO # NOT ADDRESSED BY OFFICER
-                          StateSupervisionViolationResponseType.PERMANENT_DECISION:
-                            - USNP # USE OF SANCTION NOT PERMITTED BY JUDGE
-                          StateSupervisionViolationResponseType.VIOLATION_REPORT:
-                            - CSLN # CSL VIOLATION - NO SANCTION AVAILABLE
-                            - ZTVR # ZERO TOLERANCE VIOLATION
+                      $conditional:
+                        - $if:
+                            $and:
+                              - $is_null:
+                                  $json_extract:
+                                    $key: ProposedSanction
+                                    $json: $iter_item
+                              - $equal:
+                                  - $json_extract:
+                                      $key: SanctionStatus
+                                      $json: $iter_item
+                                  - $literal("Associated to Zero Tolerance")
+                          $then: $literal_enum(StateSupervisionViolationResponseType.CITATION)
+                        - $else:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: ProposedSanction
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseType.CITATION:
+                                  - WSI2 # WRITTEN WARNING / SUPERVISOR INTERVENTION
+                                  - VBW1 # VERBAL WARNING
+                                  - AVI3 # ATTEND AND COMPLETE VICTIM IMPACT
+                                  - RFM1 # RF MONITORING 30 DAYS
+                                  - RFM2 # RF MONITORING 60 DAYS
+                                  - AJC2 # ATTEND JOB READINESS CLASS W/IN 20 DAYS
+                                  - AVI2 # ATTEND AND COMPLETE VICTIM IMPACT
+                                  - GPM1 # GPS MONITORING - 30 DAYS
+                                  - RFM3 # RF MONITORING 90 DAYS
+                                  - AVI1 # ATTEND AND COMPLETE VICTIM IMPACT
+                                  - DRC3 # REFER TO DAY REPORTING CENTER
+                                  - CRC1 # REFER COMMUNITY RESOURCE CENTER - LEVEL 1
+                                  - WSA3 # SUBMIT WEEKLY SCHEDULE - 90 DAYS
+                                  - PSL3 # ATTEND PRO-SOCIAL LIFE SKILLS - LEVEL 3
+                                  - GPM2 # GPS MONITORING - 60 DAYS
+                                  - PSL1 # ATTEND PRO-SOCIAL LIFE SKILLS - LEVEL 1
+                                  - WSA1 # SUBMIT WEEKLY SCHEDULE - 30 DAYS
+                                  - CRC2 # REFER COMMUNITY RESOURCE CENTER - LEVEL 2
+                                  - AJC1 # ATTEND JOB READINESS CLASS W/IN 30 DAYS
+                                  - PSL2 # ATTEND PRO-SOCIAL LIFE SKILLS - LEVEL 2
+                                  - WSA2 # SUBMIT WEEKLY SCHEDULE - 60 DAYS
+                                  - CSW2 # COMMUNITY SERVICE WORK  (16 HOURS W/IN 30 DAYS)
+                                  - CUR1 # CURFEW - 30 DAYS
+                                  - CSW3 # COMMUNITY SERVICE WORK  (24 HOURS W/IN 45 DAYS)
+                                  - CSW1 # COMMUNITY SERVICE WORK (8 HOURS W/IN 14 DAYS)
+                                  - GPM3 # GPS MONITORING - 90 DAYS
+                                  - CUR2 # CURFEW - 60 DAYS
+                                  - PPE3 # PAYMENT PLAN ESTABLISHED - LEVEL 3
+                                  - PPE2 # PAYMENT PLAN ESTABLISHED - LEVEL 2
+                                  - RTP1 # RESTRICTED TRAVEL - 30 DAYS
+                                  - RTP2 # RESTRICTED TRAVEL - 60 DAYS
+                                  - CUR3 # CURFEW - 90 DAYS
+                                  - RTP3 # RESTRICTED TRAVEL - 90 DAYS
+                                  - PPE1 # PAYMENT PLAN ESTABLISHED - LEVEL 1
+                                  - SFS2 # SUBMIT TO FSW ASSESSMENT COMPLETE RECOMMENDATIONS
+                                  - ADS2 # 2 ADDITIONAL DRUG SCREENS W/IN 60 DAYS
+                                  - ADS3 # 3 ADDITIONAL DRUG SCREENS W/IN 90 DAYS
+                                  - SFS3 # SUBMIT TO FSW ASSESSMENT COMPLETE RECOMMENDATIONS
+                                  - ISL3 # INCREASE REPORTING - 90 DAYS
+                                  - ISL1 # INCREASE REPORTING - 30 DAYS
+                                  - ISL2 # INCREASE REPORTING - 60 DAYS
+                                  - ADS1 # 1 ADDITIONAL DRUG SCREEN W/IN 30 DAYS
+                                  - SFS1 # SUBMIT TO FSW ASSESSMENT COMPLETE RECOMMENDATIONS
+                                StateSupervisionViolationResponseType.INTERNAL_UNKNOWN:
+                                  - NABO # NOT ADDRESSED BY OFFICER
+                                StateSupervisionViolationResponseType.PERMANENT_DECISION:
+                                  - USNP # USE OF SANCTION NOT PERMITTED BY JUDGE
+                                StateSupervisionViolationResponseType.VIOLATION_REPORT:
+                                  - CSLN # CSL VIOLATION - NO SANCTION AVAILABLE
+                                  - ZTVR # ZERO TOLERANCE VIOLATION
                     response_date:
                       $json_extract:
                         $key: ImposedDate
