@@ -10,14 +10,14 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 1.0
     override_reason: TODO(#13057) Needs investigation.
   - validation_name: incarceration_population_person_level_external_comparison
-    hard_max_allowed_error_override: 0.15
-    override_reason: TODO(#13057) Needs investigation.
+    hard_max_allowed_error_override: 0.20
+    override_reason: TODO(#13057) Needs investigation. This threshold was bumped from .15 to .20 on 11/16/23 due to outliers refactors that started including TEMPORARY_CUSTODY periods as part of population when they were not previously. This decision should be revisited at some point, but for now we bump threshold.
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
     hard_max_allowed_error_override: 1.0
     override_reason: TODO(#13057) Needs investigation.
   - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison
-    hard_max_allowed_error_override: 0.25
-    override_reason: TODO(#12167) Needs investigation.
+    hard_max_allowed_error_override: 0.30
+    override_reason: TODO(#12167) Needs investigation. This threshold was bumped from .25 to .30 on 11/16/23 due to outliers refactors that started including TEMPORARY_CUSTODY periods as part of population when they were not previously. This decision should be revisited at some point, but for now we bump threshold.
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.01
     override_reason: TODO(#15351) Needs investigation. There is one ID not accounted for over a span of 5 days in September 2022.
@@ -29,8 +29,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 120
     override_reason: TODO(#13055) Needs investigation. Current failing level as of 9/12/23 is 94 rows.
   - validation_name: invalid_release_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 90
-    override_reason: TODO(#12166) Needs investigation. Ingest mappings don't account currently map to temp custody releases
+    hard_num_allowed_rows_override: 120
+    override_reason: TODO(#12166) Needs investigation. Ingest mappings don't currently map to temp custody releases. Number of erroring rows went from 90 to 114 after refactors with TEMPORARY_CUSTODY for outliers work. Bumping the threshold on 11/16/23, but should revisit this when we prioritize validation refactors based on Outliers feedback.
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 150
     override_reason: Edge cases in TN data where there are two OffenderMovements of Departures on the same day, causing two periods to be generated. Error is increasing over time and should be addressed in some way to better handle zero-day periods. Error is 47 as of 5/18/22. Error is 62 as of 3/17/23. Error is 105 as of 7/11/23.
@@ -61,3 +61,10 @@ num_allowed_rows_overrides:
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 195000
     override_reason: Current failing level as of 4/20/23 is 178,074 rows (12%) #TODO(#20405)
+  - validation_name: current_supervision_staff_missing_district
+    hard_num_allowed_rows_override: 29
+    override_reason:
+      From initial ingest of staff, there are 29 people who have a role subtype that indicates supervision
+      officer, but their actual location is a not a supervision office. We confirmed with the supervisor staff rosters that
+      these people are not located in any of the supervision districts, and therefore it is okay to bump this threshold for
+      any known person in the Staff tables that is not an active supervision officer in a district.

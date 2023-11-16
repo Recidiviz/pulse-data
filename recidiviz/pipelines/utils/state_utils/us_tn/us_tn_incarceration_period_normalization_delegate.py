@@ -20,6 +20,7 @@ from typing import List, Optional
 
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -144,6 +145,9 @@ def _us_tn_normalize_period_if_commitment_from_supervision(
             # so this is actually a TEMPORARY CUSTODY period, not a NEW ADMISSION.
             incarceration_period.admission_reason = (
                 StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+            )
+            incarceration_period.specialized_purpose_for_incarceration = (
+                StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
             )
 
     return incarceration_period

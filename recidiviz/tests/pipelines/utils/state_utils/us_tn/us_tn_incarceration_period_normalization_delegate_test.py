@@ -130,7 +130,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2018, 5, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
         validated_incarceration_periods = (
@@ -230,7 +230,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2018, 5, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
         validated_incarceration_periods = (
@@ -280,7 +280,7 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2018, 5, 9),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 
         validated_incarceration_periods = (
