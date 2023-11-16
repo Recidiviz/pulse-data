@@ -87,6 +87,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_t
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_furlough_release_form_record import (
     US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_level_downgrade_to_medium_trustee_request_record import (
+    US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_transfer_to_sccp_jii_record import (
     US_ME_TRANSFER_TO_SCCP_JII_RECORD_VIEW_BUILDER,
 )
@@ -160,6 +163,7 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ME_COMPLETE_EARLY_TERMINATION_RECORD_VIEW_BUILDER,
     US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER,
     US_ME_COMPLETE_WORK_RELEASE_RECORD_VIEW_BUILDER,
+    US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST_RECORD_VIEW_BUILDER,
     US_MI_COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER,
