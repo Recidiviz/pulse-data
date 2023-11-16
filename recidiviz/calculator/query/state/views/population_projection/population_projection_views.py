@@ -14,7 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""All views needed for the population projection simulation"""
+"""All views that generate inputs to the population projection micro-simulations (see
+configuration in recidiviz/calculator/modeling/population_projection/microsimulations),
+or compile the outputs into a more usable form for downstream use.
+"""
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -48,6 +51,18 @@ from recidiviz.calculator.query.state.views.population_projection.remaining_sent
 from recidiviz.calculator.query.state.views.population_projection.simulation_run_dates import (
     SIMULATION_RUN_DATES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.population_projection.spark.cost_avoidance_estimate_most_recent import (
+    SPARK_COST_AVOIDANCE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.spark.cost_avoidance_non_cumulative_estimate_most_recent import (
+    SPARK_COST_AVOIDANCE_NON_CUMULATIVE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.spark.life_years_estimate_most_recent import (
+    SPARK_LIFE_YEARS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.population_projection.spark.population_estimate_most_recent import (
+    SPARK_POPULATION_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.population_projection.supervision_projected_release_dates import (
     SUPERVISION_PROJECTED_RELEASE_DATES_VIEW_BUILDER,
 )
@@ -77,18 +92,6 @@ from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_ri
 )
 from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_total_jail_population import (
     US_ID_TOTAL_JAIL_POPULATION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.cost_avoidance_estimate_most_recent import (
-    SPARK_COST_AVOIDANCE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.cost_avoidance_non_cumulative_estimate_most_recent import (
-    SPARK_COST_AVOIDANCE_NON_CUMULATIVE_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.population_estimate_most_recent import (
-    SPARK_POPULATION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.population_projection.spark.life_years_estimate_most_recent import (
-    SPARK_LIFE_YEARS_VIEW_BUILDER,
 )
 
 POPULATION_PROJECTION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
