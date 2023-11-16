@@ -737,6 +737,11 @@ class BigQueryViewDagWalker:
                 view_results[node.view] = view_result
                 view_processing_stats[node.view] = view_stats
                 processed.add(node.view.address)
+                logging.info(
+                    "Completed processing of [%s]. Duration: [%s] seconds.",
+                    node.view.address.to_str(),
+                    execution_sec,
+                )
                 for (
                     adjacent_node,
                     previous_level_results,
