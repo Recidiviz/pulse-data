@@ -1001,7 +1001,7 @@ INCARCERATIONS_INFERRED = EventCountMetric(
     name="incarcerations_inferred",
     display_name="Inferred Incarcerations",
     description="Number of inferred incarceration events that do not align with an "
-    "observed incarceration session start",
+    "observed discretionary incarceration session start",
     event_types=[EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON],
     event_attribute_filters={},
 )
@@ -1012,7 +1012,7 @@ INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         display_name=f"Inferred Incarcerations, {category.replace('_', ' ').title()} "
         "Violation",
         description="Number of inferred incarceration events that do not align with an "
-        "observed incarceration session start, for which the most severe violation "
+        "observed discretionary incarceration session start, for which the most severe violation "
         f"type was {category.replace('_', ' ').lower()}",
         event_types=[EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON],
         event_attribute_filters={"most_severe_violation_type": types},
@@ -1031,9 +1031,9 @@ INCARCERATION_RELEASES_1_MONTH_AFTER_PAROLE_ELIGIBILITY_DATE = EventCountMetric(
 INCARCERATION_STARTS = EventCountMetric(
     name="incarceration_starts",
     display_name="Incarceration Starts",
-    description="Number of observed incarceration starts",
+    description="Number of observed discretionary incarceration starts",
     event_types=[EventType.INCARCERATION_START],
-    event_attribute_filters={},
+    event_attribute_filters={"is_discretionary": ["true"]},
 )
 
 INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
@@ -1041,10 +1041,13 @@ INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
         name=f"incarceration_starts_{category.lower()}_violation",
         display_name=f"Incarceration Starts, {category.replace('_', ' ').title()} "
         "Violation",
-        description="Number of observed incarceration starts for which the most severe "
+        description="Number of observed discretionary incarceration starts for which the most severe "
         f"violation type was {category.replace('_', ' ').lower()}",
         event_types=[EventType.INCARCERATION_START],
-        event_attribute_filters={"most_severe_violation_type": types},
+        event_attribute_filters={
+            "most_severe_violation_type": types,
+            "is_discretionary": ["true"],
+        },
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
@@ -1055,12 +1058,13 @@ INCARCERATION_STARTS_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
         name=f"incarceration_starts_{category.lower()}_violation_inferred",
         display_name=f"Incarceration Starts, Inferred {category.replace('_', ' ').title()} "
         "Violation",
-        description="Number of observed incarceration starts for which the most severe "
+        description="Number of observed discretionary incarceration starts for which the most severe "
         f"violation type was {category.replace('_', ' ').lower()}, based on an inferred violation type",
         event_types=[EventType.INCARCERATION_START],
         event_attribute_filters={
             "most_severe_violation_type": types,
             "violation_is_inferred": ["true"],
+            "is_discretionary": ["true"],
         },
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
@@ -1071,26 +1075,27 @@ INCARCERATION_STARTS_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCoun
     name="incarceration_starts_technical_violation_no_prior_treatment_referral",
     display_name="Incarceration Starts, Technical Violation, No Prior Treatment "
     "Referral",
-    description="Number of observed incarceration starts for which the most severe "
+    description="Number of observed discretionary incarceration starts for which the most severe "
     "violation type was technical, and where there were no preceding treatment"
     "referrals during the past 1 year",
     event_types=[EventType.INCARCERATION_START],
     event_attribute_filters={
         "most_severe_violation_type": ["TECHNICAL"],
         "prior_treatment_referrals_1y": ["0"],
+        "is_discretionary": ["true"],
     },
 )
 
 INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
     name="incarceration_starts_and_inferred",
     display_name="Incarceration Starts And Inferred Incarcerations",
-    description="Number of total observed incarceration starts or inferred "
+    description="Number of total observed discretionary incarceration starts or inferred "
     "incarcerations",
     event_types=[
         EventType.INCARCERATION_START,
         EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
     ],
-    event_attribute_filters={},
+    event_attribute_filters={"is_discretionary": ["true"]},
 )
 
 INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
@@ -1098,14 +1103,17 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
         name=f"incarceration_starts_and_inferred_{category.lower()}_violation",
         display_name="Incarceration Starts And Inferred Incarcerations, "
         f"{category.replace('_', ' ').title()} Violation",
-        description="Number of total observed incarceration starts or inferred "
+        description="Number of total observed discretionary incarceration starts or inferred "
         f"incarcerations for which the most severe violation type was "
         f"{category.replace('_', ' ').lower()}",
         event_types=[
             EventType.INCARCERATION_START,
             EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
         ],
-        event_attribute_filters={"most_severe_violation_type": types},
+        event_attribute_filters={
+            "most_severe_violation_type": types,
+            "is_discretionary": ["true"],
+        },
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
@@ -1116,7 +1124,7 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
         name=f"incarceration_starts_and_inferred_{category.lower()}_violation_inferred",
         display_name="Incarceration Starts And Inferred Incarcerations, "
         f"Inferred {category.replace('_', ' ').title()} Violation",
-        description="Number of total observed incarceration starts or inferred "
+        description="Number of total observed discretionary incarceration starts or inferred "
         f"incarcerations for which the most severe violation type was "
         f"{category.replace('_', ' ').lower()}, based on an inferred violation type",
         event_types=[
@@ -1126,6 +1134,7 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_INFERRED_VIOLATION_TYPE_METRICS = [
         event_attribute_filters={
             "most_severe_violation_type": types,
             "violation_is_inferred": ["true"],
+            "is_discretionary": ["true"],
         },
     )
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
@@ -1136,7 +1145,7 @@ INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRA
     name="incarceration_starts_and_inferred_technical_violation_no_prior_treatment_referral",
     display_name="Incarceration Starts And Inferred Incarcerations, Technical "
     "Violation, No Prior Treatment Referral",
-    description="Number of observed incarceration starts or inferred incarcerations "
+    description="Number of observed discretionary incarceration starts or inferred incarcerations "
     "for which the most severe violation type was technical, and where there were no "
     "preceding treatment referrals during the past 1 year",
     event_types=[
@@ -1146,6 +1155,7 @@ INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRA
     event_attribute_filters={
         "most_severe_violation_type": ["TECHNICAL"],
         "prior_treatment_referrals_1y": ["0"],
+        "is_discretionary": ["true"],
     },
 )
 
