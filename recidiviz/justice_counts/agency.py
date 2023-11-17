@@ -200,6 +200,22 @@ class AgencyInterface:
         )
 
     @staticmethod
+    def get_child_agency_ids_for_agency(
+        session: Session, agency: schema.Agency
+    ) -> List[int]:
+        if agency.is_superagency is False:
+            return []
+
+        # Extract the agency IDs from the tuples
+        child_agency_ids = [
+            id[0]
+            for id in session.query(schema.Agency.id)
+            .filter(schema.Agency.super_agency_id == agency.id)
+            .all()
+        ]
+        return child_agency_ids
+
+    @staticmethod
     def get_child_agencies_by_agency_ids(
         session: Session, agency_ids: List[int]
     ) -> List[schema.Agency]:

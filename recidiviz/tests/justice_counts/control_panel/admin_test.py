@@ -276,6 +276,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             db_agency = agency_id_to_agency[(agency_json["id"])]
             user = db_agency.user_account_assocs[0].user_account
             self.assertEqual(agency_json["name"], db_agency.name)
+            self.assertEqual(agency_json["child_agency_ids"], [])
             self.assertEqual(len(agency_json["team"]), 1)
             self.assertEqual(agency_json["team"][0]["name"], user.name)
 
@@ -293,6 +294,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             response_json["roles"], [enum.value for enum in schema.UserAccountRole]
         )
         agency_json = response_json["agency"]
+        self.assertEqual(agency_json["child_agency_ids"], [])
         self.assertEqual(agency_json["name"], agency.name)
         self.assertEqual(agency_json["id"], agency.id)
         self.assertEqual(len(agency_json["team"]), 1)
@@ -340,6 +342,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         law_enforcement_agency = AgencyInterface.get_agency_by_name(
             session=self.session, name="Agency Alpha"
         )
+        law_enforcement_agency_id = law_enforcement_agency.id
         response = self.client.put(
             "/admin/agency",
             json={
@@ -347,7 +350,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "state_code": "us_ca",
                 "systems": ["LAW_ENFORCEMENT", "JAILS"],
                 "is_superagency": True,
-                "child_agency_ids": [law_enforcement_agency.id],
+                "child_agency_ids": [law_enforcement_agency_id],
                 "team": [
                     {"id": user_B_id, "role": "AGENCY_ADMIN"},
                     {"id": user_A_id, "role": "JUSTICE_COUNTS_ADMIN"},
@@ -355,6 +358,8 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["child_agency_ids"], [law_enforcement_agency_id])
         agency = AgencyInterface.get_agency_by_name(
             session=self.session, name="New Agency"
         )

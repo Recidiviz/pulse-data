@@ -174,12 +174,19 @@ def get_admin_blueprint(
         agencies = AgencyInterface.get_agencies(
             session=current_session, with_users=True, with_settings=False
         )
+
+        agency_jsons: List[Dict[str, Any]] = []
+        for agency in agencies:
+            agency_json = agency.to_json(with_team=True, with_settings=False)
+            child_agency_ids = AgencyInterface.get_child_agency_ids_for_agency(
+                session=current_session, agency=agency
+            )
+            agency_json["child_agency_ids"] = child_agency_ids
+            agency_jsons.append(agency_json)
+
         return jsonify(
             {
-                "agencies": [
-                    agency.to_json(with_team=True, with_settings=False)
-                    for agency in agencies
-                ],
+                "agencies": agency_jsons,
                 # also send list of possible systems to use in the dropdown
                 # when users can assign a system role to an agency.
                 "systems": [enum.value for enum in schema.System],
@@ -190,11 +197,19 @@ def get_admin_blueprint(
     @auth_decorator
     def get_agency(agency_id: int) -> Response:
         """Returns metadata for an individual agency."""
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=agency_id
+        )
+
+        child_agency_ids = AgencyInterface.get_child_agency_ids_for_agency(
+            session=current_session, agency=agency
+        )
+
+        agency_json = agency.to_json(with_team=True)
+        agency_json["child_agency_ids"] = child_agency_ids
         return jsonify(
             {
-                "agency": AgencyInterface.get_agency_by_id(
-                    session=current_session, agency_id=agency_id
-                ).to_json(),
+                "agency": agency_json,
                 # also send list of possible roles to use in the dropdown
                 # when users can assign a new role to user.
                 "roles": [role.value for role in schema.UserAccountRole],
@@ -255,11 +270,12 @@ def get_admin_blueprint(
 
             current_session.execute(insert_statement)
         current_session.commit()
-        return jsonify(
-            {
-                "agency": agency.to_json(),
-            }
+        child_agency_ids = AgencyInterface.get_child_agency_ids_for_agency(
+            session=current_session, agency=agency
         )
+        agency_json = agency.to_json()
+        agency_json["child_agency_ids"] = child_agency_ids
+        return jsonify(agency_json)
 
     @admin_blueprint.route(
         "/agency/<super_agency_id>/child-agency/copy", methods=["POST"]
