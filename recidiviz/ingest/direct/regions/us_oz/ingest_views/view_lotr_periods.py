@@ -14,20 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""
-This file contains an ingest view related to us_oz_lotr data.
-
-The view query takes data from three raw tables:
-  - lotr_fellowship: Has basic person info
-  - lotr_demographics: Has demographic info for each person
-  - lotr_roles: Has aliases and roles for each person
-
-These three tables will hydrate four entities:
-  - state_person_external_id (simply using ID from each table)
-  - state_person
-  - state_person_race
-  - state_person_alias
-"""
+"""Ingest view for periods information in the lotr dataset in US_OZ."""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -36,26 +23,20 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT
-  LotrPerson.ID,
-  LotrPerson.FirstName,
-  LotrPerson.LastName,
-  CAST(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', LotrPerson.StartDate) AS DATE) as StartDate,
-  LotrRace.Race,
-  LotrRole.Alias,
-  LotrRole.Role
-FROM {lotr_fellowship} AS LotrPerson
-LEFT JOIN {lotr_demographics} AS LotrRace
-ON LotrPerson.ID = LotrRace.ID
-LEFT JOIN {lotr_roles} AS LotrRole
-ON LotrPerson.ID = LotrRole.ID
+SELECT 
+  PeriodId,
+  PersonId,
+  CAST(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', StartDate) AS DATE) as StartDate,
+  CAST(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', EndDate) AS DATE) as EndDate,
+  Facility
+FROM {lotr_periods}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_oz",
-    ingest_view_name="lotr_fellowship_view",
+    ingest_view_name="lotr_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="ID",
+    order_by_cols="PersonId, StartDate",
 )
 
 if __name__ == "__main__":
