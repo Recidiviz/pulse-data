@@ -138,6 +138,7 @@ def _verify_raw_data_flashing_not_in_progress(
             f"--state_code={state_code.value}",
             f"--ingest_instance={instance.value}",
         ],
+        cloud_sql_connections=[SchemaType.OPERATIONS],
     )
 
 
