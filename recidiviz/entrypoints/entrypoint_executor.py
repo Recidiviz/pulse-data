@@ -16,10 +16,13 @@
 # =============================================================================
 """Contains functions for executing entrypoints"""
 import argparse
+import atexit
 import logging
+import os
 import sys
 from typing import List, Set, Tuple, Type
 
+import requests
 from opencensus.ext.stackdriver.stats_exporter import GLOBAL_RESOURCE_TYPE, Options
 
 from recidiviz.entrypoints.bq_refresh.cloud_sql_to_bq_refresh import (
@@ -104,7 +107,24 @@ def execute_entrypoint(entrypoint: str, entrypoint_argv: List[str]) -> None:
     monitoring.wait_for_stackdriver_export()
 
 
+def quit_kubernetes_cloud_sql_proxy() -> None:
+    """Sends a request to the Cloud SQL Proxy admin control to gracefully shut down"""
+    # These environment variables are added to our runtime when a pod is executing with the Cloud SQL Proxy sidecar
+    # See recidiviz.airflow.dags.operators.cloud_sql_proxy_sidecar for more information
+    cloud_sql_admin_host = os.environ.get("K8S_CLOUD_SQL_PROXY_ADMIN_HOST", None)
+    cloud_sql_admin_port = os.environ.get("K8S_CLOUD_SQL_PROXY_ADMIN_PORT", None)
+
+    if cloud_sql_admin_host and cloud_sql_admin_port:
+        # Send a request to gracefully shut down the proxy container
+        requests.post(
+            f"http://{cloud_sql_admin_host}:{cloud_sql_admin_port}/quitquitquit",
+            timeout=10,
+        )
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    atexit.register(quit_kubernetes_cloud_sql_proxy)
+
     args, unknown_args = parse_arguments(sys.argv[1:])
     execute_entrypoint(args.entrypoint, entrypoint_argv=unknown_args)

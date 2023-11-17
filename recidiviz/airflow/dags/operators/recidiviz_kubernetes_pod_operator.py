@@ -24,16 +24,22 @@ from typing import Any, Dict, List, Optional
 
 import jinja2
 import yaml
+from airflow.models import Connection
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.context import Context
 from airflow.utils.trigger_rule import TriggerRule
 from kubernetes.client import models as k8s
 from more_itertools import one
 
+from recidiviz.airflow.dags.operators.cloud_sql_proxy_sidecar import (
+    configure_cloud_sql_proxy_for_pod,
+)
+from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.environment import (
     COMPOSER_ENVIRONMENT,
     get_composer_environment,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.environment import RECIDIVIZ_ENV, get_environment_for_project
 
 # TODO(#23873): Remove loading of environment variables from at beginning of file.
@@ -90,7 +96,9 @@ class KubernetesEntrypointResourceAllocator:
 class RecidivizKubernetesPodOperator(KubernetesPodOperator):
     """KubernetesPodOperator with some defaults"""
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, cloud_sql_connections: Optional[List[SchemaType]] = None, **kwargs: Any
+    ) -> None:
         env_vars = kwargs.pop("env_vars", [])
         super().__init__(
             namespace=COMPOSER_USER_WORKLOADS,
@@ -122,6 +130,8 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
             **kwargs,
         )
 
+        self.cloud_sql_connections = cloud_sql_connections or []
+
     def render_template_fields(
         self,
         context: Context,
@@ -143,6 +153,33 @@ class RecidivizKubernetesPodOperator(KubernetesPodOperator):
 
         return super().execute(context)
 
+    def build_pod_request_obj(self, context: Optional[Context] = None) -> k8s.V1Pod:
+        pod = super().build_pod_request_obj(context)
+
+        if self.cloud_sql_connections:
+            connection_strings = []
+            for schema_type in self.cloud_sql_connections:
+                connection = Connection.get_connection_from_secrets(
+                    cloud_sql_conn_id_for_schema_type(schema_type)
+                )
+
+                connection_strings.append(
+                    ":".join(
+                        [
+                            connection.extra_dejson[key]
+                            for key in ("project_id", "location", "instance")
+                        ]
+                    )
+                )
+
+            pod = configure_cloud_sql_proxy_for_pod(
+                pod,
+                app_container_name=self.base_container_name,
+                connection_strings=connection_strings,
+            )
+
+        return pod
+
 
 def build_kubernetes_pod_task(
     task_id: str,
@@ -151,6 +188,7 @@ def build_kubernetes_pod_task(
     trigger_rule: Optional[TriggerRule] = TriggerRule.ALL_SUCCESS,
     retries: int = 0,
     do_xcom_push: bool = False,
+    cloud_sql_connections: Optional[List[SchemaType]] = None,
 ) -> RecidivizKubernetesPodOperator:
     """
     Builds an operator that launches a container using the appengine image in the user workloads Kubernetes namespace
@@ -182,4 +220,5 @@ def build_kubernetes_pod_task(
         trigger_rule=trigger_rule,
         retries=retries,
         do_xcom_push=do_xcom_push,
+        cloud_sql_connections=cloud_sql_connections,
     )

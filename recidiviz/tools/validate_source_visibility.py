@@ -295,6 +295,7 @@ def main() -> int:
         "recidiviz.ingest.direct.types.direct_ingest_instance",
         "recidiviz.metrics.export.products",
         "recidiviz.persistence.database.reserved_words",
+        "recidiviz.persistence.database.schema_type",
         "recidiviz.pipelines",
         "recidiviz.tools.utils.script_helpers",
         "recidiviz.utils",
