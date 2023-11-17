@@ -40,6 +40,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
+from recidiviz.ingest.direct.metadata.direct_ingest_dataflow_job_manager import (
+    DirectIngestDataflowJobManager,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
@@ -115,10 +118,19 @@ def combine_ingest_sources_into_single_state_dataset(
             "Refresh can only proceed for secondary databases into a sandbox."
         )
 
+    job_manager = DirectIngestDataflowJobManager()
+    most_recent_job_ids = job_manager.get_most_recent_job_ids_by_state_and_instance()
+
     dataflow_states, legacy_states = [], []
     for state in get_direct_ingest_states_existing_in_env():
-        # TODO(#24285): Check if a run has actually happened (recently?).
-        if is_ingest_in_dataflow_enabled(state, ingest_instance):
+        if (
+            is_ingest_in_dataflow_enabled(state, ingest_instance)
+            # Verify that one successful pipeline run has completed before reading
+            # from the output of the ingest pipelines during refresh (necessary for
+            # Ingest in Dataflow rollout only)
+            and state in most_recent_job_ids
+            and ingest_instance in most_recent_job_ids[state]
+        ):
             dataflow_states.append(state)
         else:
             legacy_states.append(state)

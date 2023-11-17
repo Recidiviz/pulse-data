@@ -39,6 +39,7 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
 from recidiviz.airflow.dags.utils.calculation_dag_utils import ManagedViewUpdateType
 from recidiviz.airflow.tests.test_utils import DAG_FOLDER, AirflowIntegrationTest
 from recidiviz.airflow.tests.utils.dag_helper_functions import fake_operator_constructor
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests import pipelines as recidiviz_pipelines_tests_module
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.yaml_dict import YAMLDict
@@ -395,7 +396,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         """Tests that refresh_bq_dataset_task triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
 
-        task = refresh_bq_dataset_operator("STATE")
+        task = refresh_bq_dataset_operator(SchemaType.STATE)
         task.render_template_fields({"dag_run": PRIMARY_DAG_RUN})
 
         self.assertEqual(task.task_id, "refresh_bq_dataset_STATE")
@@ -408,7 +409,7 @@ class TestCalculationPipelineDag(AirflowIntegrationTest):
         """Tests that refresh_bq_dataset_task triggers the proper script."""
         from recidiviz.airflow.dags.calculation_dag import refresh_bq_dataset_operator
 
-        task = refresh_bq_dataset_operator("STATE")
+        task = refresh_bq_dataset_operator(SchemaType.STATE)
 
         self.assertEqual(task.task_id, "refresh_bq_dataset_STATE")
 

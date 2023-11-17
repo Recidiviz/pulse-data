@@ -104,12 +104,26 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
         )
 
         # Act
-        actual = self.job_manager.get_job_id_by_state_and_instance(
+        actual = self.job_manager.get_job_id_for_most_recent_job(
             state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
         )
 
         # Assert
         self.assertEqual(actual, most_recent_job_id)
+
+        # Act 2
+        all_jobs = self.job_manager.get_most_recent_job_ids_by_state_and_instance()
+
+        # Assert 2
+        expected = {
+            StateCode.US_YY: {DirectIngestInstance.PRIMARY: other_region_job_id},
+            StateCode.US_XX: {
+                DirectIngestInstance.PRIMARY: most_recent_job_id,
+                DirectIngestInstance.SECONDARY: other_instance_job_id,
+            },
+        }
+
+        self.assertEqual(expected, all_jobs)
 
     def test_get_latest_job_doesnt_exist(self) -> None:
         # other instance
@@ -122,9 +136,21 @@ class DirectIngestDataflowJobManagerTest(unittest.TestCase):
         )
 
         # Act
-        actual = self.job_manager.get_job_id_by_state_and_instance(
+        actual = self.job_manager.get_job_id_for_most_recent_job(
             state_code=StateCode.US_XX, ingest_instance=DirectIngestInstance.PRIMARY
         )
 
         # Assert
         self.assertEqual(actual, None)
+
+        # Act 2
+        all_jobs = self.job_manager.get_most_recent_job_ids_by_state_and_instance()
+
+        # Assert 2
+        expected = {
+            StateCode.US_XX: {
+                DirectIngestInstance.SECONDARY: other_instance_job_id,
+            },
+        }
+
+        self.assertEqual(expected, all_jobs)

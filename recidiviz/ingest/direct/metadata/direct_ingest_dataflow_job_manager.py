@@ -16,7 +16,9 @@
 # =============================================================================
 """Handles reading metadata about ingest pipeline jobs."""
 import datetime
-from typing import Optional
+from typing import Dict, Optional
+
+from sqlalchemy import func
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -33,25 +35,50 @@ class DirectIngestDataflowJobManager:
     def __init__(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
-    def get_job_id_by_state_and_instance(
+    def get_most_recent_job_ids_by_state_and_instance(
+        self,
+    ) -> Dict[StateCode, Dict[DirectIngestInstance, str]]:
+        """Returns a map with the job_id for the most recent successful ingest Dataflow
+        pipeline for each state_code and ingest instance that has ever had a successful
+        pipeline complete.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            subquery = session.query(
+                schema.DirectIngestDataflowJob.region_code,
+                schema.DirectIngestDataflowJob.ingest_instance,
+                schema.DirectIngestDataflowJob.job_id,
+                func.row_number()
+                .over(
+                    partition_by=[
+                        schema.DirectIngestDataflowJob.region_code,
+                        schema.DirectIngestDataflowJob.ingest_instance,
+                    ],
+                    order_by=schema.DirectIngestDataflowJob.completion_time.desc(),
+                )
+                .label("row_num"),
+            ).subquery()
+            results = session.query(subquery).filter(subquery.c.row_num == 1).all()
+
+            jobs: Dict[StateCode, Dict[DirectIngestInstance, str]] = {}
+            for region_code_str, instance_str, job_id, _rn in results:
+                state_code = StateCode(region_code_str)
+                instance = DirectIngestInstance[instance_str]
+                if state_code not in jobs:
+                    jobs[state_code] = {}
+                jobs[state_code][instance] = job_id
+            return jobs
+
+    def get_job_id_for_most_recent_job(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
     ) -> Optional[str]:
-        with SessionFactory.using_database(self.database_key) as session:
-            results = (
-                session.query(schema.DirectIngestDataflowJob.job_id)
-                .filter(
-                    schema.DirectIngestDataflowJob.region_code == state_code.value,
-                    schema.DirectIngestDataflowJob.ingest_instance
-                    == ingest_instance.value,
-                )
-                .order_by(schema.DirectIngestDataflowJob.completion_time.desc())
-                .limit(1)
-                .first()
-            )
-            if results:
-                latest_job_id = results[0]
-                return latest_job_id
+        """For the provided state_code and ingest_instance, returns the ingest pipline
+        Dataflow job id for the most recent successful run.
+        """
+        all_most_recent = self.get_most_recent_job_ids_by_state_and_instance()
+        if state_code not in all_most_recent:
             return None
+
+        return all_most_recent[state_code].get(ingest_instance)
 
     @environment.test_only
     def add_job(
