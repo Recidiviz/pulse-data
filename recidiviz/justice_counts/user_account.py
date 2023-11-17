@@ -22,6 +22,7 @@ from sqlalchemy import and_, not_, or_
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from recidiviz.justice_counts.control_panel.utils import is_demo_agency
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
     AgencyUserAccountAssociation,
@@ -29,17 +30,28 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     UserAccountInvitationStatus,
     UserAccountRole,
 )
+from recidiviz.utils import metadata
+from recidiviz.utils.environment import (
+    GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION,
+    GCP_PROJECT_JUSTICE_COUNTS_STAGING,
+)
 
 
 class UserAccountInterface:
     """Contains methods for setting and getting User info."""
 
     @staticmethod
-    def get_role_from_email(email: str) -> UserAccountRole:
+    def get_role_from_email(email: str, agency_name: str) -> UserAccountRole:
         if "@recidiviz.org" in email:
             return UserAccountRole.JUSTICE_COUNTS_ADMIN
 
         if "@csg.org" in email:
+            if (
+                metadata.project_id() == GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
+                and is_demo_agency(agency_name=agency_name)
+            ) or metadata.project_id() == GCP_PROJECT_JUSTICE_COUNTS_STAGING:
+                return UserAccountRole.AGENCY_ADMIN
+
             return UserAccountRole.READ_ONLY
 
         return UserAccountRole.AGENCY_ADMIN
@@ -96,16 +108,18 @@ class UserAccountInterface:
 
         # Prepare all the values that should be "upserted" to the DB
         values = []
-        role = (
-            role
-            if role is not None
-            else UserAccountInterface.get_role_from_email(user.email)
-        )
         for agency in agencies:
             value = {"agency_id": agency.id, "user_account_id": user.id}
             if invitation_status is not None:
                 value["invitation_status"] = invitation_status
             if preserve_role is False:
+                role = (
+                    role
+                    if role is not None
+                    else UserAccountInterface.get_role_from_email(
+                        email=user.email, agency_name=agency.name
+                    )
+                )
                 value["role"] = role
 
             values.append(value)

@@ -15,6 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
+from typing import Dict
+
+import mock
 import pytest
 from mock import patch
 from sqlalchemy.engine import Engine
@@ -52,8 +55,21 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
 
     def setUp(self) -> None:
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
+
+        def mock_create_JC_user(name: str, email: str) -> Dict[str, str]:
+            return {
+                "name": name,
+                "email": email,
+                "user_id": f"auth0|1234{name}",
+            }
+
+        mock_auth0_client = mock.Mock()
+        mock_auth0_client.create_JC_user.side_effect = mock_create_JC_user
+
         self.client_patcher = patch("recidiviz.auth.auth0_client.Auth0")
-        self.test_auth0_client = self.client_patcher.start().return_value
+        self.test_auth0_client = (
+            self.client_patcher.start().return_value
+        ) = mock_auth0_client
         test_config = Config(
             DB_URL=local_postgres_helpers.on_disk_postgres_db_url(),
             WTF_CSRF_ENABLED=False,
@@ -150,8 +166,99 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(len(response_json["agencies"]), 1)
         self.assertEqual(response_json["agencies"][0]["name"], "Agency Alpha")
 
-    # Agency
+    def test_create_or_update_user(
+        self,
+    ) -> None:
+        self.load_users_and_agencies()
 
+        agency_A_id = AgencyInterface.get_agency_by_name(
+            session=self.session, name="Agency Alpha"
+        ).id
+        agency_B_id = AgencyInterface.get_agency_by_name(
+            session=self.session, name="Agency Law Enforcement"
+        ).id
+        # Create a new user
+        response = self.client.put(
+            "/admin/user",
+            json={
+                "users": [
+                    {
+                        "name": "Jane Doe",
+                        "email": "email1@test.com",
+                        "agency_ids": [agency_A_id, agency_B_id],
+                    }
+                ]
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        user = assert_type(
+            UserAccountInterface.get_user_by_email(
+                session=self.session, email="email1@test.com"
+            ),
+            schema.UserAccount,
+        )
+        self.assertEqual(len(user.agency_assocs), 2)
+        self.assertEqual(user.agency_assocs[0].agency_id, agency_A_id)
+        self.assertEqual(
+            user.agency_assocs[0].role,
+            schema.UserAccountRole.AGENCY_ADMIN,
+        )
+        self.assertEqual(user.agency_assocs[1].agency_id, agency_B_id)
+        self.assertEqual(
+            user.agency_assocs[1].role,
+            schema.UserAccountRole.AGENCY_ADMIN,
+        )
+
+        # Update Jane Smith, Add John Doe
+        response = self.client.put(
+            "/admin/user",
+            json={
+                "users": [
+                    {
+                        "name": "Jane Smith Doe",
+                        "email": "email1@test.com",
+                        "agency_ids": [agency_B_id],
+                    },
+                    {
+                        "name": "John Doe",
+                        "email": "email2@test.com",
+                        "agency_ids": [agency_A_id],
+                    },
+                ]
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        jane_doe = assert_type(
+            UserAccountInterface.get_user_by_email(
+                session=self.session, email="email1@test.com"
+            ),
+            schema.UserAccount,
+        )
+        self.assertIsNotNone(jane_doe)
+        self.assertEqual(jane_doe.name, "Jane Smith Doe")
+        self.assertEqual(len(jane_doe.agency_assocs), 1)
+        self.assertEqual(jane_doe.agency_assocs[0].agency_id, agency_B_id)
+        self.assertEqual(
+            jane_doe.agency_assocs[0].role,
+            schema.UserAccountRole.AGENCY_ADMIN,
+        )
+
+        john_doe = assert_type(
+            UserAccountInterface.get_user_by_email(
+                session=self.session, email="email2@test.com"
+            ),
+            schema.UserAccount,
+        )
+        self.assertIsNotNone(john_doe)
+        self.assertEqual(john_doe.name, "John Doe")
+        self.assertEqual(len(john_doe.agency_assocs), 1)
+        self.assertEqual(john_doe.agency_assocs[0].agency_id, agency_A_id)
+        self.assertEqual(
+            john_doe.agency_assocs[0].role,
+            schema.UserAccountRole.AGENCY_ADMIN,
+        )
+
+    # Agency
     def test_get_all_agencies(self) -> None:
         self.load_users_and_agencies()
         response = self.client.get("/admin/agency")

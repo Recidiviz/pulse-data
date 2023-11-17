@@ -16,12 +16,14 @@
 # =============================================================================
 """Implements api routes for the Justice Counts Publisher Admin Panel."""
 from http import HTTPStatus
-from typing import Callable
+from typing import Any, Callable, Dict, List, Optional
 
-from flask import Blueprint, Response, jsonify, request
+from auth0.exceptions import Auth0Error
+from flask import Blueprint, Response, jsonify, make_response, request
 from flask_sqlalchemy_session import current_session
 from sqlalchemy.dialects.postgresql import insert
 
+from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
@@ -34,6 +36,7 @@ from recidiviz.utils.types import assert_type
 
 def get_admin_blueprint(
     auth_decorator: Callable,
+    auth0_client: Optional[Auth0Client] = None,
 ) -> Blueprint:
     """API methods for Publisher Admin Panel"""
     admin_blueprint = Blueprint("admin", __name__)
@@ -75,6 +78,91 @@ def get_admin_blueprint(
         )
         agencies = [assoc.agency for assoc in user.agency_assocs]
         return jsonify(user.to_json(agencies=agencies))
+
+    @admin_blueprint.route("/user", methods=["PUT"])
+    @auth_decorator
+    def create_or_update_users() -> Response:
+        """
+        Creates/Updates users.
+        """
+        if auth0_client is None:
+            return make_response(
+                "auth0_client could not be initialized. Environment is not development or gcp.",
+                500,
+            )
+
+        user_jsons: List[Dict[str, Any]] = []
+        request_json = assert_type(request.json, dict)
+        user_request_list = assert_type(request_json.get("users"), list)
+
+        for user_request in user_request_list:
+            name = assert_type(user_request.get("name"), str)
+            email = assert_type(user_request.get("email"), str)
+            agency_ids = assert_type(user_request.get("agency_ids"), list)
+            user = UserAccountInterface.get_user_by_email(
+                session=current_session, email=email
+            )
+            auth0_user_id = user.auth0_user_id if user is not None else None
+
+            if user is None:
+                # If there is no existing user, create user in auth0
+                try:
+                    auth0_user = auth0_client.create_JC_user(name=name, email=email)
+                    auth0_user_id = auth0_user["user_id"]
+
+                except Auth0Error as e:
+                    if e.message == "The user already exists.":
+                        auth0_users = auth0_client.get_all_users_by_email_addresses(
+                            email_addresses=[email]
+                        )
+                        auth0_user = auth0_users[0]
+                        auth0_user_id = auth0_user["user_id"]
+                    else:
+                        raise e
+
+            # Create/Update user in our DB
+            user = UserAccountInterface.create_or_update_user(
+                session=current_session,
+                name=name,
+                auth0_user_id=auth0_user_id,
+                email=email,
+            )
+
+            agencies = AgencyInterface.get_agencies_by_id(
+                session=current_session, agency_ids=agency_ids
+            )
+
+            curr_agencies = {assoc.agency_id for assoc in user.agency_assocs}
+            agency_ids_to_add = {id for id in agency_ids if id not in curr_agencies}
+            agencies_ids_to_remove = [
+                id for id in curr_agencies if id not in agency_ids
+            ]
+
+            # Add user to agencies
+            if len(agency_ids_to_add) > 0:
+                agencies_to_add = [a for a in agencies if a.id in agency_ids_to_add]
+                UserAccountInterface.add_or_update_user_agency_association(
+                    session=current_session,
+                    user=user,
+                    agencies=agencies_to_add,
+                )
+
+            # Remove user from agencies
+            if len(agencies_ids_to_remove) > 0:
+                UserAccountInterface.remove_user_from_agencies(
+                    session=current_session,
+                    user=user,
+                    agency_ids=agencies_ids_to_remove,
+                )
+
+            user_jsons.append(user.to_json(agencies=agencies))
+
+        current_session.commit()
+        return jsonify(
+            {
+                "users": user_jsons,
+            }
+        )
 
     # Agency
     @admin_blueprint.route("/agency", methods=["GET"])

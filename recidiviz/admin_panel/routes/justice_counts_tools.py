@@ -28,6 +28,7 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
+from recidiviz.justice_counts.control_panel.utils import is_demo_agency
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -89,7 +90,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 for csg_user in csg_users:
                     role = (
                         "AGENCY_ADMIN"
-                        if in_gcp_staging() or "[DEMO]" in name
+                        if in_gcp_staging() or is_demo_agency(agency_name=agency.name)
                         else "READ_ONLY"
                     )
                     AgencyUserAccountAssociationInterface.update_user_role(
