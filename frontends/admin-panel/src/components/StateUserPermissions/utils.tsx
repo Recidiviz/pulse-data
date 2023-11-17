@@ -56,9 +56,9 @@ export function updatePermissionsObject(
     },
     existing
   );
-  remove.forEach(
-    (key: string) => delete newPermission[key as keyof typeof newPermission]
-  );
+  remove.forEach((key: string) => {
+    newPermission[key as keyof typeof newPermission] = false;
+  });
   return newPermission;
 }
 

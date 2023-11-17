@@ -25,6 +25,7 @@ import { DraggableModal } from "../Utilities/DraggableModal";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import ReasonInput from "./ReasonInput";
 import { validateAndFocus } from "./utils";
+import { Note } from "./styles";
 
 export const EditUserForm = ({
   editVisible,
@@ -159,6 +160,15 @@ export const EditUserForm = ({
           />
         </Form.Item>
         <hr />
+        <Note>
+          To set custom permissions or feature variants for a user, select
+          &quot;Add custom permissions&quot; in the dropdown. To revert to the
+          default for the user&apos;s state+role, select &quot;Delete custom
+          permissions&quot;. Custom permissions and feature variants will be
+          applied on top of the defaults, so if a default permission enables
+          Workflows and a custom one enables Vitals, the user will have access
+          to both Workflows and Vitals.
+        </Note>
         <Form.Item
           name="useCustomPermissions"
           label="Use custom permissions"
