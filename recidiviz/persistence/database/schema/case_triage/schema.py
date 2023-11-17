@@ -597,8 +597,8 @@ class StateRolePermissions(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     __tablename__ = "state_role_permissions"
     state_code = Column(String(255), nullable=False, primary_key=True)
     role = Column(String(255), nullable=False, primary_key=True)
-    routes = Column(JSONB, nullable=True)
-    feature_variants = Column(JSONB, nullable=True)
+    routes = Column(JSONB(none_as_null=True), nullable=True)
+    feature_variants = Column(JSONB(none_as_null=True), nullable=True)
 
 
 class PermissionsOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
@@ -606,5 +606,5 @@ class PermissionsOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
 
     __tablename__ = "permissions_override"
     email_address = Column(String(255), nullable=False, primary_key=True)
-    routes = Column(JSONB, nullable=True)
-    feature_variants = Column(JSONB, nullable=True)
+    routes = Column(JSONB(none_as_null=True), nullable=True)
+    feature_variants = Column(JSONB(none_as_null=True), nullable=True)

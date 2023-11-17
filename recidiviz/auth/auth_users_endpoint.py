@@ -26,7 +26,8 @@ from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import func
+from sqlalchemy import cast, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.row import Row
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.orm import Query
@@ -74,13 +75,13 @@ def get_users_query(session: Session) -> Query:
             ),
             func.coalesce(UserOverride.last_name, Roster.last_name).label("last_name"),
             func.coalesce(UserOverride.blocked, False).label("blocked"),
-            func.coalesce(
-                PermissionsOverride.routes,
-                StateRolePermissions.routes,
+            (
+                func.coalesce(StateRolePermissions.routes, cast({}, JSONB))
+                + func.coalesce(PermissionsOverride.routes, cast({}, JSONB))
             ).label("routes"),
-            func.coalesce(
-                PermissionsOverride.feature_variants,
-                StateRolePermissions.feature_variants,
+            (
+                func.coalesce(StateRolePermissions.feature_variants, cast({}, JSONB))
+                + func.coalesce(PermissionsOverride.feature_variants, cast({}, JSONB))
             ).label("feature_variants"),
             func.coalesce(
                 UserOverride.user_hash,

@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { FormInstance } from "antd";
-import styled from "styled-components/macro";
 import {
   PATHWAYS_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
@@ -25,11 +24,7 @@ import {
 import FeatureVariantFormItem from "./FeatureVariantFormItem";
 import PermissionSelect from "./PermissionSelect";
 import { Route, StateUserPermissionsResponse } from "../../types";
-
-const Note = styled.div`
-  color: grey;
-  padding-bottom: 5px;
-`;
+import { Note } from "./styles";
 
 /**
  * Returns a value to use as the placeholder for the route dropdown, or undefined to show no

@@ -91,14 +91,22 @@ PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
             for col in ROSTER_COLUMNS
         ]
         + [
-            f"COALESCE(permissions_override.{col}, state_role.{col}) AS {col},"
+            f"""state_role.{col} AS default_{col},
+            permissions_override.{col} AS override_{col},"""
             for col in PERMISSIONS_COLUMNS
         ]
     ),
-    joined_columns=",\n        ".join(ROSTER_COLUMNS + PERMISSIONS_COLUMNS),
+    joined_columns=",\n        ".join(
+        ROSTER_COLUMNS
+        + [
+            new_col
+            for col in PERMISSIONS_COLUMNS
+            for new_col in (f"default_{col}", f"override_{col}")
+        ]
+    ),
     expanded_routes="\n        ".join(
         [
-            f"IFNULL(CAST(JSON_VALUE(routes, '$.{route}') AS BOOL), FALSE) AS routes_{route},"
+            f"COALESCE(CAST(JSON_VALUE(override_routes, '$.{route}') AS BOOL), CAST(JSON_VALUE(default_routes, '$.{route}') AS BOOL), FALSE) AS routes_{route},"
             for route in ROUTES
         ]
     ),
