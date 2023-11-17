@@ -245,13 +245,11 @@ output:
               $raw_text: RISK_LEVEL
               $mappings:
                 StateSupervisionLevel.MINIMUM:
-                  - LOW
+                  - Low
                 StateSupervisionLevel.MEDIUM:
-                  - MED
-                  - MEDIUM
+                  - Medium
                 StateSupervisionLevel.HIGH:
-                  - HIGH
-                  - HI
+                  - High
           custodial_authority:
             $enum_mapping:
               $raw_text: RESPONSIBLE_DIVISION
