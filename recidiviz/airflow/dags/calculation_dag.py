@@ -59,6 +59,7 @@ from recidiviz.metrics.export.products.product_configs import (
     ProductConfigs,
     ProductExportConfig,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.dataflow_config import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
@@ -111,16 +112,27 @@ def update_managed_views_operator(
     )
 
 
-def refresh_bq_dataset_operator(schema_type: str) -> RecidivizKubernetesPodOperator:
+def refresh_bq_dataset_operator(
+    schema_type: SchemaType,
+) -> RecidivizKubernetesPodOperator:
+    schema_type_str = schema_type.value.upper()
+    # TODO(#20930): Once ingest in dataflow rollout is complete and we no longer have
+    #  to check for the existence of a successful pipeline run in
+    #  combine_ingest_sources_into_single_state_dataset(), we can remove the required
+    #  connection for STATE.
+    required_cloud_sql_connections = (
+        [SchemaType.OPERATIONS] if schema_type == SchemaType.STATE else None
+    )
     return build_kubernetes_pod_task(
-        task_id=f"refresh_bq_dataset_{schema_type}",
-        container_name=f"refresh_bq_dataset_{schema_type}",
+        task_id=f"refresh_bq_dataset_{schema_type_str}",
+        container_name=f"refresh_bq_dataset_{schema_type_str}",
         arguments=[
             "--entrypoint=BigQueryRefreshEntrypoint",
-            f"--schema_type={schema_type.upper()}",
+            f"--schema_type={schema_type_str}",
             INGEST_INSTANCE_JINJA_ARG,
             SANDBOX_PREFIX_JINJA_ARG,
         ],
+        cloud_sql_connections=required_cloud_sql_connections,
     )
 
 
@@ -395,9 +407,13 @@ def create_calculation_dag() -> None:
     3. Trigger BigQuery exports for each state and other datasets."""
 
     with TaskGroup("bq_refresh") as bq_refresh:
-        state_bq_refresh_completion = refresh_bq_dataset_operator("STATE")
-        operations_bq_refresh_completion = refresh_bq_dataset_operator("OPERATIONS")
-        case_triage_bq_refresh_completion = refresh_bq_dataset_operator("CASE_TRIAGE")
+        state_bq_refresh_completion = refresh_bq_dataset_operator(SchemaType.STATE)
+        operations_bq_refresh_completion = refresh_bq_dataset_operator(
+            SchemaType.OPERATIONS
+        )
+        case_triage_bq_refresh_completion = refresh_bq_dataset_operator(
+            SchemaType.CASE_TRIAGE
+        )
 
     (
         initialize_calculation_dag_group()

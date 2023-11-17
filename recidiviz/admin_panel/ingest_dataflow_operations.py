@@ -95,7 +95,10 @@ def get_latest_job_for_state_instance(
     location = DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
     client = dataflow_v1beta3.JobsV1Beta3Client()
 
-    job_id = DirectIngestDataflowJobManager().get_job_id_by_state_and_instance(
+    # TODO(#25528): Instead of calling get_job_id_for_most_recent_job() in here every
+    #  time, call this once before we dispatch any futures, then dispatch futures
+    #  with the job_id as an argument.
+    job_id = DirectIngestDataflowJobManager().get_job_id_for_most_recent_job(
         state_code, instance
     )
 
@@ -121,7 +124,6 @@ def get_latest_job_for_state_instance(
     return None
 
 
-# TODO(#24515): Refactor to use new database table
 def get_all_latest_ingest_jobs() -> (
     Dict[
         StateCode,
