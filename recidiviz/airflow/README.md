@@ -16,7 +16,6 @@ infrastructure.
 * Airflow UI
     * http://go/airflow-staging
     * http://go/airflow-prod
-    * http://go/airflow-experiment
 
 Each Cloud Composer environment has an associated Google Cloud Storage bucket that holds
 the source code for all of the DAGs deployed to that environment. For our orchestration
@@ -99,30 +98,12 @@ process.
 
 ## Testing DAGs in GCP
 
-To test DAGs in GCP, you will need to first upload all of your source code to the GCS
-bucket for the `experiment` or `experiment-2` Cloud Composer environment (you can see the GCS bucket by
-clicking on DAGS folder). To do this, you must:
+To test DAGs in GCP, you will need to create an experiment environment to upload all of your source code to.
+See `recidiviz/tools/airflow/environment_control.py` for more info.
 
-First, exit the Airflow virtualenv and go back to the main root virtualenv. 
-
-Then, run the following script:
-
+Run the following from the root virtualenv:
 ```
-python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer --environment experiment --dry-run False
-```
-
-or
-```
-python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer --environment experiment-2 --dry-run False
-```
-
-You can then refresh the appropriate DAG you're working on and trigger a test run.
-
-This script also allows you to specify individual files that you want to upload
-```
-python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer \
-       --dry-run False --environment experiment \
-       --files recidiviz/airflow/dags/calculation_dag.py recidiviz/airflow/dags/operators/recidiviz_dataflow_operator.py
+python -m recidiviz.tools.airflow.environment_control create
 ```
 
 ## Adding New Source Files
