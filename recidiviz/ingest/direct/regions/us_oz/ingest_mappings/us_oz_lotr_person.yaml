@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
-# This file associates the columns outputted from the query in `view_vfds_person` to
-#  corresponding Ingest Object fields.
+# This file associates the columns output from the query in `view_lotr_person` to
 manifest_language: 1.0.0
 input_columns:
   - ID
