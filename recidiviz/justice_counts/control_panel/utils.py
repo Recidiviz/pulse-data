@@ -266,3 +266,7 @@ def format_spreadsheet_rows(
         },
     ).execute()
     logger.info("Rows have been formatted in the sheet '%s'.", sheet_title)
+
+
+def is_demo_agency(agency_name: str) -> bool:
+    return "[DEMO]" in agency_name or agency_name == "Department of Corrections"

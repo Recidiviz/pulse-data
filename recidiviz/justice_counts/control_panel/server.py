@@ -133,6 +133,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
     app.register_blueprint(
         get_admin_blueprint(
             auth_decorator=config.AUTH_DECORATOR,
+            auth0_client=config.AUTH0_CLIENT,
         ),
         url_prefix="/admin",
     )
