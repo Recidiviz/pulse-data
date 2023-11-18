@@ -125,7 +125,9 @@ def downgrade() -> None:
         "direct_ingest_dataflow_raw_table_upper_bounds",
         sa.Column(
             "ingest_instance",
-            postgresql.ENUM("PRIMARY", "SECONDARY", name="direct_ingest_instance"),
+            postgresql.ENUM(
+                "PRIMARY", "SECONDARY", name="direct_ingest_instance", create_type=False
+            ),
             autoincrement=False,
             nullable=False,
         ),
