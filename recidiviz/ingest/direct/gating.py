@@ -22,14 +22,19 @@ from recidiviz.utils import environment
 
 # TODO(#20997): delete once ingest is enabled in dataflow in all states
 def is_ingest_in_dataflow_enabled(
-    state_code: StateCode,  # pylint: disable=unused-argument
+    state_code: StateCode,
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
-    return False
+    if environment.in_gcp_production():
+        return False
+    staging_enabled_states = [
+        StateCode.US_OZ,
+    ]
+    return state_code in staging_enabled_states
 
 
 def ingest_pipeline_can_run_in_dag(
-    state_code: StateCode,  # pylint: disable=unused-argument
+    state_code: StateCode,
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
     if environment.in_gcp_production():

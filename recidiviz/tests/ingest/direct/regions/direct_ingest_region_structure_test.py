@@ -170,7 +170,9 @@ class DirectIngestRegionDirStructureBase:
         ingest_instance: DirectIngestInstance,
         allow_unlaunched: bool,
         region_module_override: Optional[ModuleType],
+        enabled_in_dataflow: bool = False,
     ) -> BaseDirectIngestController:
+        """Builds a controller for the given region code and ingest instance."""
         state_code = StateCode(region_code.upper())
         # Seed the DB with an initial status
         PostgresDirectIngestInstanceStatusManager(
@@ -179,7 +181,11 @@ class DirectIngestRegionDirStructureBase:
             is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
                 state_code, ingest_instance
             ),
-        ).add_instance_status(DirectIngestStatus.STANDARD_RERUN_STARTED)
+        ).add_instance_status(
+            DirectIngestStatus.INITIAL_STATE
+            if enabled_in_dataflow
+            else DirectIngestStatus.STANDARD_RERUN_STARTED
+        )
 
         controller = DirectIngestControllerFactory.build(
             region_code=region_code,
@@ -275,6 +281,9 @@ class DirectIngestRegionDirStructureBase:
                     ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=True,
                     region_module_override=self.region_module_override,
+                    enabled_in_dataflow=is_ingest_in_dataflow_enabled(
+                        StateCode(region_code.upper()), DirectIngestInstance.PRIMARY
+                    ),
                 )
 
     def test_raw_files_yaml_parses_all_regions(self) -> None:
@@ -515,6 +524,9 @@ class DirectIngestRegionDirStructure(
                     ingest_instance=DirectIngestInstance.PRIMARY,
                     allow_unlaunched=False,
                     region_module_override=None,
+                    enabled_in_dataflow=is_ingest_in_dataflow_enabled(
+                        StateCode(region_code.upper()), DirectIngestInstance.PRIMARY
+                    ),
                 )
 
         # But they should not be supported in production
