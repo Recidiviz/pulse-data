@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The CloudSQLQueryGenerator for setting the watermark in DirectIngestDataflowRawTableUpperBounds."""
-from typing import Dict
+from typing import Any, Dict
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -58,12 +58,12 @@ class SetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[None]):
             context, key="return_value", task_ids=self.get_max_update_datetime_task_id
         )
 
-        job_id: str = operator.xcom_pull(
+        pipeline: Dict[str, Any] = operator.xcom_pull(
             context, key="return_value", task_ids=self.run_pipeline_task_id
         )
 
         postgres_hook.run(
-            self.insert_sql_query(job_id, max_update_datetimes),
+            self.insert_sql_query(pipeline["id"], max_update_datetimes),
         )
 
     def insert_sql_query(

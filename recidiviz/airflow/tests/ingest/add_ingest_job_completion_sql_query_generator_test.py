@@ -57,7 +57,7 @@ class TestAddIngestJobCompletionSqlQueryGenerator(unittest.TestCase):
         mock_postgres = create_autospec(PostgresHook)
         mock_context = create_autospec(Context)
 
-        mock_operator.xcom_pull.return_value = "test_job_id"
+        mock_operator.xcom_pull.return_value = {"id": "test_job_id"}
 
         self.generator.execute_postgres_query(
             mock_operator, mock_postgres, mock_context
