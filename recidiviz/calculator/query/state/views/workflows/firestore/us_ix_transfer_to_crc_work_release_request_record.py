@@ -46,6 +46,7 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
 from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     CRC_INFORMATION_CONTACT_MODES,
     CRC_INFORMATION_STR,
+    DOR_CASE_NOTES_COLUMNS,
     I9_NOTE_TX_REGEX,
     I9_NOTES_STR,
     INSTITUTIONAL_BEHAVIOR_NOTES_STR,
@@ -56,6 +57,7 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     RELEASE_INFORMATION_CONTACT_MODES,
     RELEASE_INFORMATION_STR,
     detainer_case_notes,
+    dor_query,
     escape_absconsion_or_eluding_police_case_notes,
     ix_fuzzy_matched_case_notes,
     ix_general_case_notes,
@@ -139,16 +141,27 @@ WITH current_incarcerated_population AS (
     ({current_violent_statutes_being_served(state_code = 'US_IX')})
 
         UNION ALL
+
         -- NCIC/ILETS
     {ix_fuzzy_matched_case_notes(where_clause = "WHERE ncic_ilets_nco_check")}
 
         UNION ALL
+
         -- Recent escape, absconsion or eluding police
     {escape_absconsion_or_eluding_police_case_notes()}
 
         UNION ALL
+
         -- Detainers
     {detainer_case_notes()}
+
+        UNION ALL
+
+        -- DORs
+    {dor_query(columns_str=DOR_CASE_NOTES_COLUMNS, 
+               classes_to_include=['A', 'B', 'C'])}
+    WHERE event_date > DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 6 MONTH)
+    ),
     ),
 
     array_case_notes_cte AS (
