@@ -69,7 +69,7 @@ class TestSetWatermarkSqlQueryGenerator(unittest.TestCase):
         }
 
         mock_operator.xcom_pull.side_effect = (
-            lambda context, key, task_ids: "test_job_id"
+            lambda context, key, task_ids: {"id": "test_job_id"}
             if "dataflow_pipeline" in task_ids
             else sample_data
         )

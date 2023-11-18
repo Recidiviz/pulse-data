@@ -48,7 +48,9 @@ class GetWatermarkSqlQueryGenerator(CloudSqlQueryGenerator[Dict[str, str]]):
         """Returns the max watermark from DirectIngestDataflowRawTableUpperBounds."""
 
         watermark: Dict[str, str] = {
-            row[RAW_DATA_FILE_TAG]: row[WATERMARK_DATETIME].isoformat()
+            row[RAW_DATA_FILE_TAG]: row[WATERMARK_DATETIME].strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
             for _, row in postgres_hook.get_pandas_df(self.sql_query()).iterrows()
         }
 

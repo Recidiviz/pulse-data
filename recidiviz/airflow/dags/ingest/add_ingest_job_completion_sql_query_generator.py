@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The CloudSQLQueryGenerator for adding job completion info to DirectIngestDataflowJob."""
+from typing import Any, Dict
 
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -50,11 +51,11 @@ class AddIngestJobCompletionSqlQueryGenerator(CloudSqlQueryGenerator[None]):
     ) -> None:
         """Inserts the job completion info into DirectIngestDataflowJob."""
 
-        job_id: str = operator.xcom_pull(
+        pipeline: Dict[str, Any] = operator.xcom_pull(
             context, key="return_value", task_ids=self.run_pipeline_task_id
         )
 
-        postgres_hook.run(self.insert_sql_query(job_id))
+        postgres_hook.run(self.insert_sql_query(pipeline["id"]))
 
     def insert_sql_query(
         self,
