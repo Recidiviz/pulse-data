@@ -507,3 +507,52 @@ lsir_spans AS (
         MAX(LEAST(score_end_date,{nonnull_end_date_clause('supervision_end_date')})) AS score_span_end_date
     FROM grps
     GROUP BY grp, state_code, person_id, lsir_level)"""
+
+
+DOR_CASE_NOTES_COLUMNS = """
+        dac.OffenderId AS external_id,
+        'Disciplinary Offense Reports (in the past 6 months)' AS criteria,
+        CONCAT('Class ', SUBSTR(dot.DorOffenseCode, 1, 1), ': ', DorOffenseTypeName) AS note_title,
+        COALESCE(REGEXP_EXTRACT(dac.OffenseDesc, r'"offense_desc": "([^"]+)"'), dac.OffenseDesc) AS note_body,
+        SAFE_CAST(LEFT(dac.OffenseDateTime, 10) AS DATE) AS event_date,"""
+
+DOR_CRITERIA_COLUMNS = """
+        dac.OffenderId AS external_id,
+        SAFE_CAST(LEFT(COALESCE(dac.AuditHearingDate, dac.OffenseDateTime), 10) AS DATE) AS start_date,
+        SUBSTR(dot.DorOffenseCode, 1, 1) AS dor_class"""
+
+
+def dor_query(
+    columns_str: str,
+    classes_to_include: list,
+) -> str:
+    """
+    Returns a SQL query that returns all the Disciplinary Offense Reports in Idaho
+    that match the classes requested.
+
+    Args:
+        columns_str (str): Columns to use for the select statement. Defaults to
+            DOR_CASE_NOTES_COLUMNS.
+        classes_to_include (list): List of classes to include in the query. E.g. ['A', 'B'].
+        additional_where_clause (str): Additional where clause to use in the query.
+            Defaults to ''.
+    """
+
+    return f"""
+    SELECT *
+    FROM (
+        SELECT {columns_str}
+        # Procedure data contains offense type for each case (class)
+        FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.dsc_DAProcedure_latest` dap
+        # Details of each case
+        LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.dsc_DACase_latest` dac
+            USING (OffenderId, DACaseId)
+        # Offense types
+        INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_DorOffenseType_latest` dot
+            USING (DorOffenseTypeId)
+        #Need to join to dsc_DADecisionOfficer to get decision id and filter out dors that were dismissed
+        #TODO(#25524): remove dismissed dors to the query
+        WHERE SUBSTR(dot.DorOffenseCode, 1, 1) IN {str(tuple(classes_to_include))}
+        #Only keep the latest record for each offender-case
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY dap.DACaseId, dap.OffenderId ORDER BY dap.InsertDate DESC) = 1
+    )"""
