@@ -126,15 +126,15 @@ class TestShellCompartment(unittest.TestCase):
         )
 
         use_alternate_admissions = SparkPolicy(
-            spark_compartment="pretrial",
-            simulation_group="test",
-            policy_time_step=self.policy_time_step,
-            apply_retroactive=False,
-            policy_fn=partial(
+            partial(
                 ShellCompartment.use_alternate_admissions_data,
                 alternate_admissions_data=alternate_admissions_data,
                 tag="pretrial",
             ),
+            spark_compartment="pretrial",
+            sub_population={"subgroup": "test"},
+            policy_time_step=self.policy_time_step,
+            apply_retroactive=False,
         )
 
         policy_shell_compartment = ShellCompartment(

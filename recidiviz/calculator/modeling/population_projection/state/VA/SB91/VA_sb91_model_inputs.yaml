@@ -20,8 +20,8 @@ reference_date: 2021.0
 
 time_step: .0833333333
 
-#disaggregation_axes:
-#  - crime_type
+disaggregation_axes:
+  - crime_type
 
 data_inputs:
   big_query_simulation_tag: va_prison_p1

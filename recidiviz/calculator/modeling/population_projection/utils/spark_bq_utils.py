@@ -32,13 +32,16 @@ SPARK_INPUT_PROJECT_ID = "recidiviz-staging"
 SPARK_INPUT_DATASET = "spark_public_input_data"
 
 ADMISSIONS_DATA_TABLE_NAME = "admissions_data_raw"
-ADMISSIONS_SCHEMA = [
+OUTFLOWS_SCHEMA = [
     {"name": "simulation_tag", "type": "STRING", "mode": "REQUIRED"},
     {"name": "time_step", "type": "INTEGER", "mode": "REQUIRED"},
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
     {"name": "admission_to", "type": "STRING", "mode": "REQUIRED"},
     {"name": "cohort_population", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "simulation_group", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "crime", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "crime_type", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "age", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "race", "type": "STRING", "mode": "NULLABLE"},
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
 ]
 
@@ -50,7 +53,10 @@ TRANSITIONS_SCHEMA = [
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
     {"name": "outflow_to", "type": "STRING", "mode": "REQUIRED"},
     {"name": "cohort_portion", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "simulation_group", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "crime", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "crime_type", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "age", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "race", "type": "STRING", "mode": "NULLABLE"},
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
 ]
 
@@ -60,7 +66,10 @@ POPULATION_SCHEMA = [
     {"name": "time_step", "type": "INTEGER", "mode": "REQUIRED"},
     {"name": "compartment", "type": "STRING", "mode": "REQUIRED"},
     {"name": "compartment_population", "type": "FLOAT", "mode": "REQUIRED"},
-    {"name": "simulation_group", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "crime", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "crime_type", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "age", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "race", "type": "STRING", "mode": "NULLABLE"},
     {"name": "date_created", "type": "TIMESTAMP", "mode": "REQUIRED"},
 ]
 
@@ -104,8 +113,8 @@ def _validate_data(project_id: str, uploads: List[Dict[str, Any]]) -> None:
     if project_id not in ["recidiviz-staging", "recidiviz-123"]:
         raise ValueError(f"{project_id} is not a supported gcloud BigQuery project")
 
-    # Must have exactly the right columns; must not contain null values
-    incorrect_columns = []
+    # Must include one of the valid disaggregation axes; must not contain null values
+    missing_dissagregation_axis = []
     for params in uploads:
         table_name = params["table"][:-4]
 
@@ -113,51 +122,21 @@ def _validate_data(project_id: str, uploads: List[Dict[str, Any]]) -> None:
         if params["data_df"].isnull().values.any():
             raise ValueError(f"Table '{table_name}' must not contain null values")
 
-        # check that dataframe has the right data fields
-        if params["table"] == POPULATION_DATA_TABLE_NAME:
-            # population data is allowed to not be disaggregated
-            if not (
-                (
-                    set(params["data_df"].columns)
-                    == {
-                        i["name"]
-                        for i in POPULATION_SCHEMA
-                        if i["name"] not in ["simulation_tag", "date_created"]
-                    }
-                )
-                | (
-                    set(params["data_df"].columns)
-                    == {
-                        i["name"]
-                        for i in POPULATION_SCHEMA
-                        if i["name"]
-                        not in ["simulation_tag", "date_created", "simulation_group"]
-                    }
-                )
-            ):
-                incorrect_columns.append(table_name)
+        # check that dataframe contains at least one of the required disaggregation axes
+        if params["table"] != POPULATION_DATA_TABLE_NAME:
+            missing_columns = {"crime", "crime_type", "age", "race"}.difference(
+                params["data_df"].columns
+            )
+            if len(missing_columns) >= 4:
+                missing_dissagregation_axis.append(params["table"][:-4])
 
-        if params["table"] == ADMISSIONS_DATA_TABLE_NAME:
-            if set(params["data_df"].columns) != {
-                i["name"]
-                for i in ADMISSIONS_SCHEMA
-                if i["name"] not in ["simulation_tag", "date_created"]
-            }:
-                incorrect_columns.append(table_name)
-
-        if params["table"] == TRANSITIONS_DATA_TABLE_NAME:
-            if set(params["data_df"].columns) != {
-                i["name"]
-                for i in TRANSITIONS_SCHEMA
-                if i["name"] not in ["simulation_tag", "date_created"]
-            }:
-                incorrect_columns.append(table_name)
-
-    if len(incorrect_columns) != 0:
-        raise ValueError(f"Tables {incorrect_columns} dont have the right columns")
+    if len(missing_dissagregation_axis) != 0:
+        raise ValueError(
+            f"Tables {missing_dissagregation_axis} must have dissaggregation axis of 'crime', 'crime_type', 'age', or 'race'"
+        )
 
 
-def _validate_yaml(yaml_path: str) -> None:
+def _validate_yaml(yaml_path: str, uploads: List[Dict[str, Any]]) -> None:
     "Validate the contents of the relevant yaml file"
 
     yaml_dict = YAMLDict.from_path(yaml_path)
@@ -169,6 +148,7 @@ def _validate_yaml(yaml_path: str) -> None:
         "reference_date",
         "time_step",
         "data_inputs",
+        "disaggregation_axes",
         "per_year_costs",
     }
     given_inputs = set(yaml_dict.keys())
@@ -180,6 +160,19 @@ def _validate_yaml(yaml_path: str) -> None:
     unexpected_inputs = given_inputs.difference(required_inputs)
     if len(unexpected_inputs) > 0:
         raise ValueError(f"Unexpected yaml inputs: {unexpected_inputs}")
+
+    # Check that all disaggregation axes are in all the dataframes
+    disaggregation_axes = yaml_dict.pop("disaggregation_axes", list)
+
+    for axis in disaggregation_axes:
+        for upload in uploads:
+            if upload["table"] != "population_data_raw":
+                df = upload["data_df"]
+                if axis not in df.columns:
+                    raise ValueError(
+                        f"All disaggregation axes must be included in the input dataframe columns\n"
+                        f"Expected: {disaggregation_axes}, Actual: {df.columns}"
+                    )
 
 
 def upload_spark_model_inputs(
@@ -197,7 +190,7 @@ def upload_spark_model_inputs(
     uploads = [
         {
             "table": ADMISSIONS_DATA_TABLE_NAME,
-            "schema": ADMISSIONS_SCHEMA,
+            "schema": OUTFLOWS_SCHEMA,
             "data_df": admissions_data_df.copy(),
         },
         {
@@ -215,7 +208,7 @@ def upload_spark_model_inputs(
     _validate_data(project_id, uploads)
     # Validate the relevant yaml file
     if yaml_path is not None:
-        _validate_yaml(yaml_path)
+        _validate_yaml(yaml_path, uploads)
 
     # Process dataframe and check against schema
     for params in uploads:
@@ -223,9 +216,9 @@ def upload_spark_model_inputs(
             continue
         params["data_df"].loc[:, "simulation_tag"] = simulation_tag
         params["data_df"].loc[:, "date_created"] = upload_time
-        # applies for population data that's not disaggregated
-        if "simulation_group" not in params["data_df"].columns:
-            params["data_df"].loc[:, "simulation_group"] = None
+        for disaggregation_axis in ["crime", "crime_type", "age", "race"]:
+            if disaggregation_axis not in params["data_df"].columns:
+                params["data_df"].loc[:, disaggregation_axis] = None
 
         table_name = params["table"][: (len(params["table"]) - 4)]
         _validate_schema(params["schema"], params["data_df"], table_name)

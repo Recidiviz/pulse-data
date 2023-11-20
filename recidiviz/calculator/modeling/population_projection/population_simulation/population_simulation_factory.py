@@ -18,7 +18,7 @@
 import logging
 from functools import partial
 from time import time
-from typing import Dict, List
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 
@@ -68,17 +68,19 @@ class PopulationSimulationFactory:
             policy_list,
         )
 
-        simulation_groups = list(
-            data_inputs.transitions_data.simulation_group.dropna().unique()
+        sub_group_ids_dict = cls._populate_sub_group_ids_dict(
+            data_inputs.transitions_data, data_inputs.disaggregation_axes
         )
-
         if data_inputs.should_initialize_compartment_populations:
 
             # add to `policy_list` to switch from remaining sentences data to transitions data
             alternate_transition_policies = []
-            for sub_group in simulation_groups:
+            for group_attributes in sub_group_ids_dict.values():
                 disaggregated_microsim_data = data_inputs.microsim_data[
-                    data_inputs.microsim_data.simulation_group == sub_group
+                    (
+                        data_inputs.microsim_data[data_inputs.disaggregation_axes]
+                        == pd.Series(group_attributes)
+                    ).all(axis=1)
                 ]
 
                 # add one policy per compartment to switch from remaining sentence data to transitions data
@@ -101,7 +103,7 @@ class PopulationSimulationFactory:
                                     retroactive=False,
                                 ),
                                 spark_compartment=full_comp,
-                                simulation_group=sub_group,
+                                sub_population=group_attributes,
                                 policy_time_step=user_inputs.start_time_step + 1,
                                 apply_retroactive=False,
                             )
@@ -110,7 +112,7 @@ class PopulationSimulationFactory:
                     else:
                         logging.warning(
                             "No alternate transition data for %s %s",
-                            sub_group,
+                            group_attributes,
                             full_comp,
                         )
 
@@ -123,7 +125,7 @@ class PopulationSimulationFactory:
             user_inputs,
             policy_list,
             first_relevant_time_step,
-            simulation_groups,
+            sub_group_ids_dict,
         )
 
         # If compartment populations are initialized, the first time-step is handled in initialization
@@ -136,6 +138,7 @@ class PopulationSimulationFactory:
 
         population_simulation = PopulationSimulation(
             sub_simulations=sub_simulations,
+            sub_group_ids_dict=sub_group_ids_dict,
             population_data=data_inputs.population_data,
             projection_time_steps=projection_time_steps,
             first_relevant_time_step=pop_sim_start_time_step,
@@ -154,13 +157,52 @@ class PopulationSimulationFactory:
         return population_simulation
 
     @classmethod
+    def _populate_sub_group_ids_dict(
+        cls, transitions_data: pd.DataFrame, disaggregation_axes: List[str]
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Helper function for initialize_simulation. Populates sub_group_ids_dict so we can recover sub-group properties
+        during validation.
+        """
+        sub_group_ids_dict = {}
+        # Convert the list to a single string if there's only 1 element to silence Pandas warnings
+        if len(disaggregation_axes) == 1:
+            disaggregation_grouper: Union[List[str], str] = disaggregation_axes[0]
+        else:
+            disaggregation_grouper = disaggregation_axes
+        for (simulation_group_name), _ in transitions_data.groupby(
+            disaggregation_grouper
+        ):
+            sub_group_id = str(simulation_group_name)
+
+            if len(disaggregation_axes) == 1:
+                # If `simulation_group_name` is a single string then add one key: value pair to sub_group_ids_dict
+                sub_group_ids_dict[sub_group_id] = {
+                    disaggregation_axes[0]: simulation_group_name
+                }
+            else:
+                # Else, `simulation_group_name` is a list so add multiple key: value pairs to the sub_group_ids_dict
+                sub_group_ids_dict[sub_group_id] = {
+                    disaggregation_axes[i]: simulation_group_name[i]
+                    for i in range(len(disaggregation_axes))
+                }
+
+        # Raise an error if the sub_group_ids_dict was not constructed
+        if not sub_group_ids_dict:
+            raise ValueError(
+                f"Could not define sub groups across the disaggregations: {disaggregation_axes}"
+            )
+
+        return sub_group_ids_dict
+
+    @classmethod
     def _build_sub_simulations(
         cls,
         data_inputs: SimulationInputData,
         user_inputs: UserInputs,
         policy_list: List[SparkPolicy],
         first_relevant_time_step: int,
-        sub_groups: List[str],
+        sub_group_ids_dict: Dict[str, Dict[str, Any]],
     ) -> Dict[str, SubSimulation]:
         """Helper function for initialize_simulation. Initialize one sub simulation per sub-population."""
         sub_simulations = {}
@@ -173,17 +215,26 @@ class PopulationSimulationFactory:
         unused_transitions_data = transitions_data
         unused_admissions_data = admissions_data
         unused_population_data = population_data
-        for simulation_group in sub_groups:
+        for sub_group_id in sub_group_ids_dict:
+            group_attributes = pd.Series(sub_group_ids_dict[sub_group_id])
             disaggregated_transitions_data = transitions_data[
-                transitions_data.simulation_group == simulation_group
+                (
+                    transitions_data[data_inputs.disaggregation_axes]
+                    == group_attributes
+                ).all(axis=1)
             ]
             disaggregated_admissions_data = admissions_data[
-                admissions_data.simulation_group == simulation_group
+                (
+                    admissions_data[data_inputs.disaggregation_axes] == group_attributes
+                ).all(axis=1)
             ]
 
             if data_inputs.should_initialize_compartment_populations:
                 disaggregated_population_data = population_data[
-                    population_data.simulation_group == simulation_group
+                    (
+                        population_data[data_inputs.disaggregation_axes]
+                        == group_attributes
+                    ).all(axis=1)
                 ]
                 unused_population_data = unused_population_data.drop(
                     disaggregated_population_data.index
@@ -204,12 +255,10 @@ class PopulationSimulationFactory:
 
             # Select the policies relevant to this simulation group
             group_policies = SparkPolicy.get_sub_population_policies(
-                policy_list, simulation_group
+                policy_list, sub_group_ids_dict[sub_group_id]
             )
 
-            sub_simulations[
-                simulation_group
-            ] = SubSimulationFactory.build_sub_simulation(
+            sub_simulations[sub_group_id] = SubSimulationFactory.build_sub_simulation(
                 admissions_data=disaggregated_admissions_data,
                 transitions_data=disaggregated_transitions_data,
                 compartments_architecture=data_inputs.compartments_architecture,
@@ -220,7 +269,6 @@ class PopulationSimulationFactory:
                 starting_cohort_sizes=start_cohort_sizes,
             )
 
-        # todo: switch order
         if len(unused_transitions_data) > 0:
             logging.warning(
                 "Some transitions data left unused: %s", unused_transitions_data
@@ -260,11 +308,21 @@ class PopulationSimulationFactory:
                 f"Policy list can only include SparkPolicy objects: {policy_list}"
             )
 
-        if data_inputs.should_initialize_compartment_populations:
-            if "simulation_group" not in data_inputs.population_data.columns:
-                raise ValueError(
-                    "`simulation_group` field must be included in the input population dataset if running microsim."
-                )
+        for axis in data_inputs.disaggregation_axes:
+            # Unless starting cohorts are required, population_data is allowed to be aggregated
+            fully_disaggregated_dfs = [
+                data_inputs.admissions_data,
+                data_inputs.transitions_data,
+            ]
+            if data_inputs.should_initialize_compartment_populations:
+                fully_disaggregated_dfs.append(data_inputs.population_data)
+
+            for df in [data_inputs.admissions_data, data_inputs.transitions_data]:
+                if axis not in df.columns:
+                    raise ValueError(
+                        f"All disaggregation axis must be included in the input dataframe columns\n"
+                        f"Expected: {data_inputs.disaggregation_axes}, Actual: {df.columns}"
+                    )
 
         if not data_inputs.population_data.empty:
             if (

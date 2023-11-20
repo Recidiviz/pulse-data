@@ -46,7 +46,7 @@ admissions_data_macro = pd.DataFrame(
         "admission_to": ["PRISON"] * 12,
         "time_step": list(range(5, 11)) * 2,
         "simulation_tag": ["test_data"] * 12,
-        "simulation_group": ["NONVIOLENT"] * 6 + ["VIOLENT"] * 6,
+        "crime_type": ["NONVIOLENT"] * 6 + ["VIOLENT"] * 6,
         "cohort_population": [100]
         + [100 + 2 * i for i in range(5)]
         + [10]
@@ -60,7 +60,7 @@ transitions_data_macro = pd.DataFrame(
         "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
         "compartment_duration": [3, 5, 3, 50] * 2,
         "simulation_tag": ["test_data"] * 8,
-        "simulation_group": ["NONVIOLENT"] * 4 + ["VIOLENT"] * 4,
+        "crime_type": ["NONVIOLENT"] * 4 + ["VIOLENT"] * 4,
         "cohort_portion": [0.6, 0.4, 0.3, 0.7] * 2,
     }
 )
@@ -70,7 +70,7 @@ population_data_macro = pd.DataFrame(
         "compartment": ["PRISON", "LIBERTY"] * 2,
         "time_step": [9] * 4,
         "simulation_tag": ["test_data"] * 4,
-        "simulation_group": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
+        "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
         "compartment_population": [300, 500, 30, 50],
     }
 )
@@ -116,10 +116,7 @@ admissions_data_micro = pd.DataFrame(
         + [datetime(2020, i, 1) for i in range(7, 13)] * 2,
         "state_code": ["test_state"] * 24,
         "run_date": [datetime(2020, 12, 1)] * 12 + [datetime(2021, 1, 1)] * 12,
-        "simulation_group": ["MALE"] * 6
-        + ["FEMALE"] * 6
-        + ["MALE"] * 6
-        + ["FEMALE"] * 6,
+        "gender": ["MALE"] * 6 + ["FEMALE"] * 6 + ["MALE"] * 6 + ["FEMALE"] * 6,
         "cohort_population": micro_population,
     }
 )
@@ -132,10 +129,7 @@ admissions_data_micro_missing_time_steps = pd.DataFrame(
         + [datetime(2020, i, 1) for i in range(7, 13, 2)] * 2,
         "state_code": ["test_state"] * 12,
         "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
-        "simulation_group": ["MALE"] * 3
-        + ["FEMALE"] * 3
-        + ["MALE"] * 3
-        + ["FEMALE"] * 3,
+        "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
         "cohort_population": micro_population[:12],
     }
 )
@@ -147,10 +141,7 @@ transitions_data_micro = pd.DataFrame(
         "compartment_duration": [3, 5, 3] * 4,
         "state_code": ["test_state"] * 12,
         "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
-        "simulation_group": ["MALE"] * 3
-        + ["FEMALE"] * 3
-        + ["MALE"] * 3
-        + ["FEMALE"] * 3,
+        "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
         "cohort_portion": [0.6, 0.4, 1] * 4,
     }
 )
@@ -162,10 +153,7 @@ remaining_sentence_data_micro = pd.DataFrame(
         "compartment_duration": [1, 2, 1] * 4,
         "state_code": ["test_state"] * 12,
         "run_date": [datetime(2020, 12, 1)] * 6 + [datetime(2021, 1, 1)] * 6,
-        "simulation_group": ["MALE"] * 3
-        + ["FEMALE"] * 3
-        + ["MALE"] * 3
-        + ["FEMALE"] * 3,
+        "gender": ["MALE"] * 3 + ["FEMALE"] * 3 + ["MALE"] * 3 + ["FEMALE"] * 3,
         "cohort_portion": [60, 40, 1] * 4,
     }
 )
@@ -176,10 +164,7 @@ population_data_micro = pd.DataFrame(
         "time_step": [datetime(2020, 12, 1)] * 4 + [datetime(2021, 1, 1)] * 4,
         "state_code": ["test_state"] * 8,
         "run_date": [datetime(2021, 1, 1)] * 8,
-        "simulation_group": ["MALE"] * 2
-        + ["FEMALE"] * 2
-        + ["MALE"] * 2
-        + ["FEMALE"] * 2,
+        "gender": ["MALE"] * 2 + ["FEMALE"] * 2 + ["MALE"] * 2 + ["FEMALE"] * 2,
         "compartment_population": [300, 500, 430, 410, 200, 250, 300, 350],
     }
 )
@@ -446,14 +431,14 @@ class TestSuperSimulation(unittest.TestCase):
             retroactive=True,
         )
         cost_multipliers = pd.DataFrame(
-            {"simulation_group": ["NONVIOLENT", "VIOLENT"], "multiplier": [2, 2]}
+            {"crime_type": ["NONVIOLENT", "VIOLENT"], "multiplier": [2, 2]}
         )
 
         policy_list = [
             SparkPolicy(
                 policy_fn=policy_function,
                 spark_compartment="PRISON",
-                simulation_group=crime_type,
+                sub_population={"crime_type": crime_type},
                 policy_time_step=self.macrosim.initializer.get_user_inputs().start_time_step
                 + 5,
                 apply_retroactive=True,
@@ -484,10 +469,10 @@ class TestSuperSimulation(unittest.TestCase):
 
         # same test but for only one subgroup
         partial_cost_multipliers_double = pd.DataFrame(
-            {"simulation_group": ["NONVIOLENT"], "multiplier": [2]}
+            {"crime_type": ["NONVIOLENT"], "multiplier": [2]}
         )
         partial_cost_multipliers_triple = pd.DataFrame(
-            {"simulation_group": ["NONVIOLENT"], "multiplier": [3]}
+            {"crime_type": ["NONVIOLENT"], "multiplier": [3]}
         )
         outputs_doubled = self.macrosim.upload_policy_simulation_results_to_bq(
             "test", partial_cost_multipliers_double
@@ -554,7 +539,7 @@ class TestSuperSimulation(unittest.TestCase):
         data_inputs = microsim.initializer.get_data_inputs()
         comparison_columns = [
             "time_step",
-            "simulation_group",
+            "gender",
             "compartment",
             "admission_to",
             "run_date",
@@ -571,7 +556,7 @@ class TestSuperSimulation(unittest.TestCase):
                         {
                             "time_step": [datetime(2020, 8, 1), datetime(2020, 10, 1)]
                             * 2,
-                            "simulation_group": ["FEMALE"] * 2 + ["MALE"] * 2,
+                            "gender": ["FEMALE"] * 2 + ["MALE"] * 2,
                             "compartment": ["PRETRIAL"] * 4,
                             "admission_to": ["PRISON"] * 4,
                             "run_date": [datetime(2021, 1, 1)] * 4,
@@ -580,7 +565,7 @@ class TestSuperSimulation(unittest.TestCase):
                     ),
                 ]
             )
-            .sort_values(by=["simulation_group", "time_step"])
+            .sort_values(by=["gender", "time_step"])
             .reset_index(drop=True)
         )
         expected_admissions_data["time_step"] = expected_admissions_data[
@@ -601,13 +586,9 @@ class TestSuperSimulation(unittest.TestCase):
         print(self.microsim.initializer.get_data_inputs().transitions_data)
         expected_transitions_data = (
             self.microsim.initializer.get_data_inputs().transitions_data[
-                [
-                    "compartment",
-                    "outflow_to",
-                    "simulation_group",
-                    "compartment_duration",
-                    "cohort_portion",
-                ]
+                ["compartment", "outflow_to"]
+                + self.microsim.initializer.get_data_inputs().disaggregation_axes
+                + ["compartment_duration", "cohort_portion"]
             ]
         )
         transitions_returned = self.microsim.get_transitions_data_input()
@@ -673,7 +654,7 @@ class TestSuperSimulation(unittest.TestCase):
             pd.Index(
                 [
                     "policy_sim",
-                    "simulation_group",
+                    "sub_sim",
                     "compartment",
                     "time_step",
                     "outflow_to",
@@ -683,7 +664,7 @@ class TestSuperSimulation(unittest.TestCase):
         )
         assert set(outflows.compartment) == {"LIBERTY", "PRISON", "PRETRIAL"}
         assert set(outflows.outflow_to) == {"LIBERTY", "PRISON"}
-        assert set(outflows.simulation_group) == {"NONVIOLENT", "VIOLENT"}
+        assert set(outflows.sub_sim) == {"NONVIOLENT", "VIOLENT"}
 
         # check that admissions error output can be extracted and is as expected
         admissions_error = self.macrosim.get_admissions_error("baseline_projections")  # type: ignore[union-attr]

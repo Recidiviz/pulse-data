@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """SuperSimulation composed object for outputting simulation results."""
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -81,6 +81,8 @@ class Exporter:
         simulation_tag: Optional[str],
         output_data: Dict[str, pd.DataFrame],
         cost_multipliers: pd.DataFrame,
+        sub_group_ids_dict: Dict[str, Dict[str, Any]],
+        disaggregation_axes: List[str],
     ) -> Dict[str, pd.DataFrame]:
         """Format then upload policy simulation results to Big Query."""
         # TODO(#6633): incorporate excluded populations into policy simulation upload for microsimulations
@@ -90,6 +92,8 @@ class Exporter:
             spending_diff_non_cumulative,
         ) = self._get_output_metrics(
             output_data["policy_simulation"],
+            sub_group_ids_dict,
+            disaggregation_axes,
             cost_multipliers,
         )
         aggregate_output_data = (
@@ -246,6 +250,8 @@ class Exporter:
     def _get_output_metrics(
         self,
         formatted_simulation_results: pd.DataFrame,
+        sub_group_ids_dict: Dict[str, Dict[str, Any]],
+        disaggregation_axes: List[str],
         cost_multipliers: pd.DataFrame,
     ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
@@ -256,16 +262,12 @@ class Exporter:
         spending_diff_non_cumulative = pd.DataFrame()
         spending_diff = pd.DataFrame()
 
-        simulation_groups = list(
-            formatted_simulation_results["simulation_group"].unique()
-        )
-
         cost_multipliers = self._get_complete_cost_multipliers(
-            cost_multipliers, simulation_groups
+            cost_multipliers, sub_group_ids_dict, disaggregation_axes
         )
 
         # go through and calculate differences for each subgroup
-        for subgroup_tag in simulation_groups:
+        for subgroup_tag, subgroup_dict in sub_group_ids_dict.items():
             subgroup_data = formatted_simulation_results[
                 formatted_simulation_results["simulation_group"] == subgroup_tag
             ]
@@ -296,7 +298,12 @@ class Exporter:
 
             # pull out cost multiplier for this subgroup
             multiplier = (
-                cost_multipliers[cost_multipliers["simulation_group"] == subgroup_tag]
+                cost_multipliers[
+                    (
+                        cost_multipliers[disaggregation_axes]
+                        == pd.Series(subgroup_dict)
+                    ).all(axis=1)
+                ]
                 .iloc[0]
                 .multiplier
             )
@@ -324,27 +331,33 @@ class Exporter:
     def _get_complete_cost_multipliers(
         cls,
         cost_multipliers: pd.DataFrame,
-        simulation_groups: List[str],
+        sub_group_ids_dict: Dict[str, Dict[str, Any]],
+        disaggregation_axes: List[str],
     ) -> pd.DataFrame:
         """Gets the complete cost multipliers."""
         if cost_multipliers.empty:
-            complete_cost_multipliers = pd.DataFrame(
-                columns=["simulation_group", "multiplier"]
+            cost_multipliers = pd.DataFrame(
+                columns=disaggregation_axes + ["multiplier"]
             )
-        else:
-            complete_cost_multipliers = cost_multipliers.copy()
 
-        for simulation_group in simulation_groups:
-            if simulation_group not in complete_cost_multipliers["simulation_group"]:
-                complete_cost_multipliers = pd.concat(
-                    [
-                        complete_cost_multipliers,
-                        pd.Series(
-                            {"simulation_group": simulation_group, "multiplier": 1}
-                        )
-                        .to_frame()
-                        .T,
-                    ],
-                    ignore_index=True,
+        missing_disaggregation_axes = [
+            axis for axis in disaggregation_axes if axis not in cost_multipliers
+        ]
+        if len(missing_disaggregation_axes) > 0:
+            raise ValueError(
+                f"Cost multipliers df missing disaggregation axes: {missing_disaggregation_axes}"
+            )
+
+        # fill in missing subgroups with identity multiplier = 1
+        additional_multipliers = []
+        for subgroup_dict in sub_group_ids_dict.values():
+            if cost_multipliers[
+                (cost_multipliers[disaggregation_axes] == pd.Series(subgroup_dict)).all(
+                    axis=1
                 )
-        return complete_cost_multipliers
+            ].empty:
+                additional_multipliers.append(
+                    pd.DataFrame({**subgroup_dict, **{"multiplier": 1}}, index=[0])
+                )
+        cost_multipliers = pd.concat([cost_multipliers] + additional_multipliers)
+        return cost_multipliers

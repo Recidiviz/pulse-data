@@ -15,8 +15,8 @@ reference_date: 2016.0
 
 time_step: 0.083333333333333333333
 
-#disaggregation_axes:
-#  - crime_type
+disaggregation_axes:
+  - crime_type
 
 data_inputs:
   big_query_simulation_tag: MI_probation

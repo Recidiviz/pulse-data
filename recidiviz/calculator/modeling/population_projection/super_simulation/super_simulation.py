@@ -205,12 +205,17 @@ class SuperSimulation:
         cost_multipliers: Optional[pd.DataFrame] = None,
     ) -> Optional[Dict[str, pd.DataFrame]]:
         output_data = self.validator.get_output_data_for_upload(macrosim_override=True)
+        sub_group_ids_dict = self.simulator.get_sub_group_ids_dict()
+        data_inputs = self.initializer.get_data_inputs()
+        disaggregation_axes = data_inputs.disaggregation_axes
 
         return self.exporter.upload_policy_simulation_results_to_bq(
             "recidiviz-staging",
             simulation_tag,
             output_data,
             cost_multipliers if cost_multipliers is not None else pd.DataFrame(),
+            sub_group_ids_dict,
+            disaggregation_axes,
         )
 
     def upload_validation_projection_results_to_bq(
@@ -308,14 +313,11 @@ class SuperSimulation:
         for specific compartment data (includes all outflow_to values), otherwise returns full transitions df
         """
         inputs = self.initializer.get_data_inputs()
-
-        columns_to_return = [
-            "compartment",
-            "outflow_to",
-            "simulation_group",
-            "compartment_duration",
-            "cohort_portion",
-        ]
+        columns_to_return = (
+            ["compartment", "outflow_to"]
+            + inputs.disaggregation_axes
+            + ["compartment_duration", "cohort_portion"]
+        )
         if not compartments_input:
             return inputs.transitions_data[columns_to_return]
         compartments = [c.lower() for c in compartments_input]
@@ -336,13 +338,11 @@ class SuperSimulation:
         for specific compartment data, otherwise returns full admissions df
         """
         inputs = self.initializer.get_data_inputs()
-        columns_to_return = [
-            "compartment",
-            "admission_to",
-            "simulation_group",
-            "time_step",
-            "cohort_population",
-        ]
+        columns_to_return = (
+            ["compartment", "admission_to"]
+            + inputs.disaggregation_axes
+            + ["time_step", "cohort_population"]
+        )
         if not compartments_input:
             return inputs.admissions_data[columns_to_return]
         compartments = [c.lower() for c in compartments_input]
@@ -382,7 +382,7 @@ class SuperSimulation:
 
         outflows_raw.columns = [
             "policy_sim",
-            "simulation_group",
+            "sub_sim",
             "compartment",
             "compartment_type",
             "time_step",
@@ -398,7 +398,7 @@ class SuperSimulation:
 
     def get_all_sub_simulation_tags(self) -> List[str]:
         for _, pop_sim in self.get_population_simulations().items():
-            return list(pop_sim.sub_simulations.keys())
+            return list(pop_sim.sub_group_ids_dict.keys())
         return []
 
     def _get_all_compartments(

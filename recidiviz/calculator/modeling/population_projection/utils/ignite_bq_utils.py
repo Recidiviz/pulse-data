@@ -49,7 +49,7 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
                     {
                         "compartment": terminal_compartment,
                         "outflow_to": terminal_compartment,
-                        "simulation_group": gender,
+                        "gender": gender,
                         "cohort_portion": 1,
                         "compartment_duration": 1,
                         "run_date": run_date,
@@ -59,7 +59,7 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
             terminal_compartment_transitions
         )
         long_sentences = 1 - np.round(
-            run_date_transitions.groupby(["compartment", "simulation_group"])[
+            run_date_transitions.groupby(["compartment", "gender"])[
                 "cohort_portion"
             ].sum(),
             6,
@@ -96,7 +96,7 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.Dat
                     {
                         "compartment": terminal_compartment,
                         "outflow_to": terminal_compartment,
-                        "simulation_group": gender,
+                        "gender": gender,
                         "cohort_portion": 1,
                         "compartment_duration": 1,
                         "run_date": run_date,
@@ -123,18 +123,18 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.Dat
                 & (complete_remaining["compartment"] == infrequent_compartment)
             ]
             # Only add rows for the unrepresented simulation groups
-            if infrequent_sentences["simulation_group"].nunique() < 2:
+            if infrequent_sentences["gender"].nunique() < 2:
                 missing_gender = [
                     gender
-                    for gender in complete_remaining["simulation_group"].unique()
-                    if gender not in infrequent_sentences["simulation_group"].unique()
+                    for gender in complete_remaining["gender"].unique()
+                    if gender not in infrequent_sentences["gender"].unique()
                 ]
                 num_rows = len(missing_gender)
                 infrequent_sentences_rows = pd.DataFrame(
                     {
                         "compartment": [infrequent_compartment] * num_rows,
                         "outflow_to": [infrequent_compartment] * num_rows,
-                        "simulation_group": missing_gender,
+                        "gender": missing_gender,
                         "cohort_portion": [1] * num_rows,
                         "compartment_duration": [1] * num_rows,
                         "run_date": [run_date] * num_rows,

@@ -37,14 +37,14 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
         """
 
         # get function output df
-        df = transitions_uniform("from", "to", 12, 0.8, 5, 119, "x")
+        df = transitions_uniform("from", "to", 12, 0.8, 5, 119, "type", "x")
 
         # get expected output df
         expected = pd.DataFrame(
             {
                 "compartment": ["from"] * 23,
                 "outflow_to": ["to"] * 23,
-                "simulation_group": ["x"] * 23,
+                "type": ["x"] * 23,
                 "compartment_duration": list(range(1, 23 + 1)),
                 "cohort_portion": [0.03478] * 23,
             }
@@ -75,6 +75,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
             p_x_months,
             periods,
             5,
+            "type",
             "x",
             False,
         )
@@ -98,7 +99,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
             {
                 "compartment": ["from"] * periods,
                 "outflow_to": ["to"] * periods,
-                "simulation_group": ["x"] * periods,
+                "type": ["x"] * periods,
                 "compartment_duration": list(range(1, periods + 1)),
                 "cohort_portion": total_pop,
             }
@@ -114,14 +115,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
 
         # get function output df
         df = transitions_interpolation(
-            "from",
-            "to",
-            [0.1],
-            None,
-            5,
-            "x",
-            False,
-            False,  # linear
+            "from", "to", [0.1], None, 5, "type", "x", False, False  # linear
         )
 
         # correct population
@@ -145,7 +139,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
             {
                 "compartment": ["from"] * 12,
                 "outflow_to": ["to"] * 12,
-                "simulation_group": ["x"] * 12,
+                "type": ["x"] * 12,
                 "compartment_duration": list(range(1, 12 + 1)),
                 "cohort_portion": total_pop,
             }
@@ -161,7 +155,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
 
         # get function output df
         df = transitions_interpolation(
-            "from", "to", [0.1], None, 5, "x", True, False  # uniform
+            "from", "to", [0.1], None, 5, "type", "x", True, False  # uniform
         )
 
         # correct population
@@ -172,7 +166,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
             {
                 "compartment": ["from"] * 12,
                 "outflow_to": ["to"] * 12,
-                "simulation_group": ["x"] * 12,
+                "type": ["x"] * 12,
                 "compartment_duration": list(range(1, 12 + 1)),
                 "cohort_portion": total_pop,
             }
@@ -196,7 +190,7 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
         with catch_warnings(record=True) as w:
             pdf_list = [0.1, 0.2, 0.3]
             transitions_interpolation(
-                "from", "to", pdf_list, None, 5, "x", False, False
+                "from", "to", pdf_list, None, 5, "type", "x", False, False
             )
             self.assertTrue(len(w) == 1)  # check that one warning present
             self.assertTrue("PDF not weakly decreasing." in str(w[0].message))

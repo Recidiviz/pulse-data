@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
 )
@@ -32,9 +33,7 @@ class TransitionTable:
     def __init__(
         self,
         policy_time_step: int,
-        policy_list: List[
-            Any
-        ],  # this should actually be List[SparkPolicy] but I can't say that without circular dependence
+        policy_list: List[SparkPolicy],
         previous_tables: Optional[Dict[int, pd.DataFrame]] = None,
     ):
         """
