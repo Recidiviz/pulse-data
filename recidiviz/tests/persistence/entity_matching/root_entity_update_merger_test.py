@@ -459,6 +459,181 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
             expected_result=expected_result, result=result
         )
 
+    def test_merge_people_different_flat_fields(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            birthdate=datetime.date(1990, 1, 1),
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            gender=StateGender.MALE,
+            gender_raw_text="M",
+        )
+
+        # Expect the flat fields are combined because it is a root entity
+        expected_result = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            birthdate=datetime.date(1990, 1, 1),
+            gender=StateGender.MALE,
+            gender_raw_text="M",
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_different_flat_fields_new_enum_and_raw_text_null(
+        self,
+    ) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=StateResidencyStatus.PERMANENT,
+            residency_status_raw_text="P",
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            birthdate=datetime.date(1990, 1, 1),
+        )
+
+        # Expect the flat fields are combined because it is a root entity. Residency
+        # info should not be overwritten.
+        expected_result = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=StateResidencyStatus.PERMANENT,
+            residency_status_raw_text="P",
+            birthdate=datetime.date(1990, 1, 1),
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_different_flat_fields_new_enum_null(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=StateResidencyStatus.PERMANENT,
+            residency_status_raw_text=None,
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=None,
+            residency_status_raw_text="X",
+        )
+
+        # Expect residency status and raw text updated as a pair since one is non-null
+        expected_result = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=None,
+            residency_status_raw_text="X",
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_different_flat_fields_new_raw_text_null(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=None,
+            residency_status_raw_text="X",
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=StateResidencyStatus.PERMANENT,
+            residency_status_raw_text=None,
+        )
+
+        # Expect residency status and raw text updated as a pair since one is non-null
+        expected_result = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            residency_status=StateResidencyStatus.PERMANENT,
+            residency_status_raw_text=None,
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_staff_different_flat_fields(self) -> None:
+        previous_root_entity = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+            ],
+            email="foo@bar.com",
+        )
+        entity_updates = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+            ],
+            full_name='{"given_names": "DONALD", "middle_names": "", "name_suffix": "", "surname": "DUCK"}',
+        )
+
+        # Expect the flat fields are combined because it is a root entity
+        expected_result = make_staff(
+            external_ids=[
+                make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+            ],
+            email="foo@bar.com",
+            full_name='{"given_names": "DONALD", "middle_names": "", "name_suffix": "", "surname": "DUCK"}',
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
+    def test_merge_people_different_flat_fields_enums(self) -> None:
+        previous_root_entity = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            birthdate=datetime.date(1990, 1, 1),
+            gender_raw_text="M",
+        )
+        entity_updates = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            gender=StateGender.MALE,
+        )
+
+        # Expect the flat fields are combined because it is a root entity,
+        # but the values of gender/gender_raw_text taken as a pair.
+        expected_result = make_person(
+            external_ids=[_EXTERNAL_ID_ENTITY_1],
+            birthdate=datetime.date(1990, 1, 1),
+            gender=StateGender.MALE,
+        )
+
+        result = self.merger.merge_root_entity_trees(
+            old_root_entity=previous_root_entity,
+            root_entity_updates=entity_updates,
+        )
+
+        self.assert_expected_matches_result(
+            expected_result=expected_result, result=result
+        )
+
     @parameterized.expand(
         [
             (None, "X", StateResidencyStatus.PERMANENT, None),
@@ -1081,22 +1256,3 @@ class TestRootEntityUpdateMerger(unittest.TestCase):
                 old_root_entity=previous_root_entity,
                 root_entity_updates=entity_updates,
             )
-
-    def test_optional_enums_with_none_values_are_detected_atomically_in_fields_to_update(
-        self,
-    ) -> None:
-        entity_updates = make_person(
-            external_ids=[attr.evolve(_EXTERNAL_ID_ENTITY_1)],
-            birthdate=datetime.date(1995, 10, 19),
-            gender=StateGender.MALE,
-            gender_raw_text="M",
-            races=[
-                make_person_race(race=StateRace.BLACK, race_raw_text="Black"),
-            ],
-            residency_status=None,
-            residency_status_raw_text=None,
-        )
-        # pylint: disable=protected-access
-        fields_to_update = self.merger._flat_fields_to_merge(entity_updates)
-        self.assertIn("residency_status", fields_to_update)
-        self.assertIn("residency_status_raw_text", fields_to_update)
