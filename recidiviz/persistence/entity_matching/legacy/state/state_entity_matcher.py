@@ -51,7 +51,6 @@ from recidiviz.persistence.entity_matching.legacy.entity_matching_types import (
     MatchedEntities,
     MatchResults,
 )
-from recidiviz.persistence.entity_matching.legacy.monitoring import increment_error
 from recidiviz.persistence.entity_matching.legacy.state.state_matching_utils import (
     EntityFieldType,
     add_child_to_entity,
@@ -520,7 +519,6 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
                         e.entity_name,
                         ingested_entity.get_entity_name(),
                     )
-                    increment_error(e.entity_name)
                     error_count += 1
                 else:
                     raise e

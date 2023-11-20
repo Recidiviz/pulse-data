@@ -21,12 +21,10 @@ has been shipped to all states.
 """
 # pylint: disable=no-name-in-module
 import logging
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional
 
 import psycopg2
 import sqlalchemy
-from opencensus.stats import aggregation, measure, view
-from opencensus.stats.measurement_map import MeasurementMap
 from psycopg2.errorcodes import SERIALIZATION_FAILURE
 
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -42,57 +40,8 @@ from recidiviz.persistence.persistence_utils import (
     SchemaRootEntityT,
     should_persist,
 )
-from recidiviz.utils import metadata, monitoring, trace
+from recidiviz.utils import metadata, trace
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-
-m_root_entities = measure.MeasureInt(
-    "persistence/num_people", "The number of root entities persisted", "1"
-)
-m_aborts = measure.MeasureInt(
-    "persistence/num_aborts", "The number of aborted writes", "1"
-)
-m_errors = measure.MeasureInt("persistence/num_errors", "The number of errors", "1")
-m_retries = measure.MeasureInt(
-    "persistence/num_transaction_retries",
-    "The number of transaction retries due to serialization failures",
-    "1",
-)
-root_entities_persisted_view = view.View(
-    "recidiviz/persistence/num_people",
-    "The sum of root entities persisted",
-    [monitoring.TagKey.REGION, monitoring.TagKey.PERSISTED],
-    m_root_entities,
-    aggregation.SumAggregation(),
-)
-aborted_writes_view = view.View(
-    "recidiviz/persistence/num_aborts",
-    "The sum of aborted writes to persistence",
-    [monitoring.TagKey.REGION, monitoring.TagKey.REASON],
-    m_aborts,
-    aggregation.SumAggregation(),
-)
-errors_persisted_view = view.View(
-    "recidiviz/persistence/num_errors",
-    "The sum of errors in the persistence layer",
-    [monitoring.TagKey.REGION, monitoring.TagKey.ERROR],
-    m_errors,
-    aggregation.SumAggregation(),
-)
-retried_transactions_view = view.View(
-    "recidiviz/persistence/num_transaction_retries",
-    "The total number of transaction retries",
-    [monitoring.TagKey.REGION],
-    m_retries,
-    aggregation.SumAggregation(),
-)
-monitoring.register_views(
-    [
-        root_entities_persisted_view,
-        aborted_writes_view,
-        errors_persisted_view,
-        retried_transactions_view,
-    ]
-)
 
 OVERALL_THRESHOLD = "overall_threshold"
 ENUM_THRESHOLD = "enum_threshold"
@@ -140,10 +89,6 @@ def _should_abort(
 
     if conversion_result.protected_class_errors:
         logging.error("Aborting because there was an error regarding a protected class")
-        with monitoring.measurements(
-            {monitoring.TagKey.REASON: "PROTECTED_CLASS_ERROR"}
-        ) as m:
-            m.measure_int_put(m_aborts, 1)
         return True
 
     error_thresholds = _get_thresholds_for_region(region_code)
@@ -243,13 +188,10 @@ def _log_error(
         error_thresholds[threshold_type],
         error_ratio,
     )
-    with monitoring.measurements({monitoring.TagKey.REASON: threshold_type}) as m:
-        m.measure_int_put(m_aborts, 1)
 
 
 def retry_transaction(
     session: Session,
-    measurements: MeasurementMap,
     txn_body: Callable[[Session], bool],
     max_retries: Optional[int],
 ) -> bool:
@@ -264,36 +206,31 @@ def retry_transaction(
         False, if the transaction was aborted by `txn_body`.
     """
     num_retries = 0
-    try:
-        while True:
-            try:
-                should_continue = txn_body(session)
+    while True:
+        try:
+            should_continue = txn_body(session)
 
-                if not should_continue:
-                    session.rollback()
-                    return should_continue
+            if not should_continue:
+                session.rollback()
+                return should_continue
 
-                session.commit()
-                return True
-            except sqlalchemy.exc.DBAPIError as e:
-                session.rollback()
-                if max_retries and num_retries >= max_retries:
-                    raise
-                if (
-                    isinstance(e.orig, psycopg2.OperationalError)
-                    and e.orig.pgcode == SERIALIZATION_FAILURE
-                ):
-                    logging.info(
-                        "Retrying transaction due to serialization failure: %s", e
-                    )
-                    num_retries += 1
-                    continue
+            session.commit()
+            return True
+        except sqlalchemy.exc.DBAPIError as e:
+            session.rollback()
+            if max_retries and num_retries >= max_retries:
                 raise
-            except Exception:
-                session.rollback()
-                raise
-    finally:
-        measurements.measure_int_put(m_retries, num_retries)
+            if (
+                isinstance(e.orig, psycopg2.OperationalError)
+                and e.orig.pgcode == SERIALIZATION_FAILURE
+            ):
+                logging.info("Retrying transaction due to serialization failure: %s", e)
+                num_retries += 1
+                continue
+            raise
+        except Exception:
+            session.rollback()
+            raise
 
 
 @trace.span
@@ -302,7 +239,7 @@ def write_entities(
     ingest_metadata: IngestMetadata,
     total_root_entities: int,
     run_txn_fn: Callable[
-        [Session, MeasurementMap, Callable[[Session], bool], Optional[int]], bool
+        [Session, Callable[[Session], bool], Optional[int]], bool
     ] = retry_transaction,
 ) -> bool:
     """If should_persist(), persist each object in the |conversion_result|. If an object
@@ -318,121 +255,103 @@ def write_entities(
     the session.
     """
 
-    mtags: Dict[str, Union[bool, str]] = {
-        monitoring.TagKey.SHOULD_PERSIST: should_persist(),
-        monitoring.TagKey.PERSISTED: False,
-    }
-    with monitoring.measurements(mtags) as measurements:
-        logging.info(
-            "Converted [%s] root_entities with [%s] enum_parsing_errors, [%s]"
-            " general_parsing_errors, and [%s] protected_class_errors",
-            total_root_entities,
-            conversion_result.enum_parsing_errors,
-            conversion_result.general_parsing_errors,
-            conversion_result.protected_class_errors,
+    logging.info(
+        "Converted [%s] root_entities with [%s] enum_parsing_errors, [%s]"
+        " general_parsing_errors, and [%s] protected_class_errors",
+        total_root_entities,
+        conversion_result.enum_parsing_errors,
+        conversion_result.general_parsing_errors,
+        conversion_result.protected_class_errors,
+    )
+
+    if _should_abort(
+        total_root_entities=total_root_entities,
+        conversion_result=conversion_result,
+        region_code=ingest_metadata.region,
+    ):
+        #  TODO(#1665): remove once dangling PERSIST session investigation
+        #   is complete.
+        logging.info("_should_abort_ was true after converting root entities")
+        return False
+
+    if not should_persist():
+        return True
+
+    @trace.span
+    def match_and_write_root_entities(session: Session) -> bool:
+        logging.info("Starting entity matching")
+
+        entity_matching_output = entity_matching.match(
+            session=session,
+            region=ingest_metadata.region,
+            root_entity_cls=conversion_result.root_entity_cls,
+            schema_root_entity_cls=conversion_result.schema_root_entity_cls,
+            ingested_root_entities=conversion_result.root_entities,
+            ingest_metadata=ingest_metadata,
         )
-        measurements.measure_int_put(m_root_entities, total_root_entities)
+        output_root_entities = entity_matching_output.root_entities
+        total_root_entities = entity_matching_output.total_root_entities
+        logging.info(
+            "Completed entity matching with [%s] errors",
+            entity_matching_output.error_count,
+        )
+        logging.info(
+            "Completed entity matching and have [%s] total root entities "
+            "to commit to DB",
+            len(output_root_entities),
+        )
+        if _should_abort(
+            total_root_entities=total_root_entities,
+            conversion_result=conversion_result,
+            region_code=ingest_metadata.region,
+            entity_matching_errors=entity_matching_output.error_count,
+        ):
+            #  TODO(#1665): remove once dangling PERSIST session
+            #   investigation is complete.
+            logging.info("_should_abort_ was true after entity matching")
+            return False
+
+        database_invariant_errors = database_invariant_validator.validate_invariants(
+            session,
+            ingest_metadata.region,
+            schema_root_entity_cls=conversion_result.schema_root_entity_cls,
+            output_root_entities=output_root_entities,
+        )
 
         if _should_abort(
             total_root_entities=total_root_entities,
             conversion_result=conversion_result,
             region_code=ingest_metadata.region,
+            database_invariant_errors=database_invariant_errors,
         ):
-            #  TODO(#1665): remove once dangling PERSIST session investigation
-            #   is complete.
-            logging.info("_should_abort_ was true after converting root entities")
+            logging.info("_should_abort_ was true after database invariant validation")
             return False
 
-        if not should_persist():
-            return True
-
-        @trace.span
-        def match_and_write_root_entities(session: Session) -> bool:
-            logging.info("Starting entity matching")
-
-            entity_matching_output = entity_matching.match(
-                session=session,
-                region=ingest_metadata.region,
-                root_entity_cls=conversion_result.root_entity_cls,
-                schema_root_entity_cls=conversion_result.schema_root_entity_cls,
-                ingested_root_entities=conversion_result.root_entities,
-                ingest_metadata=ingest_metadata,
-            )
-            output_root_entities = entity_matching_output.root_entities
-            total_root_entities = entity_matching_output.total_root_entities
-            logging.info(
-                "Completed entity matching with [%s] errors",
+        if entity_matching_output.error_count:
+            logging.warning(
+                "Proceeding with persist step even though there are [%s] entity "
+                "matching errors ([%s] error ratio).",
                 entity_matching_output.error_count,
+                entity_matching_output.error_count / total_root_entities,
             )
-            logging.info(
-                "Completed entity matching and have [%s] total root entities "
-                "to commit to DB",
-                len(output_root_entities),
+        if database_invariant_errors:
+            logging.warning(
+                "Proceeding with persist step even though there are [%s] database "
+                "invariant errors ([%s] error ratio).",
+                database_invariant_errors,
+                database_invariant_errors / total_root_entities,
             )
-            if _should_abort(
-                total_root_entities=total_root_entities,
-                conversion_result=conversion_result,
-                region_code=ingest_metadata.region,
-                entity_matching_errors=entity_matching_output.error_count,
-            ):
-                #  TODO(#1665): remove once dangling PERSIST session
-                #   investigation is complete.
-                logging.info("_should_abort_ was true after entity matching")
-                return False
-
-            database_invariant_errors = (
-                database_invariant_validator.validate_invariants(
-                    session,
-                    ingest_metadata.region,
-                    schema_root_entity_cls=conversion_result.schema_root_entity_cls,
-                    output_root_entities=output_root_entities,
-                )
-            )
-
-            if _should_abort(
-                total_root_entities=total_root_entities,
-                conversion_result=conversion_result,
-                region_code=ingest_metadata.region,
-                database_invariant_errors=database_invariant_errors,
-            ):
-                logging.info(
-                    "_should_abort_ was true after database invariant validation"
-                )
-                return False
-
-            if entity_matching_output.error_count:
-                logging.warning(
-                    "Proceeding with persist step even though there are [%s] entity "
-                    "matching errors ([%s] error ratio).",
-                    entity_matching_output.error_count,
-                    entity_matching_output.error_count / total_root_entities,
-                )
-            if database_invariant_errors:
-                logging.warning(
-                    "Proceeding with persist step even though there are [%s] database "
-                    "invariant errors ([%s] error ratio).",
-                    database_invariant_errors,
-                    database_invariant_errors / total_root_entities,
-                )
-            return True
-
-        try:
-            with SessionFactory.using_database(
-                ingest_metadata.database_key, autocommit=False
-            ) as session:
-                if not run_txn_fn(
-                    session, measurements, match_and_write_root_entities, 5
-                ):
-                    return False
-            mtags[monitoring.TagKey.PERSISTED] = True
-        except Exception as e:
-            logging.exception(
-                "An exception was raised in write(): [%s]", type(e).__name__
-            )
-            # Record the error type that happened and increment the counter
-            mtags[monitoring.TagKey.ERROR] = type(e).__name__
-            measurements.measure_int_put(m_errors, 1)
-            raise
-
-        logging.info("Successfully wrote to the database")
         return True
+
+    try:
+        with SessionFactory.using_database(
+            ingest_metadata.database_key, autocommit=False
+        ) as session:
+            if not run_txn_fn(session, match_and_write_root_entities, 5):
+                return False
+    except Exception as e:
+        logging.exception("An exception was raised in write(): [%s]", type(e).__name__)
+        raise
+
+    logging.info("Successfully wrote to the database")
+    return True

@@ -137,12 +137,7 @@ def exponential_buckets(start: float, factor: float, count: int) -> List[float]:
 class TagKey:
     """Scope to hold tag key constants"""
 
-    ENTITY_TYPE = "entity_type"
-    ERROR = "error"
-    PERSISTED = "persisted"
-    REASON = "reason"
     REGION = "region"
-    SHOULD_PERSIST = "should_persist"
     STATUS = "status"
 
     # Ingest related tags
