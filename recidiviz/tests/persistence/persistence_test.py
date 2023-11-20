@@ -28,7 +28,6 @@ from unittest import TestCase
 import pytest
 import sqlalchemy
 from mock import Mock, patch
-from opencensus.stats.measurement_map import MeasurementMap
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_person import StateGender, StateRace
@@ -805,7 +804,6 @@ def _get_run_transaction_block_commit_fn(
 ):
     def run_transaction_block_commit(
         session: Session,
-        _m: MeasurementMap,
         txn_body: Callable[[Session], bool],
         _r: Optional[int],
     ) -> bool:
@@ -837,7 +835,6 @@ def _get_run_transaction_after_other_fn(
 ):
     def run_transaction_after_other(
         session: Session,
-        _m: MeasurementMap,
         txn_body: Callable[[Session], bool],
         _r: Optional[int],
     ) -> bool:
@@ -1003,7 +1000,6 @@ def _run_transactions_interleaved(
 def _get_run_transaction_fn(transaction_id: int):
     def run_transaction(
         session: Session,
-        _m: MeasurementMap,
         txn_body: Callable[[Session], bool],
         _r: Optional[int],
     ) -> bool:
