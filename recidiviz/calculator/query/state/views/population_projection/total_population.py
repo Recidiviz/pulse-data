@@ -33,15 +33,15 @@ TOTAL_POPULATION_QUERY_TEMPLATE = """
         ELSE compartment
       END AS compartment,
       state_code,
-      gender,
+      gender as simulation_group,
       DATE_TRUNC(CURRENT_DATE, MONTH) AS run_date,
       time_step.run_date AS time_step,
-      COUNT(*) as total_population
+      COUNT(*) as compartment_population
     FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
     JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` AS time_step
         ON time_step.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
     WHERE gender IN ('FEMALE', 'MALE')
-    GROUP BY compartment, state_code, gender, run_date, time_step
+    GROUP BY compartment, state_code, simulation_group, run_date, time_step
     """
 
 TOTAL_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

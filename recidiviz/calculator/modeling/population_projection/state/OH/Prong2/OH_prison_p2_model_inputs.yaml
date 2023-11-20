@@ -15,9 +15,9 @@ reference_date: 2020.0
 
 time_step: 0.08333333
 
-disaggregation_axes:
-  - crime
-  - crime_type
+#disaggregation_axes:
+#  - crime
+#  - crime_type
 
 data_inputs:
   big_query_simulation_tag: OH_SB3_prong2
