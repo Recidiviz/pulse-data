@@ -84,10 +84,10 @@ term_crit_date AS (
                 WHEN term_duration_days_original_sentence/365 > 5
                     THEN DATE_ADD(
                         start_date,
-                        INTERVAL SAFE_CAST(ROUND(term_duration_days*2/3) AS INT64) DAY)
+                        INTERVAL SAFE_CAST(TRUNC(term_duration_days*2/3, 0) AS INT64) DAY)
                 ELSE DATE_ADD(
                     start_date,
-                    INTERVAL SAFE_CAST(ROUND(term_duration_days*1/2) AS INT64) DAY)
+                    INTERVAL SAFE_CAST(TRUNC(term_duration_days*1/2, 0) AS INT64) DAY)
             END critical_date,
             IF(term_duration_days_original_sentence/365 > 5, '2/3', '1/2') AS x_portion_served,
         FROM term_wdur_cte
