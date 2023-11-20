@@ -36,7 +36,7 @@ class TestInitializer(unittest.TestCase):
             pd.DataFrame(
                 {
                     "time_step": [6, 7, 8] * 2 + [7, 8, 9] * 2,
-                    "simulation_group": ["FEMALE"] * 3
+                    "gender": ["FEMALE"] * 3
                     + ["MALE"] * 3
                     + ["FEMALE"] * 3
                     + ["MALE"] * 3,
@@ -47,7 +47,7 @@ class TestInitializer(unittest.TestCase):
                     "cohort_population": [3.0, 0.0, 4.0] * 4,
                 }
             )
-            .sort_values(by=["simulation_group"])
+            .sort_values(by=["gender"])
             .reset_index(drop=True)
         )
         # Remove the rows with 0 total population and test that the method adds them back
@@ -56,6 +56,7 @@ class TestInitializer(unittest.TestCase):
         ]
         hydrated_admissions = Initializer.fully_hydrate_admissions(
             admissions_data=admissions_missing_events,
+            disaggregation_axes=["gender"],
             microsim=True,
         )
         assert_frame_equal(hydrated_admissions, test_admissions)

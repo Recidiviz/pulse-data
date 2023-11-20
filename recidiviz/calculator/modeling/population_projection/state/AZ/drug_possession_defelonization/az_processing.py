@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 
 # Change to the path needed on your machine
-path = "recidiviz/calculator/modeling/population_projection/state/AZ/drug_possession_defelonization/"
+path = ""
 yaml_file = "AZ_drug_possession_defelonization.yaml"
 
 # Available at
@@ -198,7 +198,7 @@ probation_prison_transitions = (
 probation_prison_transitions["compartment"] = "probation"
 probation_prison_transitions["outflow_to"] = "release"
 probation_prison_transitions.rename(
-    {"person_id": "cohort_portion", "Dispo Type/Class": "simulation_group"},
+    {"person_id": "total_population", "Dispo Type/Class": "crime_type"},
     axis=1,
     inplace=True,
 )
@@ -237,19 +237,19 @@ doc_transitions_df["compartment_duration"] = np.clip(
 )
 doc_transitions_df["compartment"] = "prison"
 doc_transitions_df["outflow_to"] = "release"
-doc_transitions_df["simulation_group"] = "x"
+doc_transitions_df["crime_type"] = "x"
 doc_transitions_df = doc_transitions_df.groupby(
-    ["compartment", "outflow_to", "compartment_duration", "simulation_group"],
+    ["compartment", "outflow_to", "compartment_duration", "crime_type"],
     as_index=False,
 )["person_id"].count()
-doc_transitions_df.rename({"person_id": "cohort_portion"}, axis=1, inplace=True)
+doc_transitions_df.rename({"person_id": "total_population"}, axis=1, inplace=True)
 doc_transitions_df[
     [
         "compartment",
         "outflow_to",
-        "cohort_portion",
+        "total_population",
         "compartment_duration",
-        "simulation_group",
+        "crime_type",
     ]
 ].to_csv("prison_baseline_transitions.csv", index=False)
 
@@ -300,10 +300,7 @@ for probation_date in population_dates:
         & (probation_date <= probation_table["estimated_probation_end_date"])
     )
     probation_population.append(
-        {
-            "time_step": probation_date,
-            "compartment_population": open_probation_population,
-        }
+        {"time_step": probation_date, "total_population": open_probation_population}
     )
 
 probation_population_df = pd.DataFrame(probation_population)
@@ -330,21 +327,21 @@ doc_trans = doc_trans[doc_trans > OUTLIER_TOLERANCE].reset_index()
 
 prob_trans = prob_trans.rename(
     columns={
-        "probation_total_years": "cohort_portion",
+        "probation_total_years": "total_population",
         "index": "compartment_duration",
     }
 )
 doc_trans = doc_trans.rename(
-    columns={"doc_total_days": "cohort_portion", "index": "compartment_duration"}
+    columns={"doc_total_days": "total_population", "index": "compartment_duration"}
 )
 
-prob_trans["compartment"], prob_trans["outflow_to"], prob_trans["simulation_group"] = [
+prob_trans["compartment"], prob_trans["outflow_to"], prob_trans["crime_type"] = [
     "probation",
     "release",
     "x",
 ]
 print(prob_trans.sort_values(by="compartment_duration"))
-doc_trans["compartment"], doc_trans["outflow_to"], doc_trans["simulation_group"] = [
+doc_trans["compartment"], doc_trans["outflow_to"], doc_trans["crime_type"] = [
     "prison",
     "release",
     "x",
@@ -356,9 +353,9 @@ transitions = pd.concat([prob_trans, doc_trans]).reindex(
     columns=[
         "compartment",
         "outflow_to",
-        "cohort_portion",
+        "total_population",
         "compartment_duration",
-        "simulation_group",
+        "crime_type",
     ]
 )
 

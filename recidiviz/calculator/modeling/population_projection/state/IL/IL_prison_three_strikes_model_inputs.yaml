@@ -17,8 +17,8 @@ reference_date: 2011.0
 time_step: 0.083333333
 # one month
 
-#disaggregation_axes:
-#  - race
+disaggregation_axes:
+  - race
 
 data_inputs:
   big_query_simulation_tag: IL_prison_three_strikes

@@ -14,6 +14,9 @@ reference_date: 2019.0
 
 time_step: 1.0
 
+disaggregation_axes:
+  - crime_type
+
 data_inputs:
   big_query_simulation_tag: AZ_drug_defelonization
 

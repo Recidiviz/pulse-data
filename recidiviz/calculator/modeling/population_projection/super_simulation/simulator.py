@@ -17,7 +17,7 @@
 """SuperSimulation composed object for initializing simulations."""
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -81,13 +81,13 @@ class Simulator:
                 {data_inputs.compartments_architecture.keys()}"
             )
 
-        simulation_groups = list(data_inputs.transitions_data.simulation_group.unique())
         for policy in policy_list:
-            if policy.simulation_group not in simulation_groups:
-                raise ValueError(
-                    f"Subgroup '{policy.simulation_group}' in policy function not found in simulation groups \
-                    {simulation_groups}"
-                )
+            for sub_group in policy.sub_population.keys():
+                if sub_group not in data_inputs.disaggregation_axes:
+                    raise ValueError(
+                        f"Subgroup '{sub_group}' in policy function not found in simulation disaggregations \
+                        {data_inputs.disaggregation_axes}"
+                    )
 
         self._reset_pop_simulations()
 
@@ -242,8 +242,8 @@ class Simulator:
 
         return self.pop_simulations
 
-    def get_simulation_groups(self) -> List[str]:
-        return list(list(self.pop_simulations.values())[0].sub_simulations.keys())
+    def get_sub_group_ids_dict(self) -> Dict[str, Dict[str, Any]]:
+        return list(self.pop_simulations.values())[0].sub_group_ids_dict
 
     def graph_outflow_results(self) -> None:
         outflow_sims = {

@@ -75,14 +75,14 @@ class TestInitialization(TestTransitionTable):
         compartment_policies = [
             SparkPolicy(
                 policy_fn=TransitionTable.test_retroactive_policy,
-                simulation_group="test_compartment",
+                sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=True,
             ),
             SparkPolicy(
                 policy_fn=TransitionTable.test_non_retroactive_policy,
-                simulation_group="test_compartment",
+                sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=False,
@@ -144,7 +144,7 @@ class TestPolicyFunctions(TestTransitionTable):
         compartment_policies = [
             SparkPolicy(
                 policy_fn=TransitionTable.test_retroactive_policy,
-                simulation_group="test_compartment",
+                sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=False,
@@ -185,12 +185,15 @@ class TestPolicyFunctions(TestTransitionTable):
         alternate_data.cohort_portion = 10 - alternate_data.cohort_portion
 
         policy_function = SparkPolicy(
+            policy_fn=partial(
+                TransitionTable.use_alternate_transitions_data,
+                alternate_historical_transitions=alternate_data,
+                retroactive=False,
+            ),
             spark_compartment="test_compartment",
-            simulation_group="test_population",
+            sub_population={"sub_group": "test_population"},
             policy_time_step=5,
             apply_retroactive=False,
-            policy_fn=TransitionTable.use_alternate_transitions_data,
-            alternate_transitions_data=alternate_data,
         )
 
         transition_table = TransitionTable(
@@ -221,7 +224,7 @@ class TestPolicyFunctions(TestTransitionTable):
         compartment_policies = [
             SparkPolicy(
                 policy_fn=TransitionTable.test_retroactive_policy,
-                simulation_group="test_compartment",
+                sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=True,
@@ -232,7 +235,7 @@ class TestPolicyFunctions(TestTransitionTable):
                     outflows=["prison"],
                     time_step=MIN_POSSIBLE_POLICY_TIME_STEP,
                 ),
-                simulation_group="test_compartment",
+                sub_population={"compartment": "test_compartment"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=True,
@@ -291,18 +294,18 @@ class TestPolicyFunctions(TestTransitionTable):
 
         compartment_policies = [
             SparkPolicy(
+                policy_mul,
                 "test_compartment",
-                "test_population",
+                {"sub_group": "test_population"},
                 5,
                 False,
-                policy_mul,
             ),
             SparkPolicy(
+                policy_add,
                 "test_compartment",
-                "test_population",
+                {"sub_group": "test_population"},
                 5,
                 False,
-                policy_add,
             ),
         ]
 
@@ -332,7 +335,7 @@ class TestPolicyFunctions(TestTransitionTable):
                     reduction_type="+",
                     retroactive=True,
                 ),
-                simulation_group="test_population",
+                sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=True,
@@ -379,7 +382,7 @@ class TestPolicyFunctions(TestTransitionTable):
                     affected_LOS=[None, 5],
                     retroactive=False,
                 ),
-                simulation_group="test_population",
+                sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=False,
@@ -414,7 +417,7 @@ class TestPolicyFunctions(TestTransitionTable):
                     reallocation_type="+",
                     retroactive=True,
                 ),
-                simulation_group="test_population",
+                sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=True,
@@ -476,7 +479,7 @@ class TestPolicyFunctions(TestTransitionTable):
                     release_outflow="jail",
                     retroactive=False,
                 ),
-                simulation_group="test_population",
+                sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=False,
@@ -532,7 +535,7 @@ class TestPolicyFunctions(TestTransitionTable):
                     affected_fraction=0.5,
                     retroactive=False,
                 ),
-                simulation_group="test_population",
+                sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
                 policy_time_step=5,
                 apply_retroactive=False,
@@ -580,7 +583,7 @@ class TestPolicyFunctions(TestTransitionTable):
                     reduction_type="+",
                     retroactive=False,
                 ),
-                simulation_group="test_population",
+                sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
                 policy_time_step=policy_time_step,
                 apply_retroactive=False,
@@ -646,7 +649,7 @@ class TestPolicyFunctions(TestTransitionTable):
                     reduction_type="+",
                     retroactive=False,
                 ),
-                simulation_group="test_population",
+                sub_population={"sub_group": "test_population"},
                 spark_compartment="test_compartment",
                 policy_time_step=policy_time_step,
                 apply_retroactive=False,

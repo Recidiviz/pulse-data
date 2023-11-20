@@ -45,7 +45,8 @@ def transitions_uniform(
     prob: float,
     round_digits: int = SIG_FIGS,
     max_periods: int = 119,
-    simulation_group: str = "x",
+    disagg_label: str = "crime_type",
+    disagg_value: str = "x",
 ) -> pd.DataFrame:
     """
     Creates dataframe with transitions table probabilities
@@ -68,7 +69,10 @@ def transitions_uniform(
                     0.5 * `mean_los`. Must be odd (why? Because with uniform dist,
                     only possible to maintain expected LOS with odd max_periods).
 
-    simulation_group    String label for simulation_group field, default is 'x'.
+    disagg_label    String label for the disaggregation axis name, default is
+                    'crime_type'
+
+    disagg_value    String label for disaggregation axis, default is 'x'.
 
     Example
     -------
@@ -77,7 +81,7 @@ def transitions_uniform(
     transitions_uniform('parole', 'release',
                         12, 0.8, 5, 119, 'x') produces a dataframe with:
 
-    compartment, outflow_to, simulation_group, compartment_duration, cohort_portion
+    compartment, outflow_to, crime_type, compartment_duration, cohort_portion
     parole,release,x,1,0.03478
     parole,release,x,2,0.03478
     ...
@@ -90,7 +94,7 @@ def transitions_uniform(
 
     # -- assertions --
     # check types
-    for s in [c_from, c_to, simulation_group]:
+    for s in [c_from, c_to, disagg_label, disagg_value]:
         if not isinstance(s, str):
             raise ValueError(f"{s} not type str.")
     for i in [mean_los, round_digits, max_periods]:
@@ -127,7 +131,7 @@ def transitions_uniform(
         {
             "compartment": c_from,
             "outflow_to": c_to,
-            "simulation_group": simulation_group,
+            disagg_label: disagg_value,
             "compartment_duration": months,
             "cohort_portion": [prob_u] * len(months),
         },
@@ -316,7 +320,8 @@ def transitions_lognorm(
     p_x_months: float,
     last_month: int = 120,
     round_digits: int = SIG_FIGS,
-    simulation_group: str = "x",
+    disagg_label: str = "crime_type",
+    disagg_value: str = "x",
     plot: bool = False,
 ) -> pd.DataFrame:
     """
@@ -347,7 +352,9 @@ def transitions_lognorm(
 
     round_digits  Number of places after decimal to round transition probabilities
 
-    simulation_group  String label for simulation_group field, default is 'x'.
+    disagg_label  String label for the disaggregation axis name, default is 'crime_type'
+
+    disagg_value  String label for disaggregation axis, default is 'x'.
 
     plot          If True, plots transition probabilities over time
 
@@ -360,9 +367,9 @@ def transitions_lognorm(
     mean, std = get_lognorm_params() # 20.0, 1.5
 
     transitions_lognorm('parole', 'release', mean, std, x_months, p_x_months,
-                        120, 5, 'x', False) produces a dataframe with:
+                        120, 5, 'crime_type', 'x', False) produces a dataframe with:
 
-    compartment, outflow_to, simulation_group, compartment_duration, cohort_portion
+    compartment, outflow_to, crime_type, compartment_duration, cohort_portion
     parole,release,x,1,0.01838
     parole,release,x,2,0.02078
     ...
@@ -372,7 +379,7 @@ def transitions_lognorm(
 
     # -- assertions --
     # check types
-    for s in [c_from, c_to, simulation_group]:
+    for s in [c_from, c_to, disagg_label, disagg_value]:
         if not isinstance(s, str):
             raise ValueError(f"{s} not type str.")
     for i in [x_months, last_month, round_digits]:
@@ -417,7 +424,7 @@ def transitions_lognorm(
         {
             "compartment": c_from,
             "outflow_to": c_to,
-            "simulation_group": simulation_group,
+            disagg_label: disagg_value,
             "compartment_duration": months,
             "cohort_portion": pdf,
         },
@@ -448,7 +455,8 @@ def transitions_interpolation(
     pdf_list: Sequence[float],
     year_list: Optional[Sequence[int]] = None,
     round_digits: int = SIG_FIGS,
-    simulation_group: str = "x",
+    disagg_label: str = "crime_type",
+    disagg_value: str = "x",
     uniform: bool = False,
     plot: bool = False,
 ) -> pd.DataFrame:
@@ -480,8 +488,8 @@ def transitions_interpolation(
     round_digits : int
         Number of places after decimal to round transition probabilities
 
-    simulation_group : str
-        String label for simulation_group field, default is 'x'.
+    disagg_label : str
+        String label for disaggregation axis, default is 'x'.
 
     uniform : bool
         If True, use uniform transitions within year, default is False.
@@ -576,7 +584,7 @@ def transitions_interpolation(
         {
             "compartment": c_from,
             "outflow_to": c_to,
-            "simulation_group": simulation_group,
+            disagg_label: disagg_value,
             "compartment_duration": months,
             "cohort_portion": pdf_output,
         },

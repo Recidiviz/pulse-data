@@ -16,8 +16,8 @@ compartments_architecture:
 reference_date: 2021.0
 time_step: 1.0
 
-#disaggregation_axes:
-#  - age
+disaggregation_axes:
+  - age
 
 data_inputs:
   big_query_simulation_tag: FL_SB_1378

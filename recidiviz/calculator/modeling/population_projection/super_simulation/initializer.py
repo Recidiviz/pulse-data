@@ -58,6 +58,8 @@ class SimulationInputData:
 
     # Compartment names and types (full, shell) that make up this simulated system
     compartments_architecture: Dict[str, str]
+    # Columns that define the groupings for separate SubSimulations
+    disaggregation_axes: List[str]
     # True if the simulation inputs have microsim data:
     # case-level, current population, remaining length of stay for each FullCompartment
     microsim: bool
@@ -133,76 +135,15 @@ class Initializer:
         user_inputs: UserInputs,
         data_inputs_params: Union[MacroSimulationDataInputs, MicroSimulationDataInputs],
         compartments_architecture: Dict[str, str],
+        disaggregation_axes: List[str],
         microsim: bool,
     ) -> None:
         self.time_converter = time_converter
 
         self.user_inputs = user_inputs
         self.data_inputs = self._raw_data_inputs_from_data_inputs(
-            data_inputs_params, compartments_architecture, microsim
+            data_inputs_params, compartments_architecture, disaggregation_axes, microsim
         )
-
-    def _validate_data_inputs(self) -> None:
-        """Make sure admissions, transitions, population tables have expected columns and no Null values"""
-        if self.data_inputs.transitions_data.columns != pd.Index(
-            [
-                "compartment_duration",
-                "compartment",
-                "outflow_to",
-                "cohort_fraction",
-                "simulation_group",
-            ]
-        ):
-            raise ValueError(
-                f"transitions_data table has incorrect columns. "
-                f"Expected:['compartment_duration', 'compartment', 'outflow_to', 'cohort_fraction', 'simulation_group']"
-                f"Actual:{self.data_inputs.transitions_data.columns}"
-            )
-        if self.data_inputs.transitions_data.isnull().any().any():
-            raise ValueError(
-                f"Null value(s) in transitions data:"
-                f"{self.data_inputs.transitions_data[self.data_inputs.transitions_data.isnull().any()]}"
-            )
-
-        if self.data_inputs.admissions_data.columns != pd.Index(
-            [
-                "time_step",
-                "compartment",
-                "admission_to",
-                "cohort_population",
-                "simulation_group",
-            ]
-        ):
-            raise ValueError(
-                f"admissions_data table has incorrect columns. "
-                f"Expected:['time_step', 'compartment', 'admission_to', 'cohort_population', 'simulation_group']"
-                f"Actual:{self.data_inputs.admissions_data.columns}"
-            )
-        if self.data_inputs.admissions_data.isnull().any().any():
-            raise ValueError(
-                f"Null value(s) in admissions data:"
-                f"{self.data_inputs.admissions_data[self.data_inputs.admissions_data.isnull().any()]}"
-            )
-
-        if self.data_inputs.population_data.columns != pd.Index(
-            ["time_step", "compartment", "compartment_population", "simulation_group"]
-        ):
-            raise ValueError(
-                f"population_data table has incorrect columns. "
-                f"Expected:['time_step', 'compartment', 'compartment_population', 'simulation_group']"
-                f"Actual:{self.data_inputs.population_data.columns}"
-            )
-        # drop simulation_group col because population data is allowed to not be disaggregated
-        if (
-            self.data_inputs.population_data.drop("simulation_group", axis=1)
-            .isnull()
-            .any()
-            .any()
-        ):
-            raise ValueError(
-                f"Null value(s) in population data:"
-                f"{self.data_inputs.population_data[self.data_inputs.population_data.isnull().any()]}"
-            )
 
     def get_first_relevant_time_step(
         self, first_relevant_time_step_override: Optional[int] = None
@@ -246,6 +187,7 @@ class Initializer:
             run_date = run_date_override or self.user_inputs.run_date
             return SimulationInputData(
                 compartments_architecture=self.data_inputs.compartments_architecture,
+                disaggregation_axes=self.data_inputs.disaggregation_axes,
                 microsim=self.data_inputs.microsim,
                 admissions_data=self.data_inputs.admissions_data[
                     self.data_inputs.admissions_data.run_date == run_date
@@ -322,11 +264,12 @@ class Initializer:
     @staticmethod
     def fully_hydrate_admissions(
         admissions_data: pd.DataFrame,
+        disaggregation_axes: List[str],
         microsim: bool,
     ) -> pd.DataFrame:
         """Return the admissions_data dataframe with 0s filled in for missing time steps."""
-        # Handle sparse admissions events where a simulation group is missing data for some time steps
-        fully_hydrated_columns = ["simulation_group", "compartment", "admission_to"]
+        # Handle sparse admissions events where a disaggregation is missing data for some time steps
+        fully_hydrated_columns = disaggregation_axes + ["compartment", "admission_to"]
 
         if microsim:
             fully_hydrated_columns.append("run_date")
@@ -400,16 +343,17 @@ class Initializer:
         self,
         data_inputs_params: Union[MacroSimulationDataInputs, MicroSimulationDataInputs],
         compartments_architecture: Dict[str, str],
+        disaggregation_axes: List[str],
         microsim: bool,
     ) -> SimulationInputData:
         """Load the simulation data from BigQuery into RawDataInputs"""
         if microsim and isinstance(data_inputs_params, MicroSimulationDataInputs):
             return self._microsim_data_inputs_to_raw_data_inputs(
-                data_inputs_params, compartments_architecture
+                data_inputs_params, compartments_architecture, disaggregation_axes
             )
         if not microsim and isinstance(data_inputs_params, MacroSimulationDataInputs):
             return self._macrosim_data_inputs_to_raw_data_inputs(
-                data_inputs_params, compartments_architecture
+                data_inputs_params, compartments_architecture, disaggregation_axes
             )
         raise TypeError(
             f"Cannot initialize {microsim=} with {type(data_inputs_params)=}!"
@@ -419,6 +363,7 @@ class Initializer:
         self,
         big_query_params: MicroSimulationDataInputs,
         compartments_architecture: Dict[str, str],
+        disaggregation_axes: List[str],
     ) -> SimulationInputData:
         """Helper function for _raw_data_inputs_from_data_inputs()"""
 
@@ -448,11 +393,13 @@ class Initializer:
         sparse_admissions = read_table_data(big_query_params.admissions_data)
         admissions_data = self.fully_hydrate_admissions(
             sparse_admissions,
+            disaggregation_axes,
             True,
         )
 
         return SimulationInputData(
             compartments_architecture=compartments_architecture,
+            disaggregation_axes=disaggregation_axes,
             microsim=True,
             admissions_data=admissions_data,
             population_data=read_table_data(big_query_params.population_data),
@@ -472,6 +419,7 @@ class Initializer:
         self,
         data_inputs_params: MacroSimulationDataInputs,
         compartments_architecture: Dict[str, str],
+        disaggregation_axes: List[str],
     ) -> SimulationInputData:
         """Helper function for _raw_data_inputs_from_data_inputs()"""
 
@@ -483,9 +431,11 @@ class Initializer:
 
         return SimulationInputData(
             compartments_architecture=compartments_architecture,
+            disaggregation_axes=disaggregation_axes,
             microsim=False,
             admissions_data=self.fully_hydrate_admissions(
                 read_table_data(spark_bq_utils.ADMISSIONS_DATA_TABLE_NAME),
+                disaggregation_axes,
                 False,
             ),
             population_data=read_table_data(spark_bq_utils.POPULATION_DATA_TABLE_NAME),

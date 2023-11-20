@@ -55,7 +55,7 @@ class Validator:
     ) -> pd.DataFrame:
         """Calculates baseline admissions error."""
         self.output_data["baseline_admissions_error"] = pd.DataFrame(
-            columns=["compartment", "outflow", "simulation_group", "year", "error"]
+            columns=["compartment", "outflow", "subgroup", "year", "error"]
         )
         for compartment, outflow_to in validation_pairs.items():
             for sub_group in self.pop_simulations[
@@ -69,7 +69,7 @@ class Validator:
                 error = error.rename({"time_step": "year", outflow_to: "error"}, axis=1)
                 error["outflow"] = outflow_to
                 error["compartment"] = compartment
-                error["simulation_group"] = sub_group
+                error["subgroup"] = sub_group
 
                 self.output_data["baseline_admissions_error"] = pd.concat(
                     [self.output_data["baseline_admissions_error"], error]

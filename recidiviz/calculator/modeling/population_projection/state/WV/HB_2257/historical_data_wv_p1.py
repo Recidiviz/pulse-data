@@ -68,16 +68,15 @@ transitions_data = transitions_data[
 # use uniform recidivism instead of single event
 transitions_data = transitions_data[transitions_data.outflow_to != "prison_new_crime"]
 
-# commenting out for mypy --> this file out of date
-# transitions_data = transitions_data.append(
-#     transitions_uniform(
-#         c_from="release",
-#         c_to="prison_new_crime",
-#         mean_los=36,
-#         prob=new_crime_revocation,
-#         disagg_label="age",
-#     )
-# )
+transitions_data = transitions_data.append(
+    transitions_uniform(
+        c_from="release",
+        c_to="prison_new_crime",
+        mean_los=36,
+        prob=new_crime_revocation,
+        disagg_label="age",
+    )
+)
 
 # switch tech revs to leapfrog to full_release
 transitions_data.loc[
