@@ -57,8 +57,6 @@ class SuperSimulationFactory:
 
         time_step = initialization_params.pop("time_step", float)
 
-        disaggregation_axes = initialization_params.pop("disaggregation_axes", list)
-
         data_inputs_raw = cls._get_valid_data_inputs(initialization_params)
 
         (
@@ -87,7 +85,6 @@ class SuperSimulationFactory:
             user_inputs,
             data_inputs_raw,
             compartments_architecture,
-            disaggregation_axes,
             microsim,
         )
 
@@ -107,7 +104,6 @@ class SuperSimulationFactory:
             "reference_date",
             "time_step",
             "data_inputs",
-            "disaggregation_axes",
             "per_year_costs",
         }
         given_inputs = set(initialization_params.keys())

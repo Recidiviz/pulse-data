@@ -18,7 +18,7 @@
 # pylint: disable=unused-argument
 
 from time import time
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple
 
 import pandas as pd
 
@@ -33,7 +33,6 @@ class PopulationSimulation:
     def __init__(
         self,
         sub_simulations: Dict[str, SubSimulation],
-        sub_group_ids_dict: Dict[str, Dict[str, Any]],
         population_data: pd.DataFrame,
         projection_time_steps: int,
         first_relevant_time_step: int,
@@ -45,7 +44,6 @@ class PopulationSimulation:
         validation_transitions_data: Optional[pd.DataFrame] = None,
     ) -> None:
         self.sub_simulations = sub_simulations
-        self.sub_group_ids_dict = sub_group_ids_dict
         self.population_data = population_data
         self.projection_time_steps = projection_time_steps
         self.current_time_step = first_relevant_time_step
@@ -71,9 +69,9 @@ class PopulationSimulation:
         self.step_forward(self.projection_time_steps)
 
         #  Store the results in one Dataframe
-        for simulation_group_id, simulation_obj in self.sub_simulations.items():
+        for simulation_tag, simulation_obj in self.sub_simulations.items():
             sub_population_projection = simulation_obj.get_population_projections()
-            sub_population_projection["simulation_group"] = simulation_group_id
+            sub_population_projection["simulation_group"] = simulation_tag
             self.population_projections = pd.concat(
                 [self.population_projections, sub_population_projection]
             )
@@ -102,22 +100,19 @@ class PopulationSimulation:
 
     def _collect_subsimulation_populations(self) -> pd.DataFrame:
         """Helper function for step_forward(). Collects subgroup populations for total population scaling."""
-        disaggregation_axes = list(list(self.sub_group_ids_dict.values())[0].keys())
         populations_df = pd.DataFrame()
-        for simulation_id, simulation_attr in self.sub_group_ids_dict.items():
-            sim_pops = self.sub_simulations[simulation_id].get_current_populations()
-            sim_pops[disaggregation_axes] = pd.Series(simulation_attr)
+        for simulation_tag, simulation_obj in self.sub_simulations.items():
+            sim_pops = simulation_obj.get_current_populations()
+            sim_pops["simulation_group"] = simulation_tag
             populations_df = pd.concat([populations_df, sim_pops])
         return populations_df
 
     def _cross_flow(self) -> None:
         """Helper function for step_forward. Transfer cohorts between SubSimulations"""
         cross_simulation_flows = pd.DataFrame()
-        for sub_group_id, simulation_obj in self.sub_simulations.items():
+        for simulation_tag, simulation_obj in self.sub_simulations.items():
             simulation_cohorts = simulation_obj.cross_flow()
-            simulation_cohorts = self._subgroup_id_to_attributes(
-                simulation_cohorts, sub_group_id
-            )
+            simulation_cohorts["simulation_group"] = simulation_tag
             cross_simulation_flows = pd.concat(
                 [cross_simulation_flows, simulation_cohorts], sort=True
             )
@@ -136,54 +131,33 @@ class PopulationSimulation:
         if cross_simulation_flows.empty:
             raise ValueError("Cross simulation flows cannot be empty")
 
-        cross_simulation_flows = self._attributes_to_subgroup_id(cross_simulation_flows)
-
         # collapse cohorts in the same group with the same start_time_step
         cross_simulation_flows.index.name = "start_time_step"
         cross_simulation_flows = (
             cross_simulation_flows.groupby(
-                ["start_time_step", "compartment", "sub_group_id"]
+                ["start_time_step", "compartment", "simulation_group"]
             )
             .sum()
-            .reset_index(["compartment", "sub_group_id"])
+            .reset_index(["compartment", "simulation_group"])
         )
 
-        for sub_group_id, simulation_obj in self.sub_simulations.items():
+        for simulation_tag, simulation_obj in self.sub_simulations.items():
             sub_group_cohorts = cross_simulation_flows[
-                cross_simulation_flows.sub_group_id == sub_group_id
-            ].drop("sub_group_id", axis=1)
+                cross_simulation_flows.simulation_group == simulation_tag
+            ].drop("simulation_group", axis=1)
             simulation_obj.ingest_cross_simulation_cohorts(sub_group_cohorts)
-
-    def _subgroup_id_to_attributes(
-        self, cohorts_df: pd.DataFrame, simulation_id: str
-    ) -> pd.DataFrame:
-        """Helper function for _cross_flow(). Adds columns for each disaggregation axis to a cohorts df"""
-        output_df = cohorts_df.copy()
-        for axis, attribute in self.sub_group_ids_dict[simulation_id].items():
-            output_df[axis] = attribute
-        return output_df
-
-    def _attributes_to_subgroup_id(self, cohorts_df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Helper function for _cross_flow().
-        Replaces columns for each disaggregation axis with one column for simulation id.
-        """
-        output_df = cohorts_df.copy()
-        disaggregation_axes = list(self.sub_group_ids_dict.values())[0].keys()
-        output_df["sub_group_id"] = output_df[disaggregation_axes].sum(axis=1)
-        output_df = output_df.drop(disaggregation_axes, axis=1)
-        return output_df
 
     def _scale_populations(self) -> None:
         """Helper function for step_forward. Scale populations in each compartment to match historical data."""
-        disaggregation_axes = list(self.sub_group_ids_dict.values())[0].keys()
-        population_disagg_axes = [
-            axis
-            for axis in disaggregation_axes
-            if axis in self.population_data.columns
-            and self.population_data[axis].notnull().all()
-        ]
-        population_df_sort_indices = ["compartment"] + population_disagg_axes
+
+        disaggregated_population_data = (
+            "simulation_group" in self.population_data.columns
+            and self.population_data["simulation_group"].notnull().all()
+        )
+
+        population_df_sort_indices = ["compartment"]
+        if disaggregated_population_data:
+            population_df_sort_indices.append("simulation_group")
 
         time_step_population_data = self.population_data[
             self.population_data.time_step == self.current_time_step
@@ -206,77 +180,29 @@ class PopulationSimulation:
             {"compartment_population": "scale_factor"}, axis=1
         )
 
-        for simulation_id, simulation_attr in self.sub_group_ids_dict.items():
-            agg_simulation_attr = {
-                i: j for i, j in simulation_attr.items() if i in population_disagg_axes
-            }
-            simulation_scale_factors = scale_factors[
-                (scale_factors[population_disagg_axes] == agg_simulation_attr).all(
-                    axis=1
-                )
-            ].drop(population_disagg_axes, axis=1)
-            self.sub_simulations[simulation_id].scale_cohorts(
+        for simulation_tag, simulation_obj in self.sub_simulations.items():
+            if disaggregated_population_data:
+                simulation_scale_factors = scale_factors[
+                    scale_factors["simulation_group"] == simulation_tag
+                ].drop("simulation_group", axis=1)
+            else:
+                simulation_scale_factors = scale_factors
+            simulation_obj.scale_cohorts(
                 simulation_scale_factors, self.current_time_step
             )
-
-    def calculate_transition_error(
-        self, validation_data: Optional[pd.DataFrame] = None
-    ) -> pd.DataFrame:
-        """
-        validation_data should be a DataFrame with exactly:
-            one column per axis of disaggregation, 'time_step', 'count', 'compartment', 'outflow_to'
-        """
-
-        self.validation_transition_data = (
-            validation_data or self.validation_transition_data
-        )
-
-        aggregated_results = self.validation_transition_data.copy()
-        aggregated_results["count"] = 0
-
-        for sub_group_id, sub_group_obj in self.sub_simulations.items():
-            for (
-                compartment_tag,
-                compartment,
-            ) in sub_group_obj.simulation_compartments.items():
-                for time_step in set(self.validation_transition_data["time_step"]):
-                    index_locator = aggregated_results[
-                        aggregated_results["time_step"] == time_step
-                    ]
-                    sub_group_id_dict = self.sub_group_ids_dict[sub_group_id].copy()
-                    sub_group_id_dict["compartment"] = compartment_tag
-                    for axis in sub_group_id_dict:
-                        if axis in index_locator.columns:
-                            keepers = [
-                                sub_group_id_dict[axis] in i
-                                for i in index_locator[axis]
-                            ]
-                            index_locator = index_locator[keepers]
-
-                    validation_indices = {
-                        outflow: index
-                        for index, outflow in index_locator["outflow_to"].iteritems()
-                    }
-
-                    for outflow in validation_indices:
-                        aggregated_results.loc[
-                            validation_indices[outflow], "count"
-                        ] += compartment.outflows[time_step][outflow]
-        return aggregated_results
 
     def get_outflows(self, collapse_compartments: bool = False) -> pd.DataFrame:
         """Return the projected outflows (transitions)"""
 
         # Generate the outflows df by looping through each sub-simulation & compartment
         outflows_df = pd.DataFrame()
-        for sub_group_id, sub_group_obj in self.sub_simulations.items():
+        for simulation_tag, simulation_obj in self.sub_simulations.items():
             for (
                 compartment_tag,
                 compartment,
-            ) in sub_group_obj.simulation_compartments.items():
+            ) in simulation_obj.simulation_compartments.items():
                 # Copy the outflows df from the compartment and add the compartment and
                 # simulation group information
-                sub_group_id_dict = self.sub_group_ids_dict[sub_group_id]
                 compartment_outflows = compartment.outflows.copy()
                 compartment_outflows.index.name = "outflow_to"
                 compartment_outflows.columns.name = "time_step"
@@ -287,16 +213,7 @@ class PopulationSimulation:
                 compartment_outflows["compartment"] = compartment_tag
 
                 # Add a column for the `simulation_group` from the id dict
-                group_name = [
-                    value
-                    for key, value in sub_group_id_dict.items()
-                    if key != "compartment"
-                ]
-                if len(group_name) != 1:
-                    raise ValueError(
-                        f"Cannot determine `simulation_group` name from {sub_group_id_dict}"
-                    )
-                compartment_outflows["simulation_group"] = group_name[0]
+                compartment_outflows["simulation_group"] = simulation_tag
 
                 # Append the outflows for this simulation group/compartment
                 outflows_df = pd.concat([outflows_df, compartment_outflows])
@@ -312,19 +229,19 @@ class PopulationSimulation:
 
     def gen_arima_output_df(self) -> pd.DataFrame:
         arima_output_df = pd.DataFrame()
-        for simulation_group, sub_simulation in self.sub_simulations.items():
+        for simulation_tag, sub_simulation in self.sub_simulations.items():
             output_df_sub = pd.concat(
-                {simulation_group: sub_simulation.gen_arima_output_df()},
+                {simulation_tag: sub_simulation.gen_arima_output_df()},
                 names=["simulation_group"],
             )
-            arima_output_df = arima_output_df.append(output_df_sub)
+            arima_output_df = pd.concat([arima_output_df, output_df_sub])
         return arima_output_df
 
     def gen_scale_factors_df(self) -> pd.DataFrame:
         scale_factors_df = pd.DataFrame()
-        for subgroup_name, subgroup_obj in self.sub_simulations.items():
-            subgroup_scale_factors = subgroup_obj.get_scale_factors()
-            subgroup_scale_factors["sub-group"] = subgroup_name
+        for simulation_tag, simulation_obj in self.sub_simulations.items():
+            subgroup_scale_factors = simulation_obj.get_scale_factors()
+            subgroup_scale_factors["simulation_group"] = simulation_tag
             scale_factors_df = pd.concat([scale_factors_df, subgroup_scale_factors])
         return scale_factors_df
 
@@ -461,8 +378,8 @@ class PopulationSimulation:
         cross_simulation_flows: pd.DataFrame, current_time_step: int
     ) -> pd.DataFrame:
         """
-        Change sub_group_id for each row to whatever simulation that cohort should move to in the next time_step.
-        identity: all cohorts maintain the same sub_group_id
+        Change simulation_tag for each row to whatever simulation that cohort should move to in the next time_step.
+        identity: all cohorts maintain the same simulation_tag
         """
         return cross_simulation_flows
 
@@ -471,7 +388,7 @@ class PopulationSimulation:
         cross_simulation_flows: pd.DataFrame, current_time_step: int
     ) -> pd.DataFrame:
         """
-        Change sub_group_id for each row to whatever simulation that cohort should move to in the next time_step.
+        Change simulation_tag for each row to whatever simulation that cohort should move to in the next time_step.
         recidiviz_schema: assumes use of 'age' disaggregation axis with values that match recidiviz BQ "age" column.
         Should only be used with a monthly time step
         """
@@ -491,11 +408,11 @@ class PopulationSimulation:
 
         new_cohorts = cross_simulation_flows.copy()
 
-        new_cohorts.loc[transitioners_idx, "age"] = new_cohorts.loc[
-            transitioners_idx, "age"
+        new_cohorts.loc[transitioners_idx, "simulation_group"] = new_cohorts.loc[
+            transitioners_idx, "simulation_group"
         ].map(ages)
 
-        null_value_indices = new_cohorts[new_cohorts.age.isnull()].index
+        null_value_indices = new_cohorts[new_cohorts.simulation_group.isnull()].index
         if len(null_value_indices) > 0:
             raise ValueError(
                 f"Unrecognized age groups: {cross_simulation_flows[null_value_indices]}"

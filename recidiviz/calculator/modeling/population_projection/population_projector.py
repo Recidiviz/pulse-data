@@ -158,7 +158,7 @@ class PopulationProjector:
             & (historical_population.time_step.between(first_time_step, last_time_step))
         ]
         historical_population = historical_population[
-            ["compartment", "gender", "time_step", "compartment_population"]
+            ["compartment", "simulation_group", "time_step", "compartment_population"]
         ].copy()
 
         # Format the data to match the other tables

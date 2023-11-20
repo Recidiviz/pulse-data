@@ -42,9 +42,9 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
             CASE
                 WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated THEN 'INCARCERATION - RE-INCARCERATION'
                 ELSE compartment
-            END AS outflow_to,
-            gender,
-            COUNT(1) as total_population,
+            END AS admission_to,
+            gender as simulation_group,
+            COUNT(1) as cohort_population,
         FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized`
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
             ON start_date < run_date
@@ -60,11 +60,11 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
     -- if scaled to more states
     WHERE CASE
           WHEN compartment = 'PRETRIAL'
-            THEN outflow_to IN ('INCARCERATION - GENERAL', 'SUPERVISION - PROBATION',
+            THEN admission_to IN ('INCARCERATION - GENERAL', 'SUPERVISION - PROBATION',
               'INCARCERATION - TREATMENT_IN_PRISON', 'SUPERVISION_OUT_OF_STATE - PROBATION', 
               'SUPERVISION - INFORMAL_PROBATION', 'INVESTIGATION - INVESTIGATION')
           WHEN compartment = 'LIBERTY'
-            THEN outflow_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON',
+            THEN admission_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON',
               'INCARCERATION - GENERAL', 'INCARCERATION - RE-INCARCERATION',
               'INVESTIGATION - INVESTIGATION')
           ELSE FALSE

@@ -29,8 +29,12 @@ ADDITIONAL NOTES:
 """
 
 import logging
+import os
+import sys
 
 import pandas as pd
+
+sys.path.insert(0, os.path.relpath("../../../../../../.."))
 
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
@@ -40,7 +44,7 @@ from recidiviz.utils.yaml_dict import YAMLDict
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.INFO)
 
-AZ_DIRECTORY_PATH = "recidiviz/calculator/modeling/population_projection/state/AZ/drug_possession_defelonization/"
+AZ_DIRECTORY_PATH = ""
 
 # Get the simulation tag from the model inputs config
 yaml_file_path = AZ_DIRECTORY_PATH + "AZ_drug_possession_defelonization.yaml"
@@ -50,25 +54,42 @@ simulation_tag = data_inputs.pop("big_query_simulation_tag", str)
 
 # Input files are available at
 # https://docs.google.com/spreadsheets/d/1MNvNklMWBjpTfRD05Y2rGPQ33eoM-kDRpzFHzqLf1Tk/edit#gid=0
-outflows = pd.read_csv(
+admissions = pd.read_csv(
     AZ_DIRECTORY_PATH + "AZ Possession Defelonization Data - Copy of outflows.csv"
 )
-outflows["total_population"] = outflows["total_population"].astype(float)
+admissions.rename(
+    {
+        "total_population": "cohort_population",
+        "outflow_to": "admission_to",
+        "crime_type": "simulation_group",
+    },
+    axis=1,
+    inplace=True,
+)
+admissions["cohort_population"] = admissions["cohort_population"].astype(float)
 
 baseline_transitions = pd.read_csv(
     AZ_DIRECTORY_PATH + "AZ Possession Defelonization Data - Copy of transitions.csv"
 )
+baseline_transitions.rename(
+    {"total_population": "cohort_portion", "crime_type": "simulation_group"},
+    axis=1,
+    inplace=True,
+)
 baseline_transitions["compartment_duration"] = baseline_transitions[
     "compartment_duration"
 ].astype(float)
-baseline_transitions["total_population"] = baseline_transitions[
-    "total_population"
-].astype(float)
-
-total_population = pd.read_csv(
-    "AZ Possession Defelonization Data - Copy of population.csv"
+baseline_transitions["cohort_portion"] = baseline_transitions["cohort_portion"].astype(
+    float
 )
-total_population["total_population"] = total_population["total_population"].astype(
+
+population = pd.read_csv("AZ Possession Defelonization Data - Copy of population.csv")
+population.rename(
+    {"total_population": "compartment_population", "crime_type": "simulation_group"},
+    axis=1,
+    inplace=True,
+)
+population["compartment_population"] = population["compartment_population"].astype(
     float
 )
 
@@ -76,8 +97,8 @@ total_population["total_population"] = total_population["total_population"].asty
 upload_spark_model_inputs(
     project_id="recidiviz-staging",
     simulation_tag=simulation_tag,
-    admissions_data_df=outflows,
+    admissions_data_df=admissions,
     transitions_data_df=baseline_transitions,
-    population_data_df=total_population,
+    population_data_df=population,
     yaml_path=yaml_file_path,
 )

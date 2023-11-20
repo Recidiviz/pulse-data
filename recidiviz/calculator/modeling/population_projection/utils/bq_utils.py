@@ -22,7 +22,7 @@ import pandas as pd
 from pytz import timezone
 
 # Constants for the Policy Simulation Output data
-SPARK_OUTPUT_DATASET = "population_projection_output_data"
+SPARK_OUTPUT_DATASET = "spark_public_output_data"
 
 COST_AVOIDANCE_TABLE_NAME = "cost_avoidance_estimate_raw"
 COST_AVOIDANCE_NON_CUMULATIVE_TABLE_NAME = "cost_avoidance_non_cumulative_estimate_raw"
