@@ -358,13 +358,13 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_isMatch_defaultCompareNoExternalIds(self) -> None:
         charge = schema.StateCharge()
         charge_another = schema.StateCharge()
-        self.assertTrue(
+        # No External IDs means we are using placeholders, which are deprecated
+        with self.assertRaises(ValueError):
             _is_match(
                 ingested_entity=charge,
                 db_entity=charge_another,
                 field_index=self.field_index,
             )
-        )
         charge.description = "description"
         self.assertFalse(
             _is_match(
@@ -647,6 +647,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
         is_commitment_from_supervision(None)
 
+    # Placeholders are deprecated
     def test_nonnullFieldsEntityMatch_placeholder(self) -> None:
         charge = schema.StateCharge(
             state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
@@ -654,13 +655,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         charge_another = schema.StateCharge(
             state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
         )
-        self.assertFalse(
+        with self.assertRaises(ValueError):
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
                 field_index=self.field_index,
             )
-        )
 
     def test_nonnullFieldsEntityMatch_externalIdCompare(self) -> None:
         charge = schema.StateCharge(
@@ -671,13 +671,13 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         charge_another = schema.StateCharge(
             state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
         )
-        self.assertFalse(
+        # placeholder entities with no external ID are deprecated
+        with self.assertRaises(ValueError):
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
                 field_index=self.field_index,
             )
-        )
         charge_another.external_id = _EXTERNAL_ID
         self.assertTrue(
             nonnull_fields_entity_match(
@@ -736,7 +736,8 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             charges=[schema.StateCharge()],
             person=schema.StatePerson(),
         )
-        self.assertTrue(is_placeholder(entity, field_index=self.field_index))
+        with self.assertRaises(ValueError):
+            is_placeholder(entity, field_index=self.field_index)
         entity.county_code = "county_code"
         self.assertFalse(is_placeholder(entity, field_index=self.field_index))
 
@@ -747,7 +748,8 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         person = schema.StatePerson(
             state_code=_STATE_CODE, incarceration_sentences=[incarceration_sentence]
         )
-        self.assertTrue(is_placeholder(person, field_index=self.field_index))
+        with self.assertRaises(ValueError):
+            is_placeholder(person, field_index=self.field_index)
         person.external_ids.append(
             schema.StatePersonExternalId(
                 state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
@@ -759,7 +761,8 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         entity = schema.StateIncarcerationSentence(
             incarceration_type=StateIncarcerationType.STATE_PRISON.value
         )
-        self.assertTrue(is_placeholder(entity, field_index=self.field_index))
+        with self.assertRaises(ValueError):
+            is_placeholder(entity, field_index=self.field_index)
 
         entity.incarceration_type_raw_text = "PRISON"
         self.assertFalse(is_placeholder(entity, field_index=self.field_index))
@@ -769,7 +772,9 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         for db_entity_cls in get_state_database_entities():
             print(db_entity_cls)
             for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
-                self.assertFalse(can_atomically_merge_entity(entity, field_index))
+                with self.assertRaises(ValueError):
+                    is_placeholder(entity, field_index)
+                    can_atomically_merge_entity(entity, field_index)
             for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
                 self.assertFalse(can_atomically_merge_entity(entity, field_index))
             for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:
