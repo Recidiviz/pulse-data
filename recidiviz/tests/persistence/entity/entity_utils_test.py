@@ -225,7 +225,6 @@ class TestCoreEntityFieldIndex(TestCase):
         with patch.object(
             CoreEntityFieldIndex, "_get_entity_fields_with_type_slow"
         ) as mock_get_fields:
-
             mock_get_fields.side_effect = mock_get_fields_fn
             fields = self.field_index.get_all_core_entity_fields(
                 StatePerson, EntityFieldType.BACK_EDGE
@@ -271,7 +270,6 @@ class TestCoreEntityFieldIndex(TestCase):
         with patch.object(
             CoreEntityFieldIndex, "_get_all_database_entity_fields_slow"
         ) as mock_get_fields:
-
             mock_get_fields.side_effect = mock_get_fields_fn
             fields = self.field_index.get_all_core_entity_fields(
                 schema.StatePerson, EntityFieldType.BACK_EDGE
@@ -1060,10 +1058,8 @@ class TestEntityUtils(TestCase):
                 )
             for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
                 self.assertIsInstance(entity, db_entity_cls)
-                self.assertTrue(
-                    is_placeholder(entity, field_index),
-                    f"Found entity that should be a placeholder but does not [{entity}]",
-                )
+                with self.assertRaises(ValueError):
+                    is_placeholder(entity, field_index)
 
             if db_entity_cls not in REFERENCE_ENTITY_EXAMPLES:
                 self.fail(

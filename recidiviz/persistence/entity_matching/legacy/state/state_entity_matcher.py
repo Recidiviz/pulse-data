@@ -166,8 +166,17 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
     def _is_placeholder(self, entity: DatabaseEntity) -> bool:
         """Entity matching-specific wrapper around is_placeholder() that checks that
         we didn't fail to add any types to the non_placeholder_ingest_types set.
+
+        Note: Placeholder entities are deprecated outside the context of StateEntityMatcher,
+        which generates them in matching contexts.
         """
-        entity_is_placeholder = is_placeholder(entity, self.field_index)
+        try:
+            # is_placeholder can only return False or raise a ValueError
+            # we allow its use here to allow further entity matching,
+            # as placeholder entities may be created in that process
+            entity_is_placeholder = is_placeholder(entity, self.field_index)
+        except ValueError:
+            return True
         entity_cls = type(entity)
         if (
             not entity_is_placeholder

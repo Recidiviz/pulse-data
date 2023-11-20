@@ -503,10 +503,12 @@ def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> boo
     if isinstance(entity, (state_schema.StateStaff, state_entities.StateStaff)):
         if entity.external_ids:
             return False
-        return True
+        raise ValueError(f"Placeholder entities are deprecated. {entity=}")
 
-    set_flat_fields = get_explicitly_set_flat_fields(entity, field_index)
-    return not bool(set_flat_fields)
+    if not get_explicitly_set_flat_fields(entity, field_index):
+        raise ValueError(f"Placeholder entities are deprecated. {entity=}")
+
+    return False
 
 
 def is_reference_only_entity(
