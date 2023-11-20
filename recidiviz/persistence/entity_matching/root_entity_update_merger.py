@@ -292,7 +292,7 @@ class RootEntityUpdateMerger:
         # If an enum field is updated, always update the corresponding raw text field
         # (and vice versa), even if one of the values is null.
         new_fields = set()
-        for field_name in all_fields:
+        for field_name in fields_to_update:
             if (
                 attr_field_type_for_field_name(
                     new_or_updated_entity.__class__, field_name
