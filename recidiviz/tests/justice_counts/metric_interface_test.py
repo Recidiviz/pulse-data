@@ -3178,7 +3178,13 @@ class TestMetricInterface(TestCase):
                     "race": dim.race,
                     "value": 10,
                     "description": None,
-                    "contexts": [],
+                    "contexts": [
+                        {
+                            "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                            "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                            "value": None,
+                        }
+                    ],
                 }
                 for dim in RaceAndEthnicity
             ],

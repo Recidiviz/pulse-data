@@ -142,29 +142,16 @@ class AggregatedDimension:
     ) -> Optional[Dict[DimensionBase, List[Context]]]:
         """
         Returns a dictionary of dimension members as keys. The values of the dictionary
-        are lists of Contexts. A given dimension member can potentially have 2 contexts:
-            - if the dimension member has an includes/excludes, that dimension member
-            will have the 'includes excludes description' context. This is used in the UI
-            to provide text boxes to describe additional data alements included in the
-            agency's metric definition.
+        are lists of Contexts. A given dimension member can potentially have 1 of 2 contexts:
             - OTHER and UNKNOWN dimension members can have the 'additional context' context. This is
              used in the UI to provide additional context text boxes for OTHER and UNKNOWN dimensions
+            - all other dimension members will have the 'includes excludes description' context.
+            This is used in the UI to provide text boxes to describe additional data alements included in the
+            agency's metric definition.
         """
         dim_to_contexts: Dict[DimensionBase, List[Context]] = {}
         for member in self.dimension:  # type: ignore[attr-defined]
             context_lst = []
-            if (
-                self.dimension_to_includes_excludes is not None
-                and self.dimension_to_includes_excludes.get(member) is not None
-            ):
-                context_lst.append(
-                    Context(
-                        key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
-                        value_type=ValueType.TEXT,
-                        label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                        required=False,
-                    )
-                )
             member_name = member.name.strip()
             if member_name in ["OTHER", "UNKNOWN"]:
                 context_lst.append(
@@ -175,11 +162,17 @@ class AggregatedDimension:
                         required=False,
                     )
                 )
-            if len(context_lst) > 0:
-                dim_to_contexts[member] = context_lst
-        if bool(dim_to_contexts) is True:
-            return dim_to_contexts
-        return None
+            else:
+                context_lst.append(
+                    Context(
+                        key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                        value_type=ValueType.TEXT,
+                        label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                        required=False,
+                    )
+                )
+            dim_to_contexts[member] = context_lst
+        return dim_to_contexts
 
     def dimension_identifier(self) -> str:
         return self.dimension.dimension_identifier()

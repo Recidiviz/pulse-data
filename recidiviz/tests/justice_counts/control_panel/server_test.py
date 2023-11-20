@@ -1582,11 +1582,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             response = self.client.get(f"/api/agencies/{agency.id}/metrics")
             # Check that GET request suceeded
             self.assertEqual(response.status_code, 200)
-            # For all dimensions, their 'context' field has 4 possible cases
-            # dimension has an empty contexts lists (no dimension_to_includes_excludes, not an OTHER or UNKNOWN member)
-            # dimension has singleton list [{"key": "ADDITIONAL_CONTEXT", "value": None}] (no dimension_to_includes_excludes, is an OTHER or UNKNOWN member)
-            # dimension has singleton list [{"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (has dimension_to_includes_excludes, is not an OTHER or UNKNOWN member)
-            # dimension has list of 2 contexts [{"key": "ADDITIONAL_CONTEXT", "value": None}, {"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (has dimension_to_includes_excludes and is an OTHER or UNKNOWN member)
+            # For all dimensions, their 'context' field has 2 possible cases
+            # dimension has singleton list [{"key": "ADDITIONAL_CONTEXT", "value": None}] (is an OTHER or UNNOWN member)
+            # dimension has singleton list [{"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (is not an OTHER or UNKNOWN member)
             if response.json is not None:
                 for settings in response.json:
                     for disaggregations in settings["disaggregations"]:
@@ -1597,12 +1595,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             dimension_enum = dimension_class(
                                 dimension["key"]
                             )  # type: ignore[abstract]
-                            includes_excludes = dimension.get("includes_excludes", [])
-                            if (
-                                dimension_enum.name.strip() in ["OTHER", "UNKNOWN"]  # type: ignore[attr-defined]
-                                and includes_excludes != []
-                            ):
-                                # OTHER or UNKNOWN dimension within the aggregation, and dimension has includes/excludes
+                            if dimension_enum.name.strip() in [  # type: ignore[attr-defined]
+                                "OTHER",
+                                "UNKNOWN",
+                            ]:
+                                # OTHER or UNKNOWN dimension within the aggregation
                                 self.assertEqual(
                                     dimension["contexts"],
                                     [
@@ -1611,40 +1608,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                             "value": None,
                                             "label": "Please describe what data is being included in this breakdown.",
                                         },
-                                        {
-                                            "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                                            "value": None,
-                                            "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                                        },
-                                    ],
-                                )
-                            elif dimension_enum.name.strip() in ["OTHER", "UNKNOWN"]:  # type: ignore[attr-defined]
-                                # OTHER or UNKNOWN dimension within the aggregation, dimension does not have includes/excludes
-                                self.assertEqual(
-                                    dimension["contexts"],
-                                    [
-                                        {
-                                            "key": "ADDITIONAL_CONTEXT",
-                                            "value": None,
-                                            "label": "Please describe what data is being included in this breakdown.",
-                                        }
-                                    ],
-                                )
-                            elif includes_excludes != []:
-                                # not an OTHER or UNKNOWN dimension, and dimension has includes/excludes
-                                self.assertEqual(
-                                    dimension["contexts"],
-                                    [
-                                        {
-                                            "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                                            "value": None,
-                                            "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
-                                        }
                                     ],
                                 )
                             else:
-                                # When dimension_to_contexts is None and not an OTHER member within the aggregation
-                                self.assertEqual(dimension["contexts"], [])
+                                # not OTHER or UNKNOWN dimension within the aggregation
+                                self.assertEqual(
+                                    dimension["contexts"],
+                                    [
+                                        {
+                                            "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                            "value": None,
+                                            "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                                        }
+                                    ],
+                                )
 
     def test_update_and_get_metric_settings(self) -> None:
         self.session.add_all(
