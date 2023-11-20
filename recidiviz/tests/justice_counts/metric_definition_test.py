@@ -94,11 +94,20 @@ class TestAggregatedDimension(TestCase):
         # Does not have an OTHER or UNKNOWN member
         if law_enforcement.staff.aggregated_dimensions is not None:
             # pylint: disable=unsubscriptable-object
-            agg_dim = law_enforcement.staff.aggregated_dimensions[
-                1
-            ]  # type: ignore[index]
-            self.assertIsNone(
-                agg_dim.dimension_to_contexts,
+            agg_dim = law_enforcement.staff.aggregated_dimensions[1]
+            self.assertEqual(len(agg_dim.dimension_to_contexts), 24)  # type: ignore[arg-type]
+            self.assertEqual(
+                agg_dim.dimension_to_contexts[  # type: ignore[index]
+                    agg_dim.dimension.HISPANIC_AMERICAN_INDIAN_ALASKAN_NATIVE  # type: ignore[attr-defined]
+                ],
+                [
+                    Context(
+                        key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                        value_type=ValueType.TEXT,
+                        label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
+                        required=False,
+                    )
+                ],
             )
 
 
