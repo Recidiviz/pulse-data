@@ -14,7 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view containing the incarceration population person-level for Oz"""
+"""A view containing the incarceration population person-level for Oz
+
+Raw validation data arises from "raw_validation_incarceration_population.csv"
+that has individuals incarcerated in Oz on 2020-01-01 or 2021-01-01.
+That data is currently:
+
+    date,data_system,person_id
+    2021-01-01,eg,1
+    2020-01-01,eg,1
+    2020-01-01,lotr,8
+"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
@@ -30,6 +40,7 @@ VIEW_QUERY_TEMPLATE = """
     CASE
       WHEN data_system = 'vfds' THEN 'US_OZ_VFDS'
       WHEN data_system = 'eg' THEN 'US_OZ_EG'
+      WHEN data_system = 'lotr' THEN 'US_OZ_LOTR_ID'
     END AS external_id_type,
     person_id AS person_external_id, 
     CAST(NULL AS STRING) AS facility,
