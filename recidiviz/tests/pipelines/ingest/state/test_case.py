@@ -63,6 +63,7 @@ from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_database_entities_by_association_table,
+    get_database_entity_by_table_name,
     get_state_database_association_with_names,
     get_state_entity_names,
     get_state_table_classes,
@@ -103,7 +104,6 @@ from recidiviz.tests.pipelines.fake_bigquery import (
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import run_test_pipeline
 from recidiviz.tests.utils.fake_region import fake_region
 
-DEFAULT_TIME = datetime(2023, 7, 5)
 INGEST_INTEGRATION = "ingest_integration"
 
 
@@ -388,7 +388,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
 
             expected_column_names = {field.name for field in schema}
             for output_dict in output:
-                if set(output_dict.keys()) != expected_column_names:
+                if output_dict.keys() != expected_column_names:
                     raise BeamAssertException(
                         "Output dictionary does not have "
                         f"the expected keys. Expected: [{expected_column_names}], "
@@ -397,11 +397,12 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
 
             # TODO(#25476): Update to properly look at association table output.
             if not is_association_table(output_table):
+                entity = get_database_entity_by_table_name(state_schema, output_table)
                 id_columns = {
                     column_name
                     for column_name in expected_column_names
-                    if not column_name.endswith("external_id")
-                    and column_name.endswith("_id")
+                    if column_name == entity.get_primary_key_column_name()
+                    or column_name in entity.get_foreign_key_names()
                 }
                 copy_of_expected_output = deepcopy(expected_output)
                 copy_of_output = deepcopy(output)
