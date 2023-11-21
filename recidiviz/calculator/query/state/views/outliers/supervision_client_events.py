@@ -131,6 +131,11 @@ supervision_client_events AS (
         pid.external_id AS client_id,
         p.full_name AS client_name,
         a.officer_id,
+        a.assignment_date AS officer_assignment_date,
+        a.end_date AS officer_assignment_end_date,
+        c.start_date AS supervision_start_date,
+        c.end_date AS supervision_end_date,
+        c.compartment_level_2 AS supervision_type, 
         e.attributes,
         {get_pseudonymized_id_query_str("e.state_code || pid.external_id")} AS pseudonymized_client_id,
         {get_pseudonymized_id_query_str("e.state_code || a.officer_id")} AS pseudonymized_officer_id,
@@ -144,11 +149,20 @@ supervision_client_events AS (
         USING (state_code, person_id)
     INNER JOIN `{{project_id}}.normalized_state.state_person_external_id` pid
         USING (state_code, person_id)
+    INNER JOIN `{{project_id}}.sessions.compartment_sessions_materialized` c  
+        USING (state_code, person_id)
     WHERE
-        event_date BETWEEN assignment_date AND COALESCE(end_date, CURRENT_DATE("US/Eastern"))
-        AND event_date >= population_start_date
+        -- Get events for the latest year period only
+        event_date >= population_start_date
         AND event_date < population_end_date
+        -- Get the officer assignment information at the time of the event
+        AND event_date BETWEEN assignment_date AND COALESCE(a.end_date, CURRENT_DATE("US/Eastern"))
+        -- Get the supervision period information at the time of the event
+        AND c.compartment_level_1 = 'SUPERVISION'
         AND pid.id_type = {{state_id_type}}
+    -- selects the first period among two periods that overlap with the same event date; 
+    -- allow us to not prioritize a session that starts on the same day as the event (unless there is no other overlapping period) when multiple officer sessions end on the same day as the event date
+    QUALIFY RANK() OVER (PARTITION BY person_id, event_date ORDER BY COALESCE(c.end_date_exclusive, "9999-01-01")) = 1
 )
 
 SELECT 
@@ -170,6 +184,11 @@ SUPERVISION_CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "client_id",
         "client_name",
         "officer_id",
+        "officer_assignment_date",
+        "officer_assignment_end_date",
+        "supervision_start_date",
+        "supervision_end_date",
+        "supervision_type",
         "attributes",
         "pseudonymized_client_id",
         "pseudonymized_officer_id",

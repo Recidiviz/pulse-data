@@ -333,7 +333,11 @@ def create_outliers_api_blueprint() -> Blueprint:
                 },
                 "officerId": event.officer_id,
                 "pseudonymizedClientId": event.pseudonymized_client_id,
-                "attributes": event.attributes,
+                "attributes": convert_nested_dictionary_keys(
+                    event.attributes, snake_to_camel
+                )
+                if event.attributes
+                else None,
             }
             for event in events
         ]
