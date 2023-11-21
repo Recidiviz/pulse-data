@@ -44,6 +44,7 @@ ALLOWED_ORIGINS = [
     r"https\://dashboard-demo\.recidiviz\.org$",
     r"https\://dashboard\.recidiviz\.org$",
     r"https\://recidiviz-dashboard-stag-e1108--[^.]+?\.web\.app$",
+    r"https\://recidiviz-dashboard--[^.]+?\.web\.app$",
 ]
 
 
