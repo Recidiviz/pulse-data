@@ -13,7 +13,8 @@ resources:
 automatic_scaling:
   min_num_instances: 2
   max_num_instances: 10
-  target_cpu_utilization: 0.80
+  cpu_utilization:
+    target_utilization: 0.80
 
 liveness_check:
   check_interval_sec: 5
