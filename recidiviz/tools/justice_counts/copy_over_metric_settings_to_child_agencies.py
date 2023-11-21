@@ -32,6 +32,7 @@ import logging
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
+from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -99,9 +100,18 @@ def copy_metric_settings(super_agency_id: int, dry_run: bool) -> None:
                 )
             )
 
+            super_agency_metric_keys = [
+                metric.key for metric in METRICS_BY_SYSTEM["SUPERAGENCY"]
+            ]
+
             for child_agency in child_agencies:
                 logger.info("Child Agency: %s", child_agency.name)
                 for metric_setting in super_agency_metric_settings:
+                    # We do not want to copy over Superagency specific metric
+                    # configurations. Skip these.
+                    if metric_setting.key in super_agency_metric_keys:
+                        logger.info("Skipping %s", metric_setting.key)
+                        continue
                     logger.info("Metric %s, is being updated", metric_setting.key)
                     if dry_run is False:
                         DatapointInterface.add_or_update_agency_datapoints(
