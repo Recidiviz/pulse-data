@@ -92,6 +92,10 @@ def get_latest_job_for_state_instance(
     state_code: StateCode, instance: DirectIngestInstance
 ) -> Optional[DataflowPipelineMetadataResponse]:
     """Get the latest job metadata for a state and instance from the Dataflow API."""
+    # TODO(#209930): remove this check once dataflow is launched for all states
+    if state_code not in DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE:
+        return None
+
     location = DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE[state_code]
     client = dataflow_v1beta3.JobsV1Beta3Client()
 
