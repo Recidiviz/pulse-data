@@ -139,12 +139,6 @@ def main() -> None:
     )
     print("\n*****COMPARISON STATS*****")
     print(result.comparison_stats_df.to_string(index=False))
-    for column_name, data_type in result.ignored_columns_to_types.items():
-        print(
-            "Ignored column %s of unsupported type %s",
-            column_name,
-            data_type,
-        )
 
 
 if __name__ == "__main__":

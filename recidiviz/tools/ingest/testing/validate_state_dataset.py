@@ -162,15 +162,12 @@ FILTERED_TABLE_ROWS_CLAUSE_TEMPLATE = """
 """
 
 COMPARABLE_TABLE_ROWS_TEMPLATE = """
-SELECT FARM_FINGERPRINT(TO_JSON_STRING(t)) AS comparison_key, *
-FROM (
-    SELECT * EXCEPT(
-        sandbox_{root_entity_id_col},
-        reference_{root_entity_id_col},
-        {columns_to_exclude_str}
-    )
-    FROM ({filtered_rows_clause})
-) t
+SELECT * EXCEPT(
+    sandbox_{root_entity_id_col},
+    reference_{root_entity_id_col},
+    {columns_to_exclude_str}
+)
+FROM ({filtered_rows_clause})
 """
 
 
@@ -413,11 +410,17 @@ class StateDatasetValidator:
             use_query_cache=False,
         ).result()
 
+        # If an external_id column exists, don't null it out in the `differences`
+        # output.
+        primary_keys = (
+            ["external_id"] if state_entity_cls.has_field("external_id") else []
+        )
+
         return compare_table_or_view(
             address_original=comparable_reference_table_address,
             address_new=comparable_sandbox_table_address,
             comparison_output_dataset_id=self.output_dataset_id,
-            primary_keys=["comparison_key"],
+            primary_keys=primary_keys,
             grouping_columns=None,
         )
 
