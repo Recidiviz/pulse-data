@@ -43,8 +43,11 @@ def ingest_pipeline_can_run_in_dag(
         StateCode.US_AR,
         StateCode.US_CA,
         StateCode.US_CO,
+        StateCode.US_MI,
+        StateCode.US_MO,
         StateCode.US_NC,
         StateCode.US_OZ,
         StateCode.US_OR,
+        StateCode.US_PA,
     ]
     return state_code in staging_enabled_states
