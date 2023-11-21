@@ -204,6 +204,7 @@ class TestSchemaUtils(unittest.TestCase):
             "metric_benchmarks",
             "supervision_districts",
             "supervision_client_events",
+            "supervision_clients",
             "supervision_officers",
             "supervision_officer_supervisors",
             "supervision_district_managers",
