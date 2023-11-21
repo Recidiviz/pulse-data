@@ -211,3 +211,17 @@ class SupervisionClientEvent(OutliersBase):
     attributes = Column(JSON, nullable=True)
     pseudonymized_client_id = Column(String, nullable=False)
     pseudonymized_officer_id = Column(String, nullable=False)
+
+
+class SupervisionClients(OutliersBase):
+    """ETL data imported from `recidiviz.calculator.query.state.views.outliers.supervision_clients`"""
+
+    __tablename__ = "supervision_clients"
+
+    state_code = Column(String, primary_key=True)
+    client_id = Column(String, primary_key=True)
+    pseudonymized_client_id = Column(String, nullable=False)
+    client_name = Column(JSON, nullable=False)
+    birthdate = Column(Date, nullable=True)
+    gender = Column(String, nullable=True)
+    race_or_ethnicity = Column(String, nullable=True)
