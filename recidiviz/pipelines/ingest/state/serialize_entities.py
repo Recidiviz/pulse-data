@@ -30,9 +30,11 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     get_all_entities_from_tree,
+    get_entity_class_in_module_with_name,
     get_many_to_many_relationships,
     is_one_to_one_relationship,
 )
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.pipelines.utils.beam_utils.bigquery_io_utils import (
     json_serializable_dict,
 )
@@ -110,15 +112,23 @@ def serialize_entity_into_json(
         entity.__class__, field_index
     )
 
-    entity_field_dict = {
-        **{field_name: getattr(entity, field_name) for field_name in flat_fields},
-        **{
-            getattr(entity, field_name)
-            .get_class_id_name(): getattr(entity, field_name)
-            .get_id()
-            for field_name in back_edges
-            if field_name not in many_to_many_relationships
-            and getattr(entity, field_name)
-        },
+    entity_field_dict: Dict[str, Any] = {
+        **{field_name: getattr(entity, field_name) for field_name in flat_fields}
     }
+
+    for field_name in back_edges:
+        if field_name in many_to_many_relationships:
+            continue
+        id_field = get_entity_class_in_module_with_name(
+            entities_module=state_entities,
+            class_name=attr_field_referenced_cls_name_for_field_name(
+                entity.__class__, field_name
+            ),
+        ).get_class_id_name()
+        entity_field_dict[id_field] = (
+            getattr(entity, field_name).get_id()
+            if getattr(entity, field_name)
+            else None
+        )
+
     return json_serializable_dict(entity_field_dict)

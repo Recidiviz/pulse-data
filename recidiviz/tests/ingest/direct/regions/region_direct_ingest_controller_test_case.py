@@ -105,7 +105,6 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     clear_db_ids,
 )
 from recidiviz.tests.pipelines.ingest.state.test_case import (
-    DEFAULT_TIME,
     BaseStateIngestPipelineTestCase,
 )
 from recidiviz.tests.pipelines.utils.run_pipeline_test_utils import (
@@ -578,7 +577,7 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
 
         for record in records:
             record[MATERIALIZATION_TIME_COL_NAME] = datetime.datetime.now().isoformat()
-            record[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_TIME.isoformat()
+            record[UPPER_BOUND_DATETIME_COL_NAME] = DEFAULT_UPDATE_DATETIME.isoformat()
             record[LOWER_BOUND_DATETIME_COL_NAME] = None
 
         return records
