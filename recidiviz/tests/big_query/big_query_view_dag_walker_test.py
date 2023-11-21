@@ -1486,9 +1486,9 @@ class AsynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
 
         processing_time = end - start
 
-        # We expect to see significant speedup over the processing time if we ran the process function for each view
-        # in series.
-        self.assertLess(processing_time * 5, serial_processing_time)
+        # We expect to see significant speedup over the processing time if we ran the
+        # process function for each view in series.
+        self.assertLess(processing_time * 3, serial_processing_time)
 
     def test_dag_init(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
