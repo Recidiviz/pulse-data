@@ -118,9 +118,9 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
-                title_display_name="Absconsion Rate",
-                body_display_name="absconsion rate",
-                event_name="absconsions",
+                title_display_name="Absconsion & Bench Warrant Rate",
+                body_display_name="absconsion & bench warrant rate",
+                event_name="absconsions & bench warrants",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION,
@@ -151,7 +151,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 metric=INCARCERATION_STARTS,
                 title_display_name="Incarceration Rate",
                 body_display_name="incarceration rate",
-                event_name="incarcerations",
+                event_name="all incarcerations",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
@@ -161,7 +161,7 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
-                title_display_name="Technical Incarceration Rate (TPVs)",
+                title_display_name="Technical Incarceration Rate",
                 body_display_name="technical incarceration rate",
                 event_name="technical incarcerations",
             ),
@@ -174,12 +174,15 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
                 event=VIOLATION_RESPONSES, display_name="Sanctions"
             ),
         ],
+        supervision_jii_label="client",
         supervision_officer_label="officer",
+        supervision_supervisor_label="manager",
+        supervision_unit_label="unit",
+        supervision_district_manager_label="district director",
         supervision_officer_metric_exclusions="""
     AND avg_daily_population BETWEEN 10 AND 150
     AND prop_period_with_critical_caseload >= 0.75""",
-        # TODO(#24935): Get correct Learn More URL
-        learn_more_url="",
+        learn_more_url="https://drive.google.com/file/d/1WCNEeftLeTf-c7bcKXKYteg5HykrRba1/view",
     ),
 }
 
