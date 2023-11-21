@@ -49,7 +49,7 @@ values will count as two rows: one in_original and one in_new.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional
 
 import attr
 import pandas as pd
@@ -71,7 +71,7 @@ _POTENTIAL_ID_COLS = [
     "priority",
 ]
 
-_DATA_TYPES_TO_COMPARE = [
+_DIRECTLY_COMPARABLE_DATA_TYPES = [
     "BOOL",
     "DATE",
     "DATETIME",
@@ -125,80 +125,89 @@ def format_lines_for_query(lines: List[str], join_str: str = ",\n      ") -> str
     return join_str.join(lines)
 
 
-def all_columns_equal_condition(column_names: List[str]) -> str:
-    return format_lines_for_query(
-        [
-            f"TO_JSON_STRING(original_rows.{col})=TO_JSON_STRING(new_rows.{col})"
-            for col in column_names
-        ],
-        join_str="\n      AND ",
-    )
-
-
 def get_comparison_query(
-    column_names: List[str], table_name_orig: str, table_name_new: str, id_col: str
+    column_names: List[str], table_name_orig: str, table_name_new: str
 ) -> str:
     return f"""
-    WITH original_rows AS
-    (
-    SELECT
-      {format_lines_for_query(column_names)}
-    FROM {table_name_orig}
-    )
-    ,
-    new_rows AS
-    (
-    SELECT
-      {format_lines_for_query(column_names)}
-    FROM {table_name_new}
+    WITH original_rows AS (
+      SELECT 
+        FARM_FINGERPRINT(TO_JSON_STRING(t)) AS __comparison_key, *
+      FROM {table_name_orig} t
+    ),
+    new_rows AS (
+      SELECT 
+        FARM_FINGERPRINT(TO_JSON_STRING(t)) AS __comparison_key, *
+      FROM {table_name_new} t
     )
 
     SELECT
+      COALESCE(original_rows.__comparison_key, new_rows.__comparison_key) AS __comparison_key,
       {format_lines_for_query(
         [
             f"IFNULL(original_rows.{col}, new_rows.{col}) AS {col}"
             for col in column_names
         ]
       )},
-      original_rows.{id_col} IS NOT NULL AND new_rows.{id_col} IS NOT NULL AS in_both,
-      original_rows.{id_col} IS NOT NULL AS in_original,
-      new_rows.{id_col} IS NOT NULL AS in_new
+      original_rows.__comparison_key IS NOT NULL AND new_rows.__comparison_key IS NOT NULL AS in_both,
+      original_rows.__comparison_key IS NOT NULL AS in_original,
+      new_rows.__comparison_key IS NOT NULL AS in_new
     FROM original_rows
     FULL OUTER JOIN new_rows
-    ON
-      {all_columns_equal_condition(column_names)}
+    ON original_rows.__comparison_key = new_rows.__comparison_key
     """
 
 
 def get_difference_query(
-    column_names: List[str],
-    table_name_orig: str,
-    table_name_new: str,
-    primary_keys: List[str],
+    columns_df: pd.DataFrame,
+    full_comparison_table_address: ProjectSpecificBigQueryAddress,
+    primary_keys: Optional[List[str]],
 ) -> str:
-    def format_for_difference(col: str, primary_keys: List[str]) -> str:
+    all_column_names = columns_df["column_name"].tolist()
+    directly_comparable_column_names = columns_df[columns_df.is_directly_comparable][
+        "column_name"
+    ].tolist()
+    primary_keys = primary_keys or ["__comparison_key"]
+
+    def format_for_difference(col: str) -> str:
         if col in primary_keys:
             return col
-        return f"IF(original_rows.{col} = new_rows.{col}, NULL, STRUCT(original_rows.{col} AS o, new_rows.{col} AS n)) AS {col}"
 
-    id_col = primary_keys[0]
+        if col in directly_comparable_column_names:
+            col_comparison_str = f"original_rows.{col} = new_rows.{col}"
+        else:
+            # If we can't compare the values directly (e.g. for ARRAY types),
+            # we convert to JSON first.
+            col_comparison_str = (
+                f"TO_JSON_STRING(original_rows.{col}) = TO_JSON_STRING(new_rows.{col})"
+            )
+
+        return f"IF({col_comparison_str}, NULL, STRUCT(original_rows.{col} AS o, new_rows.{col} AS n)) AS {col}"
+
     return f"""
     SELECT
-      {format_lines_for_query([format_for_difference(col, primary_keys) for col in column_names])},
-      original_rows.{id_col} IS NOT NULL AS in_original,
-      new_rows.{id_col} IS NOT NULL AS in_new
-    FROM {table_name_orig} original_rows
-    FULL OUTER JOIN {table_name_new} new_rows
+      {format_lines_for_query([format_for_difference(col) for col in all_column_names])},
+      original_rows.__comparison_key IS NOT NULL AS in_original,
+      new_rows.__comparison_key IS NOT NULL AS in_new
+    FROM (
+      SELECT * EXCEPT(in_original, in_new, in_both)
+      FROM {full_comparison_table_address.format_address_for_query()} t
+      WHERE in_original AND NOT in_both
+    ) original_rows
+    FULL OUTER JOIN (
+      SELECT * EXCEPT(in_original, in_new, in_both)
+      FROM {full_comparison_table_address.format_address_for_query()} t
+      WHERE in_new AND NOT in_both
+    ) new_rows
     USING(
       {format_lines_for_query(primary_keys)}
     )
-    WHERE NOT ({all_columns_equal_condition(column_names)})
+    WHERE original_rows.__comparison_key != new_rows.__comparison_key
 """
 
 
-def _get_columns_to_compare_and_ignore(
+def _get_columns_info_df(
     address: ProjectSpecificBigQueryAddress,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     column_query = StrictStringFormatter().format(
         _COLUMNS_QUERY,
         project_id=address.project_id,
@@ -207,15 +216,16 @@ def _get_columns_to_compare_and_ignore(
     )
     logging.info("Running query:\n%s", column_query)
     column_df = pd.read_gbq(column_query)
-    column_df["is_comparable"] = column_df.data_type.isin(_DATA_TYPES_TO_COMPARE)
-    return column_df[column_df.is_comparable], column_df[~column_df.is_comparable]
+    column_df["is_directly_comparable"] = column_df.data_type.isin(
+        _DIRECTLY_COMPARABLE_DATA_TYPES
+    )
+    return column_df
 
 
 @attr.define(kw_only=True)
 class CompareTablesResult:
     full_comparison_address: ProjectSpecificBigQueryAddress
     differences_output_address: ProjectSpecificBigQueryAddress
-    ignored_columns_to_types: Dict[str, str]
     comparison_stats_df: pd.DataFrame
 
     @property
@@ -261,14 +271,15 @@ def compare_table_or_view(
         comparison_output_dataset_ref, TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
     )
 
-    column_df, ignored_df = _get_columns_to_compare_and_ignore(address_original)
-    new_column_df, _ = _get_columns_to_compare_and_ignore(address_new)
-    column_names = column_df["column_name"].tolist()
-    new_column_names = new_column_df["column_name"].tolist()
-    if column_names != new_column_names:
+    columns_df = _get_columns_info_df(address_original)
+    all_column_names = columns_df["column_name"].tolist()
+    new_columns_df = _get_columns_info_df(address_new)
+    new_all_column_names = new_columns_df["column_name"].tolist()
+
+    if all_column_names != new_all_column_names:
         raise ValueError(
-            f"Original and new datasets comparable columns do not match. "
-            f"Original: {column_names}. New: {new_column_names}"
+            f"Original and new views comparable columns do not match. "
+            f"Original: {all_column_names}. New: {new_all_column_names}"
         )
 
     # If primary keys were not specified, try to find columns that are some form of identifier
@@ -276,22 +287,20 @@ def compare_table_or_view(
         logging.warning(
             "--primary_keys was not set, finding a suitable primary key(s) for comparison."
         )
-        primary_keys = []
-        id_col = next((col for col in _POTENTIAL_ID_COLS if col in column_names), None)
-        if id_col is None:
-            primary_keys.extend(column_names)
-        else:
-            primary_keys.append(id_col)
-            if "state_code" in column_names:
+        id_col = next(
+            (col for col in _POTENTIAL_ID_COLS if col in all_column_names), None
+        )
+        if id_col is not None:
+            primary_keys = [id_col]
+            if "state_code" in all_column_names:
                 primary_keys.append("state_code")
         logging.warning("Using %s as primary keys", primary_keys)
 
     # Construct a query that tells us which rows are in original, new, or both
     query = get_comparison_query(
-        column_names,
+        all_column_names,
         table_name_orig=address_original.format_address_for_query(),
         table_name_new=address_new.format_address_for_query(),
-        id_col=primary_keys[0],
     )
 
     # Create _full table to store results of the above query
@@ -314,9 +323,8 @@ def compare_table_or_view(
 
     # Construct query to show only the actual differences between the two tables
     difference_query = get_difference_query(
-        column_names,
-        table_name_orig=address_original.format_address_for_query(),
-        table_name_new=address_new.format_address_for_query(),
+        columns_df=columns_df,
+        full_comparison_table_address=full_comparison_address,
         primary_keys=primary_keys,
     )
 
@@ -363,7 +371,4 @@ def compare_table_or_view(
         full_comparison_address=full_comparison_address,
         differences_output_address=differences_output_address,
         comparison_stats_df=stats,
-        ignored_columns_to_types={
-            row.column_name: row.data_type for row in ignored_df.itertuples()
-        },
     )
