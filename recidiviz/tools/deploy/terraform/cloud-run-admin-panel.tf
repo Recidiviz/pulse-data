@@ -54,7 +54,7 @@ resource "google_cloud_run_service" "admin_panel" {
       containers {
         image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
-        args    = ["run", "gunicorn", "-c", "gunicorn.gthread.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.admin_panel.server:app"]
+        args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.admin_panel.server:app"]
 
         env {
           name  = "RECIDIVIZ_ENV"
@@ -68,7 +68,7 @@ resource "google_cloud_run_service" "admin_panel" {
 
         resources {
           limits = {
-            cpu    = "1000m"
+            cpu    = "2000m"
             memory = "2Gi"
           }
         }
