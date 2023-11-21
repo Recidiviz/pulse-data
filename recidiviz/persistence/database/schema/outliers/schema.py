@@ -207,6 +207,16 @@ class SupervisionClientEvent(OutliersBase):
     client_name = Column(JSON, nullable=False)
     # The external id of the officer assigned to this person at the time the event occurred
     officer_id = Column(String, primary_key=True)
+    # The start date of the officer assignment period that this event occurred in
+    officer_assignment_date = Column(Date, nullable=True)
+    # The end date of the officer assignment that this event occurred in
+    officer_assignment_end_date = Column(Date, nullable=True)
+    # The start date of the supervision period that this event occurred in
+    supervision_start_date = Column(Date, nullable=True)
+    # The end date of the supervision period that this event occurred in
+    supervision_end_date = Column(Date, nullable=True)
+    # The supervision type at the time of the event
+    supervision_type = Column(String, nullable=True)
     # JSON object of information related to this event
     attributes = Column(JSON, nullable=True)
     pseudonymized_client_id = Column(String, nullable=False)
