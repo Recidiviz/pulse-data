@@ -267,7 +267,8 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_date=date(2017, 5, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2018, 5, 9),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+            release_reason_raw_text="PAFA-PAVOK",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
@@ -279,7 +280,8 @@ class TestUsTnIncarcerationNormalizationDelegate(unittest.TestCase):
             admission_date=date(2017, 5, 9),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2018, 5, 9),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            release_reason_raw_text="PAFA-PAVOK",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
         )
 

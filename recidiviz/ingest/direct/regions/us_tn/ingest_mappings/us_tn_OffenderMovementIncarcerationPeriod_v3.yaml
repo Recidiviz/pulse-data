@@ -525,9 +525,6 @@ output:
                         - CCFA-PTVOK # Partial revocation
                         - PAFA-RECIS # Rescission
                         - DVCT-PRVOK # Revocation
-                        # Returns to supervision after serving a stint of weekend confinement.
-                        - FAPR-WKRET # Weekend return
-                        - FACC-WKRET # Weekend return
 
                       StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
                         - CUSTCHANGEFH-CUST CHANGE # Recidiviz made code to track Custody Changes
@@ -535,6 +532,9 @@ output:
                       StateIncarcerationPeriodReleaseReason.RELEASE_FROM_WEEKEND_CONFINEMENT:
                         - CCFA-WKEND
                         - PRFA-WKEND
+                        # Returns to supervision after serving a stint of weekend confinement.
+                        - FAPR-WKRET # Weekend return
+                        - FACC-WKRET # Weekend return
 
                       StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
                         # Statuses that terminate in 'FA', 'CT', or 'FH' are admissions into a facility that
