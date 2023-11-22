@@ -149,7 +149,9 @@ class ValidationResultForStorage:
         # TODO(#7544): Make result_details responsible for constraining its fields when
         # serializing so they don't scale linearly.
         if details := unstructured["result_details"]:
-            unstructured["result_details"] = json.dumps(details)
+            unstructured["result_details"] = json.dumps(
+                details, default=lambda o: o.__dict__
+            )
 
         # BigQuery doesn't store timezone information so we have to strip it off,
         # ensuring that we are passing it UTC.
