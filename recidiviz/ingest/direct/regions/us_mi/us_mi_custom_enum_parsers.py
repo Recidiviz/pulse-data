@@ -25,6 +25,9 @@ my_enum_field:
 import re
 from typing import Optional
 
+from recidiviz.common.constants.state.state_incarceration_incident import (
+    StateIncarcerationIncidentType,
+)
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
@@ -442,5 +445,84 @@ def parse_staff_role_subtype(
     if raw_text:
         # we'll ingest all other roles (like leadership roles) via a separate view/mapping using a roster
         return StateStaffRoleSubtype.INTERNAL_UNKNOWN
+
+    return None
+
+
+def map_incident_type(
+    raw_text: str,
+) -> Optional[StateIncarcerationIncidentType]:
+    """
+    Takes the raw text (which is a list of offense descriptions for the incident) and
+    parses out the incident type (prioritizing more specific incident types)
+    """
+
+    if any(
+        keyword in raw_text.lower()
+        for keyword in [
+            "fighting",
+            "assault",
+            "injury",
+            "homicide",
+            "destruction",
+            "riot",
+        ]
+    ):
+        return StateIncarcerationIncidentType.VIOLENCE
+
+    if any(
+        keyword in raw_text.lower()
+        for keyword in [
+            "contraband",
+            "possession",
+            "smuggling",
+            "paraphrenalia",
+            "substance",
+        ]
+    ):
+        return StateIncarcerationIncidentType.CONTRABAND
+
+    if "escape" in raw_text.lower():
+        return StateIncarcerationIncidentType.ESCAPE
+
+    if "minor" in raw_text.lower():
+        return StateIncarcerationIncidentType.MINOR_OFFENSE
+
+    if "code from cmis that could not be converted" in raw_text.lower():
+        return StateIncarcerationIncidentType.EXTERNAL_UNKNOWN
+
+    if any(
+        keyword in raw_text.lower()
+        for keyword in [
+            "disturb",
+            "insolence",
+            "interfere",
+            "disobey",
+            "bribery",
+            "disperse",
+            "out of place",
+            "misconduct",
+            "threatening behavior",
+            "unauthorized",
+        ]
+    ):
+        return StateIncarcerationIncidentType.DISORDERLY_CONDUCT
+
+    if any(
+        keyword in raw_text.lower()
+        for keyword in [
+            "felony",
+            "failure to maintain employment",
+            "interstate compact major misconduct",
+        ]
+    ):
+        return StateIncarcerationIncidentType.INTERNAL_UNKNOWN
+        # don't know how to categorize:
+        #   Felony
+        #   Failure to Maintain Employment
+        #   Interstate Compact Major Misconduct
+
+    if raw_text:
+        return StateIncarcerationIncidentType.INTERNAL_UNKNOWN
 
     return None
