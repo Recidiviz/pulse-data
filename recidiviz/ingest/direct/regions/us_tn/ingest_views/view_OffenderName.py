@@ -54,7 +54,8 @@ WITH normalized_rows AS (
         -- Ensures that we include nickname rows when looking for the most recent non-null birthdate but 
         -- skip them when we are calculating the row number.
       SELECT *,
-      ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY LastUpdateDate DESC, CAST(SequenceNumber AS INT64) DESC) AS recency_rank
+      -- 'O' denotes true name, 'A' is alias - we want the true name to take precedence when possible so we order by NameType. 
+      ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY CASE WHEN NameType = 'O' THEN 1 WHEN NameType = 'A' THEN 2 ELSE 3 END, LastUpdateDate DESC, CAST(SequenceNumber AS INT64) DESC) AS recency_rank 
       FROM normalized_rows
       -- Filter out nicknames.
       WHERE NameType != 'N'
