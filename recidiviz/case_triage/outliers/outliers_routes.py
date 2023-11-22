@@ -446,4 +446,103 @@ def create_outliers_api_blueprint() -> Blueprint:
             }
         )
 
+    @api.get("/<state>/client/<pseudonymized_id>/events")
+    def events_by_client(state: str, pseudonymized_id: str) -> Response:
+        try:
+            state_code = StateCode(state.upper())
+
+            # Get all requested metrics from URL
+            event_metric_ids = request.args.getlist("metric_id")
+
+            period_end_date = (
+                datetime.strptime(request.args["period_end_date"], "%Y-%m-%d")
+                if "period_end_date" in request.args
+                else None
+            )
+        except ValueError as e:
+            return jsonify_response(
+                f"Invalid parameters provided. Error: {str(e)}", HTTPStatus.BAD_REQUEST
+            )
+
+        if period_end_date is None:
+            return jsonify_response("Must provide an end date", HTTPStatus.BAD_REQUEST)
+
+        querier = OutliersQuerier(state_code)
+
+        state_config = querier.get_outliers_config()
+        state_client_events = [event.name for event in state_config.client_events]
+
+        # Check that the requested events are configured for the state
+        if len(event_metric_ids) > 0:
+            disallowed_metric_ids = [
+                metric_id
+                for metric_id in event_metric_ids
+                if metric_id not in state_client_events
+            ]
+
+            # Return an error if there are invalid requested events
+            if len(disallowed_metric_ids) > 0:
+                return jsonify_response(
+                    f"Must provide valid event metric_ids for {state_code.value} in the request",
+                    HTTPStatus.BAD_REQUEST,
+                )
+
+        # If no metric ids are provided, use the configured event names for the state.
+        else:
+            event_metric_ids = state_client_events
+
+        user_context: UserContext = g.user_context
+
+        # If supervisor, the supervisor should have outliers to access this endpoint.
+        if user_context.role == "supervision_staff":
+            if user_context.pseudonymized_id is None:
+                return jsonify_response(
+                    "Supervision staff user should have a pseudonymized id.",
+                    HTTPStatus.BAD_REQUEST,
+                )
+
+            supervisor_entity = querier.get_supervisor_entity_from_pseudonymized_id(
+                user_context.pseudonymized_id
+            )
+
+            if supervisor_entity is None:
+                return jsonify_response(
+                    "Cannot find information on the requested user for the latest period",
+                    HTTPStatus.NOT_FOUND,
+                )
+
+            if not supervisor_entity.has_outliers:
+                return jsonify_response(
+                    f"Supervisors must have outliers in the latest period to access this endpoint. User {user_context.pseudonymized_id} does not have outliers.",
+                    HTTPStatus.UNAUTHORIZED,
+                )
+
+        events = querier.get_events_by_client(
+            pseudonymized_id, event_metric_ids, period_end_date
+        )
+
+        results = [
+            {
+                "stateCode": event.state_code,
+                "metricId": event.metric_id,
+                "eventDate": datetime.strftime(event.event_date, "%Y-%m-%d"),
+                "clientId": event.client_id,
+                "clientName": {
+                    "givenNames": PersonName(**event.client_name).given_names,
+                    "middleNames": PersonName(**event.client_name).middle_names,
+                    "surname": PersonName(**event.client_name).surname,
+                },
+                "officerId": event.officer_id,
+                "pseudonymizedClientId": event.pseudonymized_client_id,
+                "attributes": convert_nested_dictionary_keys(
+                    event.attributes,
+                    snake_to_camel,
+                )
+                if event.attributes
+                else None,
+            }
+            for event in events
+        ]
+        return jsonify({"events": results})
+
     return api
