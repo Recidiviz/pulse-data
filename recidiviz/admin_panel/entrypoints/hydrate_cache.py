@@ -21,6 +21,8 @@ docker compose -f docker-compose.yaml -f docker-compose.admin-panel.yaml run adm
 import logging
 
 from recidiviz.admin_panel.admin_stores import initialize_admin_stores
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.server_config import initialize_engines
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import set_development_project_id_override
 
@@ -31,6 +33,8 @@ if __name__ == "__main__":
         set_development_project_id_override(GCP_PROJECT_STAGING)
 
     stores = initialize_admin_stores()
+
+    initialize_engines(schema_types=[SchemaType.OPERATIONS])
 
     for store in stores.all_stores:
         logging.info("Hydrating %s", store)
