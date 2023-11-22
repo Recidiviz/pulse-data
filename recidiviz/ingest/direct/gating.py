@@ -25,11 +25,13 @@ def is_ingest_in_dataflow_enabled(
     state_code: StateCode,
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
+    all_projects_enabled_states = [StateCode.US_AZ]
+    if state_code in all_projects_enabled_states:
+        return True
     if environment.in_gcp_production():
         return False
-    staging_enabled_states = [
-        StateCode.US_OZ,
-    ]
+
+    staging_enabled_states = [StateCode.US_OZ, StateCode.US_AZ]
     return state_code in staging_enabled_states
 
 
@@ -37,6 +39,9 @@ def ingest_pipeline_can_run_in_dag(
     state_code: StateCode,
     instance: DirectIngestInstance,  # pylint: disable=unused-argument
 ) -> bool:
+    all_projects_enabled_states = [StateCode.US_AZ]
+    if state_code in all_projects_enabled_states:
+        return True
     if environment.in_gcp_production():
         return False
     staging_enabled_states = [

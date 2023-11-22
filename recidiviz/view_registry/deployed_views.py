@@ -243,6 +243,7 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "state_v2_us_nc_primary_cloudsql_connection",
         "state_v2_us_or_primary_cloudsql_connection",
         "state_v2_us_oz_primary_cloudsql_connection",
+        "state_v2_us_az_primary_cloudsql_connection",
         # TODO(#10703): Remove this after merging US_IX into US_ID
         "state_v2_us_ix_primary_cloudsql_connection",
         "us_ar_state_regional",
@@ -261,6 +262,7 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "us_pa_state_regional",
         "us_tn_state_regional",
         "us_me_state_regional",
+        "us_az_state_regional",
     },
     SchemaType.OPERATIONS: {
         # TODO(#8282): Remove this once we delete the v1 databases.
@@ -282,6 +284,7 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "us_pa_operations_regional",
         "us_tn_operations_regional",
         "us_me_operations_regional",
+        "us_az_operations_regional",
     },
 }
 
