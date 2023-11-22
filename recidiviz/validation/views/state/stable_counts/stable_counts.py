@@ -59,6 +59,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2022, 11, 1),
                         date(2022, 12, 1),
                     ],  # Known issue that we don't observe as many violations in Atlas as we did in their old system
+                    StateCode.US_OR: [
+                        date(2023, 1, 1),
+                    ],  # Expect some level of fluctuation for new year
                 },
             )
         ]
