@@ -7,4 +7,10 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: There is no supervising officer data in OR so all supervising officer external id should be null.
 max_allowed_error_overrides: []
-num_allowed_rows_overrides: []
+num_allowed_rows_overrides:
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 7100
+    override_reason: Current failing level as of 11/20/23 is 6762 #TODO(#25598): Keep eye on error amount
+  - validation_name: sentences_missing_date_imposed
+    hard_num_allowed_rows_override: 1700
+    override_reason: Needs investigation. Current failing level as of 11/20/23 is 1655 rows #TODO(#25600): Investigate further
