@@ -29,6 +29,18 @@ resource "google_cloud_run_v2_job" "admin_panel_hydrate_cache" {
           name  = "RECIDIVIZ_ENV"
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
         }
+        # This is the expected path for Cloud SQL Unix sockets in most, if not all, GCP runtimes
+        # as defined here: https://cloud.google.com/sql/docs/postgres/connect-run#public-ip-default_1
+        volume_mounts {
+          name       = "cloudsql"
+          mount_path = "/cloudsql"
+        }
+      }
+      volumes {
+        name = "cloudsql"
+        cloud_sql_instance {
+          instances = [module.operations_database_v2.connection_name]
+        }
       }
       vpc_access {
         connector = google_vpc_access_connector.us_central_redis_vpc_connector.id
