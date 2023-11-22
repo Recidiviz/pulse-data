@@ -128,7 +128,7 @@ class SQLAlchemyDatabaseKey:
             # closed / recycled. In addition, decreasing the timeout prevents long-held connections
             # during these synchronous operations.
             return SQLAlchemyPoolConfiguration(
-                pool_size=2, max_overflow=5, pool_timeout=15
+                pool_size=4, max_overflow=10, pool_timeout=15
             )
         return None
 
