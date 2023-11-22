@@ -20,6 +20,7 @@ from typing import List, Optional
 
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -98,6 +99,19 @@ class UsTnIncarcerationNormalizationDelegate(
         return None
 
 
+RELEASED_FROM_TEMPORARY_CUSTODY_RAW_TEXT_VALUES: List[str] = [
+    # Revocations are logged after temporary custody due to a vioation.
+    "PAFA-PAVOK",  # Parole Revoked
+    "PAFA-REVOK",  # Revocation
+    "PRFA-PRVOK",  # Probation revoked
+    "PRFA-PTVOK",  # Partial revocation
+    "CCFA-REVOK",  # Revocation
+    "CCFA-PTVOK",  # Partial revocation
+    "PAFA-RECIS",  # Rescission
+    "DVCT-PRVOK",  # Revocation
+]
+
+
 def _us_tn_normalize_period_if_commitment_from_supervision(
     incarceration_period_list_index: int,
     sorted_incarceration_periods: List[StateIncarcerationPeriod],
@@ -149,5 +163,15 @@ def _us_tn_normalize_period_if_commitment_from_supervision(
             incarceration_period.specialized_purpose_for_incarceration = (
                 StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
             )
+
+            if (
+                incarceration_period.release_reason
+                == StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION
+                or incarceration_period.release_reason_raw_text
+                in RELEASED_FROM_TEMPORARY_CUSTODY_RAW_TEXT_VALUES
+            ):
+                incarceration_period.release_reason = (
+                    StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
+                )
 
     return incarceration_period
