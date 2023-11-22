@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationIncident` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_booking_id
+  - misconduct_incident_id
+  - miscond_violation_date
+  - miscond_written_date
+  - _incident_location_name
+  - _incident_place_type_description
+  - proposed_hearing_date
+  - _offense_description_list
+  - penalties
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id: misconduct_incident_id
+          incident_date: miscond_violation_date
+          facility: _incident_location_name
+          location_within_facility: _incident_place_type_description
+          incident_type:
+            $enum_mapping:
+              $raw_text: _offense_description_list
+              $custom_parser: us_mi_custom_enum_parsers.map_incident_type
+          incarceration_incident_outcomes:
+            - $foreach:
+                $iterable:
+                  $split_json: penalties
+                $result:
+                  StateIncarcerationIncidentOutcome:
+                    external_id:
+                      $concat:
+                        $values:
+                          - misconduct_incident_id
+                          - $json_extract:
+                              $key: miscond_hearing_penalty_id
+                              $json: $iter_item
+                    hearing_date: proposed_hearing_date
+                    date_effective:
+                      $json_extract:
+                        $key: effective_date
+                        $json: $iter_item
+                    projected_end_date:
+                      $json_extract:
+                        $key: end_date
+                        $json: $iter_item
+                    report_date: miscond_written_date
+                    outcome_type:
+                      $enum_mapping:
+                        $raw_text:
+                          $json_extract:
+                            $key: _penalty_type_description
+                            $json: $iter_item
+                        $mappings:
+                          StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                            - Restitution
+                          StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                            - Prison Detention
+                          StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                            - Loss of Privilege
+                          StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                            - Prison Toplock
+                          StateIncarcerationIncidentOutcomeType.WARNING:
+                            - Counseling/Reprimand
+                          StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                            - Extra Duty
+                          StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                            - Prison Reclassification
+                    punishment_length_days:
+                      $json_extract:
+                        $key: penalty_days
+                        $json: $iter_item
