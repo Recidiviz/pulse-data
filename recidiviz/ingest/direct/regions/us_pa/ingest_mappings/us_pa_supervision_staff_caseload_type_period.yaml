@@ -1,76 +1,62 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - external_id
-  - AgentType
-  - period_seq_num
+  - employeeid
+  - agenttype
   - start_date
   - end_date
+  - period_seq_num
 unused_columns: []
 output:
   StateStaff:
     external_ids:
       - StateStaffExternalId:
-          external_id: external_id
+          external_id: employeeid
           id_type: $literal("US_PA_PBPP_EMPLOYEE_NUM")
     caseload_type_periods:
       - StateStaffCaseloadTypePeriod:
           external_id:
             $concat:
               $values:
-                - external_id
+                - employeeid
                 - period_seq_num
           start_date: start_date
           end_date: end_date
           caseload_type:
             $enum_mapping:
-              $raw_text: AgentType
+              $raw_text: agenttype
               $mappings:
                 StateStaffCaseloadType.SEX_OFFENSE:
                   - SEX OFFENDER
                 StateStaffCaseloadType.ADMINISTRATIVE_SUPERVISION:
                   - ADMINISTRATIVE
-                  - ADMINSTRATIVE
-                  - ADMINISTRATIVE / COURT LIAISON
+                  - ADMINISTRATIVE & MONITOR CASES
                 StateStaffCaseloadType.ALCOHOL_AND_DRUG:
                   - AOD
                   - INTENSIVE DRUG
                 StateStaffCaseloadType.INTENSIVE:
                   - INTENSIVE CASELOAD
-                  - INTENSIVE
                   - INTENSIVE SUPERVISION
+                  - INTENSIVE
+                  - INTENSIVE SUPERVISION AGENT
                 StateStaffCaseloadType.MENTAL_HEALTH:
                   - MENTAL HEALTH
-                  - MENTAL HEALTH (MIXED)
                 StateStaffCaseloadType.ELECTRONIC_MONITORING:
                   - GPS
-                  - ADMINISTRATIVE & MONITOR CASES
-                  - ADMINISTRATIVE/MON/SPECIAL CIRCUMSTANCE
                 StateStaffCaseloadType.OTHER_COURT:
                   - HEARING
-                StateStaffCaseloadType.DRUG_COURT:
-                  - DRUG COURT LIASON
+                  - COURT LIAISON
                 StateStaffCaseloadType.VETERANS_COURT:
                   - VETERANS (MIXED)
                 StateStaffCaseloadType.COMMUNITY_FACILITY:
                   - CCC AGENT
-                  - REENTRY
                 StateStaffCaseloadType.INTERNAL_UNKNOWN:
-                  - TASK FORCE AGENT
-                  - TRANSPORT
-                  - JUVENILE LIFER/VICTIM WRAPAROUND
-                  - JUVENILE LIFERS
-                  - JUVENILE LIFER
-                  - JUVENILE LIFER/WRAP AROUNDS
-                  - JUVENILE LIFER/PSN # Project Safe Neighborhoods
-                  - PROJECT SAFE NEIGHBORHOODS
+                  - FAST
                   - STREET CRIME
                   - STREET CRIMES
-                  - FTA # Field Training Agent
-                  - FIELD TRAINING AGENT
-                  - INTELLIGENCE AGENT
-                  - INTERSTATE
-                  - FAST # Fugitive Apprehension Search Teams
-                  - FTTD # ?
-                  - HBG PD LIAISON # Harrisburg PD Liaison
-                  - K9
+                  - FTA
+                  - TRANSPORT
+                  - JUVENILE LIFER
+                  - PROJECT SAFE NEIGHBORHOODS
+                  - REENTRY
+                  - TASK FORCE AGENT
