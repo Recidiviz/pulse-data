@@ -30,12 +30,14 @@ from recidiviz.outliers.constants import (
     ABSCONSIONS_BENCH_WARRANTS,
     INCARCERATION_STARTS_AND_INFERRED,
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
+    VIOLATIONS,
 )
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import (
     OfficerMetricEntity,
     OfficerSupervisorReportData,
     OutlierMetricInfo,
+    OutliersClientEventConfig,
     OutliersConfig,
     OutliersMetricConfig,
     PersonName,
@@ -75,6 +77,8 @@ def load_model_fixture(
                     row["full_name"] = json.loads(row["full_name"])
                 if k == "client_name":
                     row["client_name"] = json.loads(row["client_name"])
+                if k == "attributes" and v != "":
+                    row["attributes"] = json.loads(row["attributes"])
                 if v == "":
                     row[k] = None
             results.append(row)
@@ -104,6 +108,10 @@ TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
     title_display_name="Absconsion Rate",
     body_display_name="absconsion rate",
     event_name="absconsions",
+)
+
+TEST_CLIENT_EVENT_1 = OutliersClientEventConfig.build(
+    event=VIOLATIONS, display_name="violations"
 )
 
 
@@ -728,3 +736,27 @@ class TestOutliersQuerier(TestCase):
         )
 
         self.assertEqual("101", actual.external_id)  # type: ignore[union-attr]
+
+    def test_get_events_by_client(self) -> None:
+        # Return matching event
+        with SessionFactory.using_database(self.database_key) as session:
+            metric_id = TEST_METRIC_3.name
+            expected = (
+                session.query(SupervisionClientEvent)
+                .filter(SupervisionClientEvent.event_date == "2023-05-01")
+                .first()
+            )
+
+            actual = OutliersQuerier(StateCode.US_PA).get_events_by_client(
+                "clienthash1", [metric_id], TEST_END_DATE
+            )
+            self.assertEqual(len(actual), 1)
+            self.assertEqual(expected.event_date, actual[0].event_date)
+            self.assertEqual(expected.client_id, actual[0].client_id)
+            self.assertEqual(metric_id, actual[0].metric_id)
+
+    def test_get_events_by_client_none_found(self) -> None:
+        actual = OutliersQuerier(StateCode.US_PA).get_events_by_client(
+            "randomhash", ["absconsions_bench_warrants"], TEST_END_DATE
+        )
+        self.assertEqual(actual, [])

@@ -702,6 +702,39 @@ class OutliersQuerier:
 
             return events
 
+    def get_events_by_client(
+        self,
+        pseudonymized_client_id: str,
+        metric_ids: List[str],
+        period_end_date: date,
+    ) -> List[SupervisionClientEvent]:
+        """
+        Get the list of events for the given client and metric(s) in the last 12 months relative to the provided end_date.
+
+        :param pseudonymized_client_id: The pseudonymized id of the officer to get events for.
+        :param metric_ids: The list of metrics to get events for.
+        :param period_end_date: The end date of the year period to get events for.
+        :rtype: List of SupervisionClientEvent
+        """
+
+        with self.database_session() as session:
+            # The earliest event date is the start of the year time period.
+            earliest_event_date = period_end_date - relativedelta(years=1)
+
+            events = (
+                session.query(SupervisionClientEvent)
+                .filter(
+                    SupervisionClientEvent.pseudonymized_client_id
+                    == pseudonymized_client_id,
+                    SupervisionClientEvent.metric_id.in_(metric_ids),
+                    SupervisionClientEvent.event_date <= period_end_date,
+                    SupervisionClientEvent.event_date >= earliest_event_date,
+                )
+                .all()
+            )
+
+            return events
+
     def get_supervision_officer_entity(
         self,
         pseudonymized_officer_id: str,
