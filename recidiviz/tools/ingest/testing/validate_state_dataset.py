@@ -162,11 +162,13 @@ FILTERED_TABLE_ROWS_CLAUSE_TEMPLATE = """
 """
 
 COMPARABLE_TABLE_ROWS_TEMPLATE = """
-SELECT * EXCEPT(
+SELECT 
+  reference_{root_entity_id_col} AS comparable_{root_entity_id_col}, 
+  * EXCEPT(
     sandbox_{root_entity_id_col},
     reference_{root_entity_id_col},
     {columns_to_exclude_str}
-)
+  )
 FROM ({filtered_rows_clause})
 """
 
@@ -217,6 +219,38 @@ class StateDatasetValidator:
             dataset_id=f"state_validation_results_{state_code_filter.value.lower()}",
         )
         self.bq_client = BigQueryClientImpl(project_id=self.output_project_id)
+
+    def _is_enum_entity(self, table_name: str) -> bool:
+        if is_association_table(table_name):
+            return False
+        db_entity_cls = get_database_entity_by_table_name(schema, table_name)
+
+        entity_cls = get_entity_class_in_module_with_name(
+            entities, db_entity_cls.__name__
+        )
+        return issubclass(entity_cls, EnumEntity)
+
+    def _primary_keys_for_differences_output(self, state_table_id: str) -> List[str]:
+        """Returns the list of columns that should not be nulled out for convenience
+        (when the values are the same) in the differences output for this table.
+        """
+        if is_association_table(state_table_id):
+            return []
+        state_entity_cls = get_database_entity_by_table_name(schema, state_table_id)
+
+        # If an external_id column exists, don't null it out in the `differences`
+        # output.
+        primary_keys = (
+            ["external_id"] if state_entity_cls.has_field("external_id") else []
+        )
+        return primary_keys
+
+    def _dataset_name_for_dataset(self, dataset: DatasetReference) -> str:
+        if dataset == self.reference_dataset:
+            return REFERENCE_DATASET_NAME
+        if dataset == self.sandbox_dataset:
+            return SANDBOX_DATASET_NAME
+        raise ValueError(f"Unexpected dataset {dataset}")
 
     def root_entity_id_mappings_address(
         self, root_entity_cls: Type[Entity]
@@ -320,134 +354,123 @@ class StateDatasetValidator:
             ] = row_count
         return error_table_addresses
 
-    def output_validations_for_table(
+    def _build_comparable_entity_rows_query(
         self,
-        root_entity_cls: Type[Entity],
+        dataset: DatasetReference,
         state_entity_cls: Type[DatabaseEntity],
-    ) -> CompareTablesResult:
-        """For a given table in the `state` dataset (e.g. state_charge), runs a set of
-        validation queries that will get materialized to tables in the output dataset,
-        then returns a result with some stats about the comparison.
-        """
+    ) -> str:
+        root_entity_cls = cast(
+            Type[Entity],
+            get_root_entity_class_for_entity(
+                get_entity_class_in_module_with_name(
+                    entities, state_entity_cls.__name__
+                )
+            ),
+        )
+        table_address = ProjectSpecificBigQueryAddress(
+            project_id=dataset.project,
+            dataset_id=dataset.dataset_id,
+            table_id=state_entity_cls.get_entity_name(),
+        )
         root_entity_id_col = root_entity_cls.get_primary_key_column_name()
         mapping_address = self.root_entity_id_mappings_address(
             root_entity_cls=root_entity_cls,
         )
-
-        state_table_id = state_entity_cls.get_entity_name()
         columns_to_exclude = [
             state_entity_cls.get_primary_key_column_name(),
-            *[
-                c
-                for c in state_entity_cls.get_foreign_key_names()
-                if c != root_entity_cls
-            ],
+            *state_entity_cls.get_foreign_key_names(),
         ]
         columns_to_exclude_str = ",".join(columns_to_exclude)
-        reference_table_address = ProjectSpecificBigQueryAddress(
-            project_id=self.reference_dataset.project,
-            dataset_id=self.reference_dataset.dataset_id,
-            table_id=state_table_id,
-        )
-
-        reference_comparable_rows_query = StrictStringFormatter().format(
+        dataset_name = self._dataset_name_for_dataset(dataset)
+        return StrictStringFormatter().format(
             COMPARABLE_TABLE_ROWS_TEMPLATE,
             root_entity_id_col=root_entity_id_col,
             columns_to_exclude_str=columns_to_exclude_str,
             filtered_rows_clause=StrictStringFormatter().format(
                 FILTERED_TABLE_ROWS_CLAUSE_TEMPLATE,
-                dataset_name=REFERENCE_DATASET_NAME,
+                dataset_name=dataset_name,
                 root_entity_id_col=root_entity_id_col,
-                state_table=reference_table_address.format_address_for_query(),
+                state_table=table_address.format_address_for_query(),
                 root_entity_ids_mapping_table=mapping_address.format_address_for_query(),
             ),
         )
 
-        comparable_reference_table_address = ProjectSpecificBigQueryAddress(
-            project_id=self.bq_client.project_id,
-            dataset_id=self.output_dataset_id,
-            table_id=f"{state_table_id}_reference_comparable",
-        )
-
-        self.bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=comparable_reference_table_address.dataset_id,
-            destination_table_id=comparable_reference_table_address.table_id,
-            write_disposition=WriteDisposition.WRITE_TRUNCATE,
-            query=reference_comparable_rows_query,
-            use_query_cache=False,
-        ).result()
-
-        sandbox_table_address = ProjectSpecificBigQueryAddress(
-            project_id=self.sandbox_dataset.project,
-            dataset_id=self.sandbox_dataset.dataset_id,
+    def _materialize_comparable_table(
+        self,
+        dataset: DatasetReference,
+        state_table_id: str,
+    ) -> ProjectSpecificBigQueryAddress:
+        """For the given state dataset table, generates a query that produces results
+        for that table that can be compared against results from another dataset, then
+        materializes the results of that query and returns the results address.
+        """
+        table_address = ProjectSpecificBigQueryAddress(
+            project_id=dataset.project,
+            dataset_id=dataset.dataset_id,
             table_id=state_table_id,
         )
+        if not is_association_table(state_table_id):
+            state_entity_cls = get_database_entity_by_table_name(schema, state_table_id)
+            comparable_rows_query = self._build_comparable_entity_rows_query(
+                dataset=dataset,
+                state_entity_cls=state_entity_cls,
+            )
+        else:
+            # TODO(#24413): Build query for comparing association tables here
+            raise NotImplementedError
 
-        sandbox_comparable_rows_query = StrictStringFormatter().format(
-            COMPARABLE_TABLE_ROWS_TEMPLATE,
-            root_entity_id_col=root_entity_id_col,
-            columns_to_exclude_str=columns_to_exclude_str,
-            filtered_rows_clause=StrictStringFormatter().format(
-                FILTERED_TABLE_ROWS_CLAUSE_TEMPLATE,
-                dataset_name=SANDBOX_DATASET_NAME,
-                root_entity_id_col=root_entity_id_col,
-                state_table=sandbox_table_address.format_address_for_query(),
-                root_entity_ids_mapping_table=mapping_address.format_address_for_query(),
-            ),
-        )
-
-        comparable_sandbox_table_address = ProjectSpecificBigQueryAddress(
+        dataset_name = self._dataset_name_for_dataset(dataset)
+        comparable_table_address = ProjectSpecificBigQueryAddress(
             project_id=self.bq_client.project_id,
             dataset_id=self.output_dataset_id,
-            table_id=f"{state_table_id}_sandbox_comparable",
+            table_id=f"{table_address.table_id}_{dataset_name}_comparable",
         )
 
         self.bq_client.insert_into_table_from_query_async(
-            destination_dataset_id=comparable_sandbox_table_address.dataset_id,
-            destination_table_id=comparable_sandbox_table_address.table_id,
+            destination_dataset_id=comparable_table_address.dataset_id,
+            destination_table_id=comparable_table_address.table_id,
             write_disposition=WriteDisposition.WRITE_TRUNCATE,
-            query=sandbox_comparable_rows_query,
+            query=comparable_rows_query,
             use_query_cache=False,
         ).result()
-
-        # If an external_id column exists, don't null it out in the `differences`
-        # output.
-        primary_keys = (
-            ["external_id"] if state_entity_cls.has_field("external_id") else []
-        )
-
-        return compare_table_or_view(
-            address_original=comparable_reference_table_address,
-            address_new=comparable_sandbox_table_address,
-            comparison_output_dataset_id=self.output_dataset_id,
-            primary_keys=primary_keys,
-            grouping_columns=None,
-        )
+        return comparable_table_address
 
     def _generate_table_specific_comparison_result(
         self,
         client: BigQueryClient,  # pylint: disable=unused-argument
         reference_table_address: ProjectSpecificBigQueryAddress,
     ) -> Optional[CompareTablesResult]:
-        entity_name = reference_table_address.table_id
-        if is_association_table(entity_name):
-            # TODO(#24413): Validate association tables somehow
-            return None
+        """For a given table in the `state` dataset (e.g. state_charge), runs a set of
+        validation queries that will get materialized to tables in the output dataset,
+        then returns a result with some stats about the comparison.
 
-        db_entity_cls = get_database_entity_by_table_name(schema, entity_name)
-
-        entity_cls = get_entity_class_in_module_with_name(
-            entities, db_entity_cls.__name__
-        )
-        if issubclass(entity_cls, EnumEntity):
+        Returns None if the table is not supported for comparison.
+        """
+        state_table_id = reference_table_address.table_id
+        if self._is_enum_entity(table_name=state_table_id):
             # TODO(#24413): Handle EnumEntity checking differently
             return None
 
-        return self.output_validations_for_table(
-            root_entity_cls=cast(
-                Type[Entity], get_root_entity_class_for_entity(entity_cls)
-            ),
-            state_entity_cls=db_entity_cls,
+        try:
+            comparable_reference_table_address = self._materialize_comparable_table(
+                dataset=self.reference_dataset,
+                state_table_id=state_table_id,
+            )
+
+            comparable_sandbox_table_address = self._materialize_comparable_table(
+                dataset=self.sandbox_dataset,
+                state_table_id=state_table_id,
+            )
+        except NotImplementedError:
+            # TODO(#24413): Remove this try/except once association tables are supported
+            return None
+
+        return compare_table_or_view(
+            address_original=comparable_reference_table_address,
+            address_new=comparable_sandbox_table_address,
+            comparison_output_dataset_id=self.output_dataset_id,
+            primary_keys=self._primary_keys_for_differences_output(state_table_id),
+            grouping_columns=None,
         )
 
     def run_validation(self) -> None:
@@ -535,7 +558,7 @@ class ValidationResult:
                     f"{root_entity_name} in the reference dataset."
                 )
             else:
-                output_dataset_id = one(a.dataset_id for a in errors)
+                output_dataset_id = one({a.dataset_id for a in errors})
                 print(
                     f"⚠️ Found the following {root_entity_name} inconsistencies (see "
                     f"corresponding table in the {output_dataset_id} dataset):"
