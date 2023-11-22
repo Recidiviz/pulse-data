@@ -23,6 +23,9 @@ from recidiviz.persistence.entity_matching.legacy.state.state_specific_entity_ma
 from recidiviz.persistence.entity_matching.legacy.state.us_ar.us_ar_matching_delegate import (
     UsArMatchingDelegate,
 )
+from recidiviz.persistence.entity_matching.legacy.state.us_az.us_az_matching_delegate import (
+    UsAzMatchingDelegate,
+)
 from recidiviz.persistence.entity_matching.legacy.state.us_ca.us_ca_matching_delegate import (
     UsCaMatchingDelegate,
 )
@@ -107,4 +110,6 @@ class StateSpecificEntityMatchingDelegateFactory:
             return UsPaMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_TN":
             return UsTnMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_AZ":
+            return UsAzMatchingDelegate(ingest_metadata)
         raise ValueError(f"Unexpected region_code provided: {region_code}.")

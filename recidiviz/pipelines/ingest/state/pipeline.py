@@ -128,7 +128,7 @@ def get_pipeline_output_tables(expected_output_entities: Set[str]) -> Set[str]:
                 and child_member.get_entity_name() in expected_output_entities
             ):
                 expected_output_tables.add(table.name)
-        elif table.name in expected_output_entities:
+        if table.name in expected_output_entities:
             expected_output_tables.add(table.name)
 
     return expected_output_tables
@@ -184,6 +184,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             ].hydrated_entity_classes()
         }
 
+        if not expected_output_entities and not ingest_views_to_run:
+            return
         if not expected_output_entities:
             raise ValueError("Pipeline has no expected output")
 
