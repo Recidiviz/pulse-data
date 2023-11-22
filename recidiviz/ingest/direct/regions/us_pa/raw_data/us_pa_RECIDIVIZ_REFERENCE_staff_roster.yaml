@@ -17,17 +17,26 @@ file_description: |-
 
   ```
   SELECT * FROM (
-        SELECT DISTINCT
-            all_staff.*,
-            supervisors.EmployeeID AS Supervisor_EmpNum, 
-        FROM <ALL STAFF TABLE> all 
-        LEFT JOIN <SUPERVISORS TAB> supervisors
-        -- join on supervisor name to get supervisor ID
-        ON (CONCAT(TRIM(UPPER(all.SupervisorFirstName)), TRIM(UPPER(all.SupervisorLastName))) 
-            = CONCAT(TRIM(UPPER(supervisors.EmployeeFirstName)), TRIM(UPPER(supervisors.EmployeeLastName))))
+    SELECT DISTINCT
+        all_staff.*,
+        supervisors.EmployeeID AS Supervisor_EmpNum, 
+    FROM <ALL STAFF TABLE> all 
+    LEFT JOIN <SUPERVISORS TAB> supervisors
+    -- join on supervisor name to get supervisor ID
+    ON (CONCAT(TRIM(UPPER(all.SupervisorFirstName)), TRIM(UPPER(all.SupervisorLastName))) 
+        = CONCAT(TRIM(UPPER(supervisors.EmployeeFirstName)), TRIM(UPPER(supervisors.EmployeeLastName))))
     )
     ORDER BY EmployeeID;
-    ```
+  ```
+
+  To join caseload types: 
+  ```
+  SELECT DISTINCT 
+    all.*, special.AgentType,  
+  FROM <ALL STAFF TABLE WITH SUPERVISOR IDS> all
+  LEFT JOIN <SPECIALTY AGENTS ROSTER> special
+  ON(LPAD(PosNo6, 6, '0') = AMU_POS_NO)
+  ```
 data_classification: source
 primary_key_cols:
   - EmployeeID
@@ -78,3 +87,6 @@ columns:
     description: |-
       Supervisor's employee ID. Will be blank if the employee does not have a
       supervisor or is a supervisor themselves.
+  - name: AgentType
+    description: |-
+      Officer's caseload type. NULL = General.

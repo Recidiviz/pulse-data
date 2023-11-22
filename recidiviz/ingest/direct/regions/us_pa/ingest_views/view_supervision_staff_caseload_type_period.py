@@ -15,7 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Query containing supervision staff role period information."""
+"""Query containing supervision staff role period information.
+
+If someone is employed, then leaves the department, then is re-employed by the department
+later, it will appear that they held their last position for the entirety of the time
+they were not employed by the department. 
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -24,28 +29,68 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH most_recent_entries AS (
-  SELECT 
-  external_id,
-  UPPER(AgentType) AS AgentType,
-  -- TODO(#18022): We should be building these periods based on actual start and end dates of employment; these are arbitrary, temporary placeholders.
-  -- Since this is a static roster, there will be exactly one row per P.O., and we will assume they are all actively employed.
-  DATE(1900,1,1) AS start_date, 
-  NULL AS end_date,
-  ROW_NUMBER() OVER (PARTITION BY external_id ORDER BY date_received desc, AgentType) as period_seq_num
-  FROM {specialty_agents}
+WITH roster_data AS (
+    SELECT DISTINCT
+        EmployeeID,
+        AgentType,
+        CAST(update_datetime AS DATETIME) AS update_datetime,
+        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
+        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY EmployeeID) AS last_appearance_date,
+    FROM {RECIDIVIZ_REFERENCE_staff_roster@ALL}
+),
+critical_dates AS (
+    SELECT * FROM (
+        SELECT
+            EmployeeID, 
+            AgentType,
+            update_datetime,
+            last_file_update_datetime,
+            last_appearance_date,
+            -- Add AgentType to deterministically sort assignments that happened on the same day
+            LAG(AgentType) OVER (
+                PARTITION BY EmployeeID 
+                ORDER BY update_datetime, AgentType) 
+                AS prev_caseload_type
+        FROM roster_data
+        ) cd
+    WHERE
+    -- officer just started working 
+    (cd.prev_caseload_type IS NULL AND cd.AgentType IS NOT NULL) 
+    -- officer changed caseload types 
+    OR cd.prev_caseload_type != AgentType
+    -- include all rows from the most recent roster, even if the above conditions do not apply
+    OR update_datetime = last_file_update_datetime
+), 
+all_periods AS (
+SELECT 
+    EmployeeID AS employeeid,
+    TRIM(AgentType) AS agenttype,
+    update_datetime AS start_date,
+    CASE 
+        -- If a staff member stops appearing in the roster, close their employment period
+        -- on the first date we receive a roster that does not include them
+        WHEN lead(update_datetime) OVER person_window IS NULL 
+        AND update_datetime < last_file_update_datetime 
+        THEN update_datetime   
+        -- All currently-employed staff will appear in the latest roster
+        WHEN update_datetime = last_file_update_datetime THEN CAST(NULL AS DATETIME)     
+        -- Else there is a more recent entry for a staff member
+        ELSE LEAD(update_datetime) OVER person_window
+    END AS end_date
+FROM critical_dates
+window person_window AS (PARTITION BY EmployeeID ORDER BY update_datetime) 
 )
-SELECT *
-FROM most_recent_entries
-WHERE period_seq_num = 1
-AND external_id IS NOT NULL
+SELECT 
+    *,    
+    ROW_NUMBER() OVER (PARTITION BY EmployeeID ORDER BY start_date) AS period_seq_num 
+FROM all_periods
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="supervision_staff_caseload_type_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="external_id",
+    order_by_cols="EmployeeID",
 )
 
 if __name__ == "__main__":
