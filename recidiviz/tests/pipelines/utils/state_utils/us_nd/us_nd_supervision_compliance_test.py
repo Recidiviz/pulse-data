@@ -148,7 +148,6 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -244,7 +243,6 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             assessments=[],
             supervision_contacts=contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -289,7 +287,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -324,7 +321,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -359,7 +355,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -394,7 +389,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -430,7 +424,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -465,7 +458,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -527,7 +519,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -565,7 +556,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -614,7 +604,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -665,7 +654,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -715,7 +703,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -765,7 +752,6 @@ class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -920,7 +906,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -962,7 +947,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -1024,7 +1008,6 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -1068,7 +1051,6 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -1121,7 +1103,6 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -1164,7 +1145,6 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -1223,7 +1203,6 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )
@@ -1274,7 +1253,6 @@ class TestNextRecommendedHomeVisitDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsNdSupervisionDelegate([]),
         )

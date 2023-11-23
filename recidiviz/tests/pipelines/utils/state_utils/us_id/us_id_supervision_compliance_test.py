@@ -181,7 +181,6 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             assessments=assessments,
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -278,7 +277,6 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             assessments=[],
             supervision_contacts=contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -343,7 +341,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -397,7 +394,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -451,7 +447,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -505,7 +500,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -776,7 +770,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -819,7 +812,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -862,7 +854,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1010,7 +1001,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1106,7 +1096,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1145,7 +1134,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1184,7 +1172,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1244,7 +1231,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1318,7 +1304,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=supervision_contacts,
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1357,7 +1342,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1396,7 +1380,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1430,7 +1413,6 @@ class TestNextRecommendedContactDate(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1471,7 +1453,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1505,7 +1486,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1542,7 +1522,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1579,7 +1558,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1614,7 +1592,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1651,7 +1628,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1690,7 +1666,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1726,7 +1701,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1759,7 +1733,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1819,7 +1792,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1862,7 +1834,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1904,7 +1875,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessments=[assessment],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1958,7 +1928,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessments=[assessment_boundary],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -1988,7 +1957,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessments=[assessment_under_boundary],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -2071,7 +2039,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ],  # No downgrade regardless of score
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -2104,7 +2071,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -2122,7 +2088,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -2172,7 +2137,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -2190,7 +2154,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -2217,7 +2180,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -2237,7 +2199,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )
@@ -2273,7 +2234,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ],
             supervision_contacts=[],
             violation_responses=[],
-            incarceration_sentences=[],
             incarceration_period_index=self.empty_ip_index,
             supervision_delegate=UsIdSupervisionDelegate([]),
         )

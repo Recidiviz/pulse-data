@@ -42,7 +42,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -73,7 +72,6 @@ class StateSupervisionCaseComplianceManager:
         assessments: List[NormalizedStateAssessment],
         supervision_contacts: List[StateSupervisionContact],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
-        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
     ):
@@ -84,7 +82,6 @@ class StateSupervisionCaseComplianceManager:
         self.assessments = assessments
         self.supervision_contacts = supervision_contacts
         self.violation_responses = violation_responses
-        self.incarceration_sentences = incarceration_sentences
         self.incarceration_period_index = incarceration_period_index
         self.supervision_delegate = supervision_delegate
 
@@ -298,19 +295,6 @@ class StateSupervisionCaseComplianceManager:
             compliance_evaluation_date,
             self._get_applicable_treatment_collateral_contacts_between_dates,
         )
-
-    def _treatment_collateral_contacts_on_date(
-        self, compliance_evaluation_date: date
-    ) -> int:
-        """Returns the number of treatment collateral contacts that were completed on compliance_evaluation_date."""
-        applicable_contacts = (
-            self._get_applicable_treatment_collateral_contacts_between_dates(
-                lower_bound_inclusive=compliance_evaluation_date,
-                upper_bound_inclusive=compliance_evaluation_date,
-            )
-        )
-
-        return len(applicable_contacts)
 
     def _get_applicable_treatment_collateral_contacts_between_dates(
         self, lower_bound_inclusive: date, upper_bound_inclusive: date

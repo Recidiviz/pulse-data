@@ -185,7 +185,6 @@ def test_get_required_state_specific_delegates() -> None:
             assessments=None,
             supervision_contacts=None,
             violation_responses=None,
-            incarceration_sentences=None,
             incarceration_period_index=None,
             supervision_delegate=None,
         )
