@@ -6804,9 +6804,6 @@ def _generate_case_compliances(
     violation_responses: Optional[
         List[NormalizedStateSupervisionViolationResponse]
     ] = None,
-    incarceration_sentences: Optional[
-        List[NormalizedStateIncarcerationSentence]
-    ] = None,
     incarceration_period_index: Optional[NormalizedIncarcerationPeriodIndex] = None,
     supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
 ) -> Dict[date, SupervisionCaseCompliance]:
@@ -6840,7 +6837,6 @@ def _generate_case_compliances(
         assessments or [],
         face_to_face_contacts or [],
         violation_responses or [],
-        incarceration_sentences or [],
         incarceration_period_index=(
             incarceration_period_index or default_normalized_ip_index_for_tests()
         ),

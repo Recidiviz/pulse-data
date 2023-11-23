@@ -38,7 +38,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateAssessment,
-    NormalizedStateIncarcerationSentence,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionViolationResponse,
 )
@@ -887,7 +886,6 @@ def get_state_specific_case_compliance_manager(
     assessments: List[NormalizedStateAssessment],
     supervision_contacts: List[StateSupervisionContact],
     violation_responses: List[NormalizedStateSupervisionViolationResponse],
-    incarceration_sentences: List[NormalizedStateIncarcerationSentence],
     incarceration_period_index: NormalizedIncarcerationPeriodIndex,
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Optional[StateSupervisionCaseComplianceManager]:
@@ -905,7 +903,6 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
-            incarceration_sentences,
             incarceration_period_index,
             supervision_delegate,
         )
@@ -918,7 +915,6 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
-            incarceration_sentences,
             incarceration_period_index,
             supervision_delegate,
         )
@@ -931,7 +927,6 @@ def get_state_specific_case_compliance_manager(
             assessments,
             supervision_contacts,
             violation_responses,
-            incarceration_sentences,
             incarceration_period_index,
             supervision_delegate,
         )
