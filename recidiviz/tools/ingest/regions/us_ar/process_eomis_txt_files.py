@@ -37,7 +37,7 @@ Usage:
 python -m recidiviz.tools.ingest.regions.us_ar.process_eomis_txt_files \
     --credentials-directory /path/to/username/credentials \
     --source_folder /path/to/input/folder --csv_storage_folder /path/to/csv/storage/folder \
-    --delimiter ‡ --encoding cp1252 --project_id recidiviz-staging --files_update_date 2023-11-06 \
+    --update_configs True --delimiter ‡ --encoding cp1252 --project_id recidiviz-staging --files_update_date 2023-11-06 \
     [--destination_bucket recidiviz-staging-us-ar-scratch-2]
 """
 
@@ -73,6 +73,7 @@ from recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_w
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.params import str_to_bool
 
 US_AR_REFERENCE_SHEET_ID = "1W8NDQ0LtF4LArcsL6lCu3nxgxNKQLpCC9-niRsOXPGk"
 
@@ -389,6 +390,7 @@ def main(
     cred_directory: str,
     folder_path: str,
     csv_storage_folder: str,
+    update_configs: bool,
     delimiter: str,
     encoding: str,
     project_id: Optional[str],
@@ -465,14 +467,17 @@ def main(
 
     default_config = region_config.default_config()
 
-    all_input_file_tags = [
-        file_tag.split(".")[0] for file_tag in os.listdir(folder_path)
-    ]
+    if update_configs:
+        configs_to_update = [
+            file_tag.split(".")[0] for file_tag in os.listdir(folder_path)
+        ]
+    else:
+        configs_to_update = [mc.split(".")[0] for mc in missing_configs]
 
     raw_file_configs: List[DirectIngestRawFileConfig] = [
         rfc
         for rfc in region_config.raw_file_configs.values()
-        if rfc.file_tag in all_input_file_tags
+        if rfc.file_tag in configs_to_update
     ]
 
     # Updates configs, including the skeleton configs added in previous step.
@@ -559,6 +564,14 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--update_configs",
+        dest="update_configs",
+        default=False,
+        type=str_to_bool,
+        help="Whether or not existing configs should be updated (defaults to False).",
+    )
+
+    parser.add_argument(
         "--delimiter",
         dest="delimiter",
         default="‡",
@@ -614,6 +627,7 @@ if __name__ == "__main__":
         args.cred_directory,
         args.folder_path,
         args.csv_storage_folder,
+        args.update_configs,
         args.delimiter,
         args.encoding,
         args.project_id,
