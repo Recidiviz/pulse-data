@@ -274,6 +274,13 @@ columns:
   - name: SUSPIMPSENTENCETERMD
     description: |-
       SIS term (days)
+  - name: ALTRELEASEDATE
+    description: |-
+      Alternative release date
+    field_type: datetime
+  - name: ALTRELEASETYPE
+    description: |-
+      Alternative release type
 table_relationships:
   - foreign_table: OFFENDERPROFILE
     join_logic:
