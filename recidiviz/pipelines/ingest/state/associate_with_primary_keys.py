@@ -24,6 +24,7 @@ from more_itertools import one
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.pipelines.ingest.state.constants import (
     ExternalIdKey,
+    IngestViewName,
     PrimaryKey,
     UpperBoundDate,
 )
@@ -39,23 +40,26 @@ class AssociateRootEntitiesWithPrimaryKeys(beam.PTransform):
     The input to this PTransform is a Dict[str, beam.PCollection] where the keys are
         {
             "primary_keys": beam.PCollection[Tuple[ExternalIdKey, PrimaryKey]],
-            "merged_root_entities_with_dates: beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]]
+            "merged_root_entities_with_dates: beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]]
         }
     After CoGroupByKey, we have a PCollection that is in the form of:
-        (ExternalIdKey, {"primary_keys": Iterable[PrimaryKey], "merged_root_entities_with_dates": Iterable[Tuple[UpperBoundDate, RootEntity]]})
+        (ExternalIdKey, {"primary_keys": Iterable[PrimaryKey], "merged_root_entities_with_dates": Iterable[Tuple[UpperBoundDate, IngestViewName, RootEntity]]})
     After Map(transform_joined_data), we have a PCollection that is:
-        (PrimaryKey, Dict[UpperBoundDate: Iterable[RootEntity]]) but there may be multiple instances of PrimaryKey
+        (PrimaryKey, Dict[Tuple[UpperBoundDate, IngestViewName]: Iterable[RootEntity]]) but there may be multiple instances of PrimaryKey
     After GroupByKey, we have a PCollection that is:
-        (PrimaryKey, Iterable[Dict[UpperBoundDate: Iterable[RootEntity]]]) where PrimaryKey is now unique
+        (PrimaryKey, Iterable[Dict[Tuple[UpperBoundDate, IngestViewName]: Iterable[RootEntity]]]) where PrimaryKey is now unique
     After Map(merge_date_to_root_entity_dictionary_values), we have a PCollection that is:
-        (PrimaryKey, Dict[UpperBoundDate: Iterable[RootEntity]]) where PrimaryKey is now unique and
+        (PrimaryKey, Dict[Tuple[UpperBoundDate, IngestViewName]: Iterable[RootEntity]]) where PrimaryKey is now unique and
         the values are merged.
     """
 
     def expand(
         self, input_or_inputs: Dict[str, beam.PCollection]
     ) -> beam.PCollection[
-        Tuple[PrimaryKey, Dict[UpperBoundDate, Iterable[RootEntity]]]
+        Tuple[
+            PrimaryKey,
+            Dict[Tuple[UpperBoundDate, IngestViewName], Iterable[RootEntity]],
+        ]
     ]:
         return (
             input_or_inputs
@@ -74,33 +78,56 @@ class AssociateRootEntitiesWithPrimaryKeys(beam.PTransform):
             Dict[
                 str,
                 Union[
-                    Iterable[Tuple[UpperBoundDate, RootEntity]], Iterable[PrimaryKey]
+                    Iterable[Tuple[UpperBoundDate, IngestViewName, RootEntity]],
+                    Iterable[PrimaryKey],
                 ],
             ],
         ],
-    ) -> Tuple[PrimaryKey, Dict[UpperBoundDate, Iterable[RootEntity]]]:
+    ) -> Tuple[
+        PrimaryKey, Dict[Tuple[UpperBoundDate, IngestViewName], Iterable[RootEntity]]
+    ]:
+        """Transforms the joined data from the CoGroupByKey step from a value type of
+        (ExternalIdKey, {"primary_keys": Iterable[PrimaryKey],
+        "merged_root_entities_with_dates": Iterable[Tuple[UpperBoundDate, IngestViewName, RootEntity]]})
+        into a value type of (PrimaryKey, Dict[Tuple[UpperBoundDate, IngestViewName], Iterable[RootEntity]])
+        """
         _, values = element
         primary_key: PrimaryKey = one(
             assert_type_list(values[PRIMARY_KEYS], PrimaryKey)
         )
-        entities_with_dates: Iterable[Tuple[UpperBoundDate, RootEntity]] = cast(
-            Iterable[Tuple[UpperBoundDate, RootEntity]],
+        entities_with_dates_and_ingest_view_name: Iterable[
+            Tuple[UpperBoundDate, IngestViewName, RootEntity]
+        ] = cast(
+            Iterable[Tuple[UpperBoundDate, IngestViewName, RootEntity]],
             values[MERGED_ROOT_ENTITIES_WITH_DATES],
         )
-        result: Dict[UpperBoundDate, Iterable[RootEntity]] = defaultdict(list)
-        for date, entity in entities_with_dates:
-            result[date] = [*result[date], entity]
+        result: Dict[
+            Tuple[UpperBoundDate, IngestViewName], Iterable[RootEntity]
+        ] = defaultdict(list)
+        for date, ingest_view_name, entity in entities_with_dates_and_ingest_view_name:
+            result[(date, ingest_view_name)] = [
+                *result[(date, ingest_view_name)],
+                entity,
+            ]
         return (primary_key, result)
 
     def merge_date_to_root_entity_dictionary_values(
         self,
         element: Tuple[
-            PrimaryKey, Iterable[Dict[UpperBoundDate, Iterable[RootEntity]]]
+            PrimaryKey,
+            Iterable[Dict[Tuple[UpperBoundDate, IngestViewName], Iterable[RootEntity]]],
         ],
-    ) -> Tuple[PrimaryKey, Dict[UpperBoundDate, Iterable[RootEntity]]]:
+    ) -> Tuple[
+        PrimaryKey, Dict[Tuple[UpperBoundDate, IngestViewName], Iterable[RootEntity]]
+    ]:
         primary_key, values = element
-        result: Dict[UpperBoundDate, Iterable[RootEntity]] = defaultdict(list)
+        result: Dict[
+            Tuple[UpperBoundDate, IngestViewName], Iterable[RootEntity]
+        ] = defaultdict(list)
         for value in values:
-            for date, entities in value.items():
-                result[date] = [*result[date], *entities]
+            for date_with_ingest_view, entities in value.items():
+                result[date_with_ingest_view] = [
+                    *result[date_with_ingest_view],
+                    *entities,
+                ]
         return (primary_key, result)

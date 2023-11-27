@@ -43,9 +43,13 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = False
         self.test_pipeline = TestPipeline(options=apache_beam_pipeline_options)
 
+        self.ingest_view_1 = "ingest_view_1"
+        self.ingest_view_2 = "ingest_view_2"
+
         self.external_id_1 = ("ID1", "TYPE1")
         self.external_id_2 = ("ID2", "TYPE2")
         self.external_id_3 = ("ID3", "TYPE1")
+        self.external_id_4 = ("ID4", "TYPE1")
 
         self.person12 = StatePerson(
             state_code=self.region_code().value,
@@ -87,14 +91,18 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
         )
 
     def test_associate_root_entities_with_primary_keys(self) -> None:
-        expected_output = [(self.primary_key_3, {self.date1: [self.person3]})]
+        expected_output = [
+            (self.primary_key_3, {(self.date1, self.ingest_view_1): [self.person3]})
+        ]
         primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
             [(self.external_id_3, self.primary_key_3)]
         )
         merged_root_entities_with_dates = (
             self.test_pipeline
             | "Create date root entity tuples"
-            >> beam.Create([(self.external_id_3, (self.date1, self.person3))])
+            >> beam.Create(
+                [(self.external_id_3, (self.date1, self.ingest_view_1, self.person3))]
+            )
         )
         output = {
             pipeline.PRIMARY_KEYS: primary_keys,
@@ -113,7 +121,7 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             (
                 self.primary_key_12,
                 {
-                    self.date1: [self.person12, self.person12],
+                    (self.date1, self.ingest_view_1): [self.person12, self.person12],
                 },
             )
         ]
@@ -128,8 +136,14 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             | "Create date root entity tuples"
             >> beam.Create(
                 [
-                    (self.external_id_1, (self.date1, self.person12)),
-                    (self.external_id_2, (self.date1, self.person12)),
+                    (
+                        self.external_id_1,
+                        (self.date1, self.ingest_view_1, self.person12),
+                    ),
+                    (
+                        self.external_id_2,
+                        (self.date1, self.ingest_view_1, self.person12),
+                    ),
                 ]
             )
         )
@@ -144,7 +158,10 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
         expected_output = [
             (
                 self.primary_key_3,
-                {self.date1: [self.person3], self.date2: [self.person3]},
+                {
+                    (self.date1, self.ingest_view_1): [self.person3],
+                    (self.date2, self.ingest_view_1): [self.person3],
+                },
             )
         ]
         primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
@@ -155,8 +172,98 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             | "Create date root entity tuples"
             >> beam.Create(
                 [
-                    (self.external_id_3, (self.date1, self.person3)),
-                    (self.external_id_3, (self.date2, self.person3)),
+                    (
+                        self.external_id_3,
+                        (self.date1, self.ingest_view_1, self.person3),
+                    ),
+                    (
+                        self.external_id_3,
+                        (self.date2, self.ingest_view_1, self.person3),
+                    ),
+                ]
+            )
+        )
+        output = {
+            pipeline.PRIMARY_KEYS: primary_keys,
+            pipeline.MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+        } | pipeline.AssociateRootEntitiesWithPrimaryKeys()
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    def test_associate_root_entities_with_primary_keys_multiple_views(self) -> None:
+        expected_output = [
+            (
+                self.primary_key_3,
+                {
+                    (self.date1, self.ingest_view_1): [self.person3],
+                    (self.date1, self.ingest_view_2): [self.person3],
+                },
+            )
+        ]
+        primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
+            [(self.external_id_3, self.primary_key_3)]
+        )
+        merged_root_entities_with_dates = (
+            self.test_pipeline
+            | "Create date root entity tuples"
+            >> beam.Create(
+                [
+                    (
+                        self.external_id_3,
+                        (self.date1, self.ingest_view_1, self.person3),
+                    ),
+                    (
+                        self.external_id_3,
+                        (self.date1, self.ingest_view_2, self.person3),
+                    ),
+                ]
+            )
+        )
+        output = {
+            pipeline.PRIMARY_KEYS: primary_keys,
+            pipeline.MERGED_ROOT_ENTITIES_WITH_DATES: merged_root_entities_with_dates,
+        } | pipeline.AssociateRootEntitiesWithPrimaryKeys()
+        assert_that(output, equal_to(expected_output))
+        self.test_pipeline.run()
+
+    def test_associate_root_entities_with_primary_keys_multiple_dates_multiple_views(
+        self,
+    ) -> None:
+        expected_output = [
+            (
+                self.primary_key_3,
+                {
+                    (self.date1, self.ingest_view_1): [self.person3],
+                    (self.date2, self.ingest_view_1): [self.person3],
+                    (self.date1, self.ingest_view_2): [self.person3],
+                    (self.date2, self.ingest_view_2): [self.person3],
+                },
+            )
+        ]
+        primary_keys = self.test_pipeline | "Create primary keys" >> beam.Create(
+            [(self.external_id_3, self.primary_key_3)]
+        )
+        merged_root_entities_with_dates = (
+            self.test_pipeline
+            | "Create date root entity tuples"
+            >> beam.Create(
+                [
+                    (
+                        self.external_id_3,
+                        (self.date1, self.ingest_view_1, self.person3),
+                    ),
+                    (
+                        self.external_id_3,
+                        (self.date2, self.ingest_view_1, self.person3),
+                    ),
+                    (
+                        self.external_id_3,
+                        (self.date1, self.ingest_view_2, self.person3),
+                    ),
+                    (
+                        self.external_id_3,
+                        (self.date2, self.ingest_view_2, self.person3),
+                    ),
                 ]
             )
         )
@@ -177,8 +284,8 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             (
                 self.primary_key_12,
                 {
-                    self.date1: [self.person12, self.person12],
-                    self.date2: [self.person12, self.person12],
+                    (self.date1, self.ingest_view_1): [self.person12, self.person12],
+                    (self.date2, self.ingest_view_1): [self.person12, self.person12],
                 },
             )
         ]
@@ -193,10 +300,22 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             | "Create date root entity tuples"
             >> beam.Create(
                 [
-                    (self.external_id_1, (self.date1, self.person12)),
-                    (self.external_id_2, (self.date1, self.person12)),
-                    (self.external_id_1, (self.date2, self.person12)),
-                    (self.external_id_2, (self.date2, self.person12)),
+                    (
+                        self.external_id_1,
+                        (self.date1, self.ingest_view_1, self.person12),
+                    ),
+                    (
+                        self.external_id_2,
+                        (self.date1, self.ingest_view_1, self.person12),
+                    ),
+                    (
+                        self.external_id_1,
+                        (self.date2, self.ingest_view_1, self.person12),
+                    ),
+                    (
+                        self.external_id_2,
+                        (self.date2, self.ingest_view_1, self.person12),
+                    ),
                 ]
             )
         )
@@ -215,17 +334,18 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             (
                 self.primary_key_12,
                 {
-                    self.date1: [self.person12, self.person12],
-                    self.date2: [self.person12, self.person12],
-                    self.date3: [self.person12, self.person12],
+                    (self.date1, self.ingest_view_1): [self.person12, self.person12],
+                    (self.date1, self.ingest_view_2): [self.person12],
+                    (self.date2, self.ingest_view_1): [self.person12, self.person12],
+                    (self.date3, self.ingest_view_2): [self.person12, self.person12],
                 },
             ),
             (
                 self.primary_key_3,
                 {
-                    self.date1: [self.person3],
-                    self.date2: [self.person3],
-                    self.date3: [self.person3],
+                    (self.date1, self.ingest_view_1): [self.person3],
+                    (self.date2, self.ingest_view_1): [self.person3],
+                    (self.date3, self.ingest_view_1): [self.person3],
                 },
             ),
         ]
@@ -241,15 +361,46 @@ class TestAssociateRootEntitiesWithPrimaryKeys(StateIngestPipelineTestCase):
             | "Create date root entity tuples"
             >> beam.Create(
                 [
-                    (self.external_id_1, (self.date1, self.person12)),
-                    (self.external_id_2, (self.date1, self.person12)),
-                    (self.external_id_3, (self.date1, self.person3)),
-                    (self.external_id_1, (self.date2, self.person12)),
-                    (self.external_id_2, (self.date2, self.person12)),
-                    (self.external_id_3, (self.date2, self.person3)),
-                    (self.external_id_1, (self.date3, self.person12)),
-                    (self.external_id_2, (self.date3, self.person12)),
-                    (self.external_id_3, (self.date3, self.person3)),
+                    (
+                        self.external_id_1,
+                        (self.date1, self.ingest_view_1, self.person12),
+                    ),
+                    (
+                        self.external_id_1,
+                        (self.date1, self.ingest_view_2, self.person12),
+                    ),
+                    (
+                        self.external_id_2,
+                        (self.date1, self.ingest_view_1, self.person12),
+                    ),
+                    (
+                        self.external_id_3,
+                        (self.date1, self.ingest_view_1, self.person3),
+                    ),
+                    (
+                        self.external_id_1,
+                        (self.date2, self.ingest_view_1, self.person12),
+                    ),
+                    (
+                        self.external_id_2,
+                        (self.date2, self.ingest_view_1, self.person12),
+                    ),
+                    (
+                        self.external_id_3,
+                        (self.date2, self.ingest_view_1, self.person3),
+                    ),
+                    (
+                        self.external_id_1,
+                        (self.date3, self.ingest_view_2, self.person12),
+                    ),
+                    (
+                        self.external_id_2,
+                        (self.date3, self.ingest_view_2, self.person12),
+                    ),
+                    (
+                        self.external_id_3,
+                        (self.date3, self.ingest_view_1, self.person3),
+                    ),
                 ]
             )
         )
