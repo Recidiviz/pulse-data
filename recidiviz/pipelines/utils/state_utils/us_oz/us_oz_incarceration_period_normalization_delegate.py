@@ -22,6 +22,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     StateSpecificIncarcerationNormalizationDelegate,
 )
@@ -52,3 +55,18 @@ class UsOzIncarcerationNormalizationDelegate(
             incarceration_period,
             admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
         )
+
+    def incarceration_admission_reason_override(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """Overrides admission reason for individuals in the LOTR data system.
+        All other data systems return the existing admission reason attached to the incarceration period.
+        """
+        if (
+            incarceration_period.external_id
+            and incarceration_period.external_id.upper().startswith("LOTR")
+        ):
+            return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
+        return incarceration_period.admission_reason

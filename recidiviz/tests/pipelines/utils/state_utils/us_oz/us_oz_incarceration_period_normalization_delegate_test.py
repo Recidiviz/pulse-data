@@ -18,6 +18,10 @@
 import unittest
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationPeriodAdmissionReason,
+)
 from recidiviz.pipelines.utils.state_utils.us_oz.us_oz_incarceration_period_normalization_delegate import (
     UsOzIncarcerationNormalizationDelegate,
 )
@@ -31,4 +35,46 @@ class TestUsOzIncarcerationNormalizationDelegate(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate = UsOzIncarcerationNormalizationDelegate()
 
-    # ~~ Add new tests here ~~
+    def test_incarceration_admission_reason_override(self) -> None:
+        """Tests that LOTR data system admission reasons are RETURN FROM ESCAPE
+        and do not affect existing data systems."""
+        lotr_period_no_admission_reason = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE, external_id="LOTR-99"
+        )
+        self.assertEqual(
+            self.delegate.incarceration_admission_reason_override(
+                lotr_period_no_admission_reason, None
+            ),
+            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        )
+        lotr_period_with_admission_reason = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="LOTR-42",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+        self.assertEqual(
+            self.delegate.incarceration_admission_reason_override(
+                lotr_period_with_admission_reason, None
+            ),
+            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        )
+        vfds_period_no_admission_reason = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE, external_id="VFDS-1"
+        )
+        self.assertNotEqual(
+            self.delegate.incarceration_admission_reason_override(
+                vfds_period_no_admission_reason, None
+            ),
+            StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+        )
+        vfds_period_with_admission_reason = StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="VFDS-2",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+        self.assertEqual(
+            self.delegate.incarceration_admission_reason_override(
+                vfds_period_with_admission_reason, None
+            ),
+            StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
