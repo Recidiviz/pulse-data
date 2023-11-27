@@ -88,7 +88,8 @@ def _ingest_pipeline_should_run_in_dag(
     )
 
 
-@task.short_circuit
+@task.short_circuit(ignore_downstream_trigger_rules=False)
+# allows skipping of downstream tasks until trigger rule prevents it (like ALL_DONE)
 def handle_ingest_pipeline_should_run_in_dag_check(
     should_run_ingest_pipeline: bool,
 ) -> bool:
@@ -105,7 +106,11 @@ def handle_ingest_pipeline_should_run_in_dag_check(
     return True
 
 
-@task.short_circuit(task_id="should_run_based_on_watermarks")
+@task.short_circuit(
+    task_id="should_run_based_on_watermarks",
+    ignore_downstream_trigger_rules=False
+    # allows skipping of downstream tasks until trigger rule prevents it (like ALL_DONE)
+)
 def _should_run_based_on_watermarks(
     watermarks: Dict[str, str], max_update_datetimes: Dict[str, str]
 ) -> bool:
