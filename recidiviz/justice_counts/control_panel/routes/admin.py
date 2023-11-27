@@ -283,10 +283,13 @@ def get_admin_blueprint(
     @auth_decorator
     def copy_metric_config_to_child_agencies(super_agency_id: int) -> Response:
         """Copies metric settings from a super agency to its child agency."""
+        request_json = assert_type(request.json, dict)
+        metric_definition_key_subset = request_json.get(
+            "metric_definition_key_subset", []
+        )
         super_agency = AgencyInterface.get_agency_by_id(
             session=current_session, agency_id=super_agency_id
         )
-
         child_agencies = AgencyInterface.get_child_agencies_by_agency_ids(
             session=current_session, agency_ids=[super_agency_id]
         )
@@ -297,11 +300,16 @@ def get_admin_blueprint(
 
         for child_agency in child_agencies:
             for metric_setting in super_agency_metric_settings:
-                DatapointInterface.add_or_update_agency_datapoints(
-                    session=current_session,
-                    agency=child_agency,
-                    agency_metric=metric_setting,
-                )
+                if "ALL" in set(
+                    metric_definition_key_subset
+                ) or metric_setting.metric_definition.key in set(
+                    metric_definition_key_subset
+                ):
+                    DatapointInterface.add_or_update_agency_datapoints(
+                        session=current_session,
+                        agency=child_agency,
+                        agency_metric=metric_setting,
+                    )
 
         current_session.commit()
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})

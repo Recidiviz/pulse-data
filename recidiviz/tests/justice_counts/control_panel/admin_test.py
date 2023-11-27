@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Justice Counts Control Panel backend API."""
+from collections import defaultdict
 from typing import Dict
 
 import mock
@@ -395,12 +396,6 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             .one()
         )
 
-        super_agency_metric_key_to_agency_datapoints = (
-            DatapointInterface.get_metric_key_to_agency_datapoints(
-                session=self.session, agency_id=super_agency.id
-            )
-        )
-
         child_agency = schema.Agency(
             name="Agency Alpha Child Agency",
             super_agency_id=super_agency.id,
@@ -415,7 +410,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         custom_reporting_frequency = schema.Datapoint(
-            metric_definition_key=law_enforcement.funding.key,
+            metric_definition_key=law_enforcement.expenses.key,
             source_id=super_agency.id,
             context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
             value=(
@@ -431,49 +426,76 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.session.commit()
         self.session.refresh(child_agency)
+        self.session.refresh(super_agency)
         child_agency_id = child_agency.id
         super_agency_id = super_agency.id
-
         response = self.client.post(
-            f"/admin/agency/{super_agency.id}/child-agency/copy"
+            f"/admin/agency/{super_agency_id}/child-agency/copy",
+            json={
+                "metric_definition_key_subset": [law_enforcement.expenses.key]
+            },  # only copy over expense metric settings
         )
         self.assertEqual(response.status_code, 200)
-
-        child_agency_metric_key_to_agency_datapoints = (
-            DatapointInterface.get_metric_key_to_agency_datapoints(
-                session=self.session, agency_id=child_agency_id
-            )
-        )
-        super_agency_metric_key_to_agency_datapoints = (
-            DatapointInterface.get_metric_key_to_agency_datapoints(
-                session=self.session, agency_id=super_agency_id
-            )
+        agency_datapoints = DatapointInterface.get_agency_datapoints(
+            session=self.session, agency_id=child_agency_id
         )
 
-        for key in super_agency_metric_key_to_agency_datapoints:
-            self.assertEqual(
-                {
-                    (
-                        datapoint.is_report_datapoint,
-                        datapoint.enabled,
-                        datapoint.value,
-                        datapoint.context_key,
-                    )
-                    for datapoint in child_agency_metric_key_to_agency_datapoints.get(
-                        key, []
-                    )
-                    if datapoint.value is not None
-                },
-                {
-                    (
-                        datapoint.is_report_datapoint,
-                        datapoint.enabled,
-                        datapoint.value,
-                        datapoint.context_key,
-                    )
-                    for datapoint in super_agency_metric_key_to_agency_datapoints.get(
-                        key, []
-                    )
-                    if datapoint.value is not None
-                },
+        # There will be two agency datapoints, one that is a default
+        # datapoint to record the includes/excludes description for the
+        # expenses metric, the other that records the information about
+        # the custom reporting frequency.
+        self.assertEqual(len(agency_datapoints), 2)
+        self.assertEqual(
+            agency_datapoints[0].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
+        )
+        self.assertIsNone(agency_datapoints[0].value)
+        self.assertEqual(agency_datapoints[1].context_key, "REPORTING_FREQUENCY")
+        self.assertEqual(
+            agency_datapoints[1].value,
+            '{"custom_frequency": "ANNUAL", "starting_month": 2}',
+        )
+
+        response = self.client.post(
+            f"/admin/agency/{super_agency_id}/child-agency/copy",
+            json={"metric_definition_key_subset": ["ALL"]},  # copy over all metrics
+        )
+
+        self.assertEqual(response.status_code, 200)
+        agency_datapoints = DatapointInterface.get_agency_datapoints(
+            session=self.session, agency_id=child_agency_id
+        )
+
+        # There will be two agency datapoints, one that is a default
+        # datapoint to record the includes/excludes description for the
+        # expenses metric, the other that records the information about
+        # the custom reporting frequency.
+        metric_key_to_agency_datapoints = defaultdict(list)
+        for datapoint in agency_datapoints:
+            metric_key_to_agency_datapoints[datapoint.metric_definition_key].append(
+                datapoint
             )
+
+        for key, datapoints in metric_key_to_agency_datapoints.items():
+            if key == law_enforcement.expenses.key:
+                # The expenses agency datapoints will not change
+                self.assertEqual(
+                    datapoints[0].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
+                )
+                self.assertIsNone(datapoints[0].value)
+                self.assertEqual(datapoints[1].context_key, "REPORTING_FREQUENCY")
+                self.assertEqual(
+                    datapoints[1].value,
+                    '{"custom_frequency": "ANNUAL", "starting_month": 2}',
+                )
+            elif key == law_enforcement.funding.key:
+                # The funding agency datapoints will not change from when
+                # they were updated in the last call.
+                self.assertEqual(datapoints[0].context_key, None)
+                self.assertEqual(datapoints[0].enabled, False)
+                self.assertEqual(
+                    datapoints[1].context_key, "INCLUDES_EXCLUDES_DESCRIPTION"
+                )
+                self.assertIsNone(datapoints[1].value)
+            else:
+                for datapoint in datapoints:
+                    self.assertIsNone(datapoint.value)
