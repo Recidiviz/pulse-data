@@ -124,8 +124,11 @@ class OutliersMetricConfig:
     # String used for metric in highlights and other running text
     body_display_name: str = attr.ib()
 
-    # Event name corresponding to the metric
+    # Event name in the plural form corresponding to the metric
     event_name: str = attr.ib()
+
+    # Event name in the singular form corresponding to the metric
+    event_name_singular: str = attr.ib()
 
     # The query fragment to use to filter analyst_data.person_events for this metric's events
     metric_event_conditions_string: str = attr.ib(default=None)
@@ -137,6 +140,7 @@ class OutliersMetricConfig:
         title_display_name: str,
         body_display_name: str,
         event_name: str,
+        event_name_singular: str,
     ) -> "OutliersMetricConfig":
         return cls(
             metric.name,
@@ -144,6 +148,7 @@ class OutliersMetricConfig:
             title_display_name,
             body_display_name,
             event_name,
+            event_name_singular,
             metric.metric_event_conditions_string,
         )
 
