@@ -250,3 +250,141 @@ class TestIngestDagIntegration(AirflowIntegrationTest):
                 ],
             )
             self.assertEqual(DagRunState.FAILED, result.dag_run_state)
+
+    @patch(
+        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._ingest_pipeline_should_run_in_dag"
+    )
+    def test_ingest_dag_one_branch_skips(
+        self, mock_ingest_pipeline_should_run_in_dag: MagicMock
+    ) -> None:
+        # Need to re-import ingest_dag if you want to modify the creation of the dag for a specific test.
+        from recidiviz.airflow.dags.ingest_dag import (  # pylint: disable=import-outside-toplevel
+            create_ingest_dag,
+        )
+
+        operator_return_false = fake_operator_with_return_value(False)
+        operator_return_true = fake_operator_with_return_value(True)
+
+        def fake_ingest_pipeline_should_run_in_dag(
+            state_code: StateCode, instance: DirectIngestInstance
+        ) -> BaseOperator:
+            """
+            Return false when the task id is "ingest_pipeline_should_run_in_dag" for US_XX PRIMARY,
+            otherwise returns true.
+            """
+
+            if (
+                state_code == StateCode.US_XX
+                and instance == DirectIngestInstance.PRIMARY
+            ):
+                return operator_return_false(
+                    task_id="ingest_pipeline_should_run_in_dag"
+                )
+
+            return operator_return_true(task_id="ingest_pipeline_should_run_in_dag")
+
+        mock_ingest_pipeline_should_run_in_dag.side_effect = (
+            fake_ingest_pipeline_should_run_in_dag
+        )
+
+        with Session(bind=self.engine) as session:
+            dag = create_ingest_dag()
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_skipped_ids=[
+                    r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.get_max_update_datetimes",
+                    r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.get_watermarks",
+                    r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.should_run_based_on_watermarks",
+                    r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.verify_raw_data_flashing_not_in_progress",
+                    r".*us_xx_primary_dataflow.acquire_lock.*",
+                    r".*us_xx_primary_dataflow.dataflow_pipeline.*",
+                    r".*us_xx_primary_dataflow.write_ingest_job_completion",
+                    r".*us_xx_primary_dataflow.write_upper_bounds.*",
+                    r".*us_xx_primary_dataflow.release_lock.*",
+                ],
+            )
+            self.assertEqual(DagRunState.SUCCESS, result.dag_run_state)
+
+    @patch("recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._acquire_lock")
+    @patch(
+        "recidiviz.airflow.dags.ingest.single_ingest_pipeline_group._ingest_pipeline_should_run_in_dag"
+    )
+    def test_ingest_dag_one_branch_skips_one_branch_fails(
+        self,
+        mock_ingest_pipeline_should_run_in_dag: MagicMock,
+        mock_acquire_lock: MagicMock,
+    ) -> None:
+        # Need to re-import ingest_dag if you want to modify the creation of the dag for a specific test.
+        from recidiviz.airflow.dags.ingest_dag import (  # pylint: disable=import-outside-toplevel
+            create_ingest_dag,
+        )
+
+        operator_return_false = fake_operator_with_return_value(False)
+        operator_return_true = fake_operator_with_return_value(True)
+
+        def fake_ingest_pipeline_should_run_in_dag(
+            state_code: StateCode, instance: DirectIngestInstance
+        ) -> BaseOperator:
+            """
+            Return false when the task id is "ingest_pipeline_should_run_in_dag" for US_XX PRIMARY,
+            otherwise returns true.
+            """
+
+            if (
+                state_code == StateCode.US_XX
+                and instance == DirectIngestInstance.PRIMARY
+            ):
+                return operator_return_false(
+                    task_id="ingest_pipeline_should_run_in_dag"
+                )
+
+            return operator_return_true(task_id="ingest_pipeline_should_run_in_dag")
+
+        mock_ingest_pipeline_should_run_in_dag.side_effect = (
+            fake_ingest_pipeline_should_run_in_dag
+        )
+
+        def fail_for_us_yy_primary_acquire_lock(
+            state_code: StateCode, instance: DirectIngestInstance
+        ) -> BaseOperator:
+            """
+            Raises an exception to simulate a failure when the task id is "acquire_lock", otherwise passes
+            through to the EmptyOperator.
+            """
+
+            if (
+                state_code == StateCode.US_YY
+                and instance == DirectIngestInstance.PRIMARY
+            ):
+                return fake_failure_task(task_id="acquire_lock")
+
+            return EmptyOperator(task_id="acquire_lock")
+
+        mock_acquire_lock.side_effect = fail_for_us_yy_primary_acquire_lock
+
+        with Session(bind=self.engine) as session:
+            dag = create_ingest_dag()
+            result = self.run_dag_test(
+                dag,
+                session=session,
+                expected_skipped_ids=[
+                    r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.get_max_update_datetimes",
+                    r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.get_watermarks",
+                    r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.should_run_based_on_watermarks",
+                    r".*us_xx_primary_dataflow.initialize_dataflow_pipeline.verify_raw_data_flashing_not_in_progress",
+                    r".*us_xx_primary_dataflow.acquire_lock.*",
+                    r".*us_xx_primary_dataflow.dataflow_pipeline.*",
+                    r".*us_xx_primary_dataflow.write_ingest_job_completion",
+                    r".*us_xx_primary_dataflow.write_upper_bounds.*",
+                    r".*us_xx_primary_dataflow.release_lock.*",
+                ],
+                expected_failure_ids=[
+                    ".*us_yy_primary_dataflow.acquire_lock.*",
+                    ".*us_yy_primary_dataflow.dataflow_pipeline.*",
+                    ".*us_yy_primary_dataflow.write_ingest_job_completion",
+                    ".*us_yy_primary_dataflow.write_upper_bounds.*",
+                    ".*ingest_branching.branch_end.*",
+                ],
+            )
+            self.assertEqual(DagRunState.FAILED, result.dag_run_state)
