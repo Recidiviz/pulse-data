@@ -44,15 +44,10 @@ def ingest_pipeline_can_run_in_dag(
         return True
     if environment.in_gcp_production():
         return False
-    staging_enabled_states = [
-        StateCode.US_AR,
-        StateCode.US_CA,
-        StateCode.US_CO,
-        StateCode.US_MI,
-        StateCode.US_MO,
-        StateCode.US_NC,
-        StateCode.US_OZ,
-        StateCode.US_OR,
-        StateCode.US_PA,
+    staging_disabled_states = [
+        # TODO(#25638) Remove this once entity matching issues are resolved for US_ND
+        StateCode.US_ND,
+        StateCode.US_IA,
+        StateCode.US_ID,
     ]
-    return state_code in staging_enabled_states
+    return state_code not in staging_disabled_states

@@ -26,13 +26,16 @@ DEFAULT_INGEST_PIPELINE_REGIONS_BY_STATE_CODE: Dict[StateCode, str] = {
     StateCode.US_AR: "us-east1",
     StateCode.US_CA: "us-east1",
     StateCode.US_CO: "us-west3",
+    StateCode.US_IX: "us-west3",
     StateCode.US_MI: "us-central1",
+    StateCode.US_ME: "us-east1",
     StateCode.US_MO: "us-central1",
     StateCode.US_NC: "us-east1",
     StateCode.US_OZ: "us-west3",
     StateCode.US_OR: "us-west3",
     StateCode.US_PA: "us-west3",
     StateCode.US_AZ: "us-central1",
+    StateCode.US_TN: "us-central1",
 }
 
 
