@@ -32,7 +32,8 @@ CHILD_AGENCY_NAME_TO_UPLOAD_NAME = {
     "toledo police department": "toledo",
     "newark division of police": "newark",
     "cleveland police department": "cleveland",
-    "columbus police department": "columbus",
+    "columbus police department (oh)": "columbus",
+    "franklin county sheriff's office (oh)": "franklin county sheriff's office",
 }
 
 
