@@ -64,7 +64,7 @@ critical_dates AS (
 all_periods AS (
 SELECT 
     EmployeeID AS employeeid,
-    TRIM(AgentType) AS agenttype,
+    UPPER(TRIM(AgentType)) AS agenttype,
     update_datetime AS start_date,
     CASE 
         -- If a staff member stops appearing in the roster, close their employment period
