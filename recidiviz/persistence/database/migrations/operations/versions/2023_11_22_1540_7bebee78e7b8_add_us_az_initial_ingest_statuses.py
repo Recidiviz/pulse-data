@@ -20,8 +20,8 @@ def upgrade() -> None:
     op.execute(
         """
                 INSERT INTO direct_ingest_instance_status (region_code, instance, status, status_timestamp) VALUES
-                ('US_AZ', 'PRIMARY', 'STANDARD_RERUN_STARTED', '2023-11-21T00:00:00.000000'),
-                ('US_AZ', 'SECONDARY', 'NO_RERUN_IN_PROGRESS', '2023-11-21T00:00:00.000000');
+                ('US_AZ', 'PRIMARY', 'INITIAL_STATE', '2023-11-21T00:00:00.000000'),
+                ('US_AZ', 'SECONDARY', 'NO_RAW_DATA_REIMPORT_IN_PROGRESS', '2023-11-21T00:00:00.000000');
             """
     )
 
