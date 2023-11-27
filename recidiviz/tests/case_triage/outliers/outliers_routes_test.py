@@ -62,6 +62,7 @@ TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
     title_display_name="Incarceration Rate (CPVs & TPVs)",
     body_display_name="incarceration rate",
     event_name="incarcerations",
+    event_name_singular="incarceration",
 )
 
 TEST_CLIENT_EVENT = OutliersClientEventConfig.build(
@@ -206,6 +207,7 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     {
                         "bodyDisplayName": "incarceration rate",
                         "eventName": "incarcerations",
+                        "eventNameSingular": "incarceration",
                         "name": "incarceration_starts_and_inferred",
                         "outcomeType": "ADVERSE",
                         "titleDisplayName": "Incarceration Rate (CPVs & TPVs)",

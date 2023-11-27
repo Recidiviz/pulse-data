@@ -42,36 +42,42 @@ metric_fixtures = {
         title_display_name="Incarceration Rate",
         body_display_name="incarceration rate",
         event_name="incarcerations",
+        event_name_singular="incarceration",
     ),
     ABSCONSIONS_BENCH_WARRANTS: OutliersMetricConfig.build_from_metric(
         metric=ABSCONSIONS_BENCH_WARRANTS,
         title_display_name="Absconsion Rate",
         body_display_name="absconsion rate",
         event_name="absconsions",
+        event_name_singular="absconsion",
     ),
     TASK_COMPLETIONS_FULL_TERM_DISCHARGE: OutliersMetricConfig.build_from_metric(
         metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
         title_display_name="Successful Completion Rate",
         body_display_name="successful completion rate",
         event_name="successful completions",
+        event_name_singular="successful completion",
     ),
     TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION: OutliersMetricConfig.build_from_metric(
         metric=TASK_COMPLETIONS_TRANSFER_TO_LIMITED_SUPERVISION,
         title_display_name="Limited Supervision Unit Transfer Rate",
         body_display_name="Limited Supervision Unit transfer rate",
         event_name="LSU transfers",
+        event_name_singular="LSU transfer",
     ),
     EARLY_DISCHARGE_REQUESTS: OutliersMetricConfig.build_from_metric(
         metric=EARLY_DISCHARGE_REQUESTS,
         title_display_name="Earned Discharge Request Rate",
         body_display_name="earned discharge request rate",
         event_name="earned discharge requests",
+        event_name_singular="earned discharge request",
     ),
     INCARCERATION_STARTS_TECHNICAL_VIOLATION: OutliersMetricConfig.build_from_metric(
         metric=INCARCERATION_STARTS_TECHNICAL_VIOLATION,
         title_display_name="Technical Incarceration Rate",
         body_display_name="technical incarceration rate",
         event_name="technical incarcerations",
+        event_name_singular="technical incarceration",
     ),
 }
 

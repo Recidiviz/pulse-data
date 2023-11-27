@@ -94,6 +94,7 @@ TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
     title_display_name="Incarceration Rate (CPVs & TPVs)",
     body_display_name="incarceration rate",
     event_name="incarcerations",
+    event_name_singular="incarceration",
 )
 
 TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
@@ -101,6 +102,7 @@ TEST_METRIC_2 = OutliersMetricConfig.build_from_metric(
     title_display_name="Limited Supervision Unit Transfer Rate",
     body_display_name="Limited Supervision Unit transfer rate(s)",
     event_name="LSU transfers",
+    event_name_singular="LSU transfer",
 )
 
 TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
@@ -108,6 +110,7 @@ TEST_METRIC_3 = OutliersMetricConfig.build_from_metric(
     title_display_name="Absconsion Rate",
     body_display_name="absconsion rate",
     event_name="absconsions",
+    event_name_singular="absconsion",
 )
 
 TEST_CLIENT_EVENT_1 = OutliersClientEventConfig.build(
@@ -282,6 +285,7 @@ class TestOutliersQuerier(TestCase):
                         "title_display_name": "Incarceration Rate (CPVs & TPVs)",
                         "body_display_name": "incarceration rate",
                         "event_name": "incarcerations",
+                        "event_name_singular": "incarceration",
                     },
                     {
                         "name": "task_completions_transfer_to_limited_supervision",
@@ -289,6 +293,7 @@ class TestOutliersQuerier(TestCase):
                         "title_display_name": "Limited Supervision Unit Transfer Rate",
                         "body_display_name": "Limited Supervision Unit transfer rate(s)",
                         "event_name": "LSU transfers",
+                        "event_name_singular": "LSU transfer",
                     },
                 ],
                 "recipient_email_address": "manager3@recidiviz.org",
@@ -303,6 +308,7 @@ class TestOutliersQuerier(TestCase):
                             "title_display_name": "Limited Supervision Unit Transfer Rate",
                             "body_display_name": "Limited Supervision Unit transfer rate(s)",
                             "event_name": "LSU transfers",
+                            "event_name_singular": "LSU transfer",
                         },
                         "target": 0.008,
                         "other_officers": {
@@ -336,6 +342,7 @@ class TestOutliersQuerier(TestCase):
                         "title_display_name": "Incarceration Rate (CPVs & TPVs)",
                         "body_display_name": "incarceration rate",
                         "event_name": "incarcerations",
+                        "event_name_singular": "incarceration",
                     }
                 ],
                 "recipient_email_address": "supervisor2@recidiviz.org",
@@ -353,6 +360,7 @@ class TestOutliersQuerier(TestCase):
                             "title_display_name": "Incarceration Rate (CPVs & TPVs)",
                             "body_display_name": "incarceration rate",
                             "event_name": "incarcerations",
+                            "event_name_singular": "incarceration",
                         },
                         "target": 0.13,
                         "other_officers": {
@@ -400,6 +408,7 @@ class TestOutliersQuerier(TestCase):
                         "title_display_name": "Limited Supervision Unit Transfer Rate",
                         "body_display_name": "Limited Supervision Unit transfer rate(s)",
                         "event_name": "LSU transfers",
+                        "event_name_singular": "LSU transfer",
                     }
                 ],
                 "recipient_email_address": "supervisor1@recidiviz.org",
