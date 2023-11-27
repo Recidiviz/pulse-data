@@ -31,7 +31,11 @@ from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
 )
-from recidiviz.pipelines.ingest.state.constants import ExternalIdKey, UpperBoundDate
+from recidiviz.pipelines.ingest.state.constants import (
+    ExternalIdKey,
+    IngestViewName,
+    UpperBoundDate,
+)
 from recidiviz.pipelines.ingest.state.exemptions import (
     INGEST_VIEW_TREE_MERGER_ERROR_EXEMPTIONS,
 )
@@ -54,7 +58,10 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
     RootEntities. So the PCollection is now:
         PCollection[Tuple[Tuple[ExternalIdKey, datetime], List[RootEntity]]].
     Then we merge the RootEntities together and return a:
-        PCollection[Tuple[ExternalIdKey, Tuple[datetime, RootEntity]]].
+        PCollection[Tuple[ExternalIdKey, Tuple[datetime, str, RootEntity]]].
+
+    We preserve the ingest view name in the result in order to handle ordering of merging
+    later on.
 
     We assume that all of the RootEntities share the same shape and therefore can be
     merged via the IngestViewTreeMerger.
@@ -73,7 +80,9 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
 
     def expand(
         self, input_or_inputs: beam.PCollection[Tuple[UpperBoundDate, RootEntity]]
-    ) -> beam.PCollection[Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]]:
+    ) -> beam.PCollection[
+        Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]
+    ]:
         return (
             input_or_inputs
             | f"Obtain {self.ingest_view} entity metadata from entities with dates"
@@ -118,7 +127,7 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
     def merge_entities(
         self,
         element: Tuple[Tuple[ExternalIdKey, UpperBoundDate], List[RootEntity]],
-    ) -> Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]:
+    ) -> Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]:
         """For a given key, merges entity trees together using the IngestViewTreeMerger.
         If the IngestViewTreeMerger is unable to merge the entity trees together, and if
         this particular ingest view has an error exemption, then we return the first entity
@@ -146,4 +155,4 @@ class MergeIngestViewRootEntityTrees(beam.PTransform):
         merged_entity: RootEntity = one(
             ingest_view_tree_merger.merge(root_entities, should_throw_on_conflicts)
         )
-        return (external_id_key, (upperbound_date, merged_entity))
+        return (external_id_key, (upperbound_date, self.ingest_view, merged_entity))

@@ -260,7 +260,7 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
             return
 
         merged_root_entities_with_dates: beam.PCollection[
-            Tuple[ExternalIdKey, Tuple[UpperBoundDate, RootEntity]]
+            Tuple[ExternalIdKey, Tuple[UpperBoundDate, IngestViewName, RootEntity]]
         ] = (merged_root_entities_with_dates_per_ingest_view.values() | beam.Flatten())
 
         # Silence `No value for argument 'pcoll' in function call (no-value-for-parameter)`
@@ -268,7 +268,8 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
         all_root_entities: beam.PCollection[RootEntity] = (
             merged_root_entities_with_dates
             | "Remove all of the external ids" >> beam.Values()
-            | "Remove all of the dates" >> beam.Values()
+            | "Remove all of the dates and ingest view names"
+            >> beam.Map(lambda item: item[2])
         )
 
         root_entity_external_ids_to_primary_keys: beam.PCollection[
