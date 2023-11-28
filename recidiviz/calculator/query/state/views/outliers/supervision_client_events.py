@@ -140,7 +140,7 @@ supervision_client_events AS (
         {get_pseudonymized_id_query_str("e.state_code || pid.external_id")} AS pseudonymized_client_id,
         {get_pseudonymized_id_query_str("e.state_code || a.officer_id")} AS pseudonymized_officer_id,
     FROM 
-        `{{project_id}}.aggregated_metrics.supervision_officer_metrics_assignment_sessions_materialized` a
+        `{{project_id}}.aggregated_metrics.supervision_officer_metrics_person_assignment_sessions_materialized` a
     CROSS JOIN
         latest_year_time_period period
     INNER JOIN `{{project_id}}.normalized_state.state_person` p 

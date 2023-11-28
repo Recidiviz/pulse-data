@@ -18,9 +18,6 @@
 
 from typing import List
 
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
     SpanQueryBuilder,
 )
@@ -44,7 +41,6 @@ SPANS: List[SpanQueryBuilder] = [
     SpanQueryBuilder(
         span_type=SpanType.ASSESSMENT_SCORE_SESSION,
         description="Spans of time between assessment scores of the same type",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""
 SELECT *
 FROM
@@ -61,7 +57,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.COMPARTMENT_SESSION,
         description="Compartment sessions unique on compartment level 1 & 2 types",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=COMPARTMENT_SESSIONS_VIEW_BUILDER.table_for_query,
         attribute_cols=[
             "compartment_level_1",
@@ -75,7 +70,6 @@ WHERE
         span_type=SpanType.COMPLETED_CONTACT_SESSION,
         description="Spans between completed contact dates and the subsequent contact date to help "
         "identify the most recent completed contact",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT DISTINCT
     state_code,
     person_id,
@@ -92,7 +86,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.CUSTODY_LEVEL_SESSION,
         description="Non-overlapping spans of time over which a person has a certain custody level",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.sessions.custody_level_sessions_materialized`
@@ -105,7 +98,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.EMPLOYMENT_PERIOD,
         description="Employment periods -- can be overlapping",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.normalized_state.state_employment_period`
@@ -120,7 +112,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.EMPLOYMENT_STATUS_SESSION,
         description="Non-overlapping spans of time over which a person has a certain employment status",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.sessions.supervision_employment_status_sessions_materialized`
@@ -133,7 +124,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.HOUSING_TYPE_SESSION,
         description="Non-overlapping spans of time over which a person has a certain housing type",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.sessions.housing_unit_type_sessions_materialized`
@@ -146,7 +136,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.JUSTICE_IMPACT_SESSION,
         description="Person days of justice involvement weighted by type",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER.table_for_query,
         attribute_cols=[
             "justice_impact_type",
@@ -160,7 +149,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.PERSON_DEMOGRAPHICS,
         description="Demographics over the span from a person's birth to the present",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=PERSON_DEMOGRAPHICS_VIEW_BUILDER.table_for_query,
         attribute_cols=["birthdate", "gender", "prioritized_race_or_ethnicity"],
         span_start_date_col="birthdate",
@@ -169,7 +157,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.SENTENCE_SPAN,
         description="Span of attributes of sentences being served",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT
     spans.state_code,
     spans.person_id,
@@ -223,7 +210,6 @@ GROUP BY 1, 2, 3, 4
     SpanQueryBuilder(
         span_type=SpanType.SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE,
         description="Open supervision mismatch (downgrades only), ends when mismatch corrected or supervision period ends",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *, "SUPERVISION_DOWNGRADE" AS task_name,
 FROM
     `{project_id}.sessions.supervision_downgrade_sessions_materialized`
@@ -240,7 +226,6 @@ WHERE
     SpanQueryBuilder(
         span_type=SpanType.SUPERVISION_LEVEL_SESSION,
         description="Spans of time over which a client is at a given supervision level",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT * EXCEPT(supervision_level),
     COALESCE(supervision_level, "INTERNAL_UNKNOWN") AS supervision_level,
 FROM `{project_id}.sessions.supervision_level_sessions_materialized`""",
@@ -249,9 +234,17 @@ FROM `{project_id}.sessions.supervision_level_sessions_materialized`""",
         span_end_date_col="end_date_exclusive",
     ),
     SpanQueryBuilder(
+        span_type=SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION,
+        description="Spans of time over which an officer has the majority of their clients in a given location",
+        sql_source="SELECT *, supervising_officer_external_id AS officer_id "
+        "FROM `{project_id}.sessions.supervision_officer_inferred_location_sessions_materialized`",
+        attribute_cols=["primary_office", "primary_district"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
         span_type=SpanType.SUPERVISION_OFFICER_SESSION,
         description="Spans of time over which a client is supervised by a given officer",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER.table_for_query,
         attribute_cols=["supervising_officer_external_id"],
         span_start_date_col="start_date",
@@ -260,7 +253,6 @@ FROM `{project_id}.sessions.supervision_level_sessions_materialized`""",
     SpanQueryBuilder(
         span_type=SpanType.TASK_CRITERIA_SPAN,
         description="Spans of time over which a person is eligible for a given criteria",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT
     state_code,
     person_id,
@@ -304,7 +296,6 @@ FROM
     SpanQueryBuilder(
         span_type=SpanType.TASK_ELIGIBILITY_SESSION,
         description="Task eligibility spans",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT
     * EXCEPT (ineligible_criteria),
     completion_event_type AS task_type,

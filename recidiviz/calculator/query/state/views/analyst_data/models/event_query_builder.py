@@ -25,8 +25,8 @@ from recidiviz.calculator.query.state.views.analyst_data.models.event_type impor
     EventType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    MetricUnitOfAnalysisType,
+    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
+    MetricUnitOfObservationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.query_builder_utils import (
     package_json_attributes,
@@ -49,9 +49,6 @@ class EventQueryBuilder:
     # Description of the event
     description: str = attr.field(validator=attr_validators.is_str)
 
-    # The unit of analysis at which the event was observed
-    unit_of_observation_type: MetricUnitOfAnalysisType = attr.ib()
-
     # Source for generating metric entity: requires either a standalone SQL query string, or a BigQueryAddress
     # if referencing an existing table
     sql_source: Union[str, BigQueryAddress] = attr.ib()
@@ -71,6 +68,11 @@ class EventQueryBuilder:
         return snake_to_title(self.event_type.name)
 
     @property
+    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
+        """Returns the unit of observation type at which the event is observed"""
+        return self.event_type.unit_of_observation_type
+
+    @property
     def source_query_fragment(self) -> str:
         """Returns the properly formatted SQL query string of the inputted source table"""
         if isinstance(self.sql_source, BigQueryAddress):
@@ -80,7 +82,7 @@ class EventQueryBuilder:
 )"""
 
     def generate_subquery(self) -> str:
-        unit_of_observation = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
+        unit_of_observation = METRIC_UNITS_OF_OBSERVATION_BY_TYPE[
             self.unit_of_observation_type
         ]
         return f"""

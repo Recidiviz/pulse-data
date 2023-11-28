@@ -17,13 +17,14 @@
 """Creates AggregatedMetric objects with properties of spans/events required to calculate a metric"""
 import abc
 import re
-from typing import Dict, List, Optional, Sequence, Union
+from typing import List, Optional
 
 import attr
+from more_itertools import one
 
-from recidiviz.calculator.query.bq_utils import (
-    list_to_query_string,
-    nonnull_current_date_exclusive_clause,
+from recidiviz.calculator.query.bq_utils import nonnull_current_date_exclusive_clause
+from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
+    EventSelector,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
     EventType,
@@ -33,6 +34,11 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
+    MetricUnitOfObservation,
+    MetricUnitOfObservationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
+    SpanSelector,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
     SpanType,
@@ -67,18 +73,89 @@ class AggregatedMetric:
         return re.sub(r"(\w)([A-Z])", r"\1 \2", short_cls_name)
 
 
+class MetricConditionsMixin:
+    """Attributes and functions to derive query snippets for defining a metric"""
+
+    def get_metric_conditions_string(self) -> str:
+        """Returns a query fragment string that joins SQL conditional statements with `AND`."""
+        return "\n\t\t\t\tOR\n".join(self.get_metric_conditions())
+
+    def get_metric_conditions_string_no_newline(self) -> str:
+        """
+        Returns a query fragment string that joins SQL conditional statements with `AND` without line breaks
+        or extra spaces, for more succinct print output.
+        """
+        return re.sub(r" +|\n+", " ", " OR ".join(self.get_metric_conditions()))
+
+    @abc.abstractmethod
+    def get_metric_conditions(self) -> List[str]:
+        """Returns a list of conditional query fragments filtering spans or events."""
+
+
+@attr.define(frozen=True, kw_only=True, slots=False)
+class SpanMetricConditionsMixin(MetricConditionsMixin):
+    """Attributes and functions to derive query snippets applied to spans"""
+
+    # SpanSelectors specifying conditions on a spans table
+    span_selectors: List[SpanSelector]
+
+    def get_metric_conditions(self) -> List[str]:
+        return [
+            f"({s.generate_span_conditions_query_fragment()})"
+            for s in self.span_selectors
+        ]
+
+    @property
+    def unit_of_observation(self) -> MetricUnitOfObservation:
+        return one({s.unit_of_observation for s in self.span_selectors})
+
+    @property
+    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
+        return self.unit_of_observation.type
+
+    @property
+    def span_types(self) -> List[SpanType]:
+        return [s.span_type for s in self.span_selectors]
+
+
+@attr.define(frozen=True, kw_only=True, slots=False)
+class EventMetricConditionsMixin(MetricConditionsMixin):
+    """Attributes and functions to derive query snippets applied to events"""
+
+    # The list of EventSelectors specifying conditions on a spans table
+    event_selectors: List[EventSelector]
+
+    def get_metric_conditions(self) -> List[str]:
+        return [
+            f"({s.generate_event_conditions_query_fragment()})"
+            for s in self.event_selectors
+        ]
+
+    @property
+    def unit_of_observation(self) -> MetricUnitOfObservation:
+        return one({s.unit_of_observation for s in self.event_selectors})
+
+    @property
+    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
+        return self.unit_of_observation.type
+
+    @property
+    def event_types(self) -> List[EventType]:
+        return [s.event_type for s in self.event_selectors]
+
+
 @attr.define(frozen=True, kw_only=True)
 class MiscAggregatedMetric(AggregatedMetric):
     """
     Class that stores information about metrics that are calculated in a separate user-defined query
-    for specific populations and aggregation levels, without using person_events or person_spans logic
+    for specific populations and units of analysis, without using events or spans logic
     """
 
     # Populations compatible with metric
     populations: List[MetricPopulationType]
 
-    # Aggregation levels compatible with metric
-    aggregation_levels: List[MetricUnitOfAnalysisType]
+    # Units of analysis at which the metric can be aggregated
+    unit_of_analysis_types: List[MetricUnitOfAnalysisType]
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"ARRAY_AGG({self.name}) AS {self.name}"
@@ -89,9 +166,9 @@ class MiscAggregatedMetric(AggregatedMetric):
 
 
 @attr.define(frozen=True, kw_only=True)
-class PeriodSpanAggregatedMetric(AggregatedMetric):
+class PeriodSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
     """
-    Class that stores information about metrics that involve `person_spans` and calculate
+    Class that stores information about metrics that involve spans and calculate
     aggregations across an entire analysis period.
     """
 
@@ -108,9 +185,9 @@ class PeriodSpanAggregatedMetric(AggregatedMetric):
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentSpanAggregatedMetric(AggregatedMetric):
+class AssignmentSpanAggregatedMetric(AggregatedMetric, SpanMetricConditionsMixin):
     """
-    Class that stores information about metrics that involve `person_spans` and calculate
+    Class that stores information about metrics that involve spans and calculate
     aggregations over some window following assignment, for all assignments during an analysis period.
     """
 
@@ -125,9 +202,9 @@ class AssignmentSpanAggregatedMetric(AggregatedMetric):
 
 
 @attr.define(frozen=True, kw_only=True)
-class PeriodEventAggregatedMetric(AggregatedMetric):
+class PeriodEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
     """
-    Class that stores information about metrics that involve `person_events` and calculate
+    Class that stores information about metrics that involve `events` and calculate
     aggregations across an entire analysis period.
     """
 
@@ -137,9 +214,9 @@ class PeriodEventAggregatedMetric(AggregatedMetric):
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentEventAggregatedMetric(AggregatedMetric):
+class AssignmentEventAggregatedMetric(AggregatedMetric, EventMetricConditionsMixin):
     """
-    Class that stores information about metrics that involve `person_events` and calculate
+    Class that stores information about metrics that involve `events` and calculate
     aggregations over some window following assignment, for all assignments during an analysis period.
     """
 
@@ -156,106 +233,11 @@ class AssignmentEventAggregatedMetric(AggregatedMetric):
         """Returns a query fragment that calculates an aggregation corresponding to the AssignmentEvent metric type."""
 
 
-class MetricConditionsMixin:
-    """Attributes and functions to derive query snippets for defining a metric"""
-
-    def get_metric_conditions_string(self) -> str:
-        """Returns a query fragment string that joins SQL conditional statements with `AND`."""
-        return "\n\t\t\t\tAND\n".join(self.get_metric_conditions())
-
-    def get_metric_conditions_string_no_newline(self) -> str:
-        """
-        Returns a query fragment string that joins SQL conditional statements with `AND` without line breaks
-        or extra spaces, for more succinct print output.
-        """
-        return re.sub(r" +|\n+", " ", " AND ".join(self.get_metric_conditions()))
-
-    @abc.abstractmethod
-    def get_metric_conditions(self) -> List[str]:
-        """Returns a list of conditional query fragments filtering person_spans or person_events."""
-
-
-@attr.define(frozen=True, kw_only=True, slots=False)
-class SpanMetricConditionsMixin(MetricConditionsMixin):
-    """Attributes and functions to derive query snippets applied to `person_spans`"""
-
-    # The list of strings corresponding with the `span` field in `person_spans` specifying the type of span.
-    span_types: List[SpanType] = attr.field(validator=attr_validators.is_list)
-
-    # A dictionary mapping fields from the JSON object `span_attributes` in `person_spans` to either
-    # a list of accepted values or a query string for a custom condition.
-    span_attribute_filters: Dict[str, Union[Sequence[str], str]] = attr.field(
-        validator=attr_validators.is_dict
-    )
-
-    def get_metric_conditions(self) -> List[str]:
-        span_type_strings = [s.value for s in self.span_types]
-        condition_strings = [
-            f"span IN ({list_to_query_string(span_type_strings, quoted=True)})"
-        ]
-
-        for attribute in self.span_attribute_filters.keys():
-            conditions = self.span_attribute_filters[attribute]
-            if isinstance(conditions, str):
-                attribute_condition_string = conditions
-            elif isinstance(conditions, Sequence):
-                attribute_condition_string = (
-                    f" IN ({list_to_query_string(conditions, quoted=True)})"
-                )
-            else:
-                raise TypeError(
-                    "All values in `span_attribute_filters` dictionary must have type str or Sequence[str]"
-                )
-            condition_strings.append(
-                f"""
-                 JSON_EXTRACT_SCALAR(span_attributes, "$.{attribute}") {attribute_condition_string}
-                 """
-            )
-        return condition_strings
-
-
-@attr.define(frozen=True, kw_only=True, slots=False)
-class EventMetricConditionsMixin(MetricConditionsMixin):
-    """Attributes and functions to derive query snippets applied to `person_events`"""
-
-    # The list of strings corresponding with the `event` field in `person_events` specifying the type of event.
-    event_types: List[EventType] = attr.field(validator=attr_validators.is_list)
-
-    # A dictionary mapping fields from the JSON object `event_attributes` in `person_events` to either
-    # a list of accepted values or a query string for a custom condition.
-    event_attribute_filters: Dict[str, Union[Sequence[str], str]] = attr.field(
-        validator=attr_validators.is_dict
-    )
-
-    def get_metric_conditions(self) -> List[str]:
-        event_type_strings = [s.value for s in self.event_types]
-        condition_strings = [
-            f"event IN ({list_to_query_string(event_type_strings, quoted=True)})"
-        ]
-        for attribute in self.event_attribute_filters.keys():
-            conditions = self.event_attribute_filters[attribute]
-            if isinstance(conditions, str):
-                attribute_condition_string = conditions
-            elif isinstance(conditions, Sequence):
-                attribute_condition_string = f"""
-                        IN ({list_to_query_string(conditions, quoted=True)})
-                    """
-            else:
-                raise TypeError(
-                    "All values in `event_attribute_filters` dictionary must have type str or Sequence[str]"
-                )
-            condition_strings.append(
-                f"""
-                    JSON_EXTRACT_SCALAR(event_attributes, "$.{attribute}") {attribute_condition_string}"""
-            )
-        return condition_strings
-
-
 @attr.define(frozen=True, kw_only=True)
-class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
+class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric):
     """
     Class that stores information about a metric that calculates average daily population
-    for a specified set of `person_span` rows. All end_date_cols should be end date exclusive.
+    for a specified set of span rows. All end_date_cols should be end date exclusive.
 
     Example metric: Average daily female population.
     """
@@ -287,10 +269,10 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
 
 
 @attr.define(frozen=True, kw_only=True)
-class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
+class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric):
     """
     Class that stores information about a metric that calculates average daily value
-    for a specified set of `person_span` rows intersecting with the analysis period.
+    for a specified set of span rows intersecting with the analysis period.
     All end_date_cols should be end date exclusive.
 
     Example: Average daily LSI-R score.
@@ -338,12 +320,10 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
 
 
 @attr.define(frozen=True, kw_only=True)
-class DailyAvgTimeSinceSpanStartMetric(
-    PeriodSpanAggregatedMetric, SpanMetricConditionsMixin
-):
+class DailyAvgTimeSinceSpanStartMetric(PeriodSpanAggregatedMetric):
     """
     Class that stores information about a metric that calculates the average days since the start of the span,
-    for the daily population over a specified set of `person_span` rows.
+    for the daily population over a specified set of span rows.
     All end_date_cols should be end date exclusive.
 
     Example metrics: Average age.
@@ -400,16 +380,14 @@ class DailyAvgTimeSinceSpanStartMetric(
 
 
 @attr.define(frozen=True, kw_only=True)
-class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
+class SumSpanDaysMetric(PeriodSpanAggregatedMetric):
     """
     Class that stores information about a metric that calculates the average days spent in span
-    for the daily population over a specified set of `person_span` rows over the analysis period.
+    for the daily population over a specified set of span rows over the analysis period.
     All end_date_cols should be end date exclusive.
 
     Example metrics: Person days eligible for early discharge opportunity.
     """
-
-    span_types: List[SpanType] = attr.field(validator=attr_validators.is_list)
 
     # optional column by which to weight person-days, e.g. for
     # person_days_weighted_justice_impact
@@ -446,9 +424,7 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentSpanDaysMetric(
-    AssignmentSpanAggregatedMetric, SpanMetricConditionsMixin
-):
+class AssignmentSpanDaysMetric(AssignmentSpanAggregatedMetric):
     """
     Class that stores information about a metric that counts total length in days of intersection
     between span and {window_length_days} window following assignment date
@@ -481,9 +457,7 @@ class AssignmentSpanDaysMetric(
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentSpanMaxDaysMetric(
-    AssignmentSpanAggregatedMetric, SpanMetricConditionsMixin
-):
+class AssignmentSpanMaxDaysMetric(AssignmentSpanAggregatedMetric):
     """
     Class that stores information about a metric that takes the longest contiguous intersection
     between span and {window_length_days} window following assignment date
@@ -517,12 +491,10 @@ class AssignmentSpanMaxDaysMetric(
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentSpanValueAtStartMetric(
-    AssignmentSpanAggregatedMetric, SpanMetricConditionsMixin
-):
+class AssignmentSpanValueAtStartMetric(AssignmentSpanAggregatedMetric):
     """
     Class that stores information about a metric that calculates average value
-    for a specified set of `person_span` rows intersecting with the assignment date
+    for a specified set of span rows intersecting with the assignment date
 
     Example metric: Average LSI-R score at assignment
     """
@@ -552,7 +524,7 @@ class AssignmentSpanValueAtStartMetric(
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentCountMetric(AssignmentSpanAggregatedMetric, SpanMetricConditionsMixin):
+class AssignmentCountMetric(AssignmentSpanAggregatedMetric):
     """
     Class used specifically for calculating number of assignments in a period.
 
@@ -569,10 +541,10 @@ class AssignmentCountMetric(AssignmentSpanAggregatedMetric, SpanMetricConditions
 
 
 @attr.define(frozen=True, kw_only=True)
-class EventCountMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
+class EventCountMetric(PeriodEventAggregatedMetric):
     """
     Class that stores information about a metric that counts the number of events
-    for a specified set of `person_event` rows occurring during the analysis period.
+    for a specified set of event rows occurring during the analysis period.
     Events are deduplicated to one person-event per day.
 
     Example metric: Number of technical violations.
@@ -582,7 +554,7 @@ class EventCountMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
         return f"""
             COUNT(DISTINCT IF(
                 {self.get_metric_conditions_string()},
-                CONCAT(events.person_id, {event_date_col}), NULL
+                CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}, {event_date_col}), NULL
             )) AS {self.name}
         """
 
@@ -591,10 +563,10 @@ class EventCountMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
 
 
 @attr.define(frozen=True, kw_only=True)
-class EventValueMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
+class EventValueMetric(PeriodEventAggregatedMetric):
     """
     Class that stores information about a metric that takes the average value over events
-    for a specified set of `person_event` rows occurring during the analysis period.
+    for a specified set of event rows occurring during the analysis period.
 
     Example metric: Average LSI-R score across all assessments.
     """
@@ -619,12 +591,10 @@ class EventValueMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentDaysToFirstEventMetric(
-    AssignmentEventAggregatedMetric, EventMetricConditionsMixin
-):
+class AssignmentDaysToFirstEventMetric(AssignmentEventAggregatedMetric):
     """
     Class that stores information about a metric that calculates the number of days from
-    assignment to the first instance of the event specified in `person_events` occurring within
+    assignment to the first instance of the event specified in `events` occurring within
     {window_length_days} of assignment, for all assignments occurring during the analysis period.
 
     Example metric: Days to first absconsion within 365 days of assignment.
@@ -650,12 +620,10 @@ class AssignmentDaysToFirstEventMetric(
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentEventCountMetric(
-    AssignmentEventAggregatedMetric, EventMetricConditionsMixin
-):
+class AssignmentEventCountMetric(AssignmentEventAggregatedMetric):
     """
     Class that stores information about a metric that counts the number of events
-    specified in `person_events` occurring within {window_length_days} of assignment,
+    specified in `events` occurring within {window_length_days} of assignment,
     for all assignments occurring during the analysis period.
 
     Example metric: Number of contacts within 30 days of assignment.
@@ -669,7 +637,7 @@ class AssignmentEventCountMetric(
                 DISTINCT IF(
                     {self.get_metric_conditions_string()}
                     AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                    CONCAT(events.person_id, {event_date_col}),
+                    CONCAT({self.unit_of_observation.get_primary_key_columns_query_string(prefix="events")}, {event_date_col}),
                     NULL
                 )
             ) AS {self.name}"""
@@ -679,12 +647,10 @@ class AssignmentEventCountMetric(
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentEventBinaryMetric(
-    AssignmentEventAggregatedMetric, EventMetricConditionsMixin
-):
+class AssignmentEventBinaryMetric(AssignmentEventAggregatedMetric):
     """
     Class that stores information about a metric that counts one event per person
-    specified in `person_events` occurring within {window_length_days} of assignment,
+    specified in `events` occurring within {window_length_days} of assignment,
     for all assignments occurring during the analysis period.
 
     Example metric: Any Incarceration Start Within 1 Year of Assignment

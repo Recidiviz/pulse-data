@@ -17,6 +17,10 @@
 """Defines EventType enum."""
 from enum import Enum
 
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfObservationType,
+)
+
 
 class EventType(Enum):
     """Category of event-shaped data"""
@@ -58,3 +62,52 @@ class EventType(Enum):
     WORKFLOWS_ACTION = "WORKFLOWS_ACTION"
     WORKFLOWS_CLIENT_STATUS_UPDATE = "WORKFLOWS_CLIENT_STATUS_UPDATE"
     WORKFLOWS_PAGE = "WORKFLOWS_PAGE"
+
+    @property
+    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
+        """Returns the unit of observation type associated with the event type"""
+        if self in [
+            EventType.ABSCONSION_BENCH_WARRANT.ABSCONSION_BENCH_WARRANT,
+            EventType.COMPARTMENT_LEVEL_2_START,
+            EventType.CUSTODY_LEVEL_CHANGE,
+            EventType.DRUG_SCREEN,
+            EventType.EARLY_DISCHARGE_REQUEST,
+            EventType.EARLY_DISCHARGE_REQUEST_DECISION,
+            EventType.EMPLOYMENT_PERIOD_START,
+            EventType.EMPLOYMENT_STATUS_CHANGE,
+            EventType.INCARCERATION_INCIDENT,
+            EventType.INCARCERATION_START_TEMPORARY,
+            EventType.INCARCERATION_START,
+            EventType.INCARCERATION_RELEASE,
+            EventType.LIBERTY_START,
+            EventType.PAROLE_HEARING,
+            EventType.PENDING_CUSTODY_START,
+            EventType.RISK_SCORE_ASSESSMENT,
+            EventType.SENTENCES_IMPOSED,
+            EventType.SUPERVISING_OFFICER_CHANGE,
+            EventType.SUPERVISING_OFFICER_NEW_ASSIGNMENT,
+            EventType.SUPERVISION_CONTACT,
+            EventType.SUPERVISION_LEVEL_CHANGE,
+            EventType.SUPERVISION_START,
+            EventType.SUPERVISION_RELEASE,
+            EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+            EventType.TASK_COMPLETED,
+            EventType.TASK_ELIGIBILITY_START,
+            EventType.TASK_ELIGIBLE_30_DAYS,
+            EventType.TASK_ELIGIBLE_7_DAYS,
+            EventType.TREATMENT_REFERRAL,
+            EventType.VARIANT_ASSIGNMENT,
+            EventType.VIOLATION,
+            EventType.VIOLATION_RESPONSE,
+        ]:
+            return MetricUnitOfObservationType.PERSON_ID
+        if self in [
+            EventType.WORKFLOWS_ACTION,
+            EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
+            EventType.WORKFLOWS_PAGE,
+        ]:
+            return MetricUnitOfObservationType.SUPERVISION_OFFICER
+
+        raise ValueError(
+            f"No unit_of_observation_type found for EventType {self.value}"
+        )

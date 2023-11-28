@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Joins together all aggregated metric views for the specified population and aggregation level"""
+"""Joins together all aggregated metric views for the specified population and unit of analysis"""
 from typing import List
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
@@ -32,33 +32,39 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulation,
+    POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION,
+    MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
+    MetricUnitOfObservationType,
+    get_assignment_query_for_unit_of_analysis,
 )
 
 
 def generate_aggregated_metrics_view_builder(
-    aggregation_level: MetricUnitOfAnalysis,
-    population: MetricPopulation,
+    unit_of_analysis: MetricUnitOfAnalysis,
+    population_type: MetricPopulationType,
     metrics: List[AggregatedMetric],
 ) -> SimpleBigQueryViewBuilder:
     """
     Returns a SimpleBigQueryViewBuilder that joins together all metric views into a
-    single materialized view for the specified aggregation level and population.
+    single materialized view for the specified unit of analysis and population.
     """
-    level_name = aggregation_level.level_name_short
-    population_name = population.population_name_short
-    view_id = f"{population_name}_{level_name}_aggregated_metrics"
+    unit_of_analysis_name = unit_of_analysis.type.short_name
+    population_name = population_type.population_name_short
+    person_population_query = POPULATION_TYPE_TO_SPAN_SELECTOR_BY_UNIT_OF_OBSERVATION[
+        population_type
+    ][MetricUnitOfObservationType.PERSON_ID].generate_span_selector_query()
+    view_id = f"{population_name}_{unit_of_analysis_name}_aggregated_metrics"
     included_metrics = [
         metric
         for metric in metrics
-        # Only display MiscAggregatedMetrics that are relevant to the population and aggregation level
+        # Only display MiscAggregatedMetrics that are relevant to the population and unit of analysis
         if not isinstance(metric, MiscAggregatedMetric)
         or (
-            population.population_type in metric.populations
-            and aggregation_level.level_type in metric.aggregation_levels
+            population_type in metric.populations
+            and unit_of_analysis.type in metric.unit_of_analysis_types
         )
     ]
     metrics_query_str = ",\n    ".join([metric.name for metric in included_metrics])
@@ -68,26 +74,26 @@ def generate_aggregated_metrics_view_builder(
         for metric in included_metrics
     ]
     view_description_metrics_str = "\n".join(view_description_metrics)
-    view_description_header = f"All metrics for the {population_name} population disaggregated by {level_name}."
+    view_description_header = f"All metrics for the {population_name} population disaggregated by {unit_of_analysis_name}."
     view_description = f"""
 {view_description_header}
 
 #### Population Definition: {population_name.title()}
-
+Query for person unit of observation:
 ```
-{population.get_population_query()}
+{person_population_query}
 ```
 
-#### Aggregation Level Definition: {level_name.title()}
+#### Unit Of Analysis Definition: {unit_of_analysis_name.title()}
 
 Source table:
 ```
-{aggregation_level.client_assignment_query}
+{get_assignment_query_for_unit_of_analysis(unit_of_analysis.type, MetricUnitOfObservationType.PERSON_ID)}
 ```
 
-Primary key columns: `{aggregation_level.get_primary_key_columns_query_string()}`
+Primary key columns: `{unit_of_analysis.get_primary_key_columns_query_string()}`
 
-Static attribute columns: `{aggregation_level.get_static_attribute_columns_query_string()}`
+Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_string()}`
 
 ### Metrics:
 |	Metric	|	Description	|   Metric Type    |   Conditions   |
@@ -120,8 +126,8 @@ Static attribute columns: `{aggregation_level.get_static_attribute_columns_query
             if metric_class == MiscAggregatedMetric:
                 misc_metrics_view_builder = (
                     generate_misc_aggregated_metrics_view_builder(
-                        aggregation_level=aggregation_level,
-                        population=population,
+                        unit_of_analysis=unit_of_analysis,
+                        population_type=population_type,
                         metrics=[
                             m
                             for m in included_metrics
@@ -133,13 +139,13 @@ Static attribute columns: `{aggregation_level.get_static_attribute_columns_query
                     continue
 
             # Add table to the FROM clause
-            table_ref = f"`{{project_id}}.aggregated_metrics.{population_name}_{level_name}_{table_name}_aggregated_metrics` {table_name}"
+            table_ref = f"`{{project_id}}.aggregated_metrics.{population_name}_{unit_of_analysis_name}_{table_name}_aggregated_metrics` {table_name}"
             if not from_clause:
                 join_type = "FROM"
                 join_condition = ""
             else:
                 join_type = "LEFT JOIN"
-                join_condition = f"USING ({aggregation_level.get_primary_key_columns_query_string()}, start_date, end_date, period)"
+                join_condition = f"USING ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date, period)"
             from_clause += f"""
 {join_type}
     {table_ref}
@@ -153,7 +159,7 @@ Static attribute columns: `{aggregation_level.get_static_attribute_columns_query
     # construct query template
     query_template = f"""
 SELECT
-    {aggregation_level.get_index_columns_query_string(prefix="period_span")},
+    {unit_of_analysis.get_index_columns_query_string(prefix="period_span")},
     start_date,
     end_date,
     period,
@@ -167,5 +173,5 @@ SELECT
         description=view_description,
         bq_description=view_description_header,
         should_materialize=True,
-        clustering_fields=aggregation_level.primary_key_columns,
+        clustering_fields=unit_of_analysis.primary_key_columns,
     )

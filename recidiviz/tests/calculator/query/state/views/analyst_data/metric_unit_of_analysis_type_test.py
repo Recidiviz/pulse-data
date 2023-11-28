@@ -14,19 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests functionality of MetricUnitOfAnalysis functions"""
+"""Tests functionality of MetricUnitOfAnalysis and MetricUnitOfObservation functions"""
 
 import re
 import unittest
 
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    METRIC_UNITS_OF_OBSERVATION_BY_TYPE,
     MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
+    MetricUnitOfObservation,
+    MetricUnitOfObservationType,
 )
 
 
-class MetricUnitOfAnalysissByTypeTest(unittest.TestCase):
+class MetricUnitOfAnalysisByTypeTest(unittest.TestCase):
     # check that index/attribute columns have no repeats
     def test_index_columns_no_repeats(self) -> None:
         for _, value in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
@@ -36,19 +39,10 @@ class MetricUnitOfAnalysissByTypeTest(unittest.TestCase):
                     " cannot have repeated/shared values."
                 )
 
-    # check that level_type = key value
-    def test_level_type_matches_key(self) -> None:
-        for key, value in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
-            self.assertEqual(
-                value.level_type,
-                key,
-                "MetricUnitOfAnalysis `level_type` does not match key value.",
-            )
-
-    # check that level_name_short only has valid character types
-    def test_level_name_short_char_types(self) -> None:
-        for _, value in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
-            if not re.match(r"^\w+$", value.level_name_short):
+    # check that short_name only has valid character types
+    def test_short_name_char_types(self) -> None:
+        for unit_of_analysis_type, _ in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
+            if not re.match(r"^\w+$", unit_of_analysis_type.short_name):
                 raise ValueError(
                     "All characters in MetricUnitOfAnalysisType value must be alphanumeric or underscores."
                 )
@@ -57,8 +51,7 @@ class MetricUnitOfAnalysissByTypeTest(unittest.TestCase):
 class MetricUnitOfAnalysisTest(unittest.TestCase):
     def test_get_index_columns_query_string(self) -> None:
         my_metric_aggregation_level = MetricUnitOfAnalysis(
-            level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-            client_assignment_query="SELECT * FROM `{project_id}.my_dataset.my_table`",
+            type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
             primary_key_columns=["region_code", "my_officer_id"],
             static_attribute_columns=["my_officer_attribute"],
         )
@@ -66,4 +59,27 @@ class MetricUnitOfAnalysisTest(unittest.TestCase):
             prefix="my_prefix"
         )
         expected_query_string = "my_prefix.region_code, my_prefix.my_officer_id, my_prefix.my_officer_attribute"
+        self.assertEqual(query_string, expected_query_string)
+
+
+class MetricUnitOfObservationByTypeTest(unittest.TestCase):
+    # check that short_name only has valid character types
+    def test_short_name_char_types(self) -> None:
+        for unit_of_observation_type, _ in METRIC_UNITS_OF_OBSERVATION_BY_TYPE.items():
+            if not re.match(r"^\w+$", unit_of_observation_type.short_name):
+                raise ValueError(
+                    "All characters in MetricUnitOfObservationType value must be alphanumeric or underscores."
+                )
+
+
+class MetricUnitOfObservationTest(unittest.TestCase):
+    def test_get_index_columns_query_string(self) -> None:
+        my_metric_observation_level = MetricUnitOfObservation(
+            type=MetricUnitOfObservationType.SUPERVISION_OFFICER,
+            primary_key_columns=frozenset(["region_code", "my_officer_id"]),
+        )
+        query_string = my_metric_observation_level.get_primary_key_columns_query_string(
+            prefix="my_prefix"
+        )
+        expected_query_string = "my_prefix.my_officer_id, my_prefix.region_code"
         self.assertEqual(query_string, expected_query_string)

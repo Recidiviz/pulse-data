@@ -23,9 +23,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.event_query_buil
 from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
     EventType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 
 
 class EventQueryBuilderTest(unittest.TestCase):
@@ -35,7 +32,6 @@ class EventQueryBuilderTest(unittest.TestCase):
         custom_event = EventQueryBuilder(
             event_type=EventType.LIBERTY_START,
             description="This is a description of a dummy liberty starts metric",
-            unit_of_observation_type=MetricUnitOfAnalysisType.FACILITY,
             sql_source="""SELECT *
 FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized` 
 WHERE compartment_level_1 = "LIBERTY" """,
@@ -45,7 +41,7 @@ WHERE compartment_level_1 = "LIBERTY" """,
         expected_subquery = """
 /* This is a description of a dummy liberty starts metric */
 SELECT DISTINCT
-    state_code, facility,
+    person_id, state_code,
     "LIBERTY_START" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(

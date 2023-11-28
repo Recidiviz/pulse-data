@@ -28,8 +28,14 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.event_selector import (
+    EventSelector,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
     EventType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.span_selector import (
+    SpanSelector,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.span_type import (
     SpanType,
@@ -57,8 +63,12 @@ TEST_ASSIGNMENT_METRIC = AssignmentDaysToFirstEventMetric(
     name="test_assignment_metric",
     display_name="Test Assignment Metric",
     description="Description of Test Assignment Metric",
-    event_types=[EventType.VIOLATION_RESPONSE],
-    event_attribute_filters={},
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.VIOLATION_RESPONSE,
+            event_conditions_dict={},
+        )
+    ],
     window_length_days=365,
 )
 
@@ -66,24 +76,36 @@ TEST_EVENT_METRIC = EventCountMetric(
     name="test_event_metric",
     display_name="Test Event Metric",
     description="Description of test event metric",
-    event_types=[EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON],
-    event_attribute_filters={"outflow_to_incarceration": ["false"]},
+    event_selectors=[
+        EventSelector(
+            event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
+            event_conditions_dict={"outflow_to_incarceration": ["false"]},
+        )
+    ],
 )
 
 TEST_POPULATION_METRIC = DailyAvgSpanCountMetric(
     name="test_population_metric",
     display_name="Test Population Metric",
     description="Description of test population metric",
-    span_types=[SpanType.COMPARTMENT_SESSION],
-    span_attribute_filters={},
+    span_selectors=[
+        SpanSelector(
+            span_type=SpanType.COMPARTMENT_SESSION,
+            span_conditions_dict={},
+        )
+    ],
 )
 
 TEST_SPAN_DAYS_METRIC = SumSpanDaysMetric(
     name="test_span_days_metric",
     display_name="Test Span Days Metric",
     description="Description of test span days metric",
-    span_types=[SpanType.JUSTICE_IMPACT_SESSION],
-    span_attribute_filters={},
+    span_selectors=[
+        SpanSelector(
+            span_type=SpanType.JUSTICE_IMPACT_SESSION,
+            span_conditions_dict={},
+        )
+    ],
     weight_col="justice_impact_weight",
 )
 
@@ -91,8 +113,12 @@ TEST_VALUE_METRIC = DailyAvgTimeSinceSpanStartMetric(
     name="test_value_metric",
     display_name="Test Value Metric",
     description="Test value metric",
-    span_types=[SpanType.PERSON_DEMOGRAPHICS],
-    span_attribute_filters={},
+    span_selectors=[
+        SpanSelector(
+            span_type=SpanType.PERSON_DEMOGRAPHICS,
+            span_conditions_dict={},
+        )
+    ],
 )
 
 

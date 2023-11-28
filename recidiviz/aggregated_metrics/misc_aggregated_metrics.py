@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates view builders calculating miscellaneous metrics for specific aggregation levels and populations"""
+"""Creates view builders calculating miscellaneous metrics for specific units of analysis and populations"""
 from typing import List, Optional, Tuple
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
@@ -33,7 +33,6 @@ from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_exclusive_clause,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulation,
     MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
@@ -43,7 +42,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 
 # List of [MetricPopulationType, MetricUnitOfAnalysisType] tuples that are supported by
 # `generate_misc_aggregated_metrics_view_builder` function.
-_MISC_METRICS_SUPPORTED_POPULATIONS_AGGREGATION_LEVELS: List[
+_MISC_METRICS_SUPPORTED_POPULATIONS_UNIT_OF_ANALYSIS_TYPES: List[
     Tuple[MetricPopulationType, MetricUnitOfAnalysisType]
 ] = [
     (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_OFFICER),
@@ -57,19 +56,19 @@ _MIN_OFFICER_CASELOAD_SIZE = 10
 
 
 def _query_template_and_format_args(
-    aggregation_level: MetricUnitOfAnalysis,
-    population: MetricPopulation,
+    unit_of_analysis: MetricUnitOfAnalysis,
+    population_type: MetricPopulationType,
 ) -> str:
     """Returns the appropriate query template (and associated dataset keyword args for
-    that template) for the provided population and aggregation level.
+    that template) for the provided population and unit of analysis.
     """
-    if population.population_type == MetricPopulationType.SUPERVISION:
-        if aggregation_level.level_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
-            group_by_range = range(1, len(aggregation_level.primary_key_columns) + 4)
+    if population_type == MetricPopulationType.SUPERVISION:
+        if unit_of_analysis.type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
+            group_by_range = range(1, len(unit_of_analysis.primary_key_columns) + 4)
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
             cte = f"""
     SELECT
-        {aggregation_level.get_primary_key_columns_query_string(prefix="b")},
+        {unit_of_analysis.get_primary_key_columns_query_string(prefix="b")},
         period,
         population_start_date AS start_date,
         population_end_date AS end_date,
@@ -122,7 +121,7 @@ def _query_template_and_format_args(
     GROUP BY {group_by_range_str}
 """
             return cte
-        if aggregation_level.level_type in [
+        if unit_of_analysis.type in [
             MetricUnitOfAnalysisType.SUPERVISION_UNIT,
             MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
             MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
@@ -130,7 +129,7 @@ def _query_template_and_format_args(
         ]:
             cte = f"""
     SELECT
-        {aggregation_level.get_primary_key_columns_query_string()},
+        {unit_of_analysis.get_primary_key_columns_query_string()},
         period,
         start_date,
         end_date,
@@ -141,7 +140,7 @@ def _query_template_and_format_args(
         SELECT 
             a.*, 
             IFNULL(b.supervision_district_id, b.supervision_district_id_inferred) AS district, 
-            IFNULL(b.supervision_office, b.supervision_office_inferred) AS office,
+            IFNULL(b.supervision_office_id, b.supervision_office_id_inferred) AS office,
             b.supervisor_staff_id AS unit_supervisor,
         FROM
             `{{project_id}}.aggregated_metrics.supervision_officer_aggregated_metrics_materialized` a
@@ -153,41 +152,41 @@ def _query_template_and_format_args(
             AND a.end_date BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
     )
     GROUP BY
-        {aggregation_level.get_primary_key_columns_query_string()},
+        {unit_of_analysis.get_primary_key_columns_query_string()},
         period, start_date, end_date       
 """
             return cte
 
     raise ValueError(
-        f"Unexpected population_type [{population.population_type}] and "
-        f"aggregation_level type [{aggregation_level.level_type}] when generating misc "
+        f"Unexpected population_type [{population_type}] and "
+        f"unit_of_analysis type [{unit_of_analysis.type}] when generating misc "
         f"metrics."
     )
 
 
 def generate_misc_aggregated_metrics_view_builder(
-    aggregation_level: MetricUnitOfAnalysis,
-    population: MetricPopulation,
+    unit_of_analysis: MetricUnitOfAnalysis,
+    population_type: MetricPopulationType,
     metrics: List[MiscAggregatedMetric],
 ) -> Optional[SimpleBigQueryViewBuilder]:
     """
     Returns a SimpleBigQueryViewBuilder that calculates miscellaneous metrics for the specified
-    aggregation level and population, if one exists.
+    unit of analysis and population.
     """
     if (
-        population.population_type,
-        aggregation_level.level_type,
-    ) not in _MISC_METRICS_SUPPORTED_POPULATIONS_AGGREGATION_LEVELS:
+        population_type,
+        unit_of_analysis.type,
+    ) not in _MISC_METRICS_SUPPORTED_POPULATIONS_UNIT_OF_ANALYSIS_TYPES:
         return None
 
-    cte = _query_template_and_format_args(aggregation_level, population)
+    cte = _query_template_and_format_args(unit_of_analysis, population_type)
     metrics_str = ",\n    ".join([metric.name for metric in metrics])
     query_template = f"""
 WITH misc_metrics_cte AS (
     {cte}
 )
 SELECT
-    {aggregation_level.get_primary_key_columns_query_string()},
+    {unit_of_analysis.get_primary_key_columns_query_string()},
     start_date,
     end_date,
     period,
@@ -196,10 +195,10 @@ FROM
     misc_metrics_cte
 """
 
-    view_id = f"{population.population_name_short}_{aggregation_level.level_name_short}_misc_aggregated_metrics"
+    view_id = f"{population_type.population_name_short}_{unit_of_analysis.type.short_name}_misc_aggregated_metrics"
     view_description = f"""
-    Metrics for the {population.population_name_short} population calculated using 
-    ad-hoc logic, disaggregated by {aggregation_level.level_name_short}.
+    Metrics for the {population_type.population_name_short} population calculated using 
+    ad-hoc logic, disaggregated by {unit_of_analysis.type.short_name}.
 
     All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
     """
@@ -210,5 +209,5 @@ FROM
         view_query_template=query_template,
         description=view_description,
         should_materialize=False,
-        clustering_fields=aggregation_level.primary_key_columns,
+        clustering_fields=unit_of_analysis.primary_key_columns,
     )
