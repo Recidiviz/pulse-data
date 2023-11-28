@@ -99,14 +99,6 @@ class TestDeployYamls(unittest.TestCase):
         self.assertIsNotNone(re.match(pattern, asset_gen_diff["old_value"]))
         self.assertIsNotNone(re.match(pattern, asset_gen_diff["new_value"]))
 
-        # TODO(#25624): Scale production down to 2 instances
-        # Staging is scaled back to examine day-over-day performance
-        min_instances = diff["values_changed"].pop(
-            "root['automatic_scaling']['min_num_instances']"
-        )
-        self.assertEqual(2, min_instances["old_value"])
-        self.assertEqual(4, min_instances["new_value"])
-
         # There should be no other values changed between the two
         self.assertFalse(diff.pop("values_changed"))
         # Aside from the few values changed, there should be no other changes
