@@ -48,7 +48,9 @@ from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import (
+    get_database_entities_by_association_table,
     get_database_entity_by_table_name,
     is_association_table,
 )
@@ -73,6 +75,7 @@ from recidiviz.tools.utils.compare_tables_helper import (
     STATS_ORIGINAL_ERROR_RATE_COL,
     CompareTablesResult,
 )
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -153,17 +156,8 @@ EXTERNAL_IDS_MISSING_FROM_SANDBOX = StrictStringFormatter().format(
     dataset_name=SANDBOX_DATASET_NAME,
 )
 
-
-FILTERED_TABLE_ROWS_CLAUSE_TEMPLATE = """
-  SELECT *
-  FROM {state_table} t
-  JOIN {root_entity_ids_mapping_table}
-  ON t.{root_entity_id_col} = {dataset_name}_{root_entity_id_col}
-"""
-
 COMPARABLE_TABLE_ROWS_TEMPLATE = """
 SELECT 
-  reference_{root_entity_id_col} AS comparable_{root_entity_id_col}, 
   * EXCEPT(
     sandbox_{root_entity_id_col},
     reference_{root_entity_id_col},
@@ -359,6 +353,45 @@ class StateDatasetValidator:
         dataset: DatasetReference,
         state_entity_cls: Type[DatabaseEntity],
     ) -> str:
+        """Returns a formatted query that queries the provided state entity in the
+        provided |dataset|, which can be used to compare against the same table in
+        a different dataset.
+        """
+
+        root_entity_cls = cast(
+            Type[Entity],
+            get_root_entity_class_for_entity(
+                get_entity_class_in_module_with_name(
+                    entities, state_entity_cls.__name__
+                )
+            ),
+        )
+        root_entity_id_col = root_entity_cls.get_primary_key_column_name()
+        columns_to_exclude = [
+            state_entity_cls.get_primary_key_column_name(),
+            *state_entity_cls.get_foreign_key_names(),
+        ]
+        columns_to_exclude_str = ",".join(columns_to_exclude)
+        return StrictStringFormatter().format(
+            COMPARABLE_TABLE_ROWS_TEMPLATE,
+            root_entity_id_col=root_entity_id_col,
+            columns_to_exclude_str=columns_to_exclude_str,
+            filtered_rows_clause=self._filtered_table_rows_clause_for_entity_table(
+                dataset=dataset, state_entity_cls=state_entity_cls
+            ),
+        )
+
+    def _filtered_table_rows_clause_for_entity_table(
+        self,
+        dataset: DatasetReference,
+        state_entity_cls: Type[DatabaseEntity],
+    ) -> str:
+        """Returns a formatted query clause that filters the table in |dataset| for the
+        provided |state_entity_cls| down to only rows that are connected to a root
+        entity present in both the reference and sandbox datasets. Adds a column that
+        contains the root entity id (e.g. person_id) that can be used to compare across
+        both sandbox and reference datsets.
+        """
         root_entity_cls = cast(
             Type[Entity],
             get_root_entity_class_for_entity(
@@ -376,24 +409,88 @@ class StateDatasetValidator:
         mapping_address = self.root_entity_id_mappings_address(
             root_entity_cls=root_entity_cls,
         )
-        columns_to_exclude = [
-            state_entity_cls.get_primary_key_column_name(),
-            *state_entity_cls.get_foreign_key_names(),
-        ]
-        columns_to_exclude_str = ",".join(columns_to_exclude)
         dataset_name = self._dataset_name_for_dataset(dataset)
-        return StrictStringFormatter().format(
-            COMPARABLE_TABLE_ROWS_TEMPLATE,
-            root_entity_id_col=root_entity_id_col,
-            columns_to_exclude_str=columns_to_exclude_str,
-            filtered_rows_clause=StrictStringFormatter().format(
-                FILTERED_TABLE_ROWS_CLAUSE_TEMPLATE,
-                dataset_name=dataset_name,
-                root_entity_id_col=root_entity_id_col,
-                state_table=table_address.format_address_for_query(),
-                root_entity_ids_mapping_table=mapping_address.format_address_for_query(),
+        state_table = table_address.format_address_for_query()
+        root_entity_ids_mapping_table = mapping_address.format_address_for_query()
+        return f"""
+  SELECT *, reference_{root_entity_id_col} AS comparable_{root_entity_id_col}
+  FROM {state_table} t
+  JOIN {root_entity_ids_mapping_table}
+  ON t.{root_entity_id_col} = {dataset_name}_{root_entity_id_col}
+"""
+
+    def _build_comparable_association_table_rows_query(
+        self,
+        dataset: DatasetReference,
+        association_table_id: str,
+    ) -> str:
+        """Returns a formatted query for the given association table in the provided
+        |dataset|, which can be used to compare against the same association table in
+        a different dataset.
+        """
+
+        if not is_association_table(association_table_id):
+            raise ValueError(
+                f"This function called with non-association table "
+                f"[{association_table_id}]."
+            )
+
+        (
+            associated_entity_1_cls,
+            associated_entity_2_cls,
+        ) = get_database_entities_by_association_table(
+            state_schema, association_table_id
+        )
+
+        associated_entity_1_pk = associated_entity_1_cls.get_primary_key_column_name()
+        associated_entity_2_pk = associated_entity_2_cls.get_primary_key_column_name()
+
+        root_entity_cls = cast(
+            Type[Entity],
+            get_root_entity_class_for_entity(
+                get_entity_class_in_module_with_name(
+                    entities, associated_entity_1_cls.__name__
+                )
             ),
         )
+        root_entity_id_col = root_entity_cls.get_primary_key_column_name()
+
+        association_table_address = ProjectSpecificBigQueryAddress(
+            project_id=dataset.project,
+            dataset_id=dataset.dataset_id,
+            table_id=association_table_id,
+        )
+
+        t1_name = associated_entity_1_cls.get_entity_name()
+        t1_clause = self._filtered_table_rows_clause_for_entity_table(
+            dataset=dataset, state_entity_cls=associated_entity_1_cls
+        )
+        t2_name = associated_entity_2_cls.get_entity_name()
+        t2_clause = self._filtered_table_rows_clause_for_entity_table(
+            dataset=dataset, state_entity_cls=associated_entity_2_cls
+        )
+
+        comparable_root_entity_id_col = f"comparable_{root_entity_id_col}"
+
+        association_table = association_table_address.format_address_for_query()
+
+        return f"""
+SELECT
+  {t1_name}.{comparable_root_entity_id_col} AS {t1_name}_{comparable_root_entity_id_col},
+  {t2_name}.{comparable_root_entity_id_col} AS {t2_name}_{comparable_root_entity_id_col},
+  {t1_name}.external_id AS {t1_name}_external_id,
+  {t2_name}.external_id AS {t2_name}_external_id,
+FROM
+  {association_table} association
+JOIN (
+{t1_clause}
+) {t1_name}
+USING({associated_entity_1_pk})
+JOIN (
+{t2_clause}
+) {t2_name}
+USING({associated_entity_2_pk})
+"""
 
     def _materialize_comparable_table(
         self,
@@ -416,8 +513,9 @@ class StateDatasetValidator:
                 state_entity_cls=state_entity_cls,
             )
         else:
-            # TODO(#24413): Build query for comparing association tables here
-            raise NotImplementedError
+            comparable_rows_query = self._build_comparable_association_table_rows_query(
+                dataset=dataset, association_table_id=state_table_id
+            )
 
         dataset_name = self._dataset_name_for_dataset(dataset)
         comparable_table_address = ProjectSpecificBigQueryAddress(
@@ -451,19 +549,15 @@ class StateDatasetValidator:
             # TODO(#24413): Handle EnumEntity checking differently
             return None
 
-        try:
-            comparable_reference_table_address = self._materialize_comparable_table(
-                dataset=self.reference_dataset,
-                state_table_id=state_table_id,
-            )
+        comparable_reference_table_address = self._materialize_comparable_table(
+            dataset=self.reference_dataset,
+            state_table_id=state_table_id,
+        )
 
-            comparable_sandbox_table_address = self._materialize_comparable_table(
-                dataset=self.sandbox_dataset,
-                state_table_id=state_table_id,
-            )
-        except NotImplementedError:
-            # TODO(#24413): Remove this try/except once association tables are supported
-            return None
+        comparable_sandbox_table_address = self._materialize_comparable_table(
+            dataset=self.sandbox_dataset,
+            state_table_id=state_table_id,
+        )
 
         return compare_table_or_view(
             address_original=comparable_reference_table_address,
@@ -630,6 +724,14 @@ def parse_arguments() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_arguments()
+
+    if args.state_code_filter.value.lower() not in args.sandbox_state_dataset:
+        prompt_for_confirmation(
+            f"Sandbox dataset [{args.sandbox_state_dataset}] does not contain state "
+            f"code filter [{args.state_code_filter.value}] in its name. Are you sure "
+            f"this is the correct dataset?"
+        )
+
     StateDatasetValidator(
         reference_state_dataset=args.reference_state_dataset,
         reference_state_project_id=args.reference_state_project_id,
