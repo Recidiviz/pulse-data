@@ -43,7 +43,7 @@ To run the app locally, you need to spin up both the backend and frontend simult
 gcloud auth login
 gcloud auth application-default login
 gcloud config set project recidiviz-staging
-gcloud auth configure-docker
+gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
 ### Development secrets
