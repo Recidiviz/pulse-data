@@ -194,7 +194,8 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
         supervision_unit_label="unit",
         supervision_district_manager_label="district director",
         supervision_officer_metric_exclusions="""
-    AND avg_daily_population BETWEEN 10 AND 150
+    --TODO(#25695): Revisit this after excluding admin supervision levels    
+    AND avg_daily_population BETWEEN 10 AND 175
     AND prop_period_with_critical_caseload >= 0.75""",
         learn_more_url="https://drive.google.com/file/d/1WCNEeftLeTf-c7bcKXKYteg5HykrRba1/view",
     ),
