@@ -33,46 +33,4 @@ output:
           role_subtype:
             $enum_mapping:
               $raw_text: role
-              $ignore:
-                - "CORR CNSLR 2"
-                - "CORR OFR 4"
-                - "CORR UNT MGR"
-                - "DEP CORR SUPT 2"
-                - "HRNG EXMR CORR"
-              $mappings:
-                StateStaffRoleSubtype.SUPERVISION_OFFICER:
-                  - "SUPERVISION_OFFICER"
-                  - "PRL AGT 2"
-                  - "PAROLE AGT 2"
-                  - "PRL AGT 1"
-                  - "PRL MGR 1"
-                StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR:
-                  - "SUPERVISION_OFFICER_SUPERVISOR"
-                  - "PRL SUPV"
-                  - "PAROLE SPVR"
-                StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER:
-                  - "DISTRICT DIRECTOR"
-                  - "DEPUTY DISTRICT DIRECTOR"
-                StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER:
-                  - "REGIONAL DIRECTOR"
-                  - "RGNL PBTN PRL DIR"
-                StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP:
-                  - "DEPUTY SECRETARY"
-                  - "EXECUTIVE ASSISTANT"
-                  - "DEP SEC REENTRY"
-                  - "CMY CORR CTR DIR 1"
-                  - "CMY CORR CTR DIR 2"
-                StateStaffRoleSubtype.INTERNAL_UNKNOWN:
-                  - "INTERNAL_UNKNOWN"
-                  - "ADLT BAS ED TCHR CORR ED"
-                  - "DIR BUR CTRL SRVS PBTN PRL"
-                  - "INSTL PRL ASST"
-                  - "ADMV OFR 5"
-                  - "CLK TYPST 2"
-                  - "CLK TYPST 3"
-                  - "CONTRACTOR"
-                  - "PRL AUDR"
-                  - "PRL HRNG OFR"
-                  - "SECRETARIAL SUPV 2"
-                  - "SOC WKR 2"
-                  - "VCTM ASTNC COOR"
+              $custom_parser: us_pa_custom_enum_parsers.role_subtype_mapper

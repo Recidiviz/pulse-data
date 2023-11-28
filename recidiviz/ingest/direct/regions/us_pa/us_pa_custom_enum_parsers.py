@@ -37,7 +37,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
 from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
-    StateStaffRoleType,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
@@ -707,16 +706,30 @@ def supervision_period_supervision_type_mapper(
     return get_most_relevant_supervision_type(supervision_types)
 
 
-def role_type_mapper(raw_text: str) -> Optional[StateStaffRoleType]:
-    if raw_text:
-        return StateStaffRoleType.SUPERVISION_OFFICER
-    return StateStaffRoleType.INTERNAL_UNKNOWN
-
-
 def role_subtype_mapper(raw_text: str) -> Optional[StateStaffRoleSubtype]:
-
     if raw_text:
-
-        return StateStaffRoleSubtype.SUPERVISION_OFFICER
-
+        if raw_text in (
+            "SUPERVISION_OFFICER",
+            "PRL AGT 2",
+            "PAROLE AGT 2",
+            "PRL AGT 1",
+            "PRL MGR 1",
+            "PRL MGR 2",
+        ):
+            return StateStaffRoleSubtype.SUPERVISION_OFFICER
+        if raw_text in ("SUPERVISION_OFFICER_SUPERVISOR", "PRL SUPV", "PAROLE SPVR"):
+            return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
+        if raw_text in ("DISTRICT DIRECTOR", "DEPUTY DISTRICT DIRECTOR"):
+            return StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER
+        if raw_text in ("REGIONAL DIRECTOR", "RGNL PBTN PRL DIR"):
+            return StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER
+        if raw_text in (
+            "DEPUTY SECRETARY",
+            "EXECUTIVE ASSISTANT",
+            "DEP SEC REENTRY",
+            "CMY CORR CTR DIR 1",
+            "CMY CORR CTR DIR 2",
+        ):
+            return StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP
+        return StateStaffRoleSubtype.INTERNAL_UNKNOWN
     return StateStaffRoleSubtype.INTERNAL_UNKNOWN
