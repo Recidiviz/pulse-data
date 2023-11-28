@@ -16,7 +16,7 @@
 # =============================================================================
 """File with utils specific to aggregated metrics methods."""
 
-from typing import Sequence
+from typing import List, Sequence
 
 from recidiviz.aggregated_metrics.metric_time_periods import MetricTimePeriod
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
@@ -27,7 +27,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
 
 # function for aggregating monthly-levels to quarter and year
 def get_unioned_time_granularity_clause(
-    aggregation_level: MetricUnitOfAnalysis,
+    unit_of_analysis: MetricUnitOfAnalysis,
     metrics: Sequence[AggregatedMetric],
 ) -> str:
     """
@@ -36,13 +36,13 @@ def get_unioned_time_granularity_clause(
 
     Params
     ------
-    aggregation_level : MetricUnitOfAnalysis
+    unit_of_analysis : MetricUnitOfAnalysis
         A MetricUnitOfAnalysis object used to get index columns of the query
 
     metrics : List[AggregatedMetric]
         A list of AggregatedMetric objects used to construct the select statement
     """
-    index_cols = aggregation_level.get_index_columns_query_string()
+    index_cols = unit_of_analysis.get_index_columns_query_string()
     metric_cols = ",\n\t".join(
         [metric.generate_aggregate_time_periods_query_fragment() for metric in metrics]
     )
@@ -81,3 +81,31 @@ WHERE
     )
 GROUP BY
     {index_cols}, population_start_date, population_end_date, time_periods.period"""
+
+
+def get_joined_metrics_by_observation_type_query(
+    unit_of_analysis: MetricUnitOfAnalysis,
+    subqueries: List[str],
+    metrics: Sequence[AggregatedMetric],
+) -> str:
+    """Left joins together all subqueries using the unit of analysis and time period fields"""
+    joined_query = f"SELECT * FROM ({subqueries[0]})" + "\n".join(
+        [
+            f"""
+    FULL OUTER JOIN ({x}) 
+        USING ({unit_of_analysis.get_primary_key_columns_query_string()}, start_date, end_date, period)"""
+            for i, x in enumerate(subqueries)
+            if i > 0
+        ]
+    )
+    index_cols = unit_of_analysis.get_index_columns_query_string()
+    # Select columns in their original order, since separation by metric unit of observation scrambles the order
+    metric_cols_ordered = ",\n\t".join([metric.name for metric in metrics])
+    return f"""
+SELECT
+    {index_cols},
+    start_date,
+    end_date,
+    period,
+    {metric_cols_ordered} 
+FROM ({joined_query})"""

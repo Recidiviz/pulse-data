@@ -16,11 +16,9 @@
 # =============================================================================
 """Constants related to a MetricUnitOfAnalysisType."""
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, FrozenSet, List, Optional, Tuple
 
 import attr
-
-from recidiviz.common import attr_validators
 
 # This object contains a mapping from original column names in Recidiviz's
 # schema to abbreviated column names. Note that we do not rename state_code
@@ -30,12 +28,17 @@ COLUMN_SOURCE_DICT = {
     "district_name": "supervision_district_name",
     "office": "supervision_office",
     "office_name": "supervision_office_name",
-    "officer_id": "supervising_officer_external_id",
 }
 
 
 class MetricUnitOfAnalysisType(Enum):
-    """The type of metric unit of analysis level."""
+    """A unit of analysis is the entity that you wish to say something about at the end
+    of your study.
+
+    The MetricUnitOfAnalysisType tells us the type of entity that a metric describes.
+    For example, a metric that counts currently caseload size for each officer would use
+    MetricUnitOfAnalysisType.SUPERVISION_OFFICER.
+    """
 
     STATE_CODE = "STATE"
     FACILITY = "FACILITY"
@@ -46,31 +49,69 @@ class MetricUnitOfAnalysisType(Enum):
     SUPERVISION_UNIT = "UNIT"
     PERSON_ID = "PERSON"
 
+    @property
+    def short_name(self) -> str:
+        """Returns lowercase enum name"""
+        return self.value.lower()
+
+    @property
+    def pretty_name(self) -> str:
+        """Returns enum name in title case"""
+        return self.short_name.replace("_", " ").title()
+
+
+class MetricUnitOfObservationType(Enum):
+    """A unit of observation is the item (or items) that you observe, measure, or
+    collect while trying to learn something about your unit of analysis.
+
+    The MetricUnitOfObservationType is a type that tells us what each input event / span
+    to a metric is about. For example, compartment_sessions rows are each about a single
+    person, so the MetricUnitOfObservationType is PERSON.
+    """
+
+    SUPERVISION_OFFICER = "OFFICER"
+    PERSON_ID = "PERSON"
+
+    @property
+    def short_name(self) -> str:
+        """Returns lowercase enum name"""
+        return self.value.lower()
+
+
+@attr.define(frozen=True, kw_only=True)
+class MetricUnitOfObservation:
+    """Class that stores information about a unit of observation, along with functions
+    to help generate SQL fragments.
+    """
+
+    # The enum for the type of unit of observation
+    type: MetricUnitOfObservationType
+
+    # List of columns that serve as the primary keys of a table containing information about the unit
+    primary_key_columns: FrozenSet[str]
+
+    def get_primary_key_columns_query_string(self, prefix: Optional[str] = None) -> str:
+        """Returns string containing comma separated primary key column names with optional prefix"""
+        prefix_str = f"{prefix}." if prefix else ""
+        return ", ".join(
+            f"{prefix_str}{column}" for column in sorted(self.primary_key_columns)
+        )
+
 
 @attr.define(frozen=True, kw_only=True)
 class MetricUnitOfAnalysis:
-    """Class that stores information about a unit of analysis, along with functions to help generate SQL fragments"""
+    """Class that stores information about a unit of analysis, along with functions to
+    help generate SQL fragments.
+    """
 
-    # The level type object enum
-    level_type: MetricUnitOfAnalysisType
-
-    # The source query containing client assignments to the level of analysis
-    client_assignment_query: str = attr.field(validator=attr_validators.is_str)
+    # The enum for the type of unit of analysis
+    type: MetricUnitOfAnalysisType
 
     # List of columns present in the assignment table that serve as the primary keys of the table
     primary_key_columns: List[str]
 
     # List of columns that provide information about the unit of analysis which does not change over time
     static_attribute_columns: List[str]
-
-    @property
-    def level_name_short(self) -> str:
-        """Returns lowercase enum name"""
-        return self.level_type.value.lower()
-
-    @property
-    def pretty_name(self) -> str:
-        return self.level_name_short.replace("_", " ").title()
 
     @property
     def index_columns(self) -> List[str]:
@@ -96,7 +137,9 @@ class MetricUnitOfAnalysis:
         prefix_str = f"{prefix}." if prefix else ""
         return ", ".join(f"{prefix_str}{column}" for column in self.index_columns)
 
-    def get_original_columns_query_string(self, prefix: Optional[str] = None) -> str:
+    def get_original_index_columns_query_string(
+        self, prefix: Optional[str] = None
+    ) -> str:
         """Returns string containing comma separated column names from the source table with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""
         return ", ".join(
@@ -117,16 +160,110 @@ class MetricUnitOfAnalysis:
         return ", ".join(renamed_columns)
 
 
-METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
-    MetricUnitOfAnalysisType.FACILITY: MetricUnitOfAnalysis(
-        level_type=MetricUnitOfAnalysisType.FACILITY,
-        client_assignment_query="SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
+METRIC_UNITS_OF_OBSERVATION = [
+    MetricUnitOfObservation(
+        type=MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        primary_key_columns=frozenset(["state_code", "officer_id"]),
+    ),
+    MetricUnitOfObservation(
+        type=MetricUnitOfObservationType.PERSON_ID,
+        primary_key_columns=frozenset(["state_code", "person_id"]),
+    ),
+]
+
+METRIC_UNITS_OF_OBSERVATION_BY_TYPE = {u.type: u for u in METRIC_UNITS_OF_OBSERVATION}
+
+
+METRIC_UNITS_OF_ANALYSIS = [
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.FACILITY,
         primary_key_columns=["state_code", "facility"],
         static_attribute_columns=["facility_name"],
     ),
-    MetricUnitOfAnalysisType.FACILITY_COUNSELOR: MetricUnitOfAnalysis(
-        level_type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
-        client_assignment_query="""
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+        primary_key_columns=["state_code", "facility_counselor_id"],
+        static_attribute_columns=["facility_counselor_name"],
+    ),
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.STATE_CODE,
+        primary_key_columns=["state_code"],
+        static_attribute_columns=[],
+    ),
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+        primary_key_columns=["state_code", "district"],
+        static_attribute_columns=["district_name"],
+    ),
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+        primary_key_columns=["state_code", "district", "office"],
+        static_attribute_columns=["district_name", "office_name"],
+    ),
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+        primary_key_columns=["state_code", "unit_supervisor"],
+        static_attribute_columns=["unit_supervisor_name"],
+    ),
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        primary_key_columns=["state_code", "officer_id"],
+        static_attribute_columns=["officer_name"],
+    ),
+    MetricUnitOfAnalysis(
+        type=MetricUnitOfAnalysisType.PERSON_ID,
+        primary_key_columns=["state_code", "person_id"],
+        static_attribute_columns=[],
+    ),
+]
+
+METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {u.type: u for u in METRIC_UNITS_OF_ANALYSIS}
+
+# Dictionary of queries define periods of assignment of a unit of observation to a unit of analysis
+UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT: Dict[
+    Tuple[MetricUnitOfObservationType, MetricUnitOfAnalysisType], str
+] = {
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.PERSON_ID,
+    ): "SELECT * FROM `{project_id}.sessions.system_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ): """
+SELECT a.*, a.supervising_officer_external_id AS officer_id, b.full_name_clean AS officer_name
+FROM 
+    `{project_id}.sessions.supervision_officer_sessions_materialized` a
+LEFT JOIN 
+    `{project_id}.reference_views.state_staff_with_names` b
+ON 
+    a.state_code = b.state_code
+    AND a.supervising_officer_external_id = b.legacy_supervising_officer_external_id
+""",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): "SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): "SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+    ): "SELECT * FROM `{project_id}.sessions.supervision_unit_supervisor_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): "SELECT * FROM `{project_id}.sessions.compartment_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.FACILITY,
+    ): "SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
+    (
+        MetricUnitOfObservationType.PERSON_ID,
+        MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
+    ): """
 SELECT 
     a.* EXCEPT (incarceration_staff_assignment_id),
     a.incarceration_staff_assignment_id AS facility_counselor_id,
@@ -141,56 +278,69 @@ ON
 WHERE
     incarceration_staff_assignment_role_subtype = "COUNSELOR"
 """,
-        primary_key_columns=["state_code", "facility_counselor_id"],
-        static_attribute_columns=["facility_counselor_name"],
-    ),
-    MetricUnitOfAnalysisType.STATE_CODE: MetricUnitOfAnalysis(
-        level_type=MetricUnitOfAnalysisType.STATE_CODE,
-        client_assignment_query="SELECT * "
-        "FROM `{project_id}.sessions.compartment_sessions_materialized`",
-        primary_key_columns=["state_code"],
-        static_attribute_columns=[],
-    ),
-    MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: MetricUnitOfAnalysis(
-        level_type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-        client_assignment_query="SELECT * "
-        "FROM `{project_id}.sessions.location_sessions_materialized`",
-        primary_key_columns=["state_code", "district"],
-        static_attribute_columns=["district_name"],
-    ),
-    MetricUnitOfAnalysisType.SUPERVISION_OFFICE: MetricUnitOfAnalysis(
-        level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-        client_assignment_query="SELECT * "
-        "FROM `{project_id}.sessions.location_sessions_materialized`",
-        primary_key_columns=["state_code", "district", "office"],
-        static_attribute_columns=["district_name", "office_name"],
-    ),
-    MetricUnitOfAnalysisType.SUPERVISION_UNIT: MetricUnitOfAnalysis(
-        level_type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
-        client_assignment_query="SELECT * "
-        "FROM `{project_id}.sessions.supervision_unit_supervisor_sessions_materialized`",
-        primary_key_columns=["state_code", "unit_supervisor"],
-        static_attribute_columns=["unit_supervisor_name"],
-    ),
-    MetricUnitOfAnalysisType.SUPERVISION_OFFICER: MetricUnitOfAnalysis(
-        level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-        client_assignment_query="""
+    (
+        MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+    ): """
 SELECT a.*, b.full_name_clean AS officer_name
 FROM 
-    `{project_id}.sessions.supervision_officer_sessions_materialized` a
+    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized` a
 LEFT JOIN 
     `{project_id}.reference_views.state_staff_with_names` b
 ON 
     a.state_code = b.state_code
-    AND a.supervising_officer_external_id = b.legacy_supervising_officer_external_id
+    AND a.staff_id = b.staff_id
 """,
-        primary_key_columns=["state_code", "officer_id"],
-        static_attribute_columns=["officer_name"],
-    ),
-    MetricUnitOfAnalysisType.PERSON_ID: MetricUnitOfAnalysis(
-        level_type=MetricUnitOfAnalysisType.PERSON_ID,
-        client_assignment_query="SELECT * FROM `{project_id}.sessions.system_sessions_materialized`",
-        primary_key_columns=["state_code", "person_id"],
-        static_attribute_columns=[],
-    ),
+    (
+        MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+    ): """SELECT
+    *, 
+    supervision_office_id AS supervision_office,
+    supervision_district_id AS supervision_district,
+FROM
+    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`""",
+    (
+        MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+    ): """SELECT
+    *, supervision_district_id AS supervision_district,
+FROM
+    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`
+""",
+    (
+        MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+    ): """SELECT
+    a.*, 
+    a.supervisor_staff_id AS unit_supervisor,
+    b.full_name_clean AS unit_supervisor_name,
+FROM
+    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized` a
+LEFT JOIN 
+    `{project_id}.reference_views.state_staff_with_names` b
+ON 
+    a.state_code = b.state_code
+    AND a.supervisor_staff_id = b.staff_id
+""",
+    (
+        MetricUnitOfObservationType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.STATE_CODE,
+    ): """SELECT * FROM `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`""",
 }
+
+
+def get_assignment_query_for_unit_of_analysis(
+    unit_of_analysis_type: MetricUnitOfAnalysisType,
+    unit_of_observation_type: MetricUnitOfObservationType,
+) -> str:
+    """Returns the assignment query that associates a unit of analysis with its assigned
+    units of observation.
+    """
+    unit_pair_key = (unit_of_observation_type, unit_of_analysis_type)
+    if unit_pair_key not in UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT:
+        raise ValueError(
+            f"No assignment query found for {unit_of_analysis_type=}, "
+            f"{unit_of_observation_type=}."
+        )
+    return UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT[unit_pair_key]

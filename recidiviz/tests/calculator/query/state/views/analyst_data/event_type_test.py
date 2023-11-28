@@ -14,27 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests functionality of aggregated metrics lookml generation function"""
+"""Tests functionality of EventType functions"""
 
 import unittest
 
-from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    METRICS_BY_POPULATION_TYPE,
-)
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
-    MetricPopulationType,
-)
-from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_generator import (
-    get_lookml_views_for_metrics,
+from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
+    EventType,
 )
 
 
-class LookMLViewTest(unittest.TestCase):
-    """Tests function for lookml generation"""
+class EventTypeTest(unittest.TestCase):
+    """
+    Tests EventType functions
+    """
 
-    def test_get_lookml_views_for_metrics(self) -> None:
-        # Test passes if this doesn't crash
-        _ = get_lookml_views_for_metrics(
-            population_type=MetricPopulationType.SUPERVISION,
-            metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.SUPERVISION],
-        )
+    def test_unit_of_observation_type(self) -> None:
+        """Check that unit_of_observation_type is defined for every EventType enum"""
+        for event_type in EventType:
+            self.assertIsNotNone(event_type.unit_of_observation_type)

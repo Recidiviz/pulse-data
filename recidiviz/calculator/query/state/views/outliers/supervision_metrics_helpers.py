@@ -32,7 +32,7 @@ def supervision_metric_query_template(
     Helper for querying supervision_<unit_of_analysis>_aggregated_metrics views
     """
     source_table = (
-        f"`{{project_id}}.aggregated_metrics.supervision_{unit_of_analysis.level_name_short}_aggregated_metrics_materialized`"
+        f"`{{project_id}}.aggregated_metrics.supervision_{unit_of_analysis.type.short_name}_aggregated_metrics_materialized`"
         if not cte_source
         else cte_source
     )

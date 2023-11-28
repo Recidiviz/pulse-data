@@ -54,7 +54,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
                         DAYS_AT_LIBERTY_365,
                     ]
                 },
-                levels_by_population_dict={
+                units_of_analysis_by_population_dict={
                     MetricPopulationType.JUSTICE_INVOLVED: [
                         MetricUnitOfAnalysisType.STATE_CODE,
                     ]
@@ -69,7 +69,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
                         LSIR_ASSESSMENTS_365,
                     ]
                 },
-                levels_by_population_dict={
+                units_of_analysis_by_population_dict={
                     MetricPopulationType.JUSTICE_INVOLVED: [
                         MetricUnitOfAnalysisType.STATE_CODE,
                     ]
@@ -89,7 +89,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
                     DAYS_AT_LIBERTY_365,
                 ]
             },
-            levels_by_population_dict={
+            units_of_analysis_by_population_dict={
                 MetricPopulationType.JUSTICE_INVOLVED: [
                     MetricUnitOfAnalysisType.STATE_CODE,
                 ]
@@ -104,7 +104,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
                     LSIR_ASSESSMENTS_365,
                 ]
             },
-            levels_by_population_dict={
+            units_of_analysis_by_population_dict={
                 MetricPopulationType.JUSTICE_INVOLVED: [
                     MetricUnitOfAnalysisType.STATE_CODE,
                 ]
@@ -123,7 +123,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
                         LSIR_ASSESSMENTS_AVG_SCORE,
                     ]
                 },
-                levels_by_population_dict={
+                units_of_analysis_by_population_dict={
                     MetricPopulationType.JUSTICE_INVOLVED: [
                         MetricUnitOfAnalysisType.STATE_CODE,
                     ]
@@ -142,7 +142,7 @@ class CollectAggregatedMetricsViewBuilders(unittest.TestCase):
                     LSIR_ASSESSMENTS,
                 ]
             },
-            levels_by_population_dict={
+            units_of_analysis_by_population_dict={
                 MetricPopulationType.JUSTICE_INVOLVED: [
                     MetricUnitOfAnalysisType.STATE_CODE,
                 ]

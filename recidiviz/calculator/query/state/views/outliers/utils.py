@@ -58,7 +58,7 @@ def format_state_specific_person_events_filters(years_lookback: int = 2) -> str:
         state_code = '{state_code.value}' 
         -- Limit the events lookback to minimize the size of the subqueries
         AND event_date >= DATE_SUB(CURRENT_DATE('US/Eastern'), INTERVAL {str(years_lookback)} YEAR)
-        {f"AND {metric.metric_event_conditions_string}" if metric.metric_event_conditions_string else ""}
+        {f"AND ({metric.metric_event_conditions_string})" if metric.metric_event_conditions_string else ""}
 """
             )
 

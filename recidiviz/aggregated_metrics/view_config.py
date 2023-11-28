@@ -19,8 +19,8 @@
 from typing import Sequence
 
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
-    LEVELS_BY_POPULATION_TYPE,
     METRICS_BY_POPULATION_TYPE,
+    UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
     collect_aggregated_metrics_view_builders,
 )
 from recidiviz.aggregated_metrics.metric_time_periods import (
@@ -41,6 +41,6 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
         SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
         *collect_aggregated_metrics_view_builders(
             METRICS_BY_POPULATION_TYPE,
-            LEVELS_BY_POPULATION_TYPE,
+            UNIT_OF_ANALYSIS_TYPES_BY_POPULATION_TYPE,
         ),
     ]

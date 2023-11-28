@@ -46,32 +46,40 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
 
     # check that span attribute filters are compatible with source spans for all configured span metrics
     def test_compatible_span_attribute_filters(self) -> None:
-        for metric in itertools.chain.from_iterable(
-            METRICS_BY_POPULATION_TYPE.values()
-        ):
-            if isinstance(metric, SpanMetricConditionsMixin):
-                for span, attribute in itertools.product(
-                    metric.span_types, metric.span_attribute_filters
-                ):
-                    if attribute not in SPANS_BY_TYPE[span].attribute_cols:
+        span_metrics = [
+            m
+            for m in itertools.chain.from_iterable(METRICS_BY_POPULATION_TYPE.values())
+            if isinstance(m, SpanMetricConditionsMixin)
+        ]
+        for metric in span_metrics:
+            for span_selector in metric.span_selectors:
+                for attribute in span_selector.span_conditions_dict:
+                    if (
+                        attribute
+                        not in SPANS_BY_TYPE[span_selector.span_type].attribute_cols
+                    ):
                         raise ValueError(
-                            f"Span attribute `{attribute}` is not supported by {span.value} span. "
-                            f"Supported attributes: {SPANS_BY_TYPE[span].attribute_cols}"
+                            f"Span attribute `{attribute}` is not supported by {span_selector.span_type.value} span. "
+                            f"Supported attributes: {SPANS_BY_TYPE[span_selector.span_type].attribute_cols}"
                         )
 
     # check that event attribute filters are compatible with source events for all configured event metrics
     def test_compatible_event_attribute_filters(self) -> None:
-        for metric in itertools.chain.from_iterable(
-            METRICS_BY_POPULATION_TYPE.values()
-        ):
-            if isinstance(metric, EventMetricConditionsMixin):
-                for event, attribute in itertools.product(
-                    metric.event_types, metric.event_attribute_filters
-                ):
-                    if attribute not in EVENTS_BY_TYPE[event].attribute_cols:
+        event_metrics = [
+            m
+            for m in itertools.chain.from_iterable(METRICS_BY_POPULATION_TYPE.values())
+            if isinstance(m, EventMetricConditionsMixin)
+        ]
+        for metric in event_metrics:
+            for event_selector in metric.event_selectors:
+                for attribute in event_selector.event_conditions_dict:
+                    if (
+                        attribute
+                        not in EVENTS_BY_TYPE[event_selector.event_type].attribute_cols
+                    ):
                         raise ValueError(
-                            f"Event attribute `{attribute}` is not supported by {event.value} event. "
-                            f"Supported attributes: {EVENTS_BY_TYPE[event].attribute_cols}"
+                            f"Event attribute `{attribute}` is not supported by {event_selector.event_type.value} event. "
+                            f"Supported attributes: {EVENTS_BY_TYPE[event_selector.event_type].attribute_cols}"
                         )
 
     # check that `event_value_numeric` is compatible with event attributes for all configured EventValue metrics
@@ -123,3 +131,36 @@ class MetricsByPopulationTypeTest(unittest.TestCase):
                             f"Configured weight_col `{metric.weight_col}` is not supported by {span.value} span. "
                             f"Supported attributes: {SPANS_BY_TYPE[span].attribute_cols}"
                         )
+
+    def test_consistent_unit_of_observation_type(self) -> None:
+        for metric in itertools.chain.from_iterable(
+            METRICS_BY_POPULATION_TYPE.values()
+        ):
+            if (
+                isinstance(metric, SpanMetricConditionsMixin)
+                and len(
+                    set(
+                        selector.unit_of_observation_type
+                        for selector in metric.span_selectors
+                    )
+                )
+                > 1
+            ):
+                raise ValueError(
+                    f"More than one unit_of_observation_type found for `{metric.name}` metric. "
+                    f"All span selectors must be associated with the same unit_of_observation_type."
+                )
+            if (
+                isinstance(metric, EventMetricConditionsMixin)
+                and len(
+                    set(
+                        selector.unit_of_observation_type
+                        for selector in metric.event_selectors
+                    )
+                )
+                > 1
+            ):
+                raise ValueError(
+                    f"More than one unit_of_observation_type found for `{metric.name}` metric. "
+                    f"All event selectors must be associated with the same unit_of_observation_type."
+                )

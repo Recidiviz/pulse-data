@@ -18,9 +18,16 @@
 
 from enum import Enum
 
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfObservationType,
+)
+
 
 class SpanType(Enum):
-    """Category of span-shaped data"""
+    """Enum identifying the source of span-shaped data. Corresponds to a single
+    SpanQueryBuilder entry in
+    recidiviz/calculator/query/state/views/analyst_data/models/spans.py.
+    """
 
     ASSESSMENT_SCORE_SESSION = "ASSESSMENT_SCORE_SESSION"
     COMPARTMENT_SESSION = "COMPARTMENT_SESSION"
@@ -34,6 +41,35 @@ class SpanType(Enum):
     SENTENCE_SPAN = "SENTENCE_SPAN"
     SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE = "SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE"
     SUPERVISION_LEVEL_SESSION = "SUPERVISION_LEVEL_SESSION"
+    SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION = (
+        "SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION"
+    )
     SUPERVISION_OFFICER_SESSION = "SUPERVISION_OFFICER_SESSION"
     TASK_CRITERIA_SPAN = "TASK_CRITERIA_SPAN"
     TASK_ELIGIBILITY_SESSION = "TASK_ELIGIBILITY_SESSION"
+
+    @property
+    def unit_of_observation_type(self) -> MetricUnitOfObservationType:
+        """Returns the unit of observation type associated with the span type"""
+        if self in [
+            SpanType.ASSESSMENT_SCORE_SESSION,
+            SpanType.COMPARTMENT_SESSION,
+            SpanType.COMPLETED_CONTACT_SESSION,
+            SpanType.CUSTODY_LEVEL_SESSION,
+            SpanType.EMPLOYMENT_PERIOD,
+            SpanType.EMPLOYMENT_STATUS_SESSION,
+            SpanType.HOUSING_TYPE_SESSION,
+            SpanType.JUSTICE_IMPACT_SESSION,
+            SpanType.PERSON_DEMOGRAPHICS,
+            SpanType.SENTENCE_SPAN,
+            SpanType.SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE,
+            SpanType.SUPERVISION_LEVEL_SESSION,
+            SpanType.SUPERVISION_OFFICER_SESSION,
+            SpanType.TASK_CRITERIA_SPAN,
+            SpanType.TASK_ELIGIBILITY_SESSION,
+        ]:
+            return MetricUnitOfObservationType.PERSON_ID
+        if self in [SpanType.SUPERVISION_OFFICER_INFERRED_LOCATION_SESSION]:
+            return MetricUnitOfObservationType.SUPERVISION_OFFICER
+
+        raise ValueError(f"No unit_of_observation_type found for SpanType {self.value}")

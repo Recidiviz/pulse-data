@@ -28,9 +28,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.event_query_buil
 from recidiviz.calculator.query.state.views.analyst_data.models.event_type import (
     EventType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.calculator.query.state.views.sessions.absconsion_bench_warrant_sessions import (
     ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER,
 )
@@ -58,7 +55,6 @@ def get_task_eligible_event_query_builder(
     return EventQueryBuilder(
         event_type=event_type,
         description=f"Opportunity eligibility starts{description_add_on}",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=f"""
     SELECT
         state_code,
@@ -91,7 +87,6 @@ EVENTS: List[EventQueryBuilder] = [
     EventQueryBuilder(
         event_type=EventType.ABSCONSION_BENCH_WARRANT,
         description="Transition to absconsion or bench warrant status",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=ABSCONSION_BENCH_WARRANT_SESSIONS_VIEW_BUILDER.table_for_query,
         attribute_cols=[],
         event_date_col="start_date",
@@ -99,7 +94,6 @@ EVENTS: List[EventQueryBuilder] = [
     EventQueryBuilder(
         event_type=EventType.COMPARTMENT_LEVEL_2_START,
         description="Transitions to a new incarceration or supervision compartment level 2",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.sessions.compartment_sessions_materialized`
@@ -118,7 +112,6 @@ WHERE
     ),
     EventQueryBuilder(
         event_type=EventType.CUSTODY_LEVEL_CHANGE,
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         description="Custody level changes",
         sql_source="""SELECT *,
     IF(custody_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
@@ -139,7 +132,6 @@ WHERE
     EventQueryBuilder(
         event_type=EventType.DRUG_SCREEN,
         description="Drug screen with a non-null result",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=f"""
 SELECT
     d.state_code,
@@ -173,7 +165,6 @@ WHERE
     EventQueryBuilder(
         event_type=EventType.EARLY_DISCHARGE_REQUEST,
         description="Valid early discharge requests, deduplicated to one per day regardless of decision",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.normalized_state.state_early_discharge`
@@ -186,7 +177,6 @@ WHERE
     EventQueryBuilder(
         event_type=EventType.EARLY_DISCHARGE_REQUEST_DECISION,
         description="Valid early discharge request decisions, with one event per person-day-decision_type",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.normalized_state.state_early_discharge`
@@ -199,7 +189,6 @@ WHERE
     EventQueryBuilder(
         event_type=EventType.EMPLOYMENT_PERIOD_START,
         description="Employment period starts, keeping at most one employer per period start",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT
     *
 FROM
@@ -218,7 +207,6 @@ QUALIFY
     EventQueryBuilder(
         event_type=EventType.EMPLOYMENT_STATUS_CHANGE,
         description="Employment status changes",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM `{project_id}.sessions.supervision_employment_status_sessions_materialized`
 QUALIFY
@@ -234,7 +222,6 @@ QUALIFY
     EventQueryBuilder(
         event_type=EventType.INCARCERATION_RELEASE,
         description="Releases from incarceration to supervision or liberty",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=f"""WITH incarceration_sessions AS (
     SELECT
         state_code,
@@ -355,7 +342,6 @@ ON
     EventQueryBuilder(
         event_type=EventType.INCARCERATION_START,
         description="Transitions to incarceration",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT
     a.state_code,
     a.person_id,
@@ -417,7 +403,6 @@ QUALIFY ROW_NUMBER() OVER (
     EventQueryBuilder(
         event_type=EventType.INCARCERATION_START_TEMPORARY,
         description="Transitions to temporary incarceration",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *, COALESCE(start_sub_reason, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
 FROM
     `{project_id}.sessions.compartment_sessions_materialized`
@@ -447,7 +432,6 @@ WHERE
     EventQueryBuilder(
         event_type=EventType.LIBERTY_START,
         description="Transitions to liberty",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized`
 WHERE compartment_level_1 = "LIBERTY"
@@ -462,7 +446,6 @@ WHERE compartment_level_1 = "LIBERTY"
     EventQueryBuilder(
         event_type=EventType.PAROLE_HEARING,
         description="Parole board hearings",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM `{project_id}.sessions.parole_board_hearing_sessions_materialized`
 """,
@@ -472,7 +455,6 @@ FROM `{project_id}.sessions.parole_board_hearing_sessions_materialized`
     EventQueryBuilder(
         event_type=EventType.PENDING_CUSTODY_START,
         description="Transitions to pending custody status",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized`
 WHERE compartment_level_1 = "PENDING_CUSTODY"
@@ -487,7 +469,6 @@ WHERE compartment_level_1 = "PENDING_CUSTODY"
     EventQueryBuilder(
         event_type=EventType.RISK_SCORE_ASSESSMENT,
         description="Risk assessments",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=f"""SELECT *,
     IFNULL(assessment_score_change, NULL) > 0 AS assessment_score_increase,
     IFNULL(assessment_score_change, NULL) < 0 AS assessment_score_decrease,
@@ -528,7 +509,6 @@ FROM (
     EventQueryBuilder(
         event_type=EventType.SENTENCES_IMPOSED,
         description="Sentences imposed",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT * FROM `{project_id}.sessions.sentence_imposed_group_summary_materialized`
 """,
         attribute_cols=[
@@ -547,7 +527,6 @@ FROM (
         event_type=EventType.SUPERVISING_OFFICER_CHANGE,
         description="Change in supervision officer, including initial assignment to officer; "
         "can happen multiple times per person-day",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT
     * EXCEPT(supervising_officer_external_id),
     supervising_officer_external_id AS supervising_officer_external_id_new,
@@ -574,7 +553,6 @@ QUALIFY
     EventQueryBuilder(
         event_type=EventType.SUPERVISION_CONTACT,
         description="Supervision contacts, keeping one contact per person-day-event_attributes",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.normalized_state.state_supervision_contact`
@@ -585,7 +563,6 @@ FROM
     EventQueryBuilder(
         event_type=EventType.SUPERVISION_LEVEL_CHANGE,
         description="Supervision level changes",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *,
     IF(supervision_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
     supervision_level AS new_supervision_level,
@@ -604,7 +581,6 @@ WHERE
     EventQueryBuilder(
         event_type=EventType.SUPERVISION_RELEASE,
         description="Releases from supervision to liberty",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=f"""WITH supervision_sessions AS (
     SELECT
         state_code,
@@ -701,7 +677,6 @@ ON
     EventQueryBuilder(
         event_type=EventType.SUPERVISION_START,
         description="Transitions to supervision",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized`
 WHERE compartment_level_1 = "SUPERVISION"
@@ -718,7 +693,6 @@ WHERE compartment_level_1 = "SUPERVISION"
         event_type=EventType.SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON,
         description="Supervision terminations with an end reason indicating subsequent incarceration, but"
         "without an observed compartment outflow to incarceration",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=f"""SELECT
     a.state_code,
     a.person_id,
@@ -788,7 +762,6 @@ QUALIFY ROW_NUMBER() OVER (
     EventQueryBuilder(
         event_type=EventType.TASK_COMPLETED,
         description="Task completion events for all Workflows opportunities",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source=f"""
 SELECT
     e.state_code,
@@ -835,7 +808,6 @@ QUALIFY
     EventQueryBuilder(
         event_type=EventType.TREATMENT_REFERRAL,
         description="Treatment referrals, keeping at most one per person per program-staff-status per day",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.normalized_state.state_program_assignment`
@@ -851,7 +823,6 @@ FROM
     EventQueryBuilder(
         event_type=EventType.VARIANT_ASSIGNMENT,
         description="Assignment to a tracked experiment, with one variant assignment per person-day-experiment-variant",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.experiments.person_assignments_materialized`
@@ -862,7 +833,6 @@ FROM
     EventQueryBuilder(
         event_type=EventType.INCARCERATION_INCIDENT,
         description="Incarceration incidents",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""
         SELECT
             state_code,
@@ -888,7 +858,6 @@ FROM
     EventQueryBuilder(
         event_type=EventType.VIOLATION,
         description="Violations",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT
     state_code,
     person_id,
@@ -923,7 +892,6 @@ GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
     EventQueryBuilder(
         event_type=EventType.VIOLATION_RESPONSE,
         description="Violation responses, deduped per person-day",
-        unit_of_observation_type=MetricUnitOfAnalysisType.PERSON_ID,
         sql_source="""SELECT *
 FROM
     `{project_id}.sessions.violation_responses_materialized`
@@ -940,7 +908,6 @@ WHERE
     EventQueryBuilder(
         event_type=EventType.WORKFLOWS_ACTION,
         description="Event where the officer took a specific Workflows action, e.g., FORM_COPIED",
-        unit_of_observation_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
         sql_source=f"""
 SELECT * 
 FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
@@ -956,7 +923,6 @@ WHERE event = "{EventType.WORKFLOWS_ACTION.value}" """,
     EventQueryBuilder(
         event_type=EventType.WORKFLOWS_CLIENT_STATUS_UPDATE,
         description="Event where the officer updated a person's status on Workflows tool",
-        unit_of_observation_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
         sql_source=f"""
 SELECT * 
 FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`
@@ -972,7 +938,6 @@ WHERE event = "{EventType.WORKFLOWS_CLIENT_STATUS_UPDATE.value}" """,
     EventQueryBuilder(
         event_type=EventType.WORKFLOWS_PAGE,
         description="Event where the officer viewed a particular Workflows page, e.g., PROFILE_VIEWED",
-        unit_of_observation_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
         sql_source=f"""
 SELECT * 
 FROM `{{project_id}}.analyst_data.workflows_officer_events_materialized`

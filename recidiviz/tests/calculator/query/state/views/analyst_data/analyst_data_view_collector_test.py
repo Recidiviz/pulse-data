@@ -27,7 +27,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.event_type impor
     EventType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    MetricUnitOfAnalysisType,
+    MetricUnitOfObservationType,
 )
 
 
@@ -39,7 +39,6 @@ class GenerateUnionedViewBuilderTest(unittest.TestCase):
             EventQueryBuilder(
                 event_type=EventType.LIBERTY_START,
                 description="This is a description of a dummy liberty starts metric",
-                unit_of_observation_type=MetricUnitOfAnalysisType.FACILITY,
                 sql_source="""SELECT *
 FROM `{project_id}.sessions.compartment_level_1_super_sessions_materialized` 
 WHERE compartment_level_1 = "LIBERTY" """,
@@ -49,18 +48,17 @@ WHERE compartment_level_1 = "LIBERTY" """,
             EventQueryBuilder(
                 event_type=EventType.SUPERVISION_CONTACT,
                 description="This is a description of a dummy contacts metric",
-                unit_of_observation_type=MetricUnitOfAnalysisType.FACILITY,
                 sql_source="""SELECT *
 FROM `{project_id}.normalized_state.state_supervision_contact` """,
                 attribute_cols=["compartment_level_1"],
                 event_date_col="start_date",
             ),
         ]
-        expected_view_id = "facility_events"
+        expected_view_id = "person_events"
         expected_query_template = """
 /* This is a description of a dummy liberty starts metric */
 SELECT DISTINCT
-    state_code, facility,
+    person_id, state_code,
     "LIBERTY_START" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(
@@ -77,7 +75,7 @@ UNION ALL
 
 /* This is a description of a dummy contacts metric */
 SELECT DISTINCT
-    state_code, facility,
+    person_id, state_code,
     "SUPERVISION_CONTACT" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(
@@ -90,7 +88,7 @@ FROM `{project_id}.normalized_state.state_supervision_contact`
 )
 """
         actual_bigquery_view_builder = generate_unioned_view_builder(
-            unit_of_observation_type=MetricUnitOfAnalysisType.FACILITY,
+            unit_of_observation_type=MetricUnitOfObservationType.PERSON_ID,
             query_builders=events,
         )
         actual_query_template = actual_bigquery_view_builder.view_query_template

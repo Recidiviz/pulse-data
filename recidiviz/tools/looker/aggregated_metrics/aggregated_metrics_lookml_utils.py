@@ -180,15 +180,15 @@ def measure_for_metric(
 def get_metric_explore_parameter(
     metrics: List[AggregatedMetric],
     field_name: str = "metric_filter",
-    aggregation_level: Optional[MetricUnitOfAnalysis] = None,
+    unit_of_analysis: Optional[MetricUnitOfAnalysis] = None,
     default_metric: Optional[AggregatedMetric] = None,
 ) -> ParameterLookMLViewField:
     """
     Returns a LookML parameter for metric selection, with allowed values for all supported metrics.
     """
     additional_params = (
-        [LookMLFieldParameter.group_label(aggregation_level.pretty_name)]
-        if aggregation_level
+        [LookMLFieldParameter.group_label(unit_of_analysis.type.pretty_name)]
+        if unit_of_analysis
         else []
     )
     default_value = metrics[0].name if default_metric is None else default_metric.name
@@ -211,7 +211,7 @@ def get_metric_explore_parameter(
 def get_metric_value_measure(
     view_name: str,
     metric_filter_parameter: ParameterLookMLViewField,
-    aggregation_level: Optional[MetricUnitOfAnalysis] = None,
+    unit_of_analysis: Optional[MetricUnitOfAnalysis] = None,
 ) -> MeasureLookMLViewField:
     """
     Returns a measure LookML field that uses liquid to return the metric measure selected via the metric menu filter.
@@ -228,8 +228,8 @@ def get_metric_value_measure(
         indentation_level=3,
     )
     additional_params = (
-        [LookMLFieldParameter.group_label(aggregation_level.pretty_name)]
-        if aggregation_level
+        [LookMLFieldParameter.group_label(unit_of_analysis.type.pretty_name)]
+        if unit_of_analysis
         else []
     )
     return MeasureLookMLViewField(
@@ -250,7 +250,7 @@ def get_metric_value_dimension(
     view_name: str,
     metric_filter_parameter: ParameterLookMLViewField,
     field_name: str = "metric_dimension",
-    aggregation_level: Optional[MetricUnitOfAnalysis] = None,
+    unit_of_analysis: Optional[MetricUnitOfAnalysis] = None,
 ) -> DimensionLookMLViewField:
     """
     Returns a dimension LookML field that uses liquid to return the metric dimension selected via a metric menu filter.
@@ -267,8 +267,8 @@ def get_metric_value_dimension(
         indentation_level=3,
     )
     additional_params = (
-        [LookMLFieldParameter.group_label(aggregation_level.pretty_name)]
-        if aggregation_level
+        [LookMLFieldParameter.group_label(unit_of_analysis.type.pretty_name)]
+        if unit_of_analysis
         else []
     )
     return DimensionLookMLViewField(
@@ -365,7 +365,7 @@ def get_metric_description_dimension(
     view_name: str,
     metric_filter_parameter: ParameterLookMLViewField,
     field_name: str = "metric_description",
-    aggregation_level: Optional[MetricUnitOfAnalysis] = None,
+    unit_of_analysis: Optional[MetricUnitOfAnalysis] = None,
     custom_description_builder: Optional[Callable[[str], str]] = None,
 ) -> DimensionLookMLViewField:
     """
@@ -388,8 +388,8 @@ def get_metric_description_dimension(
         indentation_level=3,
     )
     additional_params = (
-        [LookMLFieldParameter.group_label(aggregation_level.pretty_name)]
-        if aggregation_level
+        [LookMLFieldParameter.group_label(unit_of_analysis.type.pretty_name)]
+        if unit_of_analysis
         else []
     )
     return DimensionLookMLViewField(
