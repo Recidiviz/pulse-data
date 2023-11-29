@@ -136,6 +136,11 @@ def use_on_disk_postgresql_database(
         db_url=on_disk_postgres_db_url(),
     )
 
+    with SessionFactory.using_database(database_key) as session:
+        session.execute(
+            f"ALTER DATABASE {get_on_disk_postgres_database_name()} SET TIMEZONE TO 'UTC'"
+        )
+
     if create_tables:
         # Auto-generate all tables that exist in our schema in this database
         database_key.declarative_meta.metadata.create_all(engine)
