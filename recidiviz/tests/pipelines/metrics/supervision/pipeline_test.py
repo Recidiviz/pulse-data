@@ -1164,8 +1164,6 @@ class TestClassifyEvents(unittest.TestCase):
                 supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
                 successful_completion=True,
-                incarcerated_during_sentence=True,
-                sentence_days_served=(completion_date - effective_date).days,
             ),
             # We have to add these expected events in this order because there is no unsorted-list equality check in the
             # Apache Beam testing utils
