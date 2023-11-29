@@ -241,11 +241,25 @@ _RESIDENT_PORTION_NEEDED_CTE = """
     portion_needed AS (
       SELECT state_code, person_id,
       REPLACE(TO_JSON_STRING(JSON_EXTRACT(reason, '$.x_portion_served')), '"', "")
-          AS portion_served_needed
+          AS portion_served_needed,
+      REPLACE(TO_JSON_STRING(JSON_EXTRACT(reason, '$.eligible_date')), '"', "")
+          AS portion_needed_eligible_date,
       FROM `{project_id}.{us_me_task_eligibility_criteria_dataset}.served_x_portion_of_sentence_materialized`
           AS served_x
       WHERE CURRENT_DATE("US/Eastern")
       BETWEEN served_x.start_date AND IFNULL(DATE_SUB(served_x.end_date, INTERVAL 1 DAY), "9999-12-31")
+    ),
+"""
+
+_RESIDENT_MONTHS_REMAINING_NEEDED_CTE = """
+    months_remaining AS (
+        SELECT state_code, person_id,
+        REPLACE(TO_JSON_STRING(JSON_EXTRACT(reason, '$.eligible_date')), '"', "")
+            AS months_remaining_eligible_date,
+        FROM `{project_id}.{us_me_task_eligibility_criteria_dataset}.x_months_remaining_on_sentence_materialized` 
+          AS months_remaining
+      WHERE CURRENT_DATE("US/Eastern")
+      BETWEEN months_remaining.start_date AND IFNULL(DATE_SUB(months_remaining.end_date, INTERVAL 1 DAY), "9999-12-31")
     ),
 """
 
@@ -291,9 +305,11 @@ _RESIDENTS_CTE = """
             release_date,
             opportunities_aggregated.all_eligible_opportunities,
             portion_served_needed,
+            GREATEST(portion_needed_eligible_date, months_remaining_eligible_date) AS sccp_eligibility_date,
         FROM join_residents
         LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
         LEFT JOIN portion_needed USING (state_code, person_id)
+        LEFT JOIN months_remaining USING (state_code, person_id)
         WHERE officer_id IS NOT NULL
     )
 """
@@ -308,6 +324,7 @@ def full_resident_record() -> str:
     {_RESIDENT_RECORD_HOUSING_UNIT_CTE}
     {_RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE}
     {_RESIDENT_PORTION_NEEDED_CTE}
+    {_RESIDENT_MONTHS_REMAINING_NEEDED_CTE}
     {_RESIDENT_RECORD_JOIN_RESIDENTS_CTE}
     {_RESIDENTS_CTE}
     """
