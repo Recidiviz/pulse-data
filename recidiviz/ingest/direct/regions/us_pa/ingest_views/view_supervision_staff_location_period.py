@@ -15,7 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Query containing supervision staff location period information."""
+"""Query containing supervision staff location period information.
+
+Starts with the handmade roster and uses locations from there to capture most accurate 
+info possible for current employees, then fills as many remaining officers' locations as 
+possible using dbo_PRS_FACT_PAROLEE_CNTC_SMRY.PRL_AGNT_ORG_NAME
+"""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -24,54 +29,111 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH agent_base AS (
-SELECT 
-    ORG_ID, 
-    Employ_Num, 
-    -- Including all agents who are present in the roster, irrespective of start date
-    -- TODO(#21909): Update all start_date fields in this view to match start_date in the role_periods view.
-    '1900-01-01' AS start_date, 
-    NULL as end_date
-FROM {RECIDIVIZ_REFERENCE_agent_districts}
-WHERE NOT (UPPER(FirstName) LIKE '%VACANT%' AND UPPER(LastName) LIKE '%POSITION%')
+WITH 
+contacts_data AS (
+    SELECT DISTINCT
+        PRL_AGNT_EMPL_NO, 
+        PRL_AGNT_ORG_NAME,
+        CAST(CREATED_DATE AS DATETIME) AS CREATED_DATE,
+        MAX(CAST(CREATED_DATE AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
+        MAX(CAST(CREATED_DATE AS DATETIME)) OVER (PARTITION BY PRL_AGNT_EMPL_NO) AS last_appearance_datetime,
+        'CONTACTS' AS source,
+        PERSON_ID
+    FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY} contacts
+    WHERE PRL_AGNT_ORG_NAME IS NOT NULL
+), roster_data AS (
+    SELECT 
+        EmployeeID,
+        Org_Name,
+        CAST(update_datetime AS DATETIME) AS update_datetime,
+        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
+        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY EmployeeID) AS last_appearance_datetime,
+        'ROSTER' AS source,
+        -- roster data will not need to be broken out by PERSON_ID, and if it does, we should assume that the roster data is more recent
+        '9999999' AS PERSON_ID
+    FROM {RECIDIVIZ_REFERENCE_staff_roster@ALL}
 ),
-supervisor_base AS (
-SELECT 
-    district_id,
-    ext_id, 
-    '1900-01-01' AS start_date, 
-    NULL as end_date
-FROM {RECIDIVIZ_REFERENCE_field_supervisor_list} 
-WHERE role IN ('District Director','Deputy District Director')
-AND ext_id NOT IN (SELECT DISTINCT Employ_Num FROM agent_base)
+location_external_ids AS (
+  SELECT DISTINCT UPPER(Org_Name) AS ORG_NAME, Org_cd 
+  FROM {dbo_LU_PBPP_Organization}
+  UNION ALL
+  SELECT DISTINCT UPPER(ORG_NAME) AS ORG_NAME, Org_cd 
+  FROM {RECIDIVIZ_REFERENCE_locations_from_supervision_contacts}
 ),
-cntc_base AS (
+cleaned_data AS (
+  SELECT DISTINCT
+    *
+  FROM contacts_data
+  LEFT JOIN location_external_ids 
+  ON (UPPER(location_external_ids.ORG_NAME) = UPPER(contacts_data.PRL_AGNT_ORG_NAME))
+
+  UNION ALL 
+
+  SELECT DISTINCT
+    *
+  FROM roster_data
+  LEFT JOIN location_external_ids 
+  ON (UPPER(location_external_ids.ORG_NAME) = UPPER(roster_data.Org_name))
+),
+critical_dates AS (
+  SELECT DISTINCT * FROM (
+        SELECT DISTINCT
+            PRL_AGNT_EMPL_NO, 
+            Org_cd,
+            CREATED_DATE,
+            -- Add person_id to deterministically sort contacts that happened on the same day
+            LAG(Org_cd) OVER (
+                PARTITION BY PRL_AGNT_EMPL_NO
+                ORDER BY CREATED_DATE, PERSON_ID, Org_cd) 
+                AS prev_location,
+            last_file_update_datetime,
+            last_appearance_datetime,
+            source
+        FROM cleaned_data) cd
+    WHERE
+    -- officer just started working 
+    (prev_location IS NULL AND Org_cd IS NOT NULL) 
+    -- officer changed locations
+    OR prev_location != Org_cd
+    -- include most recent updates, even when neither of the previous conditions are true
+    OR CREATED_DATE = last_file_update_datetime
+),
+all_periods AS (
 SELECT DISTINCT
-    FIRST_VALUE(UPPER(PRL_AGNT_ORG_NAME)) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS district_id,
     PRL_AGNT_EMPL_NO,
-    FIRST_VALUE(START_DATE) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY START_DATE) AS start_date,
-    NULL AS end_date
-FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}
-WHERE PRL_AGNT_JOB_CLASSIFCTN IN ('Prl Agt 1', 'Prl Agt 2','Prl Supv','Prl Mgr 1')
-AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT Employ_Num FROM agent_base)
-AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT ext_id FROM supervisor_base)
-AND PRL_AGNT_ORG_NAME IS NOT NULL
+    Org_cd,
+    CREATED_DATE AS start_date,
+    CASE 
+        -- If a staff member stops appearing in the roster, close their employment period
+        -- on the last date we receive a roster that included them
+        WHEN LEAD(CREATED_DATE) OVER person_window IS NULL 
+            AND CREATED_DATE < last_file_update_datetime
+            AND source = 'ROSTER'
+            THEN last_appearance_datetime 
+        -- There is a more recent update to this person's location
+        WHEN LEAD(CREATED_DATE) OVER person_window IS NOT NULL 
+            THEN LEAD(CREATED_DATE) OVER person_window 
+        -- All currently-employed staff will appear in the latest roster
+        ELSE CAST(NULL AS DATETIME)
+    END AS end_date
+FROM critical_dates
+WHERE Org_cd IS NOT NULL
+WINDOW person_window AS (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE,org_cd)
 )
-
-SELECT * FROM agent_base 
-UNION ALL
-SELECT * FROM supervisor_base
-UNION ALL
-SELECT * 
-FROM cntc_base 
-
+SELECT DISTINCT
+    PRL_AGNT_EMPL_NO AS employee_id,
+    Org_cd AS location_id,
+    start_date,
+    end_date,
+    ROW_NUMBER() OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY start_date,org_cd) AS period_seq_num
+FROM all_periods
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="supervision_staff_location_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="Employ_Num",
+    order_by_cols="employee_id,period_seq_num",
 )
 
 if __name__ == "__main__":
