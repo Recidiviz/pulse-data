@@ -1,25 +1,25 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - ORG_ID
-  - Employ_Num
+  - employee_id
+  - location_id
   - start_date
   - end_date
+  - period_seq_num
 unused_columns: []
 output:
   StateStaff:
     external_ids:
       - StateStaffExternalId:
-          external_id: Employ_Num
+          external_id: employee_id
           id_type: $literal("US_PA_PBPP_EMPLOYEE_NUM")
     location_periods:
       - StateStaffLocationPeriod:
-          ## TODO(#18022): Eventually, when an employee has more than one period, we'd want to build our own external id using the employee number plus a ROW_NUMBER we generate by ordering the periods for each person.
-          external_id: Employ_Num
+          external_id:
+            $concat:
+              $values:
+                - employee_id
+                - period_seq_num
           start_date: start_date
           end_date: end_date
-          location_external_id:
-            $custom:
-              $function: us_pa_custom_parsers.supervision_district_mapper
-              $args:
-                district: ORG_ID
+          location_external_id: location_id
