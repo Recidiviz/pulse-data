@@ -24,58 +24,132 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH staff_in_roster AS (
-    -- Fill in POs and their supervisors from roster
-    SELECT LastName,FirstName,EMAIL_ADDRESS,Employ_Num
-    FROM {RECIDIVIZ_REFERENCE_agent_districts}
-    -- The name "Vacant Position" is used for roles that aren't filled
-    WHERE NOT (UPPER(FirstName) LIKE '%VACANT%' AND UPPER(LastName) LIKE '%POSITION%')
-),
-supervisors_in_roster AS (
--- Fill in upper management from different roster
-SELECT DISTINCT 
-    lastname AS LastName,
-    firstname AS FirstName,
-    email AS EMAIL_ADDRESS,
-    ext_id AS Employ_Num
-FROM {RECIDIVIZ_REFERENCE_field_supervisor_list}
-WHERE ext_id NOT IN (
-    SELECT DISTINCT Employ_Num FROM staff_in_roster
+WITH staff_from_roster AS (
+    SELECT DISTINCT 
+        EmployeeID,
+        EmployeeLastName,
+        EmployeeFirstName,
+        Email,
+    FROM {RECIDIVIZ_REFERENCE_staff_roster}
+    WHERE EmployeeID IS NOT NULL 
+    AND EmployeeID != ''
+), 
+raw_staff_from_agent_history AS (
+SELECT 
+    Agent_EmpNum,
+    NAME[SAFE_ORDINAL(1)] AS LastName,
+    SPLIT(NAME[SAFE_ORDINAL(2)], ' ') AS FirstName,
+    LastModifiedDateTime
+    FROM (
+    SELECT 
+        Agent_EmpNum,
+        SPLIT(AgentName, ', ') as NAME,
+        LastModifiedDateTime,
+    FROM {dbo_RelAgentHistory}
+    WHERE AgentName NOT LIKE '%Vacant%'
+    AND Agent_EmpNum IS NOT NULL
+    ) sub
+-- Exclude malformed names. These are all included separately with proper formatting,
+-- so will still appear in the final result.
+WHERE ARRAY_LENGTH(NAME) > 1
+), cleaned_staff_from_agent_history AS (
+SELECT 
+    Agent_EmpNum,
+    LastName,
+    FirstName,
+    EmployeeEmail
+FROM (
+    SELECT DISTINCT
+        Agent_EmpNum,
+        LastName,
+        FirstName[SAFE_ORDINAL(1)] AS FirstName,
+        CAST(NULL AS STRING) AS EmployeeEmail,
+        ROW_NUMBER() OVER (
+                PARTITION BY Agent_EmpNum 
+                ORDER BY CAST(LastModifiedDateTime as DATETIME) DESC) AS priority
+    FROM raw_staff_from_agent_history
+    WHERE Agent_EmpNum NOT IN (SELECT DISTINCT EmployeeID FROM staff_from_roster)
+) sub
+-- ranking to choose the most recent name spelling for each officer
+WHERE priority = 1
+), raw_supervisors_from_agent_history AS (
+SELECT 
+    Supervisor_EmpNum,
+    NAME[SAFE_ORDINAL(1)] AS LastName,
+    SPLIT(NAME[SAFE_ORDINAL(2)], ' ') AS FirstName,
+    LastModifiedDateTime
+    FROM (
+    SELECT 
+        Supervisor_EmpNum,
+        SPLIT(SupervisorName, ', ') as NAME,
+        LastModifiedDateTime
+    FROM {dbo_RelAgentHistory}
+    WHERE SupervisorName NOT LIKE '%Vacant%'
+    AND Supervisor_EmpNum IS NOT NULL
+    ORDER BY Supervisor_EmpNum
+    ) sub
+-- Exclude malformed names. These are all included separately with proper formatting,
+-- so will still appear in the final result.
+WHERE ARRAY_LENGTH(NAME) > 1
+), cleaned_supervisors_from_agent_history AS (
+SELECT 
+    Supervisor_EmpNum,
+    LastName,
+    FirstName,
+    EmployeeEmail
+FROM (
+    SELECT DISTINCT
+        Supervisor_EmpNum,
+        LastName,
+        FirstName[SAFE_ORDINAL(1)] AS FirstName,
+        CAST(NULL AS STRING) AS EmployeeEmail,
+        ROW_NUMBER() OVER (
+                PARTITION BY Supervisor_EmpNum 
+                ORDER BY CAST(LastModifiedDateTime as DATETIME) DESC) AS priority
+    FROM raw_supervisors_from_agent_history
+    WHERE Supervisor_EmpNum NOT IN (SELECT DISTINCT EmployeeID FROM staff_from_roster)
+    AND Supervisor_EmpNum NOT IN (SELECT DISTINCT Agent_EmpNum FROM cleaned_staff_from_agent_history)
+) sub
+-- ranking to choose the most recent name spelling for each officer
+WHERE priority = 1
 )
-)
-
-SELECT *
-FROM staff_in_roster
-
-UNION ALL
-
-SELECT *
-FROM supervisors_in_roster
-
-UNION ALL
-
--- Fill in names / emails for agents in contacts data who are not present in either other roster
+, staff_from_contacts AS (
 SELECT DISTINCT
-    LAST_VALUE(PRL_AGNT_LAST_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE) AS LastName,
-    LAST_VALUE(PRL_AGNT_FIRST_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE) AS FirstName,
-    agent_roster.EMAIL_ADDRESS AS EMAIL_ADDRESS,
-    PRL_AGNT_EMPL_NO AS Employ_Num
-FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY} contacts
-LEFT JOIN {RECIDIVIZ_REFERENCE_agent_districts} agent_roster
-ON(contacts.PRL_AGNT_EMPL_NO = agent_roster.Employ_Num)
-WHERE PRL_AGNT_EMPL_NO NOT IN (
-    SELECT Employ_Num FROM staff_in_roster
+    PRL_AGNT_EMPL_NO,
+    PRL_AGNT_LAST_NAME,
+    PRL_AGNT_FIRST_NAME,
+    CAST(NULL AS STRING) AS EmployeeEmail,
+FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}
+WHERE PRL_AGNT_EMPL_NO IS NOT NULL
+AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT EmployeeID FROM staff_from_roster)
+AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT Agent_EmpNum FROM cleaned_staff_from_agent_history)
+AND PRL_AGNT_EMPL_NO NOT IN (SELECT DISTINCT Supervisor_EmpNum FROM cleaned_supervisors_from_agent_history)
 )
-AND PRL_AGNT_EMPL_NO NOT IN (
-    SELECT Employ_Num FROM supervisors_in_roster
-)
+
+SELECT DISTINCT *
+FROM staff_from_roster
+
+UNION ALL 
+
+SELECT DISTINCT *
+FROM cleaned_staff_from_agent_history
+
+UNION ALL 
+
+SELECT DISTINCT * 
+FROM cleaned_supervisors_from_agent_history
+
+UNION ALL
+
+SELECT DISTINCT * 
+FROM staff_from_contacts
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="supervision_staff",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="Employ_Num",
+    order_by_cols="EmployeeID",
 )
 
 if __name__ == "__main__":
