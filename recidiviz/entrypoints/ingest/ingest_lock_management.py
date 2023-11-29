@@ -22,6 +22,17 @@ from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.pipelines.state_update_lock_manager import StateUpdateLockManager
 
+INGEST_LOCK_EXPIRATION_OVERRIDES = {
+    # TODO(#25750): remove this once the TN views has been rewritten
+    StateCode.US_TN: 60 * 80,  # 80 minutes
+    # TODO(#25751): remove this once the ME views has been rewritten
+    StateCode.US_ME: 60 * 180,  # 180 minutes
+    # TODO(#25102): remove this once the ND view has been rewritten
+    StateCode.US_ND: 60 * 180,  # 180 minutes
+    # TODO(#25752): remove this once the IX views has been rewritten
+    StateCode.US_IX: 60 * 180,  # 180 minutes
+}
+
 
 class IngestAcquireLockEntrypoint(EntrypointInterface):
     """Entrypoint for acquiring the ingest lock"""
@@ -61,7 +72,12 @@ class IngestAcquireLockEntrypoint(EntrypointInterface):
         state_update_lock_manager = StateUpdateLockManager(
             state_code_filter=args.state_code, ingest_instance=args.ingest_instance
         )
-        state_update_lock_manager.acquire_lock(lock_id=args.lock_id)
+        state_update_lock_manager.acquire_lock(
+            lock_id=args.lock_id,
+            lock_expiration_override=INGEST_LOCK_EXPIRATION_OVERRIDES.get(
+                args.state_code
+            ),
+        )
 
 
 class IngestReleaseLockEntrypoint(EntrypointInterface):

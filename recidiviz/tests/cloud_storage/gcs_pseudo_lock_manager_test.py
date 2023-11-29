@@ -505,5 +505,10 @@ class TestGCSPseudoLockManager(unittest.TestCase):
 
         self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
 
-        # Should not raise an error
-        lock_manager.unlock(self.LOCK_NAME)
+        with self.assertRaises(GCSPseudoLockDoesNotExist):
+            lock_manager.unlock(self.LOCK_NAME)
+
+        path = GcsfsFilePath(
+            bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
+        )
+        self.assertFalse(self.fs.exists(path))

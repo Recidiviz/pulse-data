@@ -19,6 +19,7 @@ import time
 import unittest
 from unittest.mock import Mock, patch
 
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
@@ -88,10 +89,13 @@ class DirectIngestRegionLockManagerTest(unittest.TestCase):
 
     def test_locking_expiration(self) -> None:
         self.assertFalse(self.lock_manager.is_locked())
-        with self.lock_manager.using_region_lock(expiration_in_seconds=1):
-            self.assertTrue(self.lock_manager.is_locked())
-            time.sleep(1.5)
-            self.assertFalse(self.lock_manager.is_locked())
+        try:
+            with self.lock_manager.using_region_lock(expiration_in_seconds=1):
+                self.assertTrue(self.lock_manager.is_locked())
+                time.sleep(1.5)
+                self.assertFalse(self.lock_manager.is_locked())
+        except GCSPseudoLockDoesNotExist:
+            pass
         self.assertFalse(self.lock_manager.is_locked())
 
     def test_locking_raise(self) -> None:
