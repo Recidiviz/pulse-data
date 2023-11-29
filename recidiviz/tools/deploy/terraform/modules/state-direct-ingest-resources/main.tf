@@ -74,3 +74,9 @@ resource "google_project_iam_member" "viewer" {
   role    = "roles/viewer"
   member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
 }
+
+resource "google_project_iam_member" "cloudprofiler_agent" {
+  project = var.project_id
+  role    = "roles/cloudprofiler.agent"
+  member  = "serviceAccount:${google_service_account.dataflow_service_account.email}"
+}
