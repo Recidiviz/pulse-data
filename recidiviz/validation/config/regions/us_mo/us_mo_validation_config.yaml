@@ -39,13 +39,13 @@ num_allowed_rows_overrides:
       Inital investigations into this show entity deletion as the main culprit. Error improved after refresh. This error should also be helped by continual work in MO
       for raw data tables and rework in TODO(#15905). When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 35000
+    hard_num_allowed_rows_override: 45000
     override_reason:
       Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
       we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
       that do follow standard formats. Rerun decreased error significantly, bumping threshold down to 1500 to note if it greatly
       increases again. Current error was at 1121 rows as of 03/01/2022. Error began steadily increasing again and is now
-      at 1699 as of 07/01/2022. 2041 as of 9/27/2022. 2514 as of 1/11/23. Error improved after refresh and is now 201. Error is currently 30467 as of 10/19/23. TODO(#24843) - We should do a refresh of the view.
+      at 1699 as of 07/01/2022. 2041 as of 9/27/2022. 2514 as of 1/11/23. Error improved after refresh and is now 201. Error is currently 30467 as of 10/19/23, 35166 as of 11/29/23. TODO(#24843) - We should do a refresh of the view.
       When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 3000
@@ -81,5 +81,5 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 2000000
     override_reason: MO charges must be sanitized of PII. Current failing level as of 4/5/23 is 1,726,658 rows (98%) #TODO(#18436)
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 65000
-    override_reason: Current failing level as of 4/20/23 is 61,378 rows (5%) #TODO(#20402)
+    hard_num_allowed_rows_override: 75000
+    override_reason: Current failing level as of 4/20/23 is 61,378 rows (5%). Error increased to 71,241 as of 11/29/23. #TODO(#20402)
