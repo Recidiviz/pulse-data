@@ -182,7 +182,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     VIOLATION_RESPONSES_BY_TYPE_METRICS,
     VIOLATIONS,
     VIOLATIONS_BY_TYPE_METRICS,
-    WORKFLOWS_CLIENT_STATUS_UPDATE,
 )
 from recidiviz.aggregated_metrics.period_event_aggregated_metrics import (
     generate_period_event_aggregated_metrics_view_builder,
@@ -386,8 +385,6 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         *TASK_COMPLETED_METRICS_SUPERVISION,
         *TASK_COMPLETED_WHILE_ELIGIBLE_METRICS_SUPERVISION,
         *DAYS_ELIGIBLE_AT_TASK_COMPLETION_METRICS_SUPERVISION,
-        ## Workflows - usage metrics
-        WORKFLOWS_CLIENT_STATUS_UPDATE,
         # Assignment window metrics
         ASSIGNMENTS,
         ANY_INCARCERATION_365,
