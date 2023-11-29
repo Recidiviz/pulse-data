@@ -56,6 +56,8 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    EntityFieldType,
     get_entity_class_in_module_with_name,
 )
 from recidiviz.persistence.entity.root_entity_utils import (
@@ -199,6 +201,7 @@ class StateDatasetValidator:
         output_sandbox_prefix: str,
         state_code_filter: StateCode,
     ) -> None:
+        self.field_index = CoreEntityFieldIndex()
         self.state_code_filter = state_code_filter
         self.reference_dataset = DatasetReference.from_string(
             reference_state_dataset, default_project=reference_state_project_id
@@ -533,6 +536,24 @@ USING({associated_entity_2_pk})
         ).result()
         return comparable_table_address
 
+    def _root_is_direct_parent(self, state_entity_cls: Type[DatabaseEntity]) -> bool:
+        """Returns True if this entity is directly connected to the root entity
+        in the entity tree, False if it is connected via an intermediate entity /
+        intermediate entities.
+        """
+        back_edge_fields = self.field_index.get_all_core_entity_fields(
+            state_entity_cls, EntityFieldType.BACK_EDGE
+        )
+
+        non_root_back_edges = back_edge_fields - {
+            get_root_entity_class_for_entity(state_entity_cls).back_edge_field_name()
+        }
+        if non_root_back_edges:
+            # If this entity has back edges other than to the root entity, then the
+            # root is not this entity's direct parent.
+            return False
+        return True
+
     def _generate_table_specific_comparison_result(
         self,
         client: BigQueryClient,  # pylint: disable=unused-argument
@@ -546,8 +567,14 @@ USING({associated_entity_2_pk})
         """
         state_table_id = reference_table_address.table_id
         if self._is_enum_entity(table_name=state_table_id):
-            # TODO(#24413): Handle EnumEntity checking differently
-            return None
+            state_entity_cls = get_database_entity_by_table_name(schema, state_table_id)
+            if not self._root_is_direct_parent(state_entity_cls):
+                # It doesn't make sense to compare enum entities that are connected to
+                # non-root entities the way we compare other entities because we expect
+                # to see many duplicate enum entities where the only difference is the
+                # direct parent primary key value.
+                # TODO(#24413): Handle indirect EnumEntity checking differently
+                return None
 
         comparable_reference_table_address = self._materialize_comparable_table(
             dataset=self.reference_dataset,
