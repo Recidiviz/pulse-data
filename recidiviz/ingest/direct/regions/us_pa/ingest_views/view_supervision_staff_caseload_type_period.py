@@ -71,7 +71,7 @@ SELECT
         -- on the first date we receive a roster that does not include them
         WHEN lead(update_datetime) OVER person_window IS NULL 
         AND update_datetime < last_file_update_datetime 
-        THEN update_datetime   
+        THEN last_appearance_date   
         -- All currently-employed staff will appear in the latest roster
         WHEN update_datetime = last_file_update_datetime THEN CAST(NULL AS DATETIME)     
         -- Else there is a more recent entry for a staff member
