@@ -20,6 +20,9 @@ columns:
     is_pii: True
   - name: JobTitle
     description: The officer's job title. This can include a role, level, and specialization.
+  - name: email
+    description: Officer's email.
+    is_pii: True
   - name: OfficePhone
     description: The officer's office phone number.
   - name: CellPhone
