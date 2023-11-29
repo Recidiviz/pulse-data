@@ -291,10 +291,8 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 period=supervision_period,
                 event_date=last_day_of_month(completion_date),
                 supervision_type=supervision_type,
-                sentence_days_served=(completion_date - effective_date).days,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 successful_completion=True,
-                incarcerated_during_sentence=False,
             ),
             create_termination_event_from_period(
                 supervision_period,
@@ -3825,7 +3823,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -3844,12 +3841,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
                     case_type=StateSupervisionCaseType.GENERAL,
-                    sentence_days_served=(
-                        supervision_sentence_completion_date
-                        - supervision_sentence_effective_date
-                    ).days,
                 )
             ],
             projected_completion_events,
@@ -3864,16 +3856,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             termination_date=date(2018, 12, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-        )
-
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            state_code="US_XX",
-            admission_date=date(2018, 6, 1),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            release_date=date(2018, 6, 21),
         )
 
         supervision_sentence_projected_completion_date = date(2018, 12, 25)
@@ -3891,16 +3873,12 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_periods = [incarceration_period]
 
         projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
-            ),
-            default_normalized_ip_index_for_tests(
-                incarceration_periods=incarceration_periods
             ),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
@@ -3920,11 +3898,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=supervision_type,
                     successful_completion=False,
-                    incarcerated_during_sentence=True,
-                    sentence_days_served=(
-                        supervision_sentence_completion_date
-                        - supervision_sentence_effective_date
-                    ).days,
                 )
             ],
             projected_completion_events,
@@ -3978,7 +3951,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     second_supervision_period,
                 ]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -3997,11 +3969,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=second_supervision_type,
                     successful_completion=False,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(
-                        supervision_sentence_completion_date
-                        - supervision_sentence_effective_date
-                    ).days,
                 )
             ],
             projected_completion_events,
@@ -4072,7 +4039,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     second_supervision_period,
                 ]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4092,11 +4058,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=first_supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(
-                        first_supervision_sentence_completion_date
-                        - first_supervision_sentence_effective_date
-                    ).days,
                 ),
                 create_projected_completion_event_from_period(
                     second_supervision_period,
@@ -4105,11 +4066,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=second_supervision_type,
                     successful_completion=False,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(
-                        second_supervision_sentence_completion_date
-                        - second_supervision_sentence_effective_date
-                    ).days,
                 ),
             ],
             projected_completion_events,
@@ -4180,7 +4136,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     second_supervision_period,
                 ]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4200,11 +4155,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=first_supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(
-                        first_supervision_sentence_completion_date
-                        - first_supervision_sentence_effective_date
-                    ).days,
                 ),
                 create_projected_completion_event_from_period(
                     second_supervision_period,
@@ -4213,11 +4163,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=second_supervision_type,
                     successful_completion=False,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(
-                        second_supervision_sentence_completion_date
-                        - second_supervision_sentence_effective_date
-                    ).days,
                 ),
             ],
             projected_completion_events,
@@ -4257,7 +4202,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4276,13 +4220,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
                     supervising_district_external_id="DISTRICTX",
                     level_1_supervision_location_external_id="DISTRICTX",
-                    sentence_days_served=(
-                        supervision_sentence_completion_date
-                        - supervision_sentence_effective_date
-                    ).days,
                 )
             ],
             projected_completion_events,
@@ -4321,7 +4260,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4339,11 +4277,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(
-                        supervision_sentence_completion_date
-                        - supervision_sentence_effective_date
-                    ).days,
                     supervising_district_external_id=None,
                 )
             ],
@@ -4385,7 +4318,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4402,8 +4334,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(projected_completion_date),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(completion_date - effective_date).days,
                 )
             ],
             projected_completion_events,
@@ -4434,10 +4364,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        incarceration_period_index = default_normalized_ip_index_for_tests(
-            incarceration_periods=incarceration_periods
-        )
 
         projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
@@ -4445,7 +4371,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            incarceration_period_index,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4475,10 +4400,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        incarceration_period_index = default_normalized_ip_index_for_tests(
-            incarceration_periods=incarceration_periods
-        )
 
         projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
@@ -4486,7 +4407,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            incarceration_period_index,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4517,10 +4437,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         )
 
         supervision_sentences = [supervision_sentence]
-        incarceration_periods: List[NormalizedStateIncarcerationPeriod] = []
-        incarceration_period_index = default_normalized_ip_index_for_tests(
-            incarceration_periods=incarceration_periods
-        )
 
         projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
@@ -4528,87 +4444,12 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            incarceration_period_index,
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
         )
 
         self.assertEqual(0, len(projected_completion_events))
-
-    def test_classify_supervision_success_was_incarcerated_during_sentence(
-        self,
-    ) -> None:
-        supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_XX",
-            start_date=date(2018, 1, 5),
-            termination_date=date(2018, 12, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-        )
-
-        projected_completion_date = date(2018, 12, 25)
-        effective_date = date(2017, 1, 1)
-        completion_date = date(2018, 12, 20)
-        supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
-            state_code="US_XX",
-            supervision_sentence_id=111,
-            effective_date=effective_date,
-            external_id="ss1",
-            status=StateSentenceStatus.COMPLETED,
-            supervision_type=StateSupervisionSentenceSupervisionType.PAROLE,
-            completion_date=completion_date,
-            projected_completion_date=projected_completion_date,
-        )
-
-        incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
-            state_code="US_XX",
-            incarceration_period_id=111,
-            external_id="ip1",
-            admission_date=date(2017, 6, 1),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            release_date=date(2017, 10, 5),
-        )
-
-        supervision_sentences = [supervision_sentence]
-        incarceration_periods = [incarceration_period]
-
-        projected_completion_events = self.identifier._classify_supervision_success(
-            supervision_sentences,
-            [],
-            default_normalized_sp_index_for_tests(
-                supervision_periods=[supervision_period]
-            ),
-            default_normalized_ip_index_for_tests(
-                incarceration_periods=incarceration_periods
-            ),
-            UsXxSupervisionDelegate(
-                DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
-            ),
-        )
-
-        self.assertEqual(1, len(projected_completion_events))
-
-        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
-
-        sentence_length = (completion_date - effective_date).days
-
-        self.assertEqual(
-            [
-                create_projected_completion_event_from_period(
-                    supervision_period,
-                    event_date=last_day_of_month(projected_completion_date),
-                    supervision_type=supervision_type,
-                    successful_completion=True,
-                    incarcerated_during_sentence=True,
-                    sentence_days_served=sentence_length,
-                )
-            ],
-            projected_completion_events,
-        )
 
     def test_classify_supervision_success_with_incarceration_sentences(self) -> None:
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -4645,7 +4486,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4664,8 +4504,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(completion_date - effective_date).days,
                 )
             ],
             projected_completion_events,
@@ -4705,7 +4543,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4746,7 +4583,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4788,7 +4624,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             default_normalized_sp_index_for_tests(
                 supervision_periods=[supervision_period]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4865,7 +4700,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     incarceration_supervision_period,
                 ]
             ),
-            default_normalized_ip_index_for_tests(),
             UsXxSupervisionDelegate(
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             ),
@@ -4882,11 +4716,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     event_date=last_day_of_month(supervision_sentence_completion_date),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(
-                        supervision_sentence_completion_date
-                        - supervision_sentence_effective_date
-                    ).days,
                 ),
                 create_projected_completion_event_from_period(
                     supervision_period,
@@ -4895,8 +4724,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ),
                     supervision_type=supervision_type,
                     successful_completion=True,
-                    incarcerated_during_sentence=False,
-                    sentence_days_served=(completion_date - effective_date).days,
                 ),
             ],
             projected_completion_events,

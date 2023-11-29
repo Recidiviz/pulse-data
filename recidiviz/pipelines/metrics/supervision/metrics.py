@@ -215,10 +215,6 @@ If a person has a `StateSupervisionSentence` with a `projected_completion_date` 
     # Whether this represents a successful completion
     successful_completion: bool = attr.ib(default=None)
 
-    # TODO(#16605): This is no-longer used after the Core dashboard deprecation - delete it.
-    # Days served for this sentence
-    sentence_days_served: int = attr.ib(default=None)
-
 
 @attr.s
 class SupervisionTerminationMetric(

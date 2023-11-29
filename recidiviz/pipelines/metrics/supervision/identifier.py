@@ -16,7 +16,6 @@
 # =============================================================================
 """Identifies various events related to supervision."""
 import datetime
-import logging
 from collections import defaultdict
 from datetime import date
 from typing import Dict, List, Optional, Tuple, Type, Union
@@ -208,7 +207,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_sentences,
             incarceration_sentences,
             supervision_period_index,
-            incarceration_period_index,
             supervision_delegate,
         )
 
@@ -780,7 +778,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_sentences: List[NormalizedStateSupervisionSentence],
         incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         supervision_period_index: NormalizedSupervisionPeriodIndex,
-        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> List[ProjectedSupervisionCompletionEvent]:
         """This classifies whether supervision projected to end in a given month was completed successfully.
@@ -890,11 +887,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
             if latest_supervision_period:
                 completion_event = self._get_projected_completion_event(
-                    sentence=sentence,
                     projected_completion_date=projected_completion_date,
                     supervision_period=latest_supervision_period,
                     supervision_type_for_event=supervision_period_supervision_type_for_sentence,
-                    incarceration_period_index=incarceration_period_index,
                     supervision_delegate=supervision_delegate,
                 )
 
@@ -905,13 +900,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _get_projected_completion_event(
         self,
-        sentence: Union[
-            NormalizedStateSupervisionSentence, NormalizedStateIncarcerationSentence
-        ],
         projected_completion_date: date,
         supervision_period: NormalizedStateSupervisionPeriod,
         supervision_type_for_event: StateSupervisionPeriodSupervisionType,
-        incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> Optional[ProjectedSupervisionCompletionEvent]:
         """Returns a ProjectedSupervisionCompletionEvent for the given supervision
@@ -937,30 +928,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 "Expected set value for successful_completion if the "
                 "termination should be included in the metrics."
             )
-
-        effective_date = sentence.effective_date
-        completion_date = sentence.completion_date
-        if effective_date is None or completion_date is None:
-            logging.warning(
-                "start_date and completion_date must be non-None for sentence: %s",
-                sentence,
-            )
-            return None
-
-        if completion_date < effective_date:
-            logging.warning(
-                "Sentence completion date is before the start date: %s",
-                sentence,
-            )
-            return None
-
-        sentence_days_served = (completion_date - effective_date).days
-
-        incarcerated_during_sentence = (
-            incarceration_period_index.incarceration_admissions_between_dates(
-                effective_date, completion_date
-            )
-        )
 
         (
             level_1_supervision_location_external_id,
@@ -993,8 +960,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             case_type=case_type,
             successful_completion=successful_completion,
-            incarcerated_during_sentence=incarcerated_during_sentence,
-            sentence_days_served=sentence_days_served,
             supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
             supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,

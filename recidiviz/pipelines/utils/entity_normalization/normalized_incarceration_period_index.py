@@ -240,16 +240,6 @@ class NormalizedIncarcerationPeriodIndex:
 
         return False
 
-    def incarceration_admissions_between_dates(
-        self, start_date: date, end_date: date
-    ) -> bool:
-        """Returns whether there were incarceration admissions between the start_date and end_date, not inclusive of
-        the end date."""
-        return any(
-            ip.admission_date and start_date <= ip.admission_date < end_date
-            for ip in self.sorted_incarceration_periods
-        )
-
     @staticmethod
     def _get_portions_of_range_not_covered_by_periods_subset(
         time_range_to_cover: DateRange,
