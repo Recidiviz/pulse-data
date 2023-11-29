@@ -3,7 +3,7 @@ file_tag: OFFENDERPROFILE
 file_description: |-
   Offender Profile
 data_classification: source
-encoding: UTF-8
+encoding: WINDOWS-1252
 separator: ‡
 primary_key_cols:
   - OFFENDERID
