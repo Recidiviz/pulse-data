@@ -9,9 +9,15 @@ columns:
   - name: ConditionTypeId
     description: |-
       Primary key of this table.
+  - name: ConditionTypeTitle
+    description: |-
+      Supervision condition type title
   - name: ConditionTypeDesc
     description: |-
       Description of the supervision condition.
+  - name: ConditionTypeDescNoTitle
+    description: |-
+      TODO(#15329): Fill in column description
   - name: ConditionTypeAbbrev
     description: |-
       TODO(#15329): Fill in column description
@@ -64,3 +70,6 @@ columns:
   - name: ConditionTypePeriodId
     description: |-
       TODO(#15329): Fill in column description
+  - name: ConditionCategoryId
+    description: |-
+      Condition category id
