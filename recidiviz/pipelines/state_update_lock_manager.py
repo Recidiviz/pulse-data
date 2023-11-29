@@ -59,7 +59,10 @@ class StateUpdateLockManager:
         self.ingest_instance = ingest_instance
 
     def acquire_lock(
-        self, lock_id: str, lock_wait_timeout: Optional[int] = None
+        self,
+        lock_id: str,
+        lock_wait_timeout: Optional[int] = None,
+        lock_expiration_override: Optional[int] = None,
     ) -> None:
         """
         Acquires the state update lock, or refreshes the timeout of the
@@ -67,6 +70,7 @@ class StateUpdateLockManager:
         lock tells other ongoing processes to yield until the lock has been released.
 
         Can set a timeout to try to lock for before giving up. If no timeout is set, will try for up to 4 hours.
+        Can override the default lock timeout of 1 hour.
         """
 
         if lock_wait_timeout is None:
@@ -93,7 +97,9 @@ class StateUpdateLockManager:
             self.lock_manager.lock(
                 self.lock_name,
                 payload=lock_id,
-                expiration_in_seconds=self._export_lock_timeout_for_update(),
+                expiration_in_seconds=self._export_lock_timeout_for_update(
+                    lock_expiration_override
+                ),
             )
         except GCSPseudoLockAlreadyExists as e:
             previous_lock_id = self.lock_manager.get_lock_payload(self.lock_name)
@@ -134,10 +140,10 @@ class StateUpdateLockManager:
         return self.lock_manager.is_locked(self.lock_name)
 
     @staticmethod
-    def _export_lock_timeout_for_update() -> int:
+    def _export_lock_timeout_for_update(lock_expiration_override: Optional[int]) -> int:
         """Defines the exported lock timeouts permitted. Currently set to one hour in
-        length.
+        length unless override is provided.
 
         Update jobs are not expected to take longer than the alotted time, but if they
         do so, they will de facto relinquish their hold on the acquired lock."""
-        return 3600
+        return lock_expiration_override or 3600

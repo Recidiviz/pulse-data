@@ -186,7 +186,7 @@ class GCSPseudoLockManager:
         # locks explicitly.
         if not self.fs.exists(path):
             raise GCSPseudoLockDoesNotExist(
-                f"Lock with the name {name} does not yet exist in the bucket "
+                f"Lock with the name {name} does not exist in the bucket "
                 f"{self.bucket_name}"
             )
 
@@ -199,10 +199,16 @@ class GCSPseudoLockManager:
 
         for i in range(MAX_UNLOCK_ATTEMPTS):
             logging.debug("Deleting lock file with name: %s (attempt %s)", name, i)
+            was_locked = self.is_locked(name)
             self.fs.delete(path)
             if not self.fs.exists(path):
-                logging.debug("Successfully deleted lock file with name: %s", name)
-                return
+                if was_locked:
+                    logging.debug("Successfully deleted lock file with name: %s", name)
+                    return
+                raise GCSPseudoLockDoesNotExist(
+                    f"Lock with the name {name} exists in the bucket "
+                    f"{self.bucket_name} but has expired."
+                )
 
         raise GCSPseudoLockFailedUnlock(f"Failed to unlock lock file with name: {name}")
 
