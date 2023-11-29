@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements authorization for Outliers routes"""
 import os
+from http import HTTPStatus
 from typing import Any, Dict, Optional
 
 from flask import g
@@ -27,7 +28,9 @@ from recidiviz.case_triage.authorization_utils import (
     on_successful_authorization_requested_state,
 )
 from recidiviz.case_triage.outliers.user_context import UserContext
+from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.utils.auth.auth0 import AuthorizationError
+from recidiviz.utils.flask_exception import FlaskException
 
 
 def on_successful_authorization(
@@ -74,3 +77,37 @@ def on_successful_authorization(
 
     if not app_metadata.get("routes", {}).get("insights", False):
         raise AuthorizationError(code="not_authorized", description="Access denied")
+
+
+def grant_endpoint_access(querier: OutliersQuerier, user_context: UserContext) -> None:
+    """
+    No-ops if:
+    1. The user is not a supervision_staff user, i.e. leadership or recidiviz user
+    2. The user is a supervisor who has outliers.
+    Otherwises, raises an exception.
+    """
+    if user_context.role == "supervision_staff":
+        if user_context.pseudonymized_id is None:
+            raise FlaskException(
+                code="no_pseudonymized_id",
+                description="Supervision staff user should have a pseudonymized id.",
+                status_code=HTTPStatus.BAD_REQUEST,
+            )
+
+        supervisor_entity = querier.get_supervisor_entity_from_pseudonymized_id(
+            user_context.pseudonymized_id
+        )
+
+        if supervisor_entity is None:
+            raise FlaskException(
+                code="supervisor_not_found",
+                description="Cannot find information on the requested user for the latest period",
+                status_code=HTTPStatus.NOT_FOUND,
+            )
+
+        if not supervisor_entity.has_outliers:
+            raise FlaskException(
+                code="supervisor_has_no_outliers",
+                description=f"Supervisors must have outliers in the latest period to access this endpoint. User {user_context.pseudonymized_id} does not have outliers.",
+                status_code=HTTPStatus.UNAUTHORIZED,
+            )

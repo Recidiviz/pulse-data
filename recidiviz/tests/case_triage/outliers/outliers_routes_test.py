@@ -45,6 +45,7 @@ from recidiviz.outliers.types import (
 )
 from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionClientEvent,
+    SupervisionClients,
     SupervisionOfficerSupervisor,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -154,6 +155,8 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                 session.add(SupervisionOfficerSupervisor(**supervisor))
             for event in load_model_fixture(SupervisionClientEvent):
                 session.add(SupervisionClientEvent(**event))
+            for client in load_model_fixture(SupervisionClients):
+                session.add(SupervisionClients(**client))
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -1661,6 +1664,180 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     "pseudonymizedClientId": "clienthash1",
                 }
             ]
+        }
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_client_not_outlier(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor_entity: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa",
+            external_id="102",
+            role="supervision_staff",
+            pseudonymized_id="officerhash",
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+            client_events=[TEST_CLIENT_EVENT_1],
+        )
+
+        mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
+            full_name=PersonName(
+                given_names="Supervisor",
+                surname="2",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="102",
+            pseudonymized_id="officerhash",
+            supervision_district="2",
+            email="supervisor2@recidiviz.org",
+            has_outliers=False,
+        )
+
+        response = self.test_client.get(
+            "/outliers/US_PA/client/clienthash1",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+        self.assertEqual(
+            response.json,
+            {
+                "message": "Supervisors must have outliers in the latest period to access this endpoint. User officerhash does not have outliers."
+            },
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_client_not_found(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor_entity: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="102", role="supervision_staff"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+            client_events=[TEST_CLIENT_EVENT_1],
+        )
+
+        mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
+            full_name=PersonName(
+                given_names="Supervisor",
+                surname="2",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="102",
+            pseudonymized_id="hashhash",
+            supervision_district="2",
+            email="supervisor2@recidiviz.org",
+            has_outliers=True,
+        )
+
+        response = self.test_client.get(
+            "/outliers/US_PA/client/randomrandom",
+            headers={"Origin": "http://localhost:3000"},
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(
+            response.json,
+            {"message": "Client randomrandom not found in the DB"},
+        )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_client_success(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor_entity: MagicMock,
+    ) -> None:
+        client_hash = "clienthash1"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="us_pa", external_id="102", role="supervision_staff"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+            client_events=[TEST_CLIENT_EVENT_1],
+        )
+
+        mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
+            full_name=PersonName(
+                given_names="Supervisor",
+                surname="2",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="102",
+            pseudonymized_id="hashhash",
+            supervision_district="2",
+            email="supervisor2@recidiviz.org",
+            has_outliers=True,
+        )
+
+        response = self.test_client.get(
+            f"/outliers/US_PA/client/{client_hash}",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        expected_json = {
+            "client": {
+                "birthdate": "1989-01-01",
+                "clientId": "111",
+                "clientName": {
+                    "givenNames": "Harry",
+                    "middleNames": None,
+                    "surname": "Potter",
+                },
+                "gender": "MALE",
+                "pseudonymizedClientId": "clienthash1",
+                "raceOrEthnicity": "WHITE",
+                "stateCode": "US_PA",
+            }
         }
 
         self.assertEqual(response.status_code, HTTPStatus.OK)

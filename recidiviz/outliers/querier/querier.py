@@ -54,6 +54,7 @@ from recidiviz.persistence.database.database_managers.state_segmented_database_m
 from recidiviz.persistence.database.schema.outliers.schema import (
     MetricBenchmark,
     SupervisionClientEvent,
+    SupervisionClients,
     SupervisionDistrictManager,
     SupervisionOfficer,
     SupervisionOfficerOutlierStatus,
@@ -947,3 +948,18 @@ class OutliersQuerier:
                     )
 
             return officer_external_id_to_entity
+
+    def get_client_from_pseudonymized_id(
+        self, pseudonymized_id: str
+    ) -> Optional[SupervisionClients]:
+        """
+        Returns the SupervisionClient entity given the pseudonymized_id.
+        """
+        with self.database_session() as session:
+            client = (
+                session.query(SupervisionClients)
+                .filter(SupervisionClients.pseudonymized_client_id == pseudonymized_id)
+                .scalar()
+            )
+
+            return client

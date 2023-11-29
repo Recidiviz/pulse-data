@@ -50,6 +50,7 @@ from recidiviz.persistence.database.schema.outliers.schema import (
     MetricBenchmark,
     OutliersBase,
     SupervisionClientEvent,
+    SupervisionClients,
     SupervisionDistrict,
     SupervisionDistrictManager,
     SupervisionOfficer,
@@ -148,6 +149,8 @@ class TestOutliersQuerier(TestCase):
                 session.add(MetricBenchmark(**benchmark))
             for event in load_model_fixture(SupervisionClientEvent):
                 session.add(SupervisionClientEvent(**event))
+            for client in load_model_fixture(SupervisionClients):
+                session.add(SupervisionClients(**client))
 
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
@@ -769,3 +772,19 @@ class TestOutliersQuerier(TestCase):
             "randomhash", ["absconsions_bench_warrants"], TEST_END_DATE
         )
         self.assertEqual(actual, [])
+
+    def test_get_supervision_client_no_match(self) -> None:
+        # Return None because none found
+        actual = OutliersQuerier(StateCode.US_PA).get_client_from_pseudonymized_id(
+            pseudonymized_id="randomhash",
+        )
+
+        self.assertIsNone(actual)
+
+    def test_get_supervision_client_success(self) -> None:
+        # Return matching supervisor
+        actual = OutliersQuerier(StateCode.US_PA).get_client_from_pseudonymized_id(
+            pseudonymized_id="clienthash1"
+        )
+
+        self.assertEqual("111", actual.client_id)  # type: ignore[union-attr]

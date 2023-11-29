@@ -27,6 +27,7 @@ from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.outliers.outliers_authorization import (
+    grant_endpoint_access,
     on_successful_authorization,
 )
 from recidiviz.case_triage.outliers.user_context import UserContext
@@ -36,6 +37,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.outliers.types import PersonName
+from recidiviz.utils.flask_exception import FlaskException
 
 ALLOWED_ORIGINS = [
     r"http\://localhost:3000",
@@ -492,30 +494,10 @@ def create_outliers_api_blueprint() -> Blueprint:
             event_metric_ids = state_client_events
 
         user_context: UserContext = g.user_context
-
-        # If supervisor, the supervisor should have outliers to access this endpoint.
-        if user_context.role == "supervision_staff":
-            if user_context.pseudonymized_id is None:
-                return jsonify_response(
-                    "Supervision staff user should have a pseudonymized id.",
-                    HTTPStatus.BAD_REQUEST,
-                )
-
-            supervisor_entity = querier.get_supervisor_entity_from_pseudonymized_id(
-                user_context.pseudonymized_id
-            )
-
-            if supervisor_entity is None:
-                return jsonify_response(
-                    "Cannot find information on the requested user for the latest period",
-                    HTTPStatus.NOT_FOUND,
-                )
-
-            if not supervisor_entity.has_outliers:
-                return jsonify_response(
-                    f"Supervisors must have outliers in the latest period to access this endpoint. User {user_context.pseudonymized_id} does not have outliers.",
-                    HTTPStatus.UNAUTHORIZED,
-                )
+        try:
+            grant_endpoint_access(querier, user_context)
+        except FlaskException as e:
+            return jsonify_response(str(e.description), e.status_code)
 
         events = querier.get_events_by_client(
             pseudonymized_id, event_metric_ids, period_end_date
@@ -544,5 +526,42 @@ def create_outliers_api_blueprint() -> Blueprint:
             for event in events
         ]
         return jsonify({"events": results})
+
+    @api.get("/<state>/client/<pseudonymized_client_id>")
+    def client(state: str, pseudonymized_client_id: str) -> Response:
+        state_code = StateCode(state.upper())
+        querier = OutliersQuerier(state_code)
+
+        user_context: UserContext = g.user_context
+        try:
+            grant_endpoint_access(querier, user_context)
+        except FlaskException as e:
+            return jsonify_response(str(e.description), e.status_code)
+
+        client = querier.get_client_from_pseudonymized_id(
+            pseudonymized_id=pseudonymized_client_id
+        )
+
+        if client is None:
+            return jsonify_response(
+                f"Client {pseudonymized_client_id} not found in the DB",
+                HTTPStatus.NOT_FOUND,
+            )
+
+        client_json = {
+            "stateCode": client.state_code,
+            "clientId": client.client_id,
+            "pseudonymizedClientId": client.pseudonymized_client_id,
+            "clientName": {
+                "givenNames": PersonName(**client.client_name).given_names,
+                "middleNames": PersonName(**client.client_name).middle_names,
+                "surname": PersonName(**client.client_name).surname,
+            },
+            "birthdate": datetime.strftime(client.birthdate, "%Y-%m-%d"),
+            "gender": client.gender,
+            "raceOrEthnicity": client.race_or_ethnicity,
+        }
+
+        return jsonify({"client": client_json})
 
     return api
