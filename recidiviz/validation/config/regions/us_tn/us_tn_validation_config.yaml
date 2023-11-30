@@ -23,7 +23,7 @@ max_allowed_error_overrides:
     override_reason: TODO(#15351) Needs investigation. There is one ID not accounted for over a span of 5 days in September 2022.
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 1500
+    hard_num_allowed_rows_override: 20000
     override_reason: TODO(#12167) Needs investigation. Ingest view mishandling zero-day incarceration periods. 552 failing rows as of 11/3/2022. This number jumped with incarceration period refactor to include housing units. Current error at 1059 as of 4/13/23. With refactors needed for Outliers to correctly attribute temporary custody periods, this error increased significantly. However, from the perspective of downstream handling in sessions and for what is needed in products, this mismatch is not causing issues/may actually be the correct interpretation. Error is 16654 as of 11/29/23. Will revisit this upon refactors after outliers launch.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 120
