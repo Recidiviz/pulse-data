@@ -45,7 +45,6 @@ from recidiviz.common.attr_mixins import (
     attr_field_attribute_for_field_name,
     attr_field_enum_cls_for_field_name,
     attr_field_type_for_field_name,
-    attribute_field_type_reference_for_class,
 )
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
 from recidiviz.common.constants.enum_parser import EnumParser, EnumT
@@ -431,16 +430,7 @@ class EntityTreeManifestFactory:
     ) -> Optional[str]:
         filter_if_null_field = None
         if issubclass(entity_cls, EnumEntity):
-            field_info_dict = attribute_field_type_reference_for_class(entity_cls)
-            enum_fields = {
-                field for field, info in field_info_dict.items() if info.enum_cls
-            }
-            if len(enum_fields) != 1:
-                raise ValueError(
-                    f"Expected exactly one enum field on EnumEntity "
-                    f"[{entity_cls.__name__}]. Found: {enum_fields}."
-                )
-            filter_if_null_field = one(enum_fields)
+            filter_if_null_field = entity_cls.get_enum_field_name()
 
         if delegate_filter_field := delegate.get_filter_if_null_field(entity_cls):
             if filter_if_null_field:
