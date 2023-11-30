@@ -1,7 +1,6 @@
 # Configuration for which validations to run for region US_OR.
 
 region_code: US_OR
-dev_mode: True # TODO(#22726): Take out of dev mode
 exclusions:
   - validation_name: dataflow_metrics_supervising_officer_staff_id_all_null
     exclusion_type: DOES_NOT_APPLY
@@ -14,3 +13,15 @@ num_allowed_rows_overrides:
   - validation_name: sentences_missing_date_imposed
     hard_num_allowed_rows_override: 1700
     override_reason: Needs investigation. Current failing level as of 11/20/23 is 1655 rows #TODO(#25600): Investigate further
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    hard_num_allowed_rows_override: 60000
+    override_reason: Current failing level as of 11/29/23 is 56,879 rows #TODO(#25773): Revisit sentencing related thresholds post-refactor
+  - validation_name: session_new_admissions_with_no_sentence_date_imposed
+    hard_num_allowed_rows_override: 190000
+    override_reason: Current failing level as of 11/29/23 is 182,294 rows #TODO(#25773): Revisit sentencing related thresholds post-refactor
+  - validation_name: session_liberty_releases_with_no_sentence_completion_date
+    hard_num_allowed_rows_override: 30000
+    override_reason: Current failing level as of 11/29/23 is 28714 rows #TODO(#25773): Revisit sentencing related thresholds post-refactor
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 1500000
+    override_reason: Current failing level as of 11/29/23 is 1252613 rows, not necessary currently and will be automated in future
