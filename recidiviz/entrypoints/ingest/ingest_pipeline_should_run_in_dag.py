@@ -18,11 +18,17 @@
 import argparse
 import logging
 
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.entrypoints.entrypoint_interface import EntrypointInterface
 from recidiviz.entrypoints.entrypoint_utils import save_to_xcom
 from recidiviz.ingest.direct import direct_ingest_regions
-from recidiviz.ingest.direct.gating import ingest_pipeline_can_run_in_dag
+from recidiviz.ingest.direct.gating import (
+    ingest_pipeline_can_run_in_dag,
+    is_ingest_in_dataflow_enabled,
+)
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -34,18 +40,42 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_deleg
     IS_SECONDARY_INSTANCE_PROPERTY_NAME,
     IngestViewManifestCompilerDelegateImpl,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import environment
 
 
-def _should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
+def _secondary_has_raw_data_changes(state_code: StateCode) -> bool:
     """
-    Returns whether the secondary ingest pipeline should be run for the given state.
+    Returns if there are raw data changes that require a reimport for the given state. If so,
+    we should run the secondary ingest pipeline for the given state.
     """
-    if not ingest_pipeline_can_run_in_dag(state_code, DirectIngestInstance.SECONDARY):
-        return False
+    ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
+        state_code, DirectIngestInstance.SECONDARY
+    )
+    instance_status_manager = PostgresDirectIngestInstanceStatusManager(
+        region_code=state_code.value.lower(),
+        ingest_instance=DirectIngestInstance.SECONDARY,
+        is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
+    )
 
+    return (
+        ingest_in_dataflow_enabled
+        and instance_status_manager.get_current_status()
+        != DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS
+    )
+
+
+def _secondary_has_manifest_views_with_launch_env_changes(
+    state_code: StateCode,
+) -> bool:
+    """
+    Returns if there are manifest views that have launch environment changes for the given state. If so,
+    we should run the secondary ingest pipeline for the given state.
+    """
     region = direct_ingest_regions.get_direct_ingest_region(
         region_code=state_code.value.lower()
     )
@@ -72,6 +102,19 @@ def _should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
         )
         for manifest in manifest_collector.ingest_view_to_manifest.values()
     )
+
+
+def _should_run_secondary_ingest_pipeline(state_code: StateCode) -> bool:
+    """
+    Returns whether the secondary ingest pipeline should be run for the given state.
+    """
+    if not ingest_pipeline_can_run_in_dag(state_code, DirectIngestInstance.SECONDARY):
+        return False
+
+    if _secondary_has_raw_data_changes(state_code):
+        return True
+
+    return _secondary_has_manifest_views_with_launch_env_changes(state_code)
 
 
 def _has_launchable_ingest_views(
