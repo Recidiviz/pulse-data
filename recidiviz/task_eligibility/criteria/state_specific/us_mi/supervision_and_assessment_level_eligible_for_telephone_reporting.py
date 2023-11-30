@@ -69,7 +69,7 @@ eligible combination of supervision and initial assessment level */
     start_date,
     end_date,
     COALESCE((COALESCE(omni_map.is_minimum_low, coms_map.is_minimum_low) OR
-        (COALESCE(omni_map.is_minimum_in_person, coms_map.is_minimum_in_person) AND initial_assessment_level != 'MAXIMUM')), FALSE) AS meets_criteria,
+        (COALESCE(omni_map.is_minimum_in_person, coms_map.is_minimum_in_person) AND initial_assessment_level IN ('MEDIUM', 'MINIMUM'))), FALSE) AS meets_criteria,
     COALESCE(omni_map.description, coms_map.description) as description,
     initial_assessment_level
   FROM supervision_level_sessions_with_assessments sl
