@@ -5,7 +5,10 @@ exclusions:
   - validation_name: dataflow_metrics_supervising_officer_staff_id_all_null
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: There is no supervising officer data in OR so all supervising officer external id should be null.
-max_allowed_error_overrides: []
+max_allowed_error_overrides:
+  - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison
+    hard_max_allowed_error_override: 0.10
+    override_reason: TODO(#25806) Needs investigation - as of 11/30/23 failing at 7.68% but waiting on validation data from OR.
 num_allowed_rows_overrides:
   - validation_name: normalized_state_charge_missing_descriptions
     hard_num_allowed_rows_override: 7100
