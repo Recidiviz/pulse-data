@@ -20,7 +20,7 @@ import inspect
 import sys
 from functools import lru_cache
 from types import ModuleType
-from typing import Any, Iterator, List, Literal, Optional, Tuple, Type
+from typing import Any, Iterator, List, Optional, Tuple, Type
 
 import sqlalchemy
 from sqlalchemy import ForeignKeyConstraint, Table
@@ -283,28 +283,6 @@ def get_state_database_association_with_names(
         f"Association table with {child_class_name} and {parent_class_name} does not in exist in "
         f"{state_schema.__name__}"
     )
-
-
-HISTORICAL_TABLE_CLASS_SUFFIX = "History"
-
-
-def historical_table_class_name_from_obj(schema_object: DatabaseEntity) -> str:
-    obj_class_name = schema_object.__class__.__name__
-    if obj_class_name.endswith(HISTORICAL_TABLE_CLASS_SUFFIX):
-        return obj_class_name
-
-    return f"{obj_class_name}{HISTORICAL_TABLE_CLASS_SUFFIX}"
-
-
-def historical_table_class_from_obj(
-    schema_object: DatabaseEntity,
-) -> Optional[Type[DatabaseEntity]]:
-    schema_module = inspect.getmodule(schema_object)
-    history_table_class_name = historical_table_class_name_from_obj(schema_object)
-    return getattr(schema_module, history_table_class_name, None)
-
-
-DirectIngestSchemaType = Literal[SchemaType.STATE]
 
 
 def schema_type_for_schema_module(module: ModuleType) -> SchemaType:

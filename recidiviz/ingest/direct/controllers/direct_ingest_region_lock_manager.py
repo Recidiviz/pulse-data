@@ -28,7 +28,6 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
     postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import DirectIngestSchemaType
 
 INGEST_PROCESS_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_"
 # Ingest process running that writes to Postgres STATE tables and should block other
@@ -122,20 +121,18 @@ class DirectIngestRegionLockManager:
         return DirectIngestRegionLockManager.for_direct_ingest(
             region_code=state_code.value,
             ingest_instance=ingest_instance,
-            schema_type=SchemaType.STATE,
         )
 
     @staticmethod
     def for_direct_ingest(
         region_code: str,
         ingest_instance: DirectIngestInstance,
-        schema_type: DirectIngestSchemaType,
     ) -> "DirectIngestRegionLockManager":
         return DirectIngestRegionLockManager(
             region_code=region_code,
             ingest_instance=ingest_instance,
             blocking_locks=[
-                postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance),
+                postgres_to_bq_lock_name_for_schema(SchemaType.STATE, ingest_instance),
                 postgres_to_bq_lock_name_for_schema(
                     SchemaType.OPERATIONS, ingest_instance
                 ),

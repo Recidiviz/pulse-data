@@ -19,9 +19,11 @@ import abc
 from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
+from more_itertools import one
 
 # TODO(#1885): Enforce all ForwardRef attributes on an Entity are optional
 from recidiviz.common import attr_validators
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.utils import environment
 
@@ -117,6 +119,10 @@ class HasMultipleExternalIdsEntity(Generic[ExternalIdEntityT], Entity):
 
 
 class EnumEntity(Entity):
+    """An entity that is a simple wrapper around an enum value and its associated raw
+    text.
+    """
+
     # Suffix to append to an enum field name to get the corresponding raw text field
     # name.
     RAW_TEXT_FIELD_SUFFIX = "_raw_text"
@@ -126,6 +132,31 @@ class EnumEntity(Entity):
         if cls is HasExternalIdEntity:
             raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
+
+    @classmethod
+    def get_enum_field_name(cls) -> str:
+        """Returns the singular enum field associated with this EnumEntity."""
+        field_info_dict = attribute_field_type_reference_for_class(cls)
+        enum_fields = {
+            field for field, info in field_info_dict.items() if info.enum_cls
+        }
+        if len(enum_fields) != 1:
+            raise ValueError(
+                f"Expected exactly one enum field on EnumEntity "
+                f"[{cls.__name__}]. Found: {enum_fields}."
+            )
+        return one(enum_fields)
+
+    @classmethod
+    def get_raw_text_field_name(cls) -> str:
+        """Returns the singular enum raw text associated with this EnumEntity."""
+        raw_text_field = f"{cls.get_enum_field_name()}{cls.RAW_TEXT_FIELD_SUFFIX}"
+        field_info_dict = attribute_field_type_reference_for_class(cls)
+        if raw_text_field not in field_info_dict:
+            raise ValueError(
+                f"Expected to find field [{raw_text_field}] on entity [{cls.__name__}]"
+            )
+        return raw_text_field
 
 
 EnumEntityT = TypeVar("EnumEntityT", bound=EnumEntity)

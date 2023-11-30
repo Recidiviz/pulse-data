@@ -135,7 +135,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         self.ingest_instance = ingest_instance
         self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
             region_code=self.region.region_code,
-            schema_type=SchemaType.STATE,
             ingest_instance=self.ingest_instance,
         )
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())

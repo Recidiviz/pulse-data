@@ -21,14 +21,15 @@
 from unittest import TestCase
 
 from recidiviz.persistence.entity import base_entity
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
+from recidiviz.persistence.entity.state import entities as state_entities
 
 
 class TestBaseEntities(TestCase):
     """Tests for base_entity.py"""
 
-    def test_base_classes_have_eq_equal_false(self):
+    def test_base_classes_have_eq_equal_false(self) -> None:
         for entity_class in get_all_entity_classes_in_module(base_entity):
             self.assertEqual(
                 entity_class.__eq__,
@@ -41,3 +42,16 @@ class TestBaseEntities(TestCase):
 
     # TODO(#1894): Write unit tests for entity graph equality that reference the
     # schema defined in test_schema/test_entities.py.
+
+    def test_enum_entity_helpers(self) -> None:
+        self.assertEqual("race", state_entities.StatePersonRace.get_enum_field_name())
+        self.assertEqual(
+            "race_raw_text", state_entities.StatePersonRace.get_raw_text_field_name()
+        )
+
+        for entity_class in get_all_entity_classes_in_module(state_entities):
+            if not issubclass(entity_class, EnumEntity):
+                continue
+            # These should not crash
+            entity_class.get_enum_field_name()
+            entity_class.get_raw_text_field_name()

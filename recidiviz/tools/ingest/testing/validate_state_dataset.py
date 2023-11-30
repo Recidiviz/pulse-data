@@ -34,7 +34,7 @@ Usage:
 
 """
 import argparse
-from typing import Dict, List, Optional, Type, cast
+from typing import Dict, List, Optional, Set, Type, cast
 
 import attr
 import pandas as pd
@@ -157,16 +157,6 @@ EXTERNAL_IDS_MISSING_FROM_SANDBOX = StrictStringFormatter().format(
     root_entity_id_links_clause=ROOT_ENTITY_ID_LINKS_CLAUSE_TEMPLATE,
     dataset_name=SANDBOX_DATASET_NAME,
 )
-
-COMPARABLE_TABLE_ROWS_TEMPLATE = """
-SELECT 
-  * EXCEPT(
-    sandbox_{root_entity_id_col},
-    reference_{root_entity_id_col},
-    {columns_to_exclude_str}
-  )
-FROM ({filtered_rows_clause})
-"""
 
 
 def root_entity_external_ids_address(
@@ -361,28 +351,34 @@ class StateDatasetValidator:
         a different dataset.
         """
 
-        root_entity_cls = cast(
-            Type[Entity],
-            get_root_entity_class_for_entity(
-                get_entity_class_in_module_with_name(
-                    entities, state_entity_cls.__name__
-                )
-            ),
+        filtered_with_new_cols = self._filtered_table_rows_clause_for_entity_table(
+            dataset=dataset, state_entity_cls=state_entity_cls
         )
-        root_entity_id_col = root_entity_cls.get_primary_key_column_name()
         columns_to_exclude = [
             state_entity_cls.get_primary_key_column_name(),
             *state_entity_cls.get_foreign_key_names(),
         ]
         columns_to_exclude_str = ",".join(columns_to_exclude)
-        return StrictStringFormatter().format(
-            COMPARABLE_TABLE_ROWS_TEMPLATE,
-            root_entity_id_col=root_entity_id_col,
-            columns_to_exclude_str=columns_to_exclude_str,
-            filtered_rows_clause=self._filtered_table_rows_clause_for_entity_table(
-                dataset=dataset, state_entity_cls=state_entity_cls
-            ),
-        )
+        return f"""SELECT * EXCEPT ({columns_to_exclude_str})
+FROM ({filtered_with_new_cols})"""
+
+    @staticmethod
+    def _get_direct_enum_entity_child_classes(
+        state_entity_cls: Type[DatabaseEntity],
+    ) -> Set[Type[EnumEntity]]:
+        """Returns the set of EnumEntity classes that are direct children of the
+        provided |state_entity_cls|.
+        """
+        direct_child_class_names = {
+            state_entity_cls.get_relationship_property_class_name(relationship_property)
+            for relationship_property in state_entity_cls.get_relationship_property_names()
+        }
+        direct_child_classes = {
+            get_entity_class_in_module_with_name(entities, cls_name)
+            for cls_name in direct_child_class_names
+        }
+
+        return {cls for cls in direct_child_classes if issubclass(cls, EnumEntity)}
 
     def _filtered_table_rows_clause_for_entity_table(
         self,
@@ -393,7 +389,8 @@ class StateDatasetValidator:
         provided |state_entity_cls| down to only rows that are connected to a root
         entity present in both the reference and sandbox datasets. Adds a column that
         contains the root entity id (e.g. person_id) that can be used to compare across
-        both sandbox and reference datsets.
+        both sandbox and reference datasets. If the entity has EnumEntity child tables,
+        adds a column that collapses those values into a JSON string value.
         """
         root_entity_cls = cast(
             Type[Entity],
@@ -415,11 +412,44 @@ class StateDatasetValidator:
         dataset_name = self._dataset_name_for_dataset(dataset)
         state_table = table_address.format_address_for_query()
         root_entity_ids_mapping_table = mapping_address.format_address_for_query()
+
+        enum_entity_child_join_clauses = []
+        for enum_entity_cls in self._get_direct_enum_entity_child_classes(
+            state_entity_cls
+        ):
+            enum_table_address = ProjectSpecificBigQueryAddress(
+                project_id=dataset.project,
+                dataset_id=dataset.dataset_id,
+                table_id=enum_entity_cls.get_entity_name(),
+            )
+            enum_field_name = enum_entity_cls.get_enum_field_name()
+            raw_text_field_name = enum_entity_cls.get_raw_text_field_name()
+            enum_entity_child_join_clauses.append(
+                f"""JOIN (
+    SELECT 
+      {state_entity_cls.get_primary_key_column_name()}, 
+      TO_JSON_STRING(
+        ARRAY_AGG(STRUCT({enum_field_name}, {raw_text_field_name})
+        ORDER BY {enum_field_name}, {raw_text_field_name})
+      ) AS {enum_entity_cls.get_entity_name()}_json
+    FROM {enum_table_address.format_address_for_query()} 
+    GROUP BY {state_entity_cls.get_primary_key_column_name()}
+  )
+  USING ({state_entity_cls.get_primary_key_column_name()})
+"""
+            )
+        enum_entity_column_join_clauses_str = "".join(enum_entity_child_join_clauses)
         return f"""
-  SELECT *, reference_{root_entity_id_col} AS comparable_{root_entity_id_col}
+  SELECT 
+    * EXCEPT(
+     sandbox_{root_entity_id_col},
+     reference_{root_entity_id_col}
+    ), 
+    reference_{root_entity_id_col} AS comparable_{root_entity_id_col}
   FROM {state_table} t
   JOIN {root_entity_ids_mapping_table}
   ON t.{root_entity_id_col} = {dataset_name}_{root_entity_id_col}
+  {enum_entity_column_join_clauses_str}
 """
 
     def _build_comparable_association_table_rows_query(
@@ -573,7 +603,6 @@ USING({associated_entity_2_pk})
                 # non-root entities the way we compare other entities because we expect
                 # to see many duplicate enum entities where the only difference is the
                 # direct parent primary key value.
-                # TODO(#24413): Handle indirect EnumEntity checking differently
                 return None
 
         comparable_reference_table_address = self._materialize_comparable_table(
@@ -627,9 +656,11 @@ USING({associated_entity_2_pk})
                 self.reference_dataset.dataset_id
             ),
         )
-        skipped_tables = [
-            table.table_id for table, result in results.items() if result is None
-        ]
+        for table, result in results.items():
+            if result is None and not self._is_enum_entity(table_name=table.table_id):
+                raise ValueError(
+                    f"Skipped validation of non-enum entity {table.table_id}"
+                )
 
         table_to_comparison_result = {
             table.table_id: result
@@ -639,7 +670,6 @@ USING({associated_entity_2_pk})
 
         validation_result = ValidationResult(
             root_entity_errors=root_entity_errors,  # type: ignore
-            skipped_tables=skipped_tables,
             table_to_comparison_result=table_to_comparison_result,
         )
 
@@ -653,7 +683,6 @@ class ValidationResult:
     """Stores the result of the `state` dataset validation."""
 
     root_entity_errors: Dict[Type[Entity], Dict[ProjectSpecificBigQueryAddress, int]]
-    skipped_tables: List[str]
     table_to_comparison_result: Dict[str, CompareTablesResult]
 
     @property
@@ -686,10 +715,6 @@ class ValidationResult:
                 )
                 for address in sorted(errors):
                     print(f"  * {address.table_id}: {errors[address]}")
-
-        print("Skipped validation of the following tables:")
-        for table in self.skipped_tables:
-            print(f"  * {table}")
         print()
         print("Table by table comparison results:")
         print(
