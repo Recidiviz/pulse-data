@@ -20,7 +20,7 @@ from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
 from types import ModuleType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Type, cast
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, cast
 
 import apache_beam
 from apache_beam.testing.util import BeamAssertException
@@ -74,6 +74,7 @@ from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
+    get_all_entity_associations_from_tree,
 )
 from recidiviz.pipelines.base_pipeline import BasePipeline
 from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
@@ -81,6 +82,10 @@ from recidiviz.pipelines.ingest.state.generate_ingest_view_results import (
     LOWER_BOUND_DATETIME_COL_NAME,
     MATERIALIZATION_TIME_COL_NAME,
     UPPER_BOUND_DATETIME_COL_NAME,
+)
+from recidiviz.pipelines.ingest.state.generate_primary_keys import (
+    generate_primary_key,
+    string_representation,
 )
 from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.ingest.state.serialize_entities import (
@@ -244,8 +249,12 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         self,
         ingest_view_results: Dict[str, Iterable[Dict[str, Any]]],
         expected_entity_type_to_entities: Dict[str, List[Entity]],
+        expected_entity_association_type_to_associations: Dict[
+            str, Set[Tuple[str, str]]
+        ],
         field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
     ) -> Dict[BigQueryAddress, Iterable[Dict[str, Any]]]:
+        """Forms a BigQueryAddress to expected output mapping for the pipeline to validate"""
         expected_output: Dict[BigQueryAddress, Iterable[Dict[str, Any]]] = {}
         for ingest_view, results in ingest_view_results.items():
             expected_output[
@@ -259,6 +268,36 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                     dataset_id=self.expected_state_dataset(), table_id=entity_type
                 )
             ] = [serialize_entity_into_json(entity, field_index) for entity in entities]
+        for (
+            entity_association,
+            associations,
+        ) in expected_entity_association_type_to_associations.items():
+            child_cls, parent_cls = get_database_entities_by_association_table(
+                state_schema, entity_association
+            )
+            expected_output[
+                BigQueryAddress(
+                    dataset_id=self.expected_state_dataset(),
+                    table_id=entity_association,
+                )
+            ] = [
+                {
+                    parent_cls.get_primary_key_column_name(): generate_primary_key(
+                        string_representation(
+                            {(parent_external_id, parent_cls.get_class_id_name())}
+                        ),
+                        self.region_code(),
+                    ),
+                    child_cls.get_primary_key_column_name(): generate_primary_key(
+                        string_representation(
+                            {(child_external_id, child_cls.get_class_id_name())}
+                        ),
+                        self.region_code(),
+                    ),
+                    "state_code": self.region_code().value,
+                }
+                for child_external_id, parent_external_id in associations
+            ]
         return expected_output
 
     def create_fake_bq_write_sink_constructor(
@@ -288,10 +327,28 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
             output_address = BigQueryAddress(
                 dataset_id=output_dataset, table_id=output_table
             )
-            # TODO(#25476): Update to properly look at association table output.
-            if output_address not in expected_output and not is_association_table(
-                output_table
-            ):
+            if is_association_table(output_table):
+                child_cls, parent_cls = get_database_entities_by_association_table(
+                    state_schema, output_table
+                )
+                child_output_address = BigQueryAddress(
+                    dataset_id=output_dataset, table_id=child_cls.__tablename__
+                )
+                parent_output_address = BigQueryAddress(
+                    dataset_id=output_dataset, table_id=parent_cls.__tablename__
+                )
+                if child_output_address not in expected_output:
+                    raise ValueError(
+                        f"Output table [{child_output_address.to_str()}] not in expected output "
+                        f"[{list(expected_output.keys())}]"
+                    )
+                if parent_output_address not in expected_output:
+                    raise ValueError(
+                        f"Output table [{parent_output_address.to_str()}] not in expected output "
+                        f"[{list(expected_output.keys())}]"
+                    )
+
+            elif output_address not in expected_output:
                 raise ValueError(
                     f"Output table [{output_address.to_str()}] not in expected output "
                     f"[{list(expected_output.keys())}]"
@@ -395,8 +452,13 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                         f"found: [{list(output_dict.keys())}]."
                     )
 
-            # TODO(#25476): Update to properly look at association table output.
-            if not is_association_table(output_table):
+            if is_association_table(output_table):
+                for record in output:
+                    if record not in expected_output:
+                        raise BeamAssertException(
+                            f"Unexpected output: {record} not in {expected_output}"
+                        )
+            else:
                 entity = get_database_entity_by_table_name(state_schema, output_table)
                 id_columns = {
                     column_name
@@ -558,6 +620,17 @@ class StateIngestPipelineTestCase(
                 ingest_view_name=ingest_view,
             )
         }
+        expected_entity_association_type_to_associations = defaultdict(set)
+        for root_entity in expected_root_entities:
+            for (
+                association_table,
+                associations,
+            ) in get_all_entity_associations_from_tree(
+                cast(Entity, root_entity), field_index
+            ).items():
+                expected_entity_association_type_to_associations[
+                    association_table
+                ].update(associations)
 
         run_test_pipeline(
             pipeline_cls=self.pipeline_class(),
@@ -566,7 +639,9 @@ class StateIngestPipelineTestCase(
             read_from_bq_constructor=self.create_fake_bq_read_source_constructor,
             write_to_bq_constructor=self.create_fake_bq_write_sink_constructor(
                 expected_output=self.get_expected_output(
-                    ingest_view_results, expected_entity_types_to_expected_entities
+                    ingest_view_results,
+                    expected_entity_types_to_expected_entities,
+                    expected_entity_association_type_to_associations,
                 )
             ),
             read_all_from_bq_constructor=self.create_fake_bq_read_all_source_constructor,
