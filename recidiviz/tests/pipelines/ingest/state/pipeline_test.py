@@ -18,7 +18,9 @@
 from datetime import date, datetime
 from typing import List
 
+from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.entity.base_entity import RootEntity
 from recidiviz.persistence.entity.state import entities
@@ -110,7 +112,7 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             incarceration_period_4,
         ]
 
-        # IngestMultipleROotExternalIds
+        # IngestMultipleRootExternalIds
         external_id_1_1 = entities.StatePersonExternalId.new_with_defaults(
             state_code=self.region_code().value,
             external_id="VALUE3",
@@ -182,11 +184,113 @@ class TestStateIngestPipeline(StateIngestPipelineTestCase):
             task_deadline_4,
         ]
 
+        # IngestMultipleParents
+        external_id_5 = entities.StatePersonExternalId.new_with_defaults(
+            state_code=self.region_code().value,
+            external_id="ID7",
+            id_type="US_DD_ID_TYPE",
+        )
+        person_5 = entities.StatePerson.new_with_defaults(
+            state_code=self.region_code().value,
+            external_ids=[external_id_5],
+        )
+        external_id_5.person = person_5
+        charge_1 = entities.StateCharge.new_with_defaults(
+            state_code=self.region_code().value,
+            external_id="C1",
+            status=StateChargeStatus.INTERNAL_UNKNOWN,
+            person=person_5,
+        )
+        charge_2 = entities.StateCharge.new_with_defaults(
+            state_code=self.region_code().value,
+            external_id="C2",
+            status=StateChargeStatus.INTERNAL_UNKNOWN,
+            person=person_5,
+        )
+        charge_3 = entities.StateCharge.new_with_defaults(
+            state_code=self.region_code().value,
+            external_id="C3",
+            status=StateChargeStatus.INTERNAL_UNKNOWN,
+            person=person_5,
+        )
+        supervision_sentence_1 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=self.region_code().value,
+            external_id="S1",
+            status=StateSentenceStatus.INTERNAL_UNKNOWN,
+            person=person_5,
+            charges=[charge_1],
+        )
+        supervision_sentence_2 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=self.region_code().value,
+            external_id="S2",
+            status=StateSentenceStatus.INTERNAL_UNKNOWN,
+            person=person_5,
+            charges=[charge_1],
+        )
+        supervision_sentence_3 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=self.region_code().value,
+            external_id="S3",
+            status=StateSentenceStatus.INTERNAL_UNKNOWN,
+            person=person_5,
+            charges=[charge_3],
+        )
+        incarceration_sentence_1 = (
+            entities.StateIncarcerationSentence.new_with_defaults(
+                state_code=self.region_code().value,
+                external_id="I1",
+                status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                person=person_5,
+                charges=[charge_1],
+            )
+        )
+        incarceration_sentence_2 = (
+            entities.StateIncarcerationSentence.new_with_defaults(
+                state_code=self.region_code().value,
+                external_id="I2",
+                status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                person=person_5,
+                charges=[charge_1],
+            )
+        )
+        incarceration_sentence_3 = (
+            entities.StateIncarcerationSentence.new_with_defaults(
+                state_code=self.region_code().value,
+                external_id="I3",
+                status=StateSentenceStatus.INTERNAL_UNKNOWN,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                person=person_5,
+                charges=[charge_2],
+            )
+        )
+        charge_1.incarceration_sentences = [
+            incarceration_sentence_1,
+            incarceration_sentence_2,
+        ]
+        charge_1.supervision_sentences = [
+            supervision_sentence_1,
+            supervision_sentence_2,
+        ]
+        charge_2.incarceration_sentences = [incarceration_sentence_3]
+        charge_3.supervision_sentences = [supervision_sentence_3]
+        person_5.incarceration_sentences = [
+            incarceration_sentence_1,
+            incarceration_sentence_2,
+            incarceration_sentence_3,
+        ]
+        person_5.supervision_sentences = [
+            supervision_sentence_1,
+            supervision_sentence_2,
+            supervision_sentence_3,
+        ]
+
         expected_root_entities: List[RootEntity] = [
             person_1,
             person_2,
             person_3,
             person_4,
+            person_5,
         ]
 
         self.run_test_state_pipeline(

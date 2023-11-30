@@ -44,6 +44,9 @@ from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_utils import (
+    get_state_database_association_with_names,
+)
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EntityT,
@@ -59,6 +62,7 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.normalized_entities import NormalizedStateEntity
 from recidiviz.persistence.errors import PersistenceError
 from recidiviz.utils.log_helpers import make_log_output_path
+from recidiviz.utils.types import non_optional
 
 _STATE_CLASS_HIERARCHY = [
     # StatePerson hierarchy
@@ -841,6 +845,63 @@ def get_all_entities_from_tree(
         else:
             get_all_entities_from_tree(child, field_index, result, seen_ids)
 
+    return result
+
+
+def get_all_entity_associations_from_tree(
+    entity: Entity,
+    field_index: CoreEntityFieldIndex,
+    result: Optional[Dict[str, Set[Tuple[str, str]]]] = None,
+    seen_ids: Optional[Set[int]] = None,
+) -> Dict[str, Set[Tuple[str, str]]]:
+    """Returns a dictionary of association table name to a set of associations in the
+    |entity| tree that belong in that table. Each association is defined as a
+    (child_external_id, parent_external_id) tuple where each id is the external_id
+    associated with the entity. We use external_ids instead of database primary keys so
+    this function can be used on Python entity trees that do not yet have primary keys assigned.
+    """
+
+    if result is None:
+        result = defaultdict(set)
+    if seen_ids is None:
+        seen_ids = set()
+
+    if id(entity) in seen_ids:
+        return result
+
+    seen_ids.add(id(entity))
+
+    many_to_many_relationships = get_many_to_many_relationships(
+        entity.__class__, field_index
+    )
+    for relationship in many_to_many_relationships:
+        parents = entity.get_field_as_list(relationship)
+        for parent in parents:
+            association_table = get_state_database_association_with_names(
+                entity.__class__.__name__, parent.__class__.__name__
+            )
+            result[association_table.name].add(
+                (
+                    non_optional(entity.get_external_id()),
+                    non_optional(parent.get_external_id()),
+                )
+            )
+
+    fields = field_index.get_fields_with_non_empty_values(
+        entity, EntityFieldType.FORWARD_EDGE
+    )
+
+    for field in fields:
+        child = entity.get_field(field)
+
+        if child is None:
+            raise ValueError("Expected only nonnull values at this point")
+
+        if isinstance(child, list):
+            for c in child:
+                get_all_entity_associations_from_tree(c, field_index, result, seen_ids)
+        else:
+            get_all_entity_associations_from_tree(child, field_index, result, seen_ids)
     return result
 
 

@@ -20,6 +20,7 @@ BaseDirectIngestControllers.
 import abc
 import datetime
 import os
+from collections import defaultdict
 from copy import deepcopy
 from types import ModuleType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Type, Union, cast
@@ -66,6 +67,7 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
+    get_all_entity_associations_from_tree,
 )
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.persistence import (
@@ -674,6 +676,18 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
             )
         }
 
+        expected_entity_association_type_to_associations = defaultdict(set)
+        for root_entity in expected_root_entities:
+            for (
+                association_table,
+                associations,
+            ) in get_all_entity_associations_from_tree(
+                cast(Entity, root_entity), field_index
+            ).items():
+                expected_entity_association_type_to_associations[
+                    association_table
+                ].update(associations)
+
         pipeline_args = default_arg_list_for_pipeline(
             pipeline=self.pipeline_class(),
             state_code=self.region_code().value,
@@ -697,6 +711,7 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
                         self.get_expected_output(
                             ingest_view_results,
                             expected_entity_types_to_expected_entities,
+                            expected_entity_association_type_to_associations,
                         )
                     ),
                 ):
