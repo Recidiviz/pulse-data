@@ -84,6 +84,7 @@ def _ingest_pipeline_should_run_in_dag(
             f"--state_code={state_code.value}",
             f"--ingest_instance={instance.value}",
         ],
+        cloud_sql_connections=[SchemaType.OPERATIONS],
         do_xcom_push=True,
     )
 
