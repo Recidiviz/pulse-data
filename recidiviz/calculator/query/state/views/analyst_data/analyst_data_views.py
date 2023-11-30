@@ -183,6 +183,24 @@ from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_day_0_overd
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_early_discharge_sessions_preprocessing import (
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_earned_discharge_sentence_eligibility_spans import (
+    US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_no_convictions_since_sentence_start import (
+    US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_sentenced_after_august_2013 import (
+    US_OR_SENTENCED_AFTER_AUGUST_2013_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_served_6_months_supervision import (
+    US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_served_half_sentence import (
+    US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_or.us_or_statute_eligible import (
+    US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_agent_supervisor_preprocessed import (
     US_PA_AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
 )
@@ -338,6 +356,12 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
     US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
+    US_OR_EARNED_DISCHARGE_SENTENCE_ELIGIBILITY_SPANS_VIEW_BUILDER,
+    US_OR_NO_CONVICTIONS_SINCE_SENTENCE_START_VIEW_BUILDER,
+    US_OR_SENTENCED_AFTER_AUGUST_2013_VIEW_BUILDER,
+    US_OR_SERVED_6_MONTHS_SUPERVISION_VIEW_BUILDER,
+    US_OR_SERVED_HALF_SENTENCE_VIEW_BUILDER,
+    US_OR_STATUTE_ELIGIBLE_VIEW_BUILDER,
     US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER,
     US_TN_COMPLIANT_REPORTING_ELIGIBLE_VIEW_BUILDER,
