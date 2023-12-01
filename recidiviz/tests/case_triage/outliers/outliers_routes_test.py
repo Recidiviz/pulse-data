@@ -20,7 +20,7 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Callable, Optional
 from unittest import TestCase, mock
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from flask import Flask
@@ -57,6 +57,7 @@ from recidiviz.tests.outliers.querier_test import (
     load_model_fixture,
 )
 from recidiviz.tools.postgres import local_persistence_helpers, local_postgres_helpers
+from recidiviz.utils.metadata import local_project_id_override
 
 TEST_METRIC_1 = OutliersMetricConfig.build_from_metric(
     metric=INCARCERATION_STARTS_AND_INFERRED,
@@ -834,6 +835,80 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                     "message": "Officer is not an outlier on any of the requested metrics."
                 },
             )
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_from_external_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervision_officer_entity",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    def test_get_events_by_officer_correct_supervisor_requested_nonoutlier_metric(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_officer_entity: MagicMock,
+        mock_get_supervisor: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_pa")
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3, TEST_METRIC_1],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+        )
+
+        mock_get_officer_entity.return_value = SupervisionOfficerEntity(
+            full_name=PersonName(**{"given_names": "OLIVIA", "surname": "RODRIGO"}),
+            external_id="123",
+            pseudonymized_id="hashhash",
+            supervisor_external_id="102",
+            district="Guts",
+            caseload_type=None,
+            outlier_metrics=[
+                {
+                    "metric_id": TEST_METRIC_1.name,
+                    "statuses_over_time": [
+                        {
+                            "end_date": "2023-05-01",
+                            "metric_rate": 0.1,
+                            "status": "FAR",
+                        },
+                    ],
+                }
+            ],
+        )
+
+        with local_project_id_override("test-project"):
+            with SessionFactory.using_database(self.database_key) as session:
+                with patch("logging.Logger.error") as mock_logger:
+                    mock_get_supervisor.return_value = (
+                        session.query(SupervisionOfficerSupervisor)
+                        .filter(SupervisionOfficerSupervisor.external_id == "102")
+                        .first()
+                    )
+
+                    response = self.test_client.get(
+                        "/outliers/US_PA/officer/hashhash/events?metric_id=absconsions_bench_warrants&metric_id=incarceration_starts_and_inferred&period_end_date=2023-05-01",
+                        headers={"Origin": "http://localhost:3000"},
+                    )
+
+                    mock_logger.assert_has_calls(
+                        [
+                            call(
+                                "Officer %s is not an outlier on the following requested metrics: %s",
+                                "hashhash",
+                                ["absconsions_bench_warrants"],
+                            )
+                        ]
+                    )
+                    self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
         "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_events_by_officer",
