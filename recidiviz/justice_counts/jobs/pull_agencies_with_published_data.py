@@ -19,8 +19,11 @@
 Pulls information of agencies who have published capacity and cost metrics.
 This helps us determine what agencies would have non-empty Agency Dashboards.
 
-python -m recidiviz.tools.justice_counts.pull_agencies_with_published_data \
-  --project_id=justice-counts-production 
+python -m recidiviz.justice_counts.jobs.pull_agencies_with_published_data \
+    --project_id=justice-counts-production \
+    --run_as_script=false \
+    --credentials-path=<path>
+
 """
 import argparse
 import datetime
@@ -77,13 +80,17 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def pull_agencies_with_published_capacity_and_cost_data(
-    session: Session, environment: str, google_credentials: Any
-) -> None:
+def get_reported_metrics_and_dashboard_helper(
+    session: Session,
+) -> Tuple[Dict, Dict, Dict]:
     """
-    Pulls agencies that have published data and writes their information to a google sheet.
+    Helper function that gets all published reports and builds 3 dictionaries:
+    - agency_id_to_reported_metrics_with_data
+    - agency_id_to_time_periods
+    - agency_id_to_agency_with_dashboard_data
+    These help in determining which agencies have published capacity and cost metrics
+    and determine what agencies would have non-empty Agency Dashboards.
     """
-
     published_reports = session.query(schema.Report).filter(
         schema.Report.status == schema.ReportStatus.PUBLISHED
     )
@@ -92,15 +99,6 @@ def pull_agencies_with_published_capacity_and_cost_data(
         int, Set[Tuple[datetime.datetime, datetime.datetime]]
     ] = defaultdict(set)
     agency_id_to_agency_with_dashboard_data = {}
-    data_to_write = [
-        [
-            "Name",
-            "Agency Dashboard Link",
-            "Number of Metrics With Data",
-            "Number of Time Periods Reported",
-            "Is Dashboard Enabled?",
-        ]
-    ]
     for report in published_reports:
         report_capacity_and_cost_metrics = {
             datapoint.metric_definition_key
@@ -125,22 +123,69 @@ def pull_agencies_with_published_capacity_and_cost_data(
         "Number of agencies with published Capacity and Cost data: %s \n",
         len(agency_id_to_agency_with_dashboard_data),
     )
+    return (
+        agency_id_to_reported_metrics_with_data,
+        agency_id_to_time_periods,
+        agency_id_to_agency_with_dashboard_data,
+    )
+
+
+def calculate_columns_helper(
+    agency_id_to_time_periods: Dict[
+        int, Set[Tuple[datetime.datetime, datetime.datetime]]
+    ],
+    agency_name: str,
+    agency_id: int,
+    environment: str,
+) -> Tuple[str, str]:
+    site = (
+        "https://dashboard-staging.justice-counts.org/agency/"
+        if environment == "STAGING"
+        else "https://dashboard-demo.justice-counts.org/agency/"
+    )
+    link = site + agency_name.replace(" ", "-").lower()
+    num_time_periods_reported = str(len(agency_id_to_time_periods[agency_id]))
+    return link, num_time_periods_reported
+
+
+def pull_agencies_with_published_capacity_and_cost_data(
+    session: Session, environment: str, google_credentials: Any
+) -> None:
+    """
+    Pulls agencies that have published data and writes their information to a google sheet.
+    """
+
+    data_to_write = [
+        [
+            "Name",
+            "Agency Dashboard Link",
+            "Number of Metrics With Data",
+            "Number of Time Periods Reported",
+            "Is Dashboard Enabled?",
+        ]
+    ]
+    (
+        agency_id_to_reported_metrics_with_data,
+        agency_id_to_time_periods,
+        agency_id_to_agency_with_dashboard_data,
+    ) = get_reported_metrics_and_dashboard_helper(session=session)
+
     for (
         agency_id,
         agency,
     ) in agency_id_to_agency_with_dashboard_data.items():
-        site = (
-            "https://dashboard-staging.justice-counts.org/agency/"
-            if environment == "STAGING"
-            else "https://dashboard-demo.justice-counts.org/agency/"
+        link, num_time_periods_reported = calculate_columns_helper(
+            agency_id_to_time_periods=agency_id_to_time_periods,
+            agency_name=agency.name,
+            agency_id=agency.id,
+            environment=environment,
         )
-        link = site + agency.name.replace(" ", "-").lower()
         data_to_write.append(
             [
                 agency.name,
                 link,
                 str(len(agency_id_to_reported_metrics_with_data[agency_id])),
-                str(len(agency_id_to_time_periods[agency_id])),
+                num_time_periods_reported,
                 "Yes" if agency.is_dashboard_enabled is True else "No",
             ]
         )
@@ -155,7 +200,7 @@ def pull_agencies_with_published_capacity_and_cost_data(
         new_sheet_title=new_sheet_title,
         spreadsheet_id=SPREADSHEET_ID,
         logger=logger,
-        index=1,
+        index=0,
     )
 
 

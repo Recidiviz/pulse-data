@@ -39,6 +39,10 @@ from recidiviz.justice_counts.control_panel.utils import (
     append_row_to_spreadsheet,
     write_data_to_spreadsheet,
 )
+from recidiviz.justice_counts.jobs.pull_agencies_with_published_data import (
+    calculate_columns_helper,
+    get_reported_metrics_and_dashboard_helper,
+)
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.utils.constants import AGENCIES_TO_EXCLUDE
 from recidiviz.persistence.database.constants import JUSTICE_COUNTS_DB_SECRET_PREFIX
@@ -68,10 +72,14 @@ LAST_UPDATE = "last_update"
 NUM_RECORDS_WITH_DATA = "num_records_with_data"
 NUM_TOTAL_POSSIBLE_METRICS = "num_total_possible_metrics"
 NUM_METRICS_WITH_DATA = "num_metrics_with_data"
+NUM_TIME_PERIODS_REPORTED = "num_time_periods_reported"
 NUM_METRICS_CONFIGURED = "num_metrics_configured"
 METRIC_CONFIG_THIS_WEEK = "metric_configured_this_week"
 NUM_METRICS_AVAILABLE = "num_metrics_available"
 NUM_METRICS_UNAVAILABLE = "num_metrics_unavailable"
+AGENCY_DASHBOARD_LINK = "agency_dashboard_link"
+PUBLISHED_CAPACITY_AND_COSTS_METRICS = "published_capacity_and_costs_metrics"
+IS_DASHBOARD_ENDABLED = "is_dashboard_enabled"
 IS_SUPERAGENCY = "is_superagency"
 IS_CHILD_AGENCY = "is_child_agency"
 NEW_STATE_THIS_WEEK = "new_state_this_week"
@@ -208,7 +216,12 @@ def summarize(
 def get_all_data(
     session: Session,
 ) -> Tuple[
-    Dict[str, schema.UserAccount], List[Any], List[Any], List[Any], List[Any], List[Any]
+    Dict[str, schema.UserAccount],
+    List[Any],
+    List[Any],
+    List[Any],
+    List[Any],
+    List[Any],
 ]:
     """Retrieve agency, user, agency_user_account_association, and datapoint data from both
     Auth0 as well as our database.
@@ -259,10 +272,12 @@ def build_system_to_num_metrics_dict() -> Dict[str, int]:
 
 
 def create_new_agency_columns(
+    session: Session,
     agencies: List[schema.Agency],
     agency_id_to_users: Dict[str, List[schema.UserAccount]],
     today: datetime.datetime,
     spreadsheets: List[schema.Spreadsheet],
+    environment: str,
 ) -> Tuple[List[schema.Agency], Dict[str, int]]:
     """Given a list of agencies and their users, create and populate the following columns:
     - last_login
@@ -272,7 +287,18 @@ def create_new_agency_columns(
     - new_agency_this_week
     - num_total_possible_metrics
     - used_bulk_upload
+    - num_time_periods_reported
+    - agency_dashboard_link
+    - published_capacity_and_costs_metrics
+    - is_dashboard_enabled
     """
+
+    (
+        agency_id_to_reported_metrics_with_data,
+        agency_id_to_time_periods,
+        agency_id_to_agency_with_dashboard_data,
+    ) = get_reported_metrics_and_dashboard_helper(session=session)
+
     # A dictionary that maps agency_ids to a list of uploaded spreadsheets
     agency_id_to_spreadsheets: Dict[str, List[schema.Spreadsheet]] = defaultdict(list)
     for spreadsheet in spreadsheets:
@@ -283,7 +309,8 @@ def create_new_agency_columns(
     # A dictionary that maps state codes to their count of new agencies: {"us_state": 2}
     state_code_by_new_agency_count: Dict[str, int] = defaultdict(int)
     for agency in agencies:
-        users = agency_id_to_users[agency["id"]]
+        agency_id = agency["id"]
+        users = agency_id_to_users[agency_id]
 
         agency_created_at = agency.get("created_at")
         agency_created_at_str = None
@@ -328,8 +355,28 @@ def create_new_agency_columns(
             num_total_possible_metrics += system_to_num_metrics_dict[system]
 
         used_bulk_upload = False
-        if len(agency_id_to_spreadsheets.get(agency["id"], [])) > 0:
+        if len(agency_id_to_spreadsheets.get(agency_id, [])) > 0:
             used_bulk_upload = True
+
+        num_time_periods_reported = None
+        agency_dashboard_link = None
+        published_capacity_and_costs_metrics = None
+        is_dashboard_enabled = None
+        if agency_id_to_agency_with_dashboard_data.get(agency_id) is not None:
+            agency_dashboard_link, num_time_periods_reported = calculate_columns_helper(
+                agency_id_to_time_periods=agency_id_to_time_periods,
+                agency_name=agency["name"],
+                agency_id=agency_id,
+                environment=environment,
+            )
+            published_capacity_and_costs_metrics = (
+                len(agency_id_to_reported_metrics_with_data[agency_id]) > 0
+            )
+            is_dashboard_enabled = (
+                agency["is_dashboard_enabled"]
+                if agency["is_dashboard_enabled"] is True
+                else False
+            )
 
         agency[LAST_LOGIN] = last_login or ""
         agency[LOGIN_THIS_WEEK] = (
@@ -351,6 +398,16 @@ def create_new_agency_columns(
         agency[IS_CHILD_AGENCY] = bool(agency["super_agency_id"])
         agency[NEW_AGENCY_THIS_WEEK] = new_agency_this_week
         agency[USED_BULK_UPLOAD] = used_bulk_upload
+        agency[NUM_TIME_PERIODS_REPORTED] = num_time_periods_reported or ""
+        agency[AGENCY_DASHBOARD_LINK] = agency_dashboard_link or ""
+        agency[PUBLISHED_CAPACITY_AND_COSTS_METRICS] = (
+            published_capacity_and_costs_metrics
+            if published_capacity_and_costs_metrics is not None
+            else ""
+        )
+        agency[IS_DASHBOARD_ENDABLED] = (
+            is_dashboard_enabled if is_dashboard_enabled is not None else ""
+        )
 
     return agencies, state_code_by_new_agency_count
 
@@ -387,6 +444,7 @@ def generate_agency_summary_csv(
     session: Session,
     dry_run: bool,
     google_credentials: Any,
+    environment: str,
 ) -> None:
     """Generates a CSV with data about all agencies with Publisher accounts."""
 
@@ -431,10 +489,12 @@ def generate_agency_summary_csv(
     today = datetime.datetime.now(tz=datetime.timezone.utc)
     # Create new agency columns and populate state_code_by_new_agency_count
     agencies, state_code_by_new_agency_count = create_new_agency_columns(
+        session=session,
         agencies=agencies,
         agency_id_to_users=agency_id_to_users,
         today=today,
         spreadsheets=spreadsheets,
+        environment=environment,
     )
 
     # Now that state_code_by_new_agency_count is populated, we can determine if
@@ -473,7 +533,11 @@ def generate_agency_summary_csv(
         NUM_RECORDS_WITH_DATA,
         NUM_TOTAL_POSSIBLE_METRICS,
         NUM_METRICS_WITH_DATA,
+        NUM_TIME_PERIODS_REPORTED,
         DATA_SHARED_THIS_WEEK,
+        AGENCY_DASHBOARD_LINK,
+        PUBLISHED_CAPACITY_AND_COSTS_METRICS,
+        IS_DASHBOARD_ENDABLED,
         NUM_METRICS_CONFIGURED,
         METRIC_CONFIG_THIS_WEEK,
         NUM_METRICS_AVAILABLE,
@@ -618,6 +682,11 @@ if __name__ == "__main__":
         # When running locally, point to JSON file with service account credentials.
         # The service account has access to the spreadsheet with editor permissions.
         credentials = Credentials.from_service_account_file(args.credentials_path)
+        environment_str = (
+            "PRODUCTION"
+            if args.project_id == GCP_PROJECT_JUSTICE_COUNTS_PRODUCTION
+            else "STAGING"
+        )
         with local_project_id_override(args.project_id):
             schema_type = SchemaType.JUSTICE_COUNTS
             database_key = SQLAlchemyDatabaseKey.for_schema(schema_type)
@@ -635,4 +704,5 @@ if __name__ == "__main__":
                         session=global_session,
                         dry_run=args.dry_run,
                         google_credentials=credentials,
+                        environment=environment_str,
                     )
