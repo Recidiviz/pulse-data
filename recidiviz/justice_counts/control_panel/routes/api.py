@@ -115,6 +115,8 @@ def get_api_blueprint(
             environment = "local"
         elif in_gcp_staging() is True:
             environment = "staging"
+        elif in_gcp_production() is True:
+            environment = "production"
 
         return jsonify({"csrf": generate_csrf(secret_key), "env": environment})
 
