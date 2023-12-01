@@ -306,8 +306,8 @@ def create_outliers_api_blueprint() -> Blueprint:
                 HTTPStatus.UNAUTHORIZED,
             )
 
-        # If the officer is not an Outlier on requested metrics, log and continue.
-        if len(outlier_metric_ids) != allowed_metric_ids:
+        # If the user requested specific metrics and the officer is not an Outlier on requested metrics, log and continue.
+        if len(metric_ids) > 0 and len(outlier_metric_ids) != len(allowed_metric_ids):
             nonoutlier_metric_ids = [
                 metric_id
                 for metric_id in allowed_metric_ids
@@ -315,7 +315,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             ]
             logging.error(
                 "Officer %s is not an outlier on the following requested metrics: %s",
-                officer_entity.external_id,
+                officer_entity.pseudonymized_id,
                 nonoutlier_metric_ids,
             )
 
