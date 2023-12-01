@@ -66,6 +66,8 @@ US_ND_DOCSTARS_OFFICER = "US_ND_DOCSTARS_OFFICER"
 US_OR_ID = "US_OR_ID"
 # RECORD_KEY linking tables, each person should only have one doc and id number
 US_OR_RECORD_KEY = "US_OR_RECORD_KEY"
+# CASELOAD, each staff member is assigned a CASELOAD
+US_OR_CASELOAD = "US_OR_CASELOAD"
 
 # PA Control Number - tracks someone across all incarceration stays (theoretically)
 US_PA_CONTROL = "US_PA_CONT"
