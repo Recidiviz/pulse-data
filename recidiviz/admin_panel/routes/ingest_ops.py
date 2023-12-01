@@ -28,8 +28,6 @@ from recidiviz.admin_panel.admin_stores import (
     get_ingest_operations_store,
 )
 from recidiviz.admin_panel.ingest_dataflow_operations import (
-    get_all_latest_ingest_jobs,
-    get_latest_job_for_state_instance,
     get_latest_run_ingest_view_results,
     get_latest_run_raw_data_watermarks,
     get_latest_run_state_results,
@@ -752,7 +750,9 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
     @bp.route("/api/ingest_operations/get_all_latest_ingest_dataflow_jobs")
     def _all_dataflow_jobs() -> Tuple[Response, HTTPStatus]:
-        all_instance_statuses = get_all_latest_ingest_jobs()
+        all_instance_statuses = (
+            get_ingest_operations_store().get_most_recent_dataflow_job_statuses()
+        )
 
         return (
             jsonify(
@@ -782,7 +782,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError:
             return (jsonify("Invalid input data"), HTTPStatus.BAD_REQUEST)
 
-        job_info = get_latest_job_for_state_instance(state_code, instance)
+        all_instance_statuses = (
+            get_ingest_operations_store().get_most_recent_dataflow_job_statuses()
+        )
+
+        job_info = all_instance_statuses[state_code][instance]
 
         return (
             jsonify(job_info.for_api() if job_info else None),

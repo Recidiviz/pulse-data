@@ -23,6 +23,7 @@ from unittest.case import TestCase
 
 import pytest
 import pytz
+from fakeredis import FakeRedis
 from freezegun import freeze_time
 from google.cloud import tasks_v2
 from mock import create_autospec
@@ -105,6 +106,12 @@ class IngestOperationsStoreTestBase(TestCase):
 
         self.operations_store = IngestOperationsStore()
 
+        self.redis_patcher = mock.patch(
+            "recidiviz.admin_panel.admin_panel_store.get_admin_panel_redis"
+        )
+        self.mock_redis_patcher = self.redis_patcher.start()
+        self.mock_redis_patcher.return_value = FakeRedis()
+
     def tearDown(self) -> None:
         local_persistence_helpers.teardown_on_disk_postgresql_database(
             self.operations_key
@@ -114,6 +121,7 @@ class IngestOperationsStoreTestBase(TestCase):
         self.task_manager_patcher.stop()
         self.cloud_task_patcher.stop()
         self.bq_client_patcher.stop()
+        self.mock_redis_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:

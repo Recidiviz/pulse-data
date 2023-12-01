@@ -15,15 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Store used to keep information related to direct ingest operations"""
+import json
 import logging
 from collections import Counter
 from concurrent import futures
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
+import attr
 from google.cloud import tasks_v2
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
+from recidiviz.admin_panel.ingest_dataflow_operations import (
+    DataflowPipelineMetadataResponse,
+    get_all_latest_ingest_jobs,
+)
 from recidiviz.big_query.big_query_client import (
     BQ_CLIENT_MAX_POOL_SIZE,
     BigQueryClientImpl,
@@ -34,6 +40,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.serialization import attr_from_json_dict, attr_to_json_dict
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
@@ -69,6 +76,7 @@ from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_direct_ingest_states_existing_in_env,
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -79,6 +87,7 @@ from recidiviz.ingest.direct.types.errors import (
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.utils import metadata
+from recidiviz.utils.types import assert_type
 
 BucketSummaryType = Dict[str, Union[str, int]]
 
@@ -93,11 +102,76 @@ class IngestOperationsStore(AdminPanelStore):
         self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
         self.bq_client = BigQueryClientImpl()
+        self.cache_key = f"{self.__class__}"
 
     def hydrate_cache(self) -> None:
-        # This store currently does not store any internal state that can be refreshed.
-        # Data must be fetched manually from other public methods.
-        pass
+        latest_jobs = get_all_latest_ingest_jobs()
+        self.set_cache(latest_jobs)
+
+    def set_cache(
+        self,
+        latest_jobs: Dict[
+            StateCode,
+            Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
+        ],
+    ) -> None:
+
+        jobs_dict = {
+            state_code.value: {
+                instance.value: attr_to_json_dict(assert_type(job, attr.Attribute))
+                if job
+                else None
+                for instance, job in responses_by_instance.items()
+            }
+            for state_code, responses_by_instance in latest_jobs.items()
+        }
+
+        jobs_json = json.dumps(jobs_dict)
+
+        self.redis.set(
+            self.cache_key,
+            jobs_json,
+        )
+
+    def get_most_recent_dataflow_job_statuses(
+        self,
+    ) -> Dict[
+        StateCode,
+        Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
+    ]:
+        """Retrieve the most recent dataflow job statuses for each state from the cache if available, or via
+        new requests to the dataflow API."""
+        jobs_json = self.redis.get(self.cache_key)
+        if not jobs_json:
+            latest_jobs = get_all_latest_ingest_jobs()
+            self.set_cache(latest_jobs)
+            return latest_jobs
+
+        parsed_jobs_dict = json.loads(jobs_json)
+
+        rehydrated_jobs = {
+            StateCode(state_code_str): {
+                DirectIngestInstance(instance_str): assert_type(
+                    attr_from_json_dict(job_dict), DataflowPipelineMetadataResponse
+                )
+                if job_dict
+                else None
+                for instance_str, job_dict in responses_by_instance.items()
+            }
+            for state_code_str, responses_by_instance in parsed_jobs_dict.items()
+        }
+
+        # there is an edge case where if a state was newly added, it would not appear in the
+        # the cache results yet and cause the state specific detail page to crash.
+        # we need to check whether the retrieved cache results include all the states
+        # we expect, and make a new call to get_all_latest_ingest_jobs() if not.
+        for state in get_direct_ingest_states_existing_in_env():
+            if state not in rehydrated_jobs:
+                latest_jobs = get_all_latest_ingest_jobs()
+                self.set_cache(latest_jobs)
+                return latest_jobs
+
+        return rehydrated_jobs
 
     @property
     def state_codes_launched_in_env(self) -> List[StateCode]:
