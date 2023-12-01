@@ -52,22 +52,27 @@ output:
                 StateIncarcerationPeriodCustodyLevel.CLOSE: Close
                 StateIncarcerationPeriodCustodyLevel.MEDIUM: Medium
                 StateIncarcerationPeriodCustodyLevel.MINIMUM: Minimum
-                # TODO(#20079) Remap rider as necessary after investigation
                 StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN: Rider
           facility: DOCLocationToName
-          #housing_unit: TODO(#16082) still need to find how to pull this in
           specialized_purpose_for_incarceration:
-            $enum_mapping:
-              $raw_text: LegalStatusDesc
-              $mappings:
-                StateSpecializedPurposeForIncarceration.GENERAL:
-                  - Termer
-                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
-                  - Rider
-                StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD:
-                  - Parole Violator
-                StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN:
-                  - Non Idaho Commitment
+            $conditional:
+              - $if:
+                  $equal:
+                    - Bed_SecurityLevelDesc
+                    - $literal("Rider")
+                $then: $literal_enum(StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON)
+              - $else:
+                  $enum_mapping:
+                    $raw_text: LegalStatusDesc
+                    $mappings:
+                      StateSpecializedPurposeForIncarceration.GENERAL:
+                        - Termer
+                      StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
+                        - Rider
+                      StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD:
+                        - Parole Violator
+                      StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN:
+                        - Non Idaho Commitment
           admission_reason:
             $enum_mapping:
               $raw_text: Start_TransferReasonDesc
