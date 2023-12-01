@@ -330,12 +330,13 @@ output:
                         - DUI Override Level 2
                         - Transition
                         - Expanded CRC
-                        - Parole Violator
-                        - Probation Violator
                         - DUI Court
                         - Out ST Custody
                       StateSupervisionLevel.WARRANT:
                         - Bench Warrant
+                        # Not exactly a warrant, but mapping to WARRANT so that they can be excluded in workflows
+                        - Parole Violator
+                        - Probation Violator
                       StateSupervisionLevel.ABSCONSION:
                         # TODO(#16848): This should probably actually come from physical
                         # location or somewhere else. In ID "Absconder" was mapped to internal
