@@ -425,6 +425,13 @@ def parse_staff_role_type(
     ):
         return StateStaffRoleType.SUPERVISION_OFFICER
 
+    # Based on metrics and supervisor relationships, it seems like someone in this position
+    # could supervise supervision staff.
+    # As of 11/20/23, there are only 2 staff members with this position, and one of them supervises supervision staff.
+    # We should adjust this as necessary later on if we start to hear differently.
+    if raw_text.lower() == "state office administrator-fzn    17":
+        return StateStaffRoleType.SUPERVISION_OFFICER
+
     if raw_text:
         # currently we only have role_type enums for supervision officer related roles
         return StateStaffRoleType.INTERNAL_UNKNOWN
