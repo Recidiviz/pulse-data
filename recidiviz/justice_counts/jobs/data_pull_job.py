@@ -91,6 +91,7 @@ if __name__ == "__main__":
             session=global_session,
             dry_run=args.dry_run,
             google_credentials=credentials,
+            environment=environment_str,
         )
     except Exception as e:
         logger.info("CSG Data Pull Script Failed: %s", str(e))
