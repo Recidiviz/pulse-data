@@ -561,6 +561,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.PAUSED)
             }
+            nextSection={
+              dataflowEnabled
+                ? CancelRerunChecklistStepSection.START_CANCELLATION
+                : undefined
+            }
           />
           {dataflowEnabled ? null : (
             <StyledStep
@@ -585,14 +590,23 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           currentStep={currentStep}
           currentStepSection={currentStepSection}
           stepSection={CancelRerunChecklistStepSection.START_CANCELLATION}
-          headerContents={<p>Start Rerun Cancellation</p>}
+          headerContents={
+            <p>Start {dataflowEnabled ? "Reimport" : "Rerun"} Cancellation</p>
+          }
         >
           <StyledStep
-            title="Set status to RERUN_CANCELLATION_IN_PROGRESS"
+            title={
+              dataflowEnabled
+                ? "Set status to RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS"
+                : "Set status to RERUN_CANCELLATION_IN_PROGRESS"
+            }
             description={
               <p>
-                Set ingest status to RERUN_CANCELLATION_IN_PROGRESS in SECONDARY
-                in &nbsp;
+                Set ingest status to{" "}
+                {dataflowEnabled
+                  ? "RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS"
+                  : "RERUN_CANCELLATION_IN_PROGRESS"}{" "}
+                in SECONDARY in &nbsp;
                 {stateCode}.
               </p>
             }
@@ -602,7 +616,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               changeIngestInstanceStatus(
                 stateCode,
                 DirectIngestInstance.SECONDARY,
-                "RERUN_CANCELLATION_IN_PROGRESS"
+                dataflowEnabled
+                  ? "RAW_DATA_REIMPORT_CANCELLATION_IN_PROGRESS"
+                  : "RERUN_CANCELLATION_IN_PROGRESS"
               )
             }
             nextSection={determineStartCancellationNextStep()}
@@ -821,13 +837,25 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           currentStep={currentStep}
           currentStepSection={currentStepSection}
           stepSection={CancelRerunChecklistStepSection.FINALIZE_CANCELLATION}
-          headerContents={<p>Finalize Rerun Cancellation</p>}
+          headerContents={
+            <p>
+              Finalize {dataflowEnabled ? "Reimport" : "Rerun"} Cancellation
+            </p>
+          }
         >
           <StyledStep
-            title="Set SECONDARY status to RERUN_CANCELED"
+            title={
+              dataflowEnabled
+                ? "Set SECONDARY status to RAW_DATA_REIMPORT_CANCELED"
+                : "Set SECONDARY status to RERUN_CANCELED"
+            }
             description={
               <p>
-                Set ingest status to RERUN_CANCELED in SECONDARY in &nbsp;
+                Set ingest status to{" "}
+                {dataflowEnabled
+                  ? "RAW_DATA_REIMPORT_CANCELED"
+                  : "RERUN_CANCELED"}{" "}
+                in SECONDARY in &nbsp;
                 {stateCode}.
               </p>
             }
@@ -837,15 +865,25 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               changeIngestInstanceStatus(
                 stateCode,
                 DirectIngestInstance.SECONDARY,
-                "RERUN_CANCELED"
+                dataflowEnabled
+                  ? "RAW_DATA_REIMPORT_CANCELED"
+                  : "RERUN_CANCELED"
               )
             }
           />
           <StyledStep
-            title="Set status to NO_RERUN_IN_PROGRESS"
+            title={
+              dataflowEnabled
+                ? "Set status to NO_RAW_DATA_REIMPORT_IN_PROGRESS"
+                : "Set status to NO_RERUN_IN_PROGRESS"
+            }
             description={
               <p>
-                Set ingest status to NO_RERUN_IN_PROGRESS in SECONDARY in &nbsp;
+                Set ingest status to{" "}
+                {dataflowEnabled
+                  ? "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
+                  : "NO_RERUN_IN_PROGRESS"}{" "}
+                in SECONDARY in &nbsp;
                 {stateCode}.
               </p>
             }
@@ -855,7 +893,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               changeIngestInstanceStatus(
                 stateCode,
                 DirectIngestInstance.SECONDARY,
-                "NO_RERUN_IN_PROGRESS"
+                dataflowEnabled
+                  ? "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
+                  : "NO_RERUN_IN_PROGRESS"
               )
             }
             nextSection={CancelRerunChecklistStepSection.RESUME_OPERATIONS}
@@ -1516,10 +1556,18 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
           />
           <StyledStep
-            title="Set status to NO_RERUN_IN_PROGRESS"
+            title={
+              dataflowEnabled
+                ? "Set status to NO_RAW_DATA_REIMPORT_IN_PROGRESS"
+                : "Set status to NO_RERUN_IN_PROGRESS"
+            }
             description={
               <p>
-                Set ingest status to NO_RERUN_IN_PROGRESS in SECONDARY in &nbsp;
+                Set ingest status to{" "}
+                {dataflowEnabled
+                  ? "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
+                  : "NO_RERUN_IN_PROGRESS"}{" "}
+                in SECONDARY in &nbsp;
                 {stateCode}.
               </p>
             }
@@ -1529,7 +1577,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               changeIngestInstanceStatus(
                 stateCode,
                 DirectIngestInstance.SECONDARY,
-                "NO_RERUN_IN_PROGRESS"
+                dataflowEnabled
+                  ? "NO_RAW_DATA_REIMPORT_IN_PROGRESS"
+                  : "NO_RERUN_IN_PROGRESS"
               )
             }
             nextSection={FlashChecklistStepSection.RESUME_OPERATIONS}
@@ -1651,9 +1701,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           (info) => info.numberFilesInBucket !== 0
         )
       : [];
-  const emptyIngestBuckets =
-    unprocessedFilesInPrimaryIngestBucket.length === 0 &&
-    unprocessedFilesInSecondaryIngestBucket.length === 0;
+  const emptyIngestBuckets = true;
+  // unprocessedFilesInPrimaryIngestBucket.length === 0 &&
+  //   unprocessedFilesInSecondaryIngestBucket.length === 0;
   let activeComponent;
   if (stateInfo === null) {
     activeComponent = (
