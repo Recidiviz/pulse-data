@@ -310,33 +310,35 @@ class MoveFilesFromStorageController:
     def validate_secondary_ingest_status(self) -> None:
         """Validate the secondary ingest status is correct"""
         if self.destination_raw_data_instance == DirectIngestInstance.SECONDARY:
+            ingest_in_dataflow_enabled = is_ingest_in_dataflow_enabled(
+                self.state_code, DirectIngestInstance.SECONDARY
+            )
             secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
                 self.state_code.value,
                 DirectIngestInstance.SECONDARY,
-                is_ingest_in_dataflow_enabled=is_ingest_in_dataflow_enabled(
-                    self.state_code, DirectIngestInstance.SECONDARY
-                ),
+                is_ingest_in_dataflow_enabled=ingest_in_dataflow_enabled,
             )
-            with SessionFactory.for_proxy(
-                SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-            ) as session:
-                # Retrieve raw data source instance, if it exists.
-                raw_data_source_instance: Optional[
-                    DirectIngestInstance
-                ] = secondary_status_manager.get_raw_data_source_instance(session)
+            if not ingest_in_dataflow_enabled:
+                with SessionFactory.for_proxy(
+                    SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+                ) as session:
+                    # Retrieve raw data source instance, if it exists.
+                    raw_data_source_instance: Optional[
+                        DirectIngestInstance
+                    ] = secondary_status_manager.get_raw_data_source_instance(session)
 
-            # If a SECONDARY rerun is in progress (as indicated by a nonnull source
-            # instance) and the rerun is reading from PRIMARY, we should not be
-            # copying to SECONDARY.
-            if (
-                raw_data_source_instance
-                and raw_data_source_instance != DirectIngestInstance.SECONDARY
-            ):
-                raise ValueError(
-                    "The SECONDARY instance is expecting to read raw files from "
-                    "PRIMARY, not SECONDARY. We should not be copying raw data "
-                    "into the SECONDARY bucket right now."
-                )
+                # If a SECONDARY rerun is in progress (as indicated by a nonnull source
+                # instance) and the rerun is reading from PRIMARY, we should not be
+                # copying to SECONDARY.
+                if (
+                    raw_data_source_instance
+                    and raw_data_source_instance != DirectIngestInstance.SECONDARY
+                ):
+                    raise ValueError(
+                        "The SECONDARY instance is expecting to read raw files from "
+                        "PRIMARY, not SECONDARY. We should not be copying raw data "
+                        "into the SECONDARY bucket right now."
+                    )
 
             # If we have reached this point, there is no rerun in progress or there
             # IS a rerun in progress with a SECONDARY raw data source. Both are valid
