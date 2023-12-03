@@ -88,3 +88,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 14500
     override_reason: Current failing level as of 9/15/23 is 14,396.  Needs
       investigation. #TODO(#22303)
+  - validation_name: current_supervision_staff_missing_email
+    hard_num_allowed_rows_override: 1
+    override_reason:
+      According to metrics, this staff member doesn't actually supervise
+      anyone so it's fine.  We should probably revise this validation to incorporate metrics.
