@@ -91,5 +91,4 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
 
             self.assert_expected_db_root_entities(expected_root_entities)
 
-        if is_ingest_in_dataflow_enabled(self.region_code(), self.ingest_instance()):
-            self.run_test_state_pipeline({}, expected_root_entities)
+        self.run_test_state_pipeline({}, expected_root_entities)
