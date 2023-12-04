@@ -237,6 +237,9 @@ from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_raw_lsir_assess
 from recidiviz.calculator.query.state.views.sessions.us_me.us_me_consecutive_sentences_preprocessed import (
     US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_me.us_me_work_release_sessions_preprocessing import (
+    US_ME_WORK_RELEASE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_charges_preprocessed import (
     US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -293,6 +296,9 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_supervision_pop
 )
 from recidiviz.calculator.query.state.views.sessions.violation_responses import (
     VIOLATION_RESPONSES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.work_release_sessions import (
+    WORK_RELEASE_SESSIONS_VIEW_BUILDER,
 )
 
 SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
@@ -357,6 +363,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_IX_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
     US_IX_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+    US_ME_WORK_RELEASE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
     US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_BUILDER,
@@ -388,4 +395,5 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     CUSTODY_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER,
     US_TN_INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
     INCARCERATION_STAFF_ASSIGNMENT_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+    WORK_RELEASE_SESSIONS_VIEW_BUILDER,
 ]
