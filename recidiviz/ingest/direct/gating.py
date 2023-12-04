@@ -29,13 +29,14 @@ def is_ingest_in_dataflow_enabled(
         StateCode.US_AZ,
         StateCode.US_IA,
         StateCode.US_ID,
+        StateCode.US_NC,
     ]
     if state_code in all_projects_enabled_states:
         return True
     if environment.in_gcp_production():
         return False
 
-    staging_enabled_states = [StateCode.US_OZ, StateCode.US_AZ]
+    staging_enabled_states = [StateCode.US_OZ]
     return state_code in staging_enabled_states
 
 
@@ -47,6 +48,7 @@ def ingest_pipeline_can_run_in_dag(
         StateCode.US_AZ,
         StateCode.US_IA,
         StateCode.US_ID,
+        StateCode.US_NC,
     ]
     if state_code in all_projects_enabled_states:
         return True
