@@ -229,13 +229,17 @@ class TimeRangeUploader:
                     )  # type: ignore[call-arg]
                 dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
 
-            aggregate_value = sum(
-                val  # type: ignore[misc]
-                for val in dimension_to_value.values()  # type: ignore[union-attr]
-                if val is not None
+            aggregate_value = round(
+                sum(
+                    val  # type: ignore[misc]
+                    for val in dimension_to_value.values()  # type: ignore[union-attr]
+                    if val is not None
+                ),
+                2,  # Round the sum because of floating point arithmetic errors.
             )
 
-            # Check that the sum of the disaggregate values is equal to that of the aggregate
+            # Check that the sum of the disaggregate values is equal to that of the
+            # aggregate and surface warning if the difference > 1.
             previously_saved_aggregate_value = (
                 self.agency_name_to_metric_key_to_timerange_to_total_value.get(
                     self.agency.name, {}
@@ -247,7 +251,7 @@ class TimeRangeUploader:
             # (don't need a warning for each breakdown row)
             if (
                 previously_saved_aggregate_value is not None
-                and previously_saved_aggregate_value != aggregate_value
+                and abs(previously_saved_aggregate_value - aggregate_value) > 1
             ):
                 description = f"The sum of all values ({aggregate_value}) in the {self.metricfile.canonical_filename} sheet for {self.time_range[0].strftime('%m/%d/%Y')}-{self.time_range[1].strftime('%m/%d/%Y')} does not equal the total value provided in the aggregate sheet ({previously_saved_aggregate_value})."
                 breakdown_total_warning = JusticeCountsBulkUploadException(
