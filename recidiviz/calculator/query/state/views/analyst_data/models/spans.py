@@ -27,6 +27,9 @@ from recidiviz.calculator.query.state.views.analyst_data.models.span_type import
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.compartment_sub_sessions import (
+    COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
     JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER,
 )
@@ -62,6 +65,36 @@ WHERE
             "compartment_level_1",
             "compartment_level_2",
             "case_type_start",
+        ],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=SpanType.COMPARTMENT_SUB_SESSION,
+        description="Non-overlapping spans unique on all population attributes",
+        sql_source=COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER.table_for_query,
+        attribute_cols=[
+            "compartment_level_1",
+            "compartment_level_2",
+            "compartment_location",
+            "facility",
+            "facility_name",
+            "supervision_office",
+            "supervision_office_name",
+            "supervision_district",
+            "supervision_district_name",
+            "supervision_region_name",
+            "correctional_level",
+            "correctional_level_raw_text",
+            "housing_unit",
+            "housing_unit_category",
+            "housing_unit_type",
+            "housing_unit_type_raw_text",
+            "case_type",
+            "prioritized_race_or_ethnicity",
+            "gender",
+            "age",
+            "assessment_score",
         ],
         span_start_date_col="start_date",
         span_end_date_col="end_date_exclusive",
