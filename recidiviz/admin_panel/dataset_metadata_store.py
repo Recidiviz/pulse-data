@@ -180,7 +180,7 @@ class DatasetMetadataCountsStore(AdminPanelStore):
             # Since the primary key is always nonnull, the max for each table will also represent
             # the number of total objects in that table.
             breakdown_by_column = self.fetch_table_nonnull_counts_by_column(
-                store[table]
+                table_data=store[table]
             )
             for state_map in breakdown_by_column.values():
                 for state_code, result in state_map.items():
@@ -202,18 +202,24 @@ class DatasetMetadataCountsStore(AdminPanelStore):
         return results
 
     def fetch_table_nonnull_counts_by_column(
-        self, table: dict[str, DatasetMetadataResult]
+        self,
+        *,
+        table_name: Optional[str] = None,
+        table_data: Optional[dict[str, DatasetMetadataResult]] = None,
     ) -> DatasetMetadataResult:
         """
         This code does the equivalent of:
         `SELECT state_code, col, SUM(total_count) AS total_count, SUM(placeholder_count) AS placeholder_count
         FROM column_metadata WHERE table_name=$1 AND value IS NOT NULL GROUP BY state_code, col`
         """
-        if not table:
+        if table_name and not table_data:
+            table_data = self.fetch_data()[table_name]
+
+        if not table_data:
             return {}
 
         results: DatasetMetadataResult = defaultdict(dict)
-        for col, val_map in table.items():
+        for col, val_map in table_data.items():
             has_placeholders = False
             placeholder_count: Dict[str, int] = defaultdict(int)
             total_count: Dict[str, int] = defaultdict(int)

@@ -193,7 +193,7 @@ region_codes_to_exclude:
             )
 
         nonnull_counts = self.store.fetch_table_nonnull_counts_by_column(
-            store_data[table]
+            table_data=store_data[table]
         )
         for col, results in nonnull_counts.items():
             # We check >= since there may be columns that are always NULL for some states.

@@ -80,7 +80,7 @@ def add_dataset_metadata_routes(admin_panel_blueprint: Blueprint) -> None:
         metadata_store = _get_metadata_store(metadata_dataset)
 
         return jsonify_dataset_metadata_result(
-            metadata_store.fetch_table_nonnull_counts_by_column(table)
+            metadata_store.fetch_table_nonnull_counts_by_column(table_name=table)
         )
 
     @admin_panel_blueprint.route(
