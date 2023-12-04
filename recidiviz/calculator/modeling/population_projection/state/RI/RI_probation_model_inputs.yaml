@@ -16,8 +16,8 @@ reference_date: 2014.0
 time_step: 0.083333333
 # one month
 
-disaggregation_axes:
-  - crime_type
+#disaggregation_axes:
+#  - crime_type
 
 data_inputs:
   big_query_simulation_tag: RI_probation

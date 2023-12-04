@@ -42,7 +42,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             state_code,
             compartment,
             outflow_to,
-            SUM(total_population) total_population,
+            SUM(cohort_portion) total_population,
           FROM `{project_id}.{population_projection_dataset}.population_transitions_materialized`
           WHERE compartment LIKE 'INCARCERATION%'
             -- Union the rider transitions at the end

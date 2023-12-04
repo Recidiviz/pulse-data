@@ -40,35 +40,22 @@ class TestSparkBQUtils(unittest.TestCase):
     def setUp(self) -> None:
         self.admissions_data = pd.DataFrame(
             {
+                "time_step": list(range(5, 11)) * 2,
                 "compartment": ["PRETRIAL"] * 12,
                 "admission_to": ["PRISON"] * 12,
-                "time_step": list(range(5, 11)) * 2,
-                "crime_type": ["NONVIOLENT"] * 6 + ["VIOLENT"] * 6,
                 "cohort_population": [100.0]
                 + [100.0 + 2 * i for i in range(5)]
                 + [10]
                 + [10 + i for i in range(5)],
+                "simulation_group": ["NONVIOLENT"] * 6 + ["VIOLENT"] * 6,
             }
         )
 
         self.admissions_data_no_disaggregation_axis = pd.DataFrame(
             {
+                "time_step": list(range(5, 11)) * 2,
                 "compartment": ["PRETRIAL"] * 12,
                 "admission_to": ["PRISON"] * 12,
-                "time_step": list(range(5, 11)) * 2,
-                "cohort_population": [100.0]
-                + [100.0 + 2 * i for i in range(5)]
-                + [10]
-                + [10 + i for i in range(5)],
-            }
-        )
-
-        self.admissions_data_wrong_disaggregation_axis = pd.DataFrame(
-            {
-                "compartment": ["PRETRIAL"] * 12,
-                "admission_to": ["PRISON"] * 12,
-                "time_step": list(range(5, 11)) * 2,
-                "age": ["young"] * 6 + ["old"] * 6,
                 "cohort_population": [100.0]
                 + [100.0 + 2 * i for i in range(5)]
                 + [10]
@@ -81,7 +68,7 @@ class TestSparkBQUtils(unittest.TestCase):
                 "compartment": ["PRISON", "PRISON", "LIBERTY", "LIBERTY"] * 2,
                 "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
                 "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
-                "crime_type": ["NONVIOLENT"] * 4 + ["VIOLENT"] * 4,
+                "simulation_group": ["NONVIOLENT"] * 4 + ["VIOLENT"] * 4,
                 "cohort_portion": [0.6, 0.4, 0.3, 0.7] * 2,
             }
         )
@@ -91,17 +78,7 @@ class TestSparkBQUtils(unittest.TestCase):
                 "compartment": ["PRISON", "PRISON", "LIBERTY", "LIBERTY"] * 2,
                 "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
                 "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
-                "crime_type": [nan] * 4 + ["VIOLENT"] * 4,  # type: ignore
-                "cohort_portion": [0.6, 0.4, 0.3, 0.7] * 2,
-            }
-        )
-
-        self.transitions_data_wrong_disaggregation_axis = pd.DataFrame(
-            {
-                "compartment": ["PRISON", "PRISON", "LIBERTY", "LIBERTY"] * 2,
-                "outflow_to": ["LIBERTY", "LIBERTY", "PRISON", "LIBERTY"] * 2,
-                "compartment_duration": [3.0, 5.0, 3.0, 50.0] * 2,
-                "age": ["young"] * 4 + ["old"] * 4,
+                "simulation_group": [nan] * 4 + ["VIOLENT"] * 4,  # type: ignore
                 "cohort_portion": [0.6, 0.4, 0.3, 0.7] * 2,
             }
         )
@@ -110,16 +87,7 @@ class TestSparkBQUtils(unittest.TestCase):
             {
                 "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
-                "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
-                "compartment_population": [300.0, 500.0, 30.0, 50.0],
-            }
-        )
-
-        self.population_data_wrong_disaggregation_axis = pd.DataFrame(
-            {
-                "compartment": ["PRISON", "LIBERTY"] * 2,
-                "time_step": [9] * 4,
-                "age": ["young"] * 2 + ["old"] * 2,
+                "simulation_group": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
                 "compartment_population": [300.0, 500.0, 30.0, 50.0],
             }
         )
@@ -136,7 +104,7 @@ class TestSparkBQUtils(unittest.TestCase):
             {
                 "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
-                "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
+                "simulation_group": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
                 "compartment_population": [300.0, 500.0, 30.0, 50.0],
                 "random_extra_column": [1, 1, 1, 1],
             }
@@ -146,7 +114,7 @@ class TestSparkBQUtils(unittest.TestCase):
             {
                 "compartment": ["PRISON", "LIBERTY"] * 2,
                 "time_step": [9] * 4,
-                "crime_type": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
+                "simulation_group": ["NONVIOLENT"] * 2 + ["VIOLENT"] * 2,
                 "compartment_population": [300, 500, 30, 50],
             }
         )
@@ -173,23 +141,6 @@ class TestSparkBQUtils(unittest.TestCase):
                 get_inputs_path("super_simulation_unexpected_inputs.yaml"),
             )
 
-    def test_upload_spark_model_inputs_with_wrong_disaggregation_axis_in_yaml(
-        self,
-    ) -> None:
-        with self.assertRaisesRegex(
-            ValueError,
-            "^All disaggregation axes must be included in the input dataframe columns\n"
-            r"Expected: \['crime_type'\], Actual: Index\(\['compartment', 'admission_to', 'time_step', 'age', 'cohort_population'\], dtype='object'\)$",
-        ):
-            upload_spark_model_inputs(
-                "recidiviz-staging",
-                "test",
-                self.admissions_data_wrong_disaggregation_axis,
-                self.transitions_data_wrong_disaggregation_axis,
-                self.population_data_wrong_disaggregation_axis,
-                get_inputs_path("super_simulation_data_ingest.yaml"),
-            )
-
     def test_upload_spark_model_inputs_with_invalid_project_id(self) -> None:
         with self.assertRaisesRegex(
             ValueError, "^bad_project_id is not a supported gcloud BigQuery project$"
@@ -206,7 +157,7 @@ class TestSparkBQUtils(unittest.TestCase):
     def test_upload_spark_model_inputs_with_missing_disaggregation_axis(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Tables \['admissions_data'\] must have dissaggregation axis of 'crime', 'crime_type', 'age', or 'race'$",
+            r"^Tables \['admissions_data'\] dont have the right columns$",
         ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
@@ -233,7 +184,7 @@ class TestSparkBQUtils(unittest.TestCase):
     def test_upload_spark_model_inputs_with_missing_column(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Table 'population_data' missing required columns \{'time_step'\}$",
+            r"^Tables \['population_data'\] dont have the right columns$",
         ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
@@ -247,7 +198,7 @@ class TestSparkBQUtils(unittest.TestCase):
     def test_upload_spark_model_inputs_with_extra_column(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
-            r"^Table 'population_data' contains unexpected columns \{'random_extra_column'\}$",
+            r"^Tables \['population_data'\] dont have the right columns$",
         ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
