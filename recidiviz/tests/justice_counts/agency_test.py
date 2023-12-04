@@ -33,16 +33,16 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            user_id = UserAccountInterface.create_or_update_user(
-                session=session, auth0_user_id="test_auth0_user"
-            ).id
             AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Agency Alpha",
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
-                user_account_id=user_id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
             AgencyInterface.create_or_update_agency(
                 session=session,
@@ -50,7 +50,10 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ak",
                 fips_county_code="us_ak_anchorage",
-                user_account_id=user_id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
 
     def test_get_agencies(self) -> None:
@@ -106,7 +109,10 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
-                user_account_id=user.id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
             delta_agency = AgencyInterface.create_or_update_agency(
                 session=session,
@@ -114,7 +120,10 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ak",
                 fips_county_code="us_ak_anchorage",
-                user_account_id=user.id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session, user=user, agencies=[delta_agency, gamma_agency]
@@ -163,8 +172,10 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
-                user_account_id=user.id,
                 is_superagency=True,
+                agency_id=None,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
             child_agency = AgencyInterface.create_or_update_agency(
                 session=session,
@@ -172,8 +183,10 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
-                user_account_id=user.id,
                 super_agency_id=super_agency.id,
+                agency_id=None,
+                is_superagency=False,
+                is_dashboard_enabled=False,
             )
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session, user=user, agencies=[super_agency, child_agency]

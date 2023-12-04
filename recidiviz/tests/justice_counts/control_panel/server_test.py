@@ -1133,6 +1133,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         self.assertEqual(user_response.status_code, 200)
         response_json = assert_type(user_response.json, dict)
+        user_A = UserAccountInterface.get_user_by_auth0_user_id(
+            session=self.session, auth0_user_id=auth0_user_id
+        )
         self.assertEqual(
             response_json["agencies"][0]["team"],
             [
@@ -1142,6 +1145,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "auth0_user_id": auth0_user_id,
                     "invitation_status": None,
                     "role": None,
+                    "user_account_id": user_A.id,
                 }
             ],
         )

@@ -395,6 +395,7 @@ class Agency(Source):
             "team": [
                 {
                     "name": assoc.user_account.name,
+                    "user_account_id": assoc.user_account.id,
                     "auth0_user_id": assoc.user_account.auth0_user_id,
                     "email": assoc.user_account.email,
                     "invitation_status": assoc.invitation_status.value

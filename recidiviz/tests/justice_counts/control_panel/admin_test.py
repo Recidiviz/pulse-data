@@ -318,7 +318,11 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
                 "state_code": "us_ca",
                 "systems": ["LAW_ENFORCEMENT", "JAILS"],
                 "is_superagency": False,
-                "team": [{"id": user_A_id, "role": "AGENCY_ADMIN"}],
+                "super_agency_id": None,
+                "agency_id": None,
+                "team": [{"user_account_id": user_A_id, "role": "AGENCY_ADMIN"}],
+                "child_agency_ids": [],
+                "is_dashboard_enabled": False,
             },
         )
         self.assertEqual(response.status_code, 200)
@@ -339,7 +343,7 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
             schema.UserAccountRole.AGENCY_ADMIN,
         )
 
-        # Update agency
+        # Update name, users, and child agency, and turn on dashboard
         law_enforcement_agency = AgencyInterface.get_agency_by_name(
             session=self.session, name="Agency Alpha"
         )
@@ -347,25 +351,29 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         response = self.client.put(
             "/admin/agency",
             json={
-                "name": "New Agency",
+                "name": "New Agency New Name",
                 "state_code": "us_ca",
                 "systems": ["LAW_ENFORCEMENT", "JAILS"],
                 "is_superagency": True,
+                "super_agency_id": None,
                 "child_agency_ids": [law_enforcement_agency_id],
+                "agency_id": agency.id,
                 "team": [
-                    {"id": user_B_id, "role": "AGENCY_ADMIN"},
-                    {"id": user_A_id, "role": "JUSTICE_COUNTS_ADMIN"},
+                    {"user_account_id": user_B_id, "role": "AGENCY_ADMIN"},
+                    {"user_account_id": user_A_id, "role": "JUSTICE_COUNTS_ADMIN"},
                 ],
+                "is_dashboard_enabled": True,
             },
         )
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
         self.assertEqual(response_json["child_agency_ids"], [law_enforcement_agency_id])
         agency = AgencyInterface.get_agency_by_name(
-            session=self.session, name="New Agency"
+            session=self.session, name="New Agency New Name"
         )
         self.assertIsNotNone(agency)
         self.assertTrue(agency.is_superagency)
+        self.assertTrue(agency.is_dashboard_enabled)
         self.assertEqual(
             agency.systems,
             [schema.System.LAW_ENFORCEMENT.value, schema.System.JAILS.value],
@@ -387,6 +395,42 @@ class TestJusticePublisherAdminPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(len(child_agencies), 1)
         self.assertEqual(child_agencies[0].name, "Agency Alpha")
+
+        # Delete users from Agency and remove child agency
+        response = self.client.put(
+            "/admin/agency",
+            json={
+                "name": "New Agency New Name",
+                "state_code": "us_ca",
+                "systems": ["LAW_ENFORCEMENT", "JAILS"],
+                "is_superagency": True,
+                "super_agency_id": None,
+                "child_agency_ids": [],
+                "agency_id": agency.id,
+                "is_dashboard_enabled": False,
+                "team": [],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        response_json = assert_type(response.json, dict)
+        self.assertEqual(response_json["child_agency_ids"], [])
+        agency = AgencyInterface.get_agency_by_name(
+            session=self.session, name="New Agency New Name"
+        )
+        self.assertIsNotNone(agency)
+        self.assertTrue(agency.is_superagency)
+        self.assertFalse(agency.is_dashboard_enabled)
+        self.assertEqual(
+            agency.systems,
+            [schema.System.LAW_ENFORCEMENT.value, schema.System.JAILS.value],
+        )
+        self.assertEqual(agency.state_code, "us_ca")
+        self.assertEqual(len(agency.user_account_assocs), 0)
+        child_agencies = AgencyInterface.get_child_agencies_for_agency(
+            session=self.session, agency=agency
+        )
+        self.assertEqual(len(child_agencies), 0)
 
     def test_copy_metric_settings_to_child_agencies(self) -> None:
         self.load_users_and_agencies()

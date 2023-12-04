@@ -18,7 +18,6 @@
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_setting import AgencySettingInterface
-from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils.utils import JusticeCountsDatabaseTestCase
@@ -30,16 +29,16 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            user_id = UserAccountInterface.create_or_update_user(
-                session=session, auth0_user_id="test_auth0_user"
-            ).id
             agency_A = AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Agency Alpha",
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
-                user_account_id=user_id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
             agency_B = AgencyInterface.create_or_update_agency(
                 session=session,
@@ -47,7 +46,10 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ak",
                 fips_county_code="us_ak_anchorage",
-                user_account_id=user_id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
             session.commit()
             session.refresh(agency_A)

@@ -82,6 +82,10 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     systems=[schema.System[system] for system in systems],
                     state_code=state_code,
                     fips_county_code=fips_county_code,
+                    is_superagency=False,
+                    super_agency_id=None,
+                    is_dashboard_enabled=False,
+                    agency_id=None,
                 )
 
                 # Add all CSG accounts (READ_ONLY in production for non-demo agencies,
