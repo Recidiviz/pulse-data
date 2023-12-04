@@ -21,6 +21,7 @@ See recidiviz.tools.calculator.create_or_update_dataflow_sandbox.py for running 
 locally to create sandbox Dataflow datasets.
 """
 import datetime
+import logging
 from concurrent import futures
 from typing import Dict, List, Optional
 
@@ -430,11 +431,30 @@ def update_state_specific_ingest_view_result_schema(
             res = f.result()
             final_schema = res.schema + ADDITIONAL_SCHEMA_COLUMNS
             if bq_client.table_exists(ingest_view_dataset_ref, ingest_view_name):
-                bq_client.update_schema(
-                    dataset_id=ingest_view_dataset_ref.dataset_id,
-                    table_id=ingest_view_name,
-                    desired_schema_fields=final_schema,
-                )
+                try:
+                    bq_client.update_schema(
+                        dataset_id=ingest_view_dataset_ref.dataset_id,
+                        table_id=ingest_view_name,
+                        desired_schema_fields=final_schema,
+                    )
+                except ValueError as e:
+                    logging.warning(
+                        "Failed to update schema for %s due to %s, will try to delete and create table.",
+                        ingest_view_name,
+                        e,
+                    )
+                    # We are okay deleting and recreating the table because the materialization results
+                    # will just get overwritten by the next ingest pipeline run anyway.
+
+                    bq_client.delete_table(
+                        dataset_id=ingest_view_dataset_ref.dataset_id,
+                        table_id=ingest_view_name,
+                    )
+                    bq_client.create_table_with_schema(
+                        dataset_id=ingest_view_dataset_ref.dataset_id,
+                        table_id=ingest_view_name,
+                        schema_fields=final_schema,
+                    )
             else:
                 bq_client.create_table_with_schema(
                     dataset_id=ingest_view_dataset_ref.dataset_id,

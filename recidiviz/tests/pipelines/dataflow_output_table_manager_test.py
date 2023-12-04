@@ -633,6 +633,61 @@ class IngestDatasetTableManagerTest(unittest.TestCase):
             any_order=True,
         )
 
+    @mock.patch(
+        "recidiviz.pipelines.dataflow_output_table_manager.get_ingest_pipeline_enabled_state_and_instance_pairs",
+        return_value=[
+            (StateCode.US_XX, DirectIngestInstance.PRIMARY),
+            (StateCode.US_XX, DirectIngestInstance.SECONDARY),
+            (StateCode.US_YY, DirectIngestInstance.PRIMARY),
+            (StateCode.US_YY, DirectIngestInstance.SECONDARY),
+        ],
+    )
+    def test_update_state_specific_ingest_view_results_datasets_schema_update_failure(
+        self, _mock_get_ingest_pipeline_enabled_state_and_instance_pairs: MagicMock
+    ) -> None:
+        def mock_dataset_ref_for_id(
+            dataset_id: str,
+        ) -> bigquery.dataset.DatasetReference:
+            return bigquery.dataset.DatasetReference(self.project_id, dataset_id)
+
+        self.mock_client.dataset_ref_for_id.side_effect = mock_dataset_ref_for_id
+        self.mock_client.update_schema.side_effect = ValueError(
+            "Failed to update schema"
+        )
+        self.mock_get_view_builder.return_value = []
+
+        dataflow_output_table_manager.update_state_specific_ingest_view_results_schemas()
+
+        self.mock_client.create_dataset_if_necessary.assert_has_calls(
+            [
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_xx_dataflow_ingest_view_results_primary"
+                    ),
+                    None,
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_xx_dataflow_ingest_view_results_secondary"
+                    ),
+                    None,
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_yy_dataflow_ingest_view_results_primary"
+                    ),
+                    None,
+                ),
+                mock.call(
+                    bigquery.dataset.DatasetReference(
+                        self.project_id, "us_yy_dataflow_ingest_view_results_secondary"
+                    ),
+                    None,
+                ),
+            ],
+            any_order=True,
+        )
+
     def test_update_state_specific_ingest_view_results_schema_create_table(
         self,
     ) -> None:
