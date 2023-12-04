@@ -327,7 +327,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             {
                 "stateCode": event.state_code,
                 "metricId": event.metric_id,
-                "eventDate": datetime.strftime(event.event_date, "%Y-%m-%d"),
+                "eventDate": event.event_date.isoformat(),
                 "clientId": event.client_id,
                 "clientName": {
                     "givenNames": PersonName(**event.client_name).given_names,
@@ -341,6 +341,11 @@ def create_outliers_api_blueprint() -> Blueprint:
                 )
                 if event.attributes
                 else None,
+                "officerAssignmentDate": event.officer_assignment_date.isoformat(),
+                "officerAssignmentEndDate": event.officer_assignment_end_date.isoformat(),
+                "supervisionStartDate": event.supervision_start_date.isoformat(),
+                "supervisionEndDate": event.supervision_end_date.isoformat(),
+                "supervisionType": event.supervision_type,
             }
             for event in events
         ]
@@ -507,7 +512,7 @@ def create_outliers_api_blueprint() -> Blueprint:
             {
                 "stateCode": event.state_code,
                 "metricId": event.metric_id,
-                "eventDate": datetime.strftime(event.event_date, "%Y-%m-%d"),
+                "eventDate": event.event_date.isoformat(),
                 "clientId": event.client_id,
                 "clientName": {
                     "givenNames": PersonName(**event.client_name).given_names,
@@ -557,7 +562,7 @@ def create_outliers_api_blueprint() -> Blueprint:
                 "middleNames": PersonName(**client.client_name).middle_names,
                 "surname": PersonName(**client.client_name).surname,
             },
-            "birthdate": datetime.strftime(client.birthdate, "%Y-%m-%d"),
+            "birthdate": client.birthdate.isoformat(),
             "gender": client.gender,
             "raceOrEthnicity": client.race_or_ethnicity,
         }
