@@ -129,6 +129,9 @@ def create_child_agencies(all_agencies: set, dry_run: bool, project_id: str) -> 
                         state_code=state_code,
                         super_agency_id=super_agency_id,
                         fips_county_code=None,
+                        agency_id=None,
+                        is_superagency=False,
+                        is_dashboard_enabled=False,
                     )
                     logging.info("%s created", agency)
                 except Exception as e:

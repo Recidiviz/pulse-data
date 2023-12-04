@@ -31,16 +31,16 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         with SessionFactory.using_database(self.database_key) as session:
-            user = UserAccountInterface.create_or_update_user(
-                session=session, auth0_user_id="test_auth0_user"
-            )
             AgencyInterface.create_or_update_agency(
                 session=session,
                 name="Agency Alpha",
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
-                user_account_id=user.id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
             AgencyInterface.create_or_update_agency(
                 session=session,
@@ -48,7 +48,10 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ak",
                 fips_county_code="us_ak_anchorage",
-                user_account_id=user.id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
             AgencyInterface.create_or_update_agency(
                 session=session,
@@ -56,7 +59,10 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 systems=[schema.System.LAW_ENFORCEMENT],
                 state_code="us_ar",
                 fips_county_code="us_ar_lee",
-                user_account_id=user.id,
+                agency_id=None,
+                is_superagency=False,
+                super_agency_id=None,
+                is_dashboard_enabled=False,
             )
 
             UserAccountInterface.create_or_update_user(

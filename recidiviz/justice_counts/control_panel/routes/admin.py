@@ -229,46 +229,81 @@ def get_admin_blueprint(
         agency = AgencyInterface.create_or_update_agency(
             session=current_session,
             name=name,
+            agency_id=request_json["agency_id"],
             systems=[schema.System[system] for system in systems],
             state_code=state_code,
             fips_county_code=request_json.get("fips_county_code"),
-            is_superagency=request_json.get("is_superagency", None),
-            super_agency_id=request_json.get("super_agency_id"),
+            is_superagency=request_json["is_superagency"],
+            super_agency_id=request_json["super_agency_id"],
+            is_dashboard_enabled=request_json["is_dashboard_enabled"],
         )
 
         if request_json.get("child_agency_ids") is not None:
-            # Add child agencies
+            # Update child agencies
+            curr_child_agencies = AgencyInterface.get_child_agencies_for_agency(
+                session=current_session, agency=agency
+            )
+            curr_child_agency_ids = {a.id for a in curr_child_agencies}
+
+            agency_ids_to_add = [
+                id
+                for id in request_json.get("child_agency_ids", [])
+                if id not in curr_child_agency_ids
+            ]
+
+            agencies_to_remove = [
+                a
+                for a in curr_child_agencies
+                if a.id not in request_json.get("child_agency_ids", [])
+            ]
+
             AgencyUserAccountAssociationInterface.add_child_agencies_to_super_agency(
                 session=current_session,
                 super_agency_id=agency.id,
-                child_agency_ids=request_json.get("child_agency_ids", []),
+                child_agency_ids=agency_ids_to_add,
             )
+
+            AgencyUserAccountAssociationInterface.remove_child_agencies_from_super_agency(
+                session=current_session,
+                super_agency_id=agency.id,
+                child_agencies=agencies_to_remove,
+            )
+
         if request_json.get("team") is not None:
             # Add users to agency
 
             # Prepare all the values that should be "upserted" to the DB
             values = []
+            user_account_ids = set()
             for user_json in request_json.get("team", []):
+                user_account_ids.add(user_json.get("user_account_id"))
                 value = {
                     "agency_id": agency.id,
-                    "user_account_id": user_json.get("id"),
+                    "user_account_id": user_json.get("user_account_id"),
                 }
 
                 if user_json.get("role") is not None:
                     value["role"] = schema.UserAccountRole[user_json.get("role")]
 
                 values.append(value)
+            if len(values) > 0:
+                insert_statement = insert(schema.AgencyUserAccountAssociation).values(
+                    values
+                )
 
-            insert_statement = insert(schema.AgencyUserAccountAssociation).values(
-                values
-            )
+                insert_statement = insert_statement.on_conflict_do_update(
+                    constraint="agency_user_account_association_pkey",
+                    set_={"role": insert_statement.excluded.role},
+                )
 
-            insert_statement = insert_statement.on_conflict_do_update(
-                constraint="agency_user_account_association_pkey",
-                set_={"role": insert_statement.excluded.role},
-            )
+                current_session.execute(insert_statement)
 
-            current_session.execute(insert_statement)
+            # Delete team members that are in the agency's assocs, but not in the
+            # list of team members that are sent over.
+            for assoc in agency.user_account_assocs:
+                if assoc.user_account_id not in user_account_ids:
+                    current_session.delete(assoc)
+
         current_session.commit()
         child_agency_ids = AgencyInterface.get_child_agency_ids_for_agency(
             session=current_session, agency=agency
