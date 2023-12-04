@@ -1078,9 +1078,14 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
                         },
                         "eventDate": "2023-04-01",
                         "metricId": "absconsions_bench_warrants",
+                        "officerAssignmentDate": "2022-01-01",
+                        "officerAssignmentEndDate": "2023-06-01",
                         "officerId": "03",
                         "stateCode": "US_PA",
                         "pseudonymizedClientId": "clienthash2",
+                        "supervisionEndDate": "2023-06-01",
+                        "supervisionStartDate": "2022-01-01",
+                        "supervisionType": "PROBATION",
                     }
                 ]
             }
