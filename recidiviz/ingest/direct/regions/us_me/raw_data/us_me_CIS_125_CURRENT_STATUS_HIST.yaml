@@ -271,8 +271,14 @@ columns:
       - value: 81
         description: Unit 1 - Downeast Correctional Facility
   - name: Cis_913_Pod_Id
+    description: |-
+      Pod ID: Connects to cis_913_POD.
   - name: Cis_914_Cell_Id
+    description: |-
+      Cell ID: Connects to cis_914_CELL
   - name: Cis_915_Bed_Id
+    description: |-
+      Bed ID: Connects to cis_915_BED
   - name: Community_Ind
   - name: Created_By_Tx
     is_pii: True
