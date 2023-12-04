@@ -17,9 +17,10 @@
 
 """Implements tests for the IngestOperationsStore."""
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 from unittest import mock
 from unittest.case import TestCase
+from unittest.mock import patch
 
 import pytest
 import pytz
@@ -28,6 +29,9 @@ from freezegun import freeze_time
 from google.cloud import tasks_v2
 from mock import create_autospec
 
+from recidiviz.admin_panel.ingest_dataflow_operations import (
+    DataflowPipelineMetadataResponse,
+)
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -565,3 +569,105 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertIsNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
                 self.assertIsNone(status["latestUpdateDatetime"])
+
+
+@patch(
+    "recidiviz.admin_panel.ingest_operations_store.get_direct_ingest_states_existing_in_env",
+    mock.MagicMock(return_value=[StateCode.US_XX, StateCode.US_YY]),
+)
+class IngestOperationsStoreCachingTest(IngestOperationsStoreTestBase):
+    """Tests for Redis caching behavior in the ingest admin panel store."""
+
+    US_XX_PIPELINE_INFO_1 = DataflowPipelineMetadataResponse(
+        id="1234",
+        project_id="test-project",
+        name="us-xx-ingest",
+        create_time=datetime(2023, 7, 10).timestamp(),
+        start_time=datetime(2023, 7, 10).timestamp(),
+        termination_time=datetime(2023, 7, 11).timestamp(),
+        termination_state="JOB_STATE_FAILED",
+        location="us-east1",
+    )
+
+    @patch("recidiviz.admin_panel.ingest_operations_store.get_all_latest_ingest_jobs")
+    def test_get_most_recent_dataflow_jobs_no_cache(
+        self, mock_get_latest_jobs: mock.MagicMock
+    ) -> None:
+        # Arrange
+        latest_jobs = {
+            StateCode.US_XX: {
+                DirectIngestInstance.PRIMARY: self.US_XX_PIPELINE_INFO_1,
+                DirectIngestInstance.SECONDARY: None,
+            },
+            StateCode.US_YY: {
+                DirectIngestInstance.PRIMARY: None,
+                DirectIngestInstance.SECONDARY: None,
+            },
+        }
+        mock_get_latest_jobs.return_value = latest_jobs
+        # Act
+        statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
+
+        # Assert
+        mock_get_latest_jobs.assert_called_once()
+        self.assertEqual(latest_jobs, statuses_map)
+
+    @patch("recidiviz.admin_panel.ingest_operations_store.get_all_latest_ingest_jobs")
+    def test_get_most_recent_dataflow_jobs_with_cache(
+        self, mock_get_latest_jobs: mock.MagicMock
+    ) -> None:
+        # Arrange
+        latest_jobs: Dict[
+            StateCode,
+            Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
+        ] = {
+            StateCode.US_XX: {
+                DirectIngestInstance.PRIMARY: self.US_XX_PIPELINE_INFO_1,
+                DirectIngestInstance.SECONDARY: None,
+            },
+            StateCode.US_YY: {
+                DirectIngestInstance.PRIMARY: None,
+                DirectIngestInstance.SECONDARY: None,
+            },
+        }
+
+        # Act
+        self.operations_store.set_cache(latest_jobs=latest_jobs)
+        statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
+
+        # Assert
+        mock_get_latest_jobs.assert_not_called()
+        self.assertEqual(latest_jobs, statuses_map)
+
+    @patch("recidiviz.admin_panel.ingest_operations_store.get_all_latest_ingest_jobs")
+    def test_get_most_recent_dataflow_jobs_with_cache_missing_a_state(
+        self, mock_get_latest_jobs: mock.MagicMock
+    ) -> None:
+        # Arrange
+        latest_jobs = {
+            StateCode.US_XX: {
+                DirectIngestInstance.PRIMARY: self.US_XX_PIPELINE_INFO_1,
+                DirectIngestInstance.SECONDARY: None,
+            }
+        }
+
+        # Act
+        self.operations_store.set_cache(latest_jobs=latest_jobs)
+        statuses_map = self.operations_store.get_most_recent_dataflow_job_statuses()
+
+        # Assert
+        mock_get_latest_jobs.assert_not_called()
+
+        expected = {
+            StateCode.US_XX: {
+                DirectIngestInstance.PRIMARY: self.US_XX_PIPELINE_INFO_1,
+                DirectIngestInstance.SECONDARY: None,
+            },
+            # None values filled in for US_YY which is brand new since the last time we
+            # cached.
+            StateCode.US_YY: {
+                DirectIngestInstance.PRIMARY: None,
+                DirectIngestInstance.SECONDARY: None,
+            },
+        }
+        self.assertEqual(expected, statuses_map)
