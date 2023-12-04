@@ -28,13 +28,11 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 
-NORMALIZED_STATE_UPDATE_LOCK_NAME = "NORMALIZED_STATE_UPDATE_PROCESS"
-
 
 def normalization_lock_name_for_ingest_instance(
     ingest_instance: DirectIngestInstance,
 ) -> str:
-    return f"{NORMALIZED_STATE_UPDATE_LOCK_NAME}_{ingest_instance.value.upper()}"
+    return f"NORMALIZED_STATE_UPDATE_PROCESS_{ingest_instance.value.upper()}"
 
 
 class NormalizedStateUpdateLockManager:
@@ -58,13 +56,6 @@ class NormalizedStateUpdateLockManager:
 
         Throws if a lock with a different lock_id exists for this update.
         """
-
-        # TODO(#2873): Remove check for old lock name once all locks migrated to new names
-        if self.lock_manager.is_locked(NORMALIZED_STATE_UPDATE_LOCK_NAME):
-            raise GCSPseudoLockAlreadyExists(
-                f"Old lock with the name {NORMALIZED_STATE_UPDATE_LOCK_NAME} already exists"
-            )
-
         lock_name = normalization_lock_name_for_ingest_instance(self.ingest_instance)
         try:
             self.lock_manager.lock(
@@ -99,19 +90,13 @@ class NormalizedStateUpdateLockManager:
 
     def release_lock(self) -> None:
         """Releases the normalized_state update lock."""
-        # TODO(#2873): Remove gating once all locks migrated to new names
-        try:
-            self.lock_manager.unlock(
-                normalization_lock_name_for_ingest_instance(self.ingest_instance)
-            )
-        except GCSPseudoLockDoesNotExist:
-            self.lock_manager.unlock(NORMALIZED_STATE_UPDATE_LOCK_NAME)
+        self.lock_manager.unlock(
+            normalization_lock_name_for_ingest_instance(self.ingest_instance)
+        )
 
     def is_locked(self) -> bool:
         return self.lock_manager.is_locked(
             normalization_lock_name_for_ingest_instance(self.ingest_instance)
-        ) or self.lock_manager.is_locked(
-            NORMALIZED_STATE_UPDATE_LOCK_NAME  # TODO(#2873): Remove check for old lock name once all locks migrated to new names
         )
 
     @staticmethod

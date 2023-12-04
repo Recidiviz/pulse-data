@@ -150,7 +150,21 @@ class GCSPseudoLockManager:
             if isinstance(path, GcsfsFilePath) and filter_term in path.blob_name
         ]
 
-        return all(lock.is_expired() for lock in lock_bodies if lock is not None)
+        active_locks = [
+            lock_body
+            for lock_body in lock_bodies
+            if lock_body is not None and not lock_body.is_expired()
+        ]
+
+        if active_locks:
+            logging.info(
+                "Found active locks with prefix [%s] and filter_term [%s]: %s",
+                prefix,
+                filter_term,
+                active_locks,
+            )
+
+        return not bool(active_locks)
 
     def lock(
         self,
