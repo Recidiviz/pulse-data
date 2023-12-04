@@ -31,7 +31,6 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import (
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.normalized_state_update_lock_manager import (
-    NORMALIZED_STATE_UPDATE_LOCK_NAME,
     normalization_lock_name_for_ingest_instance,
 )
 
@@ -97,31 +96,56 @@ class CloudSqlToBQLockManager:
             return True
 
         if schema_type == SchemaType.STATE:
-            no_blocking_normalized_state_locks = not self.lock_manager.is_locked(
+            # The "update normalized state dataset" process reads from the state dataset
+            # so it cannot be in progress while the BQ refresh is running.
+            if self.lock_manager.is_locked(
                 normalization_lock_name_for_ingest_instance(ingest_instance)
-            ) and not self.lock_manager.is_locked(
-                NORMALIZED_STATE_UPDATE_LOCK_NAME  # TODO(#2873): Remove check for old lock name once all locks migrated to new names
-            )
-
-            if not no_blocking_normalized_state_locks:
+            ):
+                logging.info(
+                    "Normalized state update lock [%s] is already locked, cannot "
+                    "proceed with lock for [%s] and [%s]",
+                    normalization_lock_name_for_ingest_instance(ingest_instance),
+                    schema_type,
+                    ingest_instance,
+                )
                 return False
 
             blocking_ingest_lock_prefix = (
                 STATE_EXTRACT_AND_MERGE_INGEST_PROCESS_RUNNING_LOCK_PREFIX
             )
-            return self.lock_manager.no_active_locks_with_prefix(
+            if not self.lock_manager.no_active_locks_with_prefix(
                 blocking_ingest_lock_prefix, ingest_instance.value
-            )
+            ):
+                logging.info(
+                    "Found active ingest locks with prefix [%s], cannot proceed with "
+                    "lock for [%s] and [%s]",
+                    blocking_ingest_lock_prefix,
+                    schema_type,
+                    ingest_instance,
+                )
+                return False
+            return True
 
         if schema_type == SchemaType.OPERATIONS:
             # The operations export yields for any ingest extract and merge process since
-            # those read from / write to Postgres.
+            # those read from / write to the Postgres OPERATIONS DB.
+            # TODO(#20930): We will not need to block on ingest extract and merge once
+            #  all states have been migrated to ingest in Dataflow.
             blocking_ingest_lock_prefix = (
                 STATE_EXTRACT_AND_MERGE_INGEST_PROCESS_RUNNING_LOCK_PREFIX
             )
-            return self.lock_manager.no_active_locks_with_prefix(
+            if not self.lock_manager.no_active_locks_with_prefix(
                 blocking_ingest_lock_prefix, ingest_instance.value
-            )
+            ):
+                logging.info(
+                    "Found active ingest locks with prefix [%s], cannot proceed with "
+                    "lock for [%s] and [%s]",
+                    blocking_ingest_lock_prefix,
+                    schema_type,
+                    ingest_instance,
+                )
+                return False
+            return True
 
         raise ValueError(f"Unexpected schema type [{schema_type}]")
 
