@@ -775,7 +775,7 @@ select
     position,
     -- grab the most recent supervision level we saw for this person (which could be the supervision level currently active)
     LAST_VALUE(supervision_level_value IGNORE NULLS)
-        OVER (PARTITION BY offender_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id
+        OVER (PARTITION BY offender_id, legal_order_id_combined ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id
         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS most_recent_supervision_level_id
 from spans_all_combos
 where movement_reason_id is not null;
