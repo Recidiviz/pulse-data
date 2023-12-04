@@ -17,12 +17,11 @@
 """Store used to keep information related to direct ingest operations"""
 import json
 import logging
-from collections import Counter
+from collections import Counter, defaultdict
 from concurrent import futures
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-import attr
 from google.cloud import tasks_v2
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
@@ -118,7 +117,9 @@ class IngestOperationsStore(AdminPanelStore):
 
         jobs_dict = {
             state_code.value: {
-                instance.value: attr_to_json_dict(assert_type(job, attr.Attribute))
+                instance.value: attr_to_json_dict(
+                    job,  # type: ignore[arg-type]
+                )
                 if job
                 else None
                 for instance, job in responses_by_instance.items()
@@ -143,33 +144,37 @@ class IngestOperationsStore(AdminPanelStore):
         new requests to the dataflow API."""
         jobs_json = self.redis.get(self.cache_key)
         if not jobs_json:
-            latest_jobs = get_all_latest_ingest_jobs()
-            self.set_cache(latest_jobs)
-            return latest_jobs
+            self.hydrate_cache()
+            jobs_json = self.redis.get(self.cache_key)
 
+        if not jobs_json:
+            raise ValueError(
+                "Expected the cache to have dataflow jobs hydrated by this point."
+            )
         parsed_jobs_dict = json.loads(jobs_json)
 
-        rehydrated_jobs = {
-            StateCode(state_code_str): {
-                DirectIngestInstance(instance_str): assert_type(
-                    attr_from_json_dict(job_dict), DataflowPipelineMetadataResponse
+        rehydrated_jobs: Dict[
+            StateCode,
+            Dict[DirectIngestInstance, Optional[DataflowPipelineMetadataResponse]],
+        ] = defaultdict(dict)
+        for state_code in get_direct_ingest_states_existing_in_env():
+            # There is an edge case where if a state was newly added, it would not
+            # appear in the cache results yet. We allow for this and just add a None
+            # value for pipeline results until the cache is next hydrated.
+            responses_by_instance = parsed_jobs_dict.get(state_code.value)
+            for instance in DirectIngestInstance:
+                job_dict = (
+                    responses_by_instance.get(instance.value)
+                    if responses_by_instance
+                    else None
                 )
-                if job_dict
-                else None
-                for instance_str, job_dict in responses_by_instance.items()
-            }
-            for state_code_str, responses_by_instance in parsed_jobs_dict.items()
-        }
-
-        # there is an edge case where if a state was newly added, it would not appear in the
-        # the cache results yet and cause the state specific detail page to crash.
-        # we need to check whether the retrieved cache results include all the states
-        # we expect, and make a new call to get_all_latest_ingest_jobs() if not.
-        for state in get_direct_ingest_states_existing_in_env():
-            if state not in rehydrated_jobs:
-                latest_jobs = get_all_latest_ingest_jobs()
-                self.set_cache(latest_jobs)
-                return latest_jobs
+                rehydrated_jobs[state_code][instance] = (
+                    assert_type(
+                        attr_from_json_dict(job_dict), DataflowPipelineMetadataResponse
+                    )
+                    if job_dict
+                    else None
+                )
 
         return rehydrated_jobs
 
