@@ -61,21 +61,23 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             ELSE transitions.compartment_duration - CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30)
          END AS remaining_compartment_duration,
 
-        -- Normalize the transition "total_population" sum at the person-level so that each individual only counts
+        -- Normalize the transition "cohort_portion" sum at the person-level so that each individual only counts
         -- towards 1 total transition per run-date (likely split across multiple outflows and compartment durations)
-        transitions.total_population / SUM(transitions.total_population) OVER (
+        transitions.cohort_portion / SUM(transitions.cohort_portion) OVER (
             PARTITION BY state_code, run_date, person_id
-        ) AS total_population,
+        ) AS total_population,  -- RENAME?
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
         -- Only include sessions that were open on the run date
         ON run_dates.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
       JOIN `{project_id}.{population_projection_dataset}.population_transitions_materialized` transitions
-        USING (state_code, compartment, gender, run_date)
+        USING (state_code, compartment, run_date)
       LEFT JOIN `{project_id}.{population_projection_dataset}.supervision_projected_release_dates_materialized` sentences
         USING (state_code, person_id, run_date)
       WHERE
         gender in ('MALE', 'FEMALE')
+        -- Replace `USING gender` clause in population_transitions_materialized JOIN 
+        AND sessions.gender = transitions.simulation_group
         -- Only include transition durations that are longer than the time already served on supervision
         AND CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) <= transitions.compartment_duration
         -- Drop sessions in long lasting compartments that are over 10 years old to limit the amount
@@ -92,7 +94,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
       gender,
       remaining_compartment_duration AS compartment_duration,
       outflow_to,
-      SUM(total_population) AS total_population
+      SUM(total_population) AS total_population -- RENAME?
     FROM supervision_cte
     GROUP BY 1,2,3,4,5,6
     """

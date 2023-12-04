@@ -13,9 +13,6 @@ reference_date: 2019.0
 
 time_step: 0.08333333333
 
-disaggregation_axes:
-  - gender
-
 per_year_costs:
   LIBERTY: 0.0
   PRISON: 0.0

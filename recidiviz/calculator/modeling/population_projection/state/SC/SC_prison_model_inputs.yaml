@@ -15,8 +15,8 @@ reference_date: 2012.0
 
 time_step: .083333333333333333333333333333
 
-disaggregation_axes:
-  - crime_type
+#disaggregation_axes:
+#  - crime_type
 
 data_inputs:
   big_query_simulation_tag: SC_prison

@@ -111,13 +111,13 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
     )
     SELECT
       compartment,
-      gender,
+      gender as simulation_group,
       state_code,
       outflow_to,
       compartment_duration,
       run_date,
       -- cte constructed so this only averages over cohorts old enough to have had a chance to see that duration
-      SUM(outflow_population/total_population) / cohort_counts.cohort_count as total_population
+      SUM(outflow_population/total_population) / cohort_counts.cohort_count as cohort_portion
     FROM outflow_population_cte
     JOIN cohort_sizes_cte
       USING (compartment, gender, state_code, run_date, start_month)
@@ -132,24 +132,24 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
 
     SELECT
       compartment,
-      gender,
+      gender as simulation_group,
       state_code,
       outflow_to,
       compartment_duration,
       run_date,
-      total_population
+      total_population as cohort_portion
     FROM `{project_id}.{population_projection_dataset}.us_id_non_bias_full_transitions_materialized`
 
     UNION ALL
 
     SELECT
       compartment,
-      gender,
+      gender as simulation_group,
       state_code,
       outflow_to,
       compartment_duration,
       run_date,
-      total_population
+      total_population as cohort_portion
     FROM `{project_id}.{population_projection_dataset}.long_lasting_compartment_transitions_materialized`
     """
 
@@ -160,7 +160,7 @@ POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=POPULATION_TRANSITIONS_VIEW_DESCRIPTION,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     long_lasting_compartments="', '".join(LONG_LASTING_COMPARTMENT_LIST),
-    clustering_fields=["state_code", "compartment", "gender", "run_date"],
+    clustering_fields=["state_code", "compartment", "simulation_group", "run_date"],
     should_materialize=True,
 )
 
