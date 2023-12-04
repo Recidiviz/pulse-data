@@ -58,7 +58,7 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
     incarceration_dates AS (
         SELECT 
             ic.* EXCEPT(admission_date),
-            MIN(t.start_date) 
+            MAX(t.start_date) 
                     OVER(w) AS admission_date,
             MAX({nonnull_end_date_clause('t.end_date')}) 
                     OVER(w) AS release_date
