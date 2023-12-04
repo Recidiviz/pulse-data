@@ -22,6 +22,7 @@ Cloud Run Job that runs the following scripts:
 """
 import argparse
 import logging
+import time
 
 from oauth2client.client import GoogleCredentials
 
@@ -96,6 +97,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.info("CSG Data Pull Script Failed: %s", str(e))
     try:
+        time.sleep(60)
         logger.info("Running Dashboard Data Pull")
         pull_agencies_with_published_capacity_and_cost_data(
             session=global_session,
@@ -105,6 +107,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.info("Agency Dashboard Script Failed %s", str(e))
     try:
+        time.sleep(60)
         logger.info("Running Superagency Data Pull")
         generate_superagency_summary(
             session=global_session,
@@ -114,6 +117,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.info("Superagency Data Pull Script Failed: %s", str(e))
     try:
+        time.sleep(60)
         logger.info("Closing DB Connection Before Running User Permissions Check")
         logger.info("Running User Permissions Checks")
         check_user_permissions(
