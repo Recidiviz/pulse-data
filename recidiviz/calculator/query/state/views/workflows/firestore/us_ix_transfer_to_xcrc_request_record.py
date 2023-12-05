@@ -22,6 +22,7 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.opportunity_record_query_fragments import (
     array_agg_case_notes_by_external_id,
@@ -59,6 +60,7 @@ from recidiviz.task_eligibility.utils.us_ix_query_fragments import (
     ix_fuzzy_matched_case_notes,
     ix_general_case_notes,
     ix_offender_alerts_case_notes,
+    program_enrollment_query,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -152,6 +154,11 @@ WITH current_crc_population AS (
 
         UNION ALL
 
+        -- Program Enrollment
+    {program_enrollment_query()}
+
+        UNION ALL
+
         -- DORs
     {dor_query(columns_str=DOR_CASE_NOTES_COLUMNS, 
                classes_to_include=['A', 'B', 'C'])}
@@ -171,6 +178,7 @@ US_IX_TRANSFER_TO_XCRC_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_IX_TRANSFER_TO_XCRC_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     task_eligibility_criteria_dataset=TASK_ELIGIBILITY_CRITERIA_GENERAL,
+    sessions_dataset=SESSIONS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_IX
     ),

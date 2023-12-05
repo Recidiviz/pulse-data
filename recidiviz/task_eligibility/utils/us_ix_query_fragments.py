@@ -383,7 +383,7 @@ def escape_absconsion_or_eluding_police_case_notes(
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON na.person_id = pei.person_id
          AND na.state_code = pei.state_code
-         AND pei.id_type = 'US_ID_IDOC'
+         AND pei.id_type = 'US_ID_DOC'
     WHERE pei.state_code = 'US_IX'
         AND CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
             AND meets_criteria IS FALSE
@@ -425,7 +425,7 @@ def detainer_case_notes(criteria_column: str = "Detainers") -> str:
     LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON det.person_id = pei.person_id
             AND det.state_code = pei.state_code
-            AND pei.id_type = 'US_IX_IDOC'
+            AND pei.id_type = 'US_IX_DOC'
 """
 
 
@@ -556,3 +556,68 @@ def dor_query(
         #Only keep the latest record for each offender-case
         QUALIFY ROW_NUMBER() OVER(PARTITION BY dap.DACaseId, dap.OffenderId ORDER BY dap.InsertDate DESC) = 1
     )"""
+
+
+def program_enrollment_query() -> str:
+    """
+    Returns a SQL query that selects information about program enrollments. Some facts:
+    - The query includes the offender ID, criteria, note title, note body, and event date.
+    - Only records with an enrollment status of 'Complete', 'Enrolled', or 'Waitlisted'
+    are included.
+    - Only programs that were started at current incarceration periods are included
+    """
+    return """
+    SELECT 
+        ce.OffenderId AS external_id,
+        "Program enrollment" AS criteria,
+        CourseNameName AS note_title,
+        CONCAT(ces.OfdEnrollmentStatusDesc, ' - ', CourseSectionNameName) AS note_body,
+        event_date
+    FROM (
+        SELECT 
+            *,
+            COALESCE( CAST(LEFT(ce.EndDate, 10) AS DATE),
+                CAST(LEFT(ce.StartDate, 10) AS DATE),
+                CAST(LEFT(ce.PendingEnrollmentDate, 10) AS DATE)) AS event_date
+        FROM `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_OfdCourseEnrollment_latest` ce  
+    ) ce
+    LEFT JOIN 
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_OfdEnrollmentStatus_latest` ces
+    ON 
+        ce.OfdEnrollmentStatusId = ces.OfdEnrollmentStatusId
+    LEFT JOIN 
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_Course_latest` co
+    ON 
+        ce.CourseId = co.CourseId
+    LEFT JOIN 
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseName_latest` con
+    ON 
+        co.CourseNameId = con.CourseNameId
+    LEFT JOIN 
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseSection_latest` cs
+    ON 
+        cs.CourseSectionId = ce.CourseSectionId
+    LEFT JOIN 
+        `{project_id}.{us_ix_raw_data_up_to_date_dataset}.crs_CourseSectionName_latest` csn
+    ON 
+        cs.CourseSectionNameId = csn.CourseSectionNameId
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+        ON ce.OffenderId = pei.external_id
+         AND pei.state_code = 'US_IX'
+         AND pei.id_type = 'US_IX_DOC'
+    -- Only inlcude enrollments that started during the current incarceration period
+    INNER JOIN (
+        SELECT person_id, start_date
+        FROM `{project_id}.{sessions_dataset}.compartment_level_0_super_sessions_materialized` 
+        WHERE state_code = 'US_IX'
+            AND compartment_level_0 = 'INCARCERATION'
+            AND CURRENT_DATE('US/Pacific') < IFNULL(end_date, '9999-12-31')
+    ) ss
+    ON pei.person_id = ss.person_id
+        AND ss.start_date < event_date
+    WHERE 
+        ce.OfdEnrollmentStatusId IN ('1', '2', '3')
+    """
+
+
+print(program_enrollment_query())
