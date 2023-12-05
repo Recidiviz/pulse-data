@@ -233,6 +233,8 @@ nbconvert = ">=6.5.1"
 PyGithub = "*"
 xlsxwriter="*"
 pytablewriter = "*"
+# TODO(#25939): Unpin once Jupyter installation issue has been fixed
+traitlets = "5.9.0"
 twilio = "*"
 twilio-stubs = "*"
 # TODO(#21447) Unpin urllib3 when worker signal 11 failure is fixed.
