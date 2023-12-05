@@ -411,10 +411,12 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         """Returns True if ingest is not running in this instance and all functions should
         early-return without doing any work.
         """
-        return (
-            self.ingest_instance_status_manager.get_current_status()
-            == DirectIngestStatus.NO_RERUN_IN_PROGRESS
-        )
+        current_status = self.ingest_instance_status_manager.get_current_status()
+
+        return current_status in {
+            DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+            DirectIngestStatus.NO_RAW_DATA_REIMPORT_IN_PROGRESS,
+        }
 
     # ============== #
     # JOB SCHEDULING #
