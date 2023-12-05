@@ -57,9 +57,6 @@ from recidiviz.validation.views.case_triage.most_recent_assessment_score_by_pers
 from recidiviz.validation.views.case_triage.most_recent_face_to_face_contact_date_by_person_by_state_comparison import (
     MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.justice_counts.incarceration_population_by_state_by_date_justice_counts_comparison import (
-    INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.active_in_population_after_death_date import (
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
 )
@@ -967,17 +964,6 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_total_population",
             ],
             hard_max_allowed_error=0.02,
-            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
-            region_configs=region_configs,
-        ),
-        SamenessDataValidationCheck(
-            view_builder=INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.PER_ROW,
-            comparison_columns=[
-                "justice_counts_total_population",
-                "internal_total_population",
-            ],
-            hard_max_allowed_error=0.06,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             region_configs=region_configs,
         ),

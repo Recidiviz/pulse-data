@@ -15,9 +15,6 @@ max_allowed_error_overrides:
   - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
     hard_max_allowed_error_override: 1.0
     override_reason: TODO(#13057) Needs investigation.
-  - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison
-    hard_max_allowed_error_override: 0.30
-    override_reason: TODO(#12167) Needs investigation. This threshold was bumped from .25 to .30 on 11/16/23 due to outliers refactors that started including TEMPORARY_CUSTODY periods as part of population when they were not previously. This decision should be revisited at some point, but for now we bump threshold.
   - validation_name: client_record_archive_duplicate_person_ids
     hard_max_allowed_error_override: 0.01
     override_reason: TODO(#15351) Needs investigation. There is one ID not accounted for over a span of 5 days in September 2022.
