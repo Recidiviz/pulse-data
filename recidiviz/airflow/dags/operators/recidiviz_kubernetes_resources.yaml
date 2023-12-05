@@ -15,7 +15,7 @@
 MetricViewExportEntrypoint:
   default_resources:
     limits:
-      cpu: 1000m
+      cpu: 500m
       memory: 1Gi
   overrides:
     - args:
@@ -23,14 +23,14 @@ MetricViewExportEntrypoint:
         - --export_job_name=LANTERN
       resources:
         limits:
-          cpu: 1000m
+          cpu: 500m
           memory: 3Gi
     # TODO(#23450): Remove once old backend exports have been removed
     - args:
         - --export_job_name=PATHWAYS
       resources:
         limits:
-          cpu: 1000m
+          cpu: 500m
           memory: 2Gi
     - args:
         - --export_job_name=INGEST_METADATA
@@ -54,7 +54,7 @@ BigQueryRefreshEntrypoint:
 ValidationEntrypoint:
   default_resources:
     limits:
-      cpu: 500m
+      cpu: 250m
       memory: 1Gi
 
 UpdateAllManagedViewsEntrypoint:
