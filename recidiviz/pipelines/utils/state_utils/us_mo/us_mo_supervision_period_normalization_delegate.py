@@ -192,29 +192,18 @@ class UsMoSupervisionNormalizationDelegate(
                         f"Intermediate span must not have None end date for sentence_external_id: {sentence_external_id}"
                     )
 
-    def normalization_relies_on_sentences(self) -> bool:
-        """In US_MO, sentences are used to pre-process StateSupervisionPeriods."""
-        return True
-
     def split_periods_based_on_sentences(
         self,
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
-        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
     ) -> List[StateSupervisionPeriod]:
         """Generates supervision periods based on sentences and critical statuses
         that denote changes in supervision type.
 
         This assumes that the input supervision periods are already chronologically
         sorted."""
-        if incarceration_sentences is None or supervision_sentences is None:
-            raise ValueError(
-                f"Sentences are required for US_MO SP normalization."
-                f"Found incarceration_sentences: {incarceration_sentences}, "
-                f"supervision_sentences: {supervision_sentences}"
-            )
-
         sentences = itertools.chain(incarceration_sentences, supervision_sentences)
         supervision_type_spans: List[SupervisionTypeSpan] = []
         all_statuses_by_date: Dict[date, Set[UsMoSentenceStatus]] = defaultdict(set)

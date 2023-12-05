@@ -88,11 +88,6 @@ class UsPaIncarcerationNormalizationDelegate(
             violation_responses,
         )
 
-    def normalization_relies_on_violation_responses(self) -> bool:
-        """The normalize_period_if_commitment_from_supervision_and_set_pfi_subtype
-        function for US_PA relies on violation response entities."""
-        return True
-
 
 def _us_pa_get_pfi_info_for_incarceration_period(
     incarceration_period_list_index: int,

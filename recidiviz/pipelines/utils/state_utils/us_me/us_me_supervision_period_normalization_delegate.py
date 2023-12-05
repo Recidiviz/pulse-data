@@ -49,16 +49,10 @@ class UsMeSupervisionNormalizationDelegate(
     def __init__(self, assessments: List[StateAssessment]):
         self._assessments = assessments
 
-    def normalization_relies_on_assessments(self) -> bool:
-        return True
-
-    def normalization_relies_on_sentences(self) -> bool:
-        return True
-
     def supervision_termination_reason_override(
         self,
         supervision_period: StateSupervisionPeriod,
-        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
     ) -> Optional[StateSupervisionPeriodTerminationReason]:
         """If there was a revocation sentence status with a completion date within a week of the supervision period's
         end date, then we assume the period's termination reason was a revocation."""

@@ -61,9 +61,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> List[StateIncarcerationPeriod]:
         """Helper function for testing the normalization of US_IX IPs."""
         # IP pre-processing for US_IX does not rely on violation responses
-        violation_responses: Optional[
-            List[NormalizedStateSupervisionViolationResponse]
-        ] = []
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         sp_index = default_normalized_sp_index_for_tests(
             supervision_periods=supervision_periods
@@ -75,7 +73,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             normalization_delegate=UsIxIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
             normalized_violation_responses=violation_responses,
-            incarceration_sentences=None,
+            incarceration_sentences=[],
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=earliest_death_date,
         )

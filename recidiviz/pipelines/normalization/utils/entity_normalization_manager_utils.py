@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for the normalization of state entities for calculations."""
 import datetime
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Type
 
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.normalized_entities_utils import (
@@ -87,18 +87,18 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
 ]
 
 
+# TODO(#10084) Combine incarceration and supervision period normalization
+# TODO(#25800) Instantiate incarceration and supervision delegates with their state-specific data
 def normalized_periods_for_calculations(
     person_id: int,
     ip_normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
     sp_normalization_delegate: StateSpecificSupervisionNormalizationDelegate,
-    incarceration_periods: Optional[List[StateIncarcerationPeriod]],
-    supervision_periods: Optional[List[StateSupervisionPeriod]],
-    normalized_violation_responses: Optional[
-        List[NormalizedStateSupervisionViolationResponse]
-    ],
+    incarceration_periods: List[StateIncarcerationPeriod],
+    supervision_periods: List[StateSupervisionPeriod],
+    normalized_violation_responses: List[NormalizedStateSupervisionViolationResponse],
     field_index: CoreEntityFieldIndex,
-    incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
-    supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
+    incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+    supervision_sentences: List[NormalizedStateSupervisionSentence],
     staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
 ) -> Tuple[
     Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap],
@@ -111,117 +111,61 @@ def normalized_periods_for_calculations(
     entities for some states. Tread carefully if you are implementing any changes to
     SP normalization that may create circular dependencies between these processes.
     """
-    if supervision_periods is None:
-        if ip_normalization_delegate.normalization_relies_on_supervision_periods():
-            raise ValueError(
-                "IP normalization for this state relies on "
-                "StateSupervisionPeriod entities. This pipeline must provide "
-                "supervision_periods to be run on this state."
-            )
-
-    if normalized_violation_responses is None:
-        if ip_normalization_delegate.normalization_relies_on_violation_responses():
-            raise ValueError(
-                "IP normalization for this state relies on "
-                "StateSupervisionViolationResponse entities. This pipeline must "
-                "provide violation_responses to be run on this state."
-            )
-
-    if incarceration_periods is not None and incarceration_sentences is None:
-        if ip_normalization_delegate.normalization_relies_on_incarceration_sentences():
-            raise ValueError(
-                "IP normalization for this state relies on StateIncarcerationSentence entities."
-                "This pipeline must provide incarceration sentences to be run on this state."
-            )
-
-    if supervision_periods is not None and (
-        incarceration_sentences is None or supervision_sentences is None
-    ):
-        if sp_normalization_delegate.normalization_relies_on_sentences():
-            raise ValueError(
-                "SP normalization for this state relies on "
-                "StateIncarcerationSentence and StateSupevisionSentence entities."
-                "This pipeline must provide sentences to be run on this state."
-            )
-
-    if supervision_periods is not None and incarceration_periods is None:
-        if sp_normalization_delegate.normalization_relies_on_incarceration_periods():
-            raise ValueError(
-                "SP normalization for this state relies on StateIncarcerationPeriod entities."
-                "This pipeline must provide incarceration periods to be run on this state."
-            )
-
-    all_periods: List[Union[StateIncarcerationPeriod, StateSupervisionPeriod]] = []
-    all_periods.extend(supervision_periods or [])
-    all_periods.extend(incarceration_periods or [])
 
     # The normalization functions need to know if this person has any periods that
     # ended because of death to handle any open periods or periods that extend past
     # their death date accordingly.
     earliest_death_date: Optional[
         datetime.date
-    ] = find_earliest_date_of_period_ending_in_death(periods=all_periods)
+    ] = find_earliest_date_of_period_ending_in_death(
+        periods=supervision_periods + incarceration_periods
+    )
 
-    supervision_period_index: Optional[NormalizedSupervisionPeriodIndex] = None
+    sp_normalization_manager = SupervisionPeriodNormalizationManager(
+        person_id=person_id,
+        supervision_periods=supervision_periods,
+        delegate=sp_normalization_delegate,
+        earliest_death_date=earliest_death_date,
+        incarceration_sentences=incarceration_sentences,
+        supervision_sentences=supervision_sentences,
+        staff_external_id_to_staff_id=staff_external_id_to_staff_id,
+    )
 
-    processed_sps: List[StateSupervisionPeriod] = []
-    additional_sp_attributes: AdditionalAttributesMap = {}
+    (
+        processed_sps,
+        additional_sp_attributes,
+    ) = (
+        sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
+    )
 
-    if supervision_periods is not None:
-        sp_normalization_manager = SupervisionPeriodNormalizationManager(
-            person_id=person_id,
-            supervision_periods=supervision_periods,
-            delegate=sp_normalization_delegate,
-            earliest_death_date=earliest_death_date,
-            incarceration_sentences=incarceration_sentences,
-            supervision_sentences=supervision_sentences,
-            incarceration_periods=incarceration_periods,
-            staff_external_id_to_staff_id=staff_external_id_to_staff_id,
-        )
+    normalized_sps = convert_entity_trees_to_normalized_versions(
+        root_entities=processed_sps,
+        normalized_entity_class=NormalizedStateSupervisionPeriod,
+        additional_attributes_map=additional_sp_attributes,
+        field_index=field_index,
+    )
 
-        (
-            processed_sps,
-            additional_sp_attributes,
-        ) = (
-            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
-        )
+    supervision_period_index = NormalizedSupervisionPeriodIndex(
+        sorted_supervision_periods=normalized_sps
+    )
 
-        normalized_sps = convert_entity_trees_to_normalized_versions(
-            root_entities=processed_sps,
-            normalized_entity_class=NormalizedStateSupervisionPeriod,
-            additional_attributes_map=additional_sp_attributes,
-            field_index=field_index,
-        )
+    ip_normalization_manager = IncarcerationPeriodNormalizationManager(
+        person_id=person_id,
+        incarceration_periods=incarceration_periods,
+        normalization_delegate=ip_normalization_delegate,
+        normalized_supervision_period_index=supervision_period_index,
+        normalized_violation_responses=normalized_violation_responses,
+        incarceration_sentences=incarceration_sentences,
+        field_index=field_index,
+        earliest_death_date=earliest_death_date,
+    )
 
-        supervision_period_index = NormalizedSupervisionPeriodIndex(
-            sorted_supervision_periods=normalized_sps
-        )
-
-    processed_ips: List[StateIncarcerationPeriod] = []
-    additional_ip_attributes: AdditionalAttributesMap = {}
-
-    if incarceration_periods:
-        ip_normalization_manager = (
-            IncarcerationPeriodNormalizationManager(
-                person_id=person_id,
-                incarceration_periods=incarceration_periods,
-                normalization_delegate=ip_normalization_delegate,
-                normalized_supervision_period_index=supervision_period_index,
-                normalized_violation_responses=normalized_violation_responses,
-                incarceration_sentences=incarceration_sentences,
-                field_index=field_index,
-                earliest_death_date=earliest_death_date,
-            )
-            if incarceration_periods is not None
-            else None
-        )
-
-        (
-            processed_ips,
-            additional_ip_attributes,
-        ) = (
-            ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
-        )
+    (
+        processed_ips,
+        additional_ip_attributes,
+    ) = (
+        ip_normalization_manager.normalized_incarceration_periods_and_additional_attributes()
+    )
 
     return (
         (processed_ips, additional_ip_attributes),

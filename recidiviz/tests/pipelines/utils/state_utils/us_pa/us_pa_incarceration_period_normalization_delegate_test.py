@@ -94,7 +94,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             normalization_delegate=UsPaIncarcerationNormalizationDelegate(),
             normalized_supervision_period_index=sp_index,
             normalized_violation_responses=violation_responses,
-            incarceration_sentences=None,
+            incarceration_sentences=[],
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=earliest_death_date,
         )

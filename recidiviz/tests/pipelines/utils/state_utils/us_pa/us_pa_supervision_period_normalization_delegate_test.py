@@ -47,7 +47,6 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
     """Unit tests for UsPaSupervisionPreProcdessingDelegate"""
 
     def setUp(self) -> None:
-        self.delegate = UsPaSupervisionNormalizationDelegate()
         self.person_id = 4200000123
 
         clear_entity_id_index_cache()
@@ -83,10 +82,10 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_site="XXX",
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
-        inferred_periods = self.delegate.infer_additional_periods(
+        delegate = UsPaSupervisionNormalizationDelegate(incarceration_periods=[])
+        inferred_periods = delegate.infer_additional_periods(
             self.person_id,
             [supervision_period_absconsion, supervision_period_non_absconsion],
-            [],
         )
         expected_periods = [
             supervision_period_absconsion,
@@ -122,8 +121,10 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
             supervision_site="XXX",
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
-        inferred_periods = self.delegate.infer_additional_periods(
-            self.person_id, [supervision_period_absconsion], []
+        delegate = UsPaSupervisionNormalizationDelegate(incarceration_periods=[])
+        inferred_periods = delegate.infer_additional_periods(
+            self.person_id,
+            [supervision_period_absconsion],
         )
         expected_periods = [
             supervision_period_absconsion,
@@ -168,10 +169,12 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
                 release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
             )
         )
-        inferred_periods = self.delegate.infer_additional_periods(
+        delegate = UsPaSupervisionNormalizationDelegate(
+            incarceration_periods=[incarceration_period_post_absconsion]
+        )
+        inferred_periods = delegate.infer_additional_periods(
             self.person_id,
             [supervision_period_absconsion],
-            [incarceration_period_post_absconsion],
         )
         expected_periods = [
             supervision_period_absconsion,
@@ -228,10 +231,12 @@ class TestUsPaSupervisionNormalizationDelegate(unittest.TestCase):
                 release_reason=StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
             )
         )
-        inferred_periods = self.delegate.infer_additional_periods(
+        delegate = UsPaSupervisionNormalizationDelegate(
+            incarceration_periods=[incarceration_period_post_absconsion]
+        )
+        inferred_periods = delegate.infer_additional_periods(
             self.person_id,
             [supervision_period_absconsion, supervision_period_post_absconsion],
-            [incarceration_period_post_absconsion],
         )
         expected_periods = [
             supervision_period_absconsion,

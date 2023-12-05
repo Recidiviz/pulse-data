@@ -46,18 +46,13 @@ class UsTnIncarcerationNormalizationDelegate(
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
     ) -> StateIncarcerationPeriod:
         return _us_tn_normalize_period_if_commitment_from_supervision(
             incarceration_period_list_index=incarceration_period_list_index,
             sorted_incarceration_periods=sorted_incarceration_periods,
             supervision_period_index=supervision_period_index,
         )
-
-    def normalization_relies_on_supervision_periods(self) -> bool:
-        """The normalize_period_if_commitment_from_supervision function for US_TN
-        relies on supervision period entities."""
-        return True
 
     def period_is_parole_board_hold(
         self,
@@ -115,7 +110,7 @@ RELEASED_FROM_TEMPORARY_CUSTODY_RAW_TEXT_VALUES: List[str] = [
 def _us_tn_normalize_period_if_commitment_from_supervision(
     incarceration_period_list_index: int,
     sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+    supervision_period_index: NormalizedSupervisionPeriodIndex,
 ) -> StateIncarcerationPeriod:
     """Returns an updated version of the specified incarceration period if it is a
     commitment from supervision admission.
@@ -125,12 +120,6 @@ def _us_tn_normalize_period_if_commitment_from_supervision(
     If the period represents an admission from XXX supervision, changes the NEW_ADMISSION admission_reason
     to be TEMPORARY CUSTODY.
     """
-    if supervision_period_index is None:
-        raise ValueError(
-            "IP normalization relies on supervision periods for US_TN. "
-            "Expected non-null supervision_period_index."
-        )
-
     incarceration_period = sorted_incarceration_periods[incarceration_period_list_index]
 
     if (

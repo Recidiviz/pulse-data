@@ -40,7 +40,6 @@ from recidiviz.persistence.entity.normalized_entities_utils import (
     merge_additional_attributes_maps,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
 )
@@ -110,7 +109,9 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
     def supervision_termination_reason_override(
         self,
         supervision_period: StateSupervisionPeriod,
-        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
+        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
+        #  supervision_sentences only to state-specific delegates that need them via the constructor.
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
     ) -> Optional[StateSupervisionPeriodTerminationReason]:
         """States may have specific logic that determines the termination reason for a
         supervision period.
@@ -121,8 +122,12 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         self,
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
-        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
+        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
+        #  incarceration_sentences only to state-specific delegates that need them via the constructor.
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
+        #  supervision_sentences only to state-specific delegates that need them via the constructor.
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
     ) -> List[StateSupervisionPeriod]:
         """Some states may use sentence information to split a period of supervision
         into multiple distinct periods with specific attributes. For example, if the
@@ -135,24 +140,11 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         self,
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
-        incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     ) -> List[StateSupervisionPeriod]:
         """Some states may require additional supervision periods to be inserted
         based on gaps in information. For instance, periods that represent active absconsions.
         """
         return supervision_periods
-
-    def normalization_relies_on_sentences(self) -> bool:
-        """State-specific implementations of this class should return whether the SP
-        normalization logic for the state relies on information in
-        StateIncarcerationSentence and StateSupervisionSentence entities."""
-        return False
-
-    def normalization_relies_on_incarceration_periods(self) -> bool:
-        """State-specific implementations of this class should return whether the SP
-        normalization logic for the state relies on information in
-        StateIncarcerationPeriod entities."""
-        return False
 
 
 class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
@@ -163,9 +155,8 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
         delegate: StateSpecificSupervisionNormalizationDelegate,
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
-        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
-        incarceration_periods: Optional[List[StateIncarcerationPeriod]],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
         staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
         earliest_death_date: Optional[datetime.date] = None,
     ):
@@ -176,26 +167,8 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         ] = None
         self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
         self.delegate = delegate
-
-        self._incarceration_sentences: Optional[
-            List[NormalizedStateIncarcerationSentence]
-        ] = (
-            incarceration_sentences
-            if self.delegate.normalization_relies_on_sentences()
-            else None
-        )
-        self._supervision_sentences: Optional[
-            List[NormalizedStateSupervisionSentence]
-        ] = (
-            supervision_sentences
-            if self.delegate.normalization_relies_on_sentences()
-            else None
-        )
-        self._incarceration_periods: Optional[List[StateIncarcerationPeriod]] = (
-            incarceration_periods
-            if self.delegate.normalization_relies_on_incarceration_periods()
-            else None
-        )
+        self._incarceration_sentences = incarceration_sentences
+        self._supervision_sentences = supervision_sentences
 
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
@@ -262,7 +235,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 )
 
             mid_processing_periods = self.delegate.infer_additional_periods(
-                self._person_id, mid_processing_periods, self._incarceration_periods
+                self._person_id, mid_processing_periods
             )
 
             # Process fields on final supervision period set
@@ -424,7 +397,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
     def _process_fields_on_final_supervision_period_set(
         self,
         supervision_periods: List[StateSupervisionPeriod],
-        supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
+        supervision_sentences: List[NormalizedStateSupervisionSentence],
     ) -> List[StateSupervisionPeriod]:
         """After all supervision periods are sorted, dropped and split as necessary,
         continue to update fields of remaining supervision periods prior to adding to

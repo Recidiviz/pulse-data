@@ -56,7 +56,7 @@ class UsIxIncarcerationNormalizationDelegate(
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
     ) -> StateIncarcerationPeriod:
         return _us_ix_normalize_period_if_commitment_from_supervision(
             incarceration_period_list_index=incarceration_period_list_index,
@@ -64,16 +64,11 @@ class UsIxIncarcerationNormalizationDelegate(
             supervision_period_index=supervision_period_index,
         )
 
-    def normalization_relies_on_supervision_periods(self) -> bool:
-        """The normalize_period_if_commitment_from_supervision function for US_IX
-        relies on supervision period entities."""
-        return True
-
 
 def _us_ix_normalize_period_if_commitment_from_supervision(
     incarceration_period_list_index: int,
     sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+    supervision_period_index: NormalizedSupervisionPeriodIndex,
 ) -> StateIncarcerationPeriod:
     """Returns an updated version of the specified incarceration period if it is a
     commitment from supervision admission.
@@ -90,12 +85,6 @@ def _us_ix_normalize_period_if_commitment_from_supervision(
     If the period represents an admission from INVESTIGATION supervision, sets the
     admission_reason to be NEW_ADMISSION.
     """
-    if supervision_period_index is None:
-        raise ValueError(
-            "IP normalization relies on supervision periods for US_IX. "
-            "Expected non-null supervision_period_index."
-        )
-
     relevant_sps = (
         filter_out_supervision_period_types_excluded_from_pre_admission_search(
             supervision_period_index.sorted_supervision_periods

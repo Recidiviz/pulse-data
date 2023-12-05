@@ -40,15 +40,13 @@ class UsPaSupervisionNormalizationDelegate(
 ):
     """US_PA implementation of the supervision normalization delegate"""
 
-    def normalization_relies_on_incarceration_periods(self) -> bool:
-        """In US_PA, inference of additional periods requires incarceration periods."""
-        return True
+    def __init__(self, incarceration_periods: List[StateIncarcerationPeriod]) -> None:
+        self._incarceration_periods = incarceration_periods
 
     def infer_additional_periods(
         self,
         person_id: int,
         supervision_periods: List[StateSupervisionPeriod],
-        incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     ) -> List[StateSupervisionPeriod]:
         """In US_PA, we need to infer additional periods that represent periods of
         active absconsions. This assumes that the supervision periods are already sorted
@@ -61,16 +59,12 @@ class UsPaSupervisionNormalizationDelegate(
         supplied and this new supervision period is implied to be an open period, indicating
         active absconsion.
         """
-
-        # TODO(#10084): Consider combining functions of IP / SP normalization to
-        # guarantee better end dates for inferred absconsion supervision periods
-        if incarceration_periods is None:
-            raise ValueError(
-                "Incarceration periods are required for inferring additional supervision periods."
-            )
-
         admission_dates = sorted(
-            [ip.admission_date for ip in incarceration_periods if ip.admission_date]
+            [
+                ip.admission_date
+                for ip in self._incarceration_periods
+                if ip.admission_date
+            ]
         )
 
         new_supervision_periods: List[StateSupervisionPeriod] = []

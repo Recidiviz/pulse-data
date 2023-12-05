@@ -90,9 +90,7 @@ class UsMoIncarcerationNormalizationDelegate(
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        violation_responses: Optional[
-            List[NormalizedStateSupervisionViolationResponse]
-        ],
+        violation_responses: List[NormalizedStateSupervisionViolationResponse],
     ) -> PurposeForIncarcerationInfo:
         return _us_mo_get_pfi_info_for_period_if_commitment_from_supervision(
             incarceration_period_list_index,
@@ -178,11 +176,6 @@ class UsMoIncarcerationNormalizationDelegate(
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         """The only periods of temporary custody in US_MO are parole board holds."""
-        return False
-
-    def normalization_relies_on_supervision_periods(self) -> bool:
-        """IP normalization for US_MO does not rely on StateSupervisionPeriod
-        entities."""
         return False
 
 

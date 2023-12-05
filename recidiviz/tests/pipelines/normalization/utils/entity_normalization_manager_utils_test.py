@@ -29,7 +29,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.base_entity import Entity
@@ -57,12 +56,6 @@ from recidiviz.pipelines.normalization.utils.normalization_managers.supervision_
 )
 from recidiviz.pipelines.utils.execution_utils import (
     build_staff_external_id_to_staff_id_map,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
-    UsXxIncarcerationNormalizationDelegate,
-)
-from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
-    UsXxSupervisionNormalizationDelegate,
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
     UsXxViolationResponseNormalizationDelegate,
@@ -99,19 +92,6 @@ STATE_PERSON_TO_STATE_STAFF_LIST = [
         "staff_external_id_type": "US_XX_STAFF_ID",
     },
 ]
-
-
-class TestIncarcerationNormalizationDelegate(UsXxIncarcerationNormalizationDelegate):
-    def normalization_relies_on_supervision_periods(self) -> bool:
-        return True
-
-    def normalization_relies_on_violation_responses(self) -> bool:
-        return True
-
-
-class TestSupervisionNormalizationDelegate(UsXxSupervisionNormalizationDelegate):
-    def normalization_relies_on_sentences(self) -> bool:
-        return True
 
 
 class TestNormalizedPeriodsForCalculations(unittest.TestCase):
@@ -162,10 +142,10 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             sp_normalization_delegate=self.sp_normalization_delegate,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
-            normalized_violation_responses=None,
+            normalized_violation_responses=[],
             field_index=self.field_index,
-            incarceration_sentences=None,
-            supervision_sentences=None,
+            incarceration_sentences=[],
+            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -192,11 +172,11 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             ip_normalization_delegate=self.ip_normalization_delegate,
             sp_normalization_delegate=self.sp_normalization_delegate,
             incarceration_periods=[incarceration_period],
-            supervision_periods=None,
-            normalized_violation_responses=None,
+            supervision_periods=[],
+            normalized_violation_responses=[],
             field_index=self.field_index,
-            incarceration_sentences=None,
-            supervision_sentences=None,
+            incarceration_sentences=[],
+            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -204,102 +184,6 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([incarceration_period], processed_ips)
         self.assertEqual([], processed_sps)
-
-    def test_normalized_periods_for_calculations_no_sps_state_requires(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_XX",
-            admission_date=datetime.date(2017, 4, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=datetime.date(2020, 5, 17),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        with self.assertRaises(ValueError):
-            # Assert an error is raised if the supervision_periods arg is None for a
-            # state that relies on supervision periods for IP pre-processing
-            (_, _,) = normalized_periods_for_calculations(
-                person_id=self.person_id,
-                ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
-                sp_normalization_delegate=self.sp_normalization_delegate,
-                incarceration_periods=[incarceration_period],
-                supervision_periods=None,
-                normalized_violation_responses=[],
-                field_index=self.field_index,
-                incarceration_sentences=None,
-                supervision_sentences=None,
-                staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                    STATE_PERSON_TO_STATE_STAFF_LIST
-                ),
-            )
-
-    def test_normalized_periods_for_calculations_no_violation_responses_state_requires(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_XX",
-            admission_date=datetime.date(2017, 4, 11),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=datetime.date(2020, 5, 17),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        with self.assertRaises(ValueError):
-            # Assert an error is raised if the violation_responses arg is None for a
-            # state that relies on violation responses for IP pre-processing
-            (_, _,) = normalized_periods_for_calculations(
-                person_id=self.person_id,
-                ip_normalization_delegate=TestIncarcerationNormalizationDelegate(),
-                sp_normalization_delegate=self.sp_normalization_delegate,
-                incarceration_periods=[incarceration_period],
-                supervision_periods=[],
-                normalized_violation_responses=None,
-                field_index=self.field_index,
-                incarceration_sentences=None,
-                supervision_sentences=None,
-                staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                    STATE_PERSON_TO_STATE_STAFF_LIST
-                ),
-            )
-
-    def test_normalized_periods_for_calculations_no_sentences_state_requires(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            state_code="US_XX",
-            start_date=datetime.date(2017, 5, 1),
-            termination_date=datetime.date(2018, 2, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
-            termination_reason=StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
-        )
-
-        with self.assertRaises(ValueError):
-            # Assert an error is raised if either sentences arg is None for a state
-            # that relies on sentences for SP pre-processing
-            (_, _) = normalized_periods_for_calculations(
-                person_id=self.person_id,
-                ip_normalization_delegate=self.ip_normalization_delegate,
-                sp_normalization_delegate=TestSupervisionNormalizationDelegate(),
-                incarceration_periods=[],
-                supervision_periods=[supervision_period],
-                normalized_violation_responses=None,
-                field_index=self.field_index,
-                incarceration_sentences=None,
-                supervision_sentences=None,
-                staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                    STATE_PERSON_TO_STATE_STAFF_LIST
-                ),
-            )
 
     def test_normalized_periods_for_calculations_no_ips(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -316,12 +200,12 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             person_id=self.person_id,
             ip_normalization_delegate=self.ip_normalization_delegate,
             sp_normalization_delegate=self.sp_normalization_delegate,
-            incarceration_periods=None,
+            incarceration_periods=[],
             supervision_periods=[supervision_period],
-            normalized_violation_responses=None,
+            normalized_violation_responses=[],
             field_index=self.field_index,
-            incarceration_sentences=None,
-            supervision_sentences=None,
+            incarceration_sentences=[],
+            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -339,8 +223,8 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             supervision_periods=[],
             normalized_violation_responses=[],
             field_index=self.field_index,
-            incarceration_sentences=None,
-            supervision_sentences=None,
+            incarceration_sentences=[],
+            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),

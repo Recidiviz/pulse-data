@@ -99,7 +99,9 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
+        #  supervision_period_index only to state-specific delegates that need them via the constructor.
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
     ) -> StateIncarcerationPeriod:
         """State-specific implementations of this class should return a new
         StateIncarcerationPeriod with updated attributes if this period represents a
@@ -112,7 +114,9 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
     def incarceration_admission_reason_override(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
+        #  incarceration_sentences only to state-specific delegates that need them via the constructor.
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
         """States may have specific logic that determines the admission reason for an
         incarceration period.
@@ -146,9 +150,9 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         self,
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        violation_responses: Optional[
-            List[NormalizedStateSupervisionViolationResponse]
-        ],
+        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
+        #  violation_responses only to state-specific delegates that need them via the constructor.
+        violation_responses: List[NormalizedStateSupervisionViolationResponse],
     ) -> PurposeForIncarcerationInfo:
         """State-specific implementations of this class should return a
         PurposeForIncarcerationInfo object complete with the correct
@@ -260,39 +264,14 @@ class StateSpecificIncarcerationNormalizationDelegate(StateSpecificDelegate):
         self,
         person_id: int,
         incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+        # TODO(#25800): When the delegate instantiation is refactored, we should be able to pass
+        #  supervision_period_index only to state-specific delegates that need them via the constructor.
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
     ) -> List[StateIncarcerationPeriod]:
         """Some states may require additional incarceration periods to be inserted
         based on gaps in information.
         """
         return incarceration_periods
-
-    def normalization_relies_on_supervision_periods(self) -> bool:
-        """State-specific implementations of this class should return whether the IP
-        normalization logic for the state relies on information in
-        StateSupervisionPeriod entities.
-
-        Default is False.
-        """
-        return False
-
-    def normalization_relies_on_incarceration_sentences(self) -> bool:
-        """State-specific implementations of this class should return whether the IP
-        normalization logic for the state relies on information in
-        StateIncarcerationSentence entities.
-
-        Default is False.
-        """
-        return False
-
-    def normalization_relies_on_violation_responses(self) -> bool:
-        """State-specific implementations of this class should return whether the IP
-        normalization logic for the state relies on information in
-        StateSupervisionViolationResponse entities.
-
-        Default is False.
-        """
-        return False
 
 
 class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
@@ -303,11 +282,11 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
         normalization_delegate: StateSpecificIncarcerationNormalizationDelegate,
-        normalized_supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
-        normalized_violation_responses: Optional[
-            List[NormalizedStateSupervisionViolationResponse]
+        normalized_supervision_period_index: NormalizedSupervisionPeriodIndex,
+        normalized_violation_responses: List[
+            NormalizedStateSupervisionViolationResponse
         ],
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
         field_index: CoreEntityFieldIndex,
         person_id: Optional[int],
         earliest_death_date: Optional[date] = None,
@@ -321,32 +300,9 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         # Only store the NormalizedSupervisionPeriodIndex if StateSupervisionPeriod
         # entities are required for this state's StateIncarcerationPeriod
         # normalization
-        self._normalized_supervision_period_index: Optional[
-            NormalizedSupervisionPeriodIndex
-        ] = (
-            normalized_supervision_period_index
-            if self.normalization_delegate.normalization_relies_on_supervision_periods()
-            else None
-        )
-
-        # Only store the violation_responses if StateSupervisionViolationResponse
-        # entities are required for this state's StateIncarcerationPeriod
-        # normalization
-        self._violation_responses: Optional[
-            List[NormalizedStateSupervisionViolationResponse]
-        ] = (
-            normalized_violation_responses
-            if self.normalization_delegate.normalization_relies_on_violation_responses()
-            else None
-        )
-
-        self._incarceration_sentences: Optional[
-            List[NormalizedStateIncarcerationSentence]
-        ] = (
-            incarceration_sentences
-            if self.normalization_delegate.normalization_relies_on_incarceration_sentences()
-            else None
-        )
+        self._normalized_supervision_period_index = normalized_supervision_period_index
+        self._violation_responses = normalized_violation_responses
+        self._incarceration_sentences = incarceration_sentences
 
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
@@ -994,10 +950,8 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
         self,
         mid_processing_periods: List[StateIncarcerationPeriod],
         original_sorted_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
-        violation_responses: Optional[
-            List[NormalizedStateSupervisionViolationResponse]
-        ],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
+        violation_responses: List[NormalizedStateSupervisionViolationResponse],
     ) -> Tuple[List[StateIncarcerationPeriod], Dict[int, Optional[str]]]:
         """Updates attributes on incarceration periods that represent a commitment
         from supervision admission and require updated attribute values,
@@ -1240,7 +1194,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
     def _process_fields_on_final_incarceration_period_set(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
     ) -> List[StateIncarcerationPeriod]:
         """After all incarceration periods are processed, continue to update fields of remaining
         incarceration periods prior to adding to the index by:

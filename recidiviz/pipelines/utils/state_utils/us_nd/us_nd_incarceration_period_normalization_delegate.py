@@ -90,7 +90,7 @@ class UsNdIncarcerationNormalizationDelegate(
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
     ) -> StateIncarcerationPeriod:
         return _us_nd_normalize_period_if_commitment_from_supervision(
             incarceration_period_list_index=incarceration_period_list_index,
@@ -176,17 +176,12 @@ class UsNdIncarcerationNormalizationDelegate(
             == StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
         )
 
-    def normalization_relies_on_supervision_periods(self) -> bool:
-        """The apply_commitment_from_supervision_period_overrides function for US_ND
-        relies on supervision period entities."""
-        return True
-
 
 def _us_nd_normalize_period_if_commitment_from_supervision(
     incarceration_period_list_index: int,
     sorted_incarceration_periods: List[StateIncarcerationPeriod],
     original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
-    supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+    supervision_period_index: NormalizedSupervisionPeriodIndex,
 ) -> StateIncarcerationPeriod:
     """Returns an updated version of the specified incarceration period if it is a
     commitment from supervision admission.
@@ -206,11 +201,6 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
         - The person has a TRANSFER admission into a GENERAL incarceration period
             after adjacent period(s) of TEMPORARY_CUSTODY.
     """
-    if supervision_period_index is None:
-        raise ValueError(
-            "IP normalization relies on supervision periods for US_ND. "
-            "Expected non-null supervision_period_index."
-        )
     if len(sorted_incarceration_periods) != len(original_sorted_incarceration_periods):
         raise ValueError(
             f"Expected lengths of mid-processing and original periods to be equal. "
