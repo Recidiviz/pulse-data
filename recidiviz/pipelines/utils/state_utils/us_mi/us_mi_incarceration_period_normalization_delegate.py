@@ -70,14 +70,10 @@ class UsMiIncarcerationNormalizationDelegate(
         "14": StateSupervisionViolationType.LAW,
     }
 
-    def normalization_relies_on_supervision_periods(self) -> bool:
-        """IP normalization for US_MI relies on StateSupervisionPeriod entities."""
-        return True
-
     def incarceration_admission_reason_override(
         self,
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence],
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
         if (
             incarceration_period.admission_reason
@@ -90,7 +86,7 @@ class UsMiIncarcerationNormalizationDelegate(
         self,
         person_id: int,
         incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
     ) -> List[StateIncarcerationPeriod]:
         """
         If we see an incarceration period that ends with release reason TEMPORARY_RELEASE

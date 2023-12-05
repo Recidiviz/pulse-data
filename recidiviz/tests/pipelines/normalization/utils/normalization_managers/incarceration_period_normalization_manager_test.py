@@ -35,6 +35,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.normalized_entities import (
+    NormalizedStateIncarcerationSentence,
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.pipelines.normalization.utils.normalization_managers.incarceration_period_normalization_manager import (
     ATTRIBUTES_TRIGGERING_STATUS_CHANGE,
     IncarcerationPeriodNormalizationManager,
@@ -45,6 +49,9 @@ from recidiviz.pipelines.utils.entity_normalization.normalized_supervision_perio
 )
 from recidiviz.pipelines.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
     UsXxIncarcerationNormalizationDelegate,
+)
+from recidiviz.tests.pipelines.utils.entity_normalization.normalization_testing_utils import (
+    default_normalized_sp_index_for_tests,
 )
 
 
@@ -61,11 +68,11 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> List[StateIncarcerationPeriod]:
         """Normalizes incarceration periods for calculations"""
         # None of the state-agnostic tests rely on supervision periods
-        sp_index = None
+        sp_index = default_normalized_sp_index_for_tests([])
         # None of the state-agnostic tests rely on violation responses
-        violation_responses = None
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
         # None of the state-agnostic tests rely on violation responses
-        incarceration_sentences = None
+        incarceration_sentences: List[NormalizedStateIncarcerationSentence] = []
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             person_id=None,
@@ -1351,9 +1358,11 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             person_id=None,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
-            normalized_supervision_period_index=None,
+            normalized_supervision_period_index=default_normalized_sp_index_for_tests(
+                []
+            ),
             normalized_violation_responses=[],
-            incarceration_sentences=None,
+            incarceration_sentences=[],
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=None,
         )
@@ -1385,18 +1394,18 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
     def _sort_and_infer_missing_dates_and_statuses(
         incarceration_periods: List[StateIncarcerationPeriod],
     ) -> List[StateIncarcerationPeriod]:
-        # None of the state-agnostic tests rely on supervision periods
-        sp_index = None
         # None of the state-agnostic tests rely on violation responses
-        violation_responses = None
+        violation_responses: List[NormalizedStateSupervisionViolationResponse] = []
 
         ip_normalization_manager = IncarcerationPeriodNormalizationManager(
             person_id=None,
             incarceration_periods=incarceration_periods,
             normalization_delegate=UsXxIncarcerationNormalizationDelegate(),
-            normalized_supervision_period_index=sp_index,
+            normalized_supervision_period_index=default_normalized_sp_index_for_tests(
+                []
+            ),
             normalized_violation_responses=violation_responses,
-            incarceration_sentences=None,
+            incarceration_sentences=[],
             field_index=CoreEntityFieldIndex(),
             earliest_death_date=None,
         )

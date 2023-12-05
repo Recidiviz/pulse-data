@@ -18,7 +18,7 @@
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
 
-from typing import List, Optional
+from typing import List
 
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -49,7 +49,7 @@ class UsNcIncarcerationNormalizationDelegate(
         incarceration_period_list_index: int,
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
         original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
+        supervision_period_index: NormalizedSupervisionPeriodIndex,
     ) -> StateIncarcerationPeriod:
         """Returns an updated version of the specified incarceration period if it is a
         commitment from supervision admission.
@@ -84,8 +84,3 @@ class UsNcIncarcerationNormalizationDelegate(
         # This period is not a commitment from supervision, so should not be updated at
         # this time
         return incarceration_period
-
-    def normalization_relies_on_supervision_periods(self) -> bool:
-        """The normalize_period_if_commitment_from_supervision function for US_NC
-        relies on supervision period entities."""
-        return False

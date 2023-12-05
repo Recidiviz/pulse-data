@@ -56,9 +56,8 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             supervision_periods=supervision_periods,
             delegate=UsXxSupervisionNormalizationDelegate(),
             earliest_death_date=earliest_death_date,
-            incarceration_sentences=None,
-            supervision_sentences=None,
-            incarceration_periods=None,
+            incarceration_sentences=[],
+            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -452,9 +451,8 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             supervision_periods=supervision_periods,
             delegate=UsXxSupervisionNormalizationDelegate(),
             earliest_death_date=None,
-            incarceration_sentences=None,
-            supervision_sentences=None,
-            incarceration_periods=None,
+            incarceration_sentences=[],
+            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),
@@ -538,9 +536,8 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             supervision_periods=supervision_periods,
             delegate=UsXxSupervisionNormalizationDelegate(),
             earliest_death_date=None,
-            incarceration_sentences=None,
-            supervision_sentences=None,
-            incarceration_periods=None,
+            incarceration_sentences=[],
+            supervision_sentences=[],
             staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
                 STATE_PERSON_TO_STATE_STAFF_LIST
             ),

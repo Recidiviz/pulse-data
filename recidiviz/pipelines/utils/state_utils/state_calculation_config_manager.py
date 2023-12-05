@@ -1044,6 +1044,15 @@ def _get_state_specific_supervision_period_normalization_delegate(
         if entity_kwargs and entity_kwargs.get(StateAssessment.__name__) is not None
         else None
     )
+    incarceration_periods: Optional[List[StateIncarcerationPeriod]] = (
+        [
+            assert_type(a, StateIncarcerationPeriod)
+            for a in entity_kwargs[StateIncarcerationPeriod.__name__]
+        ]
+        if entity_kwargs
+        and entity_kwargs.get(StateIncarcerationPeriod.__name__) is not None
+        else None
+    )
     if state_code == StateCode.US_AR.value:
         return UsArSupervisionNormalizationDelegate()
     if state_code == StateCode.US_CA.value:
@@ -1082,7 +1091,13 @@ def _get_state_specific_supervision_period_normalization_delegate(
     if state_code == StateCode.US_OR.value:
         return UsOrSupervisionNormalizationDelegate()
     if state_code == StateCode.US_PA.value:
-        return UsPaSupervisionNormalizationDelegate()
+        if incarceration_periods is None:
+            raise ValueError(
+                "Missing StateIncarcerationPeriod entity for UsPaSupervisionNormalizationDelegate"
+            )
+        return UsPaSupervisionNormalizationDelegate(
+            incarceration_periods=incarceration_periods
+        )
     if state_code == StateCode.US_TN.value:
         return UsTnSupervisionNormalizationDelegate()
     if state_code == StateCode.US_OZ.value:
