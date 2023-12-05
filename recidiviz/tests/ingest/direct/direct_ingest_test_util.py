@@ -41,22 +41,9 @@ def _get_raw_data_source_instance(
 
 def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
     """Runs task queues until they are all empty."""
-    # If there isn't a rerun in progress, as indicated by there not being a raw data source instance, there are no
-    # tasks to run.
-    raw_data_source_instance = _get_raw_data_source_instance(controller)
-    instance_is_running = (
-        controller.ingest_instance == DirectIngestInstance.PRIMARY
-        or controller.ingest_instance_status_manager.get_current_ingest_rerun_start_timestamp()
-    )
-    if not instance_is_running:
-        return
-    if not raw_data_source_instance:
-        raise ValueError(
-            "Expected to find nonnull raw_data_source_instance if instance is running."
-        )
     if isinstance(controller.cloud_task_manager, FakeAsyncDirectIngestCloudTaskManager):
         controller.cloud_task_manager.wait_for_all_tasks_to_run(
-            controller.ingest_instance, raw_data_source_instance
+            controller.ingest_instance
         )
     elif isinstance(
         controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager
@@ -68,22 +55,33 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
             or tm.get_extract_and_merge_queue_info(
                 *queue_args,
             ).size()
-            # Fetch the queue information for where the raw data is being processed.
+            # TODO(#20930): In legacy ingest, raw data relevant to this instance could
+            #  be processed in either instance so we check both queues. Once ingest in
+            #  dataflow is shipped, we should only need to check queue info for
+            #  `controller.ingest_instance`.
             or tm.get_raw_data_import_queue_info(
                 region=controller.region,
-                ingest_instance=raw_data_source_instance,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            ).size()
+            or tm.get_raw_data_import_queue_info(
+                region=controller.region,
+                ingest_instance=DirectIngestInstance.SECONDARY,
             ).size()
             or tm.get_ingest_view_materialization_queue_info(
                 *queue_args,
             ).size()
         ):
-            # Fetch the queue information for where the raw data is being processed.
-            if tm.get_raw_data_import_queue_info(
-                region=controller.region,
-                ingest_instance=raw_data_source_instance,
-            ).size():
-                tm.test_run_next_raw_data_import_task(raw_data_source_instance)
-                tm.test_pop_finished_raw_data_import_task(raw_data_source_instance)
+            # TODO(#20930): In legacy ingest, raw data relevant to this instance could
+            #  be processed in either instance so we look at both queues. Once ingest in
+            #  dataflow is shipped, we should only need to run tasks for
+            #  `controller.ingest_instance`.
+            for raw_data_instance in DirectIngestInstance:
+                if tm.get_raw_data_import_queue_info(
+                    region=controller.region,
+                    ingest_instance=raw_data_instance,
+                ).size():
+                    tm.test_run_next_raw_data_import_task(raw_data_instance)
+                    tm.test_pop_finished_raw_data_import_task(raw_data_instance)
             if tm.get_ingest_view_materialization_queue_info(
                 *queue_args,
             ).size():

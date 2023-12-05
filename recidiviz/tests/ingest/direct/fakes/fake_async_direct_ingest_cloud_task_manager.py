@@ -326,11 +326,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             task_names=task_names,
         )
 
-    def wait_for_all_tasks_to_run(
-        self,
-        ingest_instance: DirectIngestInstance,
-        raw_data_source_instance: DirectIngestInstance,
-    ) -> None:
+    def wait_for_all_tasks_to_run(self, ingest_instance: DirectIngestInstance) -> None:
         """Waits for all tasks to finish running."""
         raw_data_import_done = False
         ingest_view_materialization_done = False
@@ -342,8 +338,15 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             and extract_and_merge_queue_done
             and raw_data_import_done
         ):
-            raw_data_import_queue = self._get_queue(
-                raw_data_source_instance, DirectIngestQueueType.RAW_DATA_IMPORT
+            # TODO(#20930): In legacy ingest, raw data relevant to this instance could
+            #  be processed in either instance so we look at both queues. Once ingest in
+            #  dataflow is shipped, we should only need to run tasks for
+            #  `ingest_instance`.
+            primary_raw_data_import_queue = self._get_queue(
+                DirectIngestInstance.PRIMARY, DirectIngestQueueType.RAW_DATA_IMPORT
+            )
+            secondary_raw_data_import_queue = self._get_queue(
+                DirectIngestInstance.SECONDARY, DirectIngestQueueType.RAW_DATA_IMPORT
             )
             ingest_view_materialization_queue = self._get_queue(
                 ingest_instance, DirectIngestQueueType.MATERIALIZE_INGEST_VIEW
@@ -355,7 +358,8 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
                 ingest_instance, DirectIngestQueueType.EXTRACT_AND_MERGE
             )
 
-            raw_data_import_queue.join()
+            primary_raw_data_import_queue.join()
+            secondary_raw_data_import_queue.join()
             ingest_view_materialization_queue.join()
             scheduler_queue.join()
             extract_and_merge_queue.join()
@@ -364,7 +368,8 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
                 with scheduler_queue.all_tasks_mutex:
                     with extract_and_merge_queue.all_tasks_mutex:
                         raw_data_import_done = (
-                            not raw_data_import_queue.get_unfinished_task_names_unsafe()
+                            not primary_raw_data_import_queue.get_unfinished_task_names_unsafe()
+                            and not secondary_raw_data_import_queue.get_unfinished_task_names_unsafe()
                         )
                         ingest_view_materialization_done = (
                             not ingest_view_materialization_queue.get_unfinished_task_names_unsafe()
