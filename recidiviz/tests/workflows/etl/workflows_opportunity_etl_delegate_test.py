@@ -17,6 +17,7 @@
 """Tests for the Workflows ETL delegate."""
 import json
 from copy import deepcopy
+from typing import Any
 from unittest import TestCase
 
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
@@ -85,14 +86,6 @@ EXPECTED_DOCUMENT = {
     "formInformation": {
         "crimeNames": ["Class (A) Misdemeanor", "Class (A) Misdemeanor"]
     },
-    "criteria": {
-        "supervisionEarlyDischargeDateWithin30Days": {"eligibleDate": "2022-11-11"},
-        "usNdImpliedValidEarlyTerminationSentenceType": {"supervisionType": "DEFERRED"},
-        "usNdImpliedValidEarlyTerminationSupervisionLevel": {
-            "supervisionLevel": "MEDIUM"
-        },
-        "usNdNotInActiveRevocationStatus": {"revocationDate": None},
-    },
     "eligibleCriteria": {
         "usNdImpliedValidEarlyTerminationSentenceType": {"supervisionType": "DEFERRED"},
         "usNdImpliedValidEarlyTerminationSupervisionLevel": {
@@ -141,9 +134,6 @@ TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP = {
 
 EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED = {
     "externalId": "456",
-    "criteria": {
-        "supervisionLevelHigherThanAssessmentLevel": {"someValue": "some_data"}
-    },
     "eligibleCriteria": {
         "supervisionLevelHigherThanAssessmentLevel": {"someValue": "some_data"}
     },
@@ -171,10 +161,6 @@ TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP = {
 
 EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
     "externalId": "456",
-    "criteria": {
-        "usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"},
-        "usIdIncomeVerifiedWithin3Months": {"someValue": "some_data"},
-    },
     "eligibleCriteria": {
         "usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"}
     },
@@ -207,15 +193,6 @@ TEST_DATA_WITH_NESTED_CRITERIA = {
 
 EXPECTED_DOCUMENT_WITH_NESTED_CRITERIA = {
     "externalId": "234",
-    "criteria": {
-        "usTnFinesFeesEligible": {
-            "hasFinesFeesBalanceBelow500": {"amountOwed": 100},
-            "hasPayments3ConsecutiveMonths": {
-                "amountOwed": 100,
-                "consecutiveMonthlyPayments": 3,
-            },
-        },
-    },
     "eligibleCriteria": {
         "usTnFinesFeesEligible": {
             "hasFinesFeesBalanceBelow500": {"amountOwed": 100},
@@ -300,9 +277,9 @@ class TestWorkflowsETLDelegate(TestCase):
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         data = deepcopy(TEST_DATA)
         data["ineligible_criteria"] = []
-        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected: dict[str, Any] = deepcopy(EXPECTED_DOCUMENT)
+        expected["eligibleCriteria"].update(expected["ineligibleCriteria"])
         expected["ineligibleCriteria"] = {}  # type: ignore
-        expected["eligibleCriteria"] = expected["criteria"]  # type: ignore
         new_document = delegate.build_document(data)
         self.assertEqual(
             expected,
@@ -314,9 +291,9 @@ class TestWorkflowsETLDelegate(TestCase):
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         data = deepcopy(TEST_DATA)
         del data["ineligible_criteria"]
-        expected = deepcopy(EXPECTED_DOCUMENT)
+        expected: dict[str, Any] = deepcopy(EXPECTED_DOCUMENT)
+        expected["eligibleCriteria"].update(expected["ineligibleCriteria"])
         expected["ineligibleCriteria"] = {}  # type: ignore
-        expected["eligibleCriteria"] = expected["criteria"]  # type: ignore
         new_document = delegate.build_document(data)
         self.assertEqual(
             expected,

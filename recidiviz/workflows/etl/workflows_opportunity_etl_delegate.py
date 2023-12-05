@@ -16,7 +16,6 @@
 #  =============================================================================
 """Delegate class to ETL opportunity referral records for workflows into Firestore."""
 import json
-import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
@@ -131,25 +130,27 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         new_document: dict[str, Any] = {
             "formInformation": {},
             "metadata": {},
-            "criteria": {},
             "eligibleCriteria": {},
             "ineligibleCriteria": {},
             "caseNotes": {},
         }
-
+        processed_criteria: dict[str, Any] = {}
         ineligible_criteria: Optional[Set[str]] = None
 
+        # Process form_information, metadata, reasons, and case_notes
         for key, value in row.items():
-            # Rename form_information and metadata fields
             if key.startswith("form_information_"):
-                formatted_key = re.sub(r"form_information_", "", key)
-                new_document["formInformation"][formatted_key] = value
+                new_document["formInformation"][
+                    key.removeprefix("form_information_")
+                ] = value
             elif key.startswith("metadata_"):
-                formatted_key = re.sub(r"metadata_", "", key)
-                new_document["metadata"][formatted_key] = value
-            # transform reasons array to mapping
+                new_document["metadata"][key.removeprefix("metadata_")] = value
             elif key == "reasons":
-                new_document["criteria"] = self._process_criteria(value)
+                processed_criteria = self._process_criteria(value)
+            elif key == "ineligible_criteria":
+                ineligible_criteria = {
+                    self._preprocess_criterion_name(v) for v in value
+                }
             elif key == "case_notes":
                 if value:
                     for note in value:
@@ -164,32 +165,25 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
                                 "eventDate": note["event_date"],
                             }
                         )
-            elif key == "ineligible_criteria":
-                ineligible_criteria = {
-                    self._preprocess_criterion_name(v) for v in value
-                }
             else:
                 new_document[key] = value
 
-        # if the ineligible_criteria field is set, split the criteria into eligible and ineligible version
-        # if not set, just copy criteria into eligible_criteria
-        if ineligible_criteria is not None:
+        # Split processed criteria if ineligibleCriteria is present,
+        # otherwise set all processed criteria to eligibleCriteria
+        if ineligible_criteria:
             new_document["eligibleCriteria"] = {
-                criteria: reason
-                for (criteria, reason) in new_document["criteria"].items()
-                if criteria not in ineligible_criteria
+                k: v
+                for k, v in processed_criteria.items()
+                if k not in ineligible_criteria
             }
             new_document["ineligibleCriteria"] = {
-                criteria: reason
-                for (criteria, reason) in new_document["criteria"].items()
-                if criteria in ineligible_criteria
+                k: v for k, v in processed_criteria.items() if k in ineligible_criteria
             }
         else:
-            new_document["eligibleCriteria"] = new_document["criteria"]
+            new_document["eligibleCriteria"] = processed_criteria
 
-        # Convert all keys to camelcase
-        new_document = convert_nested_dictionary_keys(new_document, snake_to_camel)
-        return new_document
+        # Convert all keys to camelcase and return
+        return convert_nested_dictionary_keys(new_document, snake_to_camel)
 
     def transform_row(self, row: str) -> Tuple[Optional[str], Optional[dict]]:
         data = json.loads(row)

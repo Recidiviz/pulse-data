@@ -108,7 +108,6 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "offenseTypeEligibility": 2,
                     "formInformation": {},
                     "metadata": {},
-                    "criteria": {},
                     "eligibleCriteria": {},
                     "ineligibleCriteria": {},
                     "caseNotes": {},
@@ -164,60 +163,6 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "specialConditionsProgrammingFsw": False,
                     "specialConditionsProgrammingFswCurrent": False,
                     "externalId": "201",
-                    "criteria": {
-                        "hasActiveSentence": {"hasActiveSentence": True},
-                        "supervisionLevelIsNotInternalUnknown": None,
-                        "supervisionLevelIsNotInterstateCompact": None,
-                        "supervisionLevelIsNotUnassigned": None,
-                        "supervisionNotPastFullTermCompletionDateOrUpcoming90Days": {
-                            "eligibleDate": "2023-07-01"
-                        },
-                        "usTnFinesFeesEligible": {
-                            "hasFinesFeesBalanceBelow500": {"amountOwed": 45},
-                            "hasPayments3ConsecutiveMonths": {
-                                "amountOwed": 45,
-                                "consecutiveMonthlyPayments": 3,
-                            },
-                        },
-                        "usTnIneligibleOffensesExpired": None,
-                        "usTnNoArrestsInPastYear": None,
-                        "usTnNoDuiOffenseInPast5Years": None,
-                        "usTnNoHighSanctionsInPastYear": None,
-                        "usTnNoMurderConvictions": None,
-                        "usTnNoPriorRecordWithIneligibleCrOffense": {
-                            "ineligibleOffenseDates": ["2006-01-09"],
-                            "ineligibleOffenses": ["ASSAULT"],
-                        },
-                        "usTnNoRecentCompliantReportingRejections": None,
-                        "usTnNoZeroToleranceCodesSpans": None,
-                        "usTnNotInJudicialDistrict17WhileOnProbation": None,
-                        "usTnNotOnLifeSentenceOrLifetimeSupervision": {
-                            "lifetimeFlag": False
-                        },
-                        "usTnNotPermanentlyRejectedFromCompliantReporting": None,
-                        "usTnNotServingIneligibleCrOffense": None,
-                        "usTnNotServingUnknownCrOffense": None,
-                        "usTnOnEligibleLevelForSufficientTime": {
-                            "eligibleDate": "2018-04-05",
-                            "eligibleLevel": "MINIMUM",
-                        },
-                        "usTnPassedDrugScreenCheck": {
-                            "hasAtLeast1NegativeDrugTestPastYear": {
-                                "latestNegativeScreenDates": ["2023-03-04"],
-                                "latestNegativeScreenResults": ["DRUN"],
-                            },
-                            "hasAtLeast2NegativeDrugTestsPastYear": {
-                                "latestNegativeScreenDates": ["2023-03-04"],
-                                "latestNegativeScreenResults": ["DRUN"],
-                            },
-                            "latestAlcoholDrugNeedLevel": "LOW",
-                            "latestDrugTestIsNegative": {
-                                "latestDrugScreenDate": "2023-03-04",
-                                "latestDrugScreenResult": "DRUN",
-                            },
-                        },
-                        "usTnSpecialConditionsAreCurrent": {"speNoteDue": None},
-                    },
                     "eligibleCriteria": {
                         "hasActiveSentence": {"hasActiveSentence": True},
                         "supervisionLevelIsNotInternalUnknown": None,
@@ -354,57 +299,6 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "specialConditionsProgrammingFsw": False,
                     "specialConditionsProgrammingFswCurrent": False,
                     "externalId": "202",
-                    "criteria": {
-                        "hasActiveSentence": {"hasActiveSentence": True},
-                        "supervisionLevelIsNotInternalUnknown": None,
-                        "supervisionLevelIsNotInterstateCompact": None,
-                        "supervisionLevelIsNotUnassigned": None,
-                        "supervisionNotPastFullTermCompletionDateOrUpcoming90Days": {
-                            "eligibleDate": "2029-06-06"
-                        },
-                        "usTnFinesFeesEligible": {
-                            "hasFinesFeesBalanceBelow500": {"amountOwed": 700},
-                            "hasPayments3ConsecutiveMonths": {
-                                "amountOwed": 700,
-                                "consecutiveMonthlyPayments": None,
-                            },
-                        },
-                        "usTnIneligibleOffensesExpired": None,
-                        "usTnNoArrestsInPastYear": None,
-                        "usTnNoDuiOffenseInPast5Years": None,
-                        "usTnNoHighSanctionsInPastYear": None,
-                        "usTnNoMurderConvictions": None,
-                        "usTnNoPriorRecordWithIneligibleCrOffense": None,
-                        "usTnNoRecentCompliantReportingRejections": None,
-                        "usTnNoZeroToleranceCodesSpans": None,
-                        "usTnNotInJudicialDistrict17WhileOnProbation": None,
-                        "usTnNotOnLifeSentenceOrLifetimeSupervision": {
-                            "lifetimeFlag": False
-                        },
-                        "usTnNotPermanentlyRejectedFromCompliantReporting": None,
-                        "usTnNotServingIneligibleCrOffense": None,
-                        "usTnNotServingUnknownCrOffense": None,
-                        "usTnOnEligibleLevelForSufficientTime": {
-                            "eligibleDate": "2020-08-01",
-                            "eligibleLevel": "MINIMUM",
-                        },
-                        "usTnPassedDrugScreenCheck": {
-                            "hasAtLeast1NegativeDrugTestPastYear": {
-                                "latestNegativeScreenDates": ["2023-02-28"],
-                                "latestNegativeScreenResults": ["DRUN"],
-                            },
-                            "hasAtLeast2NegativeDrugTestsPastYear": {
-                                "latestNegativeScreenDates": ["2023-02-28"],
-                                "latestNegativeScreenResults": ["DRUN"],
-                            },
-                            "latestAlcoholDrugNeedLevel": "LOW",
-                            "latestDrugTestIsNegative": {
-                                "latestDrugScreenDate": "2023-02-28",
-                                "latestDrugScreenResult": "DRUN",
-                            },
-                        },
-                        "usTnSpecialConditionsAreCurrent": {"speNoteDue": None},
-                    },
                     "eligibleCriteria": {
                         "hasActiveSentence": {"hasActiveSentence": True},
                         "supervisionLevelIsNotInternalUnknown": None,
