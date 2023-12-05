@@ -198,6 +198,7 @@ def x_time_from_ineligible_offense(
     date_part: str,
     date_interval: int,
     additional_where_clause: str = "",
+    start_date_column: str = "effective_date",
 ) -> str:
     """
     Generate a BigQuery SQL query to identify time spans where individuals
@@ -225,17 +226,16 @@ def x_time_from_ineligible_offense(
     SELECT 
         state_code,
         person_id, 
-        effective_date AS start_date,
-        DATE_ADD(effective_date, INTERVAL {date_interval} {date_part}) AS end_date,
+        {start_date_column} AS start_date,
+        DATE_ADD({start_date_column}, INTERVAL {date_interval} {date_part}) AS end_date,
         statute,
-        #TODO(#23423): make sure we are using the right date
-        effective_date,
+        {start_date_column},
         description
     FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` 
     WHERE statute IS NOT NULL
         AND statute IN {statutes_string}
-        AND effective_date IS NOT NULL
-        AND effective_date NOT IN ('9999-12-31', '9999-12-20')
+        AND {start_date_column} IS NOT NULL
+        AND {start_date_column} NOT IN ('9999-12-31', '9999-12-20')
         {additional_where_clause}
 ),
 
@@ -249,7 +249,7 @@ SELECT
   FALSE AS meets_criteria,
   TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses,
                  ARRAY_AGG(DISTINCT description) AS ineligible_offenses_descriptions,
-                 MAX(effective_date) AS most_recent_statute_date)) AS reason,
+                 MAX({start_date_column}) AS most_recent_statute_date)) AS reason,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5"""
 
