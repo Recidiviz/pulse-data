@@ -194,6 +194,7 @@ output:
                         - "Granted Early Discharge - Parole"
                       StateSupervisionPeriodTerminationReason.EXPIRATION:
                         - Probation Term Expired
+                        - Parole Term Expired
                       StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                         - Administrative
                         - Administrative Transfer
