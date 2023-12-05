@@ -20,16 +20,6 @@ from typing import Dict, FrozenSet, List, Optional, Tuple
 
 import attr
 
-# This object contains a mapping from original column names in Recidiviz's
-# schema to abbreviated column names. Note that we do not rename state_code
-# or facility, so those columns are omitted from this object.
-COLUMN_SOURCE_DICT = {
-    "district": "supervision_district",
-    "district_name": "supervision_district_name",
-    "office": "supervision_office",
-    "office_name": "supervision_office_name",
-}
-
 
 class MetricUnitOfAnalysisType(Enum):
     """A unit of analysis is the entity that you wish to say something about at the end
@@ -137,28 +127,6 @@ class MetricUnitOfAnalysis:
         prefix_str = f"{prefix}." if prefix else ""
         return ", ".join(f"{prefix_str}{column}" for column in self.index_columns)
 
-    def get_original_index_columns_query_string(
-        self, prefix: Optional[str] = None
-    ) -> str:
-        """Returns string containing comma separated column names from the source table with optional prefix"""
-        prefix_str = f"{prefix}." if prefix else ""
-        return ", ".join(
-            f"{prefix_str}{COLUMN_SOURCE_DICT.get(column, column)}"
-            for column in self.index_columns
-        )
-
-    def get_index_column_rename_query_string(self, prefix: Optional[str] = None) -> str:
-        """
-        Returns string containing comma separated column names from the source table aliased with new index columns
-        where present in COLUMN_SOURCE_DICT, with optional prefix
-        """
-        prefix_str = f"{prefix}." if prefix else ""
-        renamed_columns = [
-            f"{prefix_str}{COLUMN_SOURCE_DICT.get(column, column)} AS {column}"
-            for column in self.index_columns
-        ]
-        return ", ".join(renamed_columns)
-
 
 METRIC_UNITS_OF_OBSERVATION = [
     MetricUnitOfObservation(
@@ -231,23 +199,23 @@ UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT: Dict[
         MetricUnitOfObservationType.PERSON_ID,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
     ): """
-SELECT a.*, a.supervising_officer_external_id AS officer_id, b.full_name_clean AS officer_name
-FROM 
-    `{project_id}.sessions.supervision_officer_sessions_materialized` a
-LEFT JOIN 
-    `{project_id}.reference_views.state_staff_with_names` b
-ON 
-    a.state_code = b.state_code
-    AND a.supervising_officer_external_id = b.legacy_supervising_officer_external_id
+SELECT *, supervising_officer_external_id AS officer_id
+FROM `{project_id}.sessions.supervision_officer_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.PERSON_ID,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
-    ): "SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
+    ): """SELECT
+    *, 
+    supervision_district AS district,
+    supervision_office AS office,
+FROM
+    `{project_id}.sessions.location_sessions_materialized`
+""",
     (
         MetricUnitOfObservationType.PERSON_ID,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
-    ): "SELECT * FROM `{project_id}.sessions.location_sessions_materialized`",
+    ): "SELECT *, supervision_district AS district, FROM `{project_id}.sessions.location_sessions_materialized`",
     (
         MetricUnitOfObservationType.PERSON_ID,
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
@@ -265,46 +233,31 @@ ON
         MetricUnitOfAnalysisType.FACILITY_COUNSELOR,
     ): """
 SELECT 
-    a.* EXCEPT (incarceration_staff_assignment_id),
-    a.incarceration_staff_assignment_id AS facility_counselor_id,
-    b.full_name_clean AS facility_counselor_name
+    * EXCEPT (incarceration_staff_assignment_id),
+    incarceration_staff_assignment_id AS facility_counselor_id,
 FROM
-    `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized` a
-LEFT JOIN
-    `{project_id}.reference_views.state_staff_with_names` b
-ON
-    a.state_code = b.state_code
-    AND a.incarceration_staff_assignment_id = b.staff_id
+    `{project_id}.sessions.incarceration_staff_assignment_sessions_preprocessed_materialized`
 WHERE
     incarceration_staff_assignment_role_subtype = "COUNSELOR"
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
-    ): """
-SELECT a.*, b.full_name_clean AS officer_name
-FROM 
-    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized` a
-LEFT JOIN 
-    `{project_id}.reference_views.state_staff_with_names` b
-ON 
-    a.state_code = b.state_code
-    AND a.staff_id = b.staff_id
-""",
+    ): """SELECT * FROM `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`""",
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
     ): """SELECT
     *, 
-    supervision_office_id AS supervision_office,
-    supervision_district_id AS supervision_district,
+    supervision_office_id AS office,
+    supervision_district_id AS district,
 FROM
     `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`""",
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
     ): """SELECT
-    *, supervision_district_id AS supervision_district,
+    *, supervision_district_id AS district,
 FROM
     `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`
 """,
@@ -312,21 +265,74 @@ FROM
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.SUPERVISION_UNIT,
     ): """SELECT
-    a.*, 
-    a.supervisor_staff_id AS unit_supervisor,
-    b.full_name_clean AS unit_supervisor_name,
+    *, 
+    supervisor_staff_id AS unit_supervisor,
 FROM
-    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized` a
-LEFT JOIN 
-    `{project_id}.reference_views.state_staff_with_names` b
-ON 
-    a.state_code = b.state_code
-    AND a.supervisor_staff_id = b.staff_id
+    `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`
 """,
     (
         MetricUnitOfObservationType.SUPERVISION_OFFICER,
         MetricUnitOfAnalysisType.STATE_CODE,
     ): """SELECT * FROM `{project_id}.sessions.supervision_officer_attribute_sessions_materialized`""",
+}
+
+UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT: Dict[
+    MetricUnitOfAnalysisType, str
+] = {
+    MetricUnitOfAnalysisType.FACILITY: """
+SELECT DISTINCT
+    state_code,
+    facility,
+    facility_name,
+FROM
+    `{project_id}.sessions.session_location_names_materialized`
+""",
+    MetricUnitOfAnalysisType.FACILITY_COUNSELOR: """
+SELECT
+    state_code,
+    staff_id AS facility_counselor_id,
+    full_name_clean AS facility_counselor_name,
+FROM
+    `{project_id}.reference_views.state_staff_with_names`
+""",
+    MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: """
+SELECT DISTINCT
+    state_code,
+    supervision_district AS district,
+    supervision_district_name AS district_name,
+FROM
+    `{project_id}.sessions.session_location_names_materialized`
+""",
+    MetricUnitOfAnalysisType.SUPERVISION_OFFICE: """
+SELECT DISTINCT
+    state_code,
+    supervision_district AS district,
+    supervision_district_name AS district_name,
+    supervision_office AS office,
+    supervision_office_name AS office_name,
+FROM
+    `{project_id}.sessions.session_location_names_materialized`
+""",
+    MetricUnitOfAnalysisType.SUPERVISION_OFFICER: """
+SELECT
+    a.state_code,
+    b.external_id AS officer_id,
+    a.full_name_clean AS officer_name,
+FROM
+    `{project_id}.reference_views.state_staff_with_names` a
+INNER JOIN
+    `{project_id}.sessions.state_staff_id_to_legacy_supervising_officer_external_id_materialized` b
+USING
+    (staff_id)
+""",
+    MetricUnitOfAnalysisType.SUPERVISION_UNIT: """
+SELECT
+    state_code,
+    staff_id AS unit_supervisor,
+    full_name_clean AS unit_supervisor_name,
+FROM
+    `{project_id}.reference_views.state_staff_with_names`
+""",
 }
 
 
@@ -344,3 +350,12 @@ def get_assignment_query_for_unit_of_analysis(
             f"{unit_of_observation_type=}."
         )
     return UNIT_OF_ANALYSIS_ASSIGNMENT_QUERIES_DICT[unit_pair_key]
+
+
+def get_static_attributes_query_for_unit_of_analysis(
+    unit_of_analysis_type: MetricUnitOfAnalysisType,
+) -> Optional[str]:
+    """Returns the query that associates a unit of analysis with its static attribute columns"""
+    if unit_of_analysis_type in UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT:
+        return UNIT_OF_ANALYSIS_STATIC_ATTRIBUTE_COLS_QUERY_DICT[unit_of_analysis_type]
+    return None

@@ -42,7 +42,7 @@ def get_unioned_time_granularity_clause(
     metrics : List[AggregatedMetric]
         A list of AggregatedMetric objects used to construct the select statement
     """
-    index_cols = unit_of_analysis.get_index_columns_query_string()
+    index_cols = unit_of_analysis.get_primary_key_columns_query_string()
     metric_cols = ",\n\t".join(
         [metric.generate_aggregate_time_periods_query_fragment() for metric in metrics]
     )
@@ -98,7 +98,7 @@ def get_joined_metrics_by_observation_type_query(
             if i > 0
         ]
     )
-    index_cols = unit_of_analysis.get_index_columns_query_string()
+    index_cols = unit_of_analysis.get_primary_key_columns_query_string()
     # Select columns in their original order, since separation by metric unit of observation scrambles the order
     metric_cols_ordered = ",\n\t".join([metric.name for metric in metrics])
     return f"""

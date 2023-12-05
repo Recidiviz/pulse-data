@@ -62,12 +62,12 @@ def generate_metric_assignment_sessions_view_builder(
 for use in the {unit_of_analysis_name}_metrics table, based on {unit_of_observation_name} assignments to 
 {unit_of_analysis_name}.
 """
-    # list of all index columns from unit of observation that aren't already one of the index columns
+    # list of all primary key columns from unit of observation that aren't already one of the primary key columns
     # of the unit of analysis
     child_primary_key_columns = [
         col
         for col in sorted(unit_of_observation.primary_key_columns)
-        if col not in unit_of_analysis.index_columns
+        if col not in unit_of_analysis.primary_key_columns
     ]
     child_primary_key_columns_query_string = (
         list_to_query_string(child_primary_key_columns) + ",\n"
@@ -88,14 +88,13 @@ sample AS (
 -- {unit_of_observation_name} assignments to {unit_of_analysis_name}
 , assign AS (
     SELECT
-        {child_primary_key_columns_query_string}{unit_of_analysis.get_index_column_rename_query_string()},
+        {child_primary_key_columns_query_string}{unit_of_analysis.get_primary_key_columns_query_string()},
         start_date,
         end_date_exclusive,
         1 AS dummy,
     FROM ({get_assignment_query_for_unit_of_analysis(unit_of_analysis_type, unit_of_observation_type)})
-    # TODO(#25676): Adjust this logic to exclude based on null primary key columns only
     WHERE
-        CONCAT({unit_of_analysis.get_original_index_columns_query_string()}) IS NOT NULL
+        CONCAT({unit_of_analysis.get_primary_key_columns_query_string()}) IS NOT NULL
 )
 -- if assigned unit not always in sample population, take intersection of exclusive periods
 -- to determine the start and end dates of assignment
@@ -105,7 +104,7 @@ sample AS (
         table_2_name="sample", 
         index_columns=sorted(unit_of_observation.primary_key_columns),
         include_zero_day_intersections=True,
-        table_1_columns=[col for col in unit_of_analysis.index_columns if col not in sorted(unit_of_observation.primary_key_columns)] + ["dummy"],
+        table_1_columns=[col for col in unit_of_analysis.primary_key_columns if col not in sorted(unit_of_observation.primary_key_columns)] + ["dummy"],
         table_2_columns=[]
     )}
 )
@@ -122,7 +121,7 @@ sample AS (
 -- Re-sessionize all intersecting spans
 , {unit_of_analysis_name}_assignments AS (
     SELECT
-        {child_primary_key_columns_query_string}{unit_of_analysis.get_index_columns_query_string()},
+        {child_primary_key_columns_query_string}{unit_of_analysis.get_primary_key_columns_query_string()},
         session_id,
         MIN(start_date) AS assignment_date,
         MAX({nonnull_end_date_clause("end_date_exclusive")}) AS end_date_exclusive,
@@ -130,7 +129,7 @@ sample AS (
         SELECT
             * EXCEPT(date_gap),
             SUM(IF(date_gap, 1, 0)) OVER (
-                PARTITION BY {child_primary_key_columns_query_string}{unit_of_analysis.get_index_columns_query_string()}
+                PARTITION BY {child_primary_key_columns_query_string}{unit_of_analysis.get_primary_key_columns_query_string()}
                 ORDER BY start_date, {nonnull_end_date_clause("end_date_exclusive")}
             ) AS session_id,
         FROM (
@@ -138,7 +137,7 @@ sample AS (
                 *,
                 IFNULL(
                     LAG(end_date_exclusive) OVER(
-                        PARTITION BY {child_primary_key_columns_query_string}{unit_of_analysis.get_index_columns_query_string()}
+                        PARTITION BY {child_primary_key_columns_query_string}{unit_of_analysis.get_primary_key_columns_query_string()}
                         ORDER BY start_date, {nonnull_end_date_clause("end_date_exclusive")}
                     ) != start_date, TRUE
                 ) AS date_gap,
@@ -146,7 +145,7 @@ sample AS (
                 sub_sessions_with_attributes_distinct
         )
     )
-    GROUP BY {child_primary_key_columns_query_string}{unit_of_analysis.get_index_columns_query_string()}, session_id
+    GROUP BY {child_primary_key_columns_query_string}{unit_of_analysis.get_primary_key_columns_query_string()}, session_id
 )
 SELECT 
     * EXCEPT(session_id, end_date_exclusive),
