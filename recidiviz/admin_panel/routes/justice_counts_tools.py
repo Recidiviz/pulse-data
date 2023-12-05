@@ -84,7 +84,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     fips_county_code=fips_county_code,
                     is_superagency=False,
                     super_agency_id=None,
-                    is_dashboard_enabled=False,
+                    is_dashboard_enabled=True,
                     agency_id=None,
                 )
 
