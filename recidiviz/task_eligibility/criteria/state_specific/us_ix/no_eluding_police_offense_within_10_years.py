@@ -47,7 +47,8 @@ _WHERE_CLAUSE = "AND state_code = 'US_IX'"
 _QUERY_TEMPLATE = f"""WITH {x_time_from_ineligible_offense(statutes_list = _INELIGIBLE_STATUTES,
                                                               date_part='YEAR',
                                                               date_interval=10,
-                                                              additional_where_clause = _WHERE_CLAUSE)}
+                                                              additional_where_clause = _WHERE_CLAUSE,
+                                                              start_date_column='date_imposed')}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
