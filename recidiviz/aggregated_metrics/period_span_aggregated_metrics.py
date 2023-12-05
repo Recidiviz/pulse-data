@@ -41,7 +41,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     MetricUnitOfObservation,
-    MetricUnitOfObservationType,
 )
 
 
@@ -72,7 +71,7 @@ def generate_period_span_aggregated_metrics_view_builder(
             raise ValueError(
                 f"Unsupported metric_time_period: {metric_time_period.value}"
             )
-        # get query string across the set of unit of analysis index columns and unit of observation primary key columns
+        # get query string across the set of unit of analysis and unit of observation primary key columns
 
         metric_subqueries_by_unit_of_observation: List[str] = []
         metrics_by_unit_of_observation: Dict[
@@ -92,7 +91,7 @@ def generate_period_span_aggregated_metrics_view_builder(
                 sorted(
                     {
                         *unit_of_observation.primary_key_columns,
-                        *unit_of_analysis.index_columns,
+                        *unit_of_analysis.primary_key_columns,
                     }
                 ),
                 table_prefix="assign",
@@ -109,14 +108,9 @@ def generate_period_span_aggregated_metrics_view_builder(
                     for metric in metrics_for_unit_of_observation
                 ]
             )
-            # Only include the static attribute columns if the unit of observation is `person`.
-            # This ensures that we don't have conflicting values for the static attributes
-            # across assignment queries of different observation types.
-            # TODO(#25676): Remove this logic once static attribute columns are joined in further downstream
+
             unit_of_analysis_join_columns_str = (
-                unit_of_analysis.get_index_columns_query_string()
-                if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
-                else unit_of_analysis.get_primary_key_columns_query_string()
+                unit_of_analysis.get_primary_key_columns_query_string()
             )
             metric_subquery = f"""
     SELECT

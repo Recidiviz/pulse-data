@@ -37,7 +37,6 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysis,
     MetricUnitOfObservation,
-    MetricUnitOfObservationType,
 )
 
 
@@ -89,14 +88,9 @@ def generate_period_event_aggregated_metrics_view_builder(
                     for metric in metrics_for_unit_of_observation
                 ]
             )
-            # Only include the static attribute columns if the unit of observation is `person`.
-            # This ensures that we don't have conflicting values for the static attributes
-            # across assignment queries of different observation types.
-            # TODO(#25676): Remove this logic once static attribute columns are joined in further downstream
+
             unit_of_analysis_join_columns_str = (
-                unit_of_analysis.get_index_columns_query_string("assign")
-                if unit_of_observation.type == MetricUnitOfObservationType.PERSON_ID
-                else unit_of_analysis.get_primary_key_columns_query_string("assign")
+                unit_of_analysis.get_primary_key_columns_query_string("assign")
             )
 
             metric_subquery = f"""

@@ -39,6 +39,7 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_a
     MetricUnitOfAnalysis,
     MetricUnitOfObservationType,
     get_assignment_query_for_unit_of_analysis,
+    get_static_attributes_query_for_unit_of_analysis,
 )
 
 
@@ -151,6 +152,16 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
     {table_ref}
 {join_condition}
 """
+    static_attributes_query = get_static_attributes_query_for_unit_of_analysis(
+        unit_of_analysis.type
+    )
+    if static_attributes_query:
+        from_clause += f"""
+LEFT JOIN
+    ({get_static_attributes_query_for_unit_of_analysis(unit_of_analysis.type)})
+USING
+    ({unit_of_analysis.get_primary_key_columns_query_string()})
+"""
 
     # verify from_clause is hydrated
     if not from_clause:
@@ -159,7 +170,7 @@ Static attribute columns: `{unit_of_analysis.get_static_attribute_columns_query_
     # construct query template
     query_template = f"""
 SELECT
-    {unit_of_analysis.get_index_columns_query_string(prefix="period_span")},
+    {unit_of_analysis.get_index_columns_query_string()},
     start_date,
     end_date,
     period,
