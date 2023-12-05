@@ -58,4 +58,5 @@ class UsOzController(BaseDirectIngestController):
             "ageid_staff_supervisor",
             "lotr_person",
             "lotr_periods",
+            "sm_person",
         ]
