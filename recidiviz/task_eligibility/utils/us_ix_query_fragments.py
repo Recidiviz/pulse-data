@@ -618,6 +618,3 @@ def program_enrollment_query() -> str:
     WHERE 
         ce.OfdEnrollmentStatusId IN ('1', '2', '3')
     """
-
-
-print(program_enrollment_query())

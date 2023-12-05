@@ -425,7 +425,7 @@ FROM ({filtered_with_new_cols})"""
             enum_field_name = enum_entity_cls.get_enum_field_name()
             raw_text_field_name = enum_entity_cls.get_raw_text_field_name()
             enum_entity_child_join_clauses.append(
-                f"""JOIN (
+                f"""LEFT OUTER JOIN (
     SELECT 
       {state_entity_cls.get_primary_key_column_name()}, 
       TO_JSON_STRING(
