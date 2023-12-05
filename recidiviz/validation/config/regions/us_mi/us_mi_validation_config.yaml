@@ -25,9 +25,6 @@ max_allowed_error_overrides:
       our incarceration periods view. Lastly, there are also some mismatches for
       facilities that no longer exist ("IRM"). As a note, MI has cautioned that the
       counts they have in the external data are also not entirely consistent.
-  - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison #TODO(#13513)
-    hard_max_allowed_error_override: .125
-    override_reason: Needs investigation; fails for years 2010-2013. #TODO(#13514)
   - validation_name: incarceration_population_person_level_external_comparison
     hard_max_allowed_error_override: .035
     override_reason: Needs investigation.  Current failing level as of 9/26 is .0302 #TODO(#13880)
