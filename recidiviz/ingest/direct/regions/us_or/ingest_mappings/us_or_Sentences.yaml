@@ -58,6 +58,7 @@ output:
                   - $literal("P")
                   - $literal("O")
                   - $literal("D")
+                  - $literal("C")
             $then:
               StateSupervisionSentence:
                 external_id:
