@@ -75,7 +75,7 @@ from __future__ import absolute_import
 
 import argparse
 import logging
-from typing import List, Tuple, Type
+from typing import Dict, List, Tuple, Type
 
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
@@ -85,10 +85,17 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
+from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_classes
 from recidiviz.tools.utils.run_sandbox_dataflow_pipeline_utils import (
     run_sandbox_dataflow_pipeline,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+
+PIPELINE_PARAMETER_TYPES: Dict[str, Type[PipelineParameters]] = {
+    "metrics": MetricsPipelineParameters,
+    "normalization": NormalizationPipelineParameters,
+    "supplemental": SupplementalPipelineParameters,
+}
 
 
 def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
@@ -115,28 +122,29 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
         action=argparse.BooleanOptionalAction,
     )
 
+    parser.add_argument(
+        "--pipeline",
+        type=str,
+        dest="pipeline",
+        help="The name of the specific pipeline to run (e.g. 'incarceration_metrics').",
+        choices=[p.pipeline_name().lower() for p in collect_all_pipeline_classes()],
+    )
+
     return parser.parse_known_args()
 
 
 def parse_pipeline_parameters(
-    pipeline_type: str, remaining_args: List[str]
+    known_args: argparse.Namespace, remaining_args: List[str]
 ) -> PipelineParameters:
-    parameter_cls: Type[PipelineParameters]
-    if pipeline_type == "metrics":
-        parameter_cls = MetricsPipelineParameters
-    elif pipeline_type == "normalization":
-        parameter_cls = NormalizationPipelineParameters
-    elif pipeline_type == "supplemental":
-        parameter_cls = SupplementalPipelineParameters
-    else:
-        raise ValueError(f"Unexpected pipeline_type [{pipeline_type}]")
-
-    return parameter_cls.parse_from_args(remaining_args, sandbox_pipeline=True)
+    parameter_cls = PIPELINE_PARAMETER_TYPES[known_args.pipeline_type]
+    return parameter_cls.parse_from_args(
+        remaining_args + ["--pipeline", known_args.pipeline], sandbox_pipeline=True
+    )
 
 
 def main() -> None:
     known_args, remaining_args = parse_run_arguments()
-    params = parse_pipeline_parameters(known_args.pipeline_type, remaining_args)
+    params = parse_pipeline_parameters(known_args, remaining_args)
     # Have the user confirm that the sandbox dataflow dataset exists.
     for attr in dir(params):
         if attr.endswith("output") and isinstance(getattr(params, attr), str):
