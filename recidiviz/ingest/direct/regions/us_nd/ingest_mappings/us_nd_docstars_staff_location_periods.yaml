@@ -2,17 +2,11 @@
 manifest_language: 1.0.0
 input_columns:
   - OFFICER
-  - SITEID
-  - LNAME
-  - FNAME
-  - STATUS
-  - period_seq_num
+  - location
   - start_date
   - end_date
-unused_columns:
-  - STATUS # Employment status, currently unused
-  - LNAME
-  - FNAME
+  - period_seq_num
+unused_columns: []
 output:
   StateStaff:
     external_ids:
@@ -26,6 +20,6 @@ output:
               $values:
                 - OFFICER
                 - period_seq_num
-          location_external_id: SITEID
+          location_external_id: location
           start_date: start_date
           end_date: end_date

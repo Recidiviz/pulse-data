@@ -23,48 +23,104 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH critical_dates AS (
+WITH staff_from_directory AS (
+    SELECT
+        -- Make officer IDs uniform across sources 
+        CAST(OFFICER AS INT) AS OFFICER,
+        -- Transform district names into district external IDs
+        xref.supervising_district_external_id AS location,
+        CAST(update_datetime AS DATETIME) AS edge_date,
+        '(1)' AS STATUS, 
+        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
+        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY OFFICER) AS last_appearance_datetime, 
+    FROM {RECIDIVIZ_REFERENCE_PP_directory@ALL} dir
+    LEFT JOIN {RECIDIVIZ_REFERENCE_supervision_district_id_to_name} xref
+    ON(UPPER(dir.Location) = UPPER(xref.supervising_district_name))
+),
+staff_from_docstars AS (
+    SELECT DISTINCT
+        -- Make officer IDs uniform across sources 
+        CAST(OFFICER AS INT) AS OFFICER,
+        SITEID AS location,
+        CAST(RecDate AS DATETIME) AS edge_date, 
+        STATUS,
+        MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
+        MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY OFFICER) AS last_appearance_datetime, 
+    FROM {docstars_officers@ALL} 
+),
+combined_data AS (
+    SELECT 
+        OFFICER,
+        location,
+        edge_date,
+        STATUS,
+        last_file_update_datetime,
+        last_appearance_datetime,
+    FROM staff_from_directory
+    
+    UNION ALL 
+
+    SELECT 
+        OFFICER,
+        location,
+        edge_date,
+        STATUS,
+        last_file_update_datetime,
+        last_appearance_datetime,
+    FROM staff_from_docstars 
+),
+critical_dates AS (
 SELECT * FROM (
     SELECT
         CAST(OFFICER AS INT) AS OFFICER,
-        FNAME,
-        LNAME,
-        SITEID,
+        location,
+        LAG(location) OVER (PARTITION BY OFFICER ORDER BY edge_date) AS prev_location, 
+        edge_date,
         STATUS,
-        RecDate,
-        LAG(SITEID) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS prev_location, 
-    FROM {docstars_officers@ALL}) cd
+        last_file_update_datetime,
+        last_appearance_datetime
+    FROM combined_data) cd
 WHERE 
     -- officer just started working 
-    (cd.prev_location IS NULL AND cd.SITEID IS NOT NULL) 
+    (cd.prev_location IS NULL AND cd.location IS NOT NULL) 
     -- officer changed locations
-    OR cd.prev_location != SITEID
+    OR cd.prev_location != location
     -- officer's employment was terminated (RecDate in these rows is officers' termination date)
-    OR cd.STATUS='0'    
+    OR cd.STATUS='0'   
+    -- include the latest update even if the previous conditions are not true
+    OR edge_date = last_file_update_datetime 
 ), all_periods AS (
 SELECT 
     OFFICER,
-    FNAME,
-    LNAME,
-    SITEID,
+    location,
     STATUS,
     -- if status is 0, RecDate is previous period's end date, there should not be a period with that as start date
-    RecDate AS start_date,
-    LEAD(RecDate) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS end_date
+    edge_date AS start_date,
+    CASE 
+        -- If a staff member stops appearing in the roster, close their employment period
+        -- on the last date we receive a roster that included them
+        WHEN LEAD(edge_date) OVER person_window IS NULL 
+            AND edge_date < last_file_update_datetime
+            THEN last_appearance_datetime 
+        -- There is a more recent update to this person's location
+        WHEN LEAD(edge_date) OVER person_window IS NOT NULL 
+            THEN LEAD(edge_date) OVER person_window 
+        -- All currently-employed staff will appear in the latest roster
+        ELSE CAST(NULL AS DATETIME)
+    END AS end_date,
 FROM critical_dates
-WHERE SITEID IS NOT NULL)
+WHERE STATUS IS NOT NULL
+AND STATUS != '0' -- exclude periods that start with employment termination
+WINDOW person_window AS (PARTITION BY OFFICER ORDER BY edge_date)
+)
 SELECT 
     OFFICER,
-    FNAME,
-    LNAME,
-    SITEID,
-    STATUS,
+    location, 
     -- reset period_seq_num after excluding periods start dates of inactive periods
-    ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
     start_date,
-    end_date
+    end_date,
+    ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
 FROM all_periods 
-WHERE STATUS != '0'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
