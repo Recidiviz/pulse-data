@@ -36,7 +36,7 @@ def is_ingest_in_dataflow_enabled(
     if environment.in_gcp_production():
         return False
 
-    staging_enabled_states = [StateCode.US_OZ]
+    staging_enabled_states = [StateCode.US_OZ, StateCode.US_CA]
     return state_code in staging_enabled_states
 
 
