@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_DOC_PRISON
+file_description: |-
+  TODO(#25890): FILL IN
+data_classification: source
+primary_key_cols:
+  - PRISON_ID
+columns:
+  - name: PRISON_ID
+    description: |-
+      Primary key for table
+  - name: PRISON_NAME
+    description: |-
+      Prison description
+  - name: PRISON_CODE
+    description: |-
+      Prison code
+  - name: PRISON_TYPE_ID
+    description: |-
+      Prison Type - references lookups table
+  - name: ACTIVE
+    description: |-
+      Identifies if record is active
+  - name: CREATE_DTM
+    description: |-
+      Date record was created
+    field_type: datetime
+  - name: CREATE_USERID
+    description: |-
+      User_id of person who created the record
+    is_pii: True
+  - name: UPDT_DTM
+    description: |-
+      Date record was last updated
+    field_type: datetime
+  - name: UPDT_USERID
+    description: |-
+      User_id of person who last updated the record
+    is_pii: True
+  - name: CHANGE_ID
+    description: |-
+      Change_id links to change_history for audit purposes
+  - name: EOMIS_PRISON_CODE
+    description: |-
+      Prison code that needs to be sent to EOMIS in its transactions

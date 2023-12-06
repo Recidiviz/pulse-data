@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: DOC_EDUCATION_ACHIEVEMENT
+file_description: |-
+  TODO(#25890): FILL IN
+data_classification: source
+primary_key_cols:
+  - DOC_EDU_ACH_ID
+columns:
+  - name: DOC_EDU_ACH_ID
+    description: system generated primary key
+  - name: DOC_ID
+    description: Primary Key and foreign key references DOC_EPISODE Table
+    is_pii: True
+  - name: HS_GED_FLAG
+    description: Did the inmate obtain a diploma degree Y/N Flag
+  - name: GED_HS_ID
+    description: Type of the diploma obtained, References LOOKUPS Table
+  - name: DATE_AWARDED
+    description: Date when the Diploma was awarded
+    field_type: datetime
+  - name: EXEMPTION_ID
+    description: References LOOKUPS Table category =EXEMPTION_ID
+  - name: ACTIVE_FLAG
+    description: Is the record Deleted Y/N flag
+  - name: CHANGE_ID
+    description: References CHANGE_HISTORY Table
+  - name: COMMENTS
+    description: Inmate education achievement comments
+    is_pii: True
+  - name: EXEMPTION_REMOVED_DATE
+    description: Exemption_Removed_date is used in Transition Release Program Eligibility
+    field_type: datetime

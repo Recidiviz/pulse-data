@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: DOC_CLASSIFICATION_SCORE
+file_description: |-
+  TODO(#25890): FILL IN
+data_classification: source
+primary_key_cols:
+  - CLASS_SCORE_ID
+columns:
+  - name: CLASS_SCORE_ID
+    description: |-
+      SYSTEM generated foreign key
+  - name: CLASSIFICATION_ID
+    description: |-
+      Foreign key to doc_classification
+    is_pii: True
+  - name: TYPE_ID
+    description: |-
+      INITIAL OR RECLASSIFICATION SCORE LOOKUP (MISSING LOOKUP POSSIBLE VALUES IR CLASSIFICATION, IR RECLASSIFICATION, CU CLASSIFICATION, CU RECLASSIFICATION)
+  - name: MST_SERIOUS_SCORE
+    description: |-
+      Score for most serious offense
+  - name: PR_MST_SERIOUS_SCORE
+    description: |-
+      Score for most serious prior offense
+  - name: ESCAPE_HISTORY_SCORE
+    description: |-
+      Score for Escape History
+  - name: DSCPLN_VIO_SCORE
+    description: |-
+      Score for Discipline Violations
+  - name: GANG_AFF_SCORE
+    description: |-
+      Score for Gang Affiliation
+  - name: AGE_SCORE
+    description: |-
+      Score for Age
+  - name: PROGRAM_SCORE
+    description: |-
+      Score for Programs in Reclassification
+  - name: TOTAL_SCORE
+    description: |-
+      SUM TOTAL score
+  - name: INMATE_AGE
+    description: |-
+      INMATE AGE AT TIME OF SCORING
+  - name: ESCAPE_LEVEL
+    description: |-
+      INTEGER VALUE
+  - name: GANG_AFFILIATION_ID
+    description: |-
+      FK to LOOKUPS GANG LIST
+  - name: CHANGE_ID
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+  - name: RECOMMENDED_CLASSIF_ID
+    description: |-
+      IR_LEVEL or CU_LEVEL LOOKUP
+  - name: MST_SERIOUS_DATE
+    description: |-
+      Most serious date
+    field_type: datetime
+  - name: MST_SERIOUS_ARS_CODE
+    description: |-
+      ARS Code of the most-serious offense in the current episode
+  - name: MST_SERIOUS_LVL
+    description: |-
+      INTEGER VALUE
+  - name: PR_MST_SERIOUS_DATE
+    description: |-
+      Previous most serious date
+    field_type: datetime
+  - name: PR_MST_SERIOUS_ARS_CODE
+    description: |-
+      ARS Code of the most-serious offense in any prior episode
+  - name: PR_MST_SERIOUS_LVL
+    description: |-
+      INTEGER VALUE
+  - name: NUMBER_ESCAPES
+    description: |-
+      INTEGER VALUE
+  - name: DISC_LVL
+    description: |-
+      INTEGER VALUE, DIFFERENT BETWEEN IR AND CU TYPE
+  - name: INMATE_DOB
+    description: |-
+      Inmate Date of Birth
+    is_pii: True
+    field_type: datetime
+  - name: PROGRAM_STATUS_ID
+    description: |-
+      FK TO LOOKUPS PROGRAMS STATUS
+  - name: PROGRAM_DETAIL_ID
+    description: |-
+      ID of completed programs.  FK to DOC_PROGRAM_DETAIL
+  - name: NON_DISCRETIONARY_CU
+    description: |-
+      Non-discretionary custody level result
+  - name: NON_DISCRETIONARY_IR
+    description: |-
+      Non-discretionary internal risk result
+  - name: ACTIVE_FLAG
+    description: |-
+      Is record Active Y/N?
+  - name: NON_DISCRETIONARY_CU_LEVEL_ID
+    description: |-
+      Non-Discretionary Custody Level id
+  - name: NON_DISCRETIONARY_IR_LEVEL_ID
+    description: |-
+      Non-Discretionary Custody IR Level id

@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_DOC_INMATE_TRAFFIC_HISTORY
+file_description: |-
+  TODO(#25890): FILL IN
+data_classification: source
+primary_key_cols:
+  - INMATE_TRAFFIC_HISTORY_ID
+columns:
+  - name: INMATE_TRAFFIC_HISTORY_ID
+    description: |-
+      PK for the table
+  - name: DOC_ID
+    description: |-
+      FK to DOC_EPISODE
+    is_pii: True
+  - name: MOVEMENT_DATE
+    description: |-
+      Date movement took place
+    field_type: datetime
+  - name: MOVEMENT_CODE_ID
+    description: |-
+      ID of the movement code.  FK to AZ_DOC_MOVEMENT_CODES
+  - name: MOVEMENT_REASON_ID
+    description: |-
+      ID of the movement reason.  FK to LOOKUPS, category MOVEMENT_REASON
+  - name: INTERNAL_MOVE_REASON_ID
+    description: |-
+      Movement reason associated with an internal move
+  - name: PRISON_ID
+    description: |-
+      ID of prison associated with the move
+  - name: UNIT_ID
+    description: |-
+      ID of unit associated with the move
+  - name: LOCATOR_CODE_ID
+    description: |-
+      ID of locator code associated with the move
+  - name: BED_ID
+    description: |-
+      ID of bed associated with the move
+  - name: DESTINATION_LOCATOR_CODE
+    description: |-
+      ID of destination locator code associated with the move
+  - name: DESTINATION_COURT_ID
+    description: |-
+      ID of court when move is out to court
+  - name: DESTINATION_HOSPITAL_ID
+    description: |-
+      ID of hospital when move is out to hospital
+  - name: CREATE_USERID
+    description: |-
+      User_id of person who created the record
+    is_pii: True
+  - name: CREATE_DTM
+    description: |-
+      Date record was created
+    field_type: datetime
+  - name: UPDT_USERID
+    description: |-
+      User_id of person who last updated the record
+    is_pii: True
+  - name: UPDT_DTM
+    description: |-
+      Date record was last updated
+    field_type: datetime
+  - name: CHANGE_ID
+    description: |-
+      Change_id links to change_history for audit purposes
+  - name: DPP_ID
+    description: |-
+      FK to DPP_EPISODE
+    is_pii: True
