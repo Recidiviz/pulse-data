@@ -14,23 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Functions for archiving Workflows ETL data"""
+"""Functions for archiving product ETL data"""
 from datetime import date
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.metrics.export.export_config import WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
 
 
-def archive_etl_file(filename: str) -> None:
-    """Given a storage blob name (assumed to be from the Workflows ETL bucket),
-    copies that file to the Workflows ETL Archive bucket, stamped with today's date.
+def archive_etl_file(filename: str, export_output_directory_uri: str) -> None:
+    """Given a storage blob name, copies that file to the corresponding ETL Archive bucket, stamped with today's date.
+    Assumes that the archive bucket name is identical to the export directory with the -archive suffix.
+
     For example, `US_XX/data.json` => `2022-04-07/US_XX/data.json`"""
 
     ETL_BUCKET_PATH = StrictStringFormatter().format(
-        WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_output_directory_uri,
         project_id=metadata.project_id(),
     )
 

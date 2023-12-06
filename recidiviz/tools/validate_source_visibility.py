@@ -384,6 +384,7 @@ def main() -> int:
                 "recidiviz.server_blueprint_registry",
                 "recidiviz.server_config",
                 "recidiviz.task_eligibility",
+                "recidiviz.tools.archive",
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.view_registry",

@@ -34,9 +34,7 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
 
     def setUp(self) -> None:
         self.fake_gcs = FakeGCSFileSystem()
-        self.gcs_factory_patcher = patch(
-            "recidiviz.workflows.etl.archive.GcsfsFactory.build"
-        )
+        self.gcs_factory_patcher = patch("recidiviz.tools.archive.GcsfsFactory.build")
         self.gcs_factory_patcher.start().return_value = self.fake_gcs
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-test"
