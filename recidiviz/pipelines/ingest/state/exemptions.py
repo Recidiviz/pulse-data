@@ -95,6 +95,7 @@ INGEST_VIEW_ORDER_EXEMPTIONS: Dict[StateCode, List[str]] = {
         "docstars_staff_location_periods",
         "docstars_staff_role_periods",
         "docstars_staff_supervisor_periods",
+        "docstars_staff_caseload_type_periods",
         "elite_incarceration_sentences",
     ],
 }

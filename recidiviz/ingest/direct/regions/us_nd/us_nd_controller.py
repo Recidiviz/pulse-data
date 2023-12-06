@@ -64,6 +64,7 @@ class UsNdController(BaseDirectIngestController):
             "docstars_staff_location_periods",
             "docstars_staff_role_periods",
             "docstars_staff_supervisor_periods",
+            "docstars_staff_caseload_type_periods",
             "elite_incarceration_sentences",
         ]
 
