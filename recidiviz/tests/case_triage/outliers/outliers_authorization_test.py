@@ -162,11 +162,17 @@ class OutliersAuthorizationClaimsTestCase(TestCase):
 
     @mock.patch(
         "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
-        return_value=["US_PA"],
+        return_value=["US_MI", "US_PA"],
     )
     def test_csg_auth(self, _mock_enabled_states: MagicMock) -> None:
         # Allowed state, allowed endpoint
-        self.assertIsNone(self.process_claims("/US_PA/test", user_state_code="CSG"))
+        self.assertIsNone(self.process_claims("/US_MI/test", user_state_code="CSG"))
+
+        # Enabled state, but not CSG state
+        with self.assertRaises(FlaskException) as assertion:
+            self.process_claims(f"/US_PA/{self.endpoint}", user_state_code="CSG")
+
+        self.assertEqual(assertion.exception.code, "csg_user_not_authorized")
 
     def test_invalid_state_code(self) -> None:
         with self.assertRaises(FlaskException) as assertion:

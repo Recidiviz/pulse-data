@@ -32,6 +32,8 @@ from recidiviz.outliers.querier.querier import OutliersQuerier
 from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.flask_exception import FlaskException
 
+CSG_ALLOWED_OUTLIERS_STATES = ["US_MI", "US_TN"]
+
 
 def on_successful_authorization(
     claims: Dict[str, Any], offline_mode: Optional[bool] = False
@@ -44,7 +46,7 @@ def on_successful_authorization(
         claims=claims,
         enabled_states=get_outliers_enabled_states(),
         offline_mode=offline_mode,
-        check_csg=True,
+        csg_enabled_states=CSG_ALLOWED_OUTLIERS_STATES,
     )
 
     # If in offline mode, skip endpoint checks
@@ -56,7 +58,7 @@ def on_successful_authorization(
 
     user_external_id = (
         user_state_code
-        if user_state_code == "RECIDIVIZ"
+        if user_state_code in ("RECIDIVIZ", "CSG")
         else app_metadata["externalId"]
     )
     user_role = (

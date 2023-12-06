@@ -35,8 +35,6 @@ from recidiviz.utils.environment import in_offline_mode
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.secrets import get_secret
 
-CSG_ALLOWED_STATES = ["US_MI", "US_MO", "US_PA", "US_TN"]
-
 
 def build_auth_config(secret_name: str) -> Auth0Config:
     """Get the secret using the string provided and build the auth config"""
@@ -70,7 +68,7 @@ def on_successful_authorization_requested_state(
     claims: Dict[str, Any],
     enabled_states: List[str],
     offline_mode: Optional[bool] = False,
-    check_csg: Optional[bool] = False,
+    csg_enabled_states: Optional[List[str]] = None,
 ) -> None:
     """
     No-ops if:
@@ -124,8 +122,8 @@ def on_successful_authorization_requested_state(
             )
         return
 
-    if check_csg and user_state_code == "CSG":
-        if requested_state not in CSG_ALLOWED_STATES:
+    if csg_enabled_states and user_state_code == "CSG":
+        if requested_state not in csg_enabled_states:
             raise FlaskException(
                 code="csg_user_not_authorized",
                 description="CSG user does not have authorization for this state",
