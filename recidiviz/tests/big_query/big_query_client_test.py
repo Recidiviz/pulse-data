@@ -267,6 +267,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             {"table_id": "foo", "num_rows": 120},
             {"table_id": "bar", "num_rows": 0},
         ]
+        # list_tables should return a non empty value so the dataset is not considered empty
+        self.mock_client.list_tables.return_value = ["table1"]
 
         # Act
         results = self.bq_client.get_row_counts_for_tables(self.mock_dataset_id)
@@ -295,6 +297,21 @@ class BigQueryClientImplTest(unittest.TestCase):
         # Assert
         self.assertEqual(results, {})
         self.mock_client.get_dataset.assert_called()
+        self.mock_client.query.assert_not_called()
+
+    def test_get_row_counts_for_tables_empty_dataset(self) -> None:
+        # Arrange
+        self.mock_client.get_dataset.return_value = mock.MagicMock()
+        # list_tables returns no tables so the dataset is considered empty
+        self.mock_client.list_tables.return_value = iter([])
+
+        # Act
+        results = self.bq_client.get_row_counts_for_tables(self.mock_dataset_id)
+
+        # Assert
+        self.assertEqual(results, {})
+        self.mock_client.get_dataset.assert_called()
+        self.mock_client.list_tables.assert_called()
         self.mock_client.query.assert_not_called()
 
     def test_create_or_update_view_creates_view(self) -> None:

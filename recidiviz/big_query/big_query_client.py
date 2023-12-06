@@ -1191,7 +1191,9 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
     def get_row_counts_for_tables(self, dataset_id: str) -> Dict[str, int]:
-        if not self.dataset_exists(self.dataset_ref_for_id(dataset_id)):
+        if not self.dataset_exists(
+            self.dataset_ref_for_id(dataset_id)
+        ) or self.dataset_is_empty(self.dataset_ref_for_id(dataset_id)):
             return {}
 
         results = self.run_query_async(
