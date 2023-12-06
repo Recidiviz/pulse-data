@@ -380,3 +380,188 @@ resource "google_bigquery_table" "workflows_compliant_reporting_referral_record_
 ]
 EOF
 }
+
+resource "google_bigquery_table" "outliers_supervision_officer_outlier_status_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "outliers_supervision_officer_outlier_status_archive"
+  description         = "This table contains daily archives of the supervision_officer_outlier_status export for Outliers, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "CSV"
+    source_uris           = ["gs://${var.project_id}-outliers-etl-data-archive/*/supervision_officer_outlier_status.csv"]
+  }
+
+  schema = <<EOF
+[
+    {
+        "name": "state_code",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "officer_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "metric_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "period",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "end_date",
+        "type": "DATE",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "metric_rate",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "caseload_type",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "target",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "threshold",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "status",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    }
+]
+EOF
+
+}
+
+resource "google_bigquery_table" "outliers_supervision_officer_supervisors_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "outliers_supervision_officer_supervisors_archive"
+  description         = "This table contains daily archives of the supervision_officer_supervisors export for Outliers, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "CSV"
+    source_uris           = ["gs://${var.project_id}-outliers-etl-data-archive/*/supervision_officer_supervisors.csv"]
+  }
+
+  schema = <<EOF
+[
+    {
+        "name": "state_code",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "external_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "staff_id",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "full_name",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "pseudonymized_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "supervision_district",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "email",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    }
+]
+EOF
+
+}
+
+resource "google_bigquery_table" "outliers_supervision_officers_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "outliers_supervision_officers_archive"
+  description         = "This table contains daily archives of the supervision_officers export for Outliers, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "CSV"
+    source_uris           = ["gs://${var.project_id}-outliers-etl-data-archive/*/supervision_officers.csv"]
+  }
+
+  schema = <<EOF
+[
+    {
+        "name": "state_code",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "external_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "staff_id",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "full_name",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "pseudonymized_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "supervisor_external_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "supervision_district",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "specialized_caseload_type",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    }
+]
+EOF
+
+}
