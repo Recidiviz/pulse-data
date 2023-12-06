@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: AZ_DOC_LOCATOR_CODE
+file_description: |-
+  TODO(#25890): FILL IN
+data_classification: source
+primary_key_cols:
+  - LOCATOR_CODE_ID
+  - CREATE_DTM
+columns:
+  - name: LOCATOR_CODE_ID
+    description: |-
+      First component of the compound primary key
+  - name: UNIT_ID
+    description: |-
+      Foreign key to AZ_DOC_UNIT
+  - name: LOCATOR_CODE
+    description: |-
+      Locator code
+  - name: CUSTODY_LEVEL_ID
+    description: |-
+      Custody level
+  - name: LOCATOR_NAME
+    description: |-
+      Locator code description
+  - name: CURRENT_USE_ID
+    description: |-
+      Current use
+  - name: RECEPTION
+    description: |-
+      Suitable for reception
+  - name: EIP_PHASE_CATEGORY_ID
+    description: |-
+      EIP Phase category
+  - name: ACTIVE
+    description: |-
+      Identifies if record is active
+  - name: CREATE_DTM
+    description: |-
+      Date/time record was created.  Second component of the compound primary key
+    field_type: datetime
+  - name: CREATE_USERID
+    description: |-
+      User_id of person who created the record
+    is_pii: True
+  - name: UPDT_DTM
+    description: |-
+      Date record was last updated
+    field_type: datetime
+  - name: UPDT_USERID
+    description: |-
+      User_id of person who last updated the record
+    is_pii: True
+  - name: CHANGE_ID
+    description: |-
+      Change_id links to change_history for audit purposes
+  - name: GENDER
+    description: |-
+      Gender
+  - name: INTEGRATED_HOUSING_PROGRAM
+    description: |-
+      Use in integrated housing program Y/N
+  - name: APPLIANCE_CHARGE_EXEMPT
+    description: |-
+      Are applicance charges applicable Y/N

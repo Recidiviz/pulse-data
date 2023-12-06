@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: DOC_CLASSIFICATION
+file_description: |-
+  TODO(#25890): FILL IN
+data_classification: source
+primary_key_cols:
+  - CLASSIFICATION_ID
+columns:
+  - name: CLASSIFICATION_ID
+    description: |-
+      System generated primary key
+  - name: CHANGE_ID
+    description: |-
+      Foreign key to CHANGE_HISTORY
+    is_pii: True
+  - name: DOC_ID
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    is_pii: True
+  - name: CLASS_TYPE_ID
+    description: |-
+      FOREIGN KEY TO Lookups  CU or IR
+  - name: STATUS_ID
+    description: |-
+      FOREIGN KEY TO Lookups
+  - name: START_DTM
+    description: |-
+      Date classification started
+    field_type: datetime
+  - name: END_DTM
+    description: |-
+      Date classification finished
+    field_type: datetime
+  - name: CLASS_CNID
+    description: |-
+      fk to case_note for comment on classification
+    is_pii: True
+  - name: ACTIVE_FLAG
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+  - name: RCMNDD_CUSTODY_LEVEL_ID
+    description: |-
+      ID for the system-recommended custody level.  FK to LOOKUPS, category CU_LEVEL
+  - name: IR_DISCIPLINE_LEVEL_ID
+    description: |-
+      ID for the approved internal risk level.  This may or may not be the same internal risk level as RCMNDD_INTERNAL_RISK_LEVEL_ID.  FK to LOOKUPS, category IR_LEVEL
+  - name: CUSTODY_DISCIPLINE_LEVEL_ID
+    description: |-
+      ID for the approved custody level.  This may or may not be the same custody level as RCMNDD_CUSTODY_LEVEL_ID.  FK to LOOKUPS, category CU_LEVEL
+  - name: RCMNDD_INTERNAL_RISK_LEVEL_ID
+    description: |-
+      ID for the system-recommended internal risk level.  FK to LOOKUPS, category IR_LEVEL
+  - name: CUSTODY_REDUCTION_FLAG
+    description: |-
+      Does this re-classification involve reducing the custody level?  Y/N

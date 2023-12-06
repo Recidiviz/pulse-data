@@ -1,0 +1,122 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: DPP_EPISODE
+file_description: |-
+  TODO(#25890): FILL IN
+data_classification: source
+primary_key_cols:
+  - DPP_ID
+columns:
+  - name: DPP_ID
+    description: |-
+      primary key for the table
+  - name: PERSON_ID
+    description: |-
+      foreign key to person table
+    is_pii: True
+  - name: DPP_NUMBER
+    description: |-
+      the generated dpp-number
+    is_pii: True
+  - name: CASE_TYPE
+    description: |-
+      the case type
+  - name: INTERVIEW_DATE
+    description: |-
+      the interview date
+    field_type: datetime
+  - name: REVIEWER_ID
+    description: |-
+      the id of the user who created the episode
+    is_pii: True
+  - name: STATUS_ID
+    description: |-
+      the status of the episode, foreign key to lookups
+  - name: CHANGE_ID
+    description: |-
+      References CHANGE_HISTORY table
+  - name: TRACKING_NUMBER
+    description: |-
+      input tracking #
+    is_pii: True
+  - name: INTERVIEW_STATUS_ID
+    description: |-
+      Interview status id mapped to lookup table
+  - name: DATE_COMPLETED
+    description: |-
+      user input date
+    field_type: datetime
+  - name: DATE_RECEIVED
+    description: |-
+      user input date
+    field_type: datetime
+  - name: ECC_ELIGIBILITY_STATUS
+    description: |-
+      y/n string flag
+  - name: ECC_ABATEMENT_DATE
+    description: |-
+      the ecc abatement date
+    field_type: datetime
+  - name: ECC_ABATEMENT_DATE_DENIED
+    description: |-
+      y/n string flag
+  - name: COURT_TITLE
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    is_pii: True
+  - name: COURT_FIRST_NAME
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    is_pii: True
+  - name: COURT_MIDDLE_NAME
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    is_pii: True
+  - name: COURT_LAST_NAME
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    is_pii: True
+  - name: COURT_SUFFIX
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    is_pii: True
+  - name: COURT_DATE_OF_BIRTH
+    description: |-
+      No description available in AZ data dictionary as of 10/31/23.
+    is_pii: True
+  - name: SUPERVISION_LEVEL_ID
+    description: |-
+      FK Lookups
+  - name: SUPERVISION_LEVEL_STARTDATE
+    description: |-
+      SUPERVISION_LEVEL_STARTDATE
+    field_type: datetime
+  - name: SUPERVISION_LEVEL_ENDDATE
+    description: |-
+      SUPERVISION_LEVEL_ENDDATE
+    field_type: datetime
+  - name: RELEASE_TYPE_ID
+    description: |-
+      FK Lookups
+  - name: CREATE_USERID
+    description: |-
+      User Id Who created the record references MEA_USERS Table
+    is_pii: True
+  - name: CREATE_DTM
+    description: |-
+      Date When Record Created
+    field_type: datetime
+  - name: UPDT_DTM
+    description: |-
+      Date When Record Last Updated
+    field_type: datetime
+  - name: UPDT_USERID
+    description: |-
+      User Id Who updated the record references MEA_USERS Table
+    is_pii: True
+  - name: ACTIVE_FLAG
+    description: |-
+      Is the record deleted Y/N
+  - name: LAST_CONTACT_DATE
+    description: |-
+      Offender's Last Contact Date
+    field_type: datetime
