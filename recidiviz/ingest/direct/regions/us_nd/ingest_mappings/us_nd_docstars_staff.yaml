@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - LNAME
-  - FNAME
   - OFFICER
+  - LastName
+  - FirstName
   - EMAIL
 unused_columns: []
 output:
@@ -14,6 +14,6 @@ output:
           id_type: $literal("US_ND_DOCSTARS_OFFICER")
     full_name:
       $person_name:
-        $given_names: FNAME
-        $surname: LNAME
+        $given_names: FirstName
+        $surname: LastName
     email: EMAIL

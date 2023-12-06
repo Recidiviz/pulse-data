@@ -24,27 +24,48 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH officers_with_recency_rank AS (
-SELECT 
+WITH staff_from_directory AS (
+SELECT DISTINCT
     CAST(OFFICER AS INT) AS OFFICER,
-    LNAME,
-    FNAME,
-    LOGINNAME,
-    ROW_NUMBER() OVER (
-        PARTITION BY CAST(OFFICER AS INT)
-        ORDER BY CAST(RecDate AS DATETIME) DESC) AS recency_rank
-FROM {docstars_officers}
--- Exclude service providers like "Bismarck Urban CS"
-WHERE LOGINNAME NOT LIKE '%% %%' 
-
+    UPPER(LastName) AS LastName,
+    UPPER(FirstName) AS FirstName,
+    email
+FROM {RECIDIVIZ_REFERENCE_PP_directory}
+), 
+officers_with_recency_rank AS (
+SELECT 
+    OFFICER,
+    UPPER(LNAME) AS LastName,
+    UPPER(FNAME) AS FirstName,
+    EMAIL 
+FROM (
+    SELECT 
+        CAST(OFFICER AS INT) AS OFFICER,
+        LNAME,
+        FNAME,
+        CONCAT(LOWER(LOGINNAME), '@nd.gov') AS EMAIL,
+        ROW_NUMBER() OVER (
+            PARTITION BY CAST(OFFICER AS INT)
+            ORDER BY CAST(RecDate AS DATETIME) DESC) AS recency_rank
+    FROM {docstars_officers}
+    -- Exclude service providers like "Bismarck Urban CS"
+    WHERE LOGINNAME NOT LIKE '%% %%' 
+    AND CAST(OFFICER AS INT) NOT IN (
+        SELECT DISTINCT OFFICER 
+        FROM staff_from_directory)
+    ) sub
+WHERE recency_rank = 1
 )
 SELECT 
     OFFICER,
-    LNAME,
-    FNAME,
-    CONCAT(LOWER(LOGINNAME), '@nd.gov') AS EMAIL
-FROM officers_with_recency_rank
-WHERE recency_rank = 1
+    LastName,
+    FirstName,
+    EMAIL
+FROM (
+    SELECT * FROM staff_from_directory
+    UNION ALL
+    SELECT * FROM officers_with_recency_rank
+) sub
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
