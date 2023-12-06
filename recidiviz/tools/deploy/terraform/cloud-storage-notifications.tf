@@ -73,6 +73,16 @@ module "handle_outliers_etl" {
   message_retention_duration = "86400s"
 }
 
+module "archive_outliers_file" {
+  source = "./modules/cloud-storage-notification"
+
+  bucket_name           = module.outliers-etl-data.name
+  push_endpoint         = "${local.app_engine_url}/outliers-utils/archive-file"
+  service_account_email = data.google_app_engine_default_service_account.default.email
+  # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
+  oidc_audience = local.app_engine_iap_client
+}
+
 locals {
   app_engine_url = "https://${var.project_id}.appspot.com"
   # These client IDs come from the app engine service we want to authenticate to, and can be found

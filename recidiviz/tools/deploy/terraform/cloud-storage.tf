@@ -446,6 +446,24 @@ module "outliers-etl-data" {
   name_suffix = "outliers-etl-data"
 }
 
+module "outliers-etl-data-archive" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "outliers-etl-data-archive"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 2
+      }
+    }
+  ]
+}
+
 module "generated-assets" {
   source = "./modules/cloud-storage-bucket"
 
