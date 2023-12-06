@@ -102,7 +102,7 @@ class OutliersBlueprintTestCase(TestCase):
     @staticmethod
     def auth_side_effect(
         state_code: str,
-        external_id: str = "A1B2",
+        external_id: Optional[str] = "A1B2",
         allowed_states: Optional[list[str]] = None,
         outliers_routes_enabled: Optional[bool] = True,
         role: Optional[str] = "supervision_staff",
@@ -1876,6 +1876,75 @@ class TestOutliersRoutes(OutliersBlueprintTestCase):
         client_hash = "clienthash1"
         self.mock_authorization_handler.side_effect = self.auth_side_effect(
             state_code="us_pa", external_id="102", role="supervision_staff"
+        )
+        mock_enabled_states.return_value = ["US_PA", "US_IX"]
+
+        mock_config.return_value = OutliersConfig(
+            metrics=[TEST_METRIC_3],
+            supervision_officer_label="officer",
+            learn_more_url="https://recidiviz.org",
+            client_events=[TEST_CLIENT_EVENT_1],
+        )
+
+        mock_get_supervisor_entity.return_value = SupervisionOfficerSupervisorEntity(
+            full_name=PersonName(
+                given_names="Supervisor",
+                surname="2",
+                middle_names=None,
+                name_suffix=None,
+            ),
+            external_id="102",
+            pseudonymized_id="hashhash",
+            supervision_district="2",
+            email="supervisor2@recidiviz.org",
+            has_outliers=True,
+        )
+
+        response = self.test_client.get(
+            f"/outliers/US_PA/client/{client_hash}",
+            headers={"Origin": "http://localhost:3000"},
+        )
+        expected_json = {
+            "client": {
+                "birthdate": "1989-01-01",
+                "clientId": "111",
+                "clientName": {
+                    "givenNames": "Harry",
+                    "middleNames": None,
+                    "surname": "Potter",
+                },
+                "gender": "MALE",
+                "pseudonymizedClientId": "clienthash1",
+                "raceOrEthnicity": "WHITE",
+                "stateCode": "US_PA",
+            }
+        }
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.json, expected_json)
+
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_supervisor_entity_from_pseudonymized_id",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.get_outliers_enabled_states",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_routes.OutliersQuerier.get_outliers_config",
+    )
+    @patch(
+        "recidiviz.case_triage.outliers.outliers_authorization.CSG_ALLOWED_OUTLIERS_STATES",
+        ["US_PA"],
+    )
+    def test_get_client_success_for_csg_user(
+        self,
+        mock_config: MagicMock,
+        mock_enabled_states: MagicMock,
+        mock_get_supervisor_entity: MagicMock,
+    ) -> None:
+        client_hash = "clienthash1"
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            state_code="CSG", external_id=None, role="leadership_role"
         )
         mock_enabled_states.return_value = ["US_PA", "US_IX"]
 

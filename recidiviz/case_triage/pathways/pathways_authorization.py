@@ -31,6 +31,8 @@ from recidiviz.common.str_field_utils import capitalize_first
 from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.flask_exception import FlaskException
 
+CSG_ALLOWED_PATHWAYS_STATES = ["US_MI", "US_MO", "US_PA", "US_TN"]
+
 
 def on_successful_authorization(
     claims: Dict[str, Any], offline_mode: Optional[bool] = False
@@ -42,7 +44,7 @@ def on_successful_authorization(
         claims=claims,
         enabled_states=get_pathways_enabled_states(),
         offline_mode=offline_mode,
-        check_csg=True,
+        csg_enabled_states=CSG_ALLOWED_PATHWAYS_STATES,
     )
 
     # If in offline mode, skip endpoint checks
