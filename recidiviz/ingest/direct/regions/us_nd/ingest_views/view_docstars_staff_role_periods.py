@@ -23,49 +23,114 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-WITH critical_dates AS (
-SELECT *
-FROM (
+WITH staff_from_directory AS (
     SELECT
-    CAST(OFFICER AS INT) AS OFFICER,
-    FNAME,
-    LNAME,
-    RecDate,
-    STATUS,
-    LAG(STATUS) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS prev_status, 
-FROM {docstars_officers@ALL}) cd
-WHERE 
-    -- officer just started working
-    (cd.prev_status IS NULL AND cd.STATUS IS NOT NULL) 
-    -- officer changed locations
-    OR cd.prev_status != STATUS
+        -- make officer IDs uniform across sources 
+        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(update_datetime AS DATETIME) AS edge_date,
+        '(1)' AS STATUS, 
+        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
+        MAX(CAST(update_datetime AS DATETIME)) OVER (PARTITION BY OFFICER) AS last_appearance_datetime, 
+        UPPER(JobTitle) AS JobTitle
+    FROM {RECIDIVIZ_REFERENCE_PP_directory@ALL}
+),
+staff_from_docstars AS (
+    SELECT DISTINCT
+        -- make officer IDs uniform across sources 
+        CAST(OFFICER AS INT) AS OFFICER,
+        CAST(RecDate AS DATETIME) AS edge_date, 
+        STATUS,
+        MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY TRUE) AS last_file_update_datetime,
+        MAX(CAST(RecDate AS DATETIME)) OVER (PARTITION BY OFFICER) AS last_appearance_datetime, 
+        CAST(NULL AS STRING) AS JobTitle,
+    FROM {docstars_officers@ALL} 
+),
+combined_data AS (
+    SELECT 
+        OFFICER,
+        edge_date,
+        STATUS,
+        last_file_update_datetime,
+        last_appearance_datetime,
+        JobTitle
+    FROM staff_from_directory
+    
+    UNION ALL 
+
+    SELECT 
+        OFFICER,
+        edge_date,
+        STATUS,
+        last_file_update_datetime,
+        last_appearance_datetime,
+        JobTitle
+    FROM staff_from_docstars 
+),
+critical_dates AS (
+    SELECT *
+    FROM (
+        SELECT
+            OFFICER,
+            edge_date,
+            STATUS,
+            LAG(STATUS) OVER person_window AS prev_status,
+            LAG(JobTitle) OVER person_window AS prev_JobTitle, 
+            COALESCE(
+                JobTitle,
+                LAST_VALUE(JobTitle IGNORE NULLS) OVER (person_window range between UNBOUNDED preceding and current row),
+                'GENERAL'
+            ) AS JobTitle,
+            last_file_update_datetime,
+            last_appearance_datetime 
+        FROM combined_data
+        WINDOW person_window AS (PARTITION BY OFFICER ORDER BY edge_date)
+        ) cd
+        WHERE 
+        -- officer just started working
+        (cd.prev_JobTitle IS NULL AND cd.JobTitle IS NOT NULL) 
+        -- officer changed roles
+        OR cd.JobTitle != cd.prev_JobTitle
+        -- include the latest update even if the previous two conditions are not true
+        OR edge_date = last_file_update_datetime
+        WINDOW person_window AS (PARTITION BY OFFICER ORDER BY edge_date)
 ), all_periods AS (
 SELECT 
     OFFICER,
-    FNAME,
-    LNAME,
     STATUS,
-    RecDate AS start_date,
-    LEAD(RecDate) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS end_date
+    edge_date AS start_date,
+    CASE 
+        -- If a staff member stops appearing in the roster, close their employment period
+        -- on the last date we receive a roster that included them
+        WHEN LEAD(edge_date) OVER person_window IS NULL 
+            AND edge_date < last_file_update_datetime
+            THEN last_appearance_datetime 
+        -- There is a more recent update to this person's location
+        WHEN LEAD(edge_date) OVER person_window IS NOT NULL 
+            THEN LEAD(edge_date) OVER person_window 
+        -- All currently-employed staff will appear in the latest roster
+        ELSE CAST(NULL AS DATETIME)
+    END AS end_date,
+    JobTitle
 FROM critical_dates
-WHERE STATUS IS NOT NULL)
-SELECT 
+WHERE STATUS IS NOT NULL
+AND STATUS != '0' -- exclude periods that start with employment termination
+WINDOW person_window AS (PARTITION BY OFFICER ORDER BY edge_date, JobTitle)
+)
+SELECT
     OFFICER,
-    FNAME,
-    LNAME,
-    STATUS,
-    ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
+    JobTitle,
     start_date,
-    end_date
-FROM all_periods 
-WHERE STATUS != '0' -- exclude periods that start with employment termination
+    end_date,
+    ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
+FROM all_periods
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="docstars_staff_role_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="OFFICER, period_seq_num",
+    # order_by_cols="OFFICER, period_seq_num",
+    order_by_cols="OFFICER",
 )
 
 if __name__ == "__main__":

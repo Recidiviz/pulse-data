@@ -34,6 +34,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_staff_caseload_type import (
+    StateStaffCaseloadType,
+)
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -311,6 +317,43 @@ def supervision_contact_method_mapper(raw_text: str) -> StateSupervisionContactM
     if "OC" in codes:  # Offender Communication
         return StateSupervisionContactMethod.VIRTUAL
     return StateSupervisionContactMethod.INTERNAL_UNKNOWN
+
+
+def parse_caseload_type(raw_text: str) -> StateStaffCaseloadType:
+    if raw_text:
+        if "DRUG COURT" in raw_text:
+            return StateStaffCaseloadType.DRUG_COURT
+        if "MENTAL HEALTH" in raw_text:
+            return StateStaffCaseloadType.MENTAL_HEALTH
+        if "SEX OFFENDER" in raw_text:
+            return StateStaffCaseloadType.SEX_OFFENSE
+        if "DOMESTIC VIOLENCE" in raw_text:
+            return StateStaffCaseloadType.DOMESTIC_VIOLENCE
+        return StateStaffCaseloadType.GENERAL
+    return StateStaffCaseloadType.INTERNAL_UNKNOWN
+
+
+def parse_role_subtype(raw_text: str) -> StateStaffRoleSubtype:
+    # "Lead Officer" is a supervisor of other officers.
+    # It is common for these staff members to also supervise clients directly.
+    # "Case Manager" and "Community Corrections Agent" are designations for staff members
+    # who only supervise clients, not other officers.
+    # "Region X Program Manager" is a district manager.
+    if raw_text:
+        if "LEAD OFFICER" in raw_text:
+            return StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR
+        if (
+            "PO" in raw_text
+            or "CASE MANAGER" in raw_text
+            or "CORRECTIONS AGENT" in raw_text
+            or "GENERAL" in raw_text
+        ):
+            return StateStaffRoleSubtype.SUPERVISION_OFFICER
+        if "REGION" in raw_text and "PROGRAM MANAGER" in raw_text:
+            return StateStaffRoleSubtype.SUPERVISION_DISTRICT_MANAGER
+        if "DIRECTOR" in raw_text:
+            return StateStaffRoleSubtype.SUPERVISION_STATE_LEADERSHIP
+    return StateStaffRoleSubtype.INTERNAL_UNKNOWN
 
 
 def parse_custody_level(raw_text: str) -> StateIncarcerationPeriodCustodyLevel:

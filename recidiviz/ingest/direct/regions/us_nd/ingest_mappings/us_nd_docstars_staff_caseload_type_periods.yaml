@@ -13,17 +13,16 @@ output:
       - StateStaffExternalId:
           external_id: OFFICER
           id_type: $literal("US_ND_DOCSTARS_OFFICER")
-    role_periods:
-      - StateStaffRolePeriod:
+    caseload_type_periods:
+      - StateStaffCaseloadTypePeriod:
           external_id:
             $concat:
               $values:
                 - OFFICER
                 - period_seq_num
-          start_date: start_date
-          end_date: end_date
-          role_type: $literal_enum(StateStaffRoleType.SUPERVISION_OFFICER)
-          role_subtype:
+          caseload_type:
             $enum_mapping:
               $raw_text: JobTitle
-              $custom_parser: us_nd_custom_enum_parsers.parse_role_subtype
+              $custom_parser: us_nd_custom_enum_parsers.parse_caseload_type
+          start_date: start_date
+          end_date: end_date
