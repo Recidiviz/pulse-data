@@ -81,6 +81,8 @@ module "archive_outliers_file" {
   service_account_email = data.google_app_engine_default_service_account.default.email
   # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
   oidc_audience = local.app_engine_iap_client
+
+  suffix = "archive-files"
 }
 
 locals {
