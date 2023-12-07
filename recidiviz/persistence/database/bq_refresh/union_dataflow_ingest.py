@@ -47,9 +47,13 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.bq_refresh.big_query_table_manager import (
+    bq_schema_for_sqlalchemy_table,
+)
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 
 
@@ -61,7 +65,11 @@ def _view_builder_for_table(
 ) -> BigQueryViewBuilder:
     """Creates a view builder for the given state table that combines per state output
     from legacy ingest and ingest pipelines into a single view."""
-    column_names = [column.name for column in table.columns]
+    table_schema = bq_schema_for_sqlalchemy_table(
+        schema_type=SchemaType.STATE, table=table
+    )
+    column_names = [column.name for column in table_schema]
+
     legacy_address = ProjectSpecificBigQueryAddress(
         project_id=metadata.project_id(),
         dataset_id=STATE_BASE_LEGACY_DATASET,

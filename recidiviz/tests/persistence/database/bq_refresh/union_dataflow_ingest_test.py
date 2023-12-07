@@ -21,7 +21,7 @@ import unittest
 
 from google.cloud import bigquery
 from mock import MagicMock, call, patch
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import DeclarativeMeta, relationship
 
@@ -63,6 +63,34 @@ class FakeEntity(FakeBase):
 
     entity_id = Column(Integer, primary_key=True)
     name = Column(String(255))
+
+
+class FakeAnotherEntity(FakeBase):
+    __tablename__ = "fake_another_entity"
+
+    state_code = Column(String(255))
+
+    another_entity_id = Column(Integer, primary_key=True)
+    another_name = Column(String(255))
+
+
+association_table = Table(
+    "state_entity_association",
+    FakeBase.metadata,
+    Column("entity_id", Integer, ForeignKey("fake_entity.entity_id")),
+    Column(
+        "another_entity_id",
+        Integer,
+        ForeignKey("fake_another_entity.another_entity_id"),
+    ),
+)
+
+_ALL_SCHEMA_TABLES = [
+    FakePerson.__table__,
+    FakeEntity.__table__,
+    FakeAnotherEntity.__table__,
+    association_table,
+]
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value=TEST_PROJECT))
@@ -142,10 +170,7 @@ class UnionDataflowIngestTest(unittest.TestCase):
         # Act
         union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
             ingest_instance=DirectIngestInstance.PRIMARY,
-            tables=[
-                FakePerson.__table__,
-                FakeEntity.__table__,
-            ],
+            tables=_ALL_SCHEMA_TABLES,
         )
 
         # Assert
@@ -179,6 +204,21 @@ class UnionDataflowIngestTest(unittest.TestCase):
                 dataset_id="state", table_id="fake_entity"
             ),
         ).build()
+        association_table_view = SimpleBigQueryViewBuilder(
+            dataset_id="state_views",
+            view_id="state_entity_association_view",
+            description="",
+            view_query_template="SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.state_legacy.state_entity_association`\n"
+            "WHERE state_code IN ('US_WW','US_XX','US_YY')\n"
+            "UNION ALL\n"
+            "SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.us_dd_state_primary.state_entity_association`\n",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="state", table_id="state_entity_association"
+            ),
+        ).build()
 
         self.assertEqual(
             self.mock_bq.create_dataset_if_necessary.mock_calls,
@@ -189,18 +229,35 @@ class UnionDataflowIngestTest(unittest.TestCase):
         )
 
         # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        self.assertEqual(len(self.mock_bq.create_or_update_view.call_args_list), 2)
-        (entity_create_call_args, person_create_call_args,) = sorted(
+        self.assertEqual(len(self.mock_bq.create_or_update_view.call_args_list), 4)
+        (
+            _another_entity_create_call_args,
+            entity_create_call_args,
+            person_create_call_args,
+            association_table_create_call_args,
+        ) = sorted(
             self.mock_bq.create_or_update_view.call_args_list, key=lambda x: x[0][0]
         )
         self.assertEqual(person_create_call_args, call(person_view, might_exist=True))
         self.assertEqual(person_create_call_args[0][0], person_view)
         self.assertEqual(entity_create_call_args, call(entity_view, might_exist=True))
         self.assertEqual(entity_create_call_args[0][0], entity_view)
+        self.assertEqual(
+            association_table_create_call_args,
+            call(association_table_view, might_exist=True),
+        )
+        self.assertEqual(
+            association_table_create_call_args[0][0], association_table_view
+        )
 
         # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        self.assertEqual(len(self.mock_bq.materialize_view_to_table.call_args_list), 2)
-        (entity_materialize_call_args, person_materialize_call_args,) = sorted(
+        self.assertEqual(len(self.mock_bq.materialize_view_to_table.call_args_list), 4)
+        (
+            _another_entity_materialize_call_args,
+            entity_materialize_call_args,
+            person_materialize_call_args,
+            association_table_materialize_call_args,
+        ) = sorted(
             self.mock_bq.materialize_view_to_table.call_args_list,
             key=lambda x: x[1]["view"],
         )
@@ -212,6 +269,13 @@ class UnionDataflowIngestTest(unittest.TestCase):
             entity_materialize_call_args, call(view=entity_view, use_query_cache=True)
         )
         self.assertEqual(entity_materialize_call_args[1]["view"], entity_view)
+        self.assertEqual(
+            association_table_materialize_call_args,
+            call(view=association_table_view, use_query_cache=True),
+        )
+        self.assertEqual(
+            association_table_materialize_call_args[1]["view"], association_table_view
+        )
 
     def test_combine_ingest_sources_secondary_no_sandbox(self) -> None:
         # Act
@@ -221,10 +285,7 @@ class UnionDataflowIngestTest(unittest.TestCase):
         ):
             union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
                 ingest_instance=DirectIngestInstance.SECONDARY,
-                tables=[
-                    FakePerson.__table__,
-                    FakeEntity.__table__,
-                ],
+                tables=_ALL_SCHEMA_TABLES,
             )
 
     def test_combine_ingest_sources_secondary_sandbox(self) -> None:
@@ -250,10 +311,7 @@ class UnionDataflowIngestTest(unittest.TestCase):
         # Act
         union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
             ingest_instance=DirectIngestInstance.SECONDARY,
-            tables=[
-                FakePerson.__table__,
-                FakeEntity.__table__,
-            ],
+            tables=_ALL_SCHEMA_TABLES,
             output_sandbox_prefix="foo",
         )
 
@@ -294,6 +352,25 @@ class UnionDataflowIngestTest(unittest.TestCase):
                 dataset_id="foo_state", table_id="fake_entity"
             ),
         ).build()
+        association_table_view = SimpleBigQueryViewBuilder(
+            dataset_id="foo_state_views",
+            view_id="state_entity_association_view",
+            description="",
+            view_query_template="SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.foo_state_legacy.state_entity_association`\n"
+            "WHERE state_code IN ('US_XX','US_YY')\n"
+            "UNION ALL\n"
+            "SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.us_dd_state_secondary.state_entity_association`\n"
+            "UNION ALL\n"
+            "SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.us_ww_state_secondary.state_entity_association`\n",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="state", table_id="state_entity_association"
+            ),
+        ).build()
+
         self.assertEqual(
             self.mock_bq.create_dataset_if_necessary.mock_calls,
             [
@@ -309,18 +386,35 @@ class UnionDataflowIngestTest(unittest.TestCase):
         )
 
         # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        self.assertEqual(len(self.mock_bq.create_or_update_view.call_args_list), 2)
-        (entity_create_call_args, person_create_call_args,) = sorted(
+        self.assertEqual(len(self.mock_bq.create_or_update_view.call_args_list), 4)
+        (
+            _another_entity_create_call_args,
+            entity_create_call_args,
+            person_create_call_args,
+            association_table_create_call_args,
+        ) = sorted(
             self.mock_bq.create_or_update_view.call_args_list, key=lambda x: x[0][0]
         )
         self.assertEqual(person_create_call_args, call(person_view, might_exist=True))
         self.assertEqual(person_create_call_args[0][0], person_view)
         self.assertEqual(entity_create_call_args, call(entity_view, might_exist=True))
         self.assertEqual(entity_create_call_args[0][0], entity_view)
+        self.assertEqual(
+            association_table_create_call_args,
+            call(association_table_view, might_exist=True),
+        )
+        self.assertEqual(
+            association_table_create_call_args[0][0], association_table_view
+        )
 
         # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        self.assertEqual(len(self.mock_bq.materialize_view_to_table.call_args_list), 2)
-        (entity_materialize_call_args, person_materialize_call_args,) = sorted(
+        self.assertEqual(len(self.mock_bq.materialize_view_to_table.call_args_list), 4)
+        (
+            _another_entity_materialize_call_args,
+            entity_materialize_call_args,
+            person_materialize_call_args,
+            association_table_materialize_call_args,
+        ) = sorted(
             self.mock_bq.materialize_view_to_table.call_args_list,
             key=lambda x: x[1]["view"],
         )
@@ -332,6 +426,13 @@ class UnionDataflowIngestTest(unittest.TestCase):
             entity_materialize_call_args, call(view=entity_view, use_query_cache=True)
         )
         self.assertEqual(entity_materialize_call_args[1]["view"], entity_view)
+        self.assertEqual(
+            association_table_materialize_call_args,
+            call(view=association_table_view, use_query_cache=True),
+        )
+        self.assertEqual(
+            association_table_materialize_call_args[1]["view"], association_table_view
+        )
 
     def test_no_completed_ingest_job_post_launch(self) -> None:
         # Arrange
@@ -350,10 +451,7 @@ class UnionDataflowIngestTest(unittest.TestCase):
         # Act
         union_dataflow_ingest.combine_ingest_sources_into_single_state_dataset(
             ingest_instance=DirectIngestInstance.PRIMARY,
-            tables=[
-                FakePerson.__table__,
-                FakeEntity.__table__,
-            ],
+            tables=_ALL_SCHEMA_TABLES,
         )
 
         # Assert
@@ -381,6 +479,18 @@ class UnionDataflowIngestTest(unittest.TestCase):
                 dataset_id="state", table_id="fake_entity"
             ),
         ).build()
+        association_table_view = SimpleBigQueryViewBuilder(
+            dataset_id="state_views",
+            view_id="state_entity_association_view",
+            description="",
+            view_query_template="SELECT entity_id, another_entity_id, state_code\n"
+            "FROM `test-project.state_legacy.state_entity_association`\n"
+            "WHERE state_code IN ('US_DD','US_WW','US_XX','US_YY')\n",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="state", table_id="state_entity_association"
+            ),
+        ).build()
 
         self.assertEqual(
             self.mock_bq.create_dataset_if_necessary.mock_calls,
@@ -391,18 +501,35 @@ class UnionDataflowIngestTest(unittest.TestCase):
         )
 
         # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        self.assertEqual(len(self.mock_bq.create_or_update_view.call_args_list), 2)
-        (entity_create_call_args, person_create_call_args,) = sorted(
+        self.assertEqual(len(self.mock_bq.create_or_update_view.call_args_list), 4)
+        (
+            _another_entity_create_call_args,
+            entity_create_call_args,
+            person_create_call_args,
+            association_table_create_call_args,
+        ) = sorted(
             self.mock_bq.create_or_update_view.call_args_list, key=lambda x: x[0][0]
         )
         self.assertEqual(person_create_call_args, call(person_view, might_exist=True))
         self.assertEqual(person_create_call_args[0][0], person_view)
         self.assertEqual(entity_create_call_args, call(entity_view, might_exist=True))
         self.assertEqual(entity_create_call_args[0][0], entity_view)
+        self.assertEqual(
+            association_table_create_call_args,
+            call(association_table_view, might_exist=True),
+        )
+        self.assertEqual(
+            association_table_create_call_args[0][0], association_table_view
+        )
 
         # TODO(#25330): Remove this custom comparison once __eq__ works for BigQueryView
-        self.assertEqual(len(self.mock_bq.materialize_view_to_table.call_args_list), 2)
-        (entity_materialize_call_args, person_materialize_call_args,) = sorted(
+        self.assertEqual(len(self.mock_bq.materialize_view_to_table.call_args_list), 4)
+        (
+            _another_entity_materialize_call_args,
+            entity_materialize_call_args,
+            person_materialize_call_args,
+            association_table_materialize_call_args,
+        ) = sorted(
             self.mock_bq.materialize_view_to_table.call_args_list,
             key=lambda x: x[1]["view"],
         )
@@ -414,3 +541,10 @@ class UnionDataflowIngestTest(unittest.TestCase):
             entity_materialize_call_args, call(view=entity_view, use_query_cache=True)
         )
         self.assertEqual(entity_materialize_call_args[1]["view"], entity_view)
+        self.assertEqual(
+            association_table_materialize_call_args,
+            call(view=association_table_view, use_query_cache=True),
+        )
+        self.assertEqual(
+            association_table_materialize_call_args[1]["view"], association_table_view
+        )
