@@ -408,6 +408,7 @@ output:
                         - FAPA-PBPAD # Probationary parole/detainer
                         - FAPA-PBNPA # Probationary parole
                         - FAPA-MANDE # Mandatory detainer
+                        - FAPA-MEDFU # TODO(#26025): Add definition once we learn more about MEDFU.
 
                       StateIncarcerationPeriodReleaseReason.COMMUTED:
                         - FAPA-COMMT # Facility to parole - Commutation
