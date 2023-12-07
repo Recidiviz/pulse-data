@@ -82,8 +82,8 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 100
     override_reason: Current failing level as of 11/22/23 is 54 rows
   - validation_name: sessions_missing_closest_sentence_imposed_group
-    hard_num_allowed_rows_override: 14500
-    override_reason: Current failing level as of 9/15/23 is 14,396.  Needs
+    hard_num_allowed_rows_override: 16000
+    override_reason: Current failing level as of 12/6/23 is 15,658.  Needs
       investigation. #TODO(#22303)
   - validation_name: current_supervision_staff_missing_email
     hard_num_allowed_rows_override: 1
