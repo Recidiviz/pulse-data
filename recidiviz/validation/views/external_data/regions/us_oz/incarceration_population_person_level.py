@@ -41,6 +41,7 @@ VIEW_QUERY_TEMPLATE = """
       WHEN data_system = 'vfds' THEN 'US_OZ_VFDS'
       WHEN data_system = 'eg' THEN 'US_OZ_EG'
       WHEN data_system = 'lotr' THEN 'US_OZ_LOTR_ID'
+      WHEN data_system = 'sm' THEN 'US_OZ_SM'
     END AS external_id_type,
     person_id AS person_external_id, 
     CAST(NULL AS STRING) AS facility,
