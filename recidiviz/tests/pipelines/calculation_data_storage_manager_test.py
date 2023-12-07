@@ -35,6 +35,7 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.dataset_config import raw_data_pruning_new_raw_data_dataset
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.state.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
@@ -437,6 +438,67 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
                 for dataset in datasets[:2]
             ]
         )
+
+    # pylint: disable=protected-access
+    @freeze_time("2020-01-02 00:00")
+    def test_delete_empty_or_temp_datasets_pruning_dataset(self) -> None:
+        """Test that _delete_empty_or_temp_datasets does not delete raw data pruning
+        datasets we expect to be empty sometimes.
+        """
+        empty_dataset_name = "empty"
+        empty_dataset = MockDataset(
+            empty_dataset_name,
+            datetime.datetime(2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
+        )
+        pruning_dataset_name = raw_data_pruning_new_raw_data_dataset(
+            StateCode.US_XX, DirectIngestInstance.PRIMARY
+        )
+        pruning_dataset = MockDataset(
+            dataset_id=pruning_dataset_name,
+            created=datetime.datetime(
+                2020, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
+            ),
+        )
+
+        pruning_dataset_ref = bigquery.dataset.DatasetReference(
+            self.project_id, pruning_dataset_name
+        )
+        empty_dataset_ref = bigquery.dataset.DatasetReference(
+            self.project_id, empty_dataset_name
+        )
+
+        self.mock_client.list_datasets.return_value = [
+            bigquery.dataset.DatasetListItem(
+                {
+                    "datasetReference": {
+                        "projectId": self.project_id,
+                        "datasetId": pruning_dataset_name,
+                    },
+                }
+            ),
+            bigquery.dataset.DatasetListItem(
+                {
+                    "datasetReference": {
+                        "projectId": self.project_id,
+                        "datasetId": empty_dataset_name,
+                    },
+                }
+            ),
+        ]
+        self.mock_client.dataset_ref_for_id.side_effect = [
+            pruning_dataset_ref,
+            empty_dataset_ref,
+        ]
+        self.mock_client.get_dataset.side_effect = [
+            pruning_dataset,
+            empty_dataset,
+        ]
+        self.mock_client.dataset_is_empty.return_value = True
+
+        calculation_data_storage_manager._delete_empty_or_temp_datasets()
+
+        self.mock_client.list_datasets.assert_called()
+        self.mock_client.delete_dataset.assert_called_with(empty_dataset_ref)
 
     @patch(
         "recidiviz.pipelines.calculation_data_storage_manager._delete_empty_or_temp_datasets"
