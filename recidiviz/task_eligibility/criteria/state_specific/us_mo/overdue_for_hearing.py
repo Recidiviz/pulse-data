@@ -141,7 +141,7 @@ _QUERY_TEMPLATE = f"""
     )
     ,
     -- Add 1-day lag so that someone is overdue after, but not on, the "next review date"
-    {critical_date_has_passed_spans_cte(meets_criteria_leading_window_days=-1, attributes=["due_date_type"])}
+    {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=-1, attributes=["due_date_type"])}
     SELECT 
         state_code,
         person_id,

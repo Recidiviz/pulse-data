@@ -35,8 +35,9 @@ someone is within 6 months of their tentative parole date.
 """
 
 _QUERY_TEMPLATE = f"""
-{date_within_time_span(meets_criteria_leading_window_days=183,
-                        critical_date_column='tentative_parole_date')}
+{date_within_time_span(meets_criteria_leading_window_time=6,
+                        critical_date_column='tentative_parole_date',
+                        date_part='MONTH')}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

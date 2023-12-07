@@ -58,8 +58,9 @@ def critical_date_spans_cte() -> str:
 
 
 def critical_date_has_passed_spans_cte(
-    meets_criteria_leading_window_days: int = 0,
+    meets_criteria_leading_window_time: int = 0,
     attributes: Optional[List[str]] = None,
+    date_part: str = "DAY",
 ) -> str:
     """Returns a CTE that indicates the span of time where a particular critical date
     was set and comes on or before the current date. The
@@ -74,12 +75,15 @@ def critical_date_has_passed_spans_cte(
 
     Params:
     ------
-    meets_criteria_leading_window_days : int
+    meets_criteria_leading_window_time : int
         Modifier to move the start_date by a constant value to account, for example, for time before the critical date
-        where some criteria is met.
+        where some criteria is met. Defaults to 0.
 
     attributes : Optional[List[str]]
         List of column names that will be passed through to the output CTE
+
+    date_part (str, optional): Supports any of the BigQuery date_part values:
+        "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
     """
 
     if attributes:
@@ -91,7 +95,7 @@ def critical_date_has_passed_spans_cte(
     /*
     Cast datetimes to dates, convert null dates to future dates, and create the
     `critical_or_in_window_date` column from the critical date by subtracting
-    {meets_criteria_leading_window_days} days from the critical date to indicate the
+    {meets_criteria_leading_window_time} days from the critical date to indicate the
     date when the criteria is met
     */
     critical_date_spans_no_nulls AS (
@@ -103,7 +107,7 @@ def critical_date_has_passed_spans_cte(
             {nonnull_end_date_clause(f'''
                 DATE_SUB(
                     critical_date,
-                    INTERVAL {meets_criteria_leading_window_days} DAY
+                    INTERVAL {meets_criteria_leading_window_time} {date_part}
                 )'''
             )} AS critical_or_in_window_date,
             -- Maintain the original critical date for the final output

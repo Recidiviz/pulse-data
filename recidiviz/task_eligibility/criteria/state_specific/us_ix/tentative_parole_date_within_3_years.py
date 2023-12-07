@@ -35,7 +35,7 @@ someone is within 3 years of their tentative parole date.
 """
 
 _QUERY_TEMPLATE = f"""
-{date_within_time_span(meets_criteria_leading_window_days=1095,
+{date_within_time_span(meets_criteria_leading_window_time=1095,
                         critical_date_column='tentative_parole_date')}
 """
 
