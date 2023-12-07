@@ -88,6 +88,7 @@ class TestMergeIngestViewRootEntityTrees(StateIngestPipelineTestCase):
                             contents_iterator=iter([row]),
                             context=IngestViewContentsContextImpl(
                                 ingest_instance=self.ingest_instance(),
+                                is_dataflow_pipeline=True,
                                 results_update_datetime=upper_bound_date,
                             ),
                         )

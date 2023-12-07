@@ -381,7 +381,7 @@ def _get_ingest_view_builders(
     view_collector = DirectIngestViewQueryBuilderCollector(
         region,
         ingest_manifest_collector.launchable_ingest_views(
-            ingest_instance=ingest_instance
+            ingest_instance=ingest_instance, is_dataflow_pipeline=True
         ),
     )
 

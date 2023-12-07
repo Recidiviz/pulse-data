@@ -651,7 +651,8 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
             ingest_view_results = {
                 ingest_view: []
                 for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                    ingest_instance=self.ingest_instance()
+                    ingest_instance=self.ingest_instance(),
+                    is_dataflow_pipeline=True,
                 )
             }
         expected_entities = [
@@ -669,7 +670,8 @@ class RegionDirectIngestControllerTestCase(BaseStateIngestPipelineTestCase):
                 if entity.get_entity_name() == entity_type
             ]
             for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=self.ingest_instance()
+                ingest_instance=self.ingest_instance(),
+                is_dataflow_pipeline=True,
             )
             for entity_type in self.get_expected_output_entity_types(
                 ingest_view_name=ingest_view,

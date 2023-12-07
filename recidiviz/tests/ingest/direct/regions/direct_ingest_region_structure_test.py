@@ -628,7 +628,11 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     ),
                     sorted(
                         ingest_view_manifest_collector.launchable_ingest_views(
-                            ingest_instance=ingest_instance
+                            ingest_instance=ingest_instance,
+                            # Note: there may be views gated to Dataflow only which
+                            # should *not* be listed in the ingest view rank list so
+                            # that legacy ingest does not try to process them.
+                            is_dataflow_pipeline=False,
                         )
                     ),
                     "The ingest rank list does not match the ingest view manifests for "
@@ -715,7 +719,10 @@ class TestControllerWithIngestManifestCollection(unittest.TestCase):
                     ingest_view_names
                 )
                 contents_context = IngestViewContentsContextImpl(
-                    ingest_instance=ingest_instance
+                    ingest_instance=ingest_instance,
+                    is_dataflow_pipeline=is_ingest_in_dataflow_enabled(
+                        state_code=region_code, instance=ingest_instance
+                    ),
                 )
                 for ingest_view, ingest_view_2 in related_ingest_view_pairs:
                     manifest = ingest_view_manifest_collector.ingest_view_to_manifest[
