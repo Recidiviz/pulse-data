@@ -39,9 +39,6 @@ from typing import List, Tuple
 
 from sqlalchemy.engine import Engine
 
-from recidiviz.big_query.selected_columns_big_query_view import (
-    SelectedColumnsBigQueryViewBuilder,
-)
 from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
     get_outliers_enabled_states,
 )
@@ -76,11 +73,7 @@ def get_table_columns(table: SQLAlchemyModelType) -> List[str]:
             view_builder = builder
     if not view_builder:
         raise ValueError(f"missing view builder {table.__tablename__}")
-    return (
-        view_builder.columns
-        if isinstance(view_builder, SelectedColumnsBigQueryViewBuilder)
-        else []
-    )
+    return view_builder.columns
 
 
 def import_outliers_from_gcs(
