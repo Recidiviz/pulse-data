@@ -21,8 +21,9 @@ match that of the schema being deployed before the next CloudSqlToBQ export or d
 pipelines attempt to write these datasets. Does not perform any migrations, only adds
 and deletes columns where necessary.
 """
-from typing import Optional
+from typing import List, Optional
 
+from google.cloud.bigquery import SchemaField
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
@@ -38,6 +39,19 @@ from recidiviz.persistence.database.schema_utils import (
 )
 
 
+def bq_schema_for_sqlalchemy_table(
+    schema_type: SchemaType, table: Table
+) -> List[SchemaField]:
+    """Derives a BigQuery table schema from a SQLAlchemy table. Adds region code columns
+    to any association table.
+    """
+    add_state_code_field = schema_has_region_code_query_support(
+        schema_type_to_schema_base(schema_type)
+    ) and is_association_table(table.name)
+
+    return schema_for_sqlalchemy_table(table, add_state_code_field=add_state_code_field)
+
+
 def update_bq_schema_for_sqlalchemy_table(
     bq_client: BigQueryClient, schema_type: SchemaType, dataset_id: str, table: Table
 ) -> None:
@@ -47,13 +61,7 @@ def update_bq_schema_for_sqlalchemy_table(
 
     table_id = table.name
 
-    add_state_code_field = schema_has_region_code_query_support(
-        schema_type_to_schema_base(schema_type)
-    ) and is_association_table(table.name)
-
-    schema_for_table = schema_for_sqlalchemy_table(
-        table, add_state_code_field=add_state_code_field
-    )
+    schema_for_table = bq_schema_for_sqlalchemy_table(schema_type, table)
 
     if bq_client.table_exists(bq_dataset_ref, table_id):
         # Compare schema derived from schema table to existing dataset and
