@@ -94,6 +94,7 @@ class GenerateEntities(beam.PTransform):
                 contents_iterator=iter([row]),
                 context=IngestViewContentsContextImpl(
                     ingest_instance=self._ingest_instance,
+                    is_dataflow_pipeline=True,
                     results_update_datetime=datetime.fromtimestamp(upperbound_date),
                 ),
             )

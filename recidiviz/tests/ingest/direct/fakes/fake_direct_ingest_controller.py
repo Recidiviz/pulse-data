@@ -219,6 +219,31 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 infer_columns_from_config=False,
                 table_relationships=[],
             ),
+            "tagMoreBasicData_legacy": DirectIngestRawFileConfig(
+                file_tag="tagMoreBasicData_legacy",
+                file_path="path/to/tagMoreBasicData_legacy.yaml",
+                file_description="file description",
+                data_classification=RawDataClassification.VALIDATION,
+                primary_key_cols=["mockKey"],
+                columns=[
+                    RawTableColumnInfo(
+                        name="mockKey",
+                        description="mockKey description",
+                        field_type=RawTableColumnFieldType.STRING,
+                        is_pii=False,
+                    )
+                ],
+                supplemental_order_by_clause="",
+                encoding="UTF-8",
+                separator=",",
+                custom_line_terminator=None,
+                ignore_quotes=False,
+                always_historical_export=False,
+                no_valid_primary_keys=False,
+                import_chunk_size_rows=10,
+                infer_columns_from_config=False,
+                table_relationships=[],
+            ),
             "tagWeDoNotIngest": DirectIngestRawFileConfig(
                 file_tag="tagWeDoNotIngest",
                 file_path="path/to/tagWeDoNotIngest.yaml",
@@ -281,7 +306,12 @@ class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderColl
             DirectIngestViewQueryBuilder(
                 region=self.region.region_code,
                 ingest_view_name=tag,
-                view_query_template=f"SELECT * FROM {{{tag}}}",
+                view_query_template=f"SELECT * FROM {{{tag}}}"
+                # TODO(#20930): Delete tagMoreBasicData_legacy and this logic once all
+                # states have been shipped to ingest in Dataflow and we remove the
+                # $env: is_dataflow_pipeline logic from our mappings.
+                if tag != "tagMoreBasicData_legacy"
+                else "SELECT * FROM {tagMoreBasicData}",
                 order_by_cols="",
             )
             for tag in self.expected_ingest_views

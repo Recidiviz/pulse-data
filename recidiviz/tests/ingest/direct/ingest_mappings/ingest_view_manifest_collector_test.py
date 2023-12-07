@@ -23,6 +23,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_collector impo
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     IngestViewManifestCompilerDelegateImpl,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.utils.fake_region import fake_region
@@ -32,29 +33,81 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
     """Tests for IngestViewManifestCollector."""
 
     def setUp(self) -> None:
-        self.fake_region = fake_region(
+        us_xx_region = fake_region(
             region_code="us_xx",
             environment="staging",
             region_module=fake_regions,
         )
-        self.ingest_view_manifest_collector = IngestViewManifestCollector(
-            self.fake_region,
+        self.us_xx_ingest_view_manifest_collector = IngestViewManifestCollector(
+            us_xx_region,
             IngestViewManifestCompilerDelegateImpl(
-                region=self.fake_region, schema_type=SchemaType.STATE
+                region=us_xx_region, schema_type=SchemaType.STATE
+            ),
+        )
+
+        us_yy_region = fake_region(
+            region_code="us_yy",
+            environment="staging",
+            region_module=fake_regions,
+        )
+        self.us_yy_ingest_view_manifest_collector = IngestViewManifestCollector(
+            us_yy_region,
+            IngestViewManifestCompilerDelegateImpl(
+                region=us_yy_region, schema_type=SchemaType.STATE
             ),
         )
 
     def test_ingest_view_to_manifest(self) -> None:
-        result = self.ingest_view_manifest_collector.ingest_view_to_manifest
+        result = self.us_xx_ingest_view_manifest_collector.ingest_view_to_manifest
         self.assertListEqual(
-            ["basic", "tagBasicData", "tagMoreBasicData"], list(sorted(result.keys()))
+            [
+                "basic",
+                "tagBasicData",
+                "tagMoreBasicData",
+                "tagMoreBasicData_legacy",
+            ],
+            list(sorted(result.keys())),
+        )
+
+    def test_launchable_ingest_views(self) -> None:
+        result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views(
+            ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=True
+        )
+        self.assertListEqual(
+            ["basic", "tagBasicData", "tagMoreBasicData"],
+            list(sorted(result)),
+        )
+
+        result = self.us_xx_ingest_view_manifest_collector.launchable_ingest_views(
+            ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=False
+        )
+        self.assertListEqual(
+            ["basic", "tagBasicData", "tagMoreBasicData_legacy"],
+            list(sorted(result)),
+        )
+
+        result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
+            ingest_instance=DirectIngestInstance.PRIMARY, is_dataflow_pipeline=True
+        )
+        self.assertListEqual(
+            [],
+            list(sorted(result)),
+        )
+
+        result = self.us_yy_ingest_view_manifest_collector.launchable_ingest_views(
+            ingest_instance=DirectIngestInstance.SECONDARY, is_dataflow_pipeline=True
+        )
+        self.assertListEqual(
+            # In US_YY this view is gated to only run in SECONDARY
+            ["basic"],
+            list(sorted(result)),
         )
 
     def test_parse_ingest_view_name(self) -> None:
         self.assertEqual(
             "some_view",
             # pylint: disable=protected-access
-            self.ingest_view_manifest_collector._parse_ingest_view_name(
+            self.us_xx_ingest_view_manifest_collector._parse_ingest_view_name(
                 "my/test/path/us_xx_some_view.yaml"
             ),
         )
@@ -63,7 +116,7 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
             r"Manifest path does not match expected format.*",
         ):
             # pylint: disable=protected-access
-            self.ingest_view_manifest_collector._parse_ingest_view_name(
+            self.us_xx_ingest_view_manifest_collector._parse_ingest_view_name(
                 "my/test/path/bad_view.yaml"
             )
 
@@ -72,6 +125,6 @@ class IngestViewManifestCollectorTest(unittest.TestCase):
             r"Manifest path does not match expected format.*",
         ):
             # pylint: disable=protected-access
-            self.ingest_view_manifest_collector._parse_ingest_view_name(
+            self.us_xx_ingest_view_manifest_collector._parse_ingest_view_name(
                 "my/test/path/us_xx_bad_view"
             )

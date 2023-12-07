@@ -130,6 +130,7 @@ class StateIngestViewParserTestBase:
         # By default, we assume we're ingesting into the SECONDARY ingest instance,
         # which should always have the latest ingest logic updates released to it.
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
+        is_dataflow_pipeline: bool = True,
     ) -> None:
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
@@ -141,7 +142,10 @@ class StateIngestViewParserTestBase:
         for row in csv.DictReader(contents_handle.get_contents_iterator()):
             _ = enum_parser_manifest.build_from_row(
                 row,
-                context=IngestViewContentsContextImpl(ingest_instance=ingest_instance),
+                context=IngestViewContentsContextImpl(
+                    ingest_instance=ingest_instance,
+                    is_dataflow_pipeline=is_dataflow_pipeline,
+                ),
             )
 
     def _run_parse_ingest_view_test(
@@ -153,6 +157,7 @@ class StateIngestViewParserTestBase:
         # By default, we assume we're ingesting into the SECONDARY ingest instance,
         # which should always have the latest ingest logic updates released to it.
         ingest_instance: DirectIngestInstance = DirectIngestInstance.SECONDARY,
+        is_dataflow_pipeline: bool = True,
     ) -> None:
         """Runs a test that parses the ingest view into Python entities.
 
@@ -182,6 +187,7 @@ class StateIngestViewParserTestBase:
                 ),
                 context=IngestViewContentsContextImpl(
                     ingest_instance=ingest_instance,
+                    is_dataflow_pipeline=is_dataflow_pipeline,
                     results_update_datetime=DEFAULT_UPDATE_DATETIME,
                 ),
             )

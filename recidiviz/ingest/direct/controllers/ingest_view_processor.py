@@ -60,6 +60,7 @@ class IngestViewProcessor:
             contents_iterator=self.row_iterator_from_contents_handle(contents_handle),
             context=IngestViewContentsContextImpl(
                 ingest_instance=args.ingest_instance,
+                is_dataflow_pipeline=False,
                 results_update_datetime=args.upper_bound_datetime_inclusive,
             ),
         )

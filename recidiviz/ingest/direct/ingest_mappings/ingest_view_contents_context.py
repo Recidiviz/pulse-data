@@ -24,6 +24,7 @@ from typing import Optional, Union
 
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
     INGEST_VIEW_RESULTS_UPDATE_DATETIME,
+    IS_DATAFLOW_PIPELINE_PROPERTY_NAME,
     IS_LOCAL_PROPERTY_NAME,
     IS_PRIMARY_INSTANCE_PROPERTY_NAME,
     IS_PRODUCTION_PROPERTY_NAME,
@@ -56,12 +57,18 @@ class IngestViewContentsContextImpl(IngestViewContentsContext):
     def __init__(
         self,
         ingest_instance: DirectIngestInstance,
+        # TODO(#20930): Remove this property when ingest in Dataflow has been fully
+        #  shipped.
+        is_dataflow_pipeline: bool,
         results_update_datetime: Optional[datetime.datetime] = None,
     ) -> None:
         self.ingest_instance = ingest_instance
         self.results_update_datetime = results_update_datetime
+        self.is_dataflow_pipeline = is_dataflow_pipeline
 
     def get_env_property(self, property_name: str) -> Union[bool, str]:
+        if property_name == IS_DATAFLOW_PIPELINE_PROPERTY_NAME:
+            return self.is_dataflow_pipeline
         if property_name == IS_LOCAL_PROPERTY_NAME:
             return not environment.in_gcp()
         if property_name == IS_STAGING_PROPERTY_NAME:

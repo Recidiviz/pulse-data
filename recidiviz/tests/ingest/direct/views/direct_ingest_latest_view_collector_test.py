@@ -298,6 +298,10 @@ class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):
                 "tagHeadersNoContents_latest",
                 "tagBasicData_latest",
                 "tagMoreBasicData_latest",
+                # TODO(#20930): Delete tagMoreBasicData_legacy once all states have been
+                # shipped to ingest in Dataflow and we remove the
+                # $env: is_dataflow_pipeline logic from our mappings.
+                "tagMoreBasicData_legacy_latest",
                 # Excludes tagWeDoNotIngest which has no documented columns
             ],
             [b.view_id for b in builders],

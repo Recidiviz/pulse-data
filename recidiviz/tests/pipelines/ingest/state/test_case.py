@@ -36,6 +36,7 @@ from recidiviz.ingest.direct.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -136,6 +137,10 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         return DirectIngestInstance.SECONDARY
 
     @classmethod
+    def is_ingest_in_dataflow_enabled(cls) -> bool:
+        return is_ingest_in_dataflow_enabled(cls.region_code(), cls.ingest_instance())
+
+    @classmethod
     def ingest_view_manifest_collector(cls) -> IngestViewManifestCollector:
         return IngestViewManifestCollector(
             cls.region(),
@@ -150,7 +155,8 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
         return DirectIngestViewQueryBuilderCollector(
             cls.region(),
             cls.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=cls.ingest_instance()
+                ingest_instance=cls.ingest_instance(),
+                is_dataflow_pipeline=cls.is_ingest_in_dataflow_enabled(),
             ),
         )
 
@@ -228,6 +234,7 @@ class BaseStateIngestPipelineTestCase(unittest.TestCase):
                 contents_iterator=iter(rows),
                 context=IngestViewContentsContextImpl(
                     ingest_instance=self.ingest_instance(),
+                    is_dataflow_pipeline=self.is_ingest_in_dataflow_enabled(),
                     results_update_datetime=datetime.now(),
                 ),
             )
@@ -532,7 +539,8 @@ class StateIngestPipelineTestCase(
         for (
             ingest_view
         ) in self.ingest_view_manifest_collector().launchable_ingest_views(
-            ingest_instance=self.ingest_instance()
+            ingest_instance=self.ingest_instance(),
+            is_dataflow_pipeline=True,
         ):
             ingest_view_builder = (
                 self.ingest_view_collector().get_query_builder_by_view_name(ingest_view)
@@ -614,7 +622,8 @@ class StateIngestPipelineTestCase(
                 if entity.get_entity_name() == entity_type
             ]
             for ingest_view in self.ingest_view_manifest_collector().launchable_ingest_views(
-                ingest_instance=self.ingest_instance()
+                ingest_instance=self.ingest_instance(),
+                is_dataflow_pipeline=True,
             )
             for entity_type in self.get_expected_output_entity_types(
                 ingest_view_name=ingest_view,
