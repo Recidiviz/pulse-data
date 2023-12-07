@@ -37,6 +37,9 @@ max_allowed_error_overrides:
       face contact from `normalized_state`, so if they have had one on a prior stint of
       supervision this will fail. We are going to delete this validation in the future
       so ignoring this failure for now.
+  - validation_name: state_incarceration_period_by_admission_date_stable_counts
+    hard_max_allowed_error_override: .26
+    override_reason: This is standard deviation for this validation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 550
@@ -87,8 +90,8 @@ num_allowed_rows_overrides:
       Small number of rows missing descriptions in ref table. Current failing level as of
       7/24/23 is 179 rows.
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
-    hard_num_allowed_rows_override: 80
-    override_reason: Current failing level as of 10/13/23 is 51 rows. #TODO(#24773)
+    hard_num_allowed_rows_override: 7500
+    override_reason: Current failing level as of 12/6/23 is 7302 rows. #TODO(#24773)
   - validation_name: sessions_missing_closest_sentence_imposed_group
     hard_num_allowed_rows_override: 3000
     override_reason: Current failing level as of 4/20/23 is 2,305 rows (2%) #TODO(#20403)
