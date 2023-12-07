@@ -17,9 +17,7 @@
 """All Outliers views."""
 from typing import List
 
-from recidiviz.big_query.selected_columns_big_query_view import (
-    SelectedColumnsBigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.outliers.metric_benchmarks import (
     METRIC_BENCHMARKS_VIEW_BUILDER,
 )
@@ -41,17 +39,26 @@ from recidiviz.calculator.query.state.views.outliers.supervision_officer_metrics
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_outlier_status import (
     SUPERVISION_OFFICER_OUTLIER_STATUS,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_outlier_status_archive import (
+    SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervisors import (
     SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.outliers.supervision_officer_supervisors_archive import (
+    SUPERVISION_OFFICER_SUPERVISORS_ARCHIVE_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_officers import (
     SUPERVISION_OFFICERS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.outliers.supervision_officers_archive import (
+    SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.outliers.supervision_state_metrics import (
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
 )
 
-OUTLIERS_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
+OUTLIERS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     METRIC_BENCHMARKS_VIEW_BUILDER,
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
     SUPERVISION_DISTRICTS_VIEW_BUILDER,
@@ -59,7 +66,10 @@ OUTLIERS_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
     SUPERVISION_CLIENTS_VIEW_BUILDER,
     SUPERVISION_OFFICER_METRICS_VIEW_BUILDER,
     SUPERVISION_OFFICER_OUTLIER_STATUS,
+    SUPERVISION_OFFICER_OUTLIER_STATUS_ARCHIVE_VIEW_BUILDER,
     SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER,
+    SUPERVISION_OFFICER_SUPERVISORS_ARCHIVE_VIEW_BUILDER,
     SUPERVISION_OFFICERS_VIEW_BUILDER,
+    SUPERVISION_OFFICERS_ARCHIVE_VIEW_BUILDER,
     SUPERVISION_STATE_METRICS_VIEW_BUILDER,
 ]
