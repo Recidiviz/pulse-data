@@ -104,7 +104,11 @@ def get_workflows_etl_blueprint() -> Blueprint:
             return "Missing region, ignoring", HTTPStatus.OK
 
         # Ignore staged files
-        if "staging" in region_code:
+        if region_code.startswith("staging"):
+            return "", HTTPStatus.OK
+
+        # Ignore files that have been exported to the bucket as part of a sandbox export
+        if region_code.startswith("sandbox"):
             return "", HTTPStatus.OK
 
         cloud_task_manager = SingleCloudTaskQueueManager(
