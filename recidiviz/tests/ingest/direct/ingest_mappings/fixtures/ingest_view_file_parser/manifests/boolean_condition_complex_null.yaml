@@ -8,11 +8,14 @@ output:
     name:
       $conditional:
         - $if:
-            $not_null:
-              $concat:
-                $values:
-                  - PART_1
-                  - PART_2
-                $include_nulls: False
+            # Note: You really would use $not_null to build this condition,
+            # but this is a test of the $not functionality.
+            $not:
+              $is_null:
+                $concat:
+                  $values:
+                    - PART_1
+                    - PART_2
+                  $include_nulls: False
           $then: PART_1
         - $else: $literal("BOTH NULL")

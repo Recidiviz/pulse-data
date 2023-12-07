@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "description": "An expression that returns false if the wrapped boolean expression returns true, and vice versa.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$not": {
+      "$ref": "../boolean_expressions/index.json"
+    }
+  },
+  "required": ["$not"],
+  "examples": [
+    {
+      "$not":  {
+        "$env": "is_secondary_instance"
+      }
+    },
+    {
+      "$not":  {
+        "$and": [
+          {
+            "$is_null": "TERM_DATE"
+          },
+          {
+            "$not_null": "recent_officer_id"
+          }
+        ]
+      }
+    }
+  ],
+  "#contextualized_examples": [
+    {
+      "$conditional": [
+        {
+          "$if": {
+            "$not":  {
+              "$env": "is_secondary_instance"
+            }
+          },
+          "$then": "confinement_date"
+        }
+      ]
+    }
+  ]
+}

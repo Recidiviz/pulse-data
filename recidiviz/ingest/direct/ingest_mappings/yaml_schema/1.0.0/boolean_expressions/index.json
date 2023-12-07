@@ -20,6 +20,9 @@
     {
       "$ref": "is_null.json"
     },
+        {
+      "$ref": "not.json"
+    },
     {
       "$ref": "not_in.json"
     },

@@ -30,7 +30,6 @@ from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     get_direct_ingest_region,
 )
-from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import (
     IngestViewContentsContextImpl,
 )
@@ -59,6 +58,9 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
     direct_ingest_fixture_path,
+)
+from recidiviz.tests.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_test import (
+    ingest_mappingest_json_schema_path,
 )
 from recidiviz.tests.test_debug_helpers import launch_entity_tree_html_diff_comparison
 from recidiviz.utils import environment
@@ -231,9 +233,7 @@ class StateIngestViewParserTestBase:
             version = manifest_dict.peek(MANIFEST_LANGUAGE_VERSION_KEY, str)
             validate_yaml_matches_schema(
                 yaml_dict=manifest_dict,
-                json_schema_path=os.path.join(
-                    os.path.dirname(yaml_schema.__file__), version, "schema.json"
-                ),
+                json_schema_path=ingest_mappingest_json_schema_path(version),
             )
 
     def test_all_ingest_view_manifests_parse(self) -> None:
