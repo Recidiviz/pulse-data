@@ -50,10 +50,10 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=ABSCONSIONS_BENCH_WARRANTS,
-                title_display_name="Absconsion Rate",
-                body_display_name="absconsion rate",
-                event_name="absconsions",
-                event_name_singular="absconsion",
+                title_display_name="Absconsion & Bench Warrant Rate",
+                body_display_name="absconsion & bench warrant rate",
+                event_name="absconsions & bench warrants",
+                event_name_singular="absconsion/bench warrant",
             ),
             OutliersMetricConfig.build_from_metric(
                 metric=TASK_COMPLETIONS_FULL_TERM_DISCHARGE,
