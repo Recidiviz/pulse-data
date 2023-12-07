@@ -30,6 +30,7 @@ def is_ingest_in_dataflow_enabled(
         StateCode.US_IA,
         StateCode.US_ID,
         StateCode.US_NC,
+        StateCode.US_AR,
     ]
     if state_code in all_projects_enabled_states:
         return True
@@ -54,6 +55,7 @@ def ingest_pipeline_can_run_in_dag(
         StateCode.US_IA,
         StateCode.US_ID,
         StateCode.US_NC,
+        StateCode.US_AR,
     ]
     if state_code in all_projects_enabled_states:
         return True
