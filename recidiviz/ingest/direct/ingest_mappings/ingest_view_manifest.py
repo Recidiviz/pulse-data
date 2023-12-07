@@ -1783,6 +1783,9 @@ class OrConditionManifest(ManifestNode[bool]):
 
 @attr.s(kw_only=True)
 class InvertConditionManifest(ManifestNode[bool]):
+    # Manifest node key for inverting any ManifestNode[bool]
+    NOT_CONDITION_KEY = "$not"
+
     # Manifest node key for inverted ContainsConditionManifest
     NOT_IN_CONDITION_KEY = "$not_in"
 
@@ -2231,6 +2234,15 @@ def build_manifest_from_raw(
                 delegate=delegate,
                 variable_manifests=variable_manifests,
                 expected_return_type=expected_result_type,
+            )
+        if manifest_node_name == InvertConditionManifest.NOT_CONDITION_KEY:
+            return InvertConditionManifest(
+                condition_manifest=build_manifest_from_raw_typed(
+                    raw_field_manifest=raw_field_manifest.pop_dict(manifest_node_name),
+                    delegate=delegate,
+                    variable_manifests=variable_manifests,
+                    expected_result_type=bool,
+                )
             )
         if manifest_node_name == ContainsConditionManifest.IN_CONDITION_KEY:
             return ContainsConditionManifest.from_raw_manifest(

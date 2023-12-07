@@ -25,6 +25,7 @@ from typing import Dict, List, Optional, Type, Union
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.ingest.direct.ingest_mappings import yaml_schema
 from recidiviz.ingest.direct.ingest_mappings.custom_function_registry import (
     CustomFunctionRegistry,
 )
@@ -32,6 +33,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_contents_context import
     IngestViewContentsContext,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler import (
+    MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewManifestCompiler,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_manifest_compiler_delegate import (
@@ -61,6 +63,8 @@ from recidiviz.tests.ingest.direct.ingest_mappings.fixtures.ingest_view_file_par
     FakeSentence,
     FakeTaskDeadline,
 )
+from recidiviz.utils.yaml_dict import YAMLDict
+from recidiviz.utils.yaml_dict_validator import validate_yaml_matches_schema
 
 #### Start Fake Schema Factories ####
 
@@ -252,6 +256,12 @@ class FakeIngestViewContentsContext(IngestViewContentsContext):
         raise ValueError(f"Unexpected test env property: {property_name}")
 
 
+def ingest_mappingest_json_schema_path(version_str: str) -> str:
+    return os.path.join(
+        os.path.dirname(yaml_schema.__file__), version_str, "schema.json"
+    )
+
+
 class IngestViewManifestCompilerTest(unittest.TestCase):
     """Tests for IngestViewManifestCompiler."""
 
@@ -282,7 +292,7 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
             cleanup_file=False,
         )
 
-        return self.compiler.compile_manifest(
+        result = self.compiler.compile_manifest(
             ingest_view_name=ingest_view_name
         ).parse_contents(
             contents_iterator=csv.DictReader(contents_handle.get_contents_iterator()),
@@ -294,6 +304,20 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                 results_update_datetime=results_update_datetime,
             ),
         )
+
+        # Additionally, check that the manifest is allowed by the YAML schema definition
+        manifest_path = self.compiler.delegate.get_ingest_view_manifest_path(
+            ingest_view_name
+        )
+
+        manifest_dict = YAMLDict.from_path(manifest_path)
+        version = manifest_dict.peek(MANIFEST_LANGUAGE_VERSION_KEY, str)
+        validate_yaml_matches_schema(
+            yaml_dict=manifest_dict,
+            json_schema_path=ingest_mappingest_json_schema_path(version),
+        )
+
+        return result
 
     def test_simple_output(self) -> None:
         # Arrange
@@ -2541,6 +2565,20 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
         )
         self.assertEqual(results, expected_output)
 
+        results = self._run_parse_for_ingest_view(
+            "should_launch_inverse",
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            is_staging=True,
+        )
+        self.assertEqual(results, expected_output)
+
+        results = self._run_parse_for_ingest_view(
+            "should_launch_inverse",
+            ingest_instance=DirectIngestInstance.SECONDARY,
+            is_staging=False,
+        )
+        self.assertEqual(results, expected_output)
+
     def test_should_launch_environment_doesnt_match(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
@@ -2550,6 +2588,16 @@ class IngestViewManifestCompilerTest(unittest.TestCase):
                 "should_launch",
                 ingest_instance=DirectIngestInstance.PRIMARY,
                 is_production=True,
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Cannot parse results for ingest view \[should_launch_inverse\] because should_launch is false.",
+        ):
+            _ = self._run_parse_for_ingest_view(
+                "should_launch_inverse",
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                is_staging=True,
             )
 
     def test_env_property_names_returned_string_env_property(self) -> None:
