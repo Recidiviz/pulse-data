@@ -48,7 +48,7 @@ WITH
 },
 {critical_date_spans_cte()},
 {critical_date_has_passed_spans_cte(
-    meets_criteria_leading_window_days=_DAYS_BEFORE_ELIGIBLE_DATE
+    meets_criteria_leading_window_time=_DAYS_BEFORE_ELIGIBLE_DATE
 )}
 SELECT
     state_code,

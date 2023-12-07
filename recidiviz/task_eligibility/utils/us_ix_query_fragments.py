@@ -48,7 +48,9 @@ IX_STATE_CODE_WHERE_CLAUSE = "WHERE state_code = 'US_IX'"
 
 
 def date_within_time_span(
-    meets_criteria_leading_window_days: int = 0, critical_date_column: str = ""
+    critical_date_column: str,
+    meets_criteria_leading_window_time: int = 0,
+    date_part: str = "DAY",
 ) -> str:
     """
     Generates a BigQuery SQL query that uses <critical_date_has_passed_spans> to
@@ -56,10 +58,10 @@ def date_within_time_span(
     This is all done using the <us_ix_parole_dates_spans_preprocessing> table.
 
     Args:
+        critical_date_column (str, optional): The column representing the critical date
+            to be checked within the time spans.
         meets_criteria_leading_window_days (int, optional): The leading window of days
             used to determine if a critical date falls within. Default is 0.
-        critical_date_column (str, optional): The column representing the critical date
-            to be checked within the time spans. Default is an empty string.
 
     Returns:
         str: A formatted BigQuery SQL query that selects time spans and determines if the
@@ -82,7 +84,8 @@ def date_within_time_span(
             `{{project_id}}.{{analyst_dataset}}.us_ix_parole_dates_spans_preprocessing_materialized`
           WHERE {critical_date_column} IS NOT NULL 
             ),
-      {critical_date_has_passed_spans_cte(meets_criteria_leading_window_days)},
+      {critical_date_has_passed_spans_cte(meets_criteria_leading_window_time = meets_criteria_leading_window_time,
+                                          date_part = date_part)},
       {create_sub_sessions_with_attributes('critical_date_has_passed_spans')}
     SELECT
       state_code,

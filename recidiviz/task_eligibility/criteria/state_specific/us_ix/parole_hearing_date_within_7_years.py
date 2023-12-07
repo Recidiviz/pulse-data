@@ -111,7 +111,8 @@ critical_date_spans AS (
     WHERE min_parole_hearing_date < max_parole_hearing_date
 ),
 
-{critical_date_has_passed_spans_cte(meets_criteria_leading_window_days=2555)},
+{critical_date_has_passed_spans_cte(meets_criteria_leading_window_time=7,
+                                    date_part='YEAR')},
 
 {create_sub_sessions_with_attributes('critical_date_has_passed_spans')}
 
