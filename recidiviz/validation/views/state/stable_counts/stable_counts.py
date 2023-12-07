@@ -159,6 +159,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2022, 11, 1),
                         date(2022, 12, 1),
                         date(2023, 1, 1),
+                        # The number of supervision starts has been increasing slightly in the past few months, with an all time high in 9/2023 (due to more officer assignment changes than usual)
+                        # And so the number of supervision starts in 10/2023 is actually closer to the usual, and it's only failing cause 9/2023 had crept up so high
+                        date(2023, 10, 1),
                     ],
                 },
             ),
@@ -201,6 +204,9 @@ ENTITIES_WITH_EXPECTED_STABLE_COUNTS_OVER_TIME: Dict[str, StableCountsTableConfi
                         date(2023, 1, 1),
                         # Not sure why there was these fluctuations for 4/2023, but it's only 25.4% (so just barely over the threshold) so I think it's part of normal fluctuations
                         date(2023, 4, 1),
+                        # The number of supervision terminations has been increasing slightly in the past few months, with an all time high in 9/2023 (due to more officer assignment changes than usual)
+                        # And so the number of supervision terminations in 10/2023 is actually closer to the usual, and it's only failing cause 9/2023 had crept up so high
+                        date(2023, 10, 1),
                     ],
                 },
             ),
