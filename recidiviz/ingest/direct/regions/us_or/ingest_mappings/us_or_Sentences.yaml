@@ -85,6 +85,7 @@ output:
                     $mappings:
                       StateSupervisionSentenceSupervisionType.PROBATION:
                         - P # Probation Sentence
+                        - C # Conditional Discharge (essentially probation)
                       StateSupervisionSentenceSupervisionType.PAROLE:
                         - O # Post Prison Supervision Sentence (virtually synonymous with Parole in OR)
                       StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN:
