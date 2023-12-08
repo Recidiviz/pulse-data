@@ -22,8 +22,7 @@ locals {
   composer_dag_bucket = trimprefix(trimsuffix(google_composer_environment.default_v2.config.0.dag_gcs_prefix, "/dags"), "gs://")
   source_files_to_copy_to_bucket = toset(flatten([
     for path_sequence in yamldecode(file("${path.module}/config/cloud_composer_source_files_to_copy.yaml")) : [
-      for file in fileset(replace(path_sequence[0], "recidiviz/", "${local.recidiviz_root}/"), path_sequence[1]) :
-      "${path_sequence[0]}/${file}"
+      for file in fileset(replace(path_sequence[0], "recidiviz/", "${local.recidiviz_root}/"), path_sequence[1]) : "${path_sequence[0]}/${file}"
     ]
   ]))
 }
@@ -34,9 +33,7 @@ data "google_secret_manager_secret_version" "airflow_sendgrid_api_key" {
 
 data "external" "airflow_source_files" {
   working_dir = "${dirname(local.recidiviz_root)}/../.."
-  program = [
-    "pipenv", "run", "python", "-m", "recidiviz.tools.airflow.get_airflow_source_files", "--dry-run", "False"
-  ]
+  program     = ["pipenv", "run", "python", "-m", "recidiviz.tools.airflow.get_airflow_source_files", "--dry-run", "False"]
 }
 
 resource "google_composer_environment" "default_v2" {
@@ -121,37 +118,4 @@ resource "google_storage_bucket_object" "recidiviz_source_file" {
   name     = "dags/${data.external.airflow_source_files.result[each.key]}"
   bucket   = local.composer_dag_bucket
   source   = "${local.recidiviz_root}/${trimprefix(each.key, "recidiviz/")}"
-}
-
-data "google_container_cluster" "underlying_gke_cluster" {
-  name     = reverse(split("/", google_composer_environment.default_v2.config.0.gke_cluster))[0]
-  location = google_composer_environment.default_v2.region
-}
-
-
-resource "google_compute_address" "gke_external_address" {
-  name   = "gke-nat-address"
-  region = data.google_container_cluster.underlying_gke_cluster.location
-}
-
-resource "google_compute_router" "gke_router" {
-  project = var.project_id
-  name    = "nat-router"
-  network = "default"
-  region  = data.google_container_cluster.underlying_gke_cluster.location
-}
-
-resource "google_compute_router_nat" "gke_nat" {
-  region = google_compute_router.gke_router.region
-  router = google_compute_router.gke_router.name
-  name   = "gke-nat-config"
-
-  nat_ip_allocate_option = "MANUAL_ONLY"
-  nat_ips                = [google_compute_address.gke_external_address.id]
-
-  source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
-  subnetwork {
-    name                    = data.google_container_cluster.underlying_gke_cluster.subnetwork
-    source_ip_ranges_to_nat = [data.google_container_cluster.underlying_gke_cluster.cluster_ipv4_cidr]
-  }
 }
