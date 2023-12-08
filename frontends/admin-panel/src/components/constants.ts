@@ -24,7 +24,8 @@ export const formTailLayout = {
 };
 
 export const WORKFLOWS_PERMISSIONS_LABELS = {
-  workflows: "Workflows",
+  workflowsSupervision: "Supervision Workflows",
+  workflowsFacilities: "Facilities Workflows",
 };
 
 export const VITALS_PERMISSIONS_LABELS = {
@@ -33,6 +34,7 @@ export const VITALS_PERMISSIONS_LABELS = {
 
 export const OUTLIERS_PERMISSIONS_LABELS = {
   insights: "Outliers",
+  "insights_supervision_supervisors-list": "Outliers Leadership Navigator",
 };
 
 export const PATHWAYS_PERMISSIONS_LABELS = {

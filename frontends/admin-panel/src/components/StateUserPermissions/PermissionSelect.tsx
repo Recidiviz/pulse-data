@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Select } from "antd";
+import { Form, FormItemProps, Select } from "antd";
 
 type Permission = {
   name: string;
@@ -25,10 +25,14 @@ export const PermissionSelect = ({
   permission,
   disabled,
   placeholder,
+  dependencies,
+  rules,
 }: {
   permission: Permission;
   disabled: boolean;
   placeholder?: string;
+  dependencies?: FormItemProps["dependencies"];
+  rules?: FormItemProps["rules"];
 }): JSX.Element => {
   const permissionOptions = [
     {
@@ -46,6 +50,8 @@ export const PermissionSelect = ({
       name={[permission.name]}
       label={permission.label}
       labelCol={{ span: 15 }}
+      dependencies={dependencies}
+      rules={rules}
     >
       <Select
         allowClear
