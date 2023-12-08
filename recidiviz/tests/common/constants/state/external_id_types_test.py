@@ -57,11 +57,5 @@ class ExternalIdTypeTest(unittest.TestCase):
         for var_name in get_external_id_types():
             var_value = getattr(external_id_types, var_name)
 
-            # Handle legacy case where variable name and value don't match
-            # TODO(#22448): Rename US_PA_CONTROL variable to US_PA_CONT and remove this check
-            if var_value == "US_PA_CONT":
-                self.assertEqual(var_name, "US_PA_CONTROL")
-                continue
-
             # Check that the variable value and name are equivalent
             self.assertEqual(var_name, var_value)
