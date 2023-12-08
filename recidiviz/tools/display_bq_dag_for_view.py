@@ -24,29 +24,16 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_utils import build_views_to_update
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import all_deployed_view_builders
-
-
-def build_dag_walker() -> BigQueryViewDagWalker:
-    return BigQueryViewDagWalker(
-        build_views_to_update(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            candidate_view_builders=all_deployed_view_builders(),
-            address_overrides=None,
-        )
-    )
+from recidiviz.view_registry.deployed_views import build_all_deployed_views_dag_walker
 
 
 def print_dfs_tree(
     dataset_id: str, view_id: str, print_downstream_tree: bool = False
 ) -> None:
-    dag_walker = build_dag_walker()
+    dag_walker = build_all_deployed_views_dag_walker()
 
     address = BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
     if address not in dag_walker.nodes_by_address:

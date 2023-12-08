@@ -38,6 +38,15 @@ class BasePipeline(abc.ABC, Generic[PipelineParametersT]):
     def pipeline_name(cls) -> str:
         """Static pipeline name for all pipeline runs."""
 
+    # TODO(#22528): Find another way to derive which BQ addresses a given pipeline
+    #  depends on when we run reference view queries directly inside each pipeline.
+    @classmethod
+    @abc.abstractmethod
+    def all_required_reference_table_ids(cls) -> List[str]:
+        """The table_ids for all reference views of any type read in by this
+        pipeline. All reference_views must live in the reference_views dataset.
+        """
+
     @classmethod
     @abc.abstractmethod
     def parameters_type(cls) -> Type[PipelineParametersT]:

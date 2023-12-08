@@ -212,6 +212,24 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
         }
 
     @classmethod
+    def all_required_reference_table_ids(cls) -> List[str]:
+        all_table_ids = []
+        for root_entity_cls in cls.required_reference_tables():
+            all_table_ids += (
+                cls.required_state_based_reference_tables()[root_entity_cls]
+                + cls.required_reference_tables()[root_entity_cls]
+                + [
+                    t
+                    for table_ids in cls.state_specific_required_reference_tables()[
+                        root_entity_cls
+                    ].values()
+                    for t in table_ids
+                ]
+            )
+
+        return all_table_ids
+
+    @classmethod
     def entity_normalizer(cls) -> ComprehensiveEntityNormalizer:
         return ComprehensiveEntityNormalizer()
 

@@ -142,6 +142,18 @@ class MetricPipeline(
         required to run pipelines in the state."""
 
     @classmethod
+    def all_required_reference_table_ids(cls) -> List[str]:
+        return (
+            cls.required_state_based_reference_tables()
+            + cls.required_reference_tables()
+            + [
+                t
+                for table_ids in cls.state_specific_required_reference_tables().values()
+                for t in table_ids
+            ]
+        )
+
+    @classmethod
     @abc.abstractmethod
     def identifier(cls) -> BaseIdentifier:
         """Returns the identifier for this pipeline."""
