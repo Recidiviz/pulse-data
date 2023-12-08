@@ -59,4 +59,5 @@ class UsOzController(BaseDirectIngestController):
             "lotr_person",
             "lotr_periods",
             "sm_person",
+            "sm_periods",
         ]
