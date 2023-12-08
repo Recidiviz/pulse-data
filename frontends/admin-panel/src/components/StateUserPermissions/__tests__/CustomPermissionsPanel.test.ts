@@ -35,7 +35,7 @@ const baseUser: Omit<StateUserPermissionsResponse, "routes"> = {
 
 describe("routePlaceholder", () => {
   test("no selected users", () => {
-    expect(routePlaceholder("workflows")).toBeUndefined();
+    expect(routePlaceholder("workflowsSupervision")).toBeUndefined();
   });
 
   test.each([
@@ -47,11 +47,13 @@ describe("routePlaceholder", () => {
       {
         ...baseUser,
         routes: {
-          workflows: permission,
+          workflowsSupervision: permission,
         },
       },
     ];
-    expect(routePlaceholder("workflows", selectedUsers)).toEqual(expected);
+    expect(routePlaceholder("workflowsSupervision", selectedUsers)).toEqual(
+      expected
+    );
   });
 
   test.each([
@@ -63,17 +65,19 @@ describe("routePlaceholder", () => {
       {
         ...baseUser,
         routes: {
-          workflows: permission,
+          workflowsSupervision: permission,
         },
       },
       {
         ...baseUser,
         routes: {
-          workflows: permission,
+          workflowsSupervision: permission,
         },
       },
     ];
-    expect(routePlaceholder("workflows", selectedUsers)).toEqual(expected);
+    expect(routePlaceholder("workflowsSupervision", selectedUsers)).toEqual(
+      expected
+    );
   });
 
   test("users with different permissions", () => {
@@ -81,7 +85,7 @@ describe("routePlaceholder", () => {
       {
         ...baseUser,
         routes: {
-          workflows: true,
+          workflowsSupervision: true,
         },
       },
       {
@@ -89,7 +93,9 @@ describe("routePlaceholder", () => {
         routes: {},
       },
     ];
-    expect(routePlaceholder("workflows", selectedUsers)).toBeUndefined();
+    expect(
+      routePlaceholder("workflowsSupervision", selectedUsers)
+    ).toBeUndefined();
   });
 
   test("user with null routes", () => {
@@ -99,6 +105,8 @@ describe("routePlaceholder", () => {
         routes: null,
       },
     ];
-    expect(routePlaceholder("workflows", selectedUsers)).toEqual("false");
+    expect(routePlaceholder("workflowsSupervision", selectedUsers)).toEqual(
+      "false"
+    );
   });
 });

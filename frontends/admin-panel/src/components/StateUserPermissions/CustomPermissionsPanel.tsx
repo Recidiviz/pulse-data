@@ -79,23 +79,63 @@ export const CustomPermissionsPanel = ({
     })}
 
     <h4>Outliers:</h4>
-    {(
-      Object.entries(OUTLIERS_PERMISSIONS_LABELS) as [
-        keyof typeof OUTLIERS_PERMISSIONS_LABELS,
-        string
-      ][]
-    ).map(([name, label]) => {
-      return (
-        <PermissionSelect
-          permission={{ name, label }}
-          key={name}
-          disabled={hidePermissions}
-          placeholder={
-            hidePermissions ? undefined : routePlaceholder(name, selectedUsers)
-          }
-        />
-      );
-    })}
+    <PermissionSelect
+      permission={{
+        name: "insights",
+        label: OUTLIERS_PERMISSIONS_LABELS.insights,
+      }}
+      disabled={hidePermissions}
+      placeholder={
+        hidePermissions
+          ? undefined
+          : routePlaceholder("insights", selectedUsers)
+      }
+      dependencies={["insights_supervision_supervisors-list"]}
+      rules={[
+        ({ getFieldValue }) => ({
+          // require an explicit value to ensure no conflict with this field
+          required: getFieldValue("insights_supervision_supervisors-list"),
+          message: `${OUTLIERS_PERMISSIONS_LABELS.insights} is required when ${OUTLIERS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"]} is enabled`,
+        }),
+      ]}
+    />
+
+    <PermissionSelect
+      permission={{
+        name: "insights_supervision_supervisors-list",
+        label:
+          OUTLIERS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"],
+      }}
+      disabled={hidePermissions}
+      placeholder={
+        hidePermissions
+          ? undefined
+          : routePlaceholder(
+              "insights_supervision_supervisors-list",
+              selectedUsers
+            )
+      }
+      dependencies={["insights"]}
+      rules={[
+        ({ getFieldValue }) => ({
+          // require an explicit value to ensure no conflict with this field
+          required: getFieldValue("insights") === false,
+          // this validator checks for the conflict state:
+          // supervisors-list cannot be true if insights is false
+          validator(rule, value) {
+            if (getFieldValue("insights") === false && value !== false) {
+              return Promise.reject(
+                new Error(
+                  `${OUTLIERS_PERMISSIONS_LABELS["insights_supervision_supervisors-list"]} must be False if ${OUTLIERS_PERMISSIONS_LABELS.insights} is False`
+                )
+              );
+            }
+
+            return Promise.resolve();
+          },
+        }),
+      ]}
+    />
 
     <h4>Vitals (Operations):</h4>
     {(
