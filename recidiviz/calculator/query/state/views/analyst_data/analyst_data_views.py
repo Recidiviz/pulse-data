@@ -168,6 +168,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tracks import (
     US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_restrictive_housing_record import (
+    US_MO_RESTRICTIVE_HOUSING_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_screeners_preprocessed import (
     US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -388,6 +391,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
     US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
     US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
+    US_MO_RESTRICTIVE_HOUSING_RECORD_VIEW_BUILDER,
     US_MO_MOSOP_PRIO_GROUPS_VIEW_BUILDER,
     US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
     PRIORITIZED_ELIGIBILITY,
