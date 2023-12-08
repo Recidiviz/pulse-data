@@ -273,6 +273,9 @@ class AgencyUserAccountAssociation(JusticeCountsBase):
     user_account_id = Column(ForeignKey("user_account.id"), primary_key=True)
     invitation_status = Column(Enum(UserAccountInvitationStatus), nullable=True)
     role = Column(Enum(UserAccountRole), nullable=True)
+    # Tracks the date of the user's last visit to the agency's page
+    last_visit = Column(TIMESTAMP(timezone=True), nullable=True)
+
     # Tracks progress during guidance/onboarding flow
     guidance_progress = Column(JSONB, nullable=True)
 

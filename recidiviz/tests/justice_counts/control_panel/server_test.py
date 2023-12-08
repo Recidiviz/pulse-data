@@ -2961,3 +2961,42 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         self.assertEqual(subscribed_user_emails, ["testA@email.com"])
+
+    def test_update_user_agency_visit(self) -> None:
+        user = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_A
+        self.session.add_all(
+            [
+                agency,
+                user,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                    role=schema.UserAccountRole.AGENCY_ADMIN,
+                ),
+            ]
+        )
+        self.session.commit()
+        user_id = user.id
+        agency_id = agency.id
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+            )
+
+            response = self.client.put(
+                f"/api/{user_id}/{agency_id}/page_visit",
+            )
+        self.assertEqual(response.status_code, 200)
+
+        # Get the user's last visit to the agency
+        association = AgencyUserAccountAssociationInterface.get_associations_by_ids(
+            user_account_ids=[user_id],
+            agency_id=agency_id,
+            session=self.session,
+        )[0]
+
+        self.assertEqual(
+            association.last_visit, datetime.datetime.now(tz=datetime.timezone.utc)
+        )
