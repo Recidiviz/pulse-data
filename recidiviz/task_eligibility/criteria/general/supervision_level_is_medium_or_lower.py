@@ -25,12 +25,11 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "ON_MEDIUM_SUPERVISION_LEVEL_OR_LOWER"
+_CRITERIA_NAME = "SUPERVISION_LEVEL_IS_MEDIUM_OR_LOWER"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which clients
 have a 'MEDIUM' supervision_level or lower ('MEDIUM', 'MINIMUM', 'LIMITED')"""
 
-# TODO(#22713): Rename this criteria
 _QUERY_TEMPLATE = """
 SELECT 
     state_code,
