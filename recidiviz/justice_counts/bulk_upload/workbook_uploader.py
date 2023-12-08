@@ -41,7 +41,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.report import ReportInterface
-from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.types import BulkUploadFileType, DatapointJson
 from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.justice_counts.utils.metric_breakdown_to_sheet_name import (
@@ -113,12 +113,15 @@ class WorkbookUploader:
         xls: pd.ExcelFile,
         metric_definitions: List[MetricDefinition],
         filename: Optional[str],
+        upload_filetype: BulkUploadFileType,
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
     ]:
-        """Iterate through all tabs in an Excel spreadsheet and upload them
+        """
+        Iterate through all tabs in an Excel spreadsheet and upload them
         to the Justice Counts database.
+        upload_filetype: The type of file that was originally uploaded (CSV, XLSX, etc).
         """
         # 1. Fetch existing reports and datapoints for this agency, so that
         # we know what objects to update vs. what new objects to create.
@@ -235,6 +238,7 @@ class WorkbookUploader:
             sheet_name_to_metricfile=sheet_name_to_metricfile,
             metric_definitions=metric_definitions,
             actual_sheet_names=actual_sheet_names,
+            upload_filetype=upload_filetype,
         )
 
         return (
@@ -438,8 +442,12 @@ class WorkbookUploader:
         sheet_name_to_metricfile: Dict[str, MetricFile],
         actual_sheet_names: List[str],
         metric_definitions: List[MetricDefinition],
+        upload_filetype: BulkUploadFileType,
     ) -> None:
-        """Adds invalid sheet name errors to metric_key_to_errors."""
+        """
+        Adds invalid sheet name errors to metric_key_to_errors.
+        upload_filetype: The type of file that was originally uploaded (CSV, XLSX, etc).
+        """
 
         # First, add invalid sheet name errors to metric_key_to_errors
         self._add_invalid_sheet_name_error(
@@ -452,6 +460,7 @@ class WorkbookUploader:
         self._add_missing_sheet_warnings(
             metric_definitions=metric_definitions,
             actual_sheet_names=actual_sheet_names,
+            upload_filetype=upload_filetype,
         )
 
     def _add_invalid_sheet_name_error(
@@ -480,10 +489,18 @@ class WorkbookUploader:
         self,
         metric_definitions: List[MetricDefinition],
         actual_sheet_names: List[str],
+        upload_filetype: BulkUploadFileType,
     ) -> None:
-        """This function adds a Missing Breakdown Sheet warning if a breakdown sheet is missing.
+        """
+        This function adds a Missing Breakdown Sheet warning if a breakdown sheet is missing.
         It also adds a Missing Total Sheet warning if the workbook is missing
-        an aggregate total sheet."""
+        an aggregate total sheet.
+        upload_filetype: The type of file that was originally uploaded (CSV, XLSX, etc).
+        """
+        # Do not trigger "Missing Sheet" warnings if upload came from a CSV file
+        # since you can only upload one sheet at a time when uploading via CSV.
+        if upload_filetype == BulkUploadFileType.CSV:
+            return None
         for metric_definition in metric_definitions:
             sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
                 metric_definition.system.value
@@ -549,3 +566,4 @@ class WorkbookUploader:
                     )
                     # only need 1 totals warning per metric
                     break
+        return None

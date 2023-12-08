@@ -50,7 +50,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.types import BulkUploadFileType, DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     CHILD_AGENCY_NAME_TO_UPLOAD_NAME,
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
@@ -244,6 +244,7 @@ class SpreadsheetInterface:
         metric_definitions: List[MetricDefinition],
         agency: schema.Agency,
         filename: Optional[str],
+        upload_filetype: BulkUploadFileType,
         auth0_user_id: Optional[str] = None,
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
@@ -253,7 +254,10 @@ class SpreadsheetInterface:
         Set[schema.Report],
         schema.Spreadsheet,
     ]:
-        """Ingests spreadsheet for an agency and logs any errors."""
+        """
+        Ingests spreadsheet for an agency and logs any errors.
+        upload_filetype: The type of file that was originally uploaded (CSV, XLSX, etc).
+        """
         user_account = None
         if auth0_user_id is not None:
             user_account = (
@@ -288,6 +292,7 @@ class SpreadsheetInterface:
             xls=xls,
             metric_definitions=metric_definitions,
             filename=filename,
+            upload_filetype=upload_filetype,
         )
         is_ingest_successful = all(
             isinstance(e, JusticeCountsBulkUploadException)
@@ -545,7 +550,7 @@ class SpreadsheetInterface:
         )
 
         file_bytes = gcs_file_system.download_as_bytes(path=source_path)
-        xls, filename = SpreadsheetInterface.convert_file_to_excel(
+        xls, filename, upload_filetype = SpreadsheetInterface.convert_file_to_excel(
             file=file_bytes, filename=filename
         )
 
@@ -558,6 +563,7 @@ class SpreadsheetInterface:
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
             metric_definitions=metric_definitions,
             filename=filename,
+            upload_filetype=upload_filetype,
         )
 
     @staticmethod
@@ -580,11 +586,16 @@ class SpreadsheetInterface:
         )
 
     @staticmethod
-    def convert_file_to_excel(file: Any, filename: str) -> Tuple[pd.ExcelFile, str]:
+    def convert_file_to_excel(
+        file: Any, filename: str
+    ) -> Tuple[pd.ExcelFile, str, BulkUploadFileType]:
         # source: https://stackoverflow.com/questions/47379476/how-to-convert-bytes-data-into-a-python-pandas-dataframe
         # Note that invalid metrics will be caught in workbook_uploader._add_invalid_sheet_name_error()
         # new_file_name is the path of the new xlsx file that we create in line 520
-        if filename.rsplit(".", 1)[1].lower() == "csv":
+        # Return value is a tuple of (1) the Excel file XLS, (2) the filename, and
+        # (3) the uploaded file's file type.
+        file_type = BulkUploadFileType.from_suffix(filename.rsplit(".", 1)[1].lower())
+        if file_type == BulkUploadFileType.CSV:
             new_file_name = filename.rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
             metric = new_file_name.rsplit(".", 1)[0].split("/")[-1]
             if isinstance(file, bytes):
@@ -593,7 +604,7 @@ class SpreadsheetInterface:
             csv_df = pd.read_csv(file)
             csv_df.to_excel(new_file_name, sheet_name=metric, index=False)
             xls = pd.ExcelFile(new_file_name)
-            return xls, new_file_name
+            return xls, new_file_name, file_type
 
         xls = pd.ExcelFile(file)
-        return xls, filename
+        return xls, filename, file_type

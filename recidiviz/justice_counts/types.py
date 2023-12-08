@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Justice Counts Types"""
+from enum import Enum
 from typing import Any, Optional, TypedDict
 
 
@@ -34,3 +35,18 @@ class DatapointJson(TypedDict):
     old_value: Any
     is_published: bool
     frequency: str
+
+
+# Only these filetypes are allowed for bulk upload. See ALLOWED_EXTENSIONS in api.py.
+class BulkUploadFileType(Enum):
+    CSV = "CSV"
+    XLSX = "XLSX"
+    XLS = "XLS"
+
+    @staticmethod
+    def from_suffix(label: str) -> Any:
+        """
+        Converts the three letter file extension (e.g. "xlsx") to a BulkUploadFileType enum. If
+        extension is invalid, throws an error.
+        """
+        return BulkUploadFileType[label.upper()]

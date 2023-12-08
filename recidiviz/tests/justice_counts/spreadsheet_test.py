@@ -35,6 +35,7 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 )
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
+from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
     REPORTING_FREQUENCY_CONTEXT_KEY,
@@ -91,6 +92,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         schema.System.LAW_ENFORCEMENT.value
                     ],
                     filename=file_path,
+                    upload_filetype=BulkUploadFileType.XLSX,
                 )
 
                 spreadsheet = session.query(schema.Spreadsheet).one()
@@ -129,6 +131,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     schema.System.LAW_ENFORCEMENT.value
                 ],
                 filename=file_path,
+                upload_filetype=BulkUploadFileType.XLSX,
             )
 
             spreadsheet = session.query(schema.Spreadsheet).one()
@@ -221,6 +224,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 + METRICS_BY_SYSTEM[schema.System.PROBATION.value]
                 + METRICS_BY_SYSTEM[schema.System.PAROLE.value],
                 filename=file_path,
+                upload_filetype=BulkUploadFileType.XLSX,
             )
 
             metric_definitions = (
