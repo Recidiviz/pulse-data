@@ -16,6 +16,7 @@
 # =============================================================================
 """Interface for working with the AgencyUserAccountAssociation model."""
 
+import datetime
 import itertools
 from typing import Dict, List
 
@@ -405,3 +406,22 @@ class AgencyUserAccountAssociationInterface:
             user_email_tuple[0] for user_email_tuple in subscribed_user_email_tuples
         ]
         return subscribed_user_emails
+
+    @staticmethod
+    def record_user_agency_page_visit(
+        session: Session, user_id: int, agency_id: int
+    ) -> None:
+        # get association
+        association = (
+            session.query(schema.AgencyUserAccountAssociation)
+            .filter(
+                schema.AgencyUserAccountAssociation.agency_id == agency_id,
+                schema.AgencyUserAccountAssociation.user_account_id == user_id,
+            )
+            .one()
+        )
+        # get today's date
+        today = datetime.datetime.now(tz=datetime.timezone.utc)
+        # overwrite last_visit with today's date
+        association.last_visit = today
+        session.add(association)

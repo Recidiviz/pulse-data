@@ -588,6 +588,29 @@ def get_api_blueprint(
 
     ### Home ###
 
+    @api_blueprint.route("/<user_id>/<agency_id>/page_visit", methods=["PUT"])
+    @auth_decorator
+    def record_user_agency_page_visit(user_id: int, agency_id: int) -> Response:
+        """Given a user_id, agency_id pair, records that the user visited a page
+        associated with the given agency on a particular date. This is used to track
+        login activity.
+        """
+        try:
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
+
+            AgencyUserAccountAssociationInterface.record_user_agency_page_visit(
+                session=current_session, user_id=user_id, agency_id=agency_id
+            )
+            current_session.commit()
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/home/<agency_id>", methods=["GET"])
     @auth_decorator
     def get_home_metadata(agency_id: int) -> Response:
