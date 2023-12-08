@@ -201,7 +201,8 @@ def get_difference_query(
     USING(
       {format_lines_for_query(primary_keys)}
     )
-    WHERE original_rows.__comparison_key != new_rows.__comparison_key
+    WHERE IFNULL(original_rows.__comparison_key, 0) != IFNULL(new_rows.__comparison_key, 0)
+    ORDER BY in_original DESC, in_new DESC
 """
 
 
