@@ -36,12 +36,12 @@ def classes_cte() -> str:
             ACTUAL_EXIT_DT,
             classes.CLASS_TITLE,
             exit.CLASS_EXIT_REASON_DESC
-        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS_latest` se
-        LEFT JOIN `{project_id}.{us_mo_raw_data_up_to_date_dataset}.OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF_latest` xref
+        FROM `{project_id}.us_mo_raw_data_up_to_date_views.OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS_latest` se
+        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF_latest` xref
         USING (OFNDR_CYCLE_REF_ID)
-        LEFT JOIN `{project_id}.{us_mo_raw_data_up_to_date_dataset}.MASTER_PDB_CLASSES_latest` classes
+        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.MASTER_PDB_CLASSES_latest` classes
         USING (CLASS_REF_ID)
-        LEFT JOIN `{project_id}.{us_mo_raw_data_up_to_date_dataset}.CODE_PDB_CLASS_EXIT_REASON_CODES_latest` exit
+        LEFT JOIN `{project_id}.us_mo_raw_data_up_to_date_views.CODE_PDB_CLASS_EXIT_REASON_CODES_latest` exit
         USING (CLASS_EXIT_REASON_CD)
         WHERE 
             se.DELETE_IND = "N" 
@@ -131,7 +131,7 @@ def current_bed_stay_cte() -> str:
             FIRST_VALUE(building_number) OVER w as building_number,
             FIRST_VALUE(confinement_type_raw_text) OVER w as housing_use_code,
             FIRST_VALUE(facility_code) OVER w as facility,
-        FROM `{project_id}.{sessions_dataset}.us_mo_housing_stays_preprocessed`
+        FROM `{project_id}.sessions.us_mo_housing_stays_preprocessed`
         WHERE end_date_exclusive IS NULL
         -- TODO(#18852): Refine this confinement_type_raw_text dedup logic
         WINDOW w AS (

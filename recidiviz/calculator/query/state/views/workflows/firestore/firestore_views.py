@@ -84,11 +84,11 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_e
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_complete_transfer_to_sccp_form_record import (
     US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.workflows.firestore.us_me_furlough_release_form_record import (
-    US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_custody_level_downgrade_to_medium_trustee_request_record import (
     US_ME_CUSTODY_LEVEL_DOWNGRADE_TO_MEDIUM_TRUSTEE_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_me_furlough_release_form_record import (
+    US_ME_COMPLETE_FURLOUGH_RELEASE_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_me_transfer_to_sccp_jii_record import (
     US_ME_TRANSFER_TO_SCCP_JII_RECORD_VIEW_BUILDER,
@@ -113,6 +113,15 @@ from recidiviz.calculator.query.state.views.workflows.firestore.us_mi_supervisio
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_restrictive_housing_hearing import (
     US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_restrictive_housing_initial_hearing import (
+    US_MO_OVERDUE_RESTRICTIVE_HOUSING_INITIAL_HEARING_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_restrictive_housing_release import (
+    US_MO_OVERDUE_RESTRICTIVE_HOUSING_RELEASE_RECORD_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.us_mo_overdue_restrictive_housing_review_hearing import (
+    US_MO_OVERDUE_RESTRICTIVE_HOUSING_REVIEW_HEARING_RECORD_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.us_nd_complete_discharge_early_from_supervision_record import (
     US_ND_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_RECORD_VIEW_BUILDER,
@@ -170,6 +179,9 @@ FIRESTORE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_MI_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
     US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER,
     US_TN_CUSTODY_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER,
+    US_MO_OVERDUE_RESTRICTIVE_HOUSING_INITIAL_HEARING_RECORD_VIEW_BUILDER,
+    US_MO_OVERDUE_RESTRICTIVE_HOUSING_REVIEW_HEARING_RECORD_VIEW_BUILDER,
+    US_MO_OVERDUE_RESTRICTIVE_HOUSING_RELEASE_RECORD_VIEW_BUILDER,
     US_MO_OVERDUE_RESTRICTIVE_HOUSING_HEARING_RECORD_VIEW_BUILDER,
     US_TN_TRANSFER_TO_COMPLIANT_REPORTING_RECORD_VIEW_BUILDER,
     US_TN_ANNUAL_RECLASSIFICATION_REVIEW_RECORD_VIEW_BUILDER,
