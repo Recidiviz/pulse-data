@@ -1451,7 +1451,11 @@ def get_api_blueprint(
                     "Invalid file type: All files must be of type .xlsx or .csv.",
                 )
 
-            xls, new_file_name = SpreadsheetInterface.convert_file_to_excel(
+            (
+                xls,
+                new_file_name,
+                upload_filetype,
+            ) = SpreadsheetInterface.convert_file_to_excel(
                 file=file, filename=file.filename  # type: ignore[arg-type]
             )
 
@@ -1494,6 +1498,7 @@ def get_api_blueprint(
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 metric_definitions=metric_definitions,
                 filename=new_file_name,
+                upload_filetype=upload_filetype,
             )
 
             ingested_spreadsheet_json = _get_ingest_spreadsheet_json(
