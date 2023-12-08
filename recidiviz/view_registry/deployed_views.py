@@ -24,7 +24,9 @@ from typing import Dict, List, Set
 from recidiviz.aggregated_metrics.view_config import (
     get_aggregated_metrics_view_builders,
 )
+from recidiviz.big_query.big_query_utils import build_views_to_update
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.calculator.query.experiments.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
 )
@@ -57,6 +59,7 @@ from recidiviz.validation.views.view_config import (
 from recidiviz.validation.views.view_config import (
     get_view_builders_for_views_to_update as get_validation_view_builders,
 )
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
 def _all_deployed_view_builders() -> List[BigQueryViewBuilder]:
@@ -86,10 +89,27 @@ def deployed_view_builders(project_id: str) -> List[BigQueryViewBuilder]:
     ]
 
 
-# Full list of all deployed view builders
 @environment.local_only
 def all_deployed_view_builders() -> List[BigQueryViewBuilder]:
+    """Returns a list of all view builders for views that are candidates for deploy.
+    Some of these views may not actually get deployed to a given project based on
+    the builder configuration.
+    """
     return _all_deployed_view_builders()
+
+
+@environment.local_only
+def build_all_deployed_views_dag_walker() -> BigQueryViewDagWalker:
+    """Returns a BigQueryViewDagWalker representing the DAG of all deployed views in
+    the main view graph.
+    """
+    return BigQueryViewDagWalker(
+        build_views_to_update(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            candidate_view_builders=all_deployed_view_builders(),
+            address_overrides=None,
+        )
+    )
 
 
 # A list of all datasets that have ever held managed views that were updated by our

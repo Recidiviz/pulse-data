@@ -35,6 +35,10 @@ class SupplementalDatasetPipeline(BasePipeline[SupplementalPipelineParameters]):
         return SupplementalPipelineParameters
 
     @classmethod
+    def all_required_reference_table_ids(cls) -> List[str]:
+        return cls.required_reference_tables()
+
+    @classmethod
     @abc.abstractmethod
     def required_reference_tables(cls) -> List[str]:
         """Returns the list of required reference tables for the pipeline."""

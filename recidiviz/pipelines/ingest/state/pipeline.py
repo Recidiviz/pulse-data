@@ -146,6 +146,10 @@ class StateIngestPipeline(BasePipeline[IngestPipelineParameters]):
     def pipeline_name(cls) -> str:
         return "INGEST"
 
+    @classmethod
+    def all_required_reference_table_ids(cls) -> List[str]:
+        return []
+
     def run_pipeline(self, p: Pipeline) -> None:
         field_index = CoreEntityFieldIndex()
         ingest_instance = DirectIngestInstance(self.pipeline_parameters.ingest_instance)
