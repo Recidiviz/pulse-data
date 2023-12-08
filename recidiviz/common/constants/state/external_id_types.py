@@ -70,7 +70,7 @@ US_OR_RECORD_KEY = "US_OR_RECORD_KEY"
 US_OR_CASELOAD = "US_OR_CASELOAD"
 
 # PA Control Number - tracks someone across all incarceration stays (theoretically)
-US_PA_CONTROL = "US_PA_CONT"
+US_PA_CONT = "US_PA_CONT"
 # PA Parole Number - tracks someone across all supervision terms (theoretically)
 US_PA_PBPP = "US_PA_PBPP"
 # PA Inmate Number - associated with a single contiguous incarceration stay
