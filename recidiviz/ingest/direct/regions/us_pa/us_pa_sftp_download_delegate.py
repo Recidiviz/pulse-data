@@ -32,7 +32,7 @@ from recidiviz.utils.environment import GCP_PROJECTS
 class UsPaSftpDownloadDelegate(BaseSftpDownloadDelegate):
     """Class containing logic for how US_PA SFTP downloads are handled."""
 
-    CURRENT_ROOT = "."
+    CURRENT_ROOT = "/DOC/PRS/Recidiviz"
     DELIMITER = "-"
     PREFIX = "Recidiviz"
 
