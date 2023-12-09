@@ -33,7 +33,7 @@ SUPERVISION_OFFICERS_DESCRIPTION = (
 
 
 SUPERVISION_OFFICERS_QUERY_TEMPLATE = f"""
-WITH 
+WITH
 supervision_officers AS (
     {staff_query_template(role="SUPERVISION_OFFICER")}
 )
