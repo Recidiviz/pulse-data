@@ -39,6 +39,7 @@ from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
     REPORTING_FREQUENCY_CONTEXT_KEY,
+    UploadMethod,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -92,6 +93,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         schema.System.LAW_ENFORCEMENT.value
                     ],
                     filename=file_path,
+                    upload_method=UploadMethod.BULK_UPLOAD,
                     upload_filetype=BulkUploadFileType.XLSX,
                 )
 
@@ -131,6 +133,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     schema.System.LAW_ENFORCEMENT.value
                 ],
                 filename=file_path,
+                upload_method=UploadMethod.BULK_UPLOAD,
                 upload_filetype=BulkUploadFileType.XLSX,
             )
 
@@ -224,6 +227,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 + METRICS_BY_SYSTEM[schema.System.PROBATION.value]
                 + METRICS_BY_SYSTEM[schema.System.PAROLE.value],
                 filename=file_path,
+                upload_method=UploadMethod.BULK_UPLOAD,
                 upload_filetype=BulkUploadFileType.XLSX,
             )
 

@@ -54,6 +54,7 @@ from recidiviz.justice_counts.types import BulkUploadFileType
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+    UploadMethod,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -138,6 +139,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             self.assertEqual(len(metric_key_to_errors), 2)
@@ -190,6 +192,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -250,6 +253,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=excel_file_path,
                 upload_filetype=BulkUploadFileType.CSV,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -296,6 +300,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -334,6 +339,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -368,6 +374,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERVISION.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session=session,
@@ -623,6 +630,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             reports = ReportInterface.get_reports_by_agency_id(
@@ -712,6 +720,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # Case 1 (Missing entire metric)
@@ -817,6 +826,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ],
                 filename=excel_file_path,
                 upload_filetype=BulkUploadFileType.CSV,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # No Missing Breakdown Sheet warnings.
@@ -868,6 +878,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ],
                 filename=excel_file_path,
                 upload_filetype=BulkUploadFileType.CSV,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # No Missing Total Sheet warnings.
@@ -931,6 +942,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             # There should be no errors because calls for service metric is missing
             # but it is disabled.
@@ -981,6 +993,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERVISION.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
 
             # There should be datapoints for parole and probation funding, but none for supervision
@@ -1041,6 +1054,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(metric_key_to_errors), 3)
             # 1 warning because metric was reported as monthly even though it is an annual metric.
@@ -1091,6 +1105,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(metric_key_to_errors), 8)
             # Annual metrics have a row for 2 years
@@ -1152,6 +1167,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             # Make sure reports were created
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1173,6 +1189,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             # Check that reports have not been set to draft (no changes were actually made)
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1196,6 +1213,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1229,6 +1247,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1260,6 +1279,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1304,6 +1324,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1330,6 +1351,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(workbook_uploader.updated_reports), 0)
 
@@ -1346,6 +1368,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_agency_id, include_datapoints=True
@@ -1401,6 +1424,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             super_agency_reports = ReportInterface.get_reports_by_agency_id(
                 session, agency_id=self.prison_super_agency_id
@@ -1440,6 +1464,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
                 filename=file_path,
                 upload_filetype=BulkUploadFileType.XLSX,
+                upload_method=UploadMethod.BULK_UPLOAD,
             )
             self.assertEqual(len(workbook_uploader.metric_key_to_errors), 0)
 

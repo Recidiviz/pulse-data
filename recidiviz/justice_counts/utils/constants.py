@@ -42,6 +42,12 @@ class DatapointGetRequestEntryPoint(enum.Enum):
     METRICS_TAB = "METRICS_TAB"
 
 
+class UploadMethod(enum.Enum):
+    MANUAL_ENTRY = "MANUAL_ENTRY"
+    BULK_UPLOAD = "BULK_UPLOAD"
+    AUTOMATED_BULK_UPLOAD = "AUTOMATED_BULK_UPLOAD"
+
+
 # Used to infer agency_id from bucket name during Automatic Upload
 AUTOMATIC_UPLOAD_BUCKET_REGEX = re.compile(r".*-ingest-agency-(?P<agency_id>[0-9]+)")
 

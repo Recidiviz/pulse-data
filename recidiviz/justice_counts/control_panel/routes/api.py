@@ -68,6 +68,7 @@ from recidiviz.justice_counts.utils.constants import (
     AUTOMATIC_UPLOAD_BUCKET_REGEX,
     ERRORS_WARNINGS_JSON_BUCKET_PROD,
     ERRORS_WARNINGS_JSON_BUCKET_STAGING,
+    UploadMethod,
 )
 from recidiviz.justice_counts.utils.datapoint_utils import (
     filter_deprecated_datapoints,
@@ -961,6 +962,7 @@ def get_api_blueprint(
                     report_metric=report_metric,
                     user_account=user,
                     existing_datapoints_dict=existing_datapoints_dict,
+                    upload_method=UploadMethod.MANUAL_ENTRY,
                 )
 
             editor_id_to_json = (
@@ -1347,6 +1349,7 @@ def get_api_blueprint(
                 agency=agency,
                 filename=file_name,
                 metric_definitions=metric_definitions,
+                upload_method=UploadMethod.AUTOMATED_BULK_UPLOAD,
             )
 
             if in_ci() or in_test():
@@ -1521,6 +1524,7 @@ def get_api_blueprint(
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 metric_definitions=metric_definitions,
                 filename=new_file_name,
+                upload_method=UploadMethod.BULK_UPLOAD,
                 upload_filetype=upload_filetype,
             )
 

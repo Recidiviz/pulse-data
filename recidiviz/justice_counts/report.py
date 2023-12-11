@@ -37,6 +37,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.utils.constants import UploadMethod
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 from .utils.date_utils import convert_date_range_to_year_month
@@ -485,6 +486,7 @@ class ReportInterface:
         session: Session,
         report: schema.Report,
         report_metric: MetricInterface,
+        upload_method: UploadMethod,
         uploaded_via_breakdown_sheet: bool = False,
         existing_datapoints_dict: Optional[
             Dict[DatapointUniqueKey, schema.Datapoint]
@@ -535,6 +537,7 @@ class ReportInterface:
                     value=report_metric.value,
                     uploaded_via_breakdown_sheet=uploaded_via_breakdown_sheet,
                     agency=agency,
+                    upload_method=upload_method,
                 )
             )
 
@@ -566,6 +569,7 @@ class ReportInterface:
                         value=all_dimensions_to_values[d],
                         dimension=d,
                         agency=agency,
+                        upload_method=upload_method,
                     )
                 )
 
@@ -591,6 +595,7 @@ class ReportInterface:
                     context_key=context.key,
                     value_type=context.value_type,
                     agency=agency,
+                    upload_method=upload_method,
                 )
             )
         return [dp for dp in datapoint_json_list if dp is not None]

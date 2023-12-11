@@ -42,7 +42,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import BulkUploadFileType, DatapointJson
-from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID
+from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID, UploadMethod
 from recidiviz.justice_counts.utils.datapoint_utils import get_value
 from recidiviz.justice_counts.utils.metric_breakdown_to_sheet_name import (
     METRIC_BREAKDOWN_PAIR_TO_SHEET_NAME,
@@ -113,6 +113,7 @@ class WorkbookUploader:
         xls: pd.ExcelFile,
         metric_definitions: List[MetricDefinition],
         filename: Optional[str],
+        upload_method: UploadMethod,
         upload_filetype: BulkUploadFileType,
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
@@ -223,6 +224,7 @@ class WorkbookUploader:
                 metric_key_to_datapoint_jsons=self.metric_key_to_datapoint_jsons,
                 metric_key_to_errors=self.metric_key_to_errors,
                 uploaded_reports=self.uploaded_reports,
+                upload_method=upload_method,
             )
 
         # 4. For any report that was updated, set its status to DRAFT
