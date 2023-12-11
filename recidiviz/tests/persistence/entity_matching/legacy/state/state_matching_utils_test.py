@@ -18,7 +18,6 @@
 import datetime
 
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     is_commitment_from_supervision,
@@ -33,10 +32,7 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
 )
 from recidiviz.persistence.database.schema_utils import get_state_database_entities
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import (
-    CoreEntityFieldIndex,
-    is_placeholder,
-)
+from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.legacy.entity_matching_types import (
     EntityTree,
 )
@@ -54,7 +50,6 @@ from recidiviz.persistence.entity_matching.legacy.state.state_matching_utils imp
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.persistence.entity.entity_utils_test import (
     HAS_MEANINGFUL_DATA_ENTITIES,
-    PLACEHOLDER_ENTITY_EXAMPLES,
     REFERENCE_ENTITY_EXAMPLES,
 )
 from recidiviz.tests.persistence.entity_matching.legacy.state.base_state_entity_matcher_test_classes import (
@@ -355,25 +350,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             )
         )
 
-    def test_isMatch_defaultCompareNoExternalIds(self) -> None:
-        charge = schema.StateCharge()
-        charge_another = schema.StateCharge()
-        # No External IDs means we are using placeholders, which are deprecated
-        with self.assertRaises(ValueError):
-            _is_match(
-                ingested_entity=charge,
-                db_entity=charge_another,
-                field_index=self.field_index,
-            )
-        charge.description = "description"
-        self.assertFalse(
-            _is_match(
-                ingested_entity=charge,
-                db_entity=charge_another,
-                field_index=self.field_index,
-            )
-        )
-
     def test_isMatch_stateTaskDeadline(self) -> None:
         update_datetime = datetime.datetime(2022, 1, 1, 0, 0, 0)
         deadline = schema.StateTaskDeadline(
@@ -647,21 +623,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
         is_commitment_from_supervision(None)
 
-    # Placeholders are deprecated
-    def test_nonnullFieldsEntityMatch_placeholder(self) -> None:
-        charge = schema.StateCharge(
-            state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
-        )
-        charge_another = schema.StateCharge(
-            state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
-        )
-        with self.assertRaises(ValueError):
-            nonnull_fields_entity_match(
-                ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
-                db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
-                field_index=self.field_index,
-            )
-
     def test_nonnullFieldsEntityMatch_externalIdCompare(self) -> None:
         charge = schema.StateCharge(
             state_code=_STATE_CODE,
@@ -669,16 +630,10 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             external_id=_EXTERNAL_ID,
         )
         charge_another = schema.StateCharge(
-            state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO
+            state_code=_STATE_CODE,
+            status=StateChargeStatus.PRESENT_WITHOUT_INFO,
+            external_id=_EXTERNAL_ID,
         )
-        # placeholder entities with no external ID are deprecated
-        with self.assertRaises(ValueError):
-            nonnull_fields_entity_match(
-                ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
-                db_entity=EntityTree(entity=charge_another, ancestor_chain=[]),
-                field_index=self.field_index,
-            )
-        charge_another.external_id = _EXTERNAL_ID
         self.assertTrue(
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
@@ -729,52 +684,9 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             )
         )
 
-    def test_isPlaceholder(self) -> None:
-        entity = schema.StateIncarcerationSentence(
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            charges=[schema.StateCharge()],
-            person=schema.StatePerson(),
-        )
-        with self.assertRaises(ValueError):
-            is_placeholder(entity, field_index=self.field_index)
-        entity.county_code = "county_code"
-        self.assertFalse(is_placeholder(entity, field_index=self.field_index))
-
-    def test_isPlaceholder_personWithExternalId(self) -> None:
-        incarceration_sentence = schema.StateIncarcerationSentence(
-            state_code=_STATE_CODE, status=StateSentenceStatus.PRESENT_WITHOUT_INFO
-        )
-        person = schema.StatePerson(
-            state_code=_STATE_CODE, incarceration_sentences=[incarceration_sentence]
-        )
-        with self.assertRaises(ValueError):
-            is_placeholder(person, field_index=self.field_index)
-        person.external_ids.append(
-            schema.StatePersonExternalId(
-                state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
-            )
-        )
-        self.assertFalse(is_placeholder(person, field_index=self.field_index))
-
-    def test_isPlaceholder_defaultEnumValue(self) -> None:
-        entity = schema.StateIncarcerationSentence(
-            incarceration_type=StateIncarcerationType.STATE_PRISON.value
-        )
-        with self.assertRaises(ValueError):
-            is_placeholder(entity, field_index=self.field_index)
-
-        entity.incarceration_type_raw_text = "PRISON"
-        self.assertFalse(is_placeholder(entity, field_index=self.field_index))
-
     def test_isAtomicallyMergedEntity(self) -> None:
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
-            print(db_entity_cls)
-            for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
-                with self.assertRaises(ValueError):
-                    is_placeholder(entity, field_index)
-                    can_atomically_merge_entity(entity, field_index)
             for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
                 self.assertFalse(can_atomically_merge_entity(entity, field_index))
             for entity in HAS_MEANINGFUL_DATA_ENTITIES[db_entity_cls]:

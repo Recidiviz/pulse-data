@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """GCS Store used to keep counts of column values across datasets whose data is organized by state."""
+# TODO(#26022): Remove placeholder references in admin panel state table views
 
 import json
 import logging
@@ -34,6 +35,7 @@ from recidiviz.utils import metadata
 @attr.s
 class DatasetMetadataCounts:
     total_count: int = attr.ib()
+    # TODO(#26022): Remove placeholder references in admin panel state table views
     placeholder_count: Optional[int] = attr.ib(default=None)
 
     def to_json(self) -> Dict[str, int]:

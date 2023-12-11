@@ -27,6 +27,7 @@ from more_itertools import one
 
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.state.dao import (
     check_not_dirty,
     read_root_entities_by_external_ids,
@@ -35,12 +36,14 @@ from recidiviz.persistence.database.schema_entity_converter.schema_entity_conver
     convert_entities_to_schema,
 )
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_db_objs_from_tree,
     get_all_db_objs_from_trees,
-    is_placeholder,
+    get_explicitly_set_flat_fields,
 )
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
 )
@@ -76,6 +79,32 @@ from recidiviz.utils.types import assert_type
 
 # How many root entity trees to search to fill the non_placeholder_ingest_types set.
 MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES = 20
+
+
+# Placeholder entities are deprecated outside the context of this file!
+# We allow their use here for further entity matching,
+# as placeholder entities may be created in that process
+def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> bool:
+    """Determines if the provided entity is a placeholder. Conceptually, a
+    placeholder is an object that we have no information about, but have
+    inferred its existence based on other objects we do have information about.
+    Generally, an entity is a placeholder if all of the optional flat fields are
+    empty or set to a default value.
+    """
+
+    # Although these are not flat fields, they represent characteristics of a
+    # person. If present, we do have information about the provided person, and
+    # therefore it is not a placeholder.
+    if isinstance(entity, (state_schema.StatePerson, state_entities.StatePerson)):
+        if any([entity.external_ids, entity.races, entity.aliases, entity.ethnicities]):
+            return False
+    if isinstance(entity, (state_schema.StateStaff, state_entities.StateStaff)):
+        if entity.external_ids:
+            return False
+        return True
+    if not get_explicitly_set_flat_fields(entity, field_index):
+        return True
+    return False
 
 
 class _ParentInfo:
@@ -169,13 +198,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         Note: Placeholder entities are deprecated outside the context of StateEntityMatcher,
         which generates them in matching contexts.
         """
-        try:
-            # is_placeholder can only return False or raise a ValueError
-            # we allow its use here to allow further entity matching,
-            # as placeholder entities may be created in that process
-            entity_is_placeholder = is_placeholder(entity, self.field_index)
-        except ValueError:
-            return True
+        entity_is_placeholder = is_placeholder(entity, self.field_index)
         entity_cls = type(entity)
         if (
             not entity_is_placeholder
@@ -249,7 +272,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             for obj in get_all_db_objs_from_tree(
                 ingested_root_entity, self.field_index
             ):
-                if not is_placeholder(obj, self.field_index):
+                if not self._is_placeholder(obj):
                     non_placeholder_ingest_types.add(type(obj))
         return non_placeholder_ingest_types
 
@@ -260,16 +283,6 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         intersection = self.all_ingested_db_objs.intersection(all_objs)
 
         return intersection
-
-    def describe_db_entity(self, entity: DatabaseEntity) -> str:
-        external_id = (
-            entity.get_external_id() if hasattr(entity, "external_id") else "N/A"
-        )
-
-        return (
-            f"{entity.get_entity_name()}({id(entity)}) "
-            f"external_id={external_id} placeholder={is_placeholder(entity, self.field_index)}"
-        )
 
     def run_match(
         self,

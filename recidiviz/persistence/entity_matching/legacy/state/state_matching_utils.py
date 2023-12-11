@@ -34,7 +34,6 @@ from recidiviz.persistence.entity.entity_utils import (
     EntityFieldType,
     SchemaEdgeDirectionChecker,
     get_explicitly_set_flat_fields,
-    is_placeholder,
     is_reference_only_entity,
 )
 from recidiviz.persistence.entity.state import entities
@@ -137,15 +136,6 @@ def _is_match(
     # For entities with no external id, rely on matching based on other flat fields.
     if not issubclass(ingested_entity_cls, HasExternalIdEntity):
         return _base_entity_match(ingested_entity, db_entity, field_index=field_index)
-
-    # Placeholders entities are considered equal
-    if (
-        ingested_entity.get_external_id() is None
-        and db_entity.get_external_id() is None
-    ):
-        return is_placeholder(ingested_entity, field_index) and is_placeholder(
-            db_entity, field_index
-        )
     return ingested_entity.get_external_id() == db_entity.get_external_id()
 
 
@@ -179,10 +169,6 @@ def _base_entity_match(
         allow_null_mismatch: Allow for two objects to still match if one has a null value in a field where the other's
             is nonnull.
     """
-
-    # Placeholders never match
-    if is_placeholder(a, field_index) or is_placeholder(b, field_index):
-        return False
 
     # Compare external ids if one is present
     if a.get_external_id() or b.get_external_id():
@@ -303,9 +289,7 @@ def can_atomically_merge_entity(
 
     # If this entity only contains external id information - do not merge atomically
     # onto database.
-    if is_reference_only_entity(new_entity, field_index) or is_placeholder(
-        new_entity, field_index
-    ):
+    if is_reference_only_entity(new_entity, field_index):
         return False
 
     # Enum-like objects with no external id should always be merged atomically.

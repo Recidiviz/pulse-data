@@ -27,7 +27,6 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     get_flat_fields_json_str,
-    is_placeholder,
 )
 from recidiviz.persistence.entity_matching.entity_merger_utils import (
     root_entity_external_id_keys,
@@ -185,7 +184,7 @@ class IngestViewTreeMerger:
                     merged_children.append(merged_child)
             primary_entity.set_field_from_list(field, merged_children)
 
-        # TODO(#7908): Collect non_placeholder_ingest_types here so we have a
+        # TODO(#7908): Collect root_entity_ingest_types here so we have a
         #  comprehensive list.
         return primary_entity, seen_objects
 
@@ -197,69 +196,11 @@ class IngestViewTreeMerger:
         fields. This function assumes each entity in the list has an identical parent
         chain that will be merged.
         """
-
-        placeholders = []
-        non_placeholder_buckets_dict: Dict[str, List[EntityT]] = defaultdict(list)
+        root_entity_buckets_dict: Dict[str, List[EntityT]] = defaultdict(list)
         for entity in entity_list:
-            if is_placeholder(entity, self.field_index):
-                placeholders.append(entity)
-            else:
-                non_placeholder_buckets_dict[
-                    self._get_non_placeholder_ingested_entity_key(entity)
-                ].append(entity)
-
-        buckets = self._bucket_ingested_placeholder_entities(placeholders)
-        buckets.extend([list(b) for b in non_placeholder_buckets_dict.values()])
-        return buckets
-
-    def _bucket_ingested_placeholder_entities(
-        self, placeholders: List[EntityT]
-    ) -> List[List[EntityT]]:
-        """Buckets the list of ingested placeholder entities into groups that should be
-        merged into the same entity, based on their direct children. If two placeholders
-        have hydrated children on a 1:1 relationship field then they cannot be merged
-        because their children cannot be merged.
-
-        This function assumes each entity in the list has an identical parent chain that
-        will be merged.
-        """
-        requires_exact_match_child_keys: Dict[int, Dict[str, Set[str]]] = defaultdict(
-            lambda: defaultdict(set)
-        )
-        for placeholder in placeholders:
-            for child_field in self.field_index.get_fields_with_non_empty_values(
-                placeholder, EntityFieldType.FORWARD_EDGE
-            ):
-                child = placeholder.get_field(child_field)
-                if child and not isinstance(child, list):
-                    if not is_placeholder(child, self.field_index):
-                        requires_exact_match_child_keys[id(placeholder)][
-                            child_field
-                        ].add(self._get_non_placeholder_ingested_entity_key(child))
-
-        placeholder_buckets: List[List[EntityT]] = []
-
-        def _add_placeholder_to_buckets(p: EntityT) -> None:
-            """Finds the bucket this placeholder object should belong to
-            and adds it to that bucket, or creates a new one if no bucket exists.
-            """
-            child_keys_by_field = requires_exact_match_child_keys[id(p)]
-            for placeholder_bucket in placeholder_buckets:
-                if not placeholder_bucket:
-                    raise ValueError("Expected only buckets with non-zero length.")
-                bucket_child_keys_by_field = requires_exact_match_child_keys[
-                    id(placeholder_bucket[0])
-                ]
-
-                if bucket_child_keys_by_field == child_keys_by_field:
-                    placeholder_bucket.append(p)
-                    return
-
-            placeholder_buckets.append([p])
-
-        for placeholder in placeholders:
-            _add_placeholder_to_buckets(placeholder)
-        return placeholder_buckets
+            key = self._get_root_entity_ingested_entity_key(entity)
+            root_entity_buckets_dict[key].append(entity)
+        return [list(b) for b in root_entity_buckets_dict.values()]
 
     def _get_children_grouped_by_field(
         self, entity_group: List[EntityT]
@@ -286,7 +227,7 @@ class IngestViewTreeMerger:
                 children_by_field[field].extend(entity.get_field_as_list(field))
         return children_by_field
 
-    def _get_non_placeholder_ingested_entity_key(self, entity: Entity) -> str:
+    def _get_root_entity_ingested_entity_key(self, entity: Entity) -> str:
         """Returns a string key that can be used to bucket this non-placeholder entity."""
         external_id = entity.get_external_id()
         if not external_id or isinstance(entity, ExternalIdEntity):
