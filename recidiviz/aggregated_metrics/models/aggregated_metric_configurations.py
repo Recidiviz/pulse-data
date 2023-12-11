@@ -626,6 +626,7 @@ _SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT: Dict[str, Union[str, List[str]]] = {
     "minimum": ["MINIMUM"],
     "medium": ["MEDIUM"],
     "maximum": ["HIGH", "MAXIMUM"],
+    "unsupervised": ["UNSUPERVISED"],
     "unknown": 'NOT IN ("LIMITED", "MINIMUM", "MEDIUM", "HIGH", "MAXIMUM", '
     '"EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN")',
     "other": ["EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN"],
