@@ -43,14 +43,14 @@ FROM (
         CAST(OFFICER AS INT) AS OFFICER,
         LNAME,
         FNAME,
-        CONCAT(LOWER(LOGINNAME), '@nd.gov') AS EMAIL,
+        -- Null out emails for entries like "Bismarck CS", which sometimes appear
+        -- as terminating officers in supervision periods, but are not real people.
+        IF(LOGINNAME LIKE '%% %%', NULL, CONCAT(LOWER(LOGINNAME), '@nd.gov')) AS EMAIL,
         ROW_NUMBER() OVER (
             PARTITION BY CAST(OFFICER AS INT)
             ORDER BY CAST(RecDate AS DATETIME) DESC) AS recency_rank
     FROM {docstars_officers}
-    -- Exclude service providers like "Bismarck Urban CS"
-    WHERE LOGINNAME NOT LIKE '%% %%' 
-    AND CAST(OFFICER AS INT) NOT IN (
+    WHERE CAST(OFFICER AS INT) NOT IN (
         SELECT DISTINCT OFFICER 
         FROM staff_from_directory)
     ) sub
