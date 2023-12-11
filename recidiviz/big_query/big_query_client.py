@@ -2151,15 +2151,19 @@ class BigQueryClientImpl(BigQueryClient):
             # Some views require special properties (such as _FILE_NAME) from external data tables,
             # so we need to set an external data configuration on the referenced table for them to
             # compile. We set the source URI to an empty file so we aren't actually copying data.
-            if (
-                source_table.external_data_configuration
-                and source_table.external_data_configuration.source_format
-                == "NEWLINE_DELIMITED_JSON"
-            ):
+            if source_table.external_data_configuration:
                 external_config = source_table.external_data_configuration
-                external_config.source_uris = [
-                    f"gs://{self.project_id}-configs/empty.json"
-                ]
+                if (
+                    source_table.external_data_configuration.source_format
+                    == "NEWLINE_DELIMITED_JSON"
+                ):
+                    external_config.source_uris = [
+                        f"gs://{self.project_id}-configs/empty.json"
+                    ]
+                if source_table.external_data_configuration.source_format == "CSV":
+                    external_config.source_uris = [
+                        f"gs://{self.project_id}-configs/empty.csv"
+                    ]
                 dest_table.external_data_configuration = external_config
 
             self.create_table(
