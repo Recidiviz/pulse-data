@@ -295,7 +295,12 @@ def us_tn_classification_forms(
                  ELSE incident_type_raw_text
                  END AS note_title,
             injury_level,
-            CONCAT('Class ', incident_class, '  Incident Details:', incident_details) AS note_body,
+            CONCAT('Class ', 
+                    incident_class,
+                    ' Incident Code:',
+                    incident_type_raw_text,
+                    '  Incident Details:',
+                    incident_details) AS note_body,
             disposition,
             assault_score,
             incident_details,
