@@ -1372,7 +1372,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_segment_client.return_value.track_milestones_message_status.assert_not_called()
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
@@ -1418,7 +1419,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
@@ -1448,7 +1450,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_body = {
-            "person_external_id": 1234,
             "user_email": "foo@nd.gov",
             "early_termination_date": "2024-01-01",
             "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
@@ -1463,7 +1464,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
@@ -1497,7 +1499,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_body = {
-            "person_external_id": 1234,
             "user_email": "foo@nd.gov",
             "early_termination_date": "2024-01-01",
             "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
@@ -1512,7 +1513,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
@@ -1560,7 +1562,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
@@ -1594,7 +1597,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
@@ -1628,7 +1632,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
@@ -1662,7 +1667,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     def test_handle_update_docstars_early_termination_date_success(
         self,
@@ -1690,7 +1696,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_body = {
-            "person_external_id": 1234,
             "user_email": "foo@nd.gov",
             "early_termination_date": "2024-01-01",
             "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
@@ -1705,7 +1710,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     def test_handle_update_docstars_early_termination_date_api_failure(
         self,
@@ -1737,7 +1743,6 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         expected_body = {
-            "person_external_id": 1234,
             "user_email": "foo@nd.gov",
             "early_termination_date": "2024-01-01",
             "justification_reasons": [{"code": "FOO", "description": "Code foo."}],
@@ -1752,7 +1757,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     def test_handle_update_docstars_early_termination_date_missing_pei(
         self,
@@ -1783,7 +1789,8 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     @patch(
-        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface"
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsNdExternalRequestInterface",
+        autospec=True,
     )
     def test_handle_update_docstars_early_termination_date_missing_field(
         self,

@@ -333,19 +333,17 @@ class WorkflowsUsNdExternalRequestInterface:
             docstars_response.status_code,
         )
 
-    @property
-    def doc_path(self) -> str:
-        record_id = f"{StateCode.US_ND.value.lower()}_{self.person_external_id}"
-        return f"clientUpdatesV2/{record_id}/clientOpportunityUpdates/earlyTermination/omsSnooze"
-
     def set_firestore_early_termination_status(
         self,
         status: ExternalSystemRequestStatus,
     ) -> None:
+        record_id = f"{StateCode.US_ND.value.lower()}_{self.person_external_id}"
         self.firestore_client.update_document(
-            self.doc_path,
+            f"clientUpdatesV2/{record_id}/clientOpportunityUpdates/earlyTermination",
             {
-                "status": status.value,
-                self.firestore_client.timestamp_key: datetime.now(timezone.utc),
+                "omsSnooze.status": status.value,
+                f"omsSnooze.{self.firestore_client.timestamp_key}": datetime.now(
+                    timezone.utc
+                ),
             },
         )
